@@ -1,0 +1,9 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://adesso-ai-hub.3asabc.de",
+    "ANTHROPIC_AUTH_TOKEN": "sk-ncVrnzL2zoy7N42GghIx9A",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4.5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-v4.5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-v4.5"
+  }
+}

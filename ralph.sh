@@ -1,4 +1,5 @@
-# ralph.sh
+#!/bin/bash
+# ralph.sh - Autonomous Feature Implementation Loop
 # Usage: ./ralph.sh <iterations>
 
 set -e
@@ -8,27 +9,28 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-# For each iteration, run Claude Code with the following prompt.
-# This prompt is basic, we'll expand it later.
-for ((i=1; i<=$1; i++)); do
-  result=$(docker sandbox run claude -p \
-"@FEATUES.md @progress.txt \
-1. Decide which task to work on next. \
-This should be the one YOU decide has the highest priority, \
-- not necessarily the first in the list. \
-2. Check any feedback loops, such as types and tests. \
-3. Append your progress to the progress.txt file. \
-4. Make a git commit of that feature. \
-ONLY WORK ON A SINGLE FEATURE. \
-If, while implementing the feature, you notice that all work \
-is complete, output <promise>COMPLETE</promise>. \
-")
+ITERATIONS=$1
 
-  echo "$result"
+for ((i=1; i<=$ITERATIONS; i++)); do
+  echo ""
+  echo "════════════════════════════════════════════════════════════════"
+  echo "  RALPH ITERATION $i/$ITERATIONS"
+  echo "════════════════════════════════════════════════════════════════"
+  echo ""
 
-  if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
-    echo "PRD complete, exiting."
-    exit 0
-  fi
+  claude --dangerously-skip-permissions -p "
+/lfg
+
+Iteration $i/$ITERATIONS
+
+Lies FEATURES.json und progress.txt. Wähle das nächste sinnvolle Feature.
+Erstelle einen eigenen Branch (feat/...), implementiere, committe.
+Nach dem Commit: zurück zu main.
+"
+
 done
 
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  $ITERATIONS Iterationen abgeschlossen"
+echo "════════════════════════════════════════════════════════════════"

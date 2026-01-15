@@ -47,7 +47,7 @@
         "Attempt to access /dashboard",
         "Verify redirect back to login (unauthorized)"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "AUTH-004",

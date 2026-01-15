@@ -18,7 +18,7 @@
         "Verify redirect to login page",
         "Verify user exists in database with hashed password"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "AUTH-002",
@@ -33,7 +33,7 @@
         "Verify redirect to dashboard",
         "Verify user session is active"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "AUTH-003",

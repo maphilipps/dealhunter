@@ -1,36 +1,69 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { auth } from '@/auth'
+import { getRequiredRole } from '@/lib/route-protection'
+import { UserRole } from '@/lib/roles'
 
-export async function middleware(request: NextRequest) {
-  const session = await auth()
+export default auth(async (req) => {
+  const { nextUrl } = req
+  const pathname = nextUrl.pathname
+  const session = req.auth
+  const isLoggedIn = !!session?.user
 
-  // Protected routes
-  const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') ||
-                          request.nextUrl.pathname.startsWith('/admin')
+  // Public routes (no authentication required)
+  const publicRoutes = ['/', '/login', '/register', '/api/auth']
+  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
 
-  // Auth routes
-  const isAuthRoute = request.nextUrl.pathname === '/login' ||
-                     request.nextUrl.pathname === '/register'
-
-  // Redirect unauthenticated users to login
-  if (isProtectedRoute && !session) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  if (isPublicRoute) {
+    // Redirect authenticated users away from auth pages
+    if (isLoggedIn && (pathname === '/login' || pathname === '/register')) {
+      return NextResponse.redirect(new URL('/dashboard', nextUrl))
+    }
+    return NextResponse.next()
   }
 
-  // Redirect authenticated users away from auth pages
-  if (isAuthRoute && session) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  // Check authentication
+  if (!isLoggedIn) {
+    const loginUrl = new URL('/login', nextUrl)
+    loginUrl.searchParams.set('callbackUrl', pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
-  // Admin-only routes
-  if (request.nextUrl.pathname.startsWith('/admin') && session?.user?.role !== 'admin') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  // ✅ NEW: Check tokenVersion for session invalidation
+  // TODO: Implement database check (requires DB query in middleware)
+  // For now, we skip this to avoid performance impact
+  // Will be implemented in Phase 7 with Redis caching
+
+  // Check role-based access
+  const requiredRoles = getRequiredRole(pathname)
+
+  if (requiredRoles) {
+    const userRole = session.user.role as UserRole
+
+    if (!requiredRoles.includes(userRole)) {
+      // User doesn't have required role
+      const isApiRoute = pathname.startsWith('/api')
+
+      if (isApiRoute) {
+        // Return 403 JSON for API routes
+        return NextResponse.json(
+          { error: 'Forbidden', message: 'Insufficient permissions' },
+          { status: 403 }
+        )
+      } else {
+        // Redirect to /unauthorized for page routes
+        return NextResponse.redirect(
+          new URL(`/unauthorized?required=${requiredRoles[0]}&current=${userRole}`, nextUrl)
+        )
+      }
+    }
   }
 
   return NextResponse.next()
-}
+})
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/admin/:path*', '/login', '/register']
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+  ],
 }

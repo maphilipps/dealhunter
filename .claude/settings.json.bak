@@ -1,0 +1,39 @@
+{
+    "env": {
+        "ANTHROPIC_AUTH_TOKEN": "fdd8a684b66f49a48d6acfb519a260e3.apXTCpxO2KsVFfOS",
+        "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
+        "API_TIMEOUT_MS": "3000000",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "GLM-4.7",
+"ANTHROPIC_DEFAULT_SONNET_MODEL": "GLM-4.7",
+"ANTHROPIC_DEFAULT_HAIKU_MODEL": "GLM-4.5-Air"
+    },
+    "mcpServers": {
+    "web-reader": {
+      "type": "http",
+      "url": "https://api.z.ai/api/mcp/web_reader/mcp",
+      "headers": {
+        "Authorization": "Bearer fdd8a684b66f49a48d6acfb519a260e3.apXTCpxO2KsVFfOS"
+      }
+    },
+     "web-search-prime": {
+      "type": "http",
+      "url": "https://api.z.ai/api/mcp/web_search_prime/mcp",
+      "headers": {
+        "Authorization": "Bearer fdd8a684b66f49a48d6acfb519a260e3.apXTCpxO2KsVFfOS"
+      }
+    },
+     "zai-mcp-server": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@z_ai/mcp-server"
+      ],
+      "env": {
+        "Z_AI_API_KEY": "fdd8a684b66f49a48d6acfb519a260e3.apXTCpxO2KsVFfOS",
+        "Z_AI_MODE": "ZAI"
+      }
+    }
+
+  }
+}

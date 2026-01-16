@@ -55,7 +55,7 @@ function TagInput({ items, setItems, placeholder }: { items: string[], setItems:
   );
 }
 
-export function EmployeeForm({ businessLines, competencies }: { businessLines: Option[], competencies: Option[] }) {
+export function EmployeeForm({ businessLines, competencies }: { businessLines: Option[] | undefined, competencies: Option[] | undefined }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState('');

@@ -154,7 +154,7 @@ export function TechnologyForm({ businessLines }: TechnologyFormProps) {
             required
           >
             <option value="">Business Line auswählen</option>
-            {businessLines.map((bl) => (
+            {(businessLines || []).map((bl) => (
               <option key={bl.id} value={bl.id}>
                 {bl.name}
               </option>

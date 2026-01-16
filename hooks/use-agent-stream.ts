@@ -7,7 +7,11 @@ import { AgentEventType } from '@/lib/streaming/event-types';
 /**
  * Hook for consuming Server-Sent Events from agent streams
  * Best practice: Use reducer for complex state management (rerender-derived-state)
+ * Memory optimization: Circular buffer with MAX_EVENTS=150 limit (perf-004)
  */
+
+// Maximum number of events to keep in memory (circular buffer prevents unbounded growth)
+const MAX_EVENTS = 150;
 
 type Action =
   | { type: 'ADD_EVENT'; event: AgentEvent }
@@ -20,7 +24,11 @@ function streamReducer(state: StreamState, action: Action): StreamState {
   switch (action.type) {
     case 'ADD_EVENT': {
       const event = action.event;
-      const newEvents = [...state.events, event];
+
+      // Circular buffer: keep only last MAX_EVENTS events to prevent memory leaks
+      const allEvents = [...state.events, event];
+      const newEvents =
+        allEvents.length > MAX_EVENTS ? allEvents.slice(allEvents.length - MAX_EVENTS) : allEvents;
 
       // Update agent states based on event type
       const newAgentStates = { ...state.agentStates };

@@ -13,7 +13,7 @@ Current Status: Starting implementation
 
 ### Phase 2: Core Upload & Input (Critical Path)
 - UPLOAD-001: PDF Upload ✅ COMPLETED
-- UPLOAD-002: Free Text Input
+- UPLOAD-002: Free Text Input ✅ COMPLETED
 - UPLOAD-003: Email Content Input
 
 ### Phase 3: Master Data Management (Supporting Infrastructure)
@@ -39,13 +39,14 @@ Current Status: Starting implementation
 
 ## Current Work Session
 
-### UPLOAD-001: PDF Upload ✅
+### UPLOAD-002: Free Text Input ✅
 Status: COMPLETED
-- Added bid_opportunities table to database schema
-- Created /bids/new page with drag-and-drop upload UI
-- Implemented PDF upload server action with validation (file type, size)
-- Created bid detail page (/bids/[id]) to view uploaded bids
-- Successfully tested: PDF upload → BidOpportunity creation → redirect to details
-- Note: Text extraction implemented as base64 storage for MVP (full OCR later)
+- Extended upload form with tab-based UI (PDF Upload | Text eingeben)
+- Added uploadFreetextBid server action with validation (min 50 chars)
+- Created freetext input form with customer name and project description fields
+- Character counter shows progress (X / 50 minimum)
+- Button disabled until validation passes
+- Successfully tested: Form input → BidOpportunity creation (inputType: freetext) → redirect
+- Format: "Kunde: [name]\n\nProjektbeschreibung:\n[description]"
 
-Next: UPLOAD-002 - Free Text Input
+Next: UPLOAD-003 - Email Content Input

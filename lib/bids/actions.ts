@@ -66,3 +66,54 @@ export async function uploadPdfBid(formData: FormData) {
     return { success: false, error: 'Upload fehlgeschlagen' };
   }
 }
+
+export async function uploadFreetextBid(data: {
+  projectDescription: string;
+  customerName: string;
+  source?: 'reactive' | 'proactive';
+  stage?: 'cold' | 'warm' | 'rfp';
+}) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  const { projectDescription, customerName, source = 'reactive', stage = 'warm' } = data;
+
+  // Validate inputs
+  if (!projectDescription || projectDescription.trim().length < 50) {
+    return { success: false, error: 'Projektbeschreibung muss mindestens 50 Zeichen lang sein' };
+  }
+
+  if (!customerName || customerName.trim().length === 0) {
+    return { success: false, error: 'Kundenname ist erforderlich' };
+  }
+
+  try {
+    // Format raw input
+    const rawInput = `Kunde: ${customerName}\n\nProjektbeschreibung:\n${projectDescription}`;
+
+    // Create BidOpportunity record
+    const [bidOpportunity] = await db
+      .insert(bidOpportunities)
+      .values({
+        userId: session.user.id,
+        source,
+        stage,
+        inputType: 'freetext',
+        rawInput,
+        status: 'draft',
+        bitDecision: 'pending',
+      })
+      .returning();
+
+    return {
+      success: true,
+      bidId: bidOpportunity.id
+    };
+  } catch (error) {
+    console.error('Freetext upload error:', error);
+    return { success: false, error: 'Speichern fehlgeschlagen' };
+  }
+}

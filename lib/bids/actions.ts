@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { bidOpportunities } from '@/lib/db/schema';
 import { extractTextFromPdf } from './pdf-extractor';
+import { detectPII, cleanText } from '@/lib/pii/pii-cleaner';
 
 export async function uploadPdfBid(formData: FormData) {
   const session = await auth();
@@ -15,6 +16,7 @@ export async function uploadPdfBid(formData: FormData) {
   const file = formData.get('file') as File | null;
   const source = formData.get('source') as 'reactive' | 'proactive' || 'reactive';
   const stage = formData.get('stage') as 'cold' | 'warm' | 'rfp' || 'rfp';
+  const enableDSGVO = formData.get('enableDSGVO') === 'true';
 
   if (!file) {
     return { success: false, error: 'Keine Datei ausgewählt' };
@@ -37,10 +39,24 @@ export async function uploadPdfBid(formData: FormData) {
     const buffer = Buffer.from(arrayBuffer);
 
     // Extract text from PDF
-    const extractedText = await extractTextFromPdf(buffer);
+    let extractedText = await extractTextFromPdf(buffer);
 
     if (!extractedText || extractedText.trim().length === 0) {
       return { success: false, error: 'PDF-Text konnte nicht extrahiert werden' };
+    }
+
+    // Apply DSGVO cleaning if enabled
+    let piiData = null;
+    if (enableDSGVO) {
+      const piiMatches = detectPII(extractedText);
+      if (piiMatches.length > 0) {
+        extractedText = cleanText(extractedText, piiMatches);
+        piiData = JSON.stringify(piiMatches.map(m => ({
+          type: m.type,
+          original: m.original,
+          replacement: m.replacement
+        })));
+      }
     }
 
     // Create BidOpportunity record
@@ -52,6 +68,7 @@ export async function uploadPdfBid(formData: FormData) {
         stage,
         inputType: 'pdf',
         rawInput: extractedText,
+        metadata: piiData,
         status: 'draft',
         bitDecision: 'pending',
       })
@@ -59,7 +76,8 @@ export async function uploadPdfBid(formData: FormData) {
 
     return {
       success: true,
-      bidId: bidOpportunity.id
+      bidId: bidOpportunity.id,
+      piiRemoved: enableDSGVO && (piiData !== null)
     };
   } catch (error) {
     console.error('PDF upload error:', error);

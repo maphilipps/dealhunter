@@ -163,6 +163,17 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
           <Type className="inline-block h-4 w-4 mr-2" />
           Text eingeben
         </button>
+        <button
+          onClick={() => setActiveTab('email')}
+          className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+            activeTab === 'email'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Mail className="inline-block h-4 w-4 mr-2" />
+          E-Mail
+        </button>
       </div>
 
       {/* PDF Upload Zone */}

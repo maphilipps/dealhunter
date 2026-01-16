@@ -2,7 +2,7 @@
   "project": "Dealhunter",
   "version": "1.2.0-mvp",
   "description": "AI-Powered BD Decision Platform for adesso SE - Multi-Agent System with Legal, Reference & Competitor Analysis",
-  "lastUpdated": "2026-01-15",
+  "lastUpdated": "2026-01-16",
   "features": [
     {
       "id": "AUTH-001",
@@ -171,7 +171,7 @@
         "Verify projectDescription extracted",
         "Verify confidence score shown"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "EXTRACT-002",
@@ -188,7 +188,7 @@
         "Verify extractedRequirements updated with corrections",
         "Verify status changes to 'quick_scanning'"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "QUICK-001",
@@ -204,7 +204,7 @@
         "Verify techStack populated in QuickScanResult",
         "Verify AgentActivityLog shows detection steps"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "QUICK-002",
@@ -219,7 +219,7 @@
         "Verify pagesByType breakdown populated",
         "Verify sitemapFound boolean set correctly"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "QUICK-003",
@@ -234,7 +234,7 @@
         "Verify features array populated",
         "Verify integrations array populated"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "QUICK-004",
@@ -249,7 +249,7 @@
         "Verify matchedTechnologies shows which techs matched",
         "Verify QuickScan status changes to 'completed'"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "QUICK-005",
@@ -264,7 +264,7 @@
         "Verify duration is less than 5 minutes",
         "Verify all required fields populated despite time constraint"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "BIT-001",
@@ -279,7 +279,7 @@
         "Verify competition check tool is called",
         "Verify Quick Scan results are incorporated"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "BIT-002",
@@ -293,7 +293,7 @@
         "Verify capabilityScore (0-100) calculated",
         "Verify capability reasoning in AgentActivityLog"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "BIT-003",
@@ -307,7 +307,7 @@
         "Verify dealQualityScore (0-100) calculated",
         "Verify deal quality reasoning logged"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "BIT-004",
@@ -321,7 +321,7 @@
         "Verify strategicFitScore (0-100) calculated",
         "Verify strategic fit reasoning logged"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "BIT-005",
@@ -334,7 +334,7 @@
         "Verify competitionRisk set to 'low', 'medium', or 'high'",
         "Verify competition reasoning logged"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "BIT-006",
@@ -348,7 +348,7 @@
         "Verify BitDecision data stored on BidOpportunity",
         "Verify status changes to 'bit_decided'"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "BIT-007",
@@ -362,7 +362,7 @@
         "Verify alternative includes BL name and reasoning",
         "Verify BD sees alternative suggestion in UI"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "BIT-008",
@@ -377,7 +377,7 @@
         "Verify AuditTrailEntry created with reason",
         "Verify workflow continues to routing"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ROUTE-001",
@@ -393,7 +393,7 @@
         "Verify assignedBusinessLineId set to recommended BL",
         "Verify status changes to 'routing'"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ROUTE-002",
@@ -410,7 +410,7 @@
         "Verify newValue shows selected BL",
         "Verify reason stored in AuditTrailEntry"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ROUTE-003",
@@ -424,7 +424,7 @@
         "Verify email includes link to review page",
         "Verify assignedBLNotifiedAt timestamp set"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "DEEP-001",
@@ -438,7 +438,7 @@
         "Verify background job queued",
         "Verify AgentActivityLog shows analysis start"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "DEEP-002",
@@ -454,7 +454,7 @@
         "Verify each item mapped to target CMS equivalent",
         "Verify complexity classification (simple/medium/complex)"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "DEEP-003",
@@ -468,7 +468,7 @@
         "Verify complexity score calculated",
         "Verify migrationComplexity populated in result"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "DEEP-004",
@@ -485,7 +485,7 @@
         "Verify remediationEffort hours estimated",
         "Verify wcagLevel determined"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "DEEP-005",
@@ -503,7 +503,7 @@
         "Verify confidenceLevel set",
         "Verify assumptions and risks documented"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "DEEP-006",
@@ -520,7 +520,7 @@
         "Verify BL receives email notification",
         "Verify in-app notification badge appears for BL"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "DEEP-007",
@@ -537,7 +537,7 @@
         "Verify new background job queued",
         "Verify old analysis preserved for comparison"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "EVAL-001",
@@ -553,7 +553,7 @@
         "Verify each scenario shows revenue, costs, margin",
         "Verify risk factors listed per scenario"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "EVAL-002",
@@ -569,7 +569,7 @@
         "Click on specific skill to see employee details",
         "Verify drill-down shows availability and experience"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "EVAL-003",
@@ -585,7 +585,7 @@
         "Verify assumptions expandable",
         "Verify risks expandable"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "TEAM-001",
@@ -599,7 +599,7 @@
         "Verify availability status shown per person",
         "Verify similar project experience noted"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "TEAM-002",
@@ -613,7 +613,7 @@
         "Verify changes reflected in team preview",
         "Verify team still meets minimum role requirements"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "TEAM-003",
@@ -628,7 +628,7 @@
         "Verify assignedTeam populated on BidOpportunity",
         "Verify status changes to 'team_assigned'"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "TEAM-004",
@@ -642,7 +642,7 @@
         "Verify gap noted in team assignment data",
         "Verify BL sees confirmation warning about gap"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "NOTIFY-001",
@@ -656,7 +656,7 @@
         "Verify status changes to 'notified'",
         "Verify teamNotifiedAt timestamp set"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "NOTIFY-002",
@@ -673,7 +673,7 @@
         "Verify PDF contains team composition",
         "Verify PDF contains next steps"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "NOTIFY-003",
@@ -690,7 +690,7 @@
         "Verify next steps section",
         "Verify professional formatting"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "NOTIFY-004",
@@ -704,7 +704,7 @@
         "Verify no further actions available",
         "Verify full audit trail preserved"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "AGENT-001",
@@ -718,7 +718,7 @@
         "Verify tool results shown after completion",
         "Verify decisions highlighted with confidence"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "AGENT-002",
@@ -732,7 +732,7 @@
         "Click to collapse",
         "Verify returns to summary view"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "AGENT-003",
@@ -745,7 +745,7 @@
         "Verify <60% shows red indicator with required confirmation",
         "Verify tooltip explains confidence level"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "AGENT-004",
@@ -762,7 +762,7 @@
         "Verify status reflects aborted state",
         "Verify user can restart operation"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "DASH-001",
@@ -776,7 +776,7 @@
         "Verify recent bids listed",
         "Verify quick stats visible (bit rate, open evaluations)"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "DASH-002",
@@ -793,7 +793,7 @@
         "Clear all filters",
         "Verify all bids shown again"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "DASH-003",
@@ -808,7 +808,7 @@
         "View own bid",
         "Verify edit controls available"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "DASH-004",
@@ -823,7 +823,7 @@
         "Verify newest opportunities first",
         "Click opportunity to open review"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ADMIN-001",
@@ -893,7 +893,7 @@
         "Verify all employees created",
         "Verify skills properly linked"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ADMIN-005",
@@ -941,7 +941,7 @@
         "Change date range",
         "Verify chart updates with filtered data"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ANALYTICS-002",
@@ -955,7 +955,7 @@
         "Click BL segment to filter details",
         "Verify drill-down shows BL-specific metrics"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ANALYTICS-003",
@@ -969,7 +969,7 @@
         "Verify average time per stage",
         "Verify drop-off points highlighted"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ANALYTICS-004",
@@ -984,7 +984,7 @@
         "Change date range filter",
         "Verify metric updates accordingly"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ANALYTICS-005",
@@ -998,7 +998,7 @@
         "Verify percentage breakdown shown",
         "Verify clickable to filter by source"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ANALYTICS-006",
@@ -1013,7 +1013,7 @@
         "Verify percentage breakdown shown",
         "Verify clickable to filter by stage"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "PERF-001",
@@ -1027,7 +1027,7 @@
         "Wait for status change from 'uploading' to 'draft'",
         "Verify total time < 30 seconds"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "PERF-002",
@@ -1041,7 +1041,7 @@
         "Verify duration < 60 seconds",
         "Verify all required fields extracted"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "PERF-003",
@@ -1055,7 +1055,7 @@
         "Verify duration between 2-5 minutes",
         "Verify all scan phases completed"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "PERF-004",
@@ -1069,7 +1069,7 @@
         "Verify total duration 5-15 minutes",
         "Verify all evaluation criteria assessed"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "PERF-005",
@@ -1084,7 +1084,7 @@
         "Verify duration 10-30 minutes",
         "Verify all phases completed"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "PERF-006",
@@ -1099,7 +1099,7 @@
         "Verify duration < 2 minutes",
         "Verify all evaluation data populated"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "PERF-007",
@@ -1114,7 +1114,7 @@
         "Verify total duration < 30 seconds",
         "Verify all team members received notification"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ERROR-001",
@@ -1129,7 +1129,7 @@
         "Verify user notified of failure",
         "Verify manual retry option available"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ERROR-002",
@@ -1143,7 +1143,7 @@
         "Verify option to update URL and retry",
         "Verify workflow can continue without scan"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ERROR-003",
@@ -1158,7 +1158,7 @@
         "BD selects BL manually",
         "Verify workflow continues"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "UI-001",
@@ -1174,7 +1174,7 @@
         "Verify dark mode persists",
         "Toggle back to light mode"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "UI-002",
@@ -1191,7 +1191,7 @@
         "Verify navigation to relevant page",
         "Verify badge count decreases"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "HISTORY-001",
@@ -1206,7 +1206,7 @@
         "Verify link to view previous bids",
         "Click link and verify history visible"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "DEADLINE-001",
@@ -1220,7 +1220,7 @@
         "Verify deadline-based sorting available",
         "Verify visual indicator for approaching deadlines"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "LEGAL-001",
@@ -1233,7 +1233,7 @@
         "Verify contractAnalysis.contractType populated",
         "Verify detection reasoning in AgentActivityLog"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "LEGAL-002",
@@ -1247,7 +1247,7 @@
         "Verify specific risks identified (unlimited liability, unfair penalties, IP issues)",
         "Verify recommendations for risk mitigation provided"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "LEGAL-003",
@@ -1261,7 +1261,7 @@
         "Verify deadlines identified and listed",
         "Verify complianceCheck.procurementLaw populated"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "LEGAL-004",
@@ -1274,7 +1274,7 @@
         "Verify call-off rules extracted",
         "Verify complianceCheck.frameworkAgreement populated"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "LEGAL-005",
@@ -1288,7 +1288,7 @@
         "Verify reporting requirements identified",
         "Verify complianceCheck.subcontractor populated"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "LEGAL-006",
@@ -1302,7 +1302,7 @@
         "Verify no automatic No Bit from legal issues alone",
         "Verify red flags included in Coordinator synthesis"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "LEGAL-007",
@@ -1316,7 +1316,7 @@
         "Verify detailed risk assessment available",
         "Verify BL sees complete legal analysis in review"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "REDFLAG-001",
@@ -1331,7 +1331,7 @@
         "Verify severity level assigned",
         "Verify recommendation provided"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "REDFLAG-002",
@@ -1346,7 +1346,7 @@
         "Verify severity level assigned",
         "Verify recommendation provided"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "REDFLAG-003",
@@ -1361,7 +1361,7 @@
         "Verify each has severity (critical/warning/info)",
         "Verify all shown in RedFlagAnalysis"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "RISK-001",
@@ -1379,7 +1379,7 @@
         "Verify mitigation suggestions provided where applicable",
         "Verify RiskAssessment included in BitDecision output"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "AWARD-001",
@@ -1393,7 +1393,7 @@
         "Verify individual criteria listed",
         "Verify sub-criteria captured if present"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "AWARD-002",
@@ -1407,7 +1407,7 @@
         "Verify overall fit assessment",
         "Verify recommendation generated"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "REF-001",
@@ -1455,7 +1455,7 @@
         "Verify top matches returned",
         "Verify matchedCriteria listed per reference"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "COMP-001",
@@ -1486,40 +1486,7 @@
         "Verify gaps identified for missing competencies",
         "Verify competency match result included in evaluation"
       ],
-      "passes": true
-    },
-    {
-      "id": "COMPETITOR-001",
-      "category": "master-data",
-      "description": "BD can add competitor to central database",
-      "steps": [
-        "Navigate to /competitors/new",
-        "Enter competitor name",
-        "Add known strengths",
-        "Add known weaknesses",
-        "Add technology focus areas",
-        "Add industry focus areas",
-        "Set price level (low/medium/high)",
-        "Click save",
-        "Verify Competitor created"
-      ],
-      "passes": true
-    },
-    {
-      "id": "COMPETITOR-002",
-      "category": "master-data",
-      "description": "BD can log encounter with competitor",
-      "steps": [
-        "Navigate to competitor detail page",
-        "Click 'Encounter hinzufügen'",
-        "Select outcome (won_against/lost_to/unknown)",
-        "Enter date",
-        "Optionally link to opportunity",
-        "Add notes",
-        "Click save",
-        "Verify encounter added to recentEncounters array"
-      ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "COMPETITOR-003",
@@ -1534,7 +1501,7 @@
         "Verify likelihood rating (high/medium/low) assigned",
         "Verify counter-strategy suggested if available"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ACCOUNT-001",
@@ -1550,7 +1517,7 @@
         "Verify Account created",
         "Verify account appears in account list"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ACCOUNT-002",
@@ -1564,7 +1531,7 @@
         "Verify BidOpportunity linked to Account",
         "Verify opportunity appears in account detail page"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ACCOUNT-003",
@@ -1579,7 +1546,7 @@
         "Click account header to expand/collapse",
         "Verify filtering by account works"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "ACCOUNT-004",
@@ -1593,7 +1560,7 @@
         "Verify historical data visible",
         "Verify link to create new opportunity for account"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "SUBJECTIVE-001",
@@ -1609,7 +1576,7 @@
         "Adjust technical fit slider (1-5)",
         "Verify values update in real-time"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "SUBJECTIVE-002",
@@ -1623,7 +1590,7 @@
         "Verify override is saved",
         "Verify suggestion source indicated"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "SUBJECTIVE-003",
@@ -1636,7 +1603,7 @@
         "Verify subjective factors appear in decision tree",
         "Verify BD perspective reflected in recommendation"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "TREE-001",
@@ -1650,7 +1617,7 @@
         "Verify child nodes show contributing factors",
         "Verify color coding (green=positive, red=negative, yellow=neutral)"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "TREE-002",
@@ -1664,7 +1631,7 @@
         "Verify supporting data displayed",
         "Click to close detail panel"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "TREE-003",
@@ -1677,7 +1644,7 @@
         "Verify top 3-5 arguments per side shown",
         "Verify arguments linked to tree nodes"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "COORD-001",
@@ -1691,7 +1658,7 @@
         "Verify synthesis creates unified recommendation",
         "Verify CoordinatorOutput populated"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "COORD-002",
@@ -1708,7 +1675,7 @@
         "Verify each updates independently",
         "Verify Coordinator starts when all complete"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "COORD-003",
@@ -1722,7 +1689,7 @@
         "Verify total time less than sequential sum",
         "Verify all results available for Coordinator"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "OUTCOME-001",
@@ -1737,7 +1704,7 @@
         "Verify outcome visible in dashboard",
         "Verify outcome used in analytics"
       ],
-      "passes": true
+      "passes": false
     }
   ]
 }

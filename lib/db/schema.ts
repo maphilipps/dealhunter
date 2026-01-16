@@ -247,38 +247,3 @@ export const auditTrails = sqliteTable('audit_trails', {
 
 export type AuditTrail = typeof auditTrails.$inferSelect;
 export type NewAuditTrail = typeof auditTrails.$inferInsert;
-
-export const competitors = sqliteTable('competitors', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  userId: text('user_id')
-    .notNull()
-    .references(() => users.id),
-
-  // Competitor Details
-  name: text('name').notNull(),
-
-  // Analysis
-  strengths: text('strengths'), // JSON array
-  weaknesses: text('weaknesses'), // JSON array
-  technologyFocus: text('technology_focus'), // JSON array
-  industryFocus: text('industry_focus'), // JSON array
-
-  // Market Position
-  priceLevel: text('price_level', { enum: ['low', 'medium', 'high'] })
-    .notNull()
-    .default('medium'),
-
-  // Encounters
-  recentEncounters: text('recent_encounters'), // JSON array
-
-  // Timestamps
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .$defaultFn(() => new Date())
-});
-
-export type Competitor = typeof competitors.$inferSelect;
-export type NewCompetitor = typeof competitors.$inferInsert;

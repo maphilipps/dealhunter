@@ -293,11 +293,185 @@ Decision Logic:
 - Requires reason when overriding AI recommendation
 - Validates all required fields before submission
 
-### Not Implemented (Future)
-- **ROUTE-003**: BL notification email (requires email infrastructure)
-  * Email to BL leader
-  * assignedBLNotifiedAt timestamp
-  * Will be implemented with NOTIFY features
+### Commit
+- 6dc52ed: feat(ROUTE-001-002): implement BL routing with AI recommendation and manual override
+
+## 2026-01-16 - ROUTE-003 ✅
+
+### Implemented Features
+- **ROUTE-003**: BL receives notification when opportunity is assigned
+  - Email sent to BL leader when bid is routed
+  - Email includes customer name in subject
+  - Email body includes opportunity summary and project description
+  - Email contains link to bid detail page for review
+  - Sets assignedBLNotifiedAt timestamp in database
+  - Development mode: logs email to console instead of sending
+  - Production mode: sends via Resend email service
+
+### Technical Details
+
+**Created Files:**
+- lib/notifications/email.ts - Email service using Resend
+  * sendBLAssignmentEmail() function
+  * HTML email template with gradient header
+  * Responsive email layout
+  * Development mode fallback (logs instead of sending)
+- scripts/seed-business-lines.ts - Seed script for business lines table
+  * 8 business lines with leader names and emails
+  * Banking & Insurance, Automotive, Energy & Utilities, Retail, Healthcare, Public Sector, Manufacturing, Technology
+
+**Modified Files:**
+- lib/routing/actions.ts - Updated assignBusinessLine to send email
+  * Query businessLines table by name to get leader email
+  * Parse extractedRequirements for customer name and project description
+  * Call sendBLAssignmentEmail after successful assignment
+  * Set assignedBLNotifiedAt timestamp
+  * Graceful error handling (assignment succeeds even if email fails)
+- .env.local - Added email configuration
+  * RESEND_API_KEY (placeholder)
+  * NEXT_PUBLIC_APP_URL for email links
+- FEATURES.json - Marked ROUTE-003 as passing
+
+**Dependencies:**
+- Installed: resend@4.x
+- Uses businessLines table (leaderName, leaderEmail fields)
+- Requires RESEND_API_KEY in production
+
+**Email Template Features:**
+- Clean, professional HTML email
+- Gradient header (purple/blue)
+- Opportunity summary card with customer name
+- CTA button "Opportunity prüfen" linking to bid detail
+- Next steps checklist (4 items)
+- Responsive design (max-width: 600px)
+- Works without images (text-based)
+
+**Development Workflow:**
+1. User assigns bid to business line (ROUTE-001 or ROUTE-002)
+2. System queries businessLines table for leader email
+3. System sends email notification
+4. System sets assignedBLNotifiedAt timestamp
+5. In dev mode: email logged to console
+6. In production: email sent via Resend
 
 ### Commit
-- [pending]: feat(ROUTE-001-002): implement BL routing with AI recommendation and manual override
+- [pending]: feat(ROUTE-003): implement BL notification email with Resend
+
+## 2026-01-16 - TEAM-001 through TEAM-004 ✅
+
+### Implemented Features
+- **TEAM-001**: AI Team Suggestion Based on Requirements
+  - AI analyzes project requirements and technologies
+  - Matches employee skills to required capabilities
+  - Suggests optimal team composition with roles
+  - Provides skill match reasoning for each member (0-100% score)
+  - Shows availability status (available, on_project, unavailable)
+  - Notes similar project experience for each member
+  - Identifies required roles (PM, Tech Lead, 2+ Developers)
+  - Returns overall confidence score
+
+- **TEAM-002**: Modify AI Team Suggestion
+  - BL can remove suggested team members
+  - Can add different employees from available list
+  - Change role assignments for members
+  - Team preview updates in real-time
+  - Validates minimum role requirements maintained
+
+- **TEAM-003**: Assign Team with Required Roles
+  - Enforces Project Manager requirement
+  - Requires at least 2 developers (any dev role)
+  - Creates TeamAssignment record with all members
+  - Stores assignedTeam JSON in BidOpportunity
+  - Changes status from 'routed' → 'team_assigned'
+  - Timestamps assignment with assignedBy and assignedAt
+
+- **TEAM-004**: Handle Skill Gaps
+  - AI identifies skill gaps with severity levels (critical, important, nice-to-have)
+  - Gaps clearly highlighted with amber warnings
+  - Best available alternatives suggested
+  - BL can assign team despite gaps (with confirmation dialog)
+  - Gap acknowledgment stored in team assignment
+  - Confirmation warning shows all gaps before final assignment
+
+### Technical Details
+
+**Created Files:**
+- lib/team/schema.ts - Complete Zod schemas for team data
+  * teamRoleSchema: 10 project roles (PM, Tech Lead, Developers, UX, QA, etc.)
+  * skillGapSchema: Gap severity and recommendations
+  * teamMemberSuggestionSchema: Member with skill match, availability, reasoning
+  * teamSuggestionSchema: Complete suggestion with members, gaps, validation
+  * teamAssignmentSchema: Final team with assignment metadata
+
+- lib/team/agent.ts - AI team suggestion agent
+  * suggestTeam() - Main team building function
+  * Uses gpt-4o-mini with temperature 0.3
+  * Analyzes requirements, tech stack, available employees
+  * Matches skills to technologies
+  * Balances seniority and availability
+  * Team size guidelines: Small (3-5), Medium (5-8), Large (8-12)
+  * Confidence scoring: 90-100 perfect, 70-89 good, 50-69 acceptable
+
+- lib/team/actions.ts - Server actions for team operations
+  * suggestTeamForBid(bidId) - Generates AI suggestion
+  * assignTeam(bidId, teamAssignment) - Finalizes team assignment
+  * getTeamAssignment(bidId) - Retrieves current assignment
+  * getAvailableEmployees() - Lists employees for manual selection
+  * Validates status, role requirements, employee availability
+
+- components/bids/team-builder.tsx - Comprehensive team UI
+  * AI suggestion display with confidence badge
+  * Team member cards with detailed skill matching
+  * Skill match scores and missing skills highlighted
+  * Availability indicators (color-coded badges)
+  * Similar project experience notes
+  * Remove member functionality (TEAM-002)
+  * Skill gap warnings with severity levels (TEAM-004)
+  * Gap confirmation AlertDialog
+  * Final assignment with validation
+
+**Modified Files:**
+- components/bids/bid-detail-client.tsx - Integration for 'routed' status
+  * Shows Team Builder when status='routed'
+  * Displays project overview with customer and assigned BL
+  * Shows team assignment summary when status='team_assigned'
+
+**Database Updates:**
+- assignedTeam: Stores complete TeamAssignment JSON
+  * members array with employeeId, name, role, email
+  * assignedBy user ID
+  * assignedAt ISO timestamp
+  * notes and acknowledgedGaps
+- status: Changes from 'routed' → 'team_assigned'
+
+**AI Prompt Engineering:**
+- Detailed adesso context and team building guidelines
+- Required vs. optional roles explained
+- Team size guidelines by budget range
+- Skill matching criteria (perfect/good/acceptable/weak)
+- Availability preference logic
+- Confidence scoring rubric
+- Fallback to "new_hire" placeholder when no match
+
+**UX Design (Apple Mindset):**
+- Clean suggestion display with confidence badge
+- Color-coded confidence (blue >=70%, amber <70%)
+- Detailed team member cards with all relevant info
+- Skill match visualization with badges (✓ matching, missing)
+- Availability status with intuitive color coding
+- AI reasoning visible for transparency
+- Skill gaps prominently displayed with amber warnings
+- Confirmation dialog prevents accidental gap acceptance
+- Remove button for easy team modification
+- Real-time validation feedback
+
+**Validation Logic:**
+- Status must be 'routed' before team operations
+- Minimum 1 Project Manager required
+- Minimum 2 developers required (any dev role)
+- Skill gaps acknowledged before assignment
+- All team members have role assignments
+- Assignment metadata captured (who, when)
+
+### Commit
+- [pending]: feat(TEAM-001-004): implement AI team suggestion and assignment with skill gap handling

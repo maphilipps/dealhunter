@@ -17,6 +17,7 @@ import { EvaluationProgress } from './evaluation-progress';
 import { DecisionCard } from './decision-card';
 import { LowConfidenceDialog } from './low-confidence-dialog';
 import { BLRoutingCard } from './bl-routing-card';
+import { TeamBuilder } from './team-builder';
 
 interface BidDetailClientProps {
   bid: BidOpportunity;
@@ -350,6 +351,56 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
               </>
             )}
           </>
+        )}
+      </div>
+    );
+  }
+
+  // Routed status - Show Team Builder
+  if (bid.status === 'routed' || bid.status === 'team_assigned') {
+    return (
+      <div className="space-y-6">
+        {/* Show extracted requirements summary */}
+        {extractedData && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Projekt-Übersicht</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                {extractedData.customerName && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Kunde</p>
+                    <p className="text-lg">{extractedData.customerName}</p>
+                  </div>
+                )}
+                {bid.assignedBusinessLineId && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Business Line</p>
+                    <p className="text-lg">{bid.assignedBusinessLineId}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Team Builder */}
+        {bid.status === 'routed' && <TeamBuilder bidId={bid.id} />}
+
+        {/* Team Assignment Summary (if team_assigned) */}
+        {bid.status === 'team_assigned' && bid.assignedTeam && (
+          <Card className="border-green-200 bg-green-50">
+            <CardHeader>
+              <CardTitle className="text-green-900">Team zugewiesen</CardTitle>
+              <CardDescription className="text-green-700">
+                Das Team wurde erfolgreich zugewiesen
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <pre className="text-sm">{JSON.stringify(JSON.parse(bid.assignedTeam), null, 2)}</pre>
+            </CardContent>
+          </Card>
         )}
       </div>
     );

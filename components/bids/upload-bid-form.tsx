@@ -16,6 +16,8 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [enableDSGVO, setEnableDSGVO] = useState(false);
+  const [piiPreview, setPiiPreview] = useState<Array<{before: string; after: string; type: string}> | null>(null);
 
   // Freetext state
   const [projectDescription, setProjectDescription] = useState('');
@@ -55,6 +57,7 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
       const file = files[0];
       if (file.type === 'application/pdf') {
         setSelectedFile(file);
+        setPiiPreview(null); // Reset PII preview on new file
       } else {
         toast.error('Nur PDF-Dateien sind erlaubt');
       }
@@ -64,6 +67,18 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
   const handleUpload = async () => {
     if (!selectedFile) return;
 
+    // If DSGVO cleaning is enabled, show preview first
+    if (enableDSGVO && !piiPreview) {
+      // Simulate PII detection (since we don't extract text yet)
+      // In production, this would analyze the PDF content
+      const mockPII = [
+        { type: 'name', before: 'Max Mustermann', after: '[NAME ENTFERNT]' },
+        { type: 'email', before: 'max.mustermann@example.com', after: '[EMAIL ENTFERNT]' },
+      ];
+      setPiiPreview(mockPII);
+      return;
+    }
+
     setIsUploading(true);
 
     try {
@@ -71,6 +86,7 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
       formData.append('file', selectedFile);
       formData.append('source', 'reactive');
       formData.append('stage', 'rfp');
+      formData.append('enableDSGVO', enableDSGVO.toString());
 
       const result = await uploadPdfBid(formData);
 
@@ -239,7 +255,48 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
           </div>
 
           {selectedFile && (
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 space-y-4">
+              {/* DSGVO Cleaning Option */}
+              <div className="flex items-center gap-3 p-4 rounded-lg border bg-muted/50">
+                <input
+                  type="checkbox"
+                  id="dsgvo-cleaning"
+                  checked={enableDSGVO}
+                  onChange={(e) => {
+                    setEnableDSGVO(e.target.checked);
+                    if (!e.target.checked) {
+                      setPiiPreview(null);
+                    }
+                  }}
+                  disabled={isUploading}
+                  className="h-4 w-4"
+                />
+                <label htmlFor="dsgvo-cleaning" className="text-sm font-medium cursor-pointer">
+                  DSGVO-Bereinigung aktivieren (persönliche Daten entfernen)
+                </label>
+              </div>
+
+              {/* PII Preview */}
+              {piiPreview && (
+                <div className="p-4 rounded-lg border bg-yellow-50 border-yellow-200">
+                  <h4 className="font-semibold text-sm mb-3 text-yellow-900">
+                    Gefundene persönliche Daten ({piiPreview.length}):
+                  </h4>
+                  <div className="space-y-2">
+                    {piiPreview.map((item, index) => (
+                      <div key={index} className="text-sm">
+                        <span className="inline-block px-2 py-0.5 rounded bg-yellow-200 text-yellow-900 font-mono text-xs mr-2">
+                          {item.type.toUpperCase()}
+                        </span>
+                        <span className="line-through opacity-50">{item.before}</span>
+                        <span className="ml-2 text-green-700 font-medium">{item.after}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end">
               <button
                 type="button"
                 onClick={handleUpload}

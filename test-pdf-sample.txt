@@ -1,0 +1,44 @@
+PROJECT REQUIREMENTS - CUSTOMER PORTAL MODERNIZATION
+
+Client: ABC Manufacturing GmbH
+Project Type: Web Application Modernization
+Budget Range: €150,000 - €200,000
+Timeline: 6 months
+
+OVERVIEW:
+ABC Manufacturing needs to modernize their legacy customer portal to improve user experience and integrate with modern ERP systems.
+
+TECHNICAL REQUIREMENTS:
+- Migrate from legacy .NET Framework 4.5 to .NET 8
+- Implement React-based frontend
+- Integration with SAP S/4HANA
+- Mobile-responsive design
+- SSO with Azure AD
+- Multi-language support (DE, EN, FR)
+
+SCOPE:
+1. User Management System
+2. Order Tracking & History
+3. Invoice Download Portal
+4. Product Catalog Integration
+5. Support Ticket System
+6. Document Management
+
+EXPECTED DELIVERABLES:
+- Full stack application
+- API documentation
+- User training materials
+- Deployment pipeline
+- 3 months support & maintenance
+
+TEAM REQUIREMENTS:
+- 2 Full-Stack Developers (.NET + React)
+- 1 UX/UI Designer
+- 1 Solution Architect
+- 1 QA Engineer
+
+TIMELINE:
+- Phase 1: Analysis & Design (6 weeks)
+- Phase 2: Development (12 weeks)
+- Phase 3: Testing & UAT (4 weeks)
+- Phase 4: Deployment & Handover (2 weeks)

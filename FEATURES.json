@@ -77,7 +77,7 @@
         "Verify BidOpportunity record created with status 'draft'",
         "Verify rawInput contains PDF text extraction"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "UPLOAD-002",

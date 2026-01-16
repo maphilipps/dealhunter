@@ -12,7 +12,7 @@ Current Status: Starting implementation
 - AUTH-004: Role-based Access Control ✅ COMPLETED
 
 ### Phase 2: Core Upload & Input (Critical Path)
-- UPLOAD-001: PDF Upload
+- UPLOAD-001: PDF Upload ✅ COMPLETED
 - UPLOAD-002: Free Text Input
 - UPLOAD-003: Email Content Input
 
@@ -39,11 +39,13 @@ Current Status: Starting implementation
 
 ## Current Work Session
 
-### AUTH-004: Role-based Access Control ✅
+### UPLOAD-001: PDF Upload ✅
 Status: COMPLETED
-- Created seed script for test users (bd@test.com, bl@test.com, admin@test.com)
-- Verified BD user redirects from /admin routes to /dashboard
-- Verified Admin user can access /admin routes
-- Middleware correctly enforces role-based access control
+- Added bid_opportunities table to database schema
+- Created /bids/new page with drag-and-drop upload UI
+- Implemented PDF upload server action with validation (file type, size)
+- Created bid detail page (/bids/[id]) to view uploaded bids
+- Successfully tested: PDF upload → BidOpportunity creation → redirect to details
+- Note: Text extraction implemented as base64 storage for MVP (full OCR later)
 
-Next: UPLOAD-001 - PDF Upload functionality
+Next: UPLOAD-002 - Free Text Input

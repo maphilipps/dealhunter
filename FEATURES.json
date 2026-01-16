@@ -61,7 +61,7 @@
         "Access /admin/business-lines",
         "Verify page loads successfully"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "UPLOAD-001",

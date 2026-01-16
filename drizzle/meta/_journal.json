@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1768560569310,
+      "tag": "0000_wonderful_young_avengers",
+      "breakpoints": true
+    }
+  ]
+}

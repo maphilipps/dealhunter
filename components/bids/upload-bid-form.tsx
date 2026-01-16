@@ -91,7 +91,11 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
       const result = await uploadPdfBid(formData);
 
       if (result.success) {
-        toast.success('PDF erfolgreich hochgeladen');
+        if (result.piiRemoved) {
+          toast.success('PDF erfolgreich hochgeladen (persönliche Daten entfernt)');
+        } else {
+          toast.success('PDF erfolgreich hochgeladen');
+        }
         router.push(`/bids/${result.bidId}`);
       } else {
         toast.error(result.error || 'Upload fehlgeschlagen');

@@ -28,7 +28,7 @@ export function detectPII(text: string): PIIMatch[] {
   const phonePatterns = [
     /\b\d{3,5}[-.\s]?\d{3,8}[-.\s]?\d{3,8}\b/g, // 0123-456789, 0123 456 789
     /\b\+\d{1,4}[-.\s]?\d{3,5}[-.\s]?\d{3,8}[-.\s]?\d{3,8}\b/g, // +49 123 4567890
-    /\b\(\d{4}[-.\s]?\d{3,4}[-.\s]?\d{3,4})\b/g, // 0123-456-7890
+    /\b\(\d{4}[-.\s]?\d{3,4}[-.\s]?\d{3,4}\)\b/g, // (0123) 456-7890
   ];
 
   phonePatterns.forEach(regex => {

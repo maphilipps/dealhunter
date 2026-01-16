@@ -111,3 +111,30 @@ export type BidOpportunity = typeof bidOpportunities.$inferSelect;
 export type NewBidOpportunity = typeof bidOpportunities.$inferInsert;
 export type Reference = typeof references.$inferSelect;
 export type NewReference = typeof references.$inferInsert;
+
+export const competencies = sqliteTable('competencies', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
+
+  // Competency Details
+  name: text('name').notNull(),
+  category: text('category', { enum: ['technology', 'methodology', 'industry', 'soft_skill'] }).notNull(),
+  level: text('level', { enum: ['basic', 'advanced', 'expert'] }).notNull(),
+
+  // Additional Info
+  certifications: text('certifications'), // JSON array
+  description: text('description'),
+
+  // Timestamps
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+});
+
+export type Competency = typeof competencies.$inferSelect;
+export type NewCompetency = typeof competencies.$inferInsert;

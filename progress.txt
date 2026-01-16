@@ -224,4 +224,80 @@ Decision Logic:
 - No manual needed - workflow guides user through decision
 
 ### Commit
-- [pending]: feat(BIT-001-008): implement multi-agent bit/no bit evaluation system
+- a3a90c7: feat(BIT-001-008): implement multi-agent bit/no bit evaluation system
+
+## 2026-01-16 - ROUTE-001, ROUTE-002 ✅
+
+### Implemented Features
+- **ROUTE-001**: Automatic BL Routing Based on Quick Scan Recommendation
+  - Displays AI's recommended business line prominently
+  - Shows confidence score with color coding (amber if <70%, blue otherwise)
+  - Displays reasoning for recommendation
+  - Shows required skills as badges
+  - Lists alternative business lines with confidence scores
+  - One-click acceptance of AI recommendation
+  - Auto-updates status from 'bit_decided' → 'routed'
+  - Stores business line name in assignedBusinessLineId
+
+- **ROUTE-002**: Manual BL Override with Reason
+  - "Manuelle Auswahl" button reveals override form
+  - Dropdown with all 8 business lines:
+    * Banking & Insurance
+    * Automotive
+    * Energy & Utilities
+    * Retail & E-Commerce
+    * Healthcare
+    * Public Sector
+    * Manufacturing
+    * Technology & Innovation
+  - Required reason textarea for override justification
+  - Stores override reason in bid metadata (blOverride.reason)
+  - Timestamps override action (blOverride.overriddenAt)
+  - Validates BIT decision and status before allowing routing
+
+### Technical Details
+
+**Created Files:**
+- lib/routing/actions.ts - Server actions for BL assignment
+  * assignBusinessLine(bidId, businessLineName, overrideReason?)
+  * getAvailableBusinessLines() - Returns list of 8 BLs
+- components/bids/bl-routing-card.tsx - BL routing UI component
+  * AI recommendation display with confidence
+  * Accept recommendation button
+  * Manual override form with BL select + reason textarea
+  * Low confidence warning for <70% recommendations
+
+**Modified Files:**
+- components/bids/bid-detail-client.tsx - Integration of BL routing card
+  * Shows BLRoutingCard when status='bit_decided' AND decision='bit'
+  * Passes Quick Scan recommendation data
+  * Card appears after DecisionCard
+
+**Database Updates:**
+- assignedBusinessLineId: Stores selected BL name
+- status: Changes from 'bit_decided' → 'routed'
+- metadata.blOverride: JSON object with { reason, overriddenAt }
+
+**UX Design (Apple Mindset):**
+- Clean AI recommendation card with color coding
+- Confidence badge prominently displayed
+- Low confidence warning (amber) for <70% recommendations
+- Collapsible override form (hidden by default)
+- Required reason prevents accidental overrides
+- Immediate feedback with toast notifications
+- Auto-refresh after successful routing
+
+**Validation:**
+- Ensures bid is in 'bit_decided' status
+- Ensures BIT decision is 'bit' (not 'no_bit')
+- Requires reason when overriding AI recommendation
+- Validates all required fields before submission
+
+### Not Implemented (Future)
+- **ROUTE-003**: BL notification email (requires email infrastructure)
+  * Email to BL leader
+  * assignedBLNotifiedAt timestamp
+  * Will be implemented with NOTIFY features
+
+### Commit
+- [pending]: feat(ROUTE-001-002): implement BL routing with AI recommendation and manual override

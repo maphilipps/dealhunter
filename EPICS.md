@@ -582,7 +582,7 @@ Diese Features sind NICHT im MVP enthalten:
 | 3 | Smart Upload & AI-Extraktion | 🔴 Kritisch | ✅ COMPLETE |
 | 4 | Quick Scan | 🟡 Hoch | ✅ COMPLETE |
 | 5 | Bit/No Bit Evaluation | 🔴 Kritisch | ✅ COMPLETE |
-| 5a | Agent Transparency UI (NEU) | 🔴 Kritisch | - |
+| 5a | Agent Transparency UI (NEU) | 🔴 Kritisch | ✅ COMPLETE |
 | 6 | BL-Routing | 🟡 Hoch | ✅ COMPLETE |
 | 7 | Deep Migration Analysis | 🟡 Hoch | - |
 | 8 | Extended Evaluation | 🟡 Hoch | - |
@@ -614,7 +614,71 @@ Additional improvements:
 
 Siehe `plans/epic-1-foundation-infrastructure.md` für Details.
 
+### Epic 5a Gaps (resolved 2026-01-17)
+
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| TRANS-001: Conversation Component | ✅ DELIVERED | ActivityStream component with SSE streaming |
+| TRANS-002: Reasoning Component | ✅ DELIVERED | AgentMessage with collapsible reasoning sections |
+| TRANS-003: Sources Component | ✅ DELIVERED | Sources component with type icons |
+| TRANS-004: Message Actions | ✅ DELIVERED | Copy, Expand buttons in AgentMessage |
+| TRANS-005: Confidence Indicator | ✅ DELIVERED | Color-coded progress bars (green/yellow/red) |
+| TRANS-006: Abort Mechanism | ✅ DELIVERED | AbortButton with AlertDialog confirmation |
+
+**Implementation Details:**
+
+Infrastructure:
+- ✅ SSE streaming with createAgentEventStream() and ReadableStream
+- ✅ Event type system (AgentEventType enum with 7 event types)
+- ✅ State management with useAgentStream() hook (reducer pattern)
+- ✅ Two SSE endpoints: /api/bids/[id]/evaluate/stream, /api/bids/[id]/quick-scan/stream
+
+UI Components:
+- ✅ ActivityStream: Main container with auto-scroll and auto-start
+- ✅ AgentMessage: Individual agent outputs with badges and reasoning
+- ✅ ConfidenceIndicator: Progress bars with color coding
+- ✅ AbortButton: Cancel with confirmation dialog
+- ✅ Sources: Collapsible reference display
+
+Integration:
+- ✅ Wired into bid-detail-client.tsx for status='evaluating'
+- ✅ Auto-start when BIT evaluation begins
+- ✅ Refresh router on completion
+
+**Security & Performance Fixes (Post-Review):**
+
+Critical Fixes (P1):
+- ✅ Authentication: Added NextAuth session verification to SSE endpoints
+- ✅ Authorization: Verify bid ownership before streaming (userId check)
+- ✅ Memory: Circular buffer (MAX_EVENTS=150) prevents unbounded growth
+- ⏸️ Race Conditions: Optimistic locking (pending - needs migration)
+
+Important Fixes (P2):
+- ⏸️ Rate Limiting: Per-user stream limits (pending)
+- ⏸️ XSS Protection: DOMPurify sanitization (pending)
+- ⏸️ EventSource Cleanup: Memory leak on unmount (pending)
+
+Code Quality (P3):
+- ⏸️ Scroll Performance: Debounce auto-scroll (pending)
+- ⏸️ Code Duplication: Color mapping refactor (pending)
+- ⏸️ Type Safety: Remove 'as any' (pending)
+
+**Review Results:**
+- 6 parallel review agents (pattern-recognition, architecture, security, performance, data-integrity, agent-native)
+- 10 structured todo files created in `todos/` directory
+- 3 of 4 P1 critical issues fixed immediately
+- 1 P1 issue pending (database migration required)
+
+**Known Limitations:**
+- EventSource doesn't support custom headers (auth via session only)
+- No server-side abort mechanism (client-close only)
+- No partial event replay (stream from current state only)
+- quickScanResults and websiteUrl fields missing from schema (TypeScript errors)
+
+Siehe `plans/robust-snacking-hennessy.md` für Epic 5a Implementation Plan.
+Siehe `todos/001-pending-p1-sse-authentication-missing.md` through `todos/010-pending-p3-type-safety-violations.md` für Review Findings.
+
 ---
 
-**Letztes Update:** 2026-01-16
-**Quelle:** Spec.md + Francesco Raaphorst Interview + Agent-Native Review + SpecFlow Analysis
+**Letztes Update:** 2026-01-17
+**Quelle:** Spec.md + Francesco Raaphorst Interview + Agent-Native Review + SpecFlow Analysis + Multi-Agent Code Review

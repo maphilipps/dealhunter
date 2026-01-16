@@ -1,15 +1,9 @@
-import type { NextConfig } from 'next'
+import type { NextConfig } from 'next';
+import { withBotId } from 'botid/next/config';
+import { withWorkflow } from 'workflow/next';
 
 const nextConfig: NextConfig = {
-  experimental: {
-    typedRoutes: true,
-  },
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals.push('argon2')
-    }
-    return config
-  }
-}
+  serverExternalPackages: ['@slack/bolt']
+};
 
-export default nextConfig
+export default withWorkflow(withBotId(nextConfig));

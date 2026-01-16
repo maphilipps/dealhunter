@@ -1,10 +1,17 @@
+'use client';
+
 import { register } from '@/lib/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
+import { useActionState } from 'react';
+import { AlertCircle } from 'lucide-react';
 
 export default function RegisterPage() {
+  const [state, formAction, isPending] = useActionState(register, null);
+
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-md space-y-8 p-8">
@@ -15,7 +22,14 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <form action={register} className="space-y-6">
+        {state?.error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{state.error}</AlertDescription>
+          </Alert>
+        )}
+
+        <form action={formAction} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input
@@ -25,6 +39,7 @@ export default function RegisterPage() {
               autoComplete="name"
               required
               placeholder="John Doe"
+              disabled={isPending}
             />
           </div>
 
@@ -37,6 +52,7 @@ export default function RegisterPage() {
               autoComplete="email"
               required
               placeholder="you@example.com"
+              disabled={isPending}
             />
           </div>
 
@@ -50,11 +66,12 @@ export default function RegisterPage() {
               required
               placeholder="••••••••"
               minLength={8}
+              disabled={isPending}
             />
           </div>
 
-          <Button type="submit" className="w-full">
-            Create account
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? 'Creating account...' : 'Create account'}
           </Button>
         </form>
 

@@ -5,9 +5,11 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
-import { redirect } from 'next/navigation';
 
-export async function login(formData: FormData) {
+export async function login(
+  _prevState: { error: string } | null,
+  formData: FormData
+) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
@@ -15,30 +17,35 @@ export async function login(formData: FormData) {
     await signIn('credentials', {
       email,
       password,
-      redirect: false
+      redirectTo: '/'
     });
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
         case 'CredentialsSignin':
-          return { error: 'Invalid credentials' };
+          return { error: 'Ungültige Anmeldedaten' };
         default:
-          return { error: 'Something went wrong' };
+          return { error: 'Ein Fehler ist aufgetreten' };
       }
     }
+    // NEXT_REDIRECT error should be re-thrown
     throw error;
   }
 
-  redirect('/dashboard');
+  // This line should not be reached due to redirect
+  return null;
 }
 
-export async function register(formData: FormData) {
+export async function register(
+  _prevState: { error: string } | null,
+  formData: FormData
+) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const name = formData.get('name') as string;
 
   if (!email || !password || !name) {
-    return { error: 'All fields are required' };
+    return { error: 'Alle Felder sind erforderlich' };
   }
 
   const existingUser = await db.query.users.findFirst({
@@ -46,7 +53,7 @@ export async function register(formData: FormData) {
   });
 
   if (existingUser) {
-    return { error: 'Email already exists' };
+    return { error: 'Diese E-Mail existiert bereits' };
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -58,16 +65,22 @@ export async function register(formData: FormData) {
     role: 'bd'
   });
 
-  await signIn('credentials', {
-    email,
-    password,
-    redirect: false
-  });
+  try {
+    await signIn('credentials', {
+      email,
+      password,
+      redirectTo: '/'
+    });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return { error: 'Registrierung erfolgreich, aber Login fehlgeschlagen' };
+    }
+    throw error;
+  }
 
-  redirect('/dashboard');
+  return null;
 }
 
 export async function logout() {
-  await signOut({ redirect: false });
-  redirect('/login');
+  await signOut({ redirectTo: '/login' });
 }

@@ -3,7 +3,7 @@
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 export async function getUsers() {
@@ -15,8 +15,15 @@ export async function getUsers() {
 
   try {
     const allUsers = await db
-      .select()
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        role: users.role,
+        createdAt: users.createdAt
+      })
       .from(users)
+      .where(isNull(users.deletedAt))
       .orderBy(users.createdAt);
 
     return { success: true, users: allUsers, currentUserId: session.user.id };
@@ -60,7 +67,10 @@ export async function deleteUser(userId: string) {
   }
 
   try {
-    await db.delete(users).where(eq(users.id, userId));
+    // Soft delete instead of hard delete to avoid FK constraint violations
+    await db.update(users)
+      .set({ deletedAt: new Date() })
+      .where(eq(users.id, userId));
     revalidatePath('/admin/users');
     return { success: true };
   } catch (error) {

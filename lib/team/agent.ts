@@ -29,6 +29,7 @@ export async function suggestTeam(input: TeamSuggestionInput): Promise<TeamSugge
   }));
 
   const result = await generateObject({
+    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
     model: openai('gpt-4o-mini'),
     schema: teamSuggestionSchema,
     prompt: `You are an expert team builder for software development projects at adesso SE, a German IT consulting company.

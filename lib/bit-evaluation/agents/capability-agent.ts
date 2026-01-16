@@ -13,6 +13,7 @@ export interface CapabilityAgentInput {
  */
 export async function runCapabilityAgent(input: CapabilityAgentInput): Promise<CapabilityMatch> {
   const result = await generateObject({
+    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
     model: openai('gpt-4o-mini'),
     schema: capabilityMatchSchema,
     prompt: `You are a technical capability assessor for adesso SE, a leading German IT consulting company.

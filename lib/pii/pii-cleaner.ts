@@ -9,11 +9,10 @@ export interface PIIMatch {
 // Simple regex-based PII detection for German context
 export function detectPII(text: string): PIIMatch[] {
   const matches: PIIMatch[] = [];
-  let position = 0;
 
   // Email pattern
   const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
-  let match;
+  let match: RegExpExecArray | null;
   while ((match = emailRegex.exec(text)) !== null) {
     matches.push({
       type: 'email',
@@ -31,21 +30,24 @@ export function detectPII(text: string): PIIMatch[] {
     /\b\(\d{4}[-.\s]?\d{3,4}[-.\s]?\d{3,4}\)\b/g, // (0123) 456-7890
   ];
 
-  phonePatterns.forEach(regex => {
+  for (const regex of phonePatterns) {
     regex.lastIndex = 0;
-    while ((match = regex.exec(text)) !== null) {
+    let phoneMatch: RegExpExecArray | null;
+    while ((phoneMatch = regex.exec(text)) !== null) {
+      const idx = phoneMatch.index;
+      const len = phoneMatch[0].length;
       // Avoid duplicates with email-like patterns
-      if (!matches.some(m => m.start === match.index && m.end === match.index + match[0].length)) {
+      if (!matches.some(m => m.start === idx && m.end === idx + len)) {
         matches.push({
           type: 'phone',
-          original: match[0],
-          start: match.index,
-          end: match.index + match[0].length,
+          original: phoneMatch[0],
+          start: idx,
+          end: idx + len,
           replacement: '[TELEFONNUMMER ENTFERNT]',
         });
       }
     }
-  });
+  }
 
   // Common German name patterns (simple detection)
   // This is a basic pattern - for production, you'd use a proper name database
@@ -54,23 +56,26 @@ export function detectPII(text: string): PIIMatch[] {
     /[A-Z][a-z]+\s+[A-Z][a-z]+/g, // Max Mustermann
   ];
 
-  namePatterns.forEach(regex => {
+  for (const regex of namePatterns) {
     regex.lastIndex = 0;
-    while ((match = regex.exec(text)) !== null) {
+    let nameMatch: RegExpExecArray | null;
+    while ((nameMatch = regex.exec(text)) !== null) {
+      const idx = nameMatch.index;
+      const len = nameMatch[0].length;
       const alreadyMatched = matches.some(m =>
-        m.start <= match.index && m.end >= match.index + match[0].length
+        m.start <= idx && m.end >= idx + len
       );
       if (!alreadyMatched) {
         matches.push({
           type: 'name',
-          original: match[0],
-          start: match.index,
-          end: match.index + match[0].length,
+          original: nameMatch[0],
+          start: idx,
+          end: idx + len,
           replacement: '[NAME ENTFERNT]',
         });
       }
     }
-  });
+  }
 
   // Address patterns (German street addresses)
   const addressPatterns = [
@@ -80,23 +85,26 @@ export function detectPII(text: string): PIIMatch[] {
     /\b\d{5}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?/g, // 12345 Berlin
   ];
 
-  addressPatterns.forEach(regex => {
+  for (const regex of addressPatterns) {
     regex.lastIndex = 0;
-    while ((match = regex.exec(text)) !== null) {
+    let addrMatch: RegExpExecArray | null;
+    while ((addrMatch = regex.exec(text)) !== null) {
+      const idx = addrMatch.index;
+      const len = addrMatch[0].length;
       const alreadyMatched = matches.some(m =>
-        m.start <= match.index && m.end >= match.index + match[0].length
+        m.start <= idx && m.end >= idx + len
       );
       if (!alreadyMatched) {
         matches.push({
           type: 'address',
-          original: match[0],
-          start: match.index,
-          end: match.index + match[0].length,
+          original: addrMatch[0],
+          start: idx,
+          end: idx + len,
           replacement: '[ADRESSE ENTFERNT]',
         });
       }
     }
-  });
+  }
 
   // Sort by position
   return matches.sort((a, b) => a.start - b.start);

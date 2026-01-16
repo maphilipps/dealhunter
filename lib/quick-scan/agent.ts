@@ -10,6 +10,8 @@ import {
   type Features,
   type BLRecommendation,
 } from './schema';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import { AgentEventType } from '@/lib/streaming/event-types';
 
 export interface QuickScanInput {
   websiteUrl: string;
@@ -124,6 +126,7 @@ async function detectTechStack(html: string, url: string): Promise<TechStack> {
   const htmlSnippet = extractTechIndicators(html);
 
   const result = await generateObject({
+    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
     model: openai('gpt-4o-mini'),
     schema: techStackSchema,
     prompt: `Analyze this website HTML and detect the technology stack.
@@ -155,6 +158,7 @@ async function analyzeContentVolume(html: string): Promise<ContentVolume> {
   const htmlSnippet = html.substring(0, 10000); // First 10k chars
 
   const result = await generateObject({
+    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
     model: openai('gpt-4o-mini'),
     schema: contentVolumeSchema,
     prompt: `Analyze this website HTML and estimate content volume.
@@ -183,6 +187,7 @@ async function detectFeatures(html: string): Promise<Features> {
   const htmlSnippet = html.substring(0, 10000);
 
   const result = await generateObject({
+    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
     model: openai('gpt-4o-mini'),
     schema: featuresSchema,
     prompt: `Analyze this website HTML and detect key features.
@@ -218,6 +223,7 @@ async function recommendBusinessLine(context: {
   extractedRequirements?: any;
 }): Promise<BLRecommendation> {
   const result = await generateObject({
+    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
     model: openai('gpt-4o-mini'),
     schema: blRecommendationSchema,
     prompt: `You are a business development expert at adesso SE, a leading IT consulting company.
@@ -297,4 +303,133 @@ function extractTechIndicators(html: string): string {
   });
 
   return indicators.join('\n').substring(0, 5000); // Limit size
+}
+
+/**
+ * Quick Scan with Streaming Support
+ * Emits real-time events for progress tracking
+ * Best practice: Sequential async operations with progress callbacks
+ */
+export async function runQuickScanWithStreaming(
+  input: QuickScanInput,
+  emit: EventEmitter
+): Promise<QuickScanResult> {
+  const activityLog: QuickScanResult['activityLog'] = [];
+
+  const logActivity = (action: string, details?: string) => {
+    activityLog.push({
+      timestamp: new Date().toISOString(),
+      action,
+      details,
+    });
+  };
+
+  try {
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Quick Scan',
+        message: `Starting Quick Scan for ${input.websiteUrl}...`,
+      },
+    });
+    logActivity('Starting Quick Scan', `URL: ${input.websiteUrl}`);
+
+    // Step 1: Fetch website HTML
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Quick Scan',
+        message: 'Fetching website content...',
+      },
+    });
+    logActivity('Fetching website content');
+    const htmlContent = await fetchWebsiteContent(input.websiteUrl);
+
+    if (!htmlContent) {
+      throw new Error('Failed to fetch website content');
+    }
+
+    // Step 2: Detect Tech Stack
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Quick Scan',
+        message: 'Analyzing tech stack...',
+      },
+    });
+    logActivity('Analyzing tech stack');
+    const techStack = await detectTechStack(htmlContent, input.websiteUrl);
+
+    // Step 3: Analyze Content Volume
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Quick Scan',
+        message: 'Analyzing content volume...',
+      },
+    });
+    logActivity('Analyzing content volume');
+    const contentVolume = await analyzeContentVolume(htmlContent);
+
+    // Step 4: Detect Features
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Quick Scan',
+        message: 'Detecting features and integrations...',
+      },
+    });
+    logActivity('Detecting features and integrations');
+    const features = await detectFeatures(htmlContent);
+
+    // Step 5: Generate BL Recommendation
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Quick Scan',
+        message: 'Generating business line recommendation...',
+      },
+    });
+    logActivity('Generating business line recommendation');
+    const blRecommendation = await recommendBusinessLine({
+      techStack,
+      contentVolume,
+      features,
+      extractedRequirements: input.extractedRequirements,
+    });
+
+    emit({
+      type: AgentEventType.AGENT_COMPLETE,
+      data: {
+        agent: 'Quick Scan',
+        result: {
+          techStack,
+          contentVolume,
+          features,
+          blRecommendation,
+        },
+        confidence: blRecommendation.confidence,
+      },
+    });
+
+    logActivity('Quick Scan completed successfully');
+
+    return {
+      techStack,
+      contentVolume,
+      features,
+      blRecommendation,
+      activityLog,
+    };
+  } catch (error) {
+    logActivity('Quick Scan failed', error instanceof Error ? error.message : 'Unknown error');
+    emit({
+      type: AgentEventType.ERROR,
+      data: {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        code: 'QUICK_SCAN_ERROR',
+      },
+    });
+    throw error;
+  }
 }

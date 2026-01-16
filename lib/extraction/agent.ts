@@ -29,6 +29,7 @@ export async function extractRequirements(
     const prompt = buildExtractionPrompt(input);
 
     const result = await generateObject({
+      // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
       model: openai('gpt-4o-mini'), // Using gpt-4o-mini for faster extraction
       schema: extractedRequirementsSchema,
       prompt,

@@ -1,10 +1,17 @@
+'use client';
+
 import { login } from '@/lib/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
+import { useActionState } from 'react';
+import { AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
+  const [state, formAction, isPending] = useActionState(login, null);
+
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-md space-y-8 p-8">
@@ -15,7 +22,14 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form action={login} className="space-y-6">
+        {state?.error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{state.error}</AlertDescription>
+          </Alert>
+        )}
+
+        <form action={formAction} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -25,6 +39,7 @@ export default function LoginPage() {
               autoComplete="email"
               required
               placeholder="you@example.com"
+              disabled={isPending}
             />
           </div>
 
@@ -37,16 +52,17 @@ export default function LoginPage() {
               autoComplete="current-password"
               required
               placeholder="••••••••"
+              disabled={isPending}
             />
           </div>
 
-          <Button type="submit" className="w-full">
-            Sign in
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link href="/register" className="font-medium hover:underline">
             Register
           </Link>

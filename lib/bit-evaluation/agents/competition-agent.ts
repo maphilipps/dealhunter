@@ -13,6 +13,7 @@ export interface CompetitionAgentInput {
  */
 export async function runCompetitionAgent(input: CompetitionAgentInput): Promise<CompetitionCheck> {
   const result = await generateObject({
+    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
     model: openai('gpt-4o-mini'),
     schema: competitionCheckSchema,
     prompt: `You are a competitive intelligence analyst for adesso SE, a leading German IT consulting company.

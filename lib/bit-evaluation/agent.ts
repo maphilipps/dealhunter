@@ -11,6 +11,8 @@ import { runCapabilityAgent } from './agents/capability-agent';
 import { runDealQualityAgent } from './agents/deal-quality-agent';
 import { runStrategicFitAgent } from './agents/strategic-fit-agent';
 import { runCompetitionAgent } from './agents/competition-agent';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import { AgentEventType } from '@/lib/streaming/event-types';
 
 export interface BitEvaluationInput {
   bidId: string;
@@ -159,6 +161,7 @@ async function generateBitDecision(context: {
   initialRecommendation: 'bit' | 'no_bit';
 }): Promise<BitDecision> {
   const result = await generateObject({
+    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
     model: openai('gpt-4o-mini'),
     schema: bitDecisionSchema,
     prompt: `You are the final decision maker for BIT/NO BIT evaluation at adesso SE.
@@ -231,6 +234,7 @@ async function generateAlternativeRecommendation(context: {
   decision: BitDecision;
 }): Promise<AlternativeRec> {
   const result = await generateObject({
+    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
     model: openai('gpt-4o-mini'),
     schema: alternativeRecSchema,
     prompt: `You are recommending an alternative approach for a NO BIT decision at adesso SE.
@@ -286,4 +290,199 @@ Provide your alternative recommendation:`,
   });
 
   return result.object;
+}
+
+/**
+ * BIT Evaluation with Streaming Support
+ * Emits real-time events for progress tracking
+ * Best practice: Parallel agent execution with progress callbacks (async-parallel)
+ */
+export async function runBitEvaluationWithStreaming(
+  input: BitEvaluationInput,
+  emit: EventEmitter
+): Promise<BitEvaluationResult> {
+  const startTime = Date.now();
+
+  try {
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Coordinator',
+        message: 'Starting BIT evaluation...',
+      },
+    });
+
+    // Run all four agents in parallel (best practice: async-parallel)
+    // Emit progress as each agent starts
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Coordinator',
+        message: 'Running parallel agent evaluation (Capability, Deal Quality, Strategic Fit, Competition)',
+      },
+    });
+
+    const agentPromises = [
+      runCapabilityAgent({
+        extractedRequirements: input.extractedRequirements,
+        quickScanResults: input.quickScanResults,
+      }).then((result) => {
+        emit({
+          type: AgentEventType.AGENT_COMPLETE,
+          data: {
+            agent: 'Capability',
+            result,
+            confidence: result.confidence,
+          },
+        });
+        return result;
+      }),
+      runDealQualityAgent({
+        extractedRequirements: input.extractedRequirements,
+        quickScanResults: input.quickScanResults,
+      }).then((result) => {
+        emit({
+          type: AgentEventType.AGENT_COMPLETE,
+          data: {
+            agent: 'Deal Quality',
+            result,
+            confidence: result.confidence,
+          },
+        });
+        return result;
+      }),
+      runStrategicFitAgent({
+        extractedRequirements: input.extractedRequirements,
+        quickScanResults: input.quickScanResults,
+      }).then((result) => {
+        emit({
+          type: AgentEventType.AGENT_COMPLETE,
+          data: {
+            agent: 'Strategic Fit',
+            result,
+            confidence: result.confidence,
+          },
+        });
+        return result;
+      }),
+      runCompetitionAgent({
+        extractedRequirements: input.extractedRequirements,
+        quickScanResults: input.quickScanResults,
+      }).then((result) => {
+        emit({
+          type: AgentEventType.AGENT_COMPLETE,
+          data: {
+            agent: 'Competition',
+            result,
+            confidence: result.confidence,
+          },
+        });
+        return result;
+      }),
+    ];
+
+    const [capabilityMatch, dealQuality, strategicFit, competitionCheck] =
+      await Promise.all(agentPromises);
+
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Coordinator',
+        message: 'All agents completed. Calculating weighted scores...',
+      },
+    });
+
+    // Calculate weighted scores
+    const weightedScores = {
+      capability: capabilityMatch.overallCapabilityScore,
+      dealQuality: dealQuality.overallDealQualityScore,
+      strategicFit: strategicFit.overallStrategicFitScore,
+      winProbability: competitionCheck.estimatedWinProbability,
+      overall:
+        capabilityMatch.overallCapabilityScore * 0.3 +
+        dealQuality.overallDealQualityScore * 0.25 +
+        strategicFit.overallStrategicFitScore * 0.2 +
+        competitionCheck.estimatedWinProbability * 0.25,
+    };
+
+    // Collect all critical blockers
+    const allCriticalBlockers = [
+      ...capabilityMatch.criticalBlockers,
+      ...dealQuality.criticalBlockers,
+      ...strategicFit.criticalBlockers,
+      ...competitionCheck.criticalBlockers,
+    ];
+
+    // Determine if we should BIT or NO BIT
+    const shouldBit = weightedScores.overall >= 55 && allCriticalBlockers.length === 0;
+
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Coordinator',
+        message: `Making final decision (Overall score: ${weightedScores.overall.toFixed(1)}/100)...`,
+      },
+    });
+
+    // Generate final decision with AI
+    const decision = await generateBitDecision({
+      scores: weightedScores,
+      capabilityMatch,
+      dealQuality,
+      strategicFit,
+      competitionCheck,
+      allCriticalBlockers,
+      initialRecommendation: shouldBit ? 'bit' : 'no_bit',
+    });
+
+    // Generate alternative recommendation if NO BIT
+    let alternative: AlternativeRec | undefined;
+    if (decision.decision === 'no_bit') {
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: 'Coordinator',
+          message: 'Generating alternative recommendation...',
+        },
+      });
+
+      alternative = await generateAlternativeRecommendation({
+        capabilityMatch,
+        dealQuality,
+        strategicFit,
+        competitionCheck,
+        decision,
+      });
+    }
+
+    const duration = Date.now() - startTime;
+
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Coordinator',
+        message: `BIT evaluation completed in ${(duration / 1000).toFixed(1)}s`,
+      },
+    });
+
+    return {
+      capabilityMatch,
+      dealQuality,
+      strategicFit,
+      competitionCheck,
+      decision,
+      alternative,
+      evaluatedAt: new Date().toISOString(),
+      evaluationDuration: duration,
+    };
+  } catch (error) {
+    emit({
+      type: AgentEventType.ERROR,
+      data: {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        code: 'BIT_EVALUATION_ERROR',
+      },
+    });
+    throw error;
+  }
 }

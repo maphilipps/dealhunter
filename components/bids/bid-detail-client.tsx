@@ -16,6 +16,7 @@ import { QuickScanResults } from './quick-scan-results';
 import { EvaluationProgress } from './evaluation-progress';
 import { DecisionCard } from './decision-card';
 import { LowConfidenceDialog } from './low-confidence-dialog';
+import { BLRoutingCard } from './bl-routing-card';
 
 interface BidDetailClientProps {
   bid: BidOpportunity;
@@ -323,6 +324,21 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             {bitEvaluationResult && (
               <>
                 <DecisionCard result={bitEvaluationResult} />
+
+                {/* Show BL Routing Card for BIT decisions */}
+                {bitEvaluationResult.decision.decision === 'bit' && quickScan && (
+                  <BLRoutingCard
+                    bidId={bid.id}
+                    recommendation={{
+                      primaryBusinessLine: quickScan.recommendedBusinessLine || 'Technology & Innovation',
+                      confidence: quickScan.confidence || 0,
+                      reasoning: quickScan.reasoning || '',
+                      alternativeBusinessLines: [],
+                      requiredSkills: [],
+                    }}
+                  />
+                )}
+
                 <LowConfidenceDialog
                   open={showLowConfidenceDialog}
                   onOpenChange={setShowLowConfidenceDialog}

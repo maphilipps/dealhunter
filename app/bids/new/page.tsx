@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { UploadBidForm } from '@/components/bids/upload-bid-form';
+import { getAccounts } from '@/lib/accounts-actions';
 
 export default async function NewBidPage() {
   const session = await auth();
@@ -8,6 +9,9 @@ export default async function NewBidPage() {
   if (!session?.user) {
     redirect('/login');
   }
+
+  const accountsResult = await getAccounts();
+  const accounts = accountsResult.success ? accountsResult.accounts : [];
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-4xl">
@@ -18,7 +22,7 @@ export default async function NewBidPage() {
         </p>
       </div>
 
-      <UploadBidForm userId={session.user.id} />
+      <UploadBidForm userId={session.user.id} accounts={accounts} />
     </main>
   );
 }

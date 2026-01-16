@@ -31,16 +31,18 @@ Stand: 2025-01-16
 - [x] REF-001: Add references
 - [x] REF-002: Validate references (admin)
 - [x] COMP-001: Add competencies
-- [x] COMPETITOR-001: Add competitor
+
+### ACCOUNT (Account Management)
+- [x] ACCOUNT-001: BD kann Account erstellen
 
 ## 🔄 In Arbeit
 
-### COMPETITOR (Competition Tracking)
-- [ ] COMPETITOR-002: Log encounter with outcome
+Keine Features aktuell in Arbeit.
 
 ## 📋 Nächste Schritte
 
-1. COMPETITOR-002: Log encounter (klein Feature, schnell fertig)
-2. ACCOUNT-001 bis ACCOUNT-004: Account management
-3. DASH-001 bis DASH-004: Dashboard UI
-4. UI-001: Dark mode
+1. ACCOUNT-002: Opportunity zu Account zuordnen
+2. ACCOUNT-003: Dashboard zeigt Opportunities gruppiert nach Account
+3. ACCOUNT-004: Account-Detailseite zeigt alle Opportunities
+4. DASH-001 bis DASH-004: Dashboard UI
+5. UI-001: Dark mode

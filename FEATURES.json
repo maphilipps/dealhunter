@@ -1517,7 +1517,7 @@
         "Verify Account created",
         "Verify account appears in account list"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "ACCOUNT-002",

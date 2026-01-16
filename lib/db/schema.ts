@@ -247,3 +247,27 @@ export const auditTrails = sqliteTable('audit_trails', {
 
 export type AuditTrail = typeof auditTrails.$inferSelect;
 export type NewAuditTrail = typeof auditTrails.$inferInsert;
+
+export const accounts = sqliteTable('accounts', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
+
+  // Account Details
+  name: text('name').notNull(),
+  industry: text('industry').notNull(),
+  website: text('website'),
+  notes: text('notes'),
+
+  // Timestamps
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+});
+
+export type Account = typeof accounts.$inferSelect;
+export type NewAccount = typeof accounts.$inferInsert;

@@ -1424,7 +1424,7 @@
         "Verify Reference created with createdBy set",
         "Verify validatedBy is null (pending)"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "REF-002",

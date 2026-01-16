@@ -65,7 +65,49 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
     .$defaultFn(() => new Date())
 });
 
+export const references = sqliteTable('references', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
+  validatedByUserId: text('validated_by_user_id').references(() => users.id),
+
+  // Project Details
+  projectName: text('project_name').notNull(),
+  customerName: text('customer_name').notNull(),
+  industry: text('industry').notNull(),
+
+  // Technical Details
+  technologies: text('technologies').notNull(), // JSON array
+  scope: text('scope').notNull(),
+  teamSize: integer('team_size').notNull(),
+  durationMonths: integer('duration_months').notNull(),
+
+  // Business Details
+  budgetRange: text('budget_range').notNull(),
+  outcome: text('outcome').notNull(),
+
+  // Highlights
+  highlights: text('highlights'), // JSON array
+
+  // Validation
+  isValidated: integer('is_validated', { mode: 'boolean' })
+    .notNull()
+    .default(false),
+  validatedAt: integer('validated_at', { mode: 'timestamp' }),
+
+  // Timestamps
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type BidOpportunity = typeof bidOpportunities.$inferSelect;
 export type NewBidOpportunity = typeof bidOpportunities.$inferInsert;
+export type Reference = typeof references.$inferSelect;
+export type NewReference = typeof references.$inferInsert;

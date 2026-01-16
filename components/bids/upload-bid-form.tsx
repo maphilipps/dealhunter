@@ -2,9 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, FileText, Loader2, Type } from 'lucide-react';
+import { Upload, FileText, Loader2, Type, Mail } from 'lucide-react';
 import { toast } from 'sonner';
-import { uploadPdfBid, uploadFreetextBid } from '@/lib/bids/actions';
+import { uploadPdfBid, uploadFreetextBid, uploadEmailBid } from '@/lib/bids/actions';
 
 interface UploadBidFormProps {
   userId: string;
@@ -12,7 +12,7 @@ interface UploadBidFormProps {
 
 export function UploadBidForm({ userId }: UploadBidFormProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'pdf' | 'freetext'>('pdf');
+  const [activeTab, setActiveTab] = useState<'pdf' | 'freetext' | 'email'>('pdf');
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -20,6 +20,9 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
   // Freetext state
   const [projectDescription, setProjectDescription] = useState('');
   const [customerName, setCustomerName] = useState('');
+
+  // Email state
+  const [emailContent, setEmailContent] = useState('');
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();

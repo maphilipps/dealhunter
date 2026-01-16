@@ -13,7 +13,7 @@ import type { BidOpportunity } from '@/lib/db/schema';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 import { ExtractionPreview } from './extraction-preview';
 import { QuickScanResults } from './quick-scan-results';
-import { EvaluationProgress } from './evaluation-progress';
+import { ActivityStream } from '@/components/ai-elements/activity-stream';
 import { DecisionCard } from './decision-card';
 import { LowConfidenceDialog } from './low-confidence-dialog';
 import { BLRoutingCard } from './bl-routing-card';
@@ -306,7 +306,17 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         {quickScan && <QuickScanResults quickScan={quickScan} />}
 
         {/* BIT Evaluation Progress (evaluating status) */}
-        {bid.status === 'evaluating' && <EvaluationProgress status="evaluating" />}
+        {bid.status === 'evaluating' && (
+          <ActivityStream
+            streamUrl={`/api/bids/${bid.id}/evaluate/stream`}
+            title="BIT/NO BIT Evaluierung"
+            onComplete={() => {
+              toast.success('BIT Evaluierung abgeschlossen!');
+              router.refresh();
+            }}
+            autoStart={true}
+          />
+        )}
 
         {/* BIT Evaluation Results (bit_decided status) */}
         {bid.status === 'bit_decided' && (

@@ -50,6 +50,13 @@
       "when": 1768568033281,
       "tag": "0006_mysterious_microchip",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1768569125894,
+      "tag": "0007_flat_the_captain",
+      "breakpoints": true
     }
   ]
 }

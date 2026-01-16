@@ -196,3 +196,34 @@ export const technologies = sqliteTable('technologies', {
 
 export type Technology = typeof technologies.$inferSelect;
 export type NewTechnology = typeof technologies.$inferInsert;
+
+export const employees = sqliteTable('employees', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+
+  // Employee Details
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+
+  // Business Line
+  businessLineId: text('business_line_id')
+    .notNull()
+    .references(() => businessLines.id),
+
+  // Skills & Roles
+  skills: text('skills').notNull(), // JSON array
+  roles: text('roles').notNull(), // JSON array of enum values
+  availabilityStatus: text('availability_status', { enum: ['available', 'on_project', 'unavailable'] })
+    .notNull()
+    .default('available'),
+
+  // Timestamps
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+});
+
+export type Employee = typeof employees.$inferSelect;
+export type NewEmployee = typeof employees.$inferInsert;

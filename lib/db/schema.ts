@@ -138,3 +138,28 @@ export const competencies = sqliteTable('competencies', {
 
 export type Competency = typeof competencies.$inferSelect;
 export type NewCompetency = typeof competencies.$inferInsert;
+
+export const businessLines = sqliteTable('business_lines', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+
+  // Business Line Details
+  name: text('name').notNull(),
+
+  // Leader
+  leaderName: text('leader_name').notNull(),
+  leaderEmail: text('leader_email').notNull(),
+
+  // NLP Matching
+  keywords: text('keywords').notNull(), // JSON array of strings
+
+  // Timestamps
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+});
+
+export type BusinessLine = typeof businessLines.$inferSelect;
+export type NewBusinessLine = typeof businessLines.$inferInsert;

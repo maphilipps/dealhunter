@@ -8,9 +8,14 @@ import { Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { startExtraction, updateExtractedRequirements } from '@/lib/bids/actions';
 import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
+import { startBitEvaluation, getBitEvaluationResult } from '@/lib/bit-evaluation/actions';
 import type { BidOpportunity } from '@/lib/db/schema';
+import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 import { ExtractionPreview } from './extraction-preview';
 import { QuickScanResults } from './quick-scan-results';
+import { EvaluationProgress } from './evaluation-progress';
+import { DecisionCard } from './decision-card';
+import { LowConfidenceDialog } from './low-confidence-dialog';
 
 interface BidDetailClientProps {
   bid: BidOpportunity;
@@ -24,6 +29,9 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   );
   const [quickScan, setQuickScan] = useState<any>(null);
   const [isLoadingQuickScan, setIsLoadingQuickScan] = useState(false);
+  const [bitEvaluationResult, setBitEvaluationResult] = useState<BitEvaluationResult | null>(null);
+  const [isLoadingBitEvaluation, setIsLoadingBitEvaluation] = useState(false);
+  const [showLowConfidenceDialog, setShowLowConfidenceDialog] = useState(false);
 
   // Handle extraction start
   const handleStartExtraction = async () => {
@@ -64,6 +72,12 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           if (scanResult.success) {
             toast.success('Quick Scan erfolgreich gestartet!');
             router.refresh();
+
+            // Auto-start BIT evaluation after Quick Scan completes
+            // Wait a bit for the router refresh, then poll for completion
+            setTimeout(() => {
+              checkQuickScanAndStartEvaluation();
+            }, 2000);
           } else if (scanResult.needsWebsiteUrl) {
             toast.error('Bitte Website-URL in den Anforderungen angeben');
           } else {
@@ -78,6 +92,28 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     }
   };
 
+  // Check if Quick Scan completed and start BIT evaluation
+  const checkQuickScanAndStartEvaluation = async () => {
+    const scanResult = await getQuickScanResult(bid.id);
+
+    if (scanResult.success && scanResult.quickScan?.status === 'completed') {
+      toast.info('Quick Scan abgeschlossen! Starte BIT/NO BIT Evaluierung...');
+
+      const evalResult = await startBitEvaluation(bid.id);
+      if (evalResult.success) {
+        toast.success('BIT Evaluierung abgeschlossen!');
+        router.refresh();
+      } else {
+        toast.error(evalResult.error || 'BIT Evaluierung fehlgeschlagen');
+      }
+    } else if (scanResult.success && scanResult.quickScan?.status === 'running') {
+      // Quick Scan still running, poll again
+      setTimeout(() => {
+        checkQuickScanAndStartEvaluation();
+      }, 3000);
+    }
+  };
+
   // Load quick scan if status is quick_scanning or later
   useEffect(() => {
     if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'team_assigned'].includes(bid.status)) {
@@ -87,6 +123,24 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           setQuickScan(result.quickScan);
         }
         setIsLoadingQuickScan(false);
+      });
+    }
+  }, [bid.id, bid.status]);
+
+  // Load BIT evaluation result if status is bit_decided or later
+  useEffect(() => {
+    if (['bit_decided', 'routed', 'team_assigned'].includes(bid.status)) {
+      setIsLoadingBitEvaluation(true);
+      getBitEvaluationResult(bid.id).then(result => {
+        if (result.success && result.result) {
+          setBitEvaluationResult(result.result);
+
+          // Show low confidence dialog if confidence < 70% and not yet confirmed
+          if (result.result.decision.overallConfidence < 70 && bid.status === 'bit_decided') {
+            setShowLowConfidenceDialog(true);
+          }
+        }
+        setIsLoadingBitEvaluation(false);
       });
     }
   }, [bid.id, bid.status]);
@@ -248,6 +302,39 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         )}
 
         {quickScan && <QuickScanResults quickScan={quickScan} />}
+
+        {/* BIT Evaluation Progress (evaluating status) */}
+        {bid.status === 'evaluating' && <EvaluationProgress status="evaluating" />}
+
+        {/* BIT Evaluation Results (bit_decided status) */}
+        {bid.status === 'bit_decided' && (
+          <>
+            {isLoadingBitEvaluation && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm text-muted-foreground">Lade BIT Evaluierung...</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {bitEvaluationResult && (
+              <>
+                <DecisionCard result={bitEvaluationResult} />
+                <LowConfidenceDialog
+                  open={showLowConfidenceDialog}
+                  onOpenChange={setShowLowConfidenceDialog}
+                  bidId={bid.id}
+                  decision={bitEvaluationResult.decision.decision}
+                  confidence={bitEvaluationResult.decision.overallConfidence}
+                  reasoning={bitEvaluationResult.decision.reasoning}
+                />
+              </>
+            )}
+          </>
+        )}
       </div>
     );
   }

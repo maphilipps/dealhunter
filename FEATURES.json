@@ -279,7 +279,7 @@
         "Verify competition check tool is called",
         "Verify Quick Scan results are incorporated"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "BIT-002",
@@ -293,7 +293,7 @@
         "Verify capabilityScore (0-100) calculated",
         "Verify capability reasoning in AgentActivityLog"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "BIT-003",
@@ -307,7 +307,7 @@
         "Verify dealQualityScore (0-100) calculated",
         "Verify deal quality reasoning logged"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "BIT-004",
@@ -321,7 +321,7 @@
         "Verify strategicFitScore (0-100) calculated",
         "Verify strategic fit reasoning logged"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "BIT-005",
@@ -334,7 +334,7 @@
         "Verify competitionRisk set to 'low', 'medium', or 'high'",
         "Verify competition reasoning logged"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "BIT-006",
@@ -348,7 +348,7 @@
         "Verify BitDecision data stored on BidOpportunity",
         "Verify status changes to 'bit_decided'"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "BIT-007",
@@ -362,7 +362,7 @@
         "Verify alternative includes BL name and reasoning",
         "Verify BD sees alternative suggestion in UI"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "BIT-008",
@@ -377,7 +377,7 @@
         "Verify AuditTrailEntry created with reason",
         "Verify workflow continues to routing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "ROUTE-001",

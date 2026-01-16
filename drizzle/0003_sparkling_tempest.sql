@@ -1,0 +1,21 @@
+CREATE TABLE `references` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
+	`validated_by_user_id` text,
+	`project_name` text NOT NULL,
+	`customer_name` text NOT NULL,
+	`industry` text NOT NULL,
+	`technologies` text NOT NULL,
+	`scope` text NOT NULL,
+	`team_size` integer NOT NULL,
+	`duration_months` integer NOT NULL,
+	`budget_range` text NOT NULL,
+	`outcome` text NOT NULL,
+	`highlights` text,
+	`is_validated` integer DEFAULT false NOT NULL,
+	`validated_at` integer,
+	`created_at` integer,
+	`updated_at` integer,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`validated_by_user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
+);

@@ -43,6 +43,9 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
   bitDecisionData: text('bit_decision_data'), // JSON
   alternativeRecommendation: text('alternative_recommendation'),
 
+  // Account Link
+  accountId: text('account_id').references(() => accounts.id),
+
   // Routing
   assignedBusinessLineId: text('assigned_business_line_id'),
   assignedBLNotifiedAt: integer('assigned_bl_notified_at', { mode: 'timestamp' }),

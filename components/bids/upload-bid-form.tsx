@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, FileText, Loader2, Type, Mail } from 'lucide-react';
 import { toast } from 'sonner';
@@ -8,9 +8,10 @@ import { uploadPdfBid, uploadFreetextBid, uploadEmailBid } from '@/lib/bids/acti
 
 interface UploadBidFormProps {
   userId: string;
+  accounts: Array<{ id: string; name: string; industry: string }>;
 }
 
-export function UploadBidForm({ userId }: UploadBidFormProps) {
+export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'pdf' | 'freetext' | 'email'>('pdf');
   const [isDragging, setIsDragging] = useState(false);
@@ -18,6 +19,7 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [enableDSGVO, setEnableDSGVO] = useState(false);
   const [piiPreview, setPiiPreview] = useState<Array<{before: string; after: string; type: string}> | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
 
   // Freetext state
   const [projectDescription, setProjectDescription] = useState('');
@@ -87,6 +89,9 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
       formData.append('source', 'reactive');
       formData.append('stage', 'rfp');
       formData.append('enableDSGVO', enableDSGVO.toString());
+      if (selectedAccountId) {
+        formData.append('accountId', selectedAccountId);
+      }
 
       const result = await uploadPdfBid(formData);
 
@@ -117,6 +122,7 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
         customerName,
         source: 'reactive',
         stage: 'warm',
+        accountId: selectedAccountId || undefined,
       });
 
       if (result.success) {
@@ -141,6 +147,7 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
         emailContent,
         source: 'reactive',
         stage: 'warm',
+        accountId: selectedAccountId || undefined,
       });
 
       if (result.success) {
@@ -159,6 +166,36 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
 
   return (
     <div className="space-y-6">
+      {/* Account Selection */}
+      <div className="rounded-lg border bg-card p-4">
+        <label htmlFor="account-select" className="block text-sm font-medium mb-2">
+          Account zuordnen (optional)
+        </label>
+        <select
+          id="account-select"
+          value={selectedAccountId}
+          onChange={(e) => setSelectedAccountId(e.target.value)}
+          className="w-full rounded-md border border-input bg-background px-3 py-2"
+          disabled={isUploading}
+        >
+          <option value="">-- Kein Account ausgewählt --</option>
+          {accounts.map((account) => (
+            <option key={account.id} value={account.id}>
+              {account.name} ({account.industry})
+            </option>
+          ))}
+        </select>
+        {selectedAccountId && (
+          <button
+            type="button"
+            onClick={() => window.open('/accounts/new', '_blank')}
+            className="mt-2 text-sm text-primary hover:underline"
+          >
+            + Neuen Account erstellen
+          </button>
+        )}
+      </div>
+
       {/* Tabs */}
       <div className="flex gap-2 border-b">
         <button

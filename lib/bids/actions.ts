@@ -17,6 +17,7 @@ export async function uploadPdfBid(formData: FormData) {
   const source = formData.get('source') as 'reactive' | 'proactive' || 'reactive';
   const stage = formData.get('stage') as 'cold' | 'warm' | 'rfp' || 'rfp';
   const enableDSGVO = formData.get('enableDSGVO') === 'true';
+  const accountId = formData.get('accountId') as string | null;
 
   if (!file) {
     return { success: false, error: 'Keine Datei ausgewählt' };
@@ -64,6 +65,7 @@ export async function uploadPdfBid(formData: FormData) {
       .insert(bidOpportunities)
       .values({
         userId: session.user.id,
+        accountId: accountId || undefined,
         source,
         stage,
         inputType: 'pdf',
@@ -90,6 +92,7 @@ export async function uploadFreetextBid(data: {
   customerName: string;
   source?: 'reactive' | 'proactive';
   stage?: 'cold' | 'warm' | 'rfp';
+  accountId?: string;
 }) {
   const session = await auth();
 
@@ -97,7 +100,7 @@ export async function uploadFreetextBid(data: {
     return { success: false, error: 'Nicht authentifiziert' };
   }
 
-  const { projectDescription, customerName, source = 'reactive', stage = 'warm' } = data;
+  const { projectDescription, customerName, source = 'reactive', stage = 'warm', accountId } = data;
 
   // Validate inputs
   if (!projectDescription || projectDescription.trim().length < 50) {
@@ -117,6 +120,7 @@ export async function uploadFreetextBid(data: {
       .insert(bidOpportunities)
       .values({
         userId: session.user.id,
+        accountId: accountId || undefined,
         source,
         stage,
         inputType: 'freetext',
@@ -140,6 +144,7 @@ export async function uploadEmailBid(data: {
   emailContent: string;
   source?: 'reactive' | 'proactive';
   stage?: 'cold' | 'warm' | 'rfp';
+  accountId?: string;
 }) {
   const session = await auth();
 
@@ -147,7 +152,7 @@ export async function uploadEmailBid(data: {
     return { success: false, error: 'Nicht authentifiziert' };
   }
 
-  const { emailContent, source = 'reactive', stage = 'warm' } = data;
+  const { emailContent, source = 'reactive', stage = 'warm', accountId } = data;
 
   // Validate input
   if (!emailContent || emailContent.trim().length < 50) {
@@ -171,6 +176,7 @@ export async function uploadEmailBid(data: {
       .insert(bidOpportunities)
       .values({
         userId: session.user.id,
+        accountId: accountId || undefined,
         source,
         stage,
         inputType: 'email',

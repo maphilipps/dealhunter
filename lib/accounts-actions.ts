@@ -116,10 +116,10 @@ export async function getAccountWithOpportunities(accountId: string) {
     const opportunities = await db
       .select({
         id: bidOpportunities.id,
-        projectName: bidOpportunities.projectName,
         status: bidOpportunities.status,
         source: bidOpportunities.source,
         stage: bidOpportunities.stage,
+        inputType: bidOpportunities.inputType,
         createdAt: bidOpportunities.createdAt,
       })
       .from(bidOpportunities)

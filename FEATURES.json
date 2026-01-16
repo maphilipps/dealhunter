@@ -108,7 +108,7 @@
         "Verify BidOpportunity created with inputType 'email'",
         "Verify email metadata (from, subject, date) extracted"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "CLEAN-001",

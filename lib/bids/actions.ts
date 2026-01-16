@@ -5,6 +5,8 @@ import { db } from '@/lib/db';
 import { bidOpportunities } from '@/lib/db/schema';
 import { extractTextFromPdf } from './pdf-extractor';
 import { detectPII, cleanText } from '@/lib/pii/pii-cleaner';
+import { extractRequirements } from '@/lib/extraction/agent';
+import { eq } from 'drizzle-orm';
 
 export async function uploadPdfBid(formData: FormData) {
   const session = await auth();
@@ -195,5 +197,112 @@ export async function uploadEmailBid(data: {
   } catch (error) {
     console.error('Email upload error:', error);
     return { success: false, error: 'Speichern fehlgeschlagen' };
+  }
+}
+
+/**
+ * Start AI extraction of requirements from bid document
+ * This changes status to 'extracting' and triggers the extraction agent
+ */
+export async function startExtraction(bidId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Get the bid opportunity
+    const [bid] = await db
+      .select()
+      .from(bidOpportunities)
+      .where(eq(bidOpportunities.id, bidId))
+      .limit(1);
+
+    if (!bid) {
+      return { success: false, error: 'Bid nicht gefunden' };
+    }
+
+    if (bid.userId !== session.user.id) {
+      return { success: false, error: 'Keine Berechtigung' };
+    }
+
+    // Update status to extracting
+    await db
+      .update(bidOpportunities)
+      .set({ status: 'extracting' })
+      .where(eq(bidOpportunities.id, bidId));
+
+    // Run extraction
+    const metadata = bid.metadata ? JSON.parse(bid.metadata) : {};
+    const extractionResult = await extractRequirements({
+      rawText: bid.rawInput,
+      inputType: bid.inputType as 'pdf' | 'email' | 'freetext',
+      metadata,
+    });
+
+    if (!extractionResult.success) {
+      return { success: false, error: extractionResult.error || 'Extraktion fehlgeschlagen' };
+    }
+
+    // Save extracted requirements and update status to reviewing
+    await db
+      .update(bidOpportunities)
+      .set({
+        extractedRequirements: JSON.stringify(extractionResult.requirements),
+        status: 'reviewing',
+      })
+      .where(eq(bidOpportunities.id, bidId));
+
+    return {
+      success: true,
+      requirements: extractionResult.requirements,
+    };
+  } catch (error) {
+    console.error('Extraction error:', error);
+    return { success: false, error: 'Extraktion fehlgeschlagen' };
+  }
+}
+
+/**
+ * Update extracted requirements after user review
+ * This allows BD Manager to correct AI-extracted data
+ */
+export async function updateExtractedRequirements(bidId: string, requirements: any) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Get the bid opportunity
+    const [bid] = await db
+      .select()
+      .from(bidOpportunities)
+      .where(eq(bidOpportunities.id, bidId))
+      .limit(1);
+
+    if (!bid) {
+      return { success: false, error: 'Bid nicht gefunden' };
+    }
+
+    if (bid.userId !== session.user.id) {
+      return { success: false, error: 'Keine Berechtigung' };
+    }
+
+    // Update requirements and move to quick_scanning status
+    await db
+      .update(bidOpportunities)
+      .set({
+        extractedRequirements: JSON.stringify(requirements),
+        status: 'quick_scanning',
+      })
+      .where(eq(bidOpportunities.id, bidId));
+
+    return { success: true };
+  } catch (error) {
+    console.error('Update requirements error:', error);
+    return { success: false, error: 'Update fehlgeschlagen' };
   }
 }

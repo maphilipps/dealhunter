@@ -1,48 +1,27 @@
 # Dealhunter Feature Implementation Progress
 
-Stand: 2025-01-16
+## Session Start: 2026-01-16
 
-## ✅ Abgeschlossene Features
+### Completed
+- [x] Phase 0: Foundation
+  - [x] Updated CLAUDE.md with new stack (ShadCN UI, AI SDK Elements, MCP tools)
+  - [x] Installed 32 ShadCN components
+  - [x] Created AI Elements components (conversation, message, reasoning, prompt-input, loader, shimmer)
+  - [x] Created app layout with ShadCN Sidebar
+  - [x] Fixed route conflicts (removed old app/page.tsx, moved admin routes)
+  - [x] Removed old header navigation - now only ShadCN sidebar visible
 
-### AUTH (Authentication)
-- [x] AUTH-001: User registration with email/password
-- [x] AUTH-002: User login
-- [x] AUTH-003: User logout
-- [x] AUTH-004: Role-based access control (RBAC)
+### In Progress
+- [ ] Processing FEATURES.json (149 features total)
+  - 20 features already passing
+  - 129 features to implement
 
-### CLEAN (DSGVO Document Cleaning)
-- [x] CLEAN-001: DSGVO document cleaning before processing
-- [x] CLEAN-002: Review and selectively keep PII items
-- [x] CLEAN-003: Audit trail without storing original PII
+### Next Steps
+1. Start with EXTRACT features (data extraction workflow)
+2. Then QUICK features (quick scan workflow)
+3. Then BIT features (evaluation workflow)
+4. Continue through all remaining features
 
-### UPLOAD (Document Upload)
-- [x] UPLOAD-001: PDF upload
-- [x] UPLOAD-002: Free text input
-- [x] UPLOAD-003: Email paste
+---
 
-### ADMIN (Admin Management)
-- [x] ADMIN-001: Business Lines CRUD
-- [x] ADMIN-002: Technologies with baseline
-- [x] ADMIN-003: Employees CRUD
-- [x] ADMIN-005: Audit Trail display
-- [x] ADMIN-006: User Management (role changes, delete)
-
-### MASTER DATA (Stammdaten)
-- [x] REF-001: Add references
-- [x] REF-002: Validate references (admin)
-- [x] COMP-001: Add competencies
-
-### ACCOUNT (Account Management)
-- [x] ACCOUNT-001: BD kann Account erstellen
-
-## 🔄 In Arbeit
-
-Keine Features aktuell in Arbeit.
-
-## 📋 Nächste Schritte
-
-1. ACCOUNT-002: Opportunity zu Account zuordnen
-2. ACCOUNT-003: Dashboard zeigt Opportunities gruppiert nach Account
-3. ACCOUNT-004: Account-Detailseite zeigt alle Opportunities
-4. DASH-001 bis DASH-004: Dashboard UI
-5. UI-001: Dark mode
+## Feature Log (will be updated after each feature)

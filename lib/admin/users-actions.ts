@@ -7,16 +7,22 @@ import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 export async function getUsers() {
+  const session = await auth();
+
+  if (!session?.user || session.user.role !== 'admin') {
+    return { success: false, error: 'Keine Berechtigung', users: [] };
+  }
+
   try {
     const allUsers = await db
       .select()
       .from(users)
       .orderBy(users.createdAt);
 
-    return { success: true, users: allUsers };
+    return { success: true, users: allUsers, currentUserId: session.user.id };
   } catch (error) {
     console.error('Error fetching users:', error);
-    return { success: false, error: 'Fehler beim Laden der Benutzer' };
+    return { success: false, error: 'Fehler beim Laden der Benutzer', users: [] };
   }
 }
 

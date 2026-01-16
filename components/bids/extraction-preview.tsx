@@ -98,6 +98,23 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         </div>
       )}
 
+      {/* Website URL */}
+      {data.websiteUrl !== undefined && (
+        <div className="space-y-2">
+          <Label htmlFor="websiteUrl">Kunden-Website *</Label>
+          <Input
+            id="websiteUrl"
+            type="url"
+            value={data.websiteUrl || ''}
+            onChange={(e) => setData({ ...data, websiteUrl: e.target.value })}
+            placeholder="https://www.beispiel.de"
+          />
+          <p className="text-xs text-muted-foreground">
+            Wird für den Quick Scan benötigt (Tech-Stack-Analyse)
+          </p>
+        </div>
+      )}
+
       {/* Project Name */}
       {data.projectName !== undefined && (
         <div className="space-y-2">

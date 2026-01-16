@@ -8,6 +8,7 @@ export const extractedRequirementsSchema = z.object({
   // Customer Information
   customerName: z.string().describe('Name of the customer company or organization'),
   industry: z.string().optional().describe('Industry sector of the customer'),
+  websiteUrl: z.string().optional().describe('Customer website URL for quick scan'),
 
   // Project Details
   projectDescription: z.string().describe('Detailed description of the project requirements'),

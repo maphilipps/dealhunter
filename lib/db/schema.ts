@@ -285,3 +285,49 @@ export const accounts = sqliteTable('accounts', {
 
 export type Account = typeof accounts.$inferSelect;
 export type NewAccount = typeof accounts.$inferInsert;
+
+export const quickScans = sqliteTable('quick_scans', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  bidOpportunityId: text('bid_opportunity_id')
+    .notNull()
+    .references(() => bidOpportunities.id),
+
+  // Target Website
+  websiteUrl: text('website_url').notNull(),
+
+  // Scan Status
+  status: text('status', { enum: ['pending', 'running', 'completed', 'failed'] })
+    .notNull()
+    .default('pending'),
+
+  // Detection Results
+  techStack: text('tech_stack'), // JSON - detected technologies
+  cms: text('cms'), // Detected CMS (WordPress, Drupal, etc.)
+  framework: text('framework'), // Detected framework (React, Vue, etc.)
+  hosting: text('hosting'), // Detected hosting (AWS, Azure, etc.)
+
+  // Content Analysis
+  pageCount: integer('page_count'),
+  contentVolume: text('content_volume'), // JSON - content analysis
+  features: text('features'), // JSON - detected features
+  integrations: text('integrations'), // JSON - detected integrations
+
+  // Business Line Recommendation
+  recommendedBusinessLine: text('recommended_business_line'),
+  confidence: integer('confidence'), // 0-100
+  reasoning: text('reasoning'),
+
+  // Agent Activity
+  activityLog: text('activity_log'), // JSON - agent activity steps
+
+  // Timestamps
+  startedAt: integer('started_at', { mode: 'timestamp' }),
+  completedAt: integer('completed_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+});
+
+export type QuickScan = typeof quickScans.$inferSelect;
+export type NewQuickScan = typeof quickScans.$inferInsert;

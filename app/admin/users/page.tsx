@@ -1,5 +1,7 @@
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { getUsers, updateUserRole, deleteUser } from '@/lib/admin/users-actions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,15 +9,32 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default async function UsersPage() {
-  const session = await auth();
+export default function UsersPage() {
+  const router = useRouter();
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!session?.user || session.user.role !== 'admin') {
-    redirect('/dashboard');
+  useEffect(() => {
+    async function loadUsers() {
+      const result = await getUsers();
+
+      if (!result.success) {
+        router.push('/dashboard');
+        return;
+      }
+
+      setAllUsers(result.users || []);
+      setCurrentUserId(result.currentUserId || null);
+      setIsLoading(false);
+    }
+
+    loadUsers();
+  }, [router]);
+
+  if (isLoading) {
+    return <div className="p-8">Lade...</div>;
   }
-
-  const result = await getUsers();
-  const allUsers = result.success ? result.users : [];
 
   const handleRoleChange = async (userId: string, newRole: 'bd' | 'bl' | 'admin') => {
     const result = await updateUserRole(userId, newRole);
@@ -62,7 +81,7 @@ export default async function UsersPage() {
                     <Badge variant={user.role === 'admin' ? 'default' : user.role === 'bl' ? 'secondary' : 'outline'}>
                       {user.role.toUpperCase()}
                     </Badge>
-                    {user.id !== session.user.id && (
+                    {user.id !== currentUserId && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -84,7 +103,7 @@ export default async function UsersPage() {
                       {user.createdAt ? new Date(user.createdAt).toLocaleDateString('de-DE') : 'N/A'}
                     </p>
                   </div>
-                  {user.id !== session.user.id && (
+                  {user.id !== currentUserId && (
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">Rolle ändern:</span>
                       <select

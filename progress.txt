@@ -14,7 +14,7 @@ Current Status: Starting implementation
 ### Phase 2: Core Upload & Input (Critical Path)
 - UPLOAD-001: PDF Upload ✅ COMPLETED
 - UPLOAD-002: Free Text Input ✅ COMPLETED
-- UPLOAD-003: Email Content Input
+- UPLOAD-003: Email Content Input ✅ COMPLETED
 
 ### Phase 3: Master Data Management (Supporting Infrastructure)
 - REF-001: Add Reference to Database
@@ -39,14 +39,19 @@ Current Status: Starting implementation
 
 ## Current Work Session
 
-### UPLOAD-002: Free Text Input ✅
+### UPLOAD-003: Email Content Input ✅
 Status: COMPLETED
-- Extended upload form with tab-based UI (PDF Upload | Text eingeben)
-- Added uploadFreetextBid server action with validation (min 50 chars)
-- Created freetext input form with customer name and project description fields
+- Extended upload form with third tab (PDF Upload | Text eingeben | E-Mail)
+- Added uploadEmailBid server action with email header parsing (From, Subject, Date)
+- Added `metadata` field to bid_opportunities table (JSON storage for email headers)
+- Created email input form with textarea for pasting complete email content
+- Regex-based extraction of email headers:
+  - From: `kunden@beispiel-gmbh.de`
+  - Subject: `Projektanfrage - CRM-System Erweiterung`
+  - Date: `Thu, 16 Jan 2026 10:30:00 +0100`
 - Character counter shows progress (X / 50 minimum)
 - Button disabled until validation passes
-- Successfully tested: Form input → BidOpportunity creation (inputType: freetext) → redirect
-- Format: "Kunde: [name]\n\nProjektbeschreibung:\n[description]"
+- Successfully tested: Email paste → Header extraction → BidOpportunity creation (inputType: email) → redirect
+- Metadata stored as JSON: `{"from":"...", "subject":"...", "date":"..."}`
 
-Next: UPLOAD-003 - Email Content Input
+Next: Phase 3 - Master Data Management (REF-001: Add Reference to Database)

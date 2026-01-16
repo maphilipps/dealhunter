@@ -138,3 +138,72 @@ export async function getPendingReferences() {
     return { success: false, error: 'Abrufen der ausstehenden Referenzen fehlgeschlagen' };
   }
 }
+
+export async function validateReference(referenceId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  // Only admins can validate references
+  if (session.user.role !== 'admin') {
+    return { success: false, error: 'Keine Berechtigung' };
+  }
+
+  try {
+    const [updatedReference] = await db
+      .update(references)
+      .set({
+        isValidated: true,
+        validatedByUserId: session.user.id,
+        validatedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(references.id, referenceId))
+      .returning();
+
+    if (!updatedReference) {
+      return { success: false, error: 'Referenz nicht gefunden' };
+    }
+
+    revalidatePath('/admin/references');
+    revalidatePath('/references');
+
+    return {
+      success: true,
+      reference: updatedReference
+    };
+  } catch (error) {
+    console.error('Validate reference error:', error);
+    return { success: false, error: 'Validieren fehlgeschlagen' };
+  }
+}
+
+export async function getReferenceById(referenceId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    const [reference] = await db
+      .select()
+      .from(references)
+      .where(eq(references.id, referenceId))
+      .limit(1);
+
+    if (!reference) {
+      return { success: false, error: 'Referenz nicht gefunden' };
+    }
+
+    return {
+      success: true,
+      reference
+    };
+  } catch (error) {
+    console.error('Get reference error:', error);
+    return { success: false, error: 'Abrufen der Referenz fehlgeschlagen' };
+  }
+}

@@ -64,6 +64,13 @@
       "when": 1768570053431,
       "tag": "0008_young_payback",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1768571703668,
+      "tag": "0009_worried_rawhide_kid",
+      "breakpoints": true
     }
   ]
 }

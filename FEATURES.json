@@ -204,7 +204,7 @@
         "Verify techStack populated in QuickScanResult",
         "Verify AgentActivityLog shows detection steps"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "QUICK-002",
@@ -219,7 +219,7 @@
         "Verify pagesByType breakdown populated",
         "Verify sitemapFound boolean set correctly"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "QUICK-003",
@@ -234,7 +234,7 @@
         "Verify features array populated",
         "Verify integrations array populated"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "QUICK-004",
@@ -249,7 +249,7 @@
         "Verify matchedTechnologies shows which techs matched",
         "Verify QuickScan status changes to 'completed'"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "QUICK-005",
@@ -264,7 +264,7 @@
         "Verify duration is less than 5 minutes",
         "Verify all required fields populated despite time constraint"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "BIT-001",

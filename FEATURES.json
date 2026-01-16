@@ -1440,7 +1440,7 @@
         "Verify validatedBy set to admin ID",
         "Verify validatedAt timestamp set"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "REF-003",

@@ -297,8 +297,8 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
               )}
 
               <div className="flex justify-end">
-              <button
-                type="button"
+                <button
+                  type="button"
                 onClick={handleUpload}
                 disabled={isUploading}
                 className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
@@ -314,7 +314,8 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
                     PDF hochladen
                   </>
                 )}
-              </button>
+                </button>
+              </div>
             </div>
           )}
         </div>

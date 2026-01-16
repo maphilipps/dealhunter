@@ -1,10 +1,11 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { bidOpportunities } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
 import { runBitEvaluationWithStreaming } from '@/lib/bit-evaluation/agent';
+import { auth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,19 +13,32 @@ export const dynamic = 'force-dynamic';
 /**
  * SSE endpoint for streaming BIT evaluation
  * Best practice: Use native Web Streams for real-time updates
+ * Security: Requires authentication and bid ownership verification
  */
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  // 1. Verify authentication
+  const session = await auth();
+  if (!session?.user?.id) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const { id } = await context.params;
 
   try {
-    // Fetch bid data
-    const [bid] = await db.select().from(bidOpportunities).where(eq(bidOpportunities.id, id));
+    // 2. Fetch bid data and verify ownership
+    const [bid] = await db
+      .select()
+      .from(bidOpportunities)
+      .where(and(eq(bidOpportunities.id, id), eq(bidOpportunities.userId, session.user.id)));
 
     if (!bid) {
-      return new Response(JSON.stringify({ error: 'Bid not found' }), {
+      return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });

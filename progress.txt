@@ -25,3 +25,28 @@
 ---
 
 ## Feature Log (will be updated after each feature)
+
+## 2026-01-16 - EXTRACT-001, EXTRACT-002 ✅
+
+### Implemented Features
+- **EXTRACT-001**: AI extracts structured requirements from uploaded document
+  - Created Zod schema for extraction data (customerName, technologies, projectDescription, etc.)
+  - Implemented extraction agent using Vercel AI SDK generateObject
+  - AI analyzes PDF/email/text and extracts structured requirements with confidence score
+  
+- **EXTRACT-002**: BD Manager can review and correct extracted requirements
+  - Created extraction preview component with editable form
+  - Added ability to edit all extracted fields (customer, technologies, requirements, budget)
+  - Status changes from 'extracting' → 'reviewing' → 'quick_scanning' after confirmation
+
+### Technical Details
+- Installed: ai@5.0.121, @ai-sdk/openai@3.0.12
+- Created: lib/extraction/agent.ts, lib/extraction/schema.ts
+- Updated: lib/bids/actions.ts with startExtraction and updateExtractedRequirements
+- Created: app/(dashboard)/bids/[id]/page.tsx for bid detail view
+- Created: components/bids/bid-detail-client.tsx for extraction workflow UI
+- Created: components/bids/extraction-preview.tsx for editable extraction preview
+- Updated database schema with new status values
+
+### Commit
+- ac397d3: feat(EXTRACT-001, EXTRACT-002): implement AI extraction and review workflow

@@ -117,3 +117,59 @@ export async function uploadFreetextBid(data: {
     return { success: false, error: 'Speichern fehlgeschlagen' };
   }
 }
+
+export async function uploadEmailBid(data: {
+  emailContent: string;
+  source?: 'reactive' | 'proactive';
+  stage?: 'cold' | 'warm' | 'rfp';
+}) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  const { emailContent, source = 'reactive', stage = 'warm' } = data;
+
+  // Validate input
+  if (!emailContent || emailContent.trim().length < 50) {
+    return { success: false, error: 'E-Mail-Inhalt muss mindestens 50 Zeichen lang sein' };
+  }
+
+  try {
+    // Extract email headers (simple regex parsing)
+    const fromMatch = emailContent.match(/^From:\s*(.+)$/im);
+    const subjectMatch = emailContent.match(/^Subject:\s*(.+)$/im);
+    const dateMatch = emailContent.match(/^Date:\s*(.+)$/im);
+
+    const metadata = {
+      from: fromMatch?.[1]?.trim() || 'Unbekannt',
+      subject: subjectMatch?.[1]?.trim() || 'Kein Betreff',
+      date: dateMatch?.[1]?.trim() || new Date().toISOString(),
+    };
+
+    // Create BidOpportunity record
+    const [bidOpportunity] = await db
+      .insert(bidOpportunities)
+      .values({
+        userId: session.user.id,
+        source,
+        stage,
+        inputType: 'email',
+        rawInput: emailContent,
+        status: 'draft',
+        bitDecision: 'pending',
+        metadata: JSON.stringify(metadata),
+      })
+      .returning();
+
+    return {
+      success: true,
+      bidId: bidOpportunity.id,
+      metadata
+    };
+  } catch (error) {
+    console.error('Email upload error:', error);
+    return { success: false, error: 'Speichern fehlgeschlagen' };
+  }
+}

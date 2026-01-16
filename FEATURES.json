@@ -93,7 +93,7 @@
         "Verify BidOpportunity created with inputType 'freetext'",
         "Verify rawInput contains entered text"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "UPLOAD-003",

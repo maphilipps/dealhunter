@@ -7,8 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { startExtraction, updateExtractedRequirements } from '@/lib/bids/actions';
+import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
 import type { BidOpportunity } from '@/lib/db/schema';
 import { ExtractionPreview } from './extraction-preview';
+import { QuickScanResults } from './quick-scan-results';
 
 interface BidDetailClientProps {
   bid: BidOpportunity;
@@ -20,6 +22,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   const [extractedData, setExtractedData] = useState(
     bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null
   );
+  const [quickScan, setQuickScan] = useState<any>(null);
+  const [isLoadingQuickScan, setIsLoadingQuickScan] = useState(false);
 
   // Handle extraction start
   const handleStartExtraction = async () => {
@@ -53,8 +57,19 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
 
       if (result.success) {
         toast.success('Änderungen gespeichert! Quick Scan wird gestartet...');
-        router.refresh();
-        // TODO: Navigate to quick scan page or show quick scan UI
+
+        // Start Quick Scan automatically
+        setTimeout(async () => {
+          const scanResult = await startQuickScan(bid.id);
+          if (scanResult.success) {
+            toast.success('Quick Scan erfolgreich gestartet!');
+            router.refresh();
+          } else if (scanResult.needsWebsiteUrl) {
+            toast.error('Bitte Website-URL in den Anforderungen angeben');
+          } else {
+            toast.error(scanResult.error || 'Quick Scan konnte nicht gestartet werden');
+          }
+        }, 500);
       } else {
         toast.error(result.error || 'Speichern fehlgeschlagen');
       }
@@ -62,6 +77,19 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
       toast.error('Ein Fehler ist aufgetreten');
     }
   };
+
+  // Load quick scan if status is quick_scanning or later
+  useEffect(() => {
+    if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'team_assigned'].includes(bid.status)) {
+      setIsLoadingQuickScan(true);
+      getQuickScanResult(bid.id).then(result => {
+        if (result.success && result.quickScan) {
+          setQuickScan(result.quickScan);
+        }
+        setIsLoadingQuickScan(false);
+      });
+    }
+  }, [bid.id, bid.status]);
 
   // Draft state - Show raw input and start extraction button
   if (bid.status === 'draft') {
@@ -161,6 +189,66 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           />
         </CardContent>
       </Card>
+    );
+  }
+
+  // Quick Scanning or later states - Show Quick Scan results
+  if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'team_assigned'].includes(bid.status)) {
+    return (
+      <div className="space-y-6">
+        {/* Extracted Requirements Summary */}
+        {extractedData && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Extrahierte Anforderungen</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                {extractedData.customerName && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Kunde</p>
+                    <p className="text-lg">{extractedData.customerName}</p>
+                  </div>
+                )}
+                {extractedData.technologies && extractedData.technologies.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Technologien</p>
+                    <div className="flex flex-wrap gap-2">
+                      {extractedData.technologies.slice(0, 5).map((tech: string, idx: number) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                      {extractedData.technologies.length > 5 && (
+                        <span className="text-xs text-muted-foreground">
+                          +{extractedData.technologies.length - 5} mehr
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Quick Scan Results */}
+        {isLoadingQuickScan && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm text-muted-foreground">Lade Quick Scan Ergebnisse...</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {quickScan && <QuickScanResults quickScan={quickScan} />}
+      </div>
     );
   }
 

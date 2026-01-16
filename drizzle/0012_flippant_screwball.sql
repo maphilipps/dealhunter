@@ -1,0 +1,22 @@
+CREATE TABLE `quick_scans` (
+	`id` text PRIMARY KEY NOT NULL,
+	`bid_opportunity_id` text NOT NULL,
+	`website_url` text NOT NULL,
+	`status` text DEFAULT 'pending' NOT NULL,
+	`tech_stack` text,
+	`cms` text,
+	`framework` text,
+	`hosting` text,
+	`page_count` integer,
+	`content_volume` text,
+	`features` text,
+	`integrations` text,
+	`recommended_business_line` text,
+	`confidence` integer,
+	`reasoning` text,
+	`activity_log` text,
+	`started_at` integer,
+	`completed_at` integer,
+	`created_at` integer,
+	FOREIGN KEY (`bid_opportunity_id`) REFERENCES `bid_opportunities`(`id`) ON UPDATE no action ON DELETE no action
+);

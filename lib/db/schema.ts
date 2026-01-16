@@ -32,7 +32,18 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
   extractedRequirements: text('extracted_requirements'), // JSON
 
   // Status
-  status: text('status', { enum: ['draft', 'evaluating', 'bit_decided', 'routed', 'team_assigned'] })
+  status: text('status', {
+    enum: [
+      'draft',           // Initial state after upload
+      'extracting',      // AI is extracting requirements
+      'reviewing',       // User is reviewing extracted data
+      'quick_scanning',  // AI is doing quick scan
+      'evaluating',      // AI is doing full bit/no bit evaluation
+      'bit_decided',     // Decision made
+      'routed',          // Routed to BL
+      'team_assigned'    // Team assigned
+    ]
+  })
     .notNull()
     .default('draft'),
 

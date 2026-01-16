@@ -11,6 +11,8 @@ export const users = sqliteTable('users', {
   role: text('role', { enum: ['bd', 'bl', 'admin'] })
     .notNull()
     .default('bd'),
+  businessLineId: text('business_line_id').references(() => businessLines.id),
+  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
 });

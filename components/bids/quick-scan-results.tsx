@@ -11,8 +11,17 @@ interface QuickScanResultsProps {
     techStack?: any;
     contentVolume?: any;
     features?: any;
-    activityLog?: any[];
   };
+}
+
+function parseActivityLog(log: string | null | undefined): any[] {
+  if (!log) return [];
+  try {
+    const parsed = JSON.parse(log);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 export function QuickScanResults({ quickScan }: QuickScanResultsProps) {
@@ -39,22 +48,25 @@ export function QuickScanResults({ quickScan }: QuickScanResultsProps) {
           </div>
 
           {/* Activity Log Preview */}
-          {quickScan.activityLog && Array.isArray(quickScan.activityLog) && quickScan.activityLog.length > 0 && (
-            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-              <p className="text-sm font-medium">Aktuelle Aktivität:</p>
-              {quickScan.activityLog.slice(-3).map((activity: any, idx: number) => (
-                <div key={idx} className="flex items-start gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium">{activity.action}</p>
-                    {activity.details && (
-                      <p className="text-muted-foreground text-xs">{activity.details}</p>
-                    )}
+          {(() => {
+            const activityLog = parseActivityLog(quickScan.activityLog);
+            return activityLog.length > 0 ? (
+              <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                <p className="text-sm font-medium">Aktuelle Aktivität:</p>
+                {activityLog.slice(-3).map((activity: any, idx: number) => (
+                  <div key={idx} className="flex items-start gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium">{activity.action}</p>
+                      {activity.details && (
+                        <p className="text-muted-foreground text-xs">{activity.details}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            ) : null;
+          })()}
         </CardContent>
       </Card>
     );

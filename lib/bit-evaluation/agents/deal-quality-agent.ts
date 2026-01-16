@@ -13,6 +13,7 @@ export interface DealQualityAgentInput {
  */
 export async function runDealQualityAgent(input: DealQualityAgentInput): Promise<DealQuality> {
   const result = await generateObject({
+    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
     model: openai('gpt-4o-mini'),
     schema: dealQualitySchema,
     prompt: `You are a commercial assessor for adesso SE, a leading German IT consulting company.

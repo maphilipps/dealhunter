@@ -11,7 +11,7 @@ export default async function CompetenciesPage() {
 
   const result = await getCompetencies();
 
-  const competencies = result.success ? result.competencies : [];
+  const competencies = result.success && result.competencies ? result.competencies : [];
 
   return (
     <div className="container mx-auto py-8">

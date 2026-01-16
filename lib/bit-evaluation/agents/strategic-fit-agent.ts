@@ -13,6 +13,7 @@ export interface StrategicFitAgentInput {
  */
 export async function runStrategicFitAgent(input: StrategicFitAgentInput): Promise<StrategicFit> {
   const result = await generateObject({
+    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
     model: openai('gpt-4o-mini'),
     schema: strategicFitSchema,
     prompt: `You are a strategic business assessor for adesso SE, a leading German IT consulting company.

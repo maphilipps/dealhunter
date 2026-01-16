@@ -1,497 +1,620 @@
-# Dealhunter - Feature Epics & Anforderungen
+# Dealhunter - Epics & Anforderungen
 
-**Kern-Workflow:** Anforderung hochladen → AI-Extraktion → Bit/No Bit Entscheidung → Routing an Bereichsleiter → Erweiterte Auswertung → Team zusammenstellen → Team per E-Mail benachrichtigen
+## Technologie-Stack
+
+| Bereich | Technologie | Version/Details |
+|---------|-------------|-----------------|
+| **Framework** | Next.js | 16 (App Router) |
+| **UI Library** | ShadCN UI | Vollständig |
+| **Styling** | Tailwind CSS | v4 |
+| **Charts** | Recharts | via ShadCN chart |
+| **AI SDK** | Vercel AI SDK | ai, @ai-sdk/react, @ai-sdk/anthropic |
+| **AI Models** | Claude | Opus 4.5 / Sonnet |
+| **Structured Output** | Zod | Type-safe AI responses |
+| **Database** | Drizzle ORM | SQLite (dev) / PostgreSQL (prod) |
+| **Auth** | NextAuth.js | Credentials Provider |
+| **Background Jobs** | BullMQ | Optional für Deep Analysis |
+| **State** | Zustand | Client State |
 
 ---
 
-## EPIC-001: Smart Upload & AI-Extraktion
+## Abhängigkeitsdiagramm (16 Epics)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    EPIC 1: Foundation                           │
+│           (DB Schema, Auth, Base Layout)                        │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │
+        ┌─────────────┼─────────────┬─────────────────┐
+        ▼             ▼             ▼                 ▼
+┌───────────────┐ ┌───────────┐ ┌─────────────┐ ┌─────────────────┐
+│ EPIC 2: Admin │ │ EPIC 13:  │ │ EPIC 14:    │ │ EPIC 15:        │
+│ Panel &       │ │ Account   │ │ MCP Tool    │ │ Agent Context   │
+│ Master Data   │ │ Mgmt      │ │ Layer (NEU) │ │ System (NEU)    │
+└───────┬───────┘ └─────┬─────┘ └──────┬──────┘ └────────┬────────┘
+        │               │              │                 │
+        ▼               ▼              │                 │
+┌───────────────────────────────┐      │                 │
+│     EPIC 3: Smart Upload      │◄─────┴─────────────────┘
+│     & AI-Extraktion           │
+└───────────────┬───────────────┘
+                │
+        ┌───────┴───────┐
+        ▼               ▼
+┌───────────────┐ ┌─────────────────────────────┐
+│ EPIC 4:       │ │                             │
+│ Quick Scan    │ │                             │
+└───────┬───────┘ │                             │
+        │         │                             │
+        ▼         ▼                             │
+┌─────────────────────────┐                     │
+│ EPIC 5: Bit/No Bit      │                     │
+│ Evaluation (Multi-Agent)│                     │
+└───────────┬─────────────┘                     │
+            │                                   │
+            ▼                                   │
+┌─────────────────────────┐                     │
+│ EPIC 5a: Agent          │ ← NEU               │
+│ Transparency UI         │                     │
+└───────────┬─────────────┘                     │
+            │                                   │
+            ▼                                   │
+┌─────────────────────────┐                     │
+│ EPIC 6: BL-Routing      │                     │
+└───────────┬─────────────┘                     │
+            │                                   │
+    ┌───────┼───────┬───────────────────────────┘
+    ▼       ▼       ▼
+┌───────┐ ┌───────┐ ┌─────────────────┐
+│EPIC 7:│ │EPIC 8:│ │ EPIC 11:        │
+│Deep   │ │Extend.│ │ Master Data Mgmt│
+│Migrat.│ │Evaluat│ │ (Crowdsourced)  │
+└───────┘ └───┬───┘ └─────────────────┘
+              │
+              ▼
+┌─────────────────────────┐
+│ EPIC 9: Team-Assignment │
+└───────────┬─────────────┘
+            │
+            ▼
+┌─────────────────────────┐
+│ EPIC 10: Notification   │
+└─────────────────────────┘
+
+┌─────────────────────────┐
+│ EPIC 12: Analytics      │ ← Parallel ab Epic 5/6
+└─────────────────────────┘
+```
+
+### Neue Agent-Native Epics
+
+**EPIC 14: MCP Tool Layer** - Grundlage für alle Agent-Interaktionen
+**EPIC 15: Agent Context System** - Dynamischer Context für Agents
+**EPIC 5a: Agent Transparency UI** - Sichtbarkeit der Agent-Entscheidungen
+
+---
+
+## Epic 1: Foundation & Infrastructure
+
+**Priorität:** 🔴 Kritisch (Blocker für alle anderen)
+**Abhängigkeiten:** Keine
 
 ### Anforderungen
 
-**Input-Formate:**
-- PDF (Ausschreibungen, RFPs, RFIs)
-- CRM-Export (HubSpot, Salesforce)
-- Freie Textbeschreibung
-- E-Mail-Weiterleitungen
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| F-001 | Database Schema | Drizzle ORM Schema für alle Entities (BidOpportunity, BusinessLine, Employee, etc.) |
+| F-002 | Auth System | NextAuth.js mit Credentials Provider, JWT, 3 Rollen (BD, BL, Admin) |
+| F-003 | Base Layout | ShadCN Sidebar Layout mit Navigation |
+| F-004 | API Route Structure | App Router API Routes Setup |
+| F-005 | Environment Config | .env Setup (AI Hub, DB, etc.) |
 
-**DSGVO Document Cleaning (Optional):**
-- User kann vor Verarbeitung "Dokument bereinigen" aktivieren
-- AI identifiziert und entfernt/anonymisiert PII (Namen, E-Mails, Telefon, Adressen)
-- User reviewed Vorschläge und kann einzelne Items behalten
-- Audit Trail: Nur bereinigtes Dokument + Cleaning-Log gespeichert (kein Original)
-
-**AI-Extraktion:**
-- Strukturierte Extraktion: customerName, projectDescription, technologies, budget, timeline, scope, keyRequirements
-- Confidence Score (0-100) für Qualitätsbewertung
-- User kann extrahierte Daten bestätigen/korrigieren
-- Source-Tracking (pdf/crm/freetext/email)
-
-**User Stories:**
-- Als BD Manager möchte ich Anforderungen in beliebigem Format hochladen
-- Als BD Manager möchte ich die extrahierten Daten prüfen und korrigieren können
-- Als BD Manager möchte ich optional PII vor der Verarbeitung entfernen
+### Technische Details
+- Drizzle ORM mit SQLite für lokale Entwicklung
+- NextAuth.js Session mit httpOnly Cookies
+- ShadCN Sidebar als Hauptnavigation
 
 ---
 
-## EPIC-002: Bit/No Bit Entscheidung
+## Epic 2: Admin Panel & Master Data
+
+**Priorität:** 🔴 Kritisch
+**Abhängigkeiten:** Epic 1
 
 ### Anforderungen
 
-**Multi-Agent Evaluation System:**
-- **Tech Agent**: Tech-Anforderungen vs. adesso-Kompetenzen, Komplexität, Skills
-- **Legal Agent**: Vertragsrisiken, Haftung, Compliance (BD-Level: Quick Check)
-- **Commercial Agent**: Budget, Marge, Wirtschaftlichkeit, Timeline
-- **Organizational Agent**: Kapazität, Team, Timeline-Realisierbarkeit
-- **Competition Agent**: Bekannte Mitbieter, Win-Wahrscheinlichkeit
-- **Coordinator Agent**: Synthese aller Ergebnisse, finale Empfehlung
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| A-001 | Business Lines CRUD | Bereiche anlegen, bearbeiten, löschen |
+| A-002 | Technologies CRUD | CMS-Technologien mit Baselines verwalten |
+| A-003 | Employees CRUD | Mitarbeiter mit Skills und Rollen |
+| A-004 | Employee Import | CSV Bulk-Import für Mitarbeiter |
+| A-005 | Baseline Config | Stunden, Content Types, Paragraphs pro Technologie |
 
-**Vertragstyp-Erkennung & Risikobewertung:**
-- Automatische Erkennung: EVB-IT, Werkvertrag, Dienstvertrag, Rahmenvertrag, SLA
-- Risk Level: low/medium/high
-- Risk Factors identifizieren (Haftung, Pönalen, IP-Klauseln)
-- Recommendations für Risikominimierung
-
-**Zuschlagskriterien Analysis:**
-- Preis-/Qualitätsgewichtung extrahieren
-- adesso Strengths gegen Kriterien matchen
-- Overall Fit Assessment (excellent/good/moderate/poor)
-
-**Red Flag Detection:**
-- Budget Red Flags (50% unter Marktdurchschnitt)
-- Timeline Red Flags (unrealistische Deadlines)
-- Legal Red Flags (unbegrenzte Haftung)
-- Technical Red Flags (Legacy-Integration ohne API)
-- Severity: critical/warning/info
-
-**Multi-Dimensionales Risk Assessment:**
-- Technical, Legal, Commercial, Organizational, Timeline Risks
-- Overall Severity pro Dimension
-- Mitigation Vorschläge
-
-**Entscheidungsbaum-Visualisierung:**
-- Interaktiver Baum mit allen Faktoren
-- Klickbare Nodes mit Details
-- Pro/Contra-Argumente visuell aufbereitet
-- Farbcodierung (grün=positiv, rot=negativ, gelb=neutral)
-
-**Output:**
-- Decision: 'bit' | 'no_bit'
-- Confidence Score (0-100)
-- Reasoning (ausführliche Begründung)
-- Decision Tree
-- Risk Assessment
-- Award Criteria Fit
-- Contract Analysis
-- Red Flags
-- Alternative Recommendation (bei No Bit)
-
-**Low Confidence Handling:**
-- Warning bei Confidence < 70%
-- User-Bestätigung erforderlich
-- Audit Trail für Override
-
-**User Stories:**
-- Als BD Manager möchte ich eine fundierte Bit/No Bit Empfehlung erhalten
-- Als BD Manager möchte ich alle Risiken und Red Flags sehen
-- Als BD Manager möchte ich bei No Bit eine Alternative Empfehlung erhalten
-- Als BD Manager möchte ich bei unsicheren Entscheidungen gewarnt werden
+### Seed Data
+| Bereich | BL | Technologien |
+|---------|-----|--------------|
+| PHP | Francesco Raaphorst | Drupal (693h), Ibexa, Sulu |
+| WEM | Michael Rittinghaus | Magnolia, Firstspirit |
 
 ---
 
-## EPIC-003: Company Analysis (Two-Phase)
+## Epic 3: Smart Upload & AI-Extraktion
 
-### Phase 1: Quick Scan (für BD, während Bit/No Bit)
-
-**Anforderungen:**
-- **Tech Stack Detection**: CMS, Frameworks, Hosting, Libraries identifizieren
-- **Content Volume**: Sitemap analysieren, Seitenanzahl, URL-Patterns
-- **Features & Integrations**: Formulare, Suche, APIs, E-Commerce, User Accounts
-- **BL Recommendation**: AI-basiert, mit Confidence Score und Reasoning
-
-**Output:**
-- Tech Stack (CMS, Framework, Hosting)
-- Content Volume (Total Pages, Pages by Type)
-- Features (Forms, Integrations, E-Commerce, User Accounts)
-- BL Recommendation (recommended BL, confidence, reasoning, matched technologies)
-
-**Performance:** 2-5 Minuten
-
-### Phase 2: Deep Migration Analysis (für BL, nach Assignment)
-
-**Anforderungen:**
-- **Content Architecture Mapping**: Page Types → Content Types, Components → Paragraphs
-- **Migration Complexity**: Export-Capability, Datenqualität, Cleanup-Aufwand
-- **Accessibility Audit**: WCAG 2.1 Level AA Prüfung, Remediation Effort
-- **PT-Schätzung**: Basierend auf Entity-Counts und CMS-Baseline (adessoCMS: 693h)
-
-**Output:**
-- Content Architecture (Page Types, Components, Taxonomies, Media Types)
-- Migration Complexity (Export Capability, Data Quality, Estimated Nodes, Complexity Score)
-- Accessibility (WCAG Level, Issue Count by Severity, Remediation Effort)
-- Estimation (Total Hours, Breakdown, Confidence Level, Assumptions, Risks)
-
-**Trigger:** Automatisch nach Bit + BL-Assignment (Background Job)
-**Performance:** 10-30 Minuten
-**Notification:** BL wird benachrichtigt bei Completion
-
-**BL-Spezifisch:**
-- CMS-Auswahl basierend auf BL (PHP → Drupal/Sulu, WEM → Ibexa/Magnolia)
-- BL kann Ziel-CMS ändern und Re-Analysis triggern
-
-**User Stories:**
-- Als BD Manager möchte ich Quick Scan Ergebnisse für Bit-Entscheidung nutzen
-- Als BL möchte ich detaillierte Migration Analysis für PT-Schätzung
-- Als BL möchte ich das Ziel-CMS wählen können
-
----
-
-## EPIC-004: BL-Routing & Team Assignment
-
-### BL-Routing
-
-**Anforderungen:**
-- **AI-basierte BL-Empfehlung**: Basierend auf Quick Scan Tech Stack
-- **BD Override**: BD kann anderen BL wählen mit Begründung (Audit Trail)
-- **BL Notification**: E-Mail an BL Leader bei Assignment
-
-**Routing-Logik:**
-1. AI analysiert Quick Scan Ergebnisse
-2. NLP-Match zu Business Lines (Keywords, Technologies)
-3. Confidence Score und Matched Technologies
-4. BD kann Empfehlung akzeptieren oder überschreiben
-
-### Erweiterte Auswertung (für BL)
-
-**Anforderungen:**
-- **Szenario-basierte Kalkulation**: Best/Expected/Worst Case
-- **Skill Gaps**: Required Skills vs. Available Employees
-- **PT-Estimation**: Aus Deep Migration Analysis
-- **Interaktive Exploration**: Drill-Down in Details, Filter nach Skills/Verfügbarkeit
-
-**Financial Projections:**
-- Revenue, Costs, Margin, Margin % pro Szenario
-- Risk Factors pro Szenario
-
-### Team Assignment
-
-**Anforderungen:**
-- **AI-Vorschlag**: Optimales Team basierend auf Skills, Verfügbarkeit, Erfahrung
-- **Feste Rollen**: Project Manager, Architect, Lead Developer, Developer, Consultant, Analyst, QA Engineer
-- **Team-Größe**: 2-15+ Personen (variabel)
-- **BL Override**: BL kann Team modifizieren
-- **Skill Gap Handling**: Warnung bei fehlenden Skills, Best Available Alternatives
-
-**User Stories:**
-- Als BL möchte ich automatisch über neue Opportunities informiert werden
-- Als BL möchte ich Szenario-basierte Kalkulationen sehen
-- Als BL möchte ich AI-Vorschlag für optimales Team erhalten
-- Als BL möchte ich das Team bei Bedarf anpassen können
-
----
-
-## EPIC-005: Benachrichtigungs-System
+**Priorität:** 🔴 Kritisch
+**Abhängigkeiten:** Epic 1, Epic 2
 
 ### Anforderungen
 
-**Team-Benachrichtigung per E-Mail:**
-- E-Mail an jedes Team-Mitglied
-- Subject: [Dealhunter] Angebotsteam für {CustomerName}
-- Body: Rolle, BL-Signature, Link zu Details
-- PDF-Attachment mit Projekt-Infos
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| U-001 | PDF Upload | Drag & Drop Zone für PDF-Dokumente |
+| U-002 | Text Upload | Textarea für Freitext/E-Mail |
+| U-003 | DSGVO-Bereinigung | Optionales PII-Cleaning vor Verarbeitung |
+| U-004 | Extraction Agent | AI-basierte Strukturextraktion (Customer, Tech, Budget, Timeline) |
+| U-005 | Preview & Edit | User bestätigt/korrigiert extrahierte Daten |
+| U-006 | Account Assignment | Bid einem Kunden-Account zuordnen |
 
-**PDF-Content:**
-- Kundenname & Kontakt
-- Projekt-Beschreibung
-- Scope & Requirements
-- Timeline
-- Team-Zusammensetzung
-- Nächste Schritte
-
-**BL-Benachrichtigung:**
-- E-Mail bei Deep Analysis Completion
-- In-App Notification Badge
-
-**Tracking:**
-- `teamNotifiedAt` Timestamp
-- `assignedBLNotifiedAt` Timestamp
-- Status: 'notified' nach Benachrichtigung
-- Final Status: 'handed_off' nach vollständiger Übergabe
-
-**User Stories:**
-- Als BL möchte ich das Team per Knopfdruck benachrichtigen
-- Als Team-Mitglied möchte ich alle Projekt-Infos per E-Mail + PDF erhalten
-- Als BL möchte ich benachrichtigt werden, wenn Deep Analysis fertig ist
+### AI Agent: Extraction Agent
+- **Model:** Claude Sonnet
+- **Tools:** `extractRequirements`, `cleanPII`
+- **Output:** `ExtractedRequirements` Schema
 
 ---
 
-## EPIC-006: Master Data Management
+## Epic 4: Quick Scan (Company Analysis Phase 1)
+
+**Priorität:** 🟡 Hoch
+**Abhängigkeiten:** Epic 2, Epic 3
 
 ### Anforderungen
 
-**Referenzen (Zentrale Datenbank):**
-- Vergangene Projekte dokumentieren (Name, Customer, Industry, Technologies, Scope, Team Size, Budget, Outcome)
-- Highlights und Contact Person
-- Jeder BD kann hinzufügen, Admin validiert
-- Auto-Matching zu neuen Opportunities (Match Score, Matched Criteria)
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| QS-001 | Tech Stack Detection | CMS, Frameworks, Hosting identifizieren |
+| QS-002 | Content Volume | Sitemap analysieren, Seitenanzahl |
+| QS-003 | Feature Detection | Formulare, Integrationen, E-Commerce |
+| QS-004 | BL-Empfehlung | AI-basierte Bereichsleiter-Empfehlung |
+| QS-005 | Confidence Score | 0-100% Confidence für Empfehlung |
 
-**Kompetenzen (Zentrale Datenbank):**
-- Technologies, Methodologies, Industries, Soft Skills
-- Level: basic/advanced/expert
-- Experts zuordnen (Employee IDs)
-- Certifications tracken
-- Jeder BD kann hinzufügen, Admin validiert
-- Auto-Matching zu Requirements (Available/Gap)
+### Performance Target
+- **Dauer:** 2-5 Minuten
 
-**Wettbewerber (Zentrale Datenbank):**
-- Strengths/Weaknesses dokumentieren
-- Technologies und Industries
-- Price Level (low/medium/high)
-- Recent Encounters tracken (won_against/lost_to)
-- Jeder BD kann hinzufügen, Admin validiert
-- Auto-Matching zu Opportunities (Likelihood, Counter-Strategy)
-
-**Validation Workflow:**
-- BD erstellt Entry (createdBy, validatedBy=null)
-- Admin reviewed und validiert (validatedBy, validatedAt)
-- Nur validierte Entries für Auto-Matching
-
-**User Stories:**
-- Als BD möchte ich Referenzen, Kompetenzen, Wettbewerber dokumentieren
-- Als Admin möchte ich Einträge validieren
-- Als System möchte ich automatisch passende Referenzen/Kompetenzen/Wettbewerber finden
+### Output Schema
+```typescript
+interface QuickScanResult {
+  techStack: { cms, frameworks, hosting }
+  contentVolume: { totalPages, pagesByType }
+  features: { forms, integrations, hasEcommerce }
+  blRecommendation: { recommendedBL, confidence, reasoning }
+}
+```
 
 ---
 
-## EPIC-007: Legal Agent & Compliance
+## Epic 5: Bit/No Bit Evaluation
+
+**Priorität:** 🔴 Kritisch
+**Abhängigkeiten:** Epic 3, Epic 4
 
 ### Anforderungen
 
-**Two-Level Approach:**
-- **BD-Level (Quick Check)**: Kritische Red Flags (Haftung, Pönalen, IP)
-- **BL-Level (Comprehensive)**: Vollständige Vertragsprüfung nach Assignment
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| BIT-001 | Tech Agent | Technische Anforderungen analysieren |
+| BIT-002 | Legal Agent | Vertragstyp, Risiken (Quick Check) |
+| BIT-003 | Commercial Agent | Budget, Marge, Wirtschaftlichkeit |
+| BIT-004 | Competition Agent | Wettbewerber identifizieren |
+| BIT-005 | Reference Agent | Passende Referenzen finden |
+| BIT-006 | Coordinator Agent | Synthese aller Ergebnisse |
+| BIT-007 | Red Flag Detection | Kritische Issues automatisch erkennen |
+| BIT-008 | Decision Tree | Interaktive Visualisierung |
+| BIT-009 | Alternative Empfehlung | Bei No Bit: anderen Bereich vorschlagen |
+| BIT-010 | Agent Transparency | Live Chain-of-Thought anzeigen |
 
-**BD-Level (während Bit Evaluation):**
-- Critical Flags identifizieren (liability, penalty, ip, warranty, termination, jurisdiction)
-- Severity: critical/warning
-- Compliance Hints geben
-- Requires Detailed Review Flag setzen
+### Multi-Agent Orchestrierung
+```
+Phase 1 (Parallel): Tech, Legal, Commercial, Competition, Reference
+Phase 2 (Sequential): Coordinator synthesizes all results
+```
 
-**BL-Level (nach Assignment):**
-- **Procurement Law**: VoB, VgV, UVgO, EU Threshold Detection
-- **Requirements & Deadlines**: Extrahieren und listen
-- **Framework Agreements**: Detect, Identify existing, Extract call-off rules
-- **Subcontractor Rules**: Allowed/Restricted, Reporting Requirements
-
-**Contract Analysis:**
-- Contract Type Detection (EVB-IT, Werkvertrag, Dienstvertrag, Rahmenvertrag, SLA)
-- Risk Level Assessment
-- Risk Factors identifizieren
-- Recommendations für Risikominimierung
-
-**Red Flags als informativ (nicht blockierend):**
-- Red Flags prominent anzeigen
-- BD kann trotzdem mit Bit fortfahren
-- Red Flags in Coordinator Synthesis einbeziehen
-
-**User Stories:**
-- Als BD möchte ich kritische Legal Red Flags sehen
-- Als BL möchte ich umfassende Legal Review nach Assignment
-- Als BL möchte ich Compliance-Anforderungen (Vergaberecht, Rahmenverträge) verstehen
+### Performance Target
+- **Dauer:** 5-15 Minuten
 
 ---
 
-## EPIC-008: Agent Native Transparency
+## Epic 5a: Agent Transparency UI (NEU)
+
+**Priorität:** 🔴 Kritisch (Agent-Native Compliance)
+**Abhängigkeiten:** Epic 5
 
 ### Anforderungen
 
-**Full Chain-of-Thought Display:**
-- Jeder Agent-Schritt sichtbar für User
-- Thoughts, Tool Calls, Tool Results, Decisions
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| TRANS-001 | Conversation Component | Agent Activity Stream mit Live-Updates |
+| TRANS-002 | Reasoning Component | Chain-of-Thought Visualisierung (expandierbar) |
+| TRANS-003 | Sources Component | Zitierte Daten und Referenzen anzeigen |
+| TRANS-004 | Message Actions | Copy, Expand, Retry Buttons |
+| TRANS-005 | Confidence Indicator | Visuelle Anzeige (gruen 80%+, gelb 60-79%, rot <60%) |
+| TRANS-006 | Abort Mechanism | User kann laufende Analyse abbrechen |
 
-**Real-time Agent Activity Stream:**
-- Live-Updates während AI-Operationen
-- Timestamp, Agent Name, Activity Type
-- Thought Bubbles (expandable für Details)
+### Technologie
+- `@ai-sdk/react` AI Elements (Conversation, Message, Reasoning, Sources)
+- SSE für Live-Streaming
 
-**Confidence Indicators:**
-- Color-coded: Green (80-100%), Yellow (60-79%), Red (<60%)
-- Tooltip mit Explanation
-- Warning bei Medium/Low Confidence
-
-**Abort-Mechanismus:**
-- "Abbrechen" Button während Agent Operations
-- Graceful Shutdown (laufende Tool Calls beenden)
-- Partial Results erhalten
-- Re-Start möglich
-
-**Multi-Agent Progress:**
-- 2x2 Grid für parallel laufende Agents
-- Status Indicators pro Agent
-- Overall Progress Bar
-
-**No Live-Steering:**
-- User kann nicht während Execution umlenken
-- Stattdessen: Abbrechen → Anpassen → Neu starten
-
-**User Stories:**
-- Als User möchte ich sehen, was die AI gerade tut
-- Als User möchte ich die Reasoning nachvollziehen können
-- Als User möchte ich bei Bedarf eine Operation abbrechen
+### UI Pattern
+```
+[12:34:01] Analysiere Tech Stack...
+[12:34:05] Tool: detectCMS -> WordPress 6.4
+[12:34:08] WordPress erkannt, prüfe Kompatibilität...
+[12:34:15] Entscheidung: Routing zu PHP (87%)
+```
 
 ---
 
-## EPIC-009: Dashboard & Analytics
+## Epic 6: BL-Routing
 
-### Dashboard
-
-**BD Manager View:**
-- **Pipeline Overview**: Alle Bids mit Status
-- **Quick Stats**: Bit Rate, Offene Evaluierungen, Zugewiesene Teams
-- **Deadline Tracking**: Anstehende Deadlines sichtbar
-- **Filters**: Status, Datum, BL, Source, Account
-- **Account-basierte Ansicht**: Opportunities gruppiert nach Customer/Account
-
-**BL View:**
-- **Inbox**: Assigned Opportunities mit Status
-- **Status Indicators**: "Deep Analysis läuft...", "Bereit zur Prüfung"
-- **Newest First**: Sortierung nach Datum
-
-### Analytics
-
-**Anforderungen:**
-- **Bit/No Bit Rate**: Pie Chart mit Percentages
-- **Distribution by BL**: Bar Chart mit Opportunity Count pro BL
-- **Pipeline Funnel**: Draft → Bit → Assigned → Notified (Conversion Rates)
-- **Time to Decision**: Average Time von Upload zu Bit Decision (Trend Line)
-- **Source Distribution**: Reactive vs Proactive (Pie Chart)
-- **Stage Distribution**: Cold/Warm/RFP (Pie Chart)
-- **Date Range Selector**: Filtering für alle Charts
-
-**User Stories:**
-- Als BD Manager möchte ich den kompletten Pipeline-Status sehen
-- Als BL möchte ich meine assigned Opportunities in einer Inbox sehen
-- Als Admin möchte ich Analytics über Bit/No Bit Entscheidungen sehen
-
----
-
-## EPIC-010: Admin Panel
+**Priorität:** 🟡 Hoch
+**Abhängigkeiten:** Epic 2, Epic 5
 
 ### Anforderungen
 
-**Business Lines CRUD:**
-- Name, Leader Name, Leader Email
-- Technologies zuordnen
-- Keywords für NLP-Matching
-- Active/Inactive Status
-
-**Technologies CRUD:**
-- Name (Drupal, Ibexa, Magnolia, etc.)
-- Business Line Reference
-- Baseline Hours (z.B. 693 für adessoCMS)
-- Baseline Name
-- Baseline Entity Counts (Content Types, Paragraphs, Views, Config Files)
-- Default Flag (Standard-Ziel für BL)
-
-**Employees CRUD:**
-- Name, Email
-- Business Line
-- Skills (Array)
-- Roles (Array of TeamRole)
-- Availability Status (available/on_project/unavailable)
-- Bulk Import via CSV
-
-**Master Data Validation:**
-- Referenzen, Kompetenzen, Wettbewerber validieren
-- Pending List (validatedBy = null)
-- Validate Button → validatedBy, validatedAt setzen
-
-**Audit Trail Viewer:**
-- Liste aller AuditTrailEntry Records
-- Filter nach Action Type (bl_override, bit_override, team_change, status_change)
-- User, Timestamp, Previous/New Value, Reason anzeigen
-
-**User Management:**
-- User einladen mit E-Mail und Rolle
-- Invitation E-Mail senden
-- Registration mit preset Role
-
-**User Stories:**
-- Als Admin möchte ich Business Lines und Technologies verwalten
-- Als Admin möchte ich Employees mit Skills anlegen
-- Als Admin möchte ich Master Data validieren
-- Als Admin möchte ich Audit Trail für Overrides einsehen
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| ROUTE-001 | AI-Routing | Automatisches Routing basierend auf Quick Scan |
+| ROUTE-002 | BD Override | BD kann anderen BL wählen mit Begründung |
+| ROUTE-003 | Audit Trail | Alle Overrides werden geloggt |
+| ROUTE-004 | BL Notification | BL wird über neue Opportunity informiert |
 
 ---
 
-## Account Management (EPIC-011)
+## Epic 7: Deep Migration Analysis (Phase 2)
+
+**Priorität:** 🟡 Hoch
+**Abhängigkeiten:** Epic 4, Epic 6
 
 ### Anforderungen
 
-**Account CRUD:**
-- Name, Industry, Website, Notes
-- Opportunities Array (BidOpportunity IDs)
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| DEEP-001 | Content Architecture | Page Types -> Content Types Mapping |
+| DEEP-002 | Migration Complexity | Export-Möglichkeiten, Datenqualität |
+| DEEP-003 | Accessibility Audit | WCAG 2.1 AA Prüfung |
+| DEEP-004 | PT-Schätzung | Stunden basierend auf Baseline + Entities |
+| DEEP-005 | Background Job | Läuft async nach BL-Zuweisung |
+| DEEP-006 | Progress Tracking | SSE Stream für Fortschritt |
+| DEEP-007 | CMS-spezifisch | Analysis basierend auf Ziel-CMS |
 
-**Account Assignment:**
-- Bei Upload: Opportunity einem Account zuordnen (neu oder bestehend)
-- Account Selector mit Search
+### Performance Target
+- **Dauer:** 10-30 Minuten (Background)
 
-**Account-basierte Dashboard-Ansicht:**
-- Opportunities gruppiert nach Account
-- Account Summary (Opportunity Count)
-- Expand/Collapse per Account
-
-**Account Detail Page:**
-- Account Info anzeigen
-- Alle linked Opportunities listen
-- Opportunity Statuses
-- Historical Data
-- Link zu "New Opportunity for Account"
-
-**User Stories:**
-- Als BD Manager möchte ich Opportunities Kunden zuordnen
-- Als BD Manager möchte ich alle Opportunities eines Kunden sehen
-- Als BD Manager möchte ich Dashboard nach Accounts gruppieren
+### Trigger
+Automatisch nach `bitDecision: 'bit'` UND `assignedBusinessLineId` gesetzt
 
 ---
 
-## Performance Targets
+## Epic 8: Extended Evaluation (BL View)
 
-| Metric | Target |
-|--------|--------|
-| Smart Upload Processing | < 30 sec |
-| AI Extraction | < 60 sec |
-| Quick Scan (Phase 1) | 2-5 min |
-| Bit/No Bit Decision | 5-15 min |
-| Deep Migration Analysis (Phase 2) | 10-30 min (Background) |
-| Extended Evaluation | < 2 min |
-| Team Notification | < 30 sec |
+**Priorität:** 🟡 Hoch
+**Abhängigkeiten:** Epic 5, Epic 6
+
+### Anforderungen
+
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| EXT-001 | Szenario-Kalkulation | Best/Expected/Worst Case |
+| EXT-002 | Financial Projection | Revenue, Costs, Margin |
+| EXT-003 | Skill Gap Analysis | Fehlende Skills identifizieren |
+| EXT-004 | Available Employees | Passende Mitarbeiter anzeigen |
+| EXT-005 | Interactive Exploration | Drill-Down in Details |
+| EXT-006 | Full Legal Review | Vollständige Vertragsprüfung |
 
 ---
 
-## Success Criteria (MVP)
+## Epic 9: Team-Assignment
 
-- ✅ BD kann Anforderungen in beliebigem Format hochladen
-- ✅ Bit/No Bit Entscheidung in 10-30 Minuten
-- ✅ Automatisches Routing an korrekten Bereichsleiter
-- ✅ BL erhält Szenario-basierte Wirtschaftlichkeitsanalyse
-- ✅ AI schlägt optimales Team vor
-- ✅ Team wird automatisch per E-Mail benachrichtigt
-- ✅ BD hat volle Transparenz über Pipeline-Status
-- ✅ Analytics Dashboard für Management
+**Priorität:** 🟡 Hoch
+**Abhängigkeiten:** Epic 2, Epic 8
+
+### Anforderungen
+
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| TEAM-001 | AI Team-Vorschlag | Optimales Team basierend auf Skills |
+| TEAM-002 | Skill Matching | NLP-basiertes Matching |
+| TEAM-003 | Role Assignment | PM, Architect, Lead Dev, etc. |
+| TEAM-004 | Team Builder UI | Drag & Drop Zusammenstellung |
+| TEAM-005 | Availability Check | Verfügbarkeit berücksichtigen |
+
+### Rollen
+```typescript
+type TeamRole =
+  | 'project_manager'
+  | 'architect'
+  | 'lead_developer'
+  | 'developer'
+  | 'consultant'
+  | 'analyst'
+  | 'qa_engineer'
+```
+
+---
+
+## Epic 10: Notification System
+
+**Priorität:** 🟢 Mittel
+**Abhängigkeiten:** Epic 9
+
+### Anforderungen
+
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| NOTIF-001 | E-Mail an Team | Benachrichtigung mit Rolle |
+| NOTIF-002 | PDF Generation | Projekt-Summary als Attachment |
+| NOTIF-003 | E-Mail Template | Personalisierte Nachricht |
+
+### E-Mail Template
+```
+Betreff: [Dealhunter] Angebotsteam für {CustomerName}
+Body: Hallo {Name}, du wurdest als {Role} aufgenommen...
+Attachment: Projekt-Summary.pdf
+```
+
+---
+
+## Epic 11: Master Data Management (Crowdsourced)
+
+**Priorität:** 🟢 Mittel
+**Abhängigkeiten:** Epic 2
+
+### Anforderungen
+
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| MD-001 | Referenzen CRUD | Vergangene Projekte pflegen |
+| MD-002 | Kompetenzen CRUD | Skills und Experten |
+| MD-003 | Wettbewerber CRUD | Stärken, Schwächen, Encounters |
+| MD-004 | Auto-Matching | AI findet passende Referenzen |
+| MD-005 | Admin-Validierung | Crowdsourced mit Approval |
+| MD-006 | Search & Filter | Schnelle Suche in allen DBs |
+
+---
+
+## Epic 12: Analytics Dashboard
+
+**Priorität:** 🟢 Mittel
+**Abhängigkeiten:** Epic 5, Epic 6
+
+### Anforderungen
+
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| ANAL-001 | Bit-Rate Chart | Pie Chart: Bit vs No Bit |
+| ANAL-002 | Pipeline Funnel | Draft -> Bit -> Assigned -> Notified |
+| ANAL-003 | Time to Decision | Durchschnittliche Entscheidungszeit |
+| ANAL-004 | Per BL Stats | Verteilung nach Bereichsleiter |
+| ANAL-005 | Source Distribution | Reactive vs Proactive |
+
+### ShadCN Charts
+| Metrik | Chart Type |
+|--------|------------|
+| Bit/No Bit Rate | `chart-pie-donut-text` |
+| Pipeline Funnel | `chart-bar-horizontal` |
+| Opportunities by BL | `chart-bar-stacked` |
+| Time to Decision | `chart-line-default` |
+
+---
+
+## Epic 13: Account Management
+
+**Priorität:** 🟢 Mittel
+**Abhängigkeiten:** Epic 1, Epic 3
+
+### Anforderungen
+
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| ACC-001 | Account CRUD | Kunden anlegen, bearbeiten |
+| ACC-002 | Opportunities View | Alle Bids eines Kunden |
+| ACC-003 | Account Search | Schnelle Suche nach Kunde |
+| ACC-004 | Auto-Suggest | Bei Upload: existierende Accounts vorschlagen |
+
+---
+
+## Epic 14: MCP Tool Layer (NEU)
+
+**Priorität:** 🔴 Kritisch (Agent-Native Foundation)
+**Abhängigkeiten:** Epic 1
+
+### Anforderungen
+
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| MCP-001 | Tool Registry | Zentrale Registry für alle Agent-Tools |
+| MCP-002 | Bid Tools | `uploadBid`, `extractRequirements`, `runQuickScan` |
+| MCP-003 | Evaluation Tools | `assessTechnical`, `assessLegal`, `assessCommercial`, `synthesize` |
+| MCP-004 | Team Tools | `suggestTeam`, `assignTeam`, `notifyTeam` |
+| MCP-005 | Query Tools | `findReferences`, `findCompetitors`, `findEmployees` |
+| MCP-006 | Override Tools | `overrideBitDecision`, `overrideRouting`, `overrideTeam` |
+
+### Technologie
+- Vercel AI SDK `tool()` mit Zod-Schemas
+- Standardisierte Tool-Interfaces für Agent-Interoperabilität
+
+### Tool Pattern
+```typescript
+const bidTools = {
+  uploadBid: tool({
+    description: 'Upload and parse bid document',
+    parameters: z.object({
+      content: z.string(),
+      type: z.enum(['pdf', 'text', 'email'])
+    }),
+    execute: async ({ content, type }) => { ... }
+  }),
+  // weitere Tools...
+}
+```
+
+---
+
+## Epic 15: Agent Context System (NEU)
+
+**Priorität:** 🔴 Kritisch (Agent-Native Foundation)
+**Abhängigkeiten:** Epic 1, Epic 2
+
+### Anforderungen
+
+| ID | Anforderung | Beschreibung |
+|----|-------------|--------------|
+| CTX-001 | Context Builder | Service der relevanten Context für Agents baut |
+| CTX-002 | Reference Context | Passende Referenzen aus DB für Tech Agent |
+| CTX-003 | Competitor Context | Wettbewerber-Intelligence für Competition Agent |
+| CTX-004 | Skill Matrix Context | Employee-Skills für Team Agent |
+| CTX-005 | Baseline Context | CMS-Baselines für Deep Analysis |
+| CTX-006 | History Context | Vergangene Entscheidungen für ähnliche Bids |
+
+### Technologie
+- Context Injection in AI SDK `generateText()` und `streamText()`
+- Dynamisches RAG für relevante Dokumente
+
+### Context Pattern
+```typescript
+const buildAgentContext = async (bidId: string, agentType: AgentType) => {
+  const baseContext = await getBaseContext(bidId)
+
+  switch (agentType) {
+    case 'tech':
+      return { ...baseContext, references: await findSimilarReferences(bid) }
+    case 'competition':
+      return { ...baseContext, competitors: await findLikelyCompetitors(bid) }
+    // weitere Agents...
+  }
+}
+```
+
+---
+
+## Implementierungs-Reihenfolge (empfohlen)
+
+| Phase | Epics | Begründung |
+|-------|-------|------------|
+| **Phase 1** | Epic 1, 14, 15 | Foundation + Agent-Native Infrastructure |
+| **Phase 2** | Epic 2, 13 | Admin + Accounts |
+| **Phase 3** | Epic 3 | Smart Upload mit MCP Tools |
+| **Phase 4** | Epic 4, 5, 5a | Quick Scan + Bit/No Bit + Transparency |
+| **Phase 5** | Epic 6, 11 | Routing + Master Data |
+| **Phase 6** | Epic 7, 8 | Deep Analysis + Extended Eval |
+| **Phase 7** | Epic 9, 10 | Team + Notification |
+| **Phase 8** | Epic 12 | Analytics |
 
 ---
 
 ## Non-Goals (MVP)
 
-- ❌ Learning/Feedback-Loop (System lernt nicht aus Outcomes)
-- ❌ Mobile-Optimierung (Desktop Only)
-- ❌ Multi-BL Deals (Joint Bids)
-- ❌ Post-Handoff Tracking (Won/Lost Details)
-- ❌ Slide Deck Generation (nur PDF)
-- ❌ Ablehnung durch Team-Mitglieder
-- ❌ Granularer Agent Re-Run (einzelne Agents wiederholen)
+Diese Features sind NICHT im MVP enthalten:
+- Learning/Feedback-Loop
+- Mobile-Optimierung
+- Multi-BL Deals
+- Slide Deck Generation
+- Post-Handoff Tracking
+- CRM Integration
+- Team-Member Ablehnung
+- Portal-Integration (DTVP, TED)
 
 ---
 
-**Last Updated**: 2026-01-16
-**Version**: 1.2.0-mvp
+## Agent-Native Review Ergebnisse
+
+**Score: 23/60 (38%)** - Signifikante Verbesserungen nötig
+
+### Kritische Lücken
+
+| Problem | Beschreibung |
+|---------|--------------|
+| **Kein MCP Tool Layer** | Agent-Funktionen sind Server Actions, nicht standardisierte MCP-Tools |
+| **Context Starvation** | Agents erhalten keinen Workspace-Context (Referenzen, Wettbewerber, Skills) |
+| **Workflow statt Primitives** | Fest codierte Workflows statt kombinierbare Primitive |
+| **Fehlende Agent Transparency UI** | Chain-of-Thought erwähnt aber keine UI-Komponenten geplant |
+| **Fehlende Override Tools** | User kann Agent-Entscheidungen nur begrenzt überschreiben |
+
+### Empfohlene neue Epics
+
+```markdown
+### Epic 5a: Agent Transparency UI (NEU)
+- Conversation Component für Agent Activity Stream
+- Reasoning Component für Chain-of-Thought
+- Sources Component für zitierte Daten
+- Message Actions (Copy, Expand, Retry)
+**Technologie:** @ai-sdk/react AI Elements
+
+### Epic 14: MCP Tool Layer (NEU)
+- Tool Registry mit Discovery
+- Bid Tools (upload, extract, scan)
+- Evaluation Tools (assess, synthesize)
+- Team Tools (suggest, assign, notify)
+**Technologie:** Vercel AI SDK tools
+
+### Epic 15: Agent Context System (NEU)
+- Context Builder Service
+- Reference Matching Context
+- Competitor Intelligence Context
+- Employee Skill Matrix Context
+```
+
+### Was bereits gut ist
+
+- Multi-Agent Parallel Execution (Epic 5)
+- Structured Outputs mit Zod-Schemas
+- Activity Logging
+- Override mit Begründung (Audit Trail)
+
+---
+
+## Epic-Übersicht (16 Epics total)
+
+| # | Epic | Priorität | Status |
+|---|------|-----------|--------|
+| 1 | Foundation & Infrastructure | 🔴 Kritisch | ✅ COMPLETE |
+| 2 | Admin Panel & Master Data | 🔴 Kritisch | ✅ COMPLETE |
+| 3 | Smart Upload & AI-Extraktion | 🔴 Kritisch | ✅ COMPLETE |
+| 4 | Quick Scan | 🟡 Hoch | ✅ COMPLETE |
+| 5 | Bit/No Bit Evaluation | 🔴 Kritisch | ✅ COMPLETE |
+| 5a | Agent Transparency UI (NEU) | 🔴 Kritisch | - |
+| 6 | BL-Routing | 🟡 Hoch | ✅ COMPLETE |
+| 7 | Deep Migration Analysis | 🟡 Hoch | - |
+| 8 | Extended Evaluation | 🟡 Hoch | - |
+| 9 | Team-Assignment | 🟡 Hoch | ✅ COMPLETE |
+| 10 | Notification System | 🟢 Mittel | - |
+| 11 | Master Data Management | 🟢 Mittel | - |
+| 12 | Analytics Dashboard | 🟢 Mittel | - |
+| 13 | Account Management | 🟢 Mittel | - |
+| 14 | MCP Tool Layer (NEU) | 🔴 Kritisch | - |
+| 15 | Agent Context System (NEU) | 🔴 Kritisch | - |
+
+### Epic 1 Gaps (resolved 2026-01-16)
+
+| Gap | Severity | Status | Resolution |
+|-----|----------|--------|------------|
+| Password hash in getUsers() | Critical | ✅ FIXED | Select only required columns, exclude password |
+| User deletion FK constraint | Critical | ✅ FIXED | Implemented soft delete with deletedAt column |
+| First admin bootstrap | Critical | ✅ FIXED | Created lib/db/seed.ts with npm run db:seed |
+| Auth errors not displayed | Important | ✅ FIXED | Added useActionState to login/register pages |
+| NavUser hardcoded data | Important | ✅ FIXED | Dashboard layout passes session data to NavUser |
+| Admin menu visible to all | Important | ✅ FIXED | Role-based filtering in app-sidebar.tsx |
+| Logout non-functional | Important | ✅ FIXED | NavUser uses server action with form |
+| Static breadcrumbs | Important | ✅ FIXED | Created DynamicBreadcrumb component |
+
+Additional improvements:
+- Added businessLineId to users schema for BL assignment
+- Fixed various TypeScript errors across codebase
+- AI SDK v5 type mismatch warnings suppressed with @ts-expect-error
+
+Siehe `plans/epic-1-foundation-infrastructure.md` für Details.
+
+---
+
+**Letztes Update:** 2026-01-16
+**Quelle:** Spec.md + Francesco Raaphorst Interview + Agent-Native Review + SpecFlow Analysis

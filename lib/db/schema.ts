@@ -163,3 +163,36 @@ export const businessLines = sqliteTable('business_lines', {
 
 export type BusinessLine = typeof businessLines.$inferSelect;
 export type NewBusinessLine = typeof businessLines.$inferInsert;
+
+export const technologies = sqliteTable('technologies', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+
+  // Technology Details
+  name: text('name').notNull(),
+
+  // Business Line Reference
+  businessLineId: text('business_line_id')
+    .notNull()
+    .references(() => businessLines.id),
+
+  // Baseline Information
+  baselineHours: integer('baseline_hours').notNull(),
+  baselineName: text('baseline_name').notNull(),
+  baselineEntityCounts: text('baseline_entity_counts').notNull(), // JSON
+
+  // Default Flag
+  isDefault: integer('is_default', { mode: 'boolean' })
+    .notNull()
+    .default(false),
+
+  // Timestamps
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+});
+
+export type Technology = typeof technologies.$inferSelect;
+export type NewTechnology = typeof technologies.$inferInsert;

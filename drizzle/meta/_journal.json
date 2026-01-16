@@ -43,6 +43,13 @@
       "when": 1768567344458,
       "tag": "0005_lonely_speed_demon",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1768568033281,
+      "tag": "0006_mysterious_microchip",
+      "breakpoints": true
     }
   ]
 }

@@ -15,6 +15,13 @@
       "when": 1768561680469,
       "tag": "0001_military_vargas",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1768562784061,
+      "tag": "0002_happy_strong_guy",
+      "breakpoints": true
     }
   ]
 }

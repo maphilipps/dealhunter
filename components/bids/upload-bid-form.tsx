@@ -113,6 +113,30 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
     }
   };
 
+  const handleEmailSubmit = async () => {
+    setIsUploading(true);
+
+    try {
+      const result = await uploadEmailBid({
+        emailContent,
+        source: 'reactive',
+        stage: 'warm',
+      });
+
+      if (result.success) {
+        toast.success('E-Mail erfolgreich gespeichert');
+        router.push(`/bids/${result.bidId}`);
+      } else {
+        toast.error(result.error || 'Speichern fehlgeschlagen');
+      }
+    } catch (error) {
+      toast.error('Ein Fehler ist aufgetreten');
+      console.error('Email submit error:', error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Tabs */}
@@ -275,6 +299,58 @@ export function UploadBidForm({ userId }: UploadBidFormProps) {
                 type="button"
                 onClick={handleFreetextSubmit}
                 disabled={isUploading || projectDescription.trim().length < 50 || !customerName.trim()}
+                className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Wird gespeichert...
+                  </>
+                ) : (
+                  <>
+                    Weiter
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Input */}
+      {activeTab === 'email' && (
+        <div className="rounded-lg border bg-card p-6">
+          <h2 className="text-xl font-semibold mb-4">E-Mail einfügen</h2>
+
+          <div className="space-y-6">
+            {/* Email Content */}
+            <div>
+              <label htmlFor="emailContent" className="block text-sm font-medium mb-2">
+                E-Mail-Inhalt * (mindestens 50 Zeichen)
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Bitte E-Mail mit Header einfügen (From, Subject, Date werden automatisch extrahiert)
+              </p>
+              <textarea
+                id="emailContent"
+                value={emailContent}
+                onChange={(e) => setEmailContent(e.target.value)}
+                placeholder={`From: kunde@example.com\nSubject: Projektanfrage XYZ\nDate: 2026-01-16\n\nSehr geehrte Damen und Herren,\n\nwir planen ein neues Projekt...`}
+                rows={15}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y font-mono"
+                disabled={isUploading}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {emailContent.length} / 50 Zeichen (minimum)
+              </p>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleEmailSubmit}
+                disabled={isUploading || emailContent.trim().length < 50}
                 className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isUploading ? (

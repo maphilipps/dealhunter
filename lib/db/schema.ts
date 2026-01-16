@@ -227,3 +227,23 @@ export const employees = sqliteTable('employees', {
 
 export type Employee = typeof employees.$inferSelect;
 export type NewEmployee = typeof employees.$inferInsert;
+
+export const auditTrails = sqliteTable('audit_trails', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+
+  // Audit Details
+  userId: text('user_id').notNull(),
+  action: text('action').notNull(),
+  entityType: text('entity_type').notNull(),
+  entityId: text('entity_id').notNull(),
+  changes: text('changes'),
+
+  // Timestamps
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+});
+
+export type AuditTrail = typeof auditTrails.$inferSelect;
+export type NewAuditTrail = typeof auditTrails.$inferInsert;

@@ -82,6 +82,9 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
   quickScanId: text('quick_scan_id'),
   deepMigrationAnalysisId: text('deep_migration_analysis_id'),
 
+  // Optimistic Locking
+  version: integer('version').notNull().default(1),
+
   // Timestamps
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date()),
@@ -349,6 +352,9 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
   bidOpportunityId: text('bid_opportunity_id')
     .notNull()
     .references(() => bidOpportunities.id),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
 
   // Job Tracking
   jobId: text('job_id').notNull(), // Inngest run ID

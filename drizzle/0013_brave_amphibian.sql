@@ -18,6 +18,3 @@ CREATE TABLE `deep_migration_analyses` (
 	`updated_at` integer,
 	FOREIGN KEY (`bid_opportunity_id`) REFERENCES `bid_opportunities`(`id`) ON UPDATE no action ON DELETE no action
 );
---> statement-breakpoint
-ALTER TABLE `users` ADD `business_line_id` text REFERENCES business_lines(id);--> statement-breakpoint
-ALTER TABLE `users` ADD `deleted_at` integer;

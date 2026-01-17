@@ -1,30 +1,35 @@
 import { z } from 'zod';
+import DOMPurify from 'isomorphic-dompurify';
 
-// Sanitized string schema that rejects HTML/script tags (XSS prevention)
-const sanitizedString = z.string().refine(
-  (val) => {
-    // Reject strings containing HTML tags or script content
-    const dangerousPatterns = [
-      /<script/i,
-      /<\/script/i,
-      /javascript:/i,
-      /on\w+=/i, // Event handlers like onclick=, onload=, etc.
-      /<iframe/i,
-      /<embed/i,
-      /<object/i,
-    ];
-    return !dangerousPatterns.some(pattern => pattern.test(val));
-  },
-  { message: 'String contains potentially malicious content' }
-);
+// Sanitized string schema using DOMPurify (XSS prevention)
+// Strips ALL HTML tags, entities, and malicious content
+const sanitizedString = z.string().transform((val) => {
+  // Remove all HTML tags and entities, keeping only text content
+  return DOMPurify.sanitize(val, {
+    ALLOWED_TAGS: [],      // No HTML allowed
+    ALLOWED_ATTR: [],      // No attributes allowed
+    KEEP_CONTENT: true,    // Keep text content
+  });
+});
 
-// URL schema with additional validation
+// URL schema with DOMPurify sanitization and protocol validation
 const sanitizedUrl = z.string().url().refine(
   (val) => {
     // Only allow http/https protocols
-    return val.startsWith('http://') || val.startsWith('https://');
+    if (!val.startsWith('http://') && !val.startsWith('https://')) {
+      return false;
+    }
+
+    // Sanitize and check if URL is still valid
+    const sanitized = DOMPurify.sanitize(val, { ALLOWED_TAGS: [] });
+    try {
+      new URL(sanitized);
+      return true;
+    } catch {
+      return false;
+    }
   },
-  { message: 'URL must use http or https protocol' }
+  { message: 'URL must use http or https protocol and cannot contain malicious content' }
 );
 
 export const ContentArchitectureSchema = z.object({

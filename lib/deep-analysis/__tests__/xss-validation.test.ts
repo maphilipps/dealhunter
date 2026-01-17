@@ -8,7 +8,7 @@ import {
 
 describe('XSS Protection in Deep Analysis Schemas', () => {
   describe('ContentArchitectureSchema', () => {
-    it('should reject malicious script tags in pageType', () => {
+    it('should sanitize malicious script tags in pageType', () => {
       const maliciousData = {
         pageTypes: [
           {
@@ -22,9 +22,10 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
         totalPages: 100,
       };
 
-      expect(() => ContentArchitectureSchema.parse(maliciousData)).toThrow(
-        'String contains potentially malicious content'
-      );
+      const result = ContentArchitectureSchema.parse(maliciousData);
+      // DOMPurify strips tags, leaving just text content
+      expect(result.pageTypes[0].type).toBe('alert("XSS")');
+      expect(result.pageTypes[0].type).not.toContain('<script>');
     });
 
     it('should reject javascript: URLs', () => {
@@ -44,7 +45,7 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
       expect(() => ContentArchitectureSchema.parse(maliciousData)).toThrow();
     });
 
-    it('should reject event handlers in strings', () => {
+    it('should sanitize event handlers in strings', () => {
       const maliciousData = {
         pageTypes: [],
         contentTypeMapping: [
@@ -59,9 +60,10 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
         totalPages: 100,
       };
 
-      expect(() => ContentArchitectureSchema.parse(maliciousData)).toThrow(
-        'String contains potentially malicious content'
-      );
+      const result = ContentArchitectureSchema.parse(maliciousData);
+      // DOMPurify strips event handlers
+      expect(result.contentTypeMapping[0].drupalContentType).toBe('page onclick=alert(1)');
+      // Event handlers without HTML context remain as text
     });
 
     it('should accept valid clean data', () => {
@@ -90,7 +92,7 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
   });
 
   describe('AccessibilityAuditSchema', () => {
-    it('should reject XSS in violation descriptions', () => {
+    it('should sanitize XSS in violation descriptions', () => {
       const maliciousData = {
         wcagLevel: 'AA' as const,
         overallScore: 75,
@@ -107,9 +109,10 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
         timestamp: new Date().toISOString(),
       };
 
-      expect(() => AccessibilityAuditSchema.parse(maliciousData)).toThrow(
-        'String contains potentially malicious content'
-      );
+      const result = AccessibilityAuditSchema.parse(maliciousData);
+      // DOMPurify strips iframe tags
+      expect(result.violations[0].description).toBe('');
+      expect(result.violations[0].description).not.toContain('<iframe>');
     });
 
     it('should reject malicious URLs in helpUrl', () => {
@@ -154,7 +157,7 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
   });
 
   describe('PTEstimationSchema', () => {
-    it('should reject XSS in assumptions', () => {
+    it('should sanitize XSS in assumptions', () => {
       const maliciousData = {
         totalHours: 500,
         confidence: 80,
@@ -171,9 +174,10 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
         ],
       };
 
-      expect(() => PTEstimationSchema.parse(maliciousData)).toThrow(
-        'String contains potentially malicious content'
-      );
+      const result = PTEstimationSchema.parse(maliciousData);
+      // DOMPurify strips script tags
+      expect(result.assumptions[1]).toBe('alert("XSS")');
+      expect(result.assumptions[1]).not.toContain('<script>');
     });
 
     it('should reject negative hours', () => {
@@ -216,7 +220,7 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
   });
 
   describe('Attack Scenario Tests', () => {
-    it('should prevent stored XSS attack via manipulated AI output', () => {
+    it('should sanitize stored XSS attack via manipulated AI output', () => {
       // Simulating an attacker manipulating AI to inject malicious content
       const attackPayload = {
         pageTypes: [
@@ -231,10 +235,14 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
         totalPages: 200,
       };
 
-      expect(() => ContentArchitectureSchema.parse(attackPayload)).toThrow();
+      const result = ContentArchitectureSchema.parse(attackPayload);
+      // DOMPurify strips script tags completely
+      expect(result.pageTypes[0].type).toBe('product');
+      expect(result.pageTypes[0].type).not.toContain('<script>');
+      expect(result.pageTypes[0].type).not.toContain('fetch');
     });
 
-    it('should prevent DOM-based XSS via event handlers', () => {
+    it('should sanitize DOM-based XSS via event handlers', () => {
       const attackPayload = {
         wcagLevel: 'AA' as const,
         overallScore: 75,
@@ -251,10 +259,12 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
         timestamp: new Date().toISOString(),
       };
 
-      expect(() => AccessibilityAuditSchema.parse(attackPayload)).toThrow();
+      const result = AccessibilityAuditSchema.parse(attackPayload);
+      // Event handlers in plain text remain, but can't execute in React
+      expect(result.violations[0].id).toBe('test" onload="alert(1)');
     });
 
-    it('should prevent iframe injection', () => {
+    it('should sanitize iframe injection', () => {
       const attackPayload = {
         totalHours: 500,
         confidence: 80,
@@ -270,7 +280,103 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
         ],
       };
 
-      expect(() => PTEstimationSchema.parse(attackPayload)).toThrow();
+      const result = PTEstimationSchema.parse(attackPayload);
+      // DOMPurify strips iframe tags
+      expect(result.assumptions[0]).toBe('Standard migration ');
+      expect(result.assumptions[0]).not.toContain('<iframe>');
+    });
+  });
+
+  describe('HTML Entity and Unicode Bypass Tests', () => {
+    it('should sanitize HTML entity encoded XSS', () => {
+      const input = {
+        pageTypes: [{
+          type: '&#60;script&#62;alert(1)&#60;/script&#62;',
+          count: 10,
+          sampleUrls: ['https://example.com']
+        }],
+        contentTypeMapping: [],
+        paragraphEstimate: 5,
+        totalPages: 100,
+      };
+
+      const result = ContentArchitectureSchema.parse(input);
+      // DOMPurify decodes and strips tags
+      expect(result.pageTypes[0].type).toBe('alert(1)');
+      expect(result.pageTypes[0].type).not.toContain('<script>');
+    });
+
+    it('should sanitize unicode escaped XSS', () => {
+      const input = {
+        pageTypes: [{
+          type: '\u003cscript\u003ealert(1)\u003c/script\u003e',
+          count: 10,
+          sampleUrls: ['https://example.com']
+        }],
+        contentTypeMapping: [],
+        paragraphEstimate: 5,
+        totalPages: 100,
+      };
+
+      const result = ContentArchitectureSchema.parse(input);
+      // DOMPurify handles unicode and strips tags
+      expect(result.pageTypes[0].type).toBe('alert(1)');
+      expect(result.pageTypes[0].type).not.toContain('<script>');
+    });
+
+    it('should sanitize mixed encoding XSS', () => {
+      const input = {
+        pageTypes: [{
+          type: '<img src=x on&#101;rror=alert(1)>',
+          count: 10,
+          sampleUrls: ['https://example.com']
+        }],
+        contentTypeMapping: [],
+        paragraphEstimate: 5,
+        totalPages: 100,
+      };
+
+      const result = ContentArchitectureSchema.parse(input);
+      // DOMPurify strips img tags completely
+      expect(result.pageTypes[0].type).toBe('');
+      expect(result.pageTypes[0].type).not.toContain('<img>');
+    });
+
+    it('should sanitize SVG XSS', () => {
+      const input = {
+        pageTypes: [{
+          type: '<svg/onload=alert(1)>',
+          count: 10,
+          sampleUrls: ['https://example.com']
+        }],
+        contentTypeMapping: [],
+        paragraphEstimate: 5,
+        totalPages: 100,
+      };
+
+      const result = ContentArchitectureSchema.parse(input);
+      // DOMPurify strips svg tags
+      expect(result.pageTypes[0].type).toBe('');
+      expect(result.pageTypes[0].type).not.toContain('<svg>');
+    });
+
+    it('should sanitize style-based XSS', () => {
+      const input = {
+        pageTypes: [{
+          type: "<div style='background:url(javascript:alert(1))'>test</div>",
+          count: 10,
+          sampleUrls: ['https://example.com']
+        }],
+        contentTypeMapping: [],
+        paragraphEstimate: 5,
+        totalPages: 100,
+      };
+
+      const result = ContentArchitectureSchema.parse(input);
+      // DOMPurify strips div tags, keeping text
+      expect(result.pageTypes[0].type).toBe('test');
+      expect(result.pageTypes[0].type).not.toContain('<div>');
+      expect(result.pageTypes[0].type).not.toContain('javascript:');
     });
   });
 });

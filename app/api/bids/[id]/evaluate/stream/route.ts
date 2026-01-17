@@ -58,6 +58,9 @@ export async function GET(
     const stream = createAgentEventStream(async (emit) => {
       emit({ type: AgentEventType.START });
 
+      // Capture version for optimistic locking
+      const currentVersion = bid.version;
+
       // Run evaluation with streaming callbacks
       const result = await runBitEvaluationWithStreaming(
         {
@@ -85,16 +88,25 @@ export async function GET(
         },
       });
 
-      // Update database with result
-      await db
+      // Update database with result using optimistic locking
+      const updated = await db
         .update(bidOpportunities)
         .set({
           bitEvaluation: JSON.stringify(result),
           bitDecision: result.decision.decision,
           status: 'bit_decided',
+          version: currentVersion + 1,
           updatedAt: new Date(),
         })
-        .where(eq(bidOpportunities.id, id));
+        .where(and(eq(bidOpportunities.id, id), eq(bidOpportunities.version, currentVersion)))
+        .returning();
+
+      // Check if update succeeded (version conflict detection)
+      if (!updated || updated.length === 0) {
+        throw new Error(
+          'Bid was modified during evaluation. The evaluation has completed, but the results could not be saved due to concurrent changes. Please refresh the page and try again.'
+        );
+      }
     });
 
     return createSSEResponse(stream);

@@ -1,7 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   ContentArchitectureSchema,
-  MigrationComplexitySchema,
   AccessibilityAuditSchema,
   PTEstimationSchema,
 } from '../schemas';

@@ -9,6 +9,31 @@ export default auth((req) => {
   const publicRoutes = ['/', '/login', '/register'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
+  /**
+   * API Route Exemptions (with signature verification)
+   *
+   * These routes are exempt from middleware auth but have their own security:
+   * - /api/inngest: Inngest signing key verification (INNGEST_SIGNING_KEY)
+   * - /api/slack: Slack signing secret verification (SLACK_SIGNING_SECRET)
+   * - /api/submit: Public form submission with bot protection (BotID)
+   * - /api/auth/*: NextAuth.js handles its own authentication
+   *
+   * Security Model:
+   * - User access control happens at trigger endpoints (e.g., /api/bids/[id]/deep-analysis/trigger)
+   * - Webhook endpoints validate signatures to ensure requests come from trusted services
+   * - This implements "defense in depth" where multiple layers validate security
+   */
+  const apiExemptions = [
+    '/api/inngest',
+    '/api/slack',
+    '/api/submit',
+    '/api/auth',
+  ];
+
+  if (apiExemptions.some(route => pathname.startsWith(route))) {
+    return NextResponse.next();
+  }
+
   // Allow public routes
   if (isPublicRoute) {
     // Redirect to dashboard if already authenticated
@@ -41,7 +66,20 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
+  matcher: [
+    // Protect all pages except static assets
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+    /**
+     * Explicitly protect ALL API routes
+     *
+     * This ensures all API routes pass through middleware authentication.
+     * Specific routes with external signature verification (Inngest, Slack)
+     * are exempted in the middleware function above.
+     *
+     * Without this matcher, API routes would bypass middleware entirely.
+     */
+    '/api/:path*'
+  ]
 };
 
 // Force Node.js runtime for middleware (required for better-sqlite3)

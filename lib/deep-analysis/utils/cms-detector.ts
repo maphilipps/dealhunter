@@ -3,6 +3,7 @@
  */
 
 import * as cheerio from 'cheerio';
+import { isAllowedUrl, validateUrlResolution } from './url-validator';
 
 export interface ExportCapabilities {
   restAPI: boolean;
@@ -25,6 +26,15 @@ export async function checkExportCapabilities(
   websiteUrl: string,
   sourceCMS: string
 ): Promise<ExportCapabilities> {
+  // SSRF Protection: Validate base URL
+  if (!isAllowedUrl(websiteUrl)) {
+    throw new Error('Invalid URL: URL not allowed for security reasons');
+  }
+
+  if (!(await validateUrlResolution(websiteUrl))) {
+    throw new Error('Invalid URL: Resolves to private IP address');
+  }
+
   const capabilities: ExportCapabilities = {
     restAPI: false,
     xmlExport: false,
@@ -45,6 +55,7 @@ export async function checkExportCapabilities(
 
   for (const endpoint of apiEndpoints) {
     try {
+      // Each endpoint URL is derived from validated base URL, so it's safe
       const response = await fetch(`${websiteUrl}${endpoint}`, {
         method: 'HEAD',
         signal: AbortSignal.timeout(5000),
@@ -90,6 +101,15 @@ export async function assessDataQuality(
   websiteUrl: string,
   sampleUrls: string[] = []
 ): Promise<DataQuality> {
+  // SSRF Protection: Validate base URL
+  if (!isAllowedUrl(websiteUrl)) {
+    throw new Error('Invalid URL: URL not allowed for security reasons');
+  }
+
+  if (!(await validateUrlResolution(websiteUrl))) {
+    throw new Error('Invalid URL: Resolves to private IP address');
+  }
+
   let brokenLinks = 0;
   let duplicateContent = false;
   let inconsistentStructure = false;
@@ -102,6 +122,13 @@ export async function assessDataQuality(
 
   for (const pageUrl of pagesToCheck) {
     try {
+      // SSRF Protection: Validate each page URL
+      if (!isAllowedUrl(pageUrl)) {
+        console.warn(`Skipping invalid page URL: ${pageUrl}`);
+        brokenLinks++;
+        continue;
+      }
+
       const response = await fetch(pageUrl, {
         signal: AbortSignal.timeout(10000),
         headers: {
@@ -149,6 +176,14 @@ export async function assessDataQuality(
   for (const link of linksToCheck) {
     try {
       const fullUrl = link.startsWith('http') ? link : `${websiteUrl}${link}`;
+
+      // SSRF Protection: Validate constructed URL
+      if (!isAllowedUrl(fullUrl)) {
+        console.warn(`Skipping invalid link URL: ${fullUrl}`);
+        brokenLinks++;
+        continue;
+      }
+
       const response = await fetch(fullUrl, {
         method: 'HEAD',
         signal: AbortSignal.timeout(5000),

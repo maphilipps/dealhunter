@@ -227,11 +227,20 @@ export async function startExtraction(bidId: string) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 
-    // Update status to extracting
-    await db
+    // Update status to extracting with optimistic locking
+    const updated = await db
       .update(bidOpportunities)
-      .set({ status: 'extracting' })
-      .where(eq(bidOpportunities.id, bidId));
+      .set({
+        status: 'extracting',
+        version: bid.version + 1,
+        updatedAt: new Date()
+      })
+      .where(and(eq(bidOpportunities.id, bidId), eq(bidOpportunities.version, bid.version)))
+      .returning();
+
+    if (!updated || updated.length === 0) {
+      return { success: false, error: 'Bid wurde während der Bearbeitung geändert. Bitte aktualisieren Sie die Seite.' };
+    }
 
     // Run extraction
     const metadata = bid.metadata ? JSON.parse(bid.metadata) : {};

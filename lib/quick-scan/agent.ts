@@ -12,6 +12,7 @@ import {
 } from './schema';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
+import { validateUrlForFetch } from '@/lib/utils/url-validation';
 
 export interface QuickScanInput {
   websiteUrl: string;
@@ -56,19 +57,15 @@ export async function runQuickScan(input: QuickScanInput): Promise<QuickScanResu
       throw new Error('Failed to fetch website content');
     }
 
-    // Step 2: Detect Tech Stack
-    logActivity('Analyzing tech stack');
-    const techStack = await detectTechStack(htmlContent, input.websiteUrl);
+    // Step 2-4: Run independent analyses in parallel
+    logActivity('Running parallel analysis: tech stack, content volume, and features');
+    const [techStack, contentVolume, features] = await Promise.all([
+      detectTechStack(htmlContent, input.websiteUrl),
+      analyzeContentVolume(htmlContent),
+      detectFeatures(htmlContent),
+    ]);
 
-    // Step 3: Analyze Content Volume
-    logActivity('Analyzing content volume');
-    const contentVolume = await analyzeContentVolume(htmlContent);
-
-    // Step 4: Detect Features
-    logActivity('Detecting features and integrations');
-    const features = await detectFeatures(htmlContent);
-
-    // Step 5: Generate BL Recommendation
+    // Step 5: Generate BL Recommendation (depends on previous results)
     logActivity('Generating business line recommendation');
     const blRecommendation = await recommendBusinessLine({
       techStack,
@@ -94,11 +91,16 @@ export async function runQuickScan(input: QuickScanInput): Promise<QuickScanResu
 
 /**
  * Fetch website content (HTML)
+ * Protected against SSRF attacks via URL validation
  */
 async function fetchWebsiteContent(url: string): Promise<string | null> {
   try {
     // Ensure URL has protocol
     const fullUrl = url.startsWith('http') ? url : `https://${url}`;
+
+    // Validate URL to prevent SSRF attacks
+    // Blocks localhost, private IPs (RFC 1918), and link-local addresses
+    validateUrlForFetch(fullUrl);
 
     const response = await fetch(fullUrl, {
       headers: {
@@ -349,40 +351,22 @@ export async function runQuickScanWithStreaming(
       throw new Error('Failed to fetch website content');
     }
 
-    // Step 2: Detect Tech Stack
+    // Step 2-4: Run independent analyses in parallel
     emit({
       type: AgentEventType.AGENT_PROGRESS,
       data: {
         agent: 'Quick Scan',
-        message: 'Analyzing tech stack...',
+        message: 'Running parallel analysis: tech stack, content volume, and features...',
       },
     });
-    logActivity('Analyzing tech stack');
-    const techStack = await detectTechStack(htmlContent, input.websiteUrl);
+    logActivity('Running parallel analysis: tech stack, content volume, and features');
+    const [techStack, contentVolume, features] = await Promise.all([
+      detectTechStack(htmlContent, input.websiteUrl),
+      analyzeContentVolume(htmlContent),
+      detectFeatures(htmlContent),
+    ]);
 
-    // Step 3: Analyze Content Volume
-    emit({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: 'Quick Scan',
-        message: 'Analyzing content volume...',
-      },
-    });
-    logActivity('Analyzing content volume');
-    const contentVolume = await analyzeContentVolume(htmlContent);
-
-    // Step 4: Detect Features
-    emit({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: 'Quick Scan',
-        message: 'Detecting features and integrations...',
-      },
-    });
-    logActivity('Detecting features and integrations');
-    const features = await detectFeatures(htmlContent);
-
-    // Step 5: Generate BL Recommendation
+    // Step 5: Generate BL Recommendation (depends on previous results)
     emit({
       type: AgentEventType.AGENT_PROGRESS,
       data: {

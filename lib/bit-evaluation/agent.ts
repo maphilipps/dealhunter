@@ -6,6 +6,10 @@ import {
   type BitEvaluationResult,
   type BitDecision,
   type AlternativeRec,
+  type CapabilityMatch,
+  type DealQuality,
+  type StrategicFit,
+  type CompetitionCheck,
 } from './schema';
 import { runCapabilityAgent } from './agents/capability-agent';
 import { runDealQualityAgent } from './agents/deal-quality-agent';
@@ -47,7 +51,12 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
 
     // Run all four agents in parallel
     logActivity('Running parallel agent evaluation');
-    const [capabilityMatch, dealQuality, strategicFit, competitionCheck] = await Promise.all([
+    const [capabilityMatch, dealQuality, strategicFit, competitionCheck]: [
+      CapabilityMatch,
+      DealQuality,
+      StrategicFit,
+      CompetitionCheck
+    ] = await Promise.all([
       runCapabilityAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
@@ -322,7 +331,12 @@ export async function runBitEvaluationWithStreaming(
       },
     });
 
-    const agentPromises = [
+    const agentPromises: [
+      Promise<CapabilityMatch>,
+      Promise<DealQuality>,
+      Promise<StrategicFit>,
+      Promise<CompetitionCheck>
+    ] = [
       runCapabilityAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
@@ -381,8 +395,12 @@ export async function runBitEvaluationWithStreaming(
       }),
     ];
 
-    const [capabilityMatch, dealQuality, strategicFit, competitionCheck] =
-      await Promise.all(agentPromises);
+    const [capabilityMatch, dealQuality, strategicFit, competitionCheck]: [
+      CapabilityMatch,
+      DealQuality,
+      StrategicFit,
+      CompetitionCheck
+    ] = await Promise.all(agentPromises);
 
     emit({
       type: AgentEventType.AGENT_PROGRESS,

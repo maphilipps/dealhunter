@@ -58,7 +58,7 @@ export async function GET(
       // Run quick scan with streaming callbacks
       const result = await runQuickScanWithStreaming(
         {
-          websiteUrl: bid.websiteUrl,
+          websiteUrl: bid.websiteUrl!, // Already checked for null above
           extractedRequirements: bid.extractedRequirements,
         },
         emit

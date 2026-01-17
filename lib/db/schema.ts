@@ -36,14 +36,15 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
   // Status
   status: text('status', {
     enum: [
-      'draft',           // Initial state after upload
-      'extracting',      // AI is extracting requirements
-      'reviewing',       // User is reviewing extracted data
-      'quick_scanning',  // AI is doing quick scan
-      'evaluating',      // AI is doing full bit/no bit evaluation
-      'bit_decided',     // Decision made
-      'routed',          // Routed to BL
-      'team_assigned'    // Team assigned
+      'draft',            // Initial state after upload
+      'extracting',       // AI is extracting requirements
+      'reviewing',        // User is reviewing extracted data
+      'quick_scanning',   // AI is doing quick scan
+      'evaluating',       // AI is doing full bit/no bit evaluation
+      'bit_decided',      // Decision made
+      'routed',           // Routed to BL
+      'team_assigned',    // Team assigned
+      'analysis_complete' // Deep migration analysis complete
     ]
   })
     .notNull()
@@ -69,6 +70,13 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
   // Team
   assignedTeam: text('assigned_team'), // JSON
   teamNotifiedAt: integer('team_notified_at', { mode: 'timestamp' }),
+
+  // Website URL (for analysis)
+  websiteUrl: text('website_url'),
+
+  // Analysis Results (TODO: move to separate tables)
+  quickScanResults: text('quick_scan_results'), // JSON
+  bitEvaluation: text('bit_evaluation'), // JSON
 
   // Company Analysis Links
   quickScanId: text('quick_scan_id'),
@@ -333,3 +341,42 @@ export const quickScans = sqliteTable('quick_scans', {
 
 export type QuickScan = typeof quickScans.$inferSelect;
 export type NewQuickScan = typeof quickScans.$inferInsert;
+
+export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  bidOpportunityId: text('bid_opportunity_id')
+    .notNull()
+    .references(() => bidOpportunities.id),
+
+  // Job Tracking
+  jobId: text('job_id').notNull(), // Inngest run ID
+  status: text('status', {
+    enum: ['pending', 'running', 'completed', 'failed', 'cancelled']
+  }).notNull(),
+  startedAt: integer('started_at', { mode: 'timestamp' }),
+  completedAt: integer('completed_at', { mode: 'timestamp' }),
+  errorMessage: text('error_message'),
+
+  // Input Context
+  sourceCMS: text('source_cms'), // WordPress, Drupal, Typo3, Custom
+  targetCMS: text('target_cms'), // Drupal, Magnolia, Ibexa
+  websiteUrl: text('website_url').notNull(),
+
+  // Results (JSON columns)
+  contentArchitecture: text('content_architecture'), // JSON stringified
+  migrationComplexity: text('migration_complexity'), // JSON stringified
+  accessibilityAudit: text('accessibility_audit'), // JSON stringified
+  ptEstimation: text('pt_estimation'), // JSON stringified
+
+  // Metadata
+  version: integer('version').notNull().default(1), // For re-runs
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+});
+
+export type DeepMigrationAnalysis = typeof deepMigrationAnalyses.$inferSelect;
+export type NewDeepMigrationAnalysis = typeof deepMigrationAnalyses.$inferInsert;

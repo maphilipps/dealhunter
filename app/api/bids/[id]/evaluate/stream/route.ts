@@ -63,7 +63,7 @@ export async function GET(
         {
           bidId: bid.id,
           extractedRequirements: bid.extractedRequirements,
-          quickScanResults: bid.quickScanResults,
+          // quickScanResults is in separate quickScans table, not on bid object
         },
         emit
       );
@@ -75,7 +75,7 @@ export async function GET(
           decision: result.decision.decision === 'bit' ? 'BIT' : 'NO_BIT',
           overallScore: result.decision.scores.overall,
           confidence: result.decision.overallConfidence,
-          reasoning: result.decision.executiveSummary,
+          reasoning: result.decision.reasoning,
           scores: {
             capability: result.decision.scores.capability,
             dealQuality: result.decision.scores.dealQuality,
@@ -89,9 +89,10 @@ export async function GET(
       await db
         .update(bidOpportunities)
         .set({
-          bitEvaluation: result,
+          bitEvaluation: JSON.stringify(result),
+          bitDecision: result.decision.decision,
           status: 'bit_decided',
-          updatedAt: new Date().toISOString(),
+          updatedAt: new Date(),
         })
         .where(eq(bidOpportunities.id, id));
     });

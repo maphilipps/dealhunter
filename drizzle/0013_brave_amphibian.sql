@@ -1,0 +1,23 @@
+CREATE TABLE `deep_migration_analyses` (
+	`id` text PRIMARY KEY NOT NULL,
+	`bid_opportunity_id` text NOT NULL,
+	`job_id` text NOT NULL,
+	`status` text NOT NULL,
+	`started_at` integer,
+	`completed_at` integer,
+	`error_message` text,
+	`source_cms` text,
+	`target_cms` text,
+	`website_url` text NOT NULL,
+	`content_architecture` text,
+	`migration_complexity` text,
+	`accessibility_audit` text,
+	`pt_estimation` text,
+	`version` integer DEFAULT 1 NOT NULL,
+	`created_at` integer,
+	`updated_at` integer,
+	FOREIGN KEY (`bid_opportunity_id`) REFERENCES `bid_opportunities`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+ALTER TABLE `users` ADD `business_line_id` text REFERENCES business_lines(id);--> statement-breakpoint
+ALTER TABLE `users` ADD `deleted_at` integer;

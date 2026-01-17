@@ -116,16 +116,16 @@ const allNavItems: Array<{
     roles: ['admin'],
     items: [
       {
-        title: "Users",
-        url: "/admin/users",
+        title: "Business Lines",
+        url: "/admin/business-lines",
       },
       {
-        title: "Teams",
-        url: "/admin/teams",
+        title: "Technologies",
+        url: "/admin/technologies",
       },
       {
-        title: "Settings",
-        url: "/admin/settings",
+        title: "Employees",
+        url: "/admin/employees",
       },
     ],
   },
@@ -144,8 +144,8 @@ const allProjects: Array<{
     roles: ['bd', 'bl', 'admin'],
   },
   {
-    name: "Team Overview",
-    url: "/admin/teams",
+    name: "Employees",
+    url: "/admin/employees",
     icon: Users,
     roles: ['admin'],
   },

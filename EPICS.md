@@ -607,7 +607,7 @@ Diese Features sind NICHT im MVP enthalten:
 | 2 | Admin Panel & Master Data | 🔴 Kritisch | ✅ COMPLETE |
 | 3 | Smart Upload & AI-Extraktion | 🔴 Kritisch | ✅ COMPLETE |
 | 4 | Quick Scan | 🟡 Hoch | ✅ COMPLETE |
-| 5 | Bit/No Bit Evaluation | 🔴 Kritisch | ✅ COMPLETE |
+| 5 | Bit/No Bit Evaluation | 🔴 **PRIO JETZT** | ⚠️ 70% - 2 Agents fehlen |
 | 5a | Agent Transparency UI (NEU) | 🔴 Kritisch | ✅ COMPLETE |
 | 6 | BL-Routing | 🟡 Hoch | ✅ COMPLETE |
 | 7 | Deep Migration Analysis | 🟡 Hoch | - |
@@ -619,6 +619,101 @@ Diese Features sind NICHT im MVP enthalten:
 | 13 | Account Management | 🟢 Mittel | - |
 | 14 | MCP Tool Layer (NEU) | 🔴 Kritisch | - |
 | 15 | Agent Context System (NEU) | 🔴 Kritisch | - |
+
+### ⚡ PRIORITÄT: Epic 5 vervollständigen
+
+Epic 5 fehlen noch 2 Agents (Legal, Reference). Details siehe unten.
+
+---
+
+### Epic 2 Gaps (RESOLVED - 2026-01-17)
+
+**Status: ✅ COMPLETE** - Backend und UI vollständig implementiert
+
+| Feature | Backend | UI | Status |
+|---------|---------|-----|--------|
+| Business Lines CRUD | ✅ `lib/admin/business-lines-actions.ts` | ✅ `/admin/business-lines` | ✅ DONE |
+| Technologies CRUD | ✅ `lib/admin/technologies-actions.ts` | ✅ `/admin/technologies` | ✅ DONE |
+| Employees CRUD | ✅ `lib/admin/employees-actions.ts` | ✅ `/admin/employees` | ✅ DONE |
+| Employee CSV Import | ✅ In actions vorhanden | ⏸️ Später | Optional |
+| Users CRUD | ✅ Actions | ✅ `/admin/users` | ✅ DONE |
+| Baseline Config | ✅ In technologies | ✅ Wird mit Tech | ✅ DONE |
+
+**Implementierte Pages:**
+- `/app/(dashboard)/admin/business-lines/page.tsx` - List & Delete
+- `/app/(dashboard)/admin/business-lines/new/page.tsx` - Create Form
+- `/app/(dashboard)/admin/technologies/page.tsx` - List & Delete
+- `/app/(dashboard)/admin/technologies/new/page.tsx` - Create Form
+- `/app/(dashboard)/admin/employees/page.tsx` - List & Delete
+- `/app/(dashboard)/admin/employees/new/page.tsx` - Create Form
+
+**Navigation:** Sidebar Admin-Menü aktualisiert mit Links zu allen Admin-Seiten.
+
+#### 🤖 AI-Autofill für Master Data (NEU)
+
+**Idee:** Wenn ein Admin eine neue Technologie anlegt (z.B. "Drupal"), kann ein **Technology Research Agent** automatisch Basisdaten vorschlagen:
+
+| Feld | AI-Autofill | Quelle |
+|------|-------------|--------|
+| `baselineHours` | ~693h für Drupal Standard | Erfahrungswerte + Web Research |
+| `baselineContentTypes` | 12-15 für typische Corporate Site | Pattern-Matching |
+| `baselineParagraphs` | 20-30 Module | Best Practices |
+| `migrationComplexity` | medium/high | Abhängig von Source-CMS |
+| `features` | Forms, Multilingual, Media Library | Feature-Detection |
+
+**Neuer Agent: `TechnologyResearchAgent`**
+
+Recherchiert CMS-spezifische Baselines und schätzt Migrationsaufwände automatisch. Nutzt Web-Recherche und interne Erfahrungswerte.
+
+**UI-Flow:**
+1. Admin gibt "Drupal" als Name ein
+2. Button "🤖 AI Vorschläge laden" erscheint
+3. Agent recherchiert und befüllt Formular
+4. Admin reviewt und passt an
+5. Speichern mit AI-generierten Defaults
+
+**Analoges Muster für Employees:**
+- Bei Skill-Eingabe: AI schlägt verwandte Skills vor
+- Bei Rollen-Zuweisung: AI empfiehlt typische Skill-Kombinationen
+
+---
+
+### Epic 5 Gaps (OFFEN - Prio 2026-01-17)
+
+**Status: ⚠️ 70% vollständig** - 4 von 6 Agents implementiert
+
+| Spec Agent | Implementiert als | Status |
+|------------|-------------------|--------|
+| BIT-001: Tech Agent | ✅ Capability Match Agent | ✅ DONE |
+| BIT-002: Legal Agent | ❌ NICHT VORHANDEN | **TODO** |
+| BIT-003: Commercial Agent | ✅ Deal Quality Agent | ✅ DONE |
+| BIT-004: Competition Agent | ✅ Competition Check Agent | ✅ DONE |
+| BIT-005: Reference Agent | ❌ NICHT VORHANDEN | **TODO** |
+| BIT-006: Coordinator Agent | ✅ BIT Evaluation Coordinator | ✅ DONE |
+
+**Fehlende Agents:**
+
+#### Legal Agent (BIT-002)
+- **Weight:** 15% der Gesamtbewertung
+- **Prüft:** Vertragstyp (Festpreis/T&M/Rahmenvertrag), Zahlungsrisiken, Haftungsklauseln, IP/Lizenzen, Compliance (DSGVO, Barrierefreiheit), Exit-Klauseln
+- **Output:** Legal Risk Score, Contract Type, Red Flags, Recommendations
+
+#### Reference Agent (BIT-005)
+- **Weight:** 10% der Gesamtbewertung
+- **Tasks:** Ähnliche Projekte finden, Branchen-Match, Technologie-Match, Budget-Größen-Match, Erfolgsquote analysieren
+- **Output:** Matched References, Match Score, Missing Capabilities, Suggested Case Studies
+
+**Agent-Weights nach Vervollständigung:**
+| Agent | Aktuell | Nach Fix |
+|-------|---------|----------|
+| Capability Match | 30% | 25% |
+| Deal Quality | 25% | 20% |
+| Strategic Fit | 20% | 15% |
+| Competition Check | 25% | 15% |
+| Legal Check | - | **15%** |
+| Reference Match | - | **10%** |
+
+---
 
 ### Epic 1 Gaps (resolved 2026-01-16)
 
@@ -706,5 +801,8 @@ Siehe `todos/001-pending-p1-sse-authentication-missing.md` through `todos/010-pe
 
 ---
 
-**Letztes Update:** 2026-01-17
+**Letztes Update:** 2026-01-17 (Epic-Review durchgeführt)
 **Quelle:** Spec.md + Francesco Raaphorst Interview + Agent-Native Review + SpecFlow Analysis + Multi-Agent Code Review
+
+**Änderungshistorie:**
+- 2026-01-17: Epic 2 & 5 Status korrigiert (waren fälschlich als COMPLETE markiert), AI-Autofill Konzept hinzugefügt

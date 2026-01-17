@@ -6,6 +6,7 @@
 |---------|-------------|-----------------|
 | **Framework** | Next.js | 16 (App Router) |
 | **UI Library** | ShadCN UI | Vollständig |
+| **AI-Generated UI** | json-render | @json-render/core, @json-render/react |
 | **Styling** | Tailwind CSS | v4 |
 | **Charts** | Recharts | via ShadCN chart |
 | **AI SDK** | Vercel AI SDK | ai, @ai-sdk/react, @ai-sdk/anthropic |
@@ -396,6 +397,7 @@ Attachment: Projekt-Summary.pdf
 | ANAL-003 | Time to Decision | Durchschnittliche Entscheidungszeit |
 | ANAL-004 | Per BL Stats | Verteilung nach Bereichsleiter |
 | ANAL-005 | Source Distribution | Reactive vs Proactive |
+| ANAL-006 | AI-Generated Widgets | User kann Custom Dashboards aus Natural Language generieren (json-render) |
 
 ### ShadCN Charts
 | Metrik | Chart Type |
@@ -404,6 +406,30 @@ Attachment: Projekt-Summary.pdf
 | Pipeline Funnel | `chart-bar-horizontal` |
 | Opportunities by BL | `chart-bar-stacked` |
 | Time to Decision | `chart-line-default` |
+
+### AI-Generated Dashboards (json-render)
+
+**Technologie:** `@json-render/core` + `@json-render/react`
+
+User können Custom Analytics Widgets aus Natural Language generieren:
+
+```typescript
+// User Prompt: "Show me BIT rate by business line this quarter"
+// → AI generiert JSON → Rendert als ShadCN Components
+
+// Features:
+// - Guardrails: Nur definierte Components (Card, Metric, Chart, Table)
+// - Streaming: Progressive Rendering während AI generiert
+// - Data Binding: Automatische Verknüpfung mit BID-Daten
+// - Export: Standalone React Code ohne Runtime Dependencies
+```
+
+**Use Cases:**
+- Custom BL-Performance Dashboards
+- Ad-hoc Report Generation
+- Agent Output Visualization (TECH, COMMERCIAL, RISK)
+
+Siehe `.claude/skills/json-render-integration.md` für Implementation.
 
 ---
 

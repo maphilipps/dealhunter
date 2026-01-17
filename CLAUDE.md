@@ -7,6 +7,7 @@ AI-gestützte BD-Entscheidungsplattform für adesso SE. Workflow-driven mit AI A
 - **Framework:** Next.js 16 (App Router)
 - **UI System:** ShadCN UI (Sidebar, Charts, Tables, Forms)
 - **AI Elements:** Vercel AI SDK Elements (Conversation, Message, Reasoning)
+- **AI-Generated UI:** json-render (guardrailed UI generation)
 - **AI Agents:** Vercel AI SDK v5 (streamText, generateObject, tools)
 - **Database:** Drizzle ORM (SQLite)
 - **Styling:** Tailwind CSS v4
@@ -82,6 +83,33 @@ nextjs_call(port: '3000', toolName: 'get_errors')
 // Routes inspizieren
 nextjs_call(port: '3000', toolName: 'get_routes')
 ```
+
+## Verfügbare Claude Code Skills
+
+### JSON Render Integration (`/json-render-integration`)
+
+Für AI-generierte UI-Komponenten mit Guardrails:
+
+```typescript
+// Workflow: Catalog → AI → JSON → React Components
+// Use Cases:
+// - User-generierte Dashboard Widgets aus Natural Language
+// - Agent Output Visualisierung (TECH, COMMERCIAL, RISK Agents)
+// - Dynamic Reports und Custom Analytics Views
+
+// Features:
+// - Guardrails: AI kann nur definierte Komponenten nutzen
+// - Streaming: Progressive Rendering während AI generiert
+// - ShadCN Integration: Mapping auf vorhandene UI-Komponenten
+// - Data Binding: JSON Pointer Paths (/path/to/value)
+```
+
+**Integration Points:**
+- **Analytics Dashboard** - User-generierte Custom Widgets
+- **Agent Results** - Strukturierte Visualisierung von Agent Outputs
+- **Dynamic Reports** - AI-generierte Compliance & Risk Reports
+
+Siehe `.claude/skills/json-render-integration.md` für vollständige Implementierungsanleitung.
 
 ## Workflow-Driven Architecture
 

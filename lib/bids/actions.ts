@@ -400,6 +400,146 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
 }
 
 /**
+ * Upload bid with combined inputs (PDF + Website URL + Additional Text)
+ * This is the new unified upload method that replaces separate PDF/Freetext/Email uploads
+ */
+export async function uploadCombinedBid(formData: FormData) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  const file = formData.get('file') as File | null;
+  const websiteUrl = (formData.get('websiteUrl') as string)?.trim() || '';
+  const additionalText = (formData.get('additionalText') as string)?.trim() || '';
+  const source = formData.get('source') as 'reactive' | 'proactive' || 'reactive';
+  const stage = formData.get('stage') as 'cold' | 'warm' | 'rfp' || 'rfp';
+  const enableDSGVO = formData.get('enableDSGVO') === 'true';
+  const accountId = formData.get('accountId') as string | null;
+
+  // At least one input is required
+  if (!file && !websiteUrl && !additionalText) {
+    return { success: false, error: 'Mindestens eine Eingabe (PDF, URL oder Text) ist erforderlich' };
+  }
+
+  try {
+    let extractedText = '';
+    let piiData = null;
+    let inputType: 'pdf' | 'freetext' | 'combined' = 'freetext';
+
+    // Process PDF if provided
+    if (file) {
+      // Validate file type
+      if (file.type !== 'application/pdf') {
+        return { success: false, error: 'Nur PDF-Dateien sind erlaubt' };
+      }
+
+      // Validate file size (10 MB limit)
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        return { success: false, error: 'Datei ist zu groß (max. 10 MB)' };
+      }
+
+      // Convert file to buffer
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Extract text from PDF
+      extractedText = await extractTextFromPdf(buffer);
+
+      if (!extractedText || extractedText.trim().length === 0) {
+        return { success: false, error: 'PDF-Text konnte nicht extrahiert werden' };
+      }
+
+      // Apply DSGVO cleaning if enabled
+      if (enableDSGVO) {
+        const piiMatches = detectPII(extractedText);
+        if (piiMatches.length > 0) {
+          extractedText = cleanText(extractedText, piiMatches);
+          piiData = JSON.stringify(piiMatches.map(m => ({
+            type: m.type,
+            original: m.original,
+            replacement: m.replacement
+          })));
+        }
+      }
+
+      inputType = 'pdf';
+    }
+
+    // Build combined raw input
+    let rawInput = extractedText;
+
+    // Add website URL section
+    if (websiteUrl) {
+      rawInput += rawInput ? '\n\n' : '';
+      rawInput += `Website-URL: ${websiteUrl}`;
+    }
+
+    // Add additional text section
+    if (additionalText) {
+      rawInput += rawInput ? '\n\n' : '';
+      rawInput += `Zusätzliche Informationen:\n${additionalText}`;
+    }
+
+    // If multiple inputs provided, mark as combined
+    const inputCount = [!!file, !!websiteUrl, !!additionalText].filter(Boolean).length;
+    if (inputCount > 1) {
+      inputType = 'combined';
+    }
+
+    // Validate minimum content
+    if (rawInput.trim().length < 20) {
+      return { success: false, error: 'Eingabe zu kurz (mindestens 20 Zeichen erforderlich)' };
+    }
+
+    // Create BidOpportunity record
+    const [bidOpportunity] = await db
+      .insert(bidOpportunities)
+      .values({
+        userId: session.user.id,
+        accountId: accountId || undefined,
+        source,
+        stage,
+        inputType,
+        rawInput,
+        metadata: piiData,
+        status: 'draft',
+        bitDecision: 'pending',
+      })
+      .returning();
+
+    // Save PDF file to documents table if provided
+    if (file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const base64Data = buffer.toString('base64');
+
+      await db.insert(documents).values({
+        bidOpportunityId: bidOpportunity.id,
+        userId: session.user.id,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        fileData: base64Data,
+        uploadSource: 'initial_upload',
+      });
+    }
+
+    return {
+      success: true,
+      bidId: bidOpportunity.id,
+      piiRemoved: enableDSGVO && (piiData !== null),
+      inputType,
+    };
+  } catch (error) {
+    console.error('Combined upload error:', error);
+    return { success: false, error: 'Upload fehlgeschlagen' };
+  }
+}
+
+/**
  * Suggest website URLs based on customer information
  * Uses AI to suggest likely URLs when none are found in the document
  */

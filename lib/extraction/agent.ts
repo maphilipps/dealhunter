@@ -56,6 +56,12 @@ IMPORTANT: Actively search for website URLs in the document!
 Respond with a JSON object containing these fields:
 - customerName (string, required): Name of the customer
 - industry (string, optional): Industry sector
+- companySize (string, optional): "startup", "small", "medium", "large", or "enterprise"
+- employeeCountRange (string, optional): e.g., "100-500" or "1000+"
+- revenueRange (string, optional): e.g., "10-50 Mio EUR"
+- procurementType (string, optional): "public", "private", or "semi-public"
+- industryVertical (string, optional): Specific industry sub-sector
+- companyLocation (string, optional): Company headquarters or main location
 - websiteUrls (array of objects, optional): Array of website URLs found or inferred:
   - url (string): The full URL (add https:// if missing)
   - type (string: "primary", "product", "regional", or "related"): Type of website
@@ -137,7 +143,10 @@ function buildExtractionPrompt(input: ExtractionInput): string {
 Your task is to extract structured requirements from a bid/project inquiry.
 
 Extract the following information accurately:
-- Customer name and industry
+- Customer name, industry, and company details
+- Company size, employee count, revenue range (if mentioned or can be inferred)
+- Procurement type (public, private, or semi-public)
+- Company location and headquarters
 - Project description and name
 - Technologies, frameworks, and platforms mentioned
 - Project scope, budget, timeline, and team size (if mentioned)

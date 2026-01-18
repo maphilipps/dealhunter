@@ -9,6 +9,14 @@ export const extractedRequirementsSchema = z.object({
   customerName: z.string().describe('Name of the customer company or organization'),
   industry: z.string().optional().describe('Industry sector of the customer'),
 
+  // Company Details (for Quick Scan and Company Intelligence)
+  companySize: z.enum(['startup', 'small', 'medium', 'large', 'enterprise']).optional().describe('Company size classification'),
+  employeeCountRange: z.string().optional().describe('Number of employees range (e.g., "100-500")'),
+  revenueRange: z.string().optional().describe('Revenue range (e.g., "10-50 Mio EUR")'),
+  procurementType: z.enum(['public', 'private', 'semi-public']).optional().describe('Type of procurement/bidding process'),
+  industryVertical: z.string().optional().describe('Specific industry vertical or sub-sector'),
+  companyLocation: z.string().optional().describe('Company headquarters or main location'),
+
   // Website URLs for Quick Scan (multiple possible)
   websiteUrls: z.array(z.object({
     url: z.string().describe('Website URL'),

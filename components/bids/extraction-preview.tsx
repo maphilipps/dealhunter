@@ -212,6 +212,97 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         </div>
       )}
 
+      {/* Company Details Section */}
+      <div className="rounded-lg border bg-muted/50 p-4 space-y-4">
+        <h3 className="text-sm font-semibold">Firmen-Details</h3>
+
+        {/* Company Size */}
+        <div className="space-y-2">
+          <Label htmlFor="companySize">Unternehmensgröße</Label>
+          <select
+            id="companySize"
+            value={data.companySize || ''}
+            onChange={(e) => setData({ ...data, companySize: e.target.value as any })}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="">-- Bitte wählen --</option>
+            <option value="startup">Startup</option>
+            <option value="small">Klein (1-50 MA)</option>
+            <option value="medium">Mittel (51-250 MA)</option>
+            <option value="large">Groß (251-1000 MA)</option>
+            <option value="enterprise">Enterprise (1000+ MA)</option>
+          </select>
+        </div>
+
+        {/* Employee Count Range */}
+        {data.employeeCountRange !== undefined && (
+          <div className="space-y-2">
+            <Label htmlFor="employeeCountRange">Mitarbeiteranzahl</Label>
+            <Input
+              id="employeeCountRange"
+              value={data.employeeCountRange || ''}
+              onChange={(e) => setData({ ...data, employeeCountRange: e.target.value })}
+              placeholder="z.B. 100-500 oder 1000+"
+            />
+          </div>
+        )}
+
+        {/* Revenue Range */}
+        {data.revenueRange !== undefined && (
+          <div className="space-y-2">
+            <Label htmlFor="revenueRange">Umsatzklasse</Label>
+            <Input
+              id="revenueRange"
+              value={data.revenueRange || ''}
+              onChange={(e) => setData({ ...data, revenueRange: e.target.value })}
+              placeholder="z.B. 10-50 Mio EUR"
+            />
+          </div>
+        )}
+
+        {/* Procurement Type */}
+        <div className="space-y-2">
+          <Label htmlFor="procurementType">Beschaffungstyp</Label>
+          <select
+            id="procurementType"
+            value={data.procurementType || ''}
+            onChange={(e) => setData({ ...data, procurementType: e.target.value as any })}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="">-- Bitte wählen --</option>
+            <option value="public">Öffentlich</option>
+            <option value="private">Privat</option>
+            <option value="semi-public">Halböffentlich</option>
+          </select>
+        </div>
+
+        {/* Industry Vertical */}
+        {data.industryVertical !== undefined && (
+          <div className="space-y-2">
+            <Label htmlFor="industryVertical">Branchenvertikale</Label>
+            <Input
+              id="industryVertical"
+              value={data.industryVertical || ''}
+              onChange={(e) => setData({ ...data, industryVertical: e.target.value })}
+              placeholder="Spezifischer Branchen-Sektor"
+            />
+          </div>
+        )}
+
+        {/* Company Location */}
+        {data.companyLocation !== undefined && (
+          <div className="space-y-2">
+            <Label htmlFor="companyLocation">Firmensitz</Label>
+            <Input
+              id="companyLocation"
+              value={data.companyLocation || ''}
+              onChange={(e) => setData({ ...data, companyLocation: e.target.value })}
+              placeholder="z.B. München, Frankfurt am Main"
+            />
+          </div>
+        )}
+      </div>
+
       {/* Website URLs for Quick Scan */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">

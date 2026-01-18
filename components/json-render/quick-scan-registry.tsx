@@ -309,6 +309,174 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
       </div>
     );
   },
+
+  // Company Intelligence Components
+  CompanyCard: ({ element }) => {
+    const { name, industry, size, location, employeeCount, revenue } = element.props as {
+      name: string;
+      industry?: string;
+      size?: 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
+      location?: string;
+      employeeCount?: string;
+      revenue?: string;
+    };
+
+    const sizeLabels = {
+      startup: 'Startup',
+      small: 'Klein (1-50 MA)',
+      medium: 'Mittel (51-250 MA)',
+      large: 'Groß (251-1000 MA)',
+      enterprise: 'Enterprise (1000+ MA)',
+    };
+
+    return (
+      <div className="p-4 rounded-lg border bg-card space-y-3">
+        <div>
+          <h3 className="text-lg font-semibold">{name}</h3>
+          {industry && <p className="text-sm text-muted-foreground">{industry}</p>}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          {size && (
+            <div>
+              <span className="text-muted-foreground">Größe:</span>
+              <p className="font-medium">{sizeLabels[size]}</p>
+            </div>
+          )}
+          {location && (
+            <div>
+              <span className="text-muted-foreground">Standort:</span>
+              <p className="font-medium">{location}</p>
+            </div>
+          )}
+          {employeeCount && (
+            <div>
+              <span className="text-muted-foreground">Mitarbeiter:</span>
+              <p className="font-medium">{employeeCount}</p>
+            </div>
+          )}
+          {revenue && (
+            <div>
+              <span className="text-muted-foreground">Umsatz:</span>
+              <p className="font-medium">{revenue}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  },
+
+  ContactInfo: ({ element }) => {
+    const { name, title, email, phone } = element.props as {
+      name: string;
+      title?: string;
+      email?: string;
+      phone?: string;
+    };
+
+    return (
+      <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+        <p className="font-medium">{name}</p>
+        {title && <p className="text-sm text-muted-foreground">{title}</p>}
+        {email && (
+          <p className="text-sm">
+            <span className="text-muted-foreground">Email:</span>{' '}
+            <a href={`mailto:${email}`} className="text-blue-600 hover:underline">
+              {email}
+            </a>
+          </p>
+        )}
+        {phone && (
+          <p className="text-sm">
+            <span className="text-muted-foreground">Tel:</span>{' '}
+            <a href={`tel:${phone}`} className="text-blue-600 hover:underline">
+              {phone}
+            </a>
+          </p>
+        )}
+      </div>
+    );
+  },
+
+  NewsItem: ({ element }) => {
+    const { title, source, date, sentiment, summary } = element.props as {
+      title: string;
+      source?: string;
+      date?: string;
+      sentiment?: 'positive' | 'neutral' | 'negative';
+      summary?: string;
+    };
+
+    const sentimentColors = {
+      positive: 'bg-green-100 text-green-800 border-green-200',
+      neutral: 'bg-gray-100 text-gray-800 border-gray-200',
+      negative: 'bg-red-100 text-red-800 border-red-200',
+    };
+
+    return (
+      <div className="p-3 rounded-lg border space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <h4 className="font-medium text-sm flex-1">{title}</h4>
+          {sentiment && (
+            <Badge className={cn('text-xs', sentimentColors[sentiment])}>
+              {sentiment}
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {source && <span>{source}</span>}
+          {source && date && <span>•</span>}
+          {date && <span>{date}</span>}
+        </div>
+        {summary && <p className="text-sm text-muted-foreground">{summary}</p>}
+      </div>
+    );
+  },
+
+  NewsList: ({ element }) => {
+    const { title, items } = element.props as {
+      title?: string;
+      items: Array<{
+        title: string;
+        source?: string;
+        date?: string;
+        sentiment?: 'positive' | 'neutral' | 'negative';
+        summary?: string;
+      }>;
+    };
+
+    const sentimentColors = {
+      positive: 'bg-green-100 text-green-800 border-green-200',
+      neutral: 'bg-gray-100 text-gray-800 border-gray-200',
+      negative: 'bg-red-100 text-red-800 border-red-200',
+    };
+
+    return (
+      <div className="space-y-3">
+        {title && <p className="font-medium text-sm">{title}</p>}
+        <div className="space-y-2">
+          {items.map((item, idx) => (
+            <div key={idx} className="p-3 rounded-lg border space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <h4 className="font-medium text-sm flex-1">{item.title}</h4>
+                {item.sentiment && (
+                  <Badge className={cn('text-xs', sentimentColors[item.sentiment])}>
+                    {item.sentiment}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {item.source && <span>{item.source}</span>}
+                {item.source && item.date && <span>•</span>}
+                {item.date && <span>{item.date}</span>}
+              </div>
+              {item.summary && <p className="text-sm text-muted-foreground">{item.summary}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  },
 };
 
 /**

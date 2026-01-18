@@ -28,7 +28,7 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
   // Input
   source: text('source', { enum: ['reactive', 'proactive'] }).notNull(),
   stage: text('stage', { enum: ['cold', 'warm', 'rfp'] }).notNull(),
-  inputType: text('input_type', { enum: ['pdf', 'crm', 'freetext', 'email'] }).notNull(),
+  inputType: text('input_type', { enum: ['pdf', 'crm', 'freetext', 'email', 'combined'] }).notNull(),
   rawInput: text('raw_input').notNull(),
   metadata: text('metadata'), // JSON - für Email headers (from, subject, date)
   extractedRequirements: text('extracted_requirements'), // JSON

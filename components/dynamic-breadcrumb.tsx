@@ -13,14 +13,15 @@ import { Fragment } from 'react'
 
 const routeLabels: Record<string, string> = {
   '': 'Dashboard',
-  'bids': 'Bids',
-  'new': 'New',
+  'bids': 'RFPs',
+  'new': 'Neu',
   'accounts': 'Accounts',
   'analytics': 'Analytics',
   'admin': 'Admin',
   'users': 'Users',
   'teams': 'Teams',
-  'settings': 'Settings',
+  'settings': 'Einstellungen',
+  'bl-review': 'BL-Review',
 }
 
 export function DynamicBreadcrumb() {

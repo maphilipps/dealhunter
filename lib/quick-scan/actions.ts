@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { bidOpportunities, quickScans } from '@/lib/db/schema';
+import { rfps, quickScans } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { runQuickScan } from './agent';
 
@@ -21,8 +21,8 @@ export async function startQuickScan(bidId: string) {
     // Get the bid opportunity
     const [bid] = await db
       .select()
-      .from(bidOpportunities)
-      .where(eq(bidOpportunities.id, bidId))
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
       .limit(1);
 
     if (!bid) {
@@ -57,7 +57,7 @@ export async function startQuickScan(bidId: string) {
     const [quickScan] = await db
       .insert(quickScans)
       .values({
-        bidOpportunityId: bidId,
+        rfpId: bidId,
         websiteUrl,
         status: 'running',
         startedAt: new Date(),
@@ -66,12 +66,12 @@ export async function startQuickScan(bidId: string) {
 
     // Update bid status
     await db
-      .update(bidOpportunities)
+      .update(rfps)
       .set({
         status: 'quick_scanning',
         quickScanId: quickScan.id,
       })
-      .where(eq(bidOpportunities.id, bidId));
+      .where(eq(rfps.id, bidId));
 
     // Run quick scan asynchronously
     const scanResult = await runQuickScan({
@@ -128,8 +128,8 @@ export async function retriggerQuickScan(bidId: string) {
     // Get the bid opportunity
     const [bid] = await db
       .select()
-      .from(bidOpportunities)
-      .where(eq(bidOpportunities.id, bidId))
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
       .limit(1);
 
     if (!bid) {
@@ -170,7 +170,7 @@ export async function retriggerQuickScan(bidId: string) {
     const [quickScan] = await db
       .insert(quickScans)
       .values({
-        bidOpportunityId: bidId,
+        rfpId: bidId,
         websiteUrl,
         status: 'running',
         startedAt: new Date(),
@@ -179,15 +179,15 @@ export async function retriggerQuickScan(bidId: string) {
 
     // Update bid status and reset BIT evaluation data
     await db
-      .update(bidOpportunities)
+      .update(rfps)
       .set({
         status: 'quick_scanning',
         quickScanId: quickScan.id,
-        bitDecision: 'pending',
-        bitDecisionData: null,
+        decision: 'pending',
+        decisionData: null,
         alternativeRecommendation: null,
       })
-      .where(eq(bidOpportunities.id, bidId));
+      .where(eq(rfps.id, bidId));
 
     return {
       success: true,
@@ -216,8 +216,8 @@ export async function getQuickScanResult(bidId: string) {
   try {
     const [bid] = await db
       .select()
-      .from(bidOpportunities)
-      .where(eq(bidOpportunities.id, bidId))
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
       .limit(1);
 
     if (!bid) {

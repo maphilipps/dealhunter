@@ -98,7 +98,7 @@ export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
         } else {
           toast.success('Erfolgreich hochgeladen');
         }
-        router.push(`/bids/${result.bidId}`);
+        router.push(`/rfps/${result.bidId}`);
       } else {
         toast.error(result.error || 'Upload fehlgeschlagen');
       }

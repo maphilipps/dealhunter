@@ -1,5 +1,5 @@
 import { db } from '../lib/db';
-import { businessLines } from '../lib/db/schema';
+import { businessUnits } from '../lib/db/schema';
 
 async function seedBusinessLines() {
   console.log('🌱 Seeding business lines...');
@@ -120,7 +120,7 @@ async function seedBusinessLines() {
   ];
 
   for (const bl of bls) {
-    await db.insert(businessLines).values(bl).onConflictDoNothing();
+    await db.insert(businessUnits).values(bl).onConflictDoNothing();
   }
 
   console.log('✅ Business lines seeded successfully!');

@@ -1,6 +1,6 @@
 import { inngest } from '../client';
 import { db } from '@/lib/db';
-import { deepMigrationAnalyses, bidOpportunities, quickScans } from '@/lib/db/schema';
+import { deepMigrationAnalyses, rfps, quickScans } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { analyzeContentArchitecture } from '@/lib/deep-analysis/agents/content-architecture-agent';
@@ -35,8 +35,8 @@ export const deepAnalysisFunction = inngest.createFunction(
 
       const [bidData] = await db
         .select()
-        .from(bidOpportunities)
-        .where(eq(bidOpportunities.id, bidId))
+        .from(rfps)
+        .where(eq(rfps.id, bidId))
         .limit(1);
 
       if (!bidData) {
@@ -51,7 +51,7 @@ export const deepAnalysisFunction = inngest.createFunction(
       const [quickScanData] = await db
         .select()
         .from(quickScans)
-        .where(eq(quickScans.bidOpportunityId, bidId))
+        .where(eq(quickScans.rfpId, bidId))
         .orderBy(desc(quickScans.createdAt))
         .limit(1);
 
@@ -59,7 +59,7 @@ export const deepAnalysisFunction = inngest.createFunction(
       const [analysisRecord] = await db
         .insert(deepMigrationAnalyses)
         .values({
-          bidOpportunityId: bidId,
+          rfpId: bidId,
           userId: userId, // User ownership for access control
           jobId: event.id || 'manual-trigger',
           status: 'running' as const,
@@ -194,13 +194,13 @@ export const deepAnalysisFunction = inngest.createFunction(
       // Step 6: Update bid status
       await step.run('update-bid-status', async () => {
         await db
-          .update(bidOpportunities)
+          .update(rfps)
           .set({
             deepMigrationAnalysisId: analysis.id,
             status: 'analysis_complete',
             updatedAt: new Date(),
           })
-          .where(eq(bidOpportunities.id, bidId));
+          .where(eq(rfps.id, bidId));
 
         console.log('[Inngest] Bid status updated to analysis_complete');
       });

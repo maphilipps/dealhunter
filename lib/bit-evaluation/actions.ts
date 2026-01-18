@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { bidOpportunities } from '@/lib/db/schema';
+import { rfps } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { runBitEvaluation } from './agent';
 import { getQuickScanResult } from '@/lib/quick-scan/actions';
@@ -22,8 +22,8 @@ export async function startBitEvaluation(bidId: string) {
     // Get the bid opportunity
     const [bid] = await db
       .select()
-      .from(bidOpportunities)
-      .where(eq(bidOpportunities.id, bidId))
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
       .limit(1);
 
     if (!bid) {
@@ -41,9 +41,9 @@ export async function startBitEvaluation(bidId: string) {
 
     // Update status to evaluating
     await db
-      .update(bidOpportunities)
+      .update(rfps)
       .set({ status: 'evaluating' })
-      .where(eq(bidOpportunities.id, bidId));
+      .where(eq(rfps.id, bidId));
 
     // Get quick scan results if available
     const quickScanResult = await getQuickScanResult(bidId);
@@ -68,17 +68,22 @@ export async function startBitEvaluation(bidId: string) {
     });
 
     // Save evaluation result and update status
+    // Map internal 'bit'/'no_bit' to DB enum 'bid'/'no_bid'
+    const decisionValue = evaluationResult.decision.decision === 'bit' ? 'bid' as const
+      : evaluationResult.decision.decision === 'no_bit' ? 'no_bid' as const
+      : 'pending' as const;
+
     await db
-      .update(bidOpportunities)
+      .update(rfps)
       .set({
-        status: 'bit_decided',
-        bitDecision: evaluationResult.decision.decision,
-        bitDecisionData: JSON.stringify(evaluationResult),
+        status: 'decision_made',
+        decision: decisionValue,
+        decisionData: JSON.stringify(evaluationResult),
         alternativeRecommendation: evaluationResult.alternative
           ? JSON.stringify(evaluationResult.alternative)
           : null,
       })
-      .where(eq(bidOpportunities.id, bidId));
+      .where(eq(rfps.id, bidId));
 
     return {
       success: true,
@@ -89,9 +94,9 @@ export async function startBitEvaluation(bidId: string) {
 
     // Revert status on error
     await db
-      .update(bidOpportunities)
+      .update(rfps)
       .set({ status: 'quick_scanning' })
-      .where(eq(bidOpportunities.id, bidId))
+      .where(eq(rfps.id, bidId))
       .catch(() => {}); // Ignore errors in error handler
 
     return { success: false, error: 'Evaluierung fehlgeschlagen' };
@@ -113,8 +118,8 @@ export async function retriggerBitEvaluation(bidId: string) {
     // Get the bid opportunity
     const [bid] = await db
       .select()
-      .from(bidOpportunities)
-      .where(eq(bidOpportunities.id, bidId))
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
       .limit(1);
 
     if (!bid) {
@@ -133,15 +138,15 @@ export async function retriggerBitEvaluation(bidId: string) {
     // Reset evaluation data and set status to 'evaluating'
     // The actual evaluation will be executed via the streaming endpoint
     await db
-      .update(bidOpportunities)
+      .update(rfps)
       .set({
         status: 'evaluating',
-        bitDecision: 'pending',
-        bitDecisionData: null,
-        bitEvaluation: null,
+        decision: 'pending',
+        decisionData: null,
+        decisionEvaluation: null,
         alternativeRecommendation: null,
       })
-      .where(eq(bidOpportunities.id, bidId));
+      .where(eq(rfps.id, bidId));
 
     return {
       success: true,
@@ -166,8 +171,8 @@ export async function getBitEvaluationResult(bidId: string) {
   try {
     const [bid] = await db
       .select()
-      .from(bidOpportunities)
-      .where(eq(bidOpportunities.id, bidId))
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
       .limit(1);
 
     if (!bid) {
@@ -178,11 +183,11 @@ export async function getBitEvaluationResult(bidId: string) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 
-    if (!bid.bitDecisionData) {
+    if (!bid.decisionData) {
       return { success: false, error: 'Keine Evaluierung vorhanden' };
     }
 
-    const result = JSON.parse(bid.bitDecisionData);
+    const result = JSON.parse(bid.decisionData);
     const alternative = bid.alternativeRecommendation
       ? JSON.parse(bid.alternativeRecommendation)
       : null;
@@ -193,7 +198,7 @@ export async function getBitEvaluationResult(bidId: string) {
         ...result,
         alternative,
       },
-      decision: bid.bitDecision,
+      decision: bid.decision,
     };
   } catch (error) {
     console.error('Get BIT result error:', error);
@@ -218,8 +223,8 @@ export async function confirmLowConfidenceDecision(
   try {
     const [bid] = await db
       .select()
-      .from(bidOpportunities)
-      .where(eq(bidOpportunities.id, bidId))
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
       .limit(1);
 
     if (!bid) {
@@ -234,20 +239,20 @@ export async function confirmLowConfidenceDecision(
       // User rejected low confidence decision
       // Revert to reviewing state for re-evaluation or manual override
       await db
-        .update(bidOpportunities)
+        .update(rfps)
         .set({
           status: 'reviewing',
-          bitDecision: 'pending',
-          bitDecisionData: null,
+          decision: 'pending',
+          decisionData: null,
           alternativeRecommendation: null,
         })
-        .where(eq(bidOpportunities.id, bidId));
+        .where(eq(rfps.id, bidId));
 
       return { success: true, confirmed: false };
     }
 
     // User confirmed decision despite low confidence
-    // Decision is already saved, just keep status as 'bit_decided'
+    // Decision is already saved, just keep status as 'decision_made'
     return { success: true, confirmed: true };
   } catch (error) {
     console.error('Confirm decision error:', error);

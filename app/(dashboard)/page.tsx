@@ -14,9 +14,9 @@ export default function DashboardPage() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/bids/new">
+          <Link href="/rfps/new">
             <PlusCircle className="mr-2 h-4 w-4" />
-            New Bid
+            Neuer RFP
           </Link>
         </Button>
       </div>
@@ -25,7 +25,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Bids
+              Gesamt RFPs
             </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -86,9 +86,9 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Recent Bids</CardTitle>
+            <CardTitle>Aktuelle RFPs</CardTitle>
             <CardDescription>
-              Your latest bid submissions
+              Ihre neuesten RFP-Einreichungen
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -133,7 +133,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             <Button variant="outline" className="w-full justify-start" asChild>
-              <Link href="/bids/new">
+              <Link href="/rfps/new">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Create New Bid
               </Link>

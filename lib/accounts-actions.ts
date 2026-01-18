@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { accounts, bidOpportunities } from '@/lib/db/schema';
+import { accounts, rfps } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
@@ -115,16 +115,16 @@ export async function getAccountWithOpportunities(accountId: string) {
     // Get opportunities linked to this account
     const opportunities = await db
       .select({
-        id: bidOpportunities.id,
-        status: bidOpportunities.status,
-        source: bidOpportunities.source,
-        stage: bidOpportunities.stage,
-        inputType: bidOpportunities.inputType,
-        createdAt: bidOpportunities.createdAt,
+        id: rfps.id,
+        status: rfps.status,
+        source: rfps.source,
+        stage: rfps.stage,
+        inputType: rfps.inputType,
+        createdAt: rfps.createdAt,
       })
-      .from(bidOpportunities)
-      .where(eq(bidOpportunities.accountId, accountId))
-      .orderBy(desc(bidOpportunities.createdAt));
+      .from(rfps)
+      .where(eq(rfps.accountId, accountId))
+      .orderBy(desc(rfps.createdAt));
 
     return {
       success: true,

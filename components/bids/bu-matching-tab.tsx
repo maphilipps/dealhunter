@@ -30,7 +30,7 @@ export function BUMatchingTab({ quickScan, bidId }: BUMatchingTabProps) {
       setError(null);
 
       try {
-        const response = await fetch(`/api/bids/${bidId}/bu-matching`);
+        const response = await fetch(`/api/rfps/${bidId}/bu-matching`);
 
         if (!response.ok) {
           throw new Error('Fehler beim Laden der BU Matches');

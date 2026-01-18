@@ -144,7 +144,7 @@ function generateFallbackVisualization(results: QuickScanResult): JsonRenderTree
         key: 'recommendation',
         type: 'Recommendation',
         props: {
-          businessLine: results.blRecommendation.primaryBusinessLine,
+          businessUnit: results.blRecommendation.primaryBusinessLine,
           confidence: results.blRecommendation.confidence,
           reasoning: results.blRecommendation.reasoning,
         },

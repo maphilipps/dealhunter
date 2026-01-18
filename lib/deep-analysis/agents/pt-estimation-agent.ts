@@ -11,7 +11,7 @@ import { PTEstimationSchema, type PTEstimation } from '../schemas';
 
 export interface PTEstimationInput {
   targetCMS: string;
-  businessLineId?: string;
+  businessUnitId?: string;
   contentTypeCount: number;
   paragraphCount: number;
   complexityScore: number;

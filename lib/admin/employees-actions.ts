@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { employees, businessLines, competencies } from '@/lib/db/schema';
+import { employees, businessUnits, competencies } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
@@ -17,11 +17,11 @@ export async function getEmployees() {
         roles: employees.roles,
         availabilityStatus: employees.availabilityStatus,
         createdAt: employees.createdAt,
-        businessLineId: employees.businessLineId,
-        businessLineName: businessLines.name,
+        businessUnitId: employees.businessUnitId,
+        businessLineName: businessUnits.name,
       })
       .from(employees)
-      .leftJoin(businessLines, eq(employees.businessLineId, businessLines.id))
+      .leftJoin(businessUnits, eq(employees.businessUnitId, businessUnits.id))
       .orderBy(employees.name);
 
     return { success: true, employees: emps };
@@ -51,7 +51,7 @@ export async function getCompetenciesForSelect() {
 export async function createEmployee(data: {
   name: string;
   email: string;
-  businessLineId: string;
+  businessUnitId: string;
   skills: string[];
   roles: string[];
   availabilityStatus: 'available' | 'on_project' | 'unavailable';
@@ -62,9 +62,9 @@ export async function createEmployee(data: {
     return { success: false, error: 'Keine Berechtigung' };
   }
 
-  const { name, email, businessLineId, skills, roles, availabilityStatus } = data;
+  const { name, email, businessUnitId, skills, roles, availabilityStatus } = data;
 
-  if (!name.trim() || !email.trim() || !businessLineId || skills.length === 0 || roles.length === 0) {
+  if (!name.trim() || !email.trim() || !businessUnitId || skills.length === 0 || roles.length === 0) {
     return { success: false, error: 'Bitte alle Pflichtfelder ausfüllen' };
   }
 
@@ -74,7 +74,7 @@ export async function createEmployee(data: {
       .values({
         name: name.trim(),
         email: email.trim(),
-        businessLineId,
+        businessUnitId,
         skills: JSON.stringify(skills),
         roles: JSON.stringify(roles),
         availabilityStatus,

@@ -28,7 +28,7 @@ import Link from 'next/link';
 interface Technology {
   id: string;
   name: string;
-  businessLineId: string;
+  businessUnitId: string;
   baselineHours: number | null;
   baselineName: string | null;
   baselineEntityCounts: string | null;

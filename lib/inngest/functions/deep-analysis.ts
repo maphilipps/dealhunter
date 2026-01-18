@@ -166,7 +166,7 @@ export const deepAnalysisFunction = inngest.createFunction(
 
         const result = await estimatePT({
           targetCMS: 'Drupal',
-          businessLineId: bid.assignedBusinessLineId || undefined,
+          businessUnitId: bid.assignedBusinessUnitId || undefined,
           contentTypeCount: contentArchitecture.contentTypeMapping.length,
           paragraphCount: contentArchitecture.paragraphEstimate,
           complexityScore: migrationComplexity.score,

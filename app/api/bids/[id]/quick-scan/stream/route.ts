@@ -90,7 +90,7 @@ export async function GET(
           data: {
             agent: 'Quick Scan',
             result: {
-              recommendedBusinessLine: quickScan.recommendedBusinessLine,
+              recommendedBusinessUnit: quickScan.recommendedBusinessUnit,
               confidence: quickScan.confidence,
             },
           },
@@ -131,7 +131,7 @@ export async function GET(
           hosting: result.techStack.hosting || null,
           contentVolume: JSON.stringify(result.contentVolume),
           features: JSON.stringify(result.features),
-          recommendedBusinessLine: result.blRecommendation.primaryBusinessLine,
+          recommendedBusinessUnit: result.blRecommendation.primaryBusinessLine,
           confidence: result.blRecommendation.confidence,
           reasoning: result.blRecommendation.reasoning,
           // Enhanced audit fields (NEW)
@@ -153,7 +153,7 @@ export async function GET(
         data: {
           agent: 'Quick Scan',
           result: {
-            recommendedBusinessLine: result.blRecommendation.primaryBusinessLine,
+            recommendedBusinessUnit: result.blRecommendation.primaryBusinessLine,
             confidence: result.blRecommendation.confidence,
           },
         },

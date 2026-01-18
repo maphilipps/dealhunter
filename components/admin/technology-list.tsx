@@ -17,7 +17,7 @@ interface Technology {
   baselineEntityCounts: string | null;
   isDefault: boolean;
   createdAt: Date | null;
-  businessLineId: string;
+  businessUnitId: string;
   businessLineName: string | null;
   // Extended metadata
   logoUrl: string | null;
@@ -205,7 +205,7 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
               </div>
 
               <div>
-                <span className="text-muted-foreground">Business Line:</span>
+                <span className="text-muted-foreground">Business Unit:</span>
                 <p className="font-medium">{tech.businessLineName || 'N/A'}</p>
               </div>
 

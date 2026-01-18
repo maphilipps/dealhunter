@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Sparkles, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { assignBusinessLine } from '@/lib/routing/actions';
+import { assignBusinessUnit } from '@/lib/routing/actions';
 import type { BLRecommendation } from '@/lib/quick-scan/schema';
 
 interface BLRoutingCardProps {
@@ -31,7 +31,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
   const [overrideReason, setOverrideReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const businessLines = [
+  const businessUnits = [
     'Banking & Insurance',
     'Automotive',
     'Energy & Utilities',
@@ -44,10 +44,10 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
 
   const handleAcceptRecommendation = async () => {
     setIsSubmitting(true);
-    toast.info('Routing zu Business Line...');
+    toast.info('Routing zu Business Unit...');
 
     try {
-      const result = await assignBusinessLine({
+      const result = await assignBusinessUnit({
         bidId,
         businessLineName: recommendation.primaryBusinessLine,
       });
@@ -67,7 +67,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
 
   const handleOverrideSubmit = async () => {
     if (!selectedBL) {
-      toast.error('Bitte Business Line auswählen');
+      toast.error('Bitte Business Unit auswählen');
       return;
     }
 
@@ -80,7 +80,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
     toast.info('Routing mit Override...');
 
     try {
-      const result = await assignBusinessLine({
+      const result = await assignBusinessUnit({
         bidId,
         businessLineName: selectedBL,
         overrideReason: overrideReason.trim(),
@@ -111,7 +111,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
               <Sparkles className={isLowConfidence ? 'h-6 w-6 text-amber-600' : 'h-6 w-6 text-blue-600'} />
               <div>
                 <CardTitle className={isLowConfidence ? 'text-amber-900' : 'text-blue-900'}>
-                  AI Empfehlung: Business Line Routing
+                  AI Empfehlung: Business Unit Routing
                 </CardTitle>
                 <CardDescription className={isLowConfidence ? 'text-amber-700' : 'text-blue-700'}>
                   Basierend auf Quick Scan Analyse
@@ -129,7 +129,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
         <CardContent className="space-y-4">
           {/* Primary Recommendation */}
           <div className="rounded-lg bg-white p-4">
-            <p className="text-sm font-medium text-muted-foreground mb-2">Empfohlene Business Line</p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Empfohlene Business Unit</p>
             <p className="text-2xl font-bold text-foreground">{recommendation.primaryBusinessLine}</p>
           </div>
 
@@ -157,7 +157,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
           {recommendation.alternativeBusinessLines.length > 0 && (
             <div className="rounded-lg bg-white p-4">
               <p className="text-sm font-medium text-muted-foreground mb-2">
-                Alternative Business Lines
+                Alternative Business Units
               </p>
               <ul className="space-y-2">
                 {recommendation.alternativeBusinessLines.map((alt, idx) => (
@@ -179,7 +179,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
                   <p className="text-sm font-medium text-amber-900">Niedrige Konfidenz</p>
                   <p className="text-sm text-amber-800 mt-1">
                     Die AI ist unsicher bei dieser Empfehlung. Bitte überprüfen Sie die Begründung
-                    sorgfältig oder wählen Sie manuell eine Business Line.
+                    sorgfältig oder wählen Sie manuell eine Business Unit.
                   </p>
                 </div>
               </div>
@@ -217,21 +217,21 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
       {showOverride && (
         <Card>
           <CardHeader>
-            <CardTitle>Manuelle Business Line Auswahl</CardTitle>
+            <CardTitle>Manuelle Business Unit Auswahl</CardTitle>
             <CardDescription>
-              Wählen Sie eine andere Business Line und geben Sie den Grund an
+              Wählen Sie eine andere Business Unit und geben Sie den Grund an
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* BL Select */}
             <div className="space-y-2">
-              <Label htmlFor="bl-select">Business Line</Label>
+              <Label htmlFor="bl-select">Business Unit</Label>
               <Select value={selectedBL} onValueChange={setSelectedBL}>
                 <SelectTrigger id="bl-select">
-                  <SelectValue placeholder="Business Line auswählen..." />
+                  <SelectValue placeholder="Business Unit auswählen..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {businessLines.map((bl) => (
+                  {businessUnits.map((bl) => (
                     <SelectItem key={bl} value={bl}>
                       {bl}
                     </SelectItem>

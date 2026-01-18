@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { bidOpportunities, businessLines, employees } from '@/lib/db/schema';
+import { bidOpportunities, businessUnits, employees } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { sendTeamNotificationEmails, type TeamMemberNotification, type TeamNotificationResult } from './email';
 import type { ProjectPlan } from '@/lib/project-planning/schema';
@@ -109,11 +109,11 @@ export async function sendTeamNotifications(bidId: string): Promise<SendTeamNoti
 
   // Get BL leader name
   let blLeaderName = 'BL Lead';
-  if (bid.assignedBusinessLineId) {
+  if (bid.assignedBusinessUnitId) {
     const [bl] = await db
       .select()
-      .from(businessLines)
-      .where(eq(businessLines.id, bid.assignedBusinessLineId))
+      .from(businessUnits)
+      .where(eq(businessUnits.id, bid.assignedBusinessUnitId))
       .limit(1);
 
     if (bl) {

@@ -1,24 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getBusinessLinesForSelect } from '@/lib/admin/technologies-actions';
+import { getBusinessUnitsForSelect } from '@/lib/admin/technologies-actions';
 import { getCompetenciesForSelect } from '@/lib/admin/employees-actions';
 import { EmployeeForm } from '@/components/admin/employee-form';
 
 export default function NewEmployeePage() {
-  const [businessLines, setBusinessLines] = useState<{ id: string; name: string }[]>([]);
+  const [businessUnits, setBusinessUnits] = useState<{ id: string; name: string }[]>([]);
   const [competencies, setCompetencies] = useState<{ id: string; name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       const [blResult, compResult] = await Promise.all([
-        getBusinessLinesForSelect(),
+        getBusinessUnitsForSelect(),
         getCompetenciesForSelect(),
       ]);
 
       if (blResult.success) {
-        setBusinessLines(blResult.businessLines || []);
+        setBusinessUnits(blResult.businessUnits || []);
       }
       if (compResult.success) {
         setCompetencies(compResult.competencies || []);
@@ -42,7 +42,7 @@ export default function NewEmployeePage() {
           </p>
         </div>
 
-        <EmployeeForm businessLines={businessLines} competencies={competencies} />
+        <EmployeeForm businessUnits={businessUnits} competencies={competencies} />
       </div>
     </div>
   );

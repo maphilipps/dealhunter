@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { createBusinessLine } from '@/lib/admin/business-lines-actions';
+import { createBusinessUnit } from '@/lib/admin/business-units-actions';
 
 interface KeywordInputProps {
   keywords: string[];
@@ -69,7 +69,7 @@ function KeywordInput({ keywords, setKeywords }: KeywordInputProps) {
   );
 }
 
-export function BusinessLineForm() {
+export function BusinessUnitForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState('');
@@ -88,7 +88,7 @@ export function BusinessLineForm() {
     setIsSubmitting(true);
 
     try {
-      const result = await createBusinessLine({
+      const result = await createBusinessUnit({
         name: name.trim(),
         leaderName: leaderName.trim(),
         leaderEmail: leaderEmail.trim(),
@@ -96,15 +96,15 @@ export function BusinessLineForm() {
       });
 
       if (result.success) {
-        toast.success('Business Line erfolgreich erstellt');
-        router.push('/admin/business-lines');
+        toast.success('Business Unit erfolgreich erstellt');
+        router.push('/admin/business-units');
         router.refresh();
       } else {
         toast.error(result.error || 'Fehler beim Erstellen');
       }
     } catch (error) {
       toast.error('Ein Fehler ist aufgetreten');
-      console.error('Create business line error:', error);
+      console.error('Create business unit error:', error);
     } finally {
       setIsSubmitting(false);
     }

@@ -90,7 +90,7 @@ export async function startQuickScan(bidId: string) {
         hosting: scanResult.techStack.hosting || null,
         contentVolume: JSON.stringify(scanResult.contentVolume),
         features: JSON.stringify(scanResult.features),
-        recommendedBusinessLine: scanResult.blRecommendation.primaryBusinessLine,
+        recommendedBusinessUnit: scanResult.blRecommendation.primaryBusinessLine,
         confidence: scanResult.blRecommendation.confidence,
         reasoning: scanResult.blRecommendation.reasoning,
         activityLog: JSON.stringify(scanResult.activityLog),

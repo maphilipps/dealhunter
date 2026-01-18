@@ -471,7 +471,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
                   <BLRoutingCard
                     bidId={bid.id}
                     recommendation={{
-                      primaryBusinessLine: quickScan.recommendedBusinessLine || 'Technology & Innovation',
+                      primaryBusinessLine: quickScan.recommendedBusinessUnit || 'Technology & Innovation',
                       confidence: quickScan.confidence || 0,
                       reasoning: quickScan.reasoning || '',
                       alternativeBusinessLines: [],

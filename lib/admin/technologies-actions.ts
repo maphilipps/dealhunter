@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { technologies, businessLines } from '@/lib/db/schema';
+import { technologies, businessUnits } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
@@ -17,8 +17,8 @@ export async function getTechnologies() {
         baselineEntityCounts: technologies.baselineEntityCounts,
         isDefault: technologies.isDefault,
         createdAt: technologies.createdAt,
-        businessLineId: technologies.businessLineId,
-        businessLineName: businessLines.name,
+        businessUnitId: technologies.businessUnitId,
+        businessLineName: businessUnits.name,
         // Extended metadata
         logoUrl: technologies.logoUrl,
         websiteUrl: technologies.websiteUrl,
@@ -33,7 +33,7 @@ export async function getTechnologies() {
         lastResearchedAt: technologies.lastResearchedAt,
       })
       .from(technologies)
-      .leftJoin(businessLines, eq(technologies.businessLineId, businessLines.id))
+      .leftJoin(businessUnits, eq(technologies.businessUnitId, businessUnits.id))
       .orderBy(technologies.createdAt);
 
     return { success: true, technologies: tech };
@@ -43,26 +43,26 @@ export async function getTechnologies() {
   }
 }
 
-export async function getBusinessLinesForSelect() {
+export async function getBusinessUnitsForSelect() {
   try {
     const lines = await db
       .select({
-        id: businessLines.id,
-        name: businessLines.name,
+        id: businessUnits.id,
+        name: businessUnits.name,
       })
-      .from(businessLines)
-      .orderBy(businessLines.name);
+      .from(businessUnits)
+      .orderBy(businessUnits.name);
 
-    return { success: true, businessLines: lines };
+    return { success: true, businessUnits: lines };
   } catch (error) {
     console.error('Error fetching business lines:', error);
-    return { success: false, error: 'Fehler beim Laden der Business Lines' };
+    return { success: false, error: 'Fehler beim Laden der Business Units' };
   }
 }
 
 export async function createTechnology(data: {
   name: string;
-  businessLineId: string;
+  businessUnitId: string;
   baselineHours?: number;
   baselineName?: string;
   baselineEntityCounts?: Record<string, number>;
@@ -78,15 +78,15 @@ export async function createTechnology(data: {
     return { success: false, error: 'Keine Berechtigung' };
   }
 
-  const { name, businessLineId, baselineHours, baselineName, baselineEntityCounts, isDefault } = data;
+  const { name, businessUnitId, baselineHours, baselineName, baselineEntityCounts, isDefault } = data;
 
   // Validate inputs
   if (!name || name.trim().length === 0) {
     return { success: false, error: 'Name ist erforderlich' };
   }
 
-  if (!businessLineId) {
-    return { success: false, error: 'Business Line ist erforderlich' };
+  if (!businessUnitId) {
+    return { success: false, error: 'Business Unit ist erforderlich' };
   }
 
   // Baseline is now optional - validate only if provided
@@ -99,7 +99,7 @@ export async function createTechnology(data: {
       .insert(technologies)
       .values({
         name: name.trim(),
-        businessLineId,
+        businessUnitId,
         // Baseline fields - use defaults for DB NOT NULL constraints
         baselineHours: baselineHours ?? 0,
         baselineName: baselineName?.trim() ?? '',

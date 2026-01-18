@@ -38,7 +38,7 @@ export const quickScanCatalogSchema = {
   }),
 
   Recommendation: z.object({
-    businessLine: z.string(),
+    businessUnit: z.string(),
     confidence: z.number(),
     reasoning: z.string(),
   }),
@@ -138,7 +138,7 @@ COMPONENT DETAILS:
 - Metric: { label: string, value: string, subValue?: string, trend?: "up"|"down"|"neutral" } - Single metric
 - TechBadge: { name: string, version?: string, confidence?: number, category?: "cms"|"framework"|"backend"|"hosting"|"library"|"tool" } - Technology badge
 - FeatureList: { title?: string, features: [{name: string, detected: boolean, details?: string}] } - Feature checklist
-- Recommendation: { businessLine: string, confidence: number, reasoning: string } - BL recommendation
+- Recommendation: { businessUnit: string, confidence: number, reasoning: string } - BL recommendation
 - AlternativesList: { title?: string, alternatives: [{name: string, confidence: number, reason: string}] } - Alternative BLs
 - SkillsList: { title?: string, skills: [string] } - Required skills list
 - ContentStats: { pageCount?: number, complexity?: "low"|"medium"|"high", languages?: [string], contentTypes?: [{type: string, count: number}] } - Content stats

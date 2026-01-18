@@ -15,7 +15,7 @@ interface Employee {
   roles: string;
   availabilityStatus: string;
   createdAt: Date | null;
-  businessLineId: string;
+  businessUnitId: string;
   businessLineName: string | null;
 }
 
@@ -66,7 +66,7 @@ export function EmployeeList({ employees }: { employees: Employee[] | undefined 
                 <p className="font-medium">{emp.email}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Business Line:</span>
+                <span className="text-muted-foreground">Business Unit:</span>
                 <p className="font-medium">{emp.businessLineName || 'N/A'}</p>
               </div>
               <div>

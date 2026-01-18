@@ -1,5 +1,5 @@
 import { db } from './index';
-import { users, businessLines, technologies } from './schema';
+import { users, businessUnits, technologies } from './schema';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 
@@ -25,17 +25,17 @@ async function seed() {
   }
 
   // Seed Business Lines from EPICS.md specification
-  const existingBL = await db.query.businessLines.findFirst();
+  const existingBL = await db.query.businessUnits.findFirst();
 
   if (!existingBL) {
-    const phpBL = await db.insert(businessLines).values({
+    const phpBL = await db.insert(businessUnits).values({
       name: 'PHP',
       leaderName: 'Francesco Raaphorst',
       leaderEmail: 'francesco.raaphorst@adesso.de',
       keywords: JSON.stringify(['drupal', 'php', 'symfony', 'laravel', 'wordpress', 'typo3', 'cms'])
     }).returning();
 
-    const wemBL = await db.insert(businessLines).values({
+    const wemBL = await db.insert(businessUnits).values({
       name: 'WEM',
       leaderName: 'Michael Rittinghaus',
       leaderEmail: 'michael.rittinghaus@adesso.de',
@@ -49,7 +49,7 @@ async function seed() {
       await db.insert(technologies).values([
         {
           name: 'Drupal',
-          businessLineId: phpBL[0].id,
+          businessUnitId: phpBL[0].id,
           baselineHours: 693,
           baselineName: 'adessoCMS Drupal',
           baselineEntityCounts: JSON.stringify({
@@ -63,7 +63,7 @@ async function seed() {
         },
         {
           name: 'Ibexa',
-          businessLineId: phpBL[0].id,
+          businessUnitId: phpBL[0].id,
           baselineHours: 500,
           baselineName: 'Ibexa Standard',
           baselineEntityCounts: JSON.stringify({
@@ -74,7 +74,7 @@ async function seed() {
         },
         {
           name: 'Sulu',
-          businessLineId: phpBL[0].id,
+          businessUnitId: phpBL[0].id,
           baselineHours: 400,
           baselineName: 'Sulu Standard',
           baselineEntityCounts: JSON.stringify({
@@ -92,7 +92,7 @@ async function seed() {
       await db.insert(technologies).values([
         {
           name: 'Magnolia',
-          businessLineId: wemBL[0].id,
+          businessUnitId: wemBL[0].id,
           baselineHours: 600,
           baselineName: 'Magnolia Enterprise',
           baselineEntityCounts: JSON.stringify({
@@ -104,7 +104,7 @@ async function seed() {
         },
         {
           name: 'FirstSpirit',
-          businessLineId: wemBL[0].id,
+          businessUnitId: wemBL[0].id,
           baselineHours: 700,
           baselineName: 'FirstSpirit Standard',
           baselineEntityCounts: JSON.stringify({

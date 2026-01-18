@@ -1,18 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getBusinessLinesForSelect } from '@/lib/admin/technologies-actions';
+import { getBusinessUnitsForSelect } from '@/lib/admin/technologies-actions';
 import { TechnologyForm } from '@/components/admin/technology-form';
 
 export default function NewTechnologyPage() {
-  const [businessLines, setBusinessLines] = useState<{ id: string; name: string }[]>([]);
+  const [businessUnits, setBusinessUnits] = useState<{ id: string; name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
-      const result = await getBusinessLinesForSelect();
+      const result = await getBusinessUnitsForSelect();
       if (result.success) {
-        setBusinessLines(result.businessLines || []);
+        setBusinessUnits(result.businessUnits || []);
       }
       setIsLoading(false);
     }
@@ -33,7 +33,7 @@ export default function NewTechnologyPage() {
           </p>
         </div>
 
-        <TechnologyForm businessLines={businessLines} />
+        <TechnologyForm businessUnits={businessUnits} />
       </div>
     </div>
   );

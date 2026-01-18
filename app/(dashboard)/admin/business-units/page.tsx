@@ -2,21 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getBusinessLines } from '@/lib/admin/business-lines-actions';
-import { BusinessLineList } from '@/components/admin/business-line-list';
+import { getBusinessUnits } from '@/lib/admin/business-units-actions';
+import { BusinessUnitList } from '@/components/admin/business-unit-list';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
-export default function BusinessLinesPage() {
+export default function BusinessUnitsPage() {
   const router = useRouter();
-  const [businessLines, setBusinessLines] = useState<any[]>([]);
+  const [businessUnits, setBusinessUnits] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
-      const result = await getBusinessLines();
+      const result = await getBusinessUnits();
       if (result.success) {
-        setBusinessLines(result.businessLines || []);
+        setBusinessUnits(result.businessUnits || []);
       }
       setIsLoading(false);
     }
@@ -32,18 +32,18 @@ export default function BusinessLinesPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Business Lines</h1>
+            <h1 className="text-3xl font-bold mb-2">Business Units</h1>
             <p className="text-muted-foreground">
-              Verwalten Sie Ihre Business Lines und deren Zuordnungen
+              Verwalten Sie Ihre Business Units und deren Zuordnungen
             </p>
           </div>
-          <Button onClick={() => router.push('/admin/business-lines/new')}>
+          <Button onClick={() => router.push('/admin/business-units/new')}>
             <Plus className="mr-2 h-4 w-4" />
-            Neue Business Line
+            Neue Business Unit
           </Button>
         </div>
 
-        <BusinessLineList businessLines={businessLines} />
+        <BusinessUnitList businessUnits={businessUnits} />
       </div>
     </div>
   );

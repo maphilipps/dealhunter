@@ -46,6 +46,10 @@ export async function sendTeamNotifications(bidId: string): Promise<SendTeamNoti
     return { success: false, error: 'Bid nicht gefunden' };
   }
 
+  if (bid.userId !== session.user.id) {
+    return { success: false, error: 'Keine Berechtigung' };
+  }
+
   if (!bid.assignedTeam) {
     return { success: false, error: 'Kein Team zugewiesen' };
   }
@@ -173,6 +177,7 @@ export async function getNotificationStatus(bidId: string): Promise<{
 
   const [bid] = await db
     .select({
+      userId: bidOpportunities.userId,
       teamNotifications: bidOpportunities.teamNotifications,
       teamNotifiedAt: bidOpportunities.teamNotifiedAt,
     })
@@ -182,6 +187,10 @@ export async function getNotificationStatus(bidId: string): Promise<{
 
   if (!bid) {
     return { success: false, error: 'Bid nicht gefunden' };
+  }
+
+  if (bid.userId !== session.user.id) {
+    return { success: false, error: 'Keine Berechtigung' };
   }
 
   if (!bid.teamNotifications) {

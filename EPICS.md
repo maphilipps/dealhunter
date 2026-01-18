@@ -365,10 +365,11 @@ Attachment: Projekt-Summary.pdf
 
 ---
 
-## Epic 11: Master Data Management (Crowdsourced)
+## Epic 11: Master Data Management (Crowdsourced) ✅ COMPLETE
 
 **Priorität:** 🟢 Mittel
 **Abhängigkeiten:** Epic 2
+**Status:** ✅ Abgeschlossen (Phase 2 - Admin Validation UI)
 
 ### Anforderungen
 
@@ -607,10 +608,10 @@ Diese Features sind NICHT im MVP enthalten:
 | 2 | Admin Panel & Master Data | 🔴 Kritisch | ✅ COMPLETE |
 | 3 | Smart Upload & AI-Extraktion | 🔴 Kritisch | ✅ COMPLETE |
 | 4 | Quick Scan | 🟡 Hoch | ✅ COMPLETE |
-| 5 | Bit/No Bit Evaluation | 🔴 **PRIO JETZT** | ⚠️ 70% - 2 Agents fehlen |
+| 5 | Bit/No Bit Evaluation | 🔴 Kritisch | ✅ COMPLETE |
 | 5a | Agent Transparency UI (NEU) | 🔴 Kritisch | ✅ COMPLETE |
 | 6 | BL-Routing | 🟡 Hoch | ✅ COMPLETE |
-| 7 | Deep Migration Analysis | 🟡 Hoch | - |
+| 7 | Deep Migration Analysis | 🟡 Hoch | ✅ COMPLETE |
 | 8 | Extended Evaluation | 🟡 Hoch | - |
 | 9 | Team-Assignment | 🟡 Hoch | ✅ COMPLETE |
 | 10 | Notification System | 🟢 Mittel | - |
@@ -620,9 +621,9 @@ Diese Features sind NICHT im MVP enthalten:
 | 14 | MCP Tool Layer (NEU) | 🔴 Kritisch | - |
 | 15 | Agent Context System (NEU) | 🔴 Kritisch | - |
 
-### ⚡ PRIORITÄT: Epic 5 vervollständigen
+### ⚡ PRIORITÄT: Epic 11 (Master Data Management)
 
-Epic 5 fehlen noch 2 Agents (Legal, Reference). Details siehe unten.
+Epic 5, 7 sind vollständig abgeschlossen. Nächste Priorität ist Epic 11 für Referenzen, Kompetenzen und Wettbewerber-Verwaltung.
 
 ---
 
@@ -678,40 +679,33 @@ Recherchiert CMS-spezifische Baselines und schätzt Migrationsaufwände automati
 
 ---
 
-### Epic 5 Gaps (OFFEN - Prio 2026-01-17)
+### Epic 5 Gaps (RESOLVED - 2026-01-17)
 
-**Status: ⚠️ 70% vollständig** - 4 von 6 Agents implementiert
+**Status: ✅ 100% vollständig** - Alle 6 Agents implementiert
 
 | Spec Agent | Implementiert als | Status |
 |------------|-------------------|--------|
 | BIT-001: Tech Agent | ✅ Capability Match Agent | ✅ DONE |
-| BIT-002: Legal Agent | ❌ NICHT VORHANDEN | **TODO** |
+| BIT-002: Legal Agent | ✅ Legal Agent | ✅ DONE |
 | BIT-003: Commercial Agent | ✅ Deal Quality Agent | ✅ DONE |
 | BIT-004: Competition Agent | ✅ Competition Check Agent | ✅ DONE |
-| BIT-005: Reference Agent | ❌ NICHT VORHANDEN | **TODO** |
+| BIT-005: Reference Agent | ✅ Reference Agent | ✅ DONE |
 | BIT-006: Coordinator Agent | ✅ BIT Evaluation Coordinator | ✅ DONE |
 
-**Fehlende Agents:**
+**Agent-Weights (implementiert):**
+| Agent | Weight |
+|-------|--------|
+| Capability Match | 25% |
+| Deal Quality | 20% |
+| Strategic Fit | 15% |
+| Competition Check | 15% |
+| Legal Check | 15% |
+| Reference Match | 10% |
 
-#### Legal Agent (BIT-002)
-- **Weight:** 15% der Gesamtbewertung
-- **Prüft:** Vertragstyp (Festpreis/T&M/Rahmenvertrag), Zahlungsrisiken, Haftungsklauseln, IP/Lizenzen, Compliance (DSGVO, Barrierefreiheit), Exit-Klauseln
-- **Output:** Legal Risk Score, Contract Type, Red Flags, Recommendations
-
-#### Reference Agent (BIT-005)
-- **Weight:** 10% der Gesamtbewertung
-- **Tasks:** Ähnliche Projekte finden, Branchen-Match, Technologie-Match, Budget-Größen-Match, Erfolgsquote analysieren
-- **Output:** Matched References, Match Score, Missing Capabilities, Suggested Case Studies
-
-**Agent-Weights nach Vervollständigung:**
-| Agent | Aktuell | Nach Fix |
-|-------|---------|----------|
-| Capability Match | 30% | 25% |
-| Deal Quality | 25% | 20% |
-| Strategic Fit | 20% | 15% |
-| Competition Check | 25% | 15% |
-| Legal Check | - | **15%** |
-| Reference Match | - | **10%** |
+**Implementierte Dateien:**
+- `lib/bit-evaluation/agents/legal-agent.ts` - Legal Risk Assessment
+- `lib/bit-evaluation/agents/reference-agent.ts` - Reference Project Matching
+- `lib/bit-evaluation/agent.ts` - Koordinator mit allen 6 Agents integriert
 
 ---
 

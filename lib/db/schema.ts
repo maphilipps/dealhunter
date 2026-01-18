@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 import { createId } from '@paralleldrive/cuid2';
 
 export const users = sqliteTable('users', {
@@ -119,18 +119,33 @@ export const references = sqliteTable('references', {
   // Highlights
   highlights: text('highlights'), // JSON array
 
-  // Validation
+  // Validation Workflow (UPDATED for Epic 11)
+  status: text('status', {
+    enum: ['pending', 'approved', 'rejected', 'needs_revision']
+  })
+    .notNull()
+    .default('pending'),
+  adminFeedback: text('admin_feedback'), // Rejection reason
   isValidated: integer('is_validated', { mode: 'boolean' })
     .notNull()
     .default(false),
   validatedAt: integer('validated_at', { mode: 'timestamp' }),
+
+  // Audit (Optimistic Locking - NEW for Epic 11)
+  version: integer('version').notNull().default(1),
 
   // Timestamps
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
-});
+}, (table) => ({
+  // CRITICAL: Performance Indexes (PERF-001 Fix)
+  projectNameIdx: index("references_project_name_idx").on(table.projectName),
+  statusIdx: index("references_status_idx").on(table.status),
+  validatedIdx: index("references_validated_idx").on(table.isValidated),
+  statusValidatedIdx: index("references_status_validated_idx").on(table.status, table.isValidated),
+}));
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -146,6 +161,7 @@ export const competencies = sqliteTable('competencies', {
   userId: text('user_id')
     .notNull()
     .references(() => users.id),
+  validatedByUserId: text('validated_by_user_id').references(() => users.id),
 
   // Competency Details
   name: text('name').notNull(),
@@ -156,12 +172,33 @@ export const competencies = sqliteTable('competencies', {
   certifications: text('certifications'), // JSON array
   description: text('description'),
 
+  // Validation Workflow (NEW for Epic 11)
+  status: text('status', {
+    enum: ['pending', 'approved', 'rejected', 'needs_revision']
+  })
+    .notNull()
+    .default('pending'),
+  adminFeedback: text('admin_feedback'),
+  isValidated: integer('is_validated', { mode: 'boolean' })
+    .notNull()
+    .default(false),
+  validatedAt: integer('validated_at', { mode: 'timestamp' }),
+
+  // Audit (Optimistic Locking - NEW for Epic 11)
+  version: integer('version').notNull().default(1),
+
   // Timestamps
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
-});
+}, (table) => ({
+  // CRITICAL: Performance Indexes (PERF-001 Fix)
+  nameIdx: index("competencies_name_idx").on(table.name),
+  statusIdx: index("competencies_status_idx").on(table.status),
+  validatedIdx: index("competencies_validated_idx").on(table.isValidated),
+  statusValidatedIdx: index("competencies_status_validated_idx").on(table.status, table.isValidated),
+}));
 
 export type Competency = typeof competencies.$inferSelect;
 export type NewCompetency = typeof competencies.$inferInsert;
@@ -204,15 +241,48 @@ export const technologies = sqliteTable('technologies', {
     .notNull()
     .references(() => businessLines.id),
 
-  // Baseline Information
-  baselineHours: integer('baseline_hours').notNull(),
-  baselineName: text('baseline_name').notNull(),
-  baselineEntityCounts: text('baseline_entity_counts').notNull(), // JSON
+  // Baseline Information (optional - not all technologies need baseline data)
+  baselineHours: integer('baseline_hours'),
+  baselineName: text('baseline_name'),
+  baselineEntityCounts: text('baseline_entity_counts'), // JSON
 
   // Default Flag
   isDefault: integer('is_default', { mode: 'boolean' })
     .notNull()
     .default(false),
+
+  // === Extended Metadata ===
+
+  // Basis-Informationen
+  logoUrl: text('logo_url'),
+  websiteUrl: text('website_url'),
+  description: text('description'),
+  category: text('category'), // CMS, Framework, Library, etc.
+
+  // Technische Details
+  license: text('license'), // MIT, GPL, Proprietary, etc.
+  latestVersion: text('latest_version'),
+  githubUrl: text('github_url'),
+  githubStars: integer('github_stars'),
+  lastRelease: text('last_release'),
+  communitySize: text('community_size'), // small, medium, large
+
+  // Vor-/Nachteile (JSON Arrays)
+  pros: text('pros'), // JSON array
+  cons: text('cons'), // JSON array
+
+  // Marketing/Verkauf
+  usps: text('usps'), // Unique Selling Points (JSON array)
+  targetAudiences: text('target_audiences'), // Zielgruppen (JSON array)
+  useCases: text('use_cases'), // Typische Use Cases (JSON array)
+
+  // adesso-spezifisch
+  adessoExpertise: text('adesso_expertise'),
+  adessoReferenceCount: integer('adesso_reference_count'),
+
+  // Research Metadata
+  lastResearchedAt: integer('last_researched_at', { mode: 'timestamp' }),
+  researchStatus: text('research_status'), // pending, completed, failed
 
   // Timestamps
   createdAt: integer('created_at', { mode: 'timestamp' })
@@ -327,6 +397,15 @@ export const quickScans = sqliteTable('quick_scans', {
   features: text('features'), // JSON - detected features
   integrations: text('integrations'), // JSON - detected integrations
 
+  // Enhanced Audits (NEW)
+  navigationStructure: text('navigation_structure'), // JSON - navigation analysis
+  accessibilityAudit: text('accessibility_audit'), // JSON - a11y audit results
+  seoAudit: text('seo_audit'), // JSON - SEO audit results
+  legalCompliance: text('legal_compliance'), // JSON - legal/GDPR check
+  performanceIndicators: text('performance_indicators'), // JSON - performance metrics
+  screenshots: text('screenshots'), // JSON - screenshot paths
+  companyIntelligence: text('company_intelligence'), // JSON - company research data
+
   // Business Line Recommendation
   recommendedBusinessLine: text('recommended_business_line'),
   confidence: integer('confidence'), // 0-100
@@ -334,6 +413,9 @@ export const quickScans = sqliteTable('quick_scans', {
 
   // Agent Activity
   activityLog: text('activity_log'), // JSON - agent activity steps
+
+  // Visualization (json-render tree - cached)
+  visualizationTree: text('visualization_tree'), // JSON - cached json-render tree
 
   // Timestamps
   startedAt: integer('started_at', { mode: 'timestamp' }),
@@ -386,3 +468,92 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 
 export type DeepMigrationAnalysis = typeof deepMigrationAnalyses.$inferSelect;
 export type NewDeepMigrationAnalysis = typeof deepMigrationAnalyses.$inferInsert;
+
+export const documents = sqliteTable('documents', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  bidOpportunityId: text('bid_opportunity_id')
+    .notNull()
+    .references(() => bidOpportunities.id),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
+
+  // File Details
+  fileName: text('file_name').notNull(),
+  fileType: text('file_type').notNull(), // application/pdf, etc.
+  fileSize: integer('file_size').notNull(), // bytes
+
+  // Storage
+  fileData: text('file_data').notNull(), // Base64-encoded file content
+
+  // Metadata
+  uploadSource: text('upload_source', { enum: ['initial_upload', 'additional_upload'] })
+    .notNull()
+    .default('initial_upload'),
+
+  // Timestamps
+  uploadedAt: integer('uploaded_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+});
+
+export type Document = typeof documents.$inferSelect;
+export type NewDocument = typeof documents.$inferInsert;
+
+export const competitors = sqliteTable('competitors', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+
+  // User Tracking
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
+  validatedByUserId: text('validated_by_user_id').references(() => users.id),
+
+  // Competitor Details
+  companyName: text('company_name').notNull(),
+  website: text('website'),
+  industry: text('industry'), // JSON array
+  description: text('description'),
+
+  // Intelligence
+  strengths: text('strengths'), // JSON array
+  weaknesses: text('weaknesses'), // JSON array
+  typicalMarkets: text('typical_markets'), // JSON array
+  encounterNotes: text('encounter_notes'), // JSON array of past encounters
+
+  // Validation Workflow
+  status: text('status', {
+    enum: ['pending', 'approved', 'rejected', 'needs_revision']
+  })
+    .notNull()
+    .default('pending'),
+  adminFeedback: text('admin_feedback'), // Rejection reason
+  isValidated: integer('is_validated', { mode: 'boolean' })
+    .notNull()
+    .default(false),
+  validatedAt: integer('validated_at', { mode: 'timestamp' }),
+
+  // Audit (Optimistic Locking)
+  version: integer('version').notNull().default(1),
+
+  // Timestamps
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+}, (table) => ({
+  // CRITICAL: Performance Indexes (PERF-001 Fix)
+  companyNameIdx: index("competitors_company_name_idx").on(table.companyName),
+  statusIdx: index("competitors_status_idx").on(table.status),
+  validatedIdx: index("competitors_validated_idx").on(table.isValidated),
+  // Composite index für häufige Query: WHERE status='pending' AND isValidated=false
+  statusValidatedIdx: index("competitors_status_validated_idx").on(table.status, table.isValidated),
+}));
+
+export type Competitor = typeof competitors.$inferSelect;
+export type NewCompetitor = typeof competitors.$inferInsert;

@@ -17,11 +17,38 @@ AI-gestützte BD-Entscheidungsplattform für adesso SE. Workflow-driven mit AI A
 
 ```bash
 npm install              # Dependencies
-npm run dev              # Dev server (localhost:3000)
+d3k                      # Dev server (Debug, Dev, Devtools) - USE THIS for development!
 npm run build            # Production build
 npm run start            # Production server
 npm run db:push          # Push schema changes to DB
 npm run db:studio        # Open Drizzle Studio
+```
+
+**WICHTIG:** Verwende immer `d3k` für den Dev-Server, NICHT `npm run dev`!
+
+## Large Codebase Analysis mit Gemini CLI
+
+Für die Analyse großer Codebases oder mehrerer Dateien, die Context Limits überschreiten könnten, verwende Gemini CLI mit seinem massiven Context Window.
+
+**Verwende `gemini -p` wenn:**
+- Gesamte Codebases oder große Verzeichnisse analysiert werden
+- Mehrere große Dateien verglichen werden
+- Projekt-weite Patterns oder Architektur verstanden werden müssen
+- Mit Dateien gearbeitet wird, die insgesamt mehr als 100KB sind
+- Spezifische Features, Patterns oder Security-Maßnahmen codebase-weit verifiziert werden
+
+**Wichtige Hinweise:**
+- Pfade in @ Syntax sind relativ zum aktuellen Working Directory beim Aufruf von gemini
+- Kein --yolo Flag für read-only Analysen nötig
+- Sei spezifisch, wonach du suchst, um genaue Ergebnisse zu erhalten
+
+**Beispiel:**
+```bash
+# Analysiere alle Server Actions für fehlende Zod Validation
+gemini -p "Check all files in @lib for Server Actions that are missing Zod validation. List files with issues." @lib/**/*.ts
+
+# Architektur-Review über gesamtes Projekt
+gemini -p "Analyze the overall architecture and identify SOLID violations" @app @lib @components
 ```
 
 ## Verfügbare MCP Tools
@@ -255,31 +282,54 @@ lib/
 
 ## Key Principles
 
-### 1. Workflow-Driven Development
+### 1. Continuously Shippable Application
+- **Jedes Epic muss eine nutzbare Anwendung hinterlassen** - keine halbfertigen Features
+- Die App muss nach jedem Commit besser werden, nie schlechter
+- Alle Seiten müssen ins bestehende Layout passen (Sidebar, Breadcrumbs, etc.)
+- Keine "Baustellen-Seiten" committen, die aus dem Design herausbrechen
+- Wenn ein Feature nicht fertig ist: lieber ausblenden als kaputt zeigen
+- **Regel:** Vor jedem Commit die betroffenen Seiten im Browser prüfen
+
+### 2. Navigation Integrity
+- **Nur Views mit echtem Inhalt in der Navigation verlinken** - keine Dummy-Seiten oder Platzhalter
+- Keine "Coming soon..." oder leere Seiten in der Sidebar/Navigation
+- **Jede View muss erreichbar sein** - alle Seiten müssen irgendwo verlinkt sein (Navigation, Buttons, Links)
+- Verwaiste Seiten ohne Verlinkung sind nicht erlaubt
+- Wenn ein Feature noch nicht fertig ist: Link aus Navigation entfernen statt auf leere Seite verweisen
+- **Regel:** Nach Navigation-Änderungen alle Links durchklicken und prüfen
+
+### 3. Workflow-Driven Development
 - Alle Features als Agent Workflows implementieren
 - Live streaming mit AI SDK Elements
 - Structured outputs mit generateObject
 
-### 2. ShadCN First
+### 4. ShadCN First
 - Immer ShadCN Komponenten verwenden (nie custom components)
 - Examples als Referenz nutzen
 - Recharts für Charts (via ShadCN chart component)
 
-### 3. Agent-Native UI
+### 5. Agent-Native UI
 - Agent Activity sichtbar machen (Conversation component)
 - Chain-of-Thought anzeigen (Reasoning component)
 - Tool calls transparent darstellen
 
-### 4. MCP-Driven Discovery
+### 6. MCP-Driven Discovery
 - ShadCN MCP für alle UI Komponenten
 - Context7 MCP für AI SDK und Next.js Docs
 - Chrome DevTools MCP für Visual Testing
 - Next.js DevTools MCP für Server Diagnostics
 
-### 5. Visual Verification
+### 7. Visual Verification
 - Nach jeder UI Änderung: Screenshot mit Chrome DevTools MCP
 - Console Logs prüfen
 - Responsive Design testen
+
+### 8. EPICS.md Dokumentationsstil
+- **Nur Beschreibungen, keine Code-Skizzen** - Code entsteht während der Implementierung
+- Features und Agents beschreiben: Was sie tun, welche Inputs/Outputs, welche Gewichtung
+- Keine TypeScript-Beispiele oder Interface-Definitionen in EPICS.md
+- Technische Details gehören in den Code selbst, nicht in die Planung
+- **Regel:** EPICS.md = WAS gebaut wird, Code = WIE es gebaut wird
 
 ## Feature Implementation Workflow
 

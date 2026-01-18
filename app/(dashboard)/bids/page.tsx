@@ -173,14 +173,25 @@ export default async function BidsPage() {
 
 function StatusBadge({ status }: { status: string }) {
   const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+    // Initial & Extraction
     draft: { label: 'Entwurf', variant: 'secondary' },
     extracting: { label: 'Extraktion', variant: 'default' },
     reviewing: { label: 'Review', variant: 'default' },
+    // Evaluation
     quick_scanning: { label: 'Quick Scan', variant: 'default' },
     evaluating: { label: 'Evaluierung', variant: 'default' },
     bit_decided: { label: 'Entschieden', variant: 'outline' },
+    // NO BIT Path
+    archived: { label: 'Archiviert', variant: 'secondary' },
+    // BIT Path
     routed: { label: 'Weitergeleitet', variant: 'outline' },
+    full_scanning: { label: 'Deep Analysis', variant: 'default' },
+    bl_reviewing: { label: 'BL-Review', variant: 'default' },
     team_assigned: { label: 'Team zugewiesen', variant: 'outline' },
+    notified: { label: 'Benachrichtigt', variant: 'outline' },
+    handed_off: { label: 'Abgeschlossen', variant: 'outline' },
+    // Legacy
+    analysis_complete: { label: 'Analyse fertig', variant: 'outline' },
   };
 
   const config = statusConfig[status] || { label: status, variant: 'secondary' as const };

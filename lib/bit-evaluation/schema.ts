@@ -23,27 +23,49 @@ export type CapabilityMatch = z.infer<typeof capabilityMatchSchema>;
 
 /**
  * BIT-003: Deal Quality Schema
- * Evaluates budget, timeline, and margin potential
+ * Evaluates budget, timeline, margin potential, and answers the 10 critical BIT questions
  */
 export const dealQualitySchema = z.object({
-  budgetAssessment: z.object({
-    isAdequate: z.boolean().describe('Is the budget adequate for the scope?'),
-    estimatedMargin: z.number().min(0).max(100).describe('Estimated margin percentage (0-100)'),
-    budgetRisks: z.array(z.string()).describe('Budget-related risks'),
-  }),
+  // Budget Assessment
+  budgetAdequacy: z.enum(['adequate', 'tight', 'inadequate']).describe('Budget adequacy assessment'),
+  estimatedBudget: z.string().optional().describe('Estimated budget based on scope (e.g., "€150k-€300k")'),
+  estimatedMargin: z.number().min(0).max(100).describe('Estimated margin percentage (0-100)'),
+  budgetRisks: z.array(z.string()).describe('Budget-related risks'),
 
-  timelineAssessment: z.object({
-    isRealistic: z.boolean().describe('Is the timeline realistic for the scope?'),
-    timelinePressure: z.enum(['low', 'medium', 'high']).describe('Pressure level for timeline'),
-    timelineRisks: z.array(z.string()).describe('Timeline-related risks'),
-  }),
+  // Timeline Assessment
+  timelineRealism: z.enum(['realistic', 'tight', 'unrealistic']).describe('Timeline realism assessment'),
+  projectStart: z.string().optional().describe('Estimated project start date'),
+  shortlistingDate: z.string().optional().describe('Estimated shortlisting/presentation date'),
+  timelineRisks: z.array(z.string()).describe('Timeline-related risks'),
 
-  commercialViability: z.object({
-    expectedRevenue: z.string().describe('Expected revenue range (e.g., "€100k-€500k")'),
-    profitabilityRating: z.enum(['low', 'medium', 'high']).describe('Expected profitability'),
-    commercialRisks: z.array(z.string()).describe('Commercial risks'),
-  }),
+  // Contract Assessment
+  contractType: z.string().optional().describe('Contract type (EVB-IT, service contract, SLA, framework, etc.)'),
+  contractRisks: z.array(z.string()).optional().default([]).describe('Contract-related risks'),
 
+  // Customer Relationship
+  customerRelationship: z.enum(['existing', 'known', 'anonymous']).optional().describe('Customer relationship type'),
+  relationshipDetails: z.string().optional().describe('Details about customer relationship'),
+
+  // Services and Requirements
+  requiredServices: z.array(z.string()).optional().default([]).describe('Required services'),
+  requiredReferences: z.array(z.string()).optional().default([]).describe('Required references'),
+  canFulfillReferences: z.boolean().optional().describe('Can we fulfill reference requirements?'),
+
+  // Award Criteria
+  awardCriteria: z.string().optional().describe('Description of award criteria'),
+
+  // Team Requirements
+  teamRequirements: z.string().optional().describe('Team requirements for bid/presentation'),
+
+  // Challenges
+  challenges: z.array(z.string()).optional().default([]).describe('Identified challenges'),
+
+  // Commercial Viability
+  expectedRevenueRange: z.string().describe('Expected revenue range (e.g., "€100k-€500k")'),
+  profitabilityRating: z.enum(['low', 'medium', 'high']).describe('Expected profitability'),
+  commercialRisks: z.array(z.string()).describe('Commercial risks'),
+
+  // Overall Assessment
   overallDealQualityScore: z.number().min(0).max(100).describe('Overall deal quality score'),
   confidence: z.number().min(0).max(100).describe('Confidence in this assessment'),
   reasoning: z.string().describe('Detailed explanation of deal quality assessment'),
@@ -113,17 +135,109 @@ export const competitionCheckSchema = z.object({
 export type CompetitionCheck = z.infer<typeof competitionCheckSchema>;
 
 /**
- * BIT-006: BIT Decision Schema
+ * BIT-006: Legal Assessment Schema
+ * Evaluates legal and contractual risks
+ */
+export const legalAssessmentSchema = z.object({
+  contractTypeAssessment: z.object({
+    contractType: z.string().describe('Type of contract (fixed price, T&M, outcome-based, etc.)'),
+    isAcceptable: z.boolean().describe('Is this contract type acceptable for adesso?'),
+    contractRisks: z.array(z.string()).describe('Risks related to contract type'),
+  }),
+
+  paymentRiskAssessment: z.object({
+    paymentTerms: z.string().describe('Payment terms description (e.g., "30 days net", "milestone-based")'),
+    paymentRiskLevel: z.enum(['low', 'medium', 'high']).describe('Risk level for payment'),
+    paymentRisks: z.array(z.string()).describe('Payment-related risks'),
+  }),
+
+  liabilityAssessment: z.object({
+    hasUnlimitedLiability: z.boolean().describe('Does contract require unlimited liability?'),
+    liabilityCaps: z.string().describe('Description of liability caps if any'),
+    liabilityRisks: z.array(z.string()).describe('Liability-related risks'),
+  }),
+
+  ipAndLicenseAssessment: z.object({
+    ipTransferRequired: z.boolean().describe('Is IP transfer to customer required?'),
+    licenseRequirements: z.array(z.string()).describe('License requirements or restrictions'),
+    ipRisks: z.array(z.string()).describe('IP and licensing risks'),
+  }),
+
+  complianceAssessment: z.object({
+    hasSpecialCompliance: z.boolean().describe('Are there special compliance requirements?'),
+    complianceRequirements: z.array(z.string()).describe('List of compliance requirements (GDPR, SOC2, etc.)'),
+    complianceRisks: z.array(z.string()).describe('Compliance-related risks'),
+  }),
+
+  exitClauseAssessment: z.object({
+    hasReasonableExit: z.boolean().describe('Are exit clauses reasonable?'),
+    exitConditions: z.array(z.string()).describe('Exit conditions in contract'),
+    exitRisks: z.array(z.string()).describe('Exit-related risks'),
+  }),
+
+  overallLegalScore: z.number().min(0).max(100).describe('Overall legal/contractual score'),
+  confidence: z.number().min(0).max(100).describe('Confidence in this assessment'),
+  reasoning: z.string().describe('Detailed explanation of legal assessment'),
+  criticalBlockers: z.array(z.string()).describe('Critical legal blockers'),
+});
+
+export type LegalAssessment = z.infer<typeof legalAssessmentSchema>;
+
+/**
+ * BIT-007: Reference Match Schema
+ * Evaluates matching with existing reference projects and experience
+ */
+export const referenceMatchSchema = z.object({
+  similarProjectsAnalysis: z.object({
+    hasRelevantReferences: z.boolean().describe('Do we have relevant reference projects?'),
+    similarProjects: z.array(z.object({
+      projectType: z.string().describe('Type of similar project'),
+      relevanceScore: z.number().min(0).max(100).describe('How relevant is this project type'),
+      keyLearnings: z.string().describe('Key learnings from similar projects'),
+    })).describe('List of similar project types we have done'),
+    projectTypeMatchScore: z.number().min(0).max(100).describe('Overall project type match score'),
+  }),
+
+  industryMatchAnalysis: z.object({
+    industryMatchScore: z.number().min(0).max(100).describe('How well do we know this industry'),
+    industryExperience: z.enum(['none', 'limited', 'moderate', 'extensive']).describe('Our experience level in this industry'),
+    industryInsights: z.array(z.string()).describe('Key industry insights we bring'),
+  }),
+
+  technologyMatchAnalysis: z.object({
+    technologyMatchScore: z.number().min(0).max(100).describe('Technology experience score'),
+    matchingTechnologies: z.array(z.string()).describe('Technologies we have strong experience with'),
+    missingExperience: z.array(z.string()).describe('Technologies we lack experience with'),
+  }),
+
+  successRateAnalysis: z.object({
+    estimatedSuccessRate: z.number().min(0).max(100).describe('Estimated success rate based on history'),
+    successFactors: z.array(z.string()).describe('Factors that increase success probability'),
+    riskFactors: z.array(z.string()).describe('Factors that decrease success probability'),
+  }),
+
+  overallReferenceScore: z.number().min(0).max(100).describe('Overall reference match score'),
+  confidence: z.number().min(0).max(100).describe('Confidence in this assessment'),
+  reasoning: z.string().describe('Detailed explanation of reference assessment'),
+  criticalBlockers: z.array(z.string()).describe('Critical reference-related blockers'),
+});
+
+export type ReferenceMatch = z.infer<typeof referenceMatchSchema>;
+
+/**
+ * BIT-008: BIT Decision Schema
  * Final coordinated decision
  */
 export const bitDecisionSchema = z.object({
   decision: z.enum(['bit', 'no_bit']).describe('Final BIT or NO BIT decision'),
 
   scores: z.object({
-    capability: z.number().min(0).max(100).describe('Capability score (30% weight)'),
-    dealQuality: z.number().min(0).max(100).describe('Deal quality score (25% weight)'),
-    strategicFit: z.number().min(0).max(100).describe('Strategic fit score (20% weight)'),
-    winProbability: z.number().min(0).max(100).describe('Win probability (25% weight)'),
+    capability: z.number().min(0).max(100).describe('Capability score (25% weight)'),
+    dealQuality: z.number().min(0).max(100).describe('Deal quality score (20% weight)'),
+    strategicFit: z.number().min(0).max(100).describe('Strategic fit score (15% weight)'),
+    winProbability: z.number().min(0).max(100).describe('Win probability (15% weight)'),
+    legal: z.number().min(0).max(100).describe('Legal assessment score (15% weight)'),
+    reference: z.number().min(0).max(100).describe('Reference match score (10% weight)'),
     overall: z.number().min(0).max(100).describe('Weighted overall score'),
   }),
 
@@ -176,6 +290,8 @@ export const bitEvaluationResultSchema = z.object({
   dealQuality: dealQualitySchema,
   strategicFit: strategicFitSchema,
   competitionCheck: competitionCheckSchema,
+  legalAssessment: legalAssessmentSchema,
+  referenceMatch: referenceMatchSchema,
 
   // Coordinated decision
   decision: bitDecisionSchema,

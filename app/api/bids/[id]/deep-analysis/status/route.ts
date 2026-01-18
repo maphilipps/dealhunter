@@ -74,11 +74,18 @@ export async function GET(
     }
 
     return Response.json({
-      status: analysis.status,
-      analysisId: analysis.id,
-      startedAt: analysis.startedAt?.toISOString(),
-      completedAt: analysis.completedAt?.toISOString(),
-      errorMessage: analysis.errorMessage,
+      success: true,
+      analysis: {
+        id: analysis.id,
+        status: analysis.status,
+        startedAt: analysis.startedAt,
+        completedAt: analysis.completedAt,
+        errorMessage: analysis.errorMessage,
+        contentArchitecture: analysis.contentArchitecture,
+        migrationComplexity: analysis.migrationComplexity,
+        accessibilityAudit: analysis.accessibilityAudit,
+        ptEstimation: analysis.ptEstimation,
+      },
     });
   } catch (error) {
     console.error('[API] Failed to fetch analysis status:', error);

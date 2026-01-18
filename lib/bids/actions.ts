@@ -2,11 +2,82 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { bidOpportunities } from '@/lib/db/schema';
+import { bidOpportunities, documents } from '@/lib/db/schema';
 import { extractTextFromPdf } from './pdf-extractor';
 import { detectPII, cleanText } from '@/lib/pii/pii-cleaner';
 import { extractRequirements } from '@/lib/extraction/agent';
-import { eq } from 'drizzle-orm';
+import { suggestWebsiteUrls } from '@/lib/extraction/url-suggestion-agent';
+import { eq, and, desc } from 'drizzle-orm';
+
+/**
+ * Get all bids for the current user
+ */
+export async function getBids() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert', bids: [] };
+  }
+
+  try {
+    const bids = await db
+      .select()
+      .from(bidOpportunities)
+      .where(eq(bidOpportunities.userId, session.user.id))
+      .orderBy(desc(bidOpportunities.createdAt));
+
+    return { success: true, bids };
+  } catch (error) {
+    console.error('Get bids error:', error);
+    return { success: false, error: 'Fehler beim Laden der Bids', bids: [] };
+  }
+}
+
+/**
+ * Get all documents for a bid
+ */
+export async function getBidDocuments(bidId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert', documents: [] };
+  }
+
+  try {
+    // Get bid first to ensure user has access
+    const bid = await db
+      .select()
+      .from(bidOpportunities)
+      .where(and(
+        eq(bidOpportunities.id, bidId),
+        eq(bidOpportunities.userId, session.user.id)
+      ))
+      .limit(1);
+
+    if (!bid.length) {
+      return { success: false, error: 'Bid nicht gefunden', documents: [] };
+    }
+
+    // Get documents (without fileData to avoid large responses)
+    const docs = await db
+      .select({
+        id: documents.id,
+        fileName: documents.fileName,
+        fileType: documents.fileType,
+        fileSize: documents.fileSize,
+        uploadSource: documents.uploadSource,
+        uploadedAt: documents.uploadedAt,
+      })
+      .from(documents)
+      .where(eq(documents.bidOpportunityId, bidId))
+      .orderBy(desc(documents.uploadedAt));
+
+    return { success: true, documents: docs };
+  } catch (error) {
+    console.error('Get bid documents error:', error);
+    return { success: false, error: 'Fehler beim Laden der Dokumente', documents: [] };
+  }
+}
 
 export async function uploadPdfBid(formData: FormData) {
   const session = await auth();
@@ -77,6 +148,18 @@ export async function uploadPdfBid(formData: FormData) {
         bitDecision: 'pending',
       })
       .returning();
+
+    // Save PDF file to documents table
+    const base64Data = buffer.toString('base64');
+    await db.insert(documents).values({
+      bidOpportunityId: bidOpportunity.id,
+      userId: session.user.id,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      fileData: base64Data,
+      uploadSource: 'initial_upload',
+    });
 
     return {
       success: true,
@@ -313,5 +396,41 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
   } catch (error) {
     console.error('Update requirements error:', error);
     return { success: false, error: 'Update fehlgeschlagen' };
+  }
+}
+
+/**
+ * Suggest website URLs based on customer information
+ * Uses AI to suggest likely URLs when none are found in the document
+ */
+export async function suggestWebsiteUrlsAction(data: {
+  customerName: string;
+  industry?: string;
+  projectDescription?: string;
+  technologies?: string[];
+}) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert', suggestions: [] };
+  }
+
+  try {
+    const result = await suggestWebsiteUrls(data);
+
+    return {
+      success: true,
+      suggestions: result.suggestions.map(s => ({
+        url: s.url,
+        type: s.type,
+        description: s.description,
+        confidence: s.confidence,
+        extractedFromDocument: false,
+      })),
+      reasoning: result.reasoning,
+    };
+  } catch (error) {
+    console.error('URL suggestion error:', error);
+    return { success: false, error: 'Vorschläge konnten nicht generiert werden', suggestions: [] };
   }
 }

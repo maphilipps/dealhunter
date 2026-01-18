@@ -1,6 +1,11 @@
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import OpenAI from 'openai';
 import { strategicFitSchema, type StrategicFit } from '../schema';
+
+// Initialize OpenAI client with adesso AI Hub
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+});
 
 export interface StrategicFitAgentInput {
   extractedRequirements: any; // From extraction phase
@@ -12,13 +17,20 @@ export interface StrategicFitAgentInput {
  * Evaluates alignment with adesso strategy and target customer profile
  */
 export async function runStrategicFitAgent(input: StrategicFitAgentInput): Promise<StrategicFit> {
-  const result = await generateObject({
-    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
-    model: openai('gpt-4o-mini'),
-    schema: strategicFitSchema,
-    prompt: `You are a strategic business assessor for adesso SE, a leading German IT consulting company.
+  const completion = await openai.chat.completions.create({
+    model: 'claude-haiku-4.5',
+    messages: [
+      {
+        role: 'system',
+        content: `Du bist ein erfahrener Strategic Business Assessor bei adesso SE.
+Bewerte GRÜNDLICH, wie gut diese Opportunity zur strategischen Ausrichtung und dem Zielkundenprofil von adesso passt.
+Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
 
-Evaluate how well this opportunity aligns with adesso's strategic direction and target customer profile.
+WICHTIG: Gib immer eine fundierte Einschätzung ab. Alle Begründungen und Texte auf Deutsch.`,
+      },
+      {
+        role: 'user',
+        content: `Evaluate how well this opportunity aligns with adesso's strategic direction and target customer profile.
 
 Extracted Requirements:
 ${JSON.stringify(input.extractedRequirements, null, 2)}
@@ -63,50 +75,41 @@ adesso's Strategic Focus:
 - **Technology Leadership:** Cutting-edge tech that positions us as innovators
 - **Recurring Revenue:** Potential for managed services, retainers, or follow-on work
 
-Assessment Criteria:
-
-1. **Customer Type Assessment**
-   - What type of customer is this? (enterprise, mid-market, SMB, startup, public sector)
-   - Is this our target customer profile?
-   - Customer fit score (0-100): How well do they match our ideal customer?
-
-2. **Industry Alignment**
-   - What industry are they in?
-   - Is this a target industry for us?
-   - What's our experience level? (none, limited, moderate, extensive)
-   - Industry fit score (0-100)
-
-3. **Strategic Value**
-   - Could this become a reference project? (based on company prominence, project visibility)
-   - Does it enable entry to new markets/industries?
-   - Does it expand an existing relationship?
-   - Long-term potential: high (multi-year relationship likely), medium (possible extensions), low (one-off project)
-
-4. **Overall Strategic Fit Score (overallStrategicFitScore)**
-   - 80-100: Perfect fit (target customer, target industry, high strategic value)
-   - 60-80: Good fit (mostly aligned with our strategy)
-   - 40-60: Moderate fit (some strategic value but not ideal)
-   - 0-40: Poor fit (outside our target profile)
-
-5. **Critical Blockers**
-   - Customer type completely mismatched (e.g., small startup)
-   - Industry where we have zero expertise and cannot quickly develop it
-   - Project type inconsistent with our strategy (e.g., body shopping)
-   - Geographic market we don't serve
-
-6. **Confidence (confidence)**
-   - How confident are you in this assessment? (0-100)
-   - Lower if customer/industry details are unclear
-   - Higher if this clearly matches/mismatches our profile
-
-IMPORTANT:
-- A lower score doesn't mean automatic NO BIT - strategic value can outweigh fit
-- A first project with a target customer might score lower on "experience" but higher on strategic value
-- Consider both current fit AND future potential
-
-Provide your assessment:`,
+Respond with JSON containing:
+- customerTypeAssessment (object):
+  - customerType (string): Type of customer (enterprise, mid-market, startup, etc.)
+  - isTargetCustomer (boolean): Is this our target customer profile?
+  - customerFitScore (number 0-100): How well customer fits our profile
+- industryAlignment (object):
+  - industry (string): Customer industry
+  - isTargetIndustry (boolean): Is this a target industry for adesso?
+  - industryExperience (string: "none", "limited", "moderate", or "extensive"): Our experience
+  - industryFitScore (number 0-100): Industry alignment score
+- strategicValue (object):
+  - isReferenceProject (boolean): Could this become a reference project?
+  - enablesNewMarket (boolean): Opens doors to new markets?
+  - expandsExistingRelationship (boolean): Expands relationship with existing customer?
+  - longTermPotential (string: "low", "medium", or "high"): Long-term potential
+- overallStrategicFitScore (number 0-100): Gesamt Strategic Fit Score
+- confidence (number 0-100): Confidence der Bewertung
+- reasoning (string): Ausführliche Begründung auf Deutsch (min. 2-3 Sätze)
+- criticalBlockers (array of strings): Strategische Blocker auf Deutsch`,
+      },
+    ],
     temperature: 0.3,
+    max_tokens: 4000,
   });
 
-  return result.object;
+  const responseText = completion.choices[0]?.message?.content || '{}';
+  const cleanedResponse = responseText
+    .replace(/```json\n?/g, '')
+    .replace(/```\n?/g, '')
+    .trim();
+
+  const rawResult = JSON.parse(cleanedResponse);
+  const cleanedResult = Object.fromEntries(
+    Object.entries(rawResult).filter(([_, v]) => v !== null)
+  );
+
+  return strategicFitSchema.parse(cleanedResult);
 }

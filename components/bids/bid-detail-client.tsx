@@ -4,20 +4,23 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
-import { startExtraction, updateExtractedRequirements } from '@/lib/bids/actions';
+import { updateExtractedRequirements } from '@/lib/bids/actions';
 import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
-import { startBitEvaluation, getBitEvaluationResult } from '@/lib/bit-evaluation/actions';
+import { startBitEvaluation, getBitEvaluationResult, retriggerBitEvaluation } from '@/lib/bit-evaluation/actions';
 import type { BidOpportunity } from '@/lib/db/schema';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 import { ExtractionPreview } from './extraction-preview';
 import { QuickScanResults } from './quick-scan-results';
+import { WebsiteUrlInput } from './website-url-input';
 import { ActivityStream } from '@/components/ai-elements/activity-stream';
 import { DecisionCard } from './decision-card';
 import { LowConfidenceDialog } from './low-confidence-dialog';
 import { BLRoutingCard } from './bl-routing-card';
 import { TeamBuilder } from './team-builder';
+import { DeepAnalysisCard } from './deep-analysis-card';
+import { DocumentsSidebar } from './documents-sidebar';
 
 interface BidDetailClientProps {
   bid: BidOpportunity;
@@ -34,28 +37,16 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   const [bitEvaluationResult, setBitEvaluationResult] = useState<BitEvaluationResult | null>(null);
   const [isLoadingBitEvaluation, setIsLoadingBitEvaluation] = useState(false);
   const [showLowConfidenceDialog, setShowLowConfidenceDialog] = useState(false);
+  const [needsWebsiteUrl, setNeedsWebsiteUrl] = useState(false);
+  const [isSubmittingUrl, setIsSubmittingUrl] = useState(false);
+  const [isRetriggeringBit, setIsRetriggeringBit] = useState(false);
 
-  // Handle extraction start
-  const handleStartExtraction = async () => {
+  // Handle extraction start - now uses streaming
+  const handleStartExtraction = () => {
     setIsExtracting(true);
     toast.info('Starte AI-Extraktion...');
-
-    try {
-      const result = await startExtraction(bid.id);
-
-      if (result.success) {
-        toast.success('Extraktion abgeschlossen!');
-        setExtractedData(result.requirements);
-        setIsExtracting(false);
-        router.refresh();
-      } else {
-        toast.error(result.error || 'Extraktion fehlgeschlagen');
-        setIsExtracting(false);
-      }
-    } catch (error) {
-      toast.error('Ein Fehler ist aufgetreten');
-      setIsExtracting(false);
-    }
+    // The actual extraction happens via ActivityStream SSE endpoint
+    // When stream completes, onComplete callback refreshes the page
   };
 
   // Handle requirements confirmation
@@ -116,6 +107,83 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     }
   };
 
+  // Handle URL submission when Quick Scan needs a URL
+  const handleUrlSubmit = async (urls: Array<{ url: string; type: string; description?: string; selected: boolean }>) => {
+    setIsSubmittingUrl(true);
+
+    try {
+      // Update extracted requirements with selected URLs
+      const selectedUrls = urls.filter(u => u.selected);
+      const primaryUrl = selectedUrls[0]?.url;
+
+      const updatedRequirements = {
+        ...extractedData,
+        websiteUrls: selectedUrls.map(u => ({
+          url: u.url,
+          type: u.type,
+          description: u.description,
+          extractedFromDocument: false,
+        })),
+        websiteUrl: primaryUrl,
+      };
+
+      // Save updated requirements
+      const updateResult = await updateExtractedRequirements(bid.id, updatedRequirements);
+
+      if (!updateResult.success) {
+        toast.error(updateResult.error || 'Fehler beim Speichern der URLs');
+        setIsSubmittingUrl(false);
+        return;
+      }
+
+      setExtractedData(updatedRequirements);
+      toast.success('URLs gespeichert! Quick Scan wird gestartet...');
+
+      // Start Quick Scan
+      const scanResult = await startQuickScan(bid.id);
+      if (scanResult.success) {
+        setNeedsWebsiteUrl(false);
+        toast.success('Quick Scan gestartet!');
+        router.refresh();
+
+        // Wait and start BIT evaluation
+        setTimeout(() => {
+          checkQuickScanAndStartEvaluation();
+        }, 2000);
+      } else {
+        toast.error(scanResult.error || 'Quick Scan konnte nicht gestartet werden');
+      }
+    } catch (error) {
+      toast.error('Ein Fehler ist aufgetreten');
+    } finally {
+      setIsSubmittingUrl(false);
+    }
+  };
+
+  // Handle BIT evaluation re-trigger
+  const handleRetriggerBitEvaluation = async () => {
+    setIsRetriggeringBit(true);
+    toast.info('Starte BIT Evaluierung erneut...');
+
+    try {
+      const result = await retriggerBitEvaluation(bid.id);
+
+      if (result.success) {
+        toast.success('BIT Evaluierung gestartet - bitte warten...');
+        // Clear current result so the ActivityStream is shown
+        setBitEvaluationResult(null);
+        // Force page reload to show ActivityStream
+        window.location.reload();
+      } else {
+        toast.error(result.error || 'BIT Re-Evaluierung fehlgeschlagen');
+        setIsRetriggeringBit(false);
+      }
+    } catch (error) {
+      toast.error('Ein Fehler ist aufgetreten');
+      setIsRetriggeringBit(false);
+    }
+  };
+
   // Load quick scan if status is quick_scanning or later
   useEffect(() => {
     if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'team_assigned'].includes(bid.status)) {
@@ -123,11 +191,19 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
       getQuickScanResult(bid.id).then(result => {
         if (result.success && result.quickScan) {
           setQuickScan(result.quickScan);
+          setNeedsWebsiteUrl(false);
+        } else if (bid.status === 'quick_scanning') {
+          // Quick Scan status but no results - likely missing URL
+          // Check if extractedData has a websiteUrl
+          const hasUrl = extractedData?.websiteUrl || (extractedData?.websiteUrls && extractedData.websiteUrls.length > 0);
+          if (!hasUrl) {
+            setNeedsWebsiteUrl(true);
+          }
         }
         setIsLoadingQuickScan(false);
       });
     }
-  }, [bid.id, bid.status]);
+  }, [bid.id, bid.status, extractedData]);
 
   // Load BIT evaluation result if status is bit_decided or later
   useEffect(() => {
@@ -148,110 +224,126 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   }, [bid.id, bid.status]);
 
   // Draft state - Show raw input and start extraction button
-  if (bid.status === 'draft') {
+  if (bid.status === 'draft' && !isExtracting) {
     return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Rohdaten</CardTitle>
-            <CardDescription>
-              Extrahierter Text aus dem Dokument
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-lg bg-muted p-4">
-              <pre className="whitespace-pre-wrap text-sm font-mono">
-                {bid.rawInput.substring(0, 1000)}
-                {bid.rawInput.length > 1000 && '...'}
-              </pre>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Rohdaten</CardTitle>
+              <CardDescription>
+                Extrahierter Text aus dem Dokument
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg bg-muted p-4">
+                <pre className="whitespace-pre-wrap text-sm font-mono">
+                  {bid.rawInput.substring(0, 1000)}
+                  {bid.rawInput.length > 1000 && '...'}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Nächster Schritt</CardTitle>
-            <CardDescription>
-              AI-gestützte Extraktion der Anforderungen
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleStartExtraction} disabled={isExtracting}>
-              {isExtracting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Extraktion läuft...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  AI-Extraktion starten
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Nächster Schritt</CardTitle>
+              <CardDescription>
+                AI-gestützte Extraktion der Anforderungen
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={handleStartExtraction} disabled={isExtracting}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                AI-Extraktion starten
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+          <DocumentsSidebar bidId={bid.id} />
+        </aside>
       </div>
     );
   }
 
-  // Extracting state - Show progress
+  // Extracting state - Show ActivityStream with real-time progress
   if (isExtracting || bid.status === 'extracting') {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            AI-Extraktion läuft
-          </CardTitle>
-          <CardDescription>
-            Bitte warten, während die AI die Anforderungen analysiert...
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden">
-                <div className="h-full w-2/3 bg-primary animate-pulse" />
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Rohdaten</CardTitle>
+              <CardDescription>
+                Extrahierter Text aus dem Dokument
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg bg-muted p-4">
+                <pre className="whitespace-pre-wrap text-sm font-mono">
+                  {bid.rawInput.substring(0, 500)}
+                  {bid.rawInput.length > 500 && '...'}
+                </pre>
               </div>
-              <span className="text-sm text-muted-foreground">~30 Sekunden</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Die AI extrahiert Kundenname, Technologien, Anforderungen und weitere Details aus dem Dokument.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+
+          <ActivityStream
+            streamUrl={`/api/bids/${bid.id}/extraction/stream`}
+            title="AI-Extraktion"
+            onComplete={() => {
+              toast.success('Extraktion abgeschlossen!');
+              setIsExtracting(false);
+              router.refresh();
+            }}
+            onError={(error) => {
+              toast.error(error || 'Extraktion fehlgeschlagen');
+              setIsExtracting(false);
+            }}
+            autoStart={true}
+          />
+        </div>
+        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+          <DocumentsSidebar bidId={bid.id} />
+        </aside>
+      </div>
     );
   }
 
   // Reviewing state - Show extraction preview and edit form
   if (bid.status === 'reviewing' && extractedData) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-            Extraktion abgeschlossen
-          </CardTitle>
-          <CardDescription>
-            Überprüfen und korrigieren Sie die extrahierten Daten
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ExtractionPreview
-            initialData={extractedData}
-            onConfirm={handleConfirmRequirements}
-          />
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              Extraktion abgeschlossen
+            </CardTitle>
+            <CardDescription>
+              Überprüfen und korrigieren Sie die extrahierten Daten
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ExtractionPreview
+              initialData={extractedData}
+              onConfirm={handleConfirmRequirements}
+            />
+          </CardContent>
+        </Card>
+        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+          <DocumentsSidebar bidId={bid.id} />
+        </aside>
+      </div>
     );
   }
 
   // Quick Scanning or later states - Show Quick Scan results
   if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'team_assigned'].includes(bid.status)) {
     return (
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        <div className="space-y-6">
         {/* Extracted Requirements Summary */}
         {extractedData && (
           <Card>
@@ -291,8 +383,20 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           </Card>
         )}
 
+        {/* Website URL Input (when needed) */}
+        {needsWebsiteUrl && extractedData && (
+          <WebsiteUrlInput
+            customerName={extractedData.customerName}
+            industry={extractedData.industry}
+            projectDescription={extractedData.projectDescription}
+            technologies={extractedData.technologies}
+            onSubmit={handleUrlSubmit}
+            isSubmitting={isSubmittingUrl}
+          />
+        )}
+
         {/* Quick Scan Results */}
-        {isLoadingQuickScan && (
+        {isLoadingQuickScan && !needsWebsiteUrl && (
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-2">
@@ -303,7 +407,13 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           </Card>
         )}
 
-        {quickScan && <QuickScanResults quickScan={quickScan} />}
+        {quickScan && (
+          <QuickScanResults
+            quickScan={quickScan}
+            bidId={bid.id}
+            onRefresh={() => router.refresh()}
+          />
+        )}
 
         {/* BIT Evaluation Progress (evaluating status) */}
         {bid.status === 'evaluating' && (
@@ -334,6 +444,22 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
 
             {bitEvaluationResult && (
               <>
+                <div className="flex items-center justify-between">
+                  <div />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRetriggerBitEvaluation}
+                    disabled={isRetriggeringBit}
+                  >
+                    {isRetriggeringBit ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4 mr-1" />
+                    )}
+                    Erneut evaluieren
+                  </Button>
+                </div>
                 <DecisionCard result={bitEvaluationResult} />
 
                 {/* Show BL Routing Card for BIT decisions */}
@@ -350,6 +476,15 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
                   />
                 )}
 
+                {/* Show Deep Analysis Card for BIT decisions */}
+                {bitEvaluationResult.decision.decision === 'bit' && (
+                  <DeepAnalysisCard
+                    bidId={bid.id}
+                    websiteUrl={bid.websiteUrl}
+                    existingAnalysis={null}
+                  />
+                )}
+
                 <LowConfidenceDialog
                   open={showLowConfidenceDialog}
                   onOpenChange={setShowLowConfidenceDialog}
@@ -362,6 +497,10 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             )}
           </>
         )}
+        </div>
+        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+          <DocumentsSidebar bidId={bid.id} />
+        </aside>
       </div>
     );
   }
@@ -369,7 +508,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Routed status - Show Team Builder
   if (bid.status === 'routed' || bid.status === 'team_assigned') {
     return (
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        <div className="space-y-6">
         {/* Show extracted requirements summary */}
         {extractedData && (
           <Card>
@@ -395,6 +535,13 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           </Card>
         )}
 
+        {/* Deep Analysis */}
+        <DeepAnalysisCard
+          bidId={bid.id}
+          websiteUrl={bid.websiteUrl}
+          existingAnalysis={null}
+        />
+
         {/* Team Builder */}
         {bid.status === 'routed' && <TeamBuilder bidId={bid.id} />}
 
@@ -412,6 +559,10 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             </CardContent>
           </Card>
         )}
+        </div>
+        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+          <DocumentsSidebar bidId={bid.id} />
+        </aside>
       </div>
     );
   }
@@ -419,45 +570,50 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Other states - Show extracted data readonly
   if (extractedData) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Extrahierte Anforderungen</CardTitle>
-          <CardDescription>
-            Von AI extrahierte und bestätigte Daten
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {extractedData.customerName && (
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Kunde</p>
-                <p className="text-lg">{extractedData.customerName}</p>
-              </div>
-            )}
-            {extractedData.projectDescription && (
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Projektbeschreibung</p>
-                <p>{extractedData.projectDescription}</p>
-              </div>
-            )}
-            {extractedData.technologies && extractedData.technologies.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">Technologien</p>
-                <div className="flex flex-wrap gap-2">
-                  {extractedData.technologies.map((tech: string, idx: number) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm"
-                    >
-                      {tech}
-                    </span>
-                  ))}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Extrahierte Anforderungen</CardTitle>
+            <CardDescription>
+              Von AI extrahierte und bestätigte Daten
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {extractedData.customerName && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Kunde</p>
+                  <p className="text-lg">{extractedData.customerName}</p>
                 </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              )}
+              {extractedData.projectDescription && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Projektbeschreibung</p>
+                  <p>{extractedData.projectDescription}</p>
+                </div>
+              )}
+              {extractedData.technologies && extractedData.technologies.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Technologien</p>
+                  <div className="flex flex-wrap gap-2">
+                    {extractedData.technologies.map((tech: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+          <DocumentsSidebar bidId={bid.id} />
+        </aside>
+      </div>
     );
   }
 

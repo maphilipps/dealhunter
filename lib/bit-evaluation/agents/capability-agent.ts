@@ -1,6 +1,11 @@
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import OpenAI from 'openai';
 import { capabilityMatchSchema, type CapabilityMatch } from '../schema';
+
+// Initialize OpenAI client with adesso AI Hub
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+});
 
 export interface CapabilityAgentInput {
   extractedRequirements: any; // From extraction phase
@@ -12,76 +17,74 @@ export interface CapabilityAgentInput {
  * Evaluates if adesso has the technical capabilities to deliver this project
  */
 export async function runCapabilityAgent(input: CapabilityAgentInput): Promise<CapabilityMatch> {
-  const result = await generateObject({
-    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
-    model: openai('gpt-4o-mini'),
-    schema: capabilityMatchSchema,
-    prompt: `You are a technical capability assessor for adesso SE, a leading German IT consulting company.
+  const completion = await openai.chat.completions.create({
+    model: 'claude-haiku-4.5',
+    messages: [
+      {
+        role: 'system',
+        content: `Du bist ein erfahrener Technical Capability Assessor bei adesso SE.
+Bewerte GRÜNDLICH, ob adesso die technischen Fähigkeiten hat, dieses Projekt erfolgreich zu liefern.
+Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
 
-Evaluate if adesso has the capabilities to successfully deliver this project.
+WICHTIG: Gib immer eine fundierte Einschätzung ab, auch wenn nicht alle technischen Details explizit genannt sind. Nutze dein Expertenwissen über typische Projektanforderungen.`,
+      },
+      {
+        role: 'user',
+        content: `Bewerte die technische Kapazität von adesso für dieses Projekt.
 
-Extracted Requirements:
+**Extrahierte Anforderungen:**
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${input.quickScanResults ? `
-Quick Scan Results:
+**Quick Scan Ergebnisse (Tech Stack des Kunden):**
 ${JSON.stringify(input.quickScanResults, null, 2)}
 ` : ''}
 
-adesso's Core Capabilities:
-- **CMS & Portals:** Drupal (20+ years experience), WordPress, Typo3, Magnolia, Liferay
-- **Frontend:** React, Vue, Angular, Next.js, TypeScript, modern JavaScript
-- **Backend:** Java/Spring, .NET, Node.js, Python, PHP
-- **Cloud:** AWS, Azure, GCP (certified partners)
-- **E-Commerce:** SAP Commerce, Shopware, Magento, custom solutions
-- **Enterprise:** SAP, Salesforce, Microsoft Dynamics
+**adesso Kernkompetenzen:**
+- **CMS & Portale:** Drupal (20+ Jahre Expertise), WordPress, Typo3, Magnolia, Sitecore
+- **Frontend:** React, Vue, Angular, Next.js, TypeScript, Tailwind
+- **Backend:** Java/Spring Boot, .NET Core, Node.js, Python, PHP
+- **Cloud:** AWS (Advanced Partner), Azure, GCP (zertifizierte Partner)
+- **E-Commerce:** SAP Commerce, Shopware, Magento, Spryker
+- **Enterprise:** SAP S/4HANA, Salesforce, Microsoft Dynamics 365
 - **Mobile:** React Native, Flutter, native iOS/Android
-- **DevOps:** CI/CD, Kubernetes, Docker, Infrastructure as Code
-- **Data:** Data Engineering, Analytics, AI/ML integration
-- **Industry Expertise:** Banking, Insurance, Automotive, Energy, Retail, Public Sector
+- **DevOps:** CI/CD, Kubernetes, Docker, GitOps
+- **Data & AI:** Machine Learning, Data Engineering, Business Intelligence
+- **Integration:** API Management, Microservices, Event-Driven Architecture
 
-Typical Team Sizes: 3-50 people
-Typical Project Durations: 3-24 months
-Geographic Reach: Germany (headquarters), Europe, global delivery
+**BEWERTUNGSKRITERIEN:**
+1. **Technologie-Match:** Haben wir Expertise in den benötigten Technologien?
+2. **Skalierung:** Können wir das Projekt in der gewünschten Größe stemmen?
+3. **Fehlende Kapazitäten:** Was fehlt uns und wie kritisch ist es?
+4. **Kritische Blocker:** Gibt es absolute Deal-Breaker?
 
-Assessment Criteria:
-
-1. **Technology Match (technologyMatchScore)**
-   - Do we have deep expertise in the required technologies?
-   - Can we staff a team with the right skills within 4-6 weeks?
-   - Rate 0-100 (100 = perfect match, 0 = no match at all)
-
-2. **Scale Match (scaleMatchScore)**
-   - Can we handle the project scale (team size, timeline, complexity)?
-   - Do we have enough available resources?
-   - Rate 0-100
-
-3. **Critical Blockers (criticalBlockers)**
-   - Technologies we CANNOT deliver (e.g., proprietary systems we don't support)
-   - Scale beyond our capacity (e.g., >100 person teams)
-   - Compliance requirements we cannot meet
-   - Geographic constraints we cannot fulfill
-
-4. **Overall Capability Score (overallCapabilityScore)**
-   - Weighted average of technology and scale scores
-   - Reduced if there are missing capabilities
-   - Should be 0 if there are critical blockers
-
-5. **Confidence (confidence)**
-   - How confident are you in this assessment? (0-100)
-   - Lower if requirements are vague
-   - Higher if we have similar reference projects
-
-IMPORTANT:
-- Be realistic but not overly conservative
-- A score of 70+ means we can definitely deliver
-- A score of 50-70 means we can deliver with some partnerships/training
-- A score below 50 means significant gaps
-- Identify critical blockers that would prevent success
-
-Provide your assessment:`,
+**Antworte mit JSON:**
+- hasRequiredTechnologies (boolean): Haben wir die benötigten Technologien?
+- technologyMatchScore (number 0-100): Technologie-Match-Score
+- missingCapabilities (array of strings): Fehlende Kapazitäten auf Deutsch
+- hasRequiredScale (boolean): Können wir die Projektgröße stemmen?
+- scaleMatchScore (number 0-100): Skalierungs-Score
+- scaleGaps (array of strings): Skalierungs-Lücken auf Deutsch
+- overallCapabilityScore (number 0-100): Gewichteter Gesamt-Score
+- confidence (number 0-100): Confidence der Bewertung
+- reasoning (string): Ausführliche Begründung auf Deutsch (min. 2-3 Sätze)
+- criticalBlockers (array of strings): Kritische Blocker auf Deutsch`,
+      },
+    ],
     temperature: 0.3,
+    max_tokens: 4000,
   });
 
-  return result.object;
+  const responseText = completion.choices[0]?.message?.content || '{}';
+  const cleanedResponse = responseText
+    .replace(/```json\n?/g, '')
+    .replace(/```\n?/g, '')
+    .trim();
+
+  const rawResult = JSON.parse(cleanedResponse);
+  const cleanedResult = Object.fromEntries(
+    Object.entries(rawResult).filter(([_, v]) => v !== null)
+  );
+
+  return capabilityMatchSchema.parse(cleanedResult);
 }

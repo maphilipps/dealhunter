@@ -1,7 +1,14 @@
 import { Resend } from 'resend';
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-initialized Resend client (only created when actually needed)
+let resend: Resend | null = null;
+
+function getResendClient(): Resend {
+  if (!resend) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resend;
+}
 
 export interface SendBLAssignmentEmailInput {
   blLeaderName: string;
@@ -44,7 +51,7 @@ export async function sendBLAssignmentEmail(
     const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/bids/${bidId}`;
 
     // Send email using Resend
-    await resend.emails.send({
+    await getResendClient().emails.send({
       from: 'Dealhunter <noreply@dealhunter.adesso.de>',
       to: blLeaderEmail,
       subject: `Neue Opportunity: ${customerName}`,

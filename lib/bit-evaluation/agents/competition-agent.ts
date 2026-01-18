@@ -1,6 +1,11 @@
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import OpenAI from 'openai';
 import { competitionCheckSchema, type CompetitionCheck } from '../schema';
+
+// Initialize OpenAI client with adesso AI Hub
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+});
 
 export interface CompetitionAgentInput {
   extractedRequirements: any; // From extraction phase
@@ -12,13 +17,20 @@ export interface CompetitionAgentInput {
  * Analyzes competitive situation and estimates win probability
  */
 export async function runCompetitionAgent(input: CompetitionAgentInput): Promise<CompetitionCheck> {
-  const result = await generateObject({
-    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
-    model: openai('gpt-4o-mini'),
-    schema: competitionCheckSchema,
-    prompt: `You are a competitive intelligence analyst for adesso SE, a leading German IT consulting company.
+  const completion = await openai.chat.completions.create({
+    model: 'claude-haiku-4.5',
+    messages: [
+      {
+        role: 'system',
+        content: `Du bist ein erfahrener Competitive Intelligence Analyst bei adesso SE.
+Analysiere GRÜNDLICH die Wettbewerbssituation und schätze die Gewinnwahrscheinlichkeit ein.
+Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
 
-Evaluate the competitive landscape and estimate our probability of winning this opportunity.
+WICHTIG: Gib immer eine fundierte Einschätzung ab. Alle Begründungen und Texte auf Deutsch.`,
+      },
+      {
+        role: 'user',
+        content: `Evaluate the competitive landscape and estimate our probability of winning this opportunity.
 
 Extracted Requirements:
 ${JSON.stringify(input.extractedRequirements, null, 2)}
@@ -53,62 +65,37 @@ adesso's Competitive Position:
 5. **Complexity:** High complexity favors us over smaller players
 6. **German Market:** German customer + German requirements
 
-Assessment Criteria:
-
-1. **Competition Level**
-   - none: Direct invitation, no competition expected
-   - low: Limited competition, likely 1-2 competitors
-   - medium: Open RFP, 3-5 competitors expected
-   - high: Formal public tender, 5+ competitors
-   - very_high: International tender, 10+ competitors, very competitive
-
-2. **Known/Likely Competitors**
-   - Based on project type, size, and industry
-   - List 2-5 most likely competitors
-   - Consider: Global SIs, German IT consulting, specialized agencies
-
-3. **Our Differentiators**
-   - What makes us stand out from competitors?
-   - Examples: Drupal expertise, industry knowledge, existing relationship, quality reputation
-   - List 3-5 key differentiators
-
-4. **Competitive Weaknesses**
-   - Where might competitors be stronger?
-   - Examples: lower price, global reach, specific technology, faster delivery
-   - Be honest - list 2-4 potential weaknesses
-
-5. **Win Probability Factors**
-   - **hasIncumbentAdvantage:** Are we the current vendor/maintainer?
-   - **hasExistingRelationship:** Do we already work with this customer (even on different projects)?
-   - **hasUniqueCapability:** Do we have unique capabilities competitors lack (e.g., Drupal leadership)?
-   - **pricingPosition:** low (we'll be cheapest), competitive (mid-range), premium (higher priced but justified by quality)
-
-6. **Estimated Win Probability (estimatedWinProbability)**
-   - 80-100%: Very likely to win (incumbent, low competition, perfect fit)
-   - 60-80%: Good chance (some advantages, manageable competition)
-   - 40-60%: Moderate chance (balanced competition, no clear advantage)
-   - 20-40%: Low chance (strong competition, we're underdog)
-   - 0-20%: Very unlikely (major disadvantages, fierce competition)
-
-7. **Critical Blockers**
-   - Competitor has exclusive relationship/contract
-   - Price expectation far below our cost structure
-   - Customer explicitly prefers competitor technology/approach
-   - We're legally excluded from bidding
-
-8. **Confidence (confidence)**
-   - How confident are you in this competitive assessment? (0-100)
-   - Lower if limited information about competition
-   - Higher if we have clear competitive intelligence
-
-IMPORTANT:
-- Base win probability on concrete factors, not wishful thinking
-- Consider that even with 30% win probability, a strategic deal might be worth pursuing
-- A "low" win probability doesn't mean automatic NO BIT - it means higher risk
-
-Provide your assessment:`,
+Respond with JSON containing:
+- competitiveAnalysis (object):
+  - competitionLevel (string: "none", "low", "medium", "high", or "very_high"): Level of competition
+  - knownCompetitors (array of strings): Known/likely competitors (2-5)
+  - ourDifferentiators (array of strings): What differentiates adesso (3-5)
+  - competitiveWeaknesses (array of strings): Areas where competitors might be stronger (2-4)
+- winProbabilityFactors (object):
+  - hasIncumbentAdvantage (boolean): Are we the current vendor?
+  - hasExistingRelationship (boolean): Do we already work with this customer?
+  - hasUniqueCapability (boolean): Do we have unique capabilities competitors lack?
+  - pricingPosition (string: "low", "competitive", or "premium"): Our pricing position
+- estimatedWinProbability (number 0-100): Geschätzte Gewinnwahrscheinlichkeit
+- confidence (number 0-100): Confidence der Bewertung
+- reasoning (string): Ausführliche Begründung auf Deutsch (min. 2-3 Sätze)
+- criticalBlockers (array of strings): Wettbewerbs-bezogene Blocker auf Deutsch`,
+      },
+    ],
     temperature: 0.3,
+    max_tokens: 4000,
   });
 
-  return result.object;
+  const responseText = completion.choices[0]?.message?.content || '{}';
+  const cleanedResponse = responseText
+    .replace(/```json\n?/g, '')
+    .replace(/```\n?/g, '')
+    .trim();
+
+  const rawResult = JSON.parse(cleanedResponse);
+  const cleanedResult = Object.fromEntries(
+    Object.entries(rawResult).filter(([_, v]) => v !== null)
+  );
+
+  return competitionCheckSchema.parse(cleanedResult);
 }

@@ -1,5 +1,4 @@
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import OpenAI from 'openai';
 import {
   bitDecisionSchema,
   alternativeRecSchema,
@@ -10,13 +9,51 @@ import {
   type DealQuality,
   type StrategicFit,
   type CompetitionCheck,
+  type LegalAssessment,
+  type ReferenceMatch,
 } from './schema';
 import { runCapabilityAgent } from './agents/capability-agent';
 import { runDealQualityAgent } from './agents/deal-quality-agent';
 import { runStrategicFitAgent } from './agents/strategic-fit-agent';
 import { runCompetitionAgent } from './agents/competition-agent';
+import { runLegalAgent } from './agents/legal-agent';
+import { runReferenceAgent } from './agents/reference-agent';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
+
+// Initialize OpenAI client with adesso AI Hub
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+});
+
+/**
+ * Helper function to call AI and parse JSON response
+ */
+async function callAI<T>(systemPrompt: string, userPrompt: string, schema: any): Promise<T> {
+  const completion = await openai.chat.completions.create({
+    model: 'claude-haiku-4.5',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature: 0.3,
+    max_tokens: 8000,
+  });
+
+  const responseText = completion.choices[0]?.message?.content || '{}';
+  const cleanedResponse = responseText
+    .replace(/```json\n?/g, '')
+    .replace(/```\n?/g, '')
+    .trim();
+
+  const rawResult = JSON.parse(cleanedResponse);
+  const cleanedResult = Object.fromEntries(
+    Object.entries(rawResult).filter(([_, v]) => v !== null)
+  );
+
+  return schema.parse(cleanedResult) as T;
+}
 
 export interface BitEvaluationInput {
   bidId: string;
@@ -49,13 +86,15 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
   try {
     logActivity('Starting BIT evaluation', `Bid ID: ${input.bidId}`);
 
-    // Run all four agents in parallel
+    // Run all six agents in parallel
     logActivity('Running parallel agent evaluation');
-    const [capabilityMatch, dealQuality, strategicFit, competitionCheck]: [
+    const [capabilityMatch, dealQuality, strategicFit, competitionCheck, legalAssessment, referenceMatch]: [
       CapabilityMatch,
       DealQuality,
       StrategicFit,
-      CompetitionCheck
+      CompetitionCheck,
+      LegalAssessment,
+      ReferenceMatch
     ] = await Promise.all([
       runCapabilityAgent({
         extractedRequirements: input.extractedRequirements,
@@ -73,22 +112,34 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
       }),
+      runLegalAgent({
+        extractedRequirements: input.extractedRequirements,
+        quickScanResults: input.quickScanResults,
+      }),
+      runReferenceAgent({
+        extractedRequirements: input.extractedRequirements,
+        quickScanResults: input.quickScanResults,
+      }),
     ]);
 
     logActivity('All agents completed', 'Calculating weighted scores');
 
     // Calculate weighted scores
-    // Capability: 30%, Deal Quality: 25%, Strategic Fit: 20%, Win Probability: 25%
+    // Capability: 25%, Deal Quality: 20%, Strategic Fit: 15%, Win Probability: 15%, Legal: 15%, Reference: 10%
     const weightedScores = {
       capability: capabilityMatch.overallCapabilityScore,
       dealQuality: dealQuality.overallDealQualityScore,
       strategicFit: strategicFit.overallStrategicFitScore,
       winProbability: competitionCheck.estimatedWinProbability,
+      legal: legalAssessment.overallLegalScore,
+      reference: referenceMatch.overallReferenceScore,
       overall:
-        capabilityMatch.overallCapabilityScore * 0.3 +
-        dealQuality.overallDealQualityScore * 0.25 +
-        strategicFit.overallStrategicFitScore * 0.2 +
-        competitionCheck.estimatedWinProbability * 0.25,
+        capabilityMatch.overallCapabilityScore * 0.25 +
+        dealQuality.overallDealQualityScore * 0.20 +
+        strategicFit.overallStrategicFitScore * 0.15 +
+        competitionCheck.estimatedWinProbability * 0.15 +
+        legalAssessment.overallLegalScore * 0.15 +
+        referenceMatch.overallReferenceScore * 0.10,
     };
 
     // Collect all critical blockers
@@ -97,6 +148,8 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
       ...dealQuality.criticalBlockers,
       ...strategicFit.criticalBlockers,
       ...competitionCheck.criticalBlockers,
+      ...legalAssessment.criticalBlockers,
+      ...referenceMatch.criticalBlockers,
     ];
 
     // Determine if we should BIT or NO BIT
@@ -113,6 +166,8 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
       dealQuality,
       strategicFit,
       competitionCheck,
+      legalAssessment,
+      referenceMatch,
       allCriticalBlockers,
       initialRecommendation: shouldBit ? 'bit' : 'no_bit',
     });
@@ -140,6 +195,8 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
       dealQuality,
       strategicFit,
       competitionCheck,
+      legalAssessment,
+      referenceMatch,
       decision,
       alternative,
       evaluatedAt: new Date().toISOString(),
@@ -160,28 +217,34 @@ async function generateBitDecision(context: {
     dealQuality: number;
     strategicFit: number;
     winProbability: number;
+    legal: number;
+    reference: number;
     overall: number;
   };
   capabilityMatch: any;
   dealQuality: any;
   strategicFit: any;
   competitionCheck: any;
+  legalAssessment: any;
+  referenceMatch: any;
   allCriticalBlockers: string[];
   initialRecommendation: 'bit' | 'no_bit';
 }): Promise<BitDecision> {
-  const result = await generateObject({
-    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
-    model: openai('gpt-4o-mini'),
-    schema: bitDecisionSchema,
-    prompt: `You are the final decision maker for BIT/NO BIT evaluation at adesso SE.
+  const systemPrompt = `Du bist der finale Entscheider für BIT/NO BIT Bewertungen bei adesso SE.
+Treffe fundierte Entscheidungen basierend auf allen Agent-Bewertungen.
+Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
 
-Review all agent assessments and make the final decision.
+WICHTIG: Alle Texte und Begründungen müssen auf Deutsch sein.`;
+
+  const userPrompt = `Review all agent assessments and make the final decision.
 
 **Weighted Scores:**
-- Capability Match: ${context.scores.capability}/100 (30% weight)
-- Deal Quality: ${context.scores.dealQuality}/100 (25% weight)
-- Strategic Fit: ${context.scores.strategicFit}/100 (20% weight)
-- Win Probability: ${context.scores.winProbability}/100 (25% weight)
+- Capability Match: ${context.scores.capability}/100 (25% weight)
+- Deal Quality: ${context.scores.dealQuality}/100 (20% weight)
+- Strategic Fit: ${context.scores.strategicFit}/100 (15% weight)
+- Win Probability: ${context.scores.winProbability}/100 (15% weight)
+- Legal Assessment: ${context.scores.legal}/100 (15% weight)
+- Reference Match: ${context.scores.reference}/100 (10% weight)
 - **Overall Score: ${context.scores.overall.toFixed(1)}/100**
 
 **Initial Recommendation:** ${context.initialRecommendation.toUpperCase()}
@@ -201,33 +264,29 @@ ${JSON.stringify(context.strategicFit, null, 2)}
 **Competition Assessment:**
 ${JSON.stringify(context.competitionCheck, null, 2)}
 
+**Legal Assessment:**
+${JSON.stringify(context.legalAssessment, null, 2)}
+
+**Reference Match Assessment:**
+${JSON.stringify(context.referenceMatch, null, 2)}
+
 **Decision Criteria:**
 - BIT if: Overall score >= 55 AND no critical blockers
 - NO BIT if: Overall score < 55 OR critical blockers present
-- Low confidence warning if: Overall confidence < 70%
 
-**Your Task:**
-1. Make the final BIT or NO BIT decision
-2. Calculate overall confidence (average of all agent confidences)
-3. List 3-5 key strengths for this opportunity
-4. List 3-5 key risks for this opportunity
-5. List all critical blockers (if any)
-6. Provide executive summary reasoning
-7. Recommend next steps
+Antworte mit JSON:
+- decision (string: "bit" oder "no_bit"): Die finale Entscheidung
+- overallConfidence (number 0-100): Gesamt-Confidence der Bewertung
+- reasoning (string): Executive Summary auf Deutsch (min. 3-4 Sätze)
+- keyStrengths (array of strings): 3-5 Schlüsselstärken auf Deutsch
+- keyRisks (array of strings): 3-5 Schlüsselrisiken auf Deutsch
+- criticalBlockers (array of strings): Alle kritischen Blocker auf Deutsch
+- nextSteps (array of strings): Empfohlene nächste Schritte auf Deutsch`;
 
-**Important:**
-- Follow the initial recommendation unless you have strong reason to override
-- Be honest about confidence level
-- Key strengths should be specific and compelling
-- Key risks should be realistic and actionable
-- Next steps should be practical and immediate
-
-Provide your decision:`,
-    temperature: 0.3,
-  });
+  const result = await callAI<Omit<BitDecision, 'scores'>>(systemPrompt, userPrompt, bitDecisionSchema);
 
   return {
-    ...result.object,
+    ...result,
     scores: context.scores,
   };
 }
@@ -242,13 +301,12 @@ async function generateAlternativeRecommendation(context: {
   competitionCheck: any;
   decision: BitDecision;
 }): Promise<AlternativeRec> {
-  const result = await generateObject({
-    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
-    model: openai('gpt-4o-mini'),
-    schema: alternativeRecSchema,
-    prompt: `You are recommending an alternative approach for a NO BIT decision at adesso SE.
+  const systemPrompt = `Du empfiehlst alternative Ansätze für NO BIT Entscheidungen bei adesso SE.
+Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
 
-The opportunity did not meet our criteria for a full BIT, but we should suggest a constructive alternative.
+WICHTIG: Alle Texte und Begründungen müssen auf Deutsch sein.`;
+
+  const userPrompt = `The opportunity did not meet our criteria for a full BIT, but we should suggest a constructive alternative.
 
 **Decision Context:**
 ${JSON.stringify(context.decision, null, 2)}
@@ -260,45 +318,20 @@ ${JSON.stringify(context.decision, null, 2)}
 - Competition: ${context.competitionCheck.reasoning}
 
 **Alternative Options:**
+1. partner_collaboration - Use when we have capability gaps partners could fill
+2. partial_scope - Use when full project is too large/risky but part is viable
+3. delay_and_reassess - Use when timing is wrong but opportunity might be good later
+4. refer_to_competitor - Use when genuinely not a fit but want to maintain relationship
+5. decline_gracefully - Use when no viable alternative but maintain good relationship
 
-1. **partner_collaboration**
-   - Use when: We have gaps in capabilities that partners could fill
-   - Example: "We can deliver the Drupal CMS part, but partner with X for the mobile app"
+Antworte mit JSON:
+- recommendedAlternative (string: eine der Optionen oben): Die empfohlene Alternative
+- reasoning (string): Warum diese Alternative die beste ist (auf Deutsch)
+- partnerSuggestions (array of strings, optional): Konkrete Partner-Vorschläge
+- reducedScopeOptions (array of {scope: string, viability: string "low"/"medium"/"high"}, optional): Für partial_scope
+- customerCommunication (string): Professioneller 2-3 Satz Entwurf für Kundenkommunikation auf Deutsch`;
 
-2. **partial_scope**
-   - Use when: Full project is too large/risky, but part of it is viable
-   - Example: "We can handle Phase 1 (CMS) but not Phase 2 (custom ERP integration)"
-
-3. **delay_and_reassess**
-   - Use when: Timing is wrong but opportunity might be good later
-   - Example: "Budget unclear now, reassess in Q3 when they finalize planning"
-
-4. **refer_to_competitor**
-   - Use when: Genuinely not a fit for us, but we want to maintain relationship
-   - Example: "This needs SAP expertise we don't have, refer to CGI but stay engaged"
-
-5. **decline_gracefully**
-   - Use when: No viable alternative, but maintain good relationship
-   - Example: "This is outside our focus, but we'd love to help with future CMS projects"
-
-**Your Task:**
-1. Choose the most appropriate alternative
-2. If applicable, suggest specific partners (real companies in the industry)
-3. If partial scope, outline 1-3 reduced scope options with viability
-4. Explain why this alternative is best
-5. Draft a professional customer communication (2-3 sentences)
-
-**Important:**
-- Be constructive and helpful, not just "no"
-- Maintain the relationship for future opportunities
-- Be specific about what we CAN do, if anything
-- Customer communication should be professional and preserve relationship
-
-Provide your alternative recommendation:`,
-    temperature: 0.3,
-  });
-
-  return result.object;
+  return callAI<AlternativeRec>(systemPrompt, userPrompt, alternativeRecSchema);
 }
 
 /**
@@ -321,13 +354,13 @@ export async function runBitEvaluationWithStreaming(
       },
     });
 
-    // Run all four agents in parallel (best practice: async-parallel)
+    // Run all six agents in parallel (best practice: async-parallel)
     // Emit progress as each agent starts
     emit({
       type: AgentEventType.AGENT_PROGRESS,
       data: {
         agent: 'Coordinator',
-        message: 'Running parallel agent evaluation (Capability, Deal Quality, Strategic Fit, Competition)',
+        message: 'Running parallel agent evaluation (Capability, Deal Quality, Strategic Fit, Competition, Legal, Reference)',
       },
     });
 
@@ -335,7 +368,9 @@ export async function runBitEvaluationWithStreaming(
       Promise<CapabilityMatch>,
       Promise<DealQuality>,
       Promise<StrategicFit>,
-      Promise<CompetitionCheck>
+      Promise<CompetitionCheck>,
+      Promise<LegalAssessment>,
+      Promise<ReferenceMatch>
     ] = [
       runCapabilityAgent({
         extractedRequirements: input.extractedRequirements,
@@ -393,13 +428,43 @@ export async function runBitEvaluationWithStreaming(
         });
         return result;
       }),
+      runLegalAgent({
+        extractedRequirements: input.extractedRequirements,
+        quickScanResults: input.quickScanResults,
+      }).then((result) => {
+        emit({
+          type: AgentEventType.AGENT_COMPLETE,
+          data: {
+            agent: 'Legal',
+            result,
+            confidence: result.confidence,
+          },
+        });
+        return result;
+      }),
+      runReferenceAgent({
+        extractedRequirements: input.extractedRequirements,
+        quickScanResults: input.quickScanResults,
+      }).then((result) => {
+        emit({
+          type: AgentEventType.AGENT_COMPLETE,
+          data: {
+            agent: 'Reference',
+            result,
+            confidence: result.confidence,
+          },
+        });
+        return result;
+      }),
     ];
 
-    const [capabilityMatch, dealQuality, strategicFit, competitionCheck]: [
+    const [capabilityMatch, dealQuality, strategicFit, competitionCheck, legalAssessment, referenceMatch]: [
       CapabilityMatch,
       DealQuality,
       StrategicFit,
-      CompetitionCheck
+      CompetitionCheck,
+      LegalAssessment,
+      ReferenceMatch
     ] = await Promise.all(agentPromises);
 
     emit({
@@ -411,16 +476,21 @@ export async function runBitEvaluationWithStreaming(
     });
 
     // Calculate weighted scores
+    // Capability: 25%, Deal Quality: 20%, Strategic Fit: 15%, Win Probability: 15%, Legal: 15%, Reference: 10%
     const weightedScores = {
       capability: capabilityMatch.overallCapabilityScore,
       dealQuality: dealQuality.overallDealQualityScore,
       strategicFit: strategicFit.overallStrategicFitScore,
       winProbability: competitionCheck.estimatedWinProbability,
+      legal: legalAssessment.overallLegalScore,
+      reference: referenceMatch.overallReferenceScore,
       overall:
-        capabilityMatch.overallCapabilityScore * 0.3 +
-        dealQuality.overallDealQualityScore * 0.25 +
-        strategicFit.overallStrategicFitScore * 0.2 +
-        competitionCheck.estimatedWinProbability * 0.25,
+        capabilityMatch.overallCapabilityScore * 0.25 +
+        dealQuality.overallDealQualityScore * 0.20 +
+        strategicFit.overallStrategicFitScore * 0.15 +
+        competitionCheck.estimatedWinProbability * 0.15 +
+        legalAssessment.overallLegalScore * 0.15 +
+        referenceMatch.overallReferenceScore * 0.10,
     };
 
     // Collect all critical blockers
@@ -429,6 +499,8 @@ export async function runBitEvaluationWithStreaming(
       ...dealQuality.criticalBlockers,
       ...strategicFit.criticalBlockers,
       ...competitionCheck.criticalBlockers,
+      ...legalAssessment.criticalBlockers,
+      ...referenceMatch.criticalBlockers,
     ];
 
     // Determine if we should BIT or NO BIT
@@ -449,6 +521,8 @@ export async function runBitEvaluationWithStreaming(
       dealQuality,
       strategicFit,
       competitionCheck,
+      legalAssessment,
+      referenceMatch,
       allCriticalBlockers,
       initialRecommendation: shouldBit ? 'bit' : 'no_bit',
     });
@@ -488,6 +562,8 @@ export async function runBitEvaluationWithStreaming(
       dealQuality,
       strategicFit,
       competitionCheck,
+      legalAssessment,
+      referenceMatch,
       decision,
       alternative,
       evaluatedAt: new Date().toISOString(),

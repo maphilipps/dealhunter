@@ -19,6 +19,18 @@ export async function getTechnologies() {
         createdAt: technologies.createdAt,
         businessLineId: technologies.businessLineId,
         businessLineName: businessLines.name,
+        // Extended metadata
+        logoUrl: technologies.logoUrl,
+        websiteUrl: technologies.websiteUrl,
+        description: technologies.description,
+        category: technologies.category,
+        license: technologies.license,
+        latestVersion: technologies.latestVersion,
+        githubUrl: technologies.githubUrl,
+        githubStars: technologies.githubStars,
+        communitySize: technologies.communitySize,
+        researchStatus: technologies.researchStatus,
+        lastResearchedAt: technologies.lastResearchedAt,
       })
       .from(technologies)
       .leftJoin(businessLines, eq(technologies.businessLineId, businessLines.id))
@@ -51,9 +63,9 @@ export async function getBusinessLinesForSelect() {
 export async function createTechnology(data: {
   name: string;
   businessLineId: string;
-  baselineHours: number;
-  baselineName: string;
-  baselineEntityCounts: Record<string, number>;
+  baselineHours?: number;
+  baselineName?: string;
+  baselineEntityCounts?: Record<string, number>;
   isDefault: boolean;
 }) {
   const session = await auth();
@@ -77,16 +89,9 @@ export async function createTechnology(data: {
     return { success: false, error: 'Business Line ist erforderlich' };
   }
 
-  if (!baselineHours || baselineHours <= 0) {
+  // Baseline is now optional - validate only if provided
+  if (baselineHours !== undefined && baselineHours <= 0) {
     return { success: false, error: 'Baseline-Stunden müssen größer als 0 sein' };
-  }
-
-  if (!baselineName || baselineName.trim().length === 0) {
-    return { success: false, error: 'Baseline-Name ist erforderlich' };
-  }
-
-  if (!baselineEntityCounts || Object.keys(baselineEntityCounts).length === 0) {
-    return { success: false, error: 'Baseline-Entity-Counts sind erforderlich' };
   }
 
   try {
@@ -95,9 +100,12 @@ export async function createTechnology(data: {
       .values({
         name: name.trim(),
         businessLineId,
-        baselineHours,
-        baselineName: baselineName.trim(),
-        baselineEntityCounts: JSON.stringify(baselineEntityCounts),
+        // Baseline fields - use defaults for DB NOT NULL constraints
+        baselineHours: baselineHours ?? 0,
+        baselineName: baselineName?.trim() ?? '',
+        baselineEntityCounts: baselineEntityCounts && Object.keys(baselineEntityCounts).length > 0
+          ? JSON.stringify(baselineEntityCounts)
+          : '{}',
         isDefault,
       })
       .returning();
@@ -108,6 +116,24 @@ export async function createTechnology(data: {
   } catch (error) {
     console.error('Error creating technology:', error);
     return { success: false, error: 'Fehler beim Erstellen der Technologie' };
+  }
+}
+
+export async function getTechnology(id: string) {
+  try {
+    const [tech] = await db
+      .select()
+      .from(technologies)
+      .where(eq(technologies.id, id));
+
+    if (!tech) {
+      return { success: false, error: 'Technologie nicht gefunden' };
+    }
+
+    return { success: true, technology: tech };
+  } catch (error) {
+    console.error('Error fetching technology:', error);
+    return { success: false, error: 'Fehler beim Laden der Technologie' };
   }
 }
 

@@ -1,6 +1,11 @@
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import OpenAI from 'openai';
 import { dealQualitySchema, type DealQuality } from '../schema';
+
+// Initialize OpenAI client with adesso AI Hub
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+});
 
 export interface DealQualityAgentInput {
   extractedRequirements: any; // From extraction phase
@@ -9,78 +14,94 @@ export interface DealQualityAgentInput {
 
 /**
  * BIT-003: Deal Quality Agent
- * Evaluates budget adequacy, timeline realism, and margin potential
+ * Evaluates budget adequacy, timeline realism, margin potential, and bid-specific factors
+ * Answers the 10 critical questions for BIT/NO BIT decisions
  */
 export async function runDealQualityAgent(input: DealQualityAgentInput): Promise<DealQuality> {
-  const result = await generateObject({
-    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
-    model: openai('gpt-4o-mini'),
-    schema: dealQualitySchema,
-    prompt: `You are a commercial assessor for adesso SE, a leading German IT consulting company.
+  const completion = await openai.chat.completions.create({
+    model: 'claude-haiku-4.5',
+    messages: [
+      {
+        role: 'system',
+        content: `Du bist ein erfahrener Business Development Experte bei adesso SE.
+Analysiere die Ausschreibung GRÜNDLICH und beantworte alle kritischen Fragen für die BIT/NO BIT Entscheidung.
+Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
 
-Evaluate the commercial quality and viability of this deal.
+WICHTIG: Du musst eine fundierte Einschätzung geben, auch wenn nicht alle Informationen explizit verfügbar sind. Nutze dein Expertenwissen, um realistische Annahmen zu treffen.`,
+      },
+      {
+        role: 'user',
+        content: `Analysiere diese Ausschreibung für die BIT/NO BIT Entscheidung.
 
-Extracted Requirements:
+**Extrahierte Anforderungen:**
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${input.quickScanResults ? `
-Quick Scan Results:
+**Quick Scan Ergebnisse (Website-Analyse):**
 ${JSON.stringify(input.quickScanResults, null, 2)}
 ` : ''}
 
-adesso's Commercial Context:
-- **Hourly Rates:** €80-€150 per hour depending on seniority
-- **Target Margins:** 25-35% gross margin
-- **Minimum Deal Size:** Typically €50k+ (smaller deals only if strategic)
-- **Payment Terms:** 30-60 days standard
-- **Risk Appetite:** Medium (prefer fixed-price for well-defined scopes, T&M for complex/uncertain work)
+**adesso Kommerzieller Kontext:**
+- Stundensätze: €80-€150 pro Stunde (Senior: €120+)
+- Ziel-Margen: 25-35% Bruttomarge
+- Mindest-Dealgrößen: €50k+ (präferiert: €150k+)
+- Zahlungsziele: 30-60 Tage Standard
 
-Assessment Criteria:
+**KRITISCHE FRAGEN FÜR DIE BEWERTUNG:**
 
-1. **Budget Assessment**
-   - Is the stated/implied budget adequate for the scope?
-   - Consider: team size × duration × hourly rate
-   - Example: 5 people × 6 months × €100/hr × 160hrs/month = €480k
-   - Estimate realistic margin (25-35% is healthy, 15-25% is acceptable, <15% is risky)
-   - Flag budget risks: unrealistic expectations, scope creep potential, payment terms
+1. **Kundenbeziehung:** Haben wir bekannte Ansprechpartner beim Kunden, oder ist es ein anonymes Vergabeportal?
+2. **Budget:** Welches Budget steckt hinter der Ausschreibung? Ist es angemessen für den Scope?
+3. **Timeline:** Wie ist der zeitliche Ablauf? Wann ist die Shortlisting-Phase? Wann der geplante Projektstart?
+4. **Vertragsform:** Ist es ein EVB-IT Vertrag, Dienstleistungsvertrag oder SLA? Welche Risiken birgt die Vertragsform?
+5. **Leistungsumfang:** Welche konkreten Leistungen werden abgefragt?
+6. **Referenzen:** Welche Referenzen werden gefordert? Können wir diese erfüllen?
+7. **Zuschlagskriterien:** Wie sind die Zuschlagskriterien aufgebaut? Was wird besonders gewichtet?
+8. **Team-Anforderungen:** Wie viele Leute werden für das Angebot benötigt? Wie komplex ist die Präsentation?
+9. **Herausforderungen:** Welche speziellen Herausforderungen sehen wir?
+10. **BIT/NO BIT Einschätzung:** Wie schätzen wir die Gewinnchancen ein?
 
-2. **Timeline Assessment**
-   - Is the timeline realistic given the scope and complexity?
-   - Red flags: "urgent", "ASAP", very tight deadlines (<3 months for complex work)
-   - Consider: time for requirements, development, testing, deployment, training
-   - Flag timeline risks: insufficient time, dependencies, resource availability
-
-3. **Commercial Viability**
-   - Expected revenue range (e.g., "€100k-€500k")
-   - Profitability rating: high (30%+ margin), medium (20-30%), low (<20%)
-   - Commercial risks: payment issues, scope uncertainty, contractual risks
-
-4. **Overall Deal Quality Score (overallDealQualityScore)**
-   - 80-100: Excellent deal (good budget, realistic timeline, high margin)
-   - 60-80: Good deal (adequate budget, doable timeline, acceptable margin)
-   - 40-60: Marginal deal (tight budget or timeline, low margin)
-   - 0-40: Poor deal (inadequate budget, unrealistic timeline, or negative margin)
-
-5. **Critical Blockers**
-   - Budget impossibly low for scope (e.g., €50k for a €500k project)
-   - Timeline impossible (e.g., 1 month for 12-month work)
-   - Payment terms unacceptable (e.g., pay-on-completion for 2-year project)
-   - Scope-budget mismatch that cannot be resolved
-
-6. **Confidence (confidence)**
-   - How confident are you in this assessment? (0-100)
-   - Lower if budget/timeline not clearly stated
-   - Higher if detailed requirements and clear numbers
-
-IMPORTANT:
-- If no budget is stated, make reasonable assumptions based on scope
-- If timeline seems rushed, flag it as a risk
-- A low-margin deal might still be acceptable if strategically valuable
-- Focus on realistic commercial assessment, not just winning the deal
-
-Provide your assessment:`,
+**Antworte mit JSON:**
+- budgetAdequacy (string: "adequate", "tight", oder "inadequate"): Budget-Bewertung
+- estimatedBudget (string): Geschätztes Budget basierend auf Scope (z.B. "€150k-€300k")
+- estimatedMargin (number 0-100): Erwartete Marge in Prozent
+- budgetRisks (array of strings): Budget-bezogene Risiken auf Deutsch
+- timelineRealism (string: "realistic", "tight", oder "unrealistic"): Timeline-Bewertung
+- projectStart (string): Geschätzter Projektstart
+- shortlistingDate (string): Geschätztes Datum für Shortlisting/Präsentation
+- timelineRisks (array of strings): Timeline-bezogene Risiken auf Deutsch
+- contractType (string): Erkannter Vertragstyp (EVB-IT, Dienstleistung, SLA, Rahmenvertrag, etc.)
+- contractRisks (array of strings): Vertrags-bezogene Risiken auf Deutsch
+- customerRelationship (string: "existing", "known", oder "anonymous"): Kundenbeziehung
+- relationshipDetails (string): Details zur Kundenbeziehung auf Deutsch
+- requiredServices (array of strings): Geforderte Leistungen auf Deutsch
+- requiredReferences (array of strings): Geforderte Referenzen auf Deutsch
+- canFulfillReferences (boolean): Können wir die Referenzen erfüllen?
+- awardCriteria (string): Beschreibung der Zuschlagskriterien auf Deutsch
+- teamRequirements (string): Beschreibung der Team-Anforderungen für das Angebot auf Deutsch
+- challenges (array of strings): Identifizierte Herausforderungen auf Deutsch
+- expectedRevenueRange (string): Umsatzschätzung wie "€100k-€300k"
+- profitabilityRating (string: "high", "medium", oder "low"): Profitabilitäts-Rating
+- commercialRisks (array of strings): Kommerzielle Risiken auf Deutsch
+- criticalBlockers (array of strings): Absolute Deal-Breaker auf Deutsch
+- overallDealQualityScore (number 0-100): Gesamt Deal-Qualität
+- confidence (number 0-100): Confidence der Bewertung
+- reasoning (string): Ausführliche Begründung auf Deutsch (min. 3-4 Sätze)`,
+      },
+    ],
     temperature: 0.3,
+    max_tokens: 6000,
   });
 
-  return result.object;
+  const responseText = completion.choices[0]?.message?.content || '{}';
+  const cleanedResponse = responseText
+    .replace(/```json\n?/g, '')
+    .replace(/```\n?/g, '')
+    .trim();
+
+  const rawResult = JSON.parse(cleanedResponse);
+  const cleanedResult = Object.fromEntries(
+    Object.entries(rawResult).filter(([_, v]) => v !== null)
+  );
+
+  return dealQualitySchema.parse(cleanedResult);
 }

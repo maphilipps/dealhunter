@@ -6,18 +6,41 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { X, Plus, Loader2, Globe, Sparkles, Check, ExternalLink, Calendar, Clock, FileText, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
+import { suggestWebsiteUrlsAction } from '@/lib/bids/actions';
 
 interface ExtractionPreviewProps {
   initialData: ExtractedRequirements;
   onConfirm: (data: ExtractedRequirements) => void;
 }
 
+type WebsiteUrl = {
+  url: string;
+  type: 'primary' | 'product' | 'regional' | 'related';
+  description?: string;
+  extractedFromDocument: boolean;
+  selected?: boolean;
+};
+
 export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewProps) {
   const [data, setData] = useState<ExtractedRequirements>(initialData);
   const [newTech, setNewTech] = useState('');
   const [newRequirement, setNewRequirement] = useState('');
+  const [newUrl, setNewUrl] = useState('');
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [suggestedUrls, setSuggestedUrls] = useState<WebsiteUrl[]>([]);
+
+  // Initialize websiteUrls from data
+  const websiteUrls: WebsiteUrl[] = data.websiteUrls || (data.websiteUrl ? [{
+    url: data.websiteUrl,
+    type: 'primary' as const,
+    description: 'Haupt-Website',
+    extractedFromDocument: true,
+    selected: true,
+  }] : []);
 
   const handleAddTechnology = () => {
     if (newTech.trim()) {
@@ -53,8 +76,99 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
     });
   };
 
+  // URL management handlers
+  const handleGetSuggestions = async () => {
+    if (!data.customerName) {
+      toast.error('Bitte zuerst Kundennamen eingeben');
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+    try {
+      const result = await suggestWebsiteUrlsAction({
+        customerName: data.customerName,
+        industry: data.industry,
+        projectDescription: data.projectDescription,
+        technologies: data.technologies,
+      });
+
+      if (result.success && result.suggestions.length > 0) {
+        setSuggestedUrls(result.suggestions.map(s => ({
+          ...s,
+          extractedFromDocument: false,
+          selected: false,
+        })));
+        toast.success(`${result.suggestions.length} URL-Vorschläge generiert`);
+      } else {
+        toast.info('Keine URL-Vorschläge gefunden. Bitte manuell eingeben.');
+      }
+    } catch {
+      toast.error('Fehler beim Generieren der Vorschläge');
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  const handleToggleUrl = (index: number, _fromExtracted: boolean) => {
+    const updatedUrls = [...websiteUrls];
+    updatedUrls[index] = { ...updatedUrls[index], selected: !updatedUrls[index].selected };
+    setData({ ...data, websiteUrls: updatedUrls });
+  };
+
+  const handleRemoveUrl = (index: number, _fromExtracted: boolean) => {
+    setData({
+      ...data,
+      websiteUrls: websiteUrls.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleToggleSuggestion = (index: number) => {
+    const updatedSuggestions = [...suggestedUrls];
+    updatedSuggestions[index] = { ...updatedSuggestions[index], selected: !updatedSuggestions[index].selected };
+    setSuggestedUrls(updatedSuggestions);
+  };
+
+  const handleRemoveSuggestion = (index: number) => {
+    setSuggestedUrls(suggestedUrls.filter((_, i) => i !== index));
+  };
+
+  const handleAddManualUrl = () => {
+    if (newUrl.trim()) {
+      let url = newUrl.trim();
+      // Add https:// if missing
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      setData({
+        ...data,
+        websiteUrls: [
+          ...websiteUrls,
+          {
+            url,
+            type: 'primary' as const,
+            description: 'Manuell hinzugefügt',
+            extractedFromDocument: false,
+            selected: true,
+          },
+        ],
+      });
+      setNewUrl('');
+    }
+  };
+
   const handleConfirm = () => {
-    onConfirm(data);
+    // Merge selected suggestions into websiteUrls before confirming
+    const selectedSuggestions = suggestedUrls.filter(u => u.selected);
+    const allUrls = [...websiteUrls, ...selectedSuggestions];
+
+    // Set primary URL for backwards compatibility
+    const primaryUrl = allUrls.find(u => u.selected)?.url || allUrls[0]?.url;
+
+    onConfirm({
+      ...data,
+      websiteUrls: allUrls,
+      websiteUrl: primaryUrl,
+    });
   };
 
   return (
@@ -98,22 +212,160 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         </div>
       )}
 
-      {/* Website URL */}
-      {data.websiteUrl !== undefined && (
-        <div className="space-y-2">
-          <Label htmlFor="websiteUrl">Kunden-Website *</Label>
-          <Input
-            id="websiteUrl"
-            type="url"
-            value={data.websiteUrl || ''}
-            onChange={(e) => setData({ ...data, websiteUrl: e.target.value })}
-            placeholder="https://www.beispiel.de"
-          />
-          <p className="text-xs text-muted-foreground">
-            Wird für den Quick Scan benötigt (Tech-Stack-Analyse)
-          </p>
+      {/* Website URLs for Quick Scan */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Website URLs für Quick Scan *</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Wählen Sie die Website(s) für die technische Analyse aus
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleGetSuggestions}
+            disabled={isLoadingSuggestions || !data.customerName}
+          >
+            {isLoadingSuggestions ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Lade Vorschläge...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                AI-Vorschläge
+              </>
+            )}
+          </Button>
         </div>
-      )}
+
+        {/* URL List */}
+        <div className="space-y-2">
+          {/* Extracted URLs */}
+          {websiteUrls.filter(u => u.extractedFromDocument).length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Aus Dokument extrahiert:</p>
+              {websiteUrls.filter(u => u.extractedFromDocument).map((urlItem, idx) => (
+                <Card key={`extracted-${idx}`} className={urlItem.selected ? 'border-primary' : ''}>
+                  <CardContent className="p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <a
+                          href={urlItem.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium hover:underline flex items-center gap-1"
+                        >
+                          {urlItem.url}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                        {urlItem.description && (
+                          <p className="text-xs text-muted-foreground truncate">{urlItem.description}</p>
+                        )}
+                      </div>
+                      <Badge variant="secondary" className="shrink-0">{urlItem.type}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2 ml-2">
+                      <Button
+                        type="button"
+                        variant={urlItem.selected ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleToggleUrl(idx, true)}
+                      >
+                        {urlItem.selected ? <Check className="h-4 w-4" /> : 'Auswählen'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveUrl(idx, true)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* AI Suggested URLs */}
+          {suggestedUrls.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">AI-Vorschläge:</p>
+              {suggestedUrls.map((urlItem, idx) => (
+                <Card key={`suggested-${idx}`} className={urlItem.selected ? 'border-primary' : 'border-dashed'}>
+                  <CardContent className="p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Sparkles className="h-4 w-4 text-yellow-500 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <a
+                          href={urlItem.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium hover:underline flex items-center gap-1"
+                        >
+                          {urlItem.url}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                        {urlItem.description && (
+                          <p className="text-xs text-muted-foreground truncate">{urlItem.description}</p>
+                        )}
+                      </div>
+                      <Badge variant="outline" className="shrink-0">{urlItem.type}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2 ml-2">
+                      <Button
+                        type="button"
+                        variant={urlItem.selected ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleToggleSuggestion(idx)}
+                      >
+                        {urlItem.selected ? <Check className="h-4 w-4" /> : 'Auswählen'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveSuggestion(idx)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* No URLs warning */}
+          {websiteUrls.length === 0 && suggestedUrls.length === 0 && (
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+              <p className="text-sm text-yellow-800">
+                Keine Website-URLs im Dokument gefunden. Klicken Sie auf &quot;AI-Vorschläge&quot; oder fügen Sie manuell URLs hinzu.
+              </p>
+            </div>
+          )}
+
+          {/* Manual URL Entry */}
+          <div className="flex gap-2 mt-3">
+            <Input
+              value={newUrl}
+              onChange={(e) => setNewUrl(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddManualUrl()}
+              placeholder="https://www.beispiel.de"
+              type="url"
+            />
+            <Button type="button" onClick={handleAddManualUrl} variant="outline" size="icon">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {/* Project Name */}
       {data.projectName !== undefined && (
@@ -230,12 +482,336 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         </div>
       )}
 
+      {/* Submission Deadline Visualization */}
+      <SubmissionDeadlineCard
+        data={data}
+        onChange={(updates) => setData({ ...data, ...updates })}
+      />
+
+      {/* Required Deliverables */}
+      <RequiredDeliverablesCard
+        deliverables={data.requiredDeliverables || []}
+        onChange={(deliverables) => setData({ ...data, requiredDeliverables: deliverables })}
+      />
+
       {/* Confirm Button */}
       <div className="flex justify-end pt-4 border-t">
         <Button onClick={handleConfirm} size="lg">
           Bestätigen und weiter zum Quick Scan
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Submission Deadline Card with visual timeline
+ */
+function SubmissionDeadlineCard({
+  data,
+  onChange,
+}: {
+  data: ExtractedRequirements;
+  onChange: (updates: Partial<ExtractedRequirements>) => void;
+}) {
+  // Calculate days until deadline
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const deadline = data.submissionDeadline ? new Date(data.submissionDeadline) : null;
+  const projectStart = data.projectStartDate ? new Date(data.projectStartDate) : null;
+  const projectEnd = data.projectEndDate ? new Date(data.projectEndDate) : null;
+
+  const daysUntilDeadline = deadline
+    ? Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const isUrgent = daysUntilDeadline !== null && daysUntilDeadline <= 7;
+  const isExpired = daysUntilDeadline !== null && daysUntilDeadline < 0;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Calendar className="h-5 w-5 text-muted-foreground" />
+        <Label className="text-base font-semibold">Fristen & Zeitrahmen</Label>
+      </div>
+
+      {/* Deadline Visualization Banner */}
+      {deadline && (
+        <Card className={`border-2 ${isExpired ? 'border-red-500 bg-red-50' : isUrgent ? 'border-orange-500 bg-orange-50' : 'border-blue-500 bg-blue-50'}`}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {isExpired ? (
+                  <AlertTriangle className="h-8 w-8 text-red-600" />
+                ) : isUrgent ? (
+                  <Clock className="h-8 w-8 text-orange-600" />
+                ) : (
+                  <Calendar className="h-8 w-8 text-blue-600" />
+                )}
+                <div>
+                  <p className={`text-sm font-medium ${isExpired ? 'text-red-900' : isUrgent ? 'text-orange-900' : 'text-blue-900'}`}>
+                    Abgabefrist
+                  </p>
+                  <p className={`text-2xl font-bold ${isExpired ? 'text-red-700' : isUrgent ? 'text-orange-700' : 'text-blue-700'}`}>
+                    {deadline.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    {data.submissionTime && ` um ${data.submissionTime} Uhr`}
+                  </p>
+                </div>
+              </div>
+              <div className={`text-right p-3 rounded-lg ${isExpired ? 'bg-red-100' : isUrgent ? 'bg-orange-100' : 'bg-blue-100'}`}>
+                <p className={`text-3xl font-bold ${isExpired ? 'text-red-700' : isUrgent ? 'text-orange-700' : 'text-blue-700'}`}>
+                  {isExpired ? Math.abs(daysUntilDeadline!) : daysUntilDeadline}
+                </p>
+                <p className={`text-xs font-medium ${isExpired ? 'text-red-600' : isUrgent ? 'text-orange-600' : 'text-blue-600'}`}>
+                  {isExpired ? 'Tage überfällig' : daysUntilDeadline === 1 ? 'Tag verbleibend' : 'Tage verbleibend'}
+                </p>
+              </div>
+            </div>
+
+            {/* Timeline Bar */}
+            {projectStart && projectEnd && (
+              <div className="mt-4 pt-4 border-t border-dashed">
+                <p className="text-xs text-muted-foreground mb-2">Projektzeitraum</p>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium">{projectStart.toLocaleDateString('de-DE')}</span>
+                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full" style={{ width: '100%' }} />
+                  </div>
+                  <span className="font-medium">{projectEnd.toLocaleDateString('de-DE')}</span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Date Inputs */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="submissionDeadline">Abgabefrist *</Label>
+          <div className="flex gap-2">
+            <Input
+              id="submissionDeadline"
+              type="date"
+              value={data.submissionDeadline || ''}
+              onChange={(e) => onChange({ submissionDeadline: e.target.value })}
+              className="flex-1"
+            />
+            <Input
+              type="time"
+              value={data.submissionTime || ''}
+              onChange={(e) => onChange({ submissionTime: e.target.value })}
+              placeholder="12:00"
+              className="w-24"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">Heute: {today.toLocaleDateString('de-DE')}</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="projectStartDate">Projektstart (geplant)</Label>
+          <Input
+            id="projectStartDate"
+            type="date"
+            value={data.projectStartDate || ''}
+            onChange={(e) => onChange({ projectStartDate: e.target.value })}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="projectEndDate">Projektende (geplant)</Label>
+          <Input
+            id="projectEndDate"
+            type="date"
+            value={data.projectEndDate || ''}
+            onChange={(e) => onChange({ projectEndDate: e.target.value })}
+          />
+        </div>
+      </div>
+
+      {/* No deadline warning */}
+      {!deadline && (
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-yellow-800">Keine Abgabefrist gefunden</p>
+            <p className="text-xs text-yellow-700 mt-1">
+              Bitte geben Sie die Abgabefrist manuell ein, um die Zeitplanung zu visualisieren.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+type Deliverable = {
+  name: string;
+  description?: string;
+  format?: string;
+  copies?: number;
+  mandatory: boolean;
+};
+
+/**
+ * Required Deliverables Card
+ */
+function RequiredDeliverablesCard({
+  deliverables,
+  onChange,
+}: {
+  deliverables: Deliverable[];
+  onChange: (deliverables: Deliverable[]) => void;
+}) {
+  const [newDeliverable, setNewDeliverable] = useState('');
+
+  const handleAdd = () => {
+    if (newDeliverable.trim()) {
+      onChange([
+        ...deliverables,
+        {
+          name: newDeliverable.trim(),
+          mandatory: true,
+        },
+      ]);
+      setNewDeliverable('');
+    }
+  };
+
+  const handleRemove = (index: number) => {
+    onChange(deliverables.filter((_, i) => i !== index));
+  };
+
+  const handleToggleMandatory = (index: number) => {
+    const updated = [...deliverables];
+    updated[index] = { ...updated[index], mandatory: !updated[index].mandatory };
+    onChange(updated);
+  };
+
+  const handleUpdateFormat = (index: number, format: string) => {
+    const updated = [...deliverables];
+    updated[index] = { ...updated[index], format };
+    onChange(updated);
+  };
+
+  const mandatoryCount = deliverables.filter(d => d.mandatory).length;
+  const optionalCount = deliverables.filter(d => !d.mandatory).length;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FileText className="h-5 w-5 text-muted-foreground" />
+          <Label className="text-base font-semibold">Abzugebende Unterlagen</Label>
+        </div>
+        {deliverables.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Badge variant="default">{mandatoryCount} Pflicht</Badge>
+            {optionalCount > 0 && (
+              <Badge variant="secondary">{optionalCount} Optional</Badge>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Deliverables List */}
+      {deliverables.length > 0 && (
+        <div className="space-y-2">
+          {deliverables.map((item, idx) => (
+            <Card key={idx} className={item.mandatory ? 'border-primary/50' : 'border-dashed'}>
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${item.mandatory ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                      {idx + 1}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm truncate">{item.name}</p>
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                      )}
+                    </div>
+                    <select
+                      value={item.format || ''}
+                      onChange={(e) => handleUpdateFormat(idx, e.target.value)}
+                      className="text-xs border rounded px-2 py-1 bg-background"
+                    >
+                      <option value="">Format</option>
+                      <option value="PDF">PDF</option>
+                      <option value="Word">Word</option>
+                      <option value="Excel">Excel</option>
+                      <option value="Hardcopy">Ausdruck</option>
+                      <option value="Digital">Digital</option>
+                    </select>
+                    <Badge
+                      variant={item.mandatory ? 'default' : 'secondary'}
+                      className="shrink-0 cursor-pointer"
+                      onClick={() => handleToggleMandatory(idx)}
+                    >
+                      {item.mandatory ? 'Pflicht' : 'Optional'}
+                    </Badge>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemove(idx)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Add new deliverable */}
+      <div className="flex gap-2">
+        <Input
+          value={newDeliverable}
+          onChange={(e) => setNewDeliverable(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          placeholder="z.B. Angebotsdokument, Referenzliste, Konzeptpapier..."
+        />
+        <Button type="button" onClick={handleAdd} variant="outline" size="icon">
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Empty state */}
+      {deliverables.length === 0 && (
+        <div className="rounded-lg border border-dashed p-4 text-center">
+          <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">
+            Keine abzugebenden Unterlagen definiert.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Fügen Sie die geforderten Dokumente hinzu (z.B. Angebot, Konzept, Referenzen).
+          </p>
+        </div>
+      )}
+
+      {/* Common deliverables suggestions */}
+      {deliverables.length === 0 && (
+        <div className="flex flex-wrap gap-2">
+          <p className="text-xs text-muted-foreground w-full">Übliche Unterlagen:</p>
+          {['Angebotsdokument', 'Preisblatt', 'Konzeptpapier', 'Referenzliste', 'Projektplan', 'Team-Profile'].map((suggestion) => (
+            <Button
+              key={suggestion}
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => onChange([...deliverables, { name: suggestion, mandatory: true }])}
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              {suggestion}
+            </Button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

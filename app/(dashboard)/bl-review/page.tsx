@@ -8,12 +8,12 @@ export default async function BLReviewPage() {
     !session?.user ||
     (session.user.role !== 'bl' && session.user.role !== 'admin')
   ) {
-    redirect('/dashboard');
+    redirect('/');
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <>
+      <div>
         <h1 className="text-3xl font-bold">BL Review</h1>
         <p className="mt-2 text-muted-foreground">
           Review and approve bids assigned to your business line
@@ -25,6 +25,6 @@ export default async function BLReviewPage() {
           BL review interface coming soon...
         </p>
       </div>
-    </div>
+    </>
   );
 }

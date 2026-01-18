@@ -4,6 +4,7 @@
  */
 
 import { XMLParser } from 'fast-xml-parser';
+import * as cheerio from 'cheerio';
 import { isAllowedUrl, validateUrlResolution } from './url-validator';
 import { validateXml } from './xml-validator';
 

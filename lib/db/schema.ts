@@ -33,7 +33,7 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
   metadata: text('metadata'), // JSON - für Email headers (from, subject, date)
   extractedRequirements: text('extracted_requirements'), // JSON
 
-  // Status
+  // Status (WORKFLOW.md compliant)
   status: text('status', {
     enum: [
       'draft',            // Initial state after upload
@@ -42,9 +42,14 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
       'quick_scanning',   // AI is doing quick scan
       'evaluating',       // AI is doing full bit/no bit evaluation
       'bit_decided',      // Decision made
+      'archived',         // NO BIT - Archiviert
       'routed',           // Routed to BL
+      'full_scanning',    // Deep Analysis läuft
+      'bl_reviewing',     // BL prüft Ergebnisse
       'team_assigned',    // Team assigned
-      'analysis_complete' // Deep migration analysis complete
+      'notified',         // Team wurde benachrichtigt
+      'handed_off',       // Workflow abgeschlossen
+      'analysis_complete' // Deep migration analysis complete (legacy)
     ]
   })
     .notNull()
@@ -70,6 +75,17 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
   // Team
   assignedTeam: text('assigned_team'), // JSON
   teamNotifiedAt: integer('team_notified_at', { mode: 'timestamp' }),
+
+  // Baseline Comparison (Phase 6)
+  baselineComparisonResult: text('baseline_comparison_result'), // JSON - kategorisierte Baseline-Items
+  baselineComparisonCompletedAt: integer('baseline_comparison_completed_at', { mode: 'timestamp' }),
+
+  // Project Planning (Phase 7)
+  projectPlanningResult: text('project_planning_result'), // JSON - Timeline + Disziplinen-Matrix
+  projectPlanningCompletedAt: integer('project_planning_completed_at', { mode: 'timestamp' }),
+
+  // Team Notifications (Phase 9)
+  teamNotifications: text('team_notifications'), // JSON Array - Versandstatus pro Team-Mitglied
 
   // Website URL (for analysis)
   websiteUrl: text('website_url'),

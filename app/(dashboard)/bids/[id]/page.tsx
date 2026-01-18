@@ -104,14 +104,25 @@ export default async function BidDetailPage({
 
 function StatusBadge({ status }: { status: string }) {
   const statusConfig = {
+    // Initial & Extraction
     draft: { label: 'Entwurf', variant: 'secondary' as const },
     extracting: { label: 'Extraktion läuft', variant: 'default' as const },
     reviewing: { label: 'Wird geprüft', variant: 'default' as const },
+    // Evaluation
     quick_scanning: { label: 'Quick Scan', variant: 'default' as const },
     evaluating: { label: 'Wird bewertet', variant: 'default' as const },
     bit_decided: { label: 'Entschieden', variant: 'default' as const },
+    // NO BIT Path
+    archived: { label: 'Archiviert', variant: 'outline' as const },
+    // BIT Path
     routed: { label: 'Weitergeleitet', variant: 'default' as const },
+    full_scanning: { label: 'Deep Analysis', variant: 'default' as const },
+    bl_reviewing: { label: 'BL-Review', variant: 'default' as const },
     team_assigned: { label: 'Team zugewiesen', variant: 'default' as const },
+    notified: { label: 'Team benachrichtigt', variant: 'default' as const },
+    handed_off: { label: 'Abgeschlossen', variant: 'default' as const },
+    // Legacy
+    analysis_complete: { label: 'Analyse fertig', variant: 'default' as const },
   };
 
   const config = statusConfig[status as keyof typeof statusConfig] || {

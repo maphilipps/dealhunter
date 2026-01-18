@@ -21,6 +21,9 @@ import { BLRoutingCard } from './bl-routing-card';
 import { TeamBuilder } from './team-builder';
 import { DeepAnalysisCard } from './deep-analysis-card';
 import { DocumentsSidebar } from './documents-sidebar';
+import { BaselineComparisonCard } from './baseline-comparison-card';
+import { ProjectPlanningCard } from './project-planning-card';
+import { NotificationCard } from './notification-card';
 
 interface BidDetailClientProps {
   bid: BidOpportunity;
@@ -186,7 +189,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
 
   // Load quick scan if status is quick_scanning or later
   useEffect(() => {
-    if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'team_assigned'].includes(bid.status)) {
+    if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
       setIsLoadingQuickScan(true);
       getQuickScanResult(bid.id).then(result => {
         if (result.success && result.quickScan) {
@@ -207,7 +210,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
 
   // Load BIT evaluation result if status is bit_decided or later
   useEffect(() => {
-    if (['bit_decided', 'routed', 'team_assigned'].includes(bid.status)) {
+    if (['bit_decided', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
       setIsLoadingBitEvaluation(true);
       getBitEvaluationResult(bid.id).then(result => {
         if (result.success && result.result) {
@@ -340,7 +343,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   }
 
   // Quick Scanning or later states - Show Quick Scan results
-  if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'team_assigned'].includes(bid.status)) {
+  if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         <div className="space-y-6">
@@ -505,8 +508,27 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     );
   }
 
-  // Routed status - Show Team Builder
-  if (bid.status === 'routed' || bid.status === 'team_assigned') {
+  // Routed status and later - Show Team Builder, Baseline, Planning, Notifications
+  if (['routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
+    // Check what data is available for the new components
+    const hasDeepAnalysis = bid.deepMigrationAnalysisId !== null;
+    const hasTeam = bid.assignedTeam !== null;
+
+    // Parse results if available
+    let baselineResult = null;
+    let projectPlan = null;
+    let notificationResults = null;
+
+    if (bid.baselineComparisonResult) {
+      try { baselineResult = JSON.parse(bid.baselineComparisonResult); } catch {}
+    }
+    if (bid.projectPlanningResult) {
+      try { projectPlan = JSON.parse(bid.projectPlanningResult); } catch {}
+    }
+    if (bid.teamNotifications) {
+      try { notificationResults = JSON.parse(bid.teamNotifications); } catch {}
+    }
+
     return (
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         <div className="space-y-6">
@@ -542,21 +564,58 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           existingAnalysis={null}
         />
 
+        {/* Phase 6: Baseline-Vergleich */}
+        <BaselineComparisonCard
+          bidId={bid.id}
+          initialResult={baselineResult}
+          hasDeepAnalysis={hasDeepAnalysis}
+        />
+
+        {/* Phase 7: Projekt-Planung */}
+        <ProjectPlanningCard
+          bidId={bid.id}
+          initialPlan={projectPlan}
+          hasDeepAnalysis={hasDeepAnalysis}
+        />
+
         {/* Team Builder */}
         {bid.status === 'routed' && <TeamBuilder bidId={bid.id} />}
 
-        {/* Team Assignment Summary (if team_assigned) */}
-        {bid.status === 'team_assigned' && bid.assignedTeam && (
-          <Card className="border-green-200 bg-green-50">
+        {/* Team Assignment Summary (if team_assigned or later) */}
+        {['team_assigned', 'notified', 'handed_off'].includes(bid.status) && bid.assignedTeam && (
+          <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
             <CardHeader>
-              <CardTitle className="text-green-900">Team zugewiesen</CardTitle>
-              <CardDescription className="text-green-700">
+              <CardTitle className="text-green-900 dark:text-green-100">Team zugewiesen</CardTitle>
+              <CardDescription className="text-green-700 dark:text-green-300">
                 Das Team wurde erfolgreich zugewiesen
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <pre className="text-sm">{JSON.stringify(JSON.parse(bid.assignedTeam), null, 2)}</pre>
+              <pre className="text-sm overflow-auto">{JSON.stringify(JSON.parse(bid.assignedTeam), null, 2)}</pre>
             </CardContent>
+          </Card>
+        )}
+
+        {/* Phase 9: Team-Benachrichtigung */}
+        <NotificationCard
+          bidId={bid.id}
+          hasTeam={hasTeam}
+          initialResults={notificationResults}
+          notifiedAt={bid.teamNotifiedAt}
+        />
+
+        {/* Workflow Complete Badge */}
+        {bid.status === 'handed_off' && (
+          <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                <CheckCircle2 className="h-5 w-5" />
+                Workflow abgeschlossen
+              </CardTitle>
+              <CardDescription className="text-blue-700 dark:text-blue-300">
+                Alle Phasen wurden erfolgreich durchlaufen. Das Projekt wurde übergeben.
+              </CardDescription>
+            </CardHeader>
           </Card>
         )}
         </div>

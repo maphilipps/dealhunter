@@ -71,6 +71,42 @@ export const quickScanCatalogSchema = {
     columns: z.number().optional(),
     gap: z.enum(['sm', 'md', 'lg']).optional(),
   }),
+
+  // Company Intelligence Components
+  CompanyCard: z.object({
+    name: z.string(),
+    industry: z.string().optional(),
+    size: z.enum(['startup', 'small', 'medium', 'large', 'enterprise']).optional(),
+    location: z.string().optional(),
+    employeeCount: z.string().optional(),
+    revenue: z.string().optional(),
+  }),
+
+  ContactInfo: z.object({
+    name: z.string(),
+    title: z.string().optional(),
+    email: z.string().optional(),
+    phone: z.string().optional(),
+  }),
+
+  NewsItem: z.object({
+    title: z.string(),
+    source: z.string().optional(),
+    date: z.string().optional(),
+    sentiment: z.enum(['positive', 'neutral', 'negative']).optional(),
+    summary: z.string().optional(),
+  }),
+
+  NewsList: z.object({
+    title: z.string().optional(),
+    items: z.array(z.object({
+      title: z.string(),
+      source: z.string().optional(),
+      date: z.string().optional(),
+      sentiment: z.enum(['positive', 'neutral', 'negative']).optional(),
+      summary: z.string().optional(),
+    })),
+  }),
 };
 
 // Component descriptions for AI
@@ -84,6 +120,10 @@ export const quickScanComponentDescriptions = {
   SkillsList: 'List of required skills/competencies',
   ContentStats: 'Content volume statistics including page count, complexity, languages',
   Grid: 'Layout container for arranging children in columns',
+  CompanyCard: 'Company information card with name, industry, size, location, employees, revenue',
+  ContactInfo: 'Contact person information with name, title, email, phone',
+  NewsItem: 'Single news article with title, source, date, sentiment',
+  NewsList: 'List of news items with sentiment indicators',
 };
 
 // System prompt for AI
@@ -103,6 +143,10 @@ COMPONENT DETAILS:
 - SkillsList: { title?: string, skills: [string] } - Required skills list
 - ContentStats: { pageCount?: number, complexity?: "low"|"medium"|"high", languages?: [string], contentTypes?: [{type: string, count: number}] } - Content stats
 - Grid: { columns?: number, gap?: "sm"|"md"|"lg" } - Layout grid (has children)
+- CompanyCard: { name: string, industry?: string, size?: "startup"|"small"|"medium"|"large"|"enterprise", location?: string, employeeCount?: string, revenue?: string } - Company info
+- ContactInfo: { name: string, title?: string, email?: string, phone?: string } - Contact person
+- NewsItem: { title: string, source?: string, date?: string, sentiment?: "positive"|"neutral"|"negative", summary?: string } - Single news item
+- NewsList: { title?: string, items: [{title: string, source?: string, date?: string, sentiment?: "positive"|"neutral"|"negative", summary?: string}] } - News list
 
 OUTPUT FORMAT:
 Output JSONL where each line is a patch operation:

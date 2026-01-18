@@ -39,7 +39,11 @@ export async function startQuickScan(bidId: string) {
       : null;
 
     // Determine website URL from extracted requirements or ask user
-    const websiteUrl = extractedReqs?.websiteUrl || extractedReqs?.customerWebsite;
+    // Prioritize websiteUrls array (primary source), fallback to legacy single URL
+    const websiteUrl =
+      extractedReqs?.websiteUrls?.[0]?.url ||  // Primary: Array with type info
+      extractedReqs?.websiteUrl ||              // Legacy: Single URL field
+      null;
 
     if (!websiteUrl) {
       return {
@@ -147,7 +151,11 @@ export async function retriggerQuickScan(bidId: string) {
       : null;
 
     // Determine website URL from extracted requirements
-    const websiteUrl = extractedReqs?.websiteUrl || extractedReqs?.customerWebsite;
+    // Prioritize websiteUrls array (primary source), fallback to legacy single URL
+    const websiteUrl =
+      extractedReqs?.websiteUrls?.[0]?.url ||  // Primary: Array with type info
+      extractedReqs?.websiteUrl ||              // Legacy: Single URL field
+      null;
 
     if (!websiteUrl) {
       return {

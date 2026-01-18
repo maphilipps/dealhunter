@@ -116,7 +116,11 @@ const allNavItems: Array<{
     roles: ['admin'],
     items: [
       {
-        title: "Business Lines",
+        title: "Validierung",
+        url: "/admin/validations",
+      },
+      {
+        title: "Business Unit",
         url: "/admin/business-lines",
       },
       {

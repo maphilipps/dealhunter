@@ -1,11 +1,23 @@
 'use server';
 
+import { z } from 'zod';
 import { db } from '@/lib/db';
-import { bidOpportunities, employees } from '@/lib/db/schema';
+import { rfps, employees, users } from '@/lib/db/schema';
+import { revalidatePath } from 'next/cache';
 import { eq } from 'drizzle-orm';
 import { suggestTeam } from './agent';
 import { auth } from '@/lib/auth';
+import { canTransitionTo } from '@/lib/workflow/bl-review-status';
 import type { TeamSuggestion, TeamAssignment } from './schema';
+
+// Validation schemas
+const BidIdSchema = z.object({
+  bidId: z.string().min(1, 'Bid ID ist erforderlich'),
+});
+
+const AssignTeamInputSchema = z.object({
+  bidId: z.string().min(1, 'Bid ID ist erforderlich'),
+});
 
 export interface SuggestTeamResult {
   success: boolean;
@@ -28,17 +40,30 @@ export async function suggestTeamForBid(bidId: string): Promise<SuggestTeamResul
     return { success: false, error: 'Nicht authentifiziert' };
   }
 
+  // Validate input
+  const parsed = BidIdSchema.safeParse({ bidId });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message || 'Ungültige Eingabe' };
+  }
+
   try {
     // Get bid
-    const [bid] = await db.select().from(bidOpportunities).where(eq(bidOpportunities.id, bidId)).limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, parsed.data.bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
     }
 
-    // Validate status - must be routed
-    if (bid.status !== 'routed') {
-      return { success: false, error: 'Bid muss in Status "routed" sein' };
+    // Security: BU ownership validation (IDOR prevention)
+    const [currentUser] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+    if (currentUser?.role === 'bl' && bid.assignedBusinessUnitId !== currentUser.businessUnitId) {
+      return { success: false, error: 'Keine Berechtigung für diesen Bid' };
+    }
+
+    // Validate transition to team assignment is allowed
+    const transitionSuggest = canTransitionTo(bid, 'team_assignment');
+    if (!transitionSuggest.allowed) {
+      return { success: false, error: transitionSuggest.reason || 'Übergang zum Team Assignment nicht erlaubt' };
     }
 
     // Validate BL assignment
@@ -95,17 +120,30 @@ export async function assignTeam(
     return { success: false, error: 'Nicht authentifiziert' };
   }
 
+  // Validate input
+  const parsed = AssignTeamInputSchema.safeParse({ bidId });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message || 'Ungültige Eingabe' };
+  }
+
   try {
     // Get bid
-    const [bid] = await db.select().from(bidOpportunities).where(eq(bidOpportunities.id, bidId)).limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, parsed.data.bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
     }
 
-    // Validate status
-    if (bid.status !== 'routed') {
-      return { success: false, error: 'Bid muss in Status "routed" sein' };
+    // Security: BU ownership validation (IDOR prevention)
+    const [currentUser] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+    if (currentUser?.role === 'bl' && bid.assignedBusinessUnitId !== currentUser.businessUnitId) {
+      return { success: false, error: 'Keine Berechtigung für diesen Bid' };
+    }
+
+    // Validate transition to team assignment is allowed
+    const transitionAssign = canTransitionTo(bid, 'team_assignment');
+    if (!transitionAssign.allowed) {
+      return { success: false, error: transitionAssign.reason || 'Übergang zum Team Assignment nicht erlaubt' };
     }
 
     // Validate team has required roles
@@ -130,13 +168,17 @@ export async function assignTeam(
 
     // Update bid with team assignment
     await db
-      .update(bidOpportunities)
+      .update(rfps)
       .set({
         assignedTeam: JSON.stringify(teamAssignment),
         status: 'team_assigned',
         updatedAt: new Date(),
       })
-      .where(eq(bidOpportunities.id, bidId));
+      .where(eq(rfps.id, parsed.data.bidId));
+
+    // Revalidate cache for updated views
+    revalidatePath(`/bl-review/${parsed.data.bidId}`);
+    revalidatePath("/bl-review");
 
     return {
       success: true,
@@ -160,8 +202,14 @@ export async function getTeamAssignment(bidId: string) {
     return { success: false, error: 'Nicht authentifiziert' };
   }
 
+  // Validate input
+  const parsed = BidIdSchema.safeParse({ bidId });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message || 'Ungültige Eingabe' };
+  }
+
   try {
-    const [bid] = await db.select().from(bidOpportunities).where(eq(bidOpportunities.id, bidId)).limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, parsed.data.bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };

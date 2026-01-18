@@ -1,9 +1,11 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { bidOpportunities, businessUnits } from '@/lib/db/schema';
+import { rfps, businessUnits } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 import { sendBLAssignmentEmail } from '@/lib/notifications/email';
+import { auth } from '@/lib/auth';
 
 export interface AssignBusinessUnitInput {
   bidId: string;
@@ -14,6 +16,7 @@ export interface AssignBusinessUnitInput {
 export interface AssignBusinessUnitResult {
   success: boolean;
   error?: string;
+  warning?: string;
 }
 
 /**
@@ -25,6 +28,12 @@ export interface AssignBusinessUnitResult {
 export async function assignBusinessUnit(
   input: AssignBusinessUnitInput
 ): Promise<AssignBusinessUnitResult> {
+  // Security: Authentication check
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
   try {
     const { bidId, businessLineName, overrideReason } = input;
 
@@ -39,8 +48,8 @@ export async function assignBusinessUnit(
     // Get bid
     const bids = await db
       .select()
-      .from(bidOpportunities)
-      .where(eq(bidOpportunities.id, bidId))
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
       .limit(1);
 
     if (bids.length === 0) {
@@ -52,16 +61,16 @@ export async function assignBusinessUnit(
 
     const bid = bids[0];
 
-    // Validate status - must be bit_decided
-    if (bid.status !== 'bit_decided') {
+    // Validate status - must be decision_made
+    if (bid.status !== 'decision_made') {
       return {
         success: false,
-        error: 'Bid muss in Status "bit_decided" sein',
+        error: 'Bid muss in Status "decision_made" sein',
       };
     }
 
     // Validate BIT decision
-    if (bid.bitDecision !== 'bit') {
+    if (bid.decision !== 'bid') {
       return {
         success: false,
         error: 'Nur BIT-Opportunities können geroutet werden',
@@ -94,7 +103,7 @@ export async function assignBusinessUnit(
     // Update bid with assigned business line
     const notifiedAt = new Date();
     await db
-      .update(bidOpportunities)
+      .update(rfps)
       .set({
         assignedBusinessUnitId: businessLineName,
         assignedBLNotifiedAt: notifiedAt,
@@ -111,7 +120,11 @@ export async function assignBusinessUnit(
           }),
         }),
       })
-      .where(eq(bidOpportunities.id, bidId));
+      .where(eq(rfps.id, bidId));
+
+    // Revalidate cache for updated views
+    revalidatePath(`/bl-review/${bidId}`);
+    revalidatePath("/bl-review");
 
     // ROUTE-003: Send email notification to BL leader
     const emailResult = await sendBLAssignmentEmail({
@@ -131,6 +144,7 @@ export async function assignBusinessUnit(
 
     return {
       success: true,
+      warning: emailResult.success ? undefined : 'Zuweisung erfolgreich, aber E-Mail-Benachrichtigung fehlgeschlagen',
     };
   } catch (error) {
     console.error('Error assigning business line:', error);
@@ -142,19 +156,13 @@ export async function assignBusinessUnit(
 }
 
 /**
- * Get list of available business lines
+ * Get list of available business units
  */
 export async function getAvailableBusinessUnits(): Promise<string[]> {
-  // These are the business lines known to the Quick Scan agent
-  // In a production system, these would come from the database
-  return [
-    'Banking & Insurance',
-    'Automotive',
-    'Energy & Utilities',
-    'Retail & E-Commerce',
-    'Healthcare',
-    'Public Sector',
-    'Manufacturing',
-    'Technology & Innovation',
-  ];
+  const units = await db
+    .select({ name: businessUnits.name })
+    .from(businessUnits)
+    .orderBy(businessUnits.name);
+
+  return units.map(u => u.name);
 }

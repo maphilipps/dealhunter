@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
-interface BusinessLineOption {
+interface BusinessUnitOption {
   id: string;
   name: string;
 }
@@ -84,14 +84,14 @@ function EntityCountsInput({ entityCounts, setEntityCounts }: EntityCountsProps)
 }
 
 interface TechnologyFormProps {
-  businessLines: BusinessLineOption[] | undefined;
+  businessUnits: BusinessUnitOption[] | undefined;
 }
 
-export function TechnologyForm({ businessLines }: TechnologyFormProps) {
+export function TechnologyForm({ businessUnits }: TechnologyFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState('');
-  const [businessLineId, setBusinessLineId] = useState('');
+  const [businessUnitId, setBusinessUnitId] = useState('');
   const [baselineHours, setBaselineHours] = useState('');
   const [baselineName, setBaselineName] = useState('');
   const [entityCounts, setEntityCounts] = useState<Record<string, number>>({});
@@ -101,8 +101,8 @@ export function TechnologyForm({ businessLines }: TechnologyFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim() || !businessLineId) {
-      toast.error('Bitte Name und Business Line ausfüllen');
+    if (!name.trim() || !businessUnitId) {
+      toast.error('Bitte Name und Business Unit ausfüllen');
       return;
     }
 
@@ -111,7 +111,7 @@ export function TechnologyForm({ businessLines }: TechnologyFormProps) {
     try {
       const result = await createTechnology({
         name: name.trim(),
-        businessLineId,
+        businessUnitId,
         baselineHours: baselineHours ? parseInt(baselineHours) : undefined,
         baselineName: baselineName.trim() || undefined,
         baselineEntityCounts: Object.keys(entityCounts).length > 0 ? entityCounts : undefined,
@@ -152,16 +152,16 @@ export function TechnologyForm({ businessLines }: TechnologyFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="businessLine">Business Line *</Label>
+          <Label htmlFor="businessLine">Business Unit *</Label>
           <select
             id="businessLine"
-            value={businessLineId}
-            onChange={(e) => setBusinessLineId(e.target.value)}
+            value={businessUnitId}
+            onChange={(e) => setBusinessUnitId(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             required
           >
-            <option value="">Business Line auswählen</option>
-            {(businessLines || []).map((bl) => (
+            <option value="">Business Unit auswählen</option>
+            {(businessUnits || []).map((bl) => (
               <option key={bl.id} value={bl.id}>
                 {bl.name}
               </option>
@@ -178,7 +178,7 @@ export function TechnologyForm({ businessLines }: TechnologyFormProps) {
             className="h-4 w-4"
           />
           <Label htmlFor="isDefault" className="cursor-pointer">
-            Als Default für diese Business Line setzen
+            Als Default für diese Business Unit setzen
           </Label>
         </div>
 

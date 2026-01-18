@@ -53,7 +53,7 @@ export async function startBitEvaluation(bidId: string) {
           contentVolume: quickScanResult.quickScan.contentVolume,
           features: quickScanResult.quickScan.features,
           blRecommendation: {
-            primaryBusinessLine: quickScanResult.quickScan.recommendedBusinessLine,
+            primaryBusinessLine: quickScanResult.quickScan.recommendedBusinessUnit,
             confidence: quickScanResult.quickScan.confidence,
             reasoning: quickScanResult.quickScan.reasoning,
           },

@@ -218,17 +218,17 @@ export const featuresSchema = z.object({
 export type Features = z.infer<typeof featuresSchema>;
 
 /**
- * Schema for business line recommendation
+ * Schema for business unit recommendation
  */
 export const blRecommendationSchema = z.object({
-  primaryBusinessLine: z.string().describe('Primary recommended business line'),
+  primaryBusinessLine: z.string().describe('Primary recommended business unit'),
   confidence: z.number().min(0).max(100).describe('Confidence in recommendation (0-100)'),
   reasoning: z.string().describe('Explanation for the recommendation'),
   alternativeBusinessLines: z.array(z.object({
     name: z.string(),
     confidence: z.number().min(0).max(100),
     reason: z.string(),
-  })).describe('Alternative business line recommendations'),
+  })).describe('Alternative business unit recommendations'),
   requiredSkills: z.array(z.string()).describe('Key skills needed for this project'),
 });
 

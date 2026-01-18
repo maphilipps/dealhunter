@@ -59,12 +59,12 @@ export async function triggerBaselineComparison(bidId: string): Promise<TriggerB
   let baselineName = 'adessoCMS 2.0';
   let baselineHours = 400;
 
-  if (bid.assignedBusinessLineId) {
+  if (bid.assignedBusinessUnitId) {
     // Get technology with baseline data for the assigned business line
     const [tech] = await db
       .select()
       .from(technologies)
-      .where(eq(technologies.businessLineId, bid.assignedBusinessLineId))
+      .where(eq(technologies.businessUnitId, bid.assignedBusinessUnitId))
       .limit(1);
 
     if (tech?.baselineEntityCounts) {

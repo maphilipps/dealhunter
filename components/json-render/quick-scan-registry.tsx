@@ -156,8 +156,8 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
   },
 
   Recommendation: ({ element }) => {
-    const { businessLine, confidence, reasoning } = element.props as {
-      businessLine: string;
+    const { businessUnit, confidence, reasoning } = element.props as {
+      businessUnit: string;
       confidence: number;
       reasoning: string;
     };
@@ -165,7 +165,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-2xl font-bold text-blue-900">{businessLine}</span>
+          <span className="text-2xl font-bold text-blue-900">{businessUnit}</span>
           <Badge variant="secondary" className="bg-blue-100 text-blue-900">
             {confidence}% Confidence
           </Badge>

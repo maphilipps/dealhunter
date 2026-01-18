@@ -42,12 +42,12 @@ export async function suggestTeamForBid(bidId: string): Promise<SuggestTeamResul
     }
 
     // Validate BL assignment
-    if (!bid.assignedBusinessLineId) {
-      return { success: false, error: 'Keine Business Line zugewiesen' };
+    if (!bid.assignedBusinessUnitId) {
+      return { success: false, error: 'Keine Business Unit zugewiesen' };
     }
 
     // Get employees from assigned BL
-    // Note: In real system, this would query by businessLineId
+    // Note: In real system, this would query by businessUnitId
     // For now, get all employees as we don't have BL-to-employee mapping yet
     const availableEmployees = await db.select().from(employees).limit(20);
 
@@ -65,7 +65,7 @@ export async function suggestTeamForBid(bidId: string): Promise<SuggestTeamResul
         ? JSON.parse(bid.extractedRequirements)
         : {},
       quickScanResults,
-      assignedBusinessLine: bid.assignedBusinessLineId,
+      assignedBusinessLine: bid.assignedBusinessUnitId,
       availableEmployees,
     });
 

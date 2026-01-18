@@ -55,19 +55,19 @@ function TagInput({ items, setItems, placeholder }: { items: string[], setItems:
   );
 }
 
-export function EmployeeForm({ businessLines, competencies }: { businessLines: Option[] | undefined, competencies: Option[] | undefined }) {
+export function EmployeeForm({ businessUnits, competencies }: { businessUnits: Option[] | undefined, competencies: Option[] | undefined }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [businessLineId, setBusinessLineId] = useState('');
+  const [businessUnitId, setBusinessUnitId] = useState('');
   const [skills, setSkills] = useState<string[]>([]);
   const [roles, setRoles] = useState<string[]>(['developer']);
   const [availability, setAvailability] = useState<'available' | 'on_project' | 'unavailable'>('available');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !businessLineId || skills.length === 0 || roles.length === 0) {
+    if (!name.trim() || !email.trim() || !businessUnitId || skills.length === 0 || roles.length === 0) {
       toast.error('Bitte alle Pflichtfelder ausfüllen');
       return;
     }
@@ -77,7 +77,7 @@ export function EmployeeForm({ businessLines, competencies }: { businessLines: O
       const result = await createEmployee({
         name: name.trim(),
         email: email.trim(),
-        businessLineId,
+        businessUnitId,
         skills,
         roles,
         availabilityStatus: availability,
@@ -110,16 +110,16 @@ export function EmployeeForm({ businessLines, competencies }: { businessLines: O
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="businessLine">Business Line *</Label>
+          <Label htmlFor="businessLine">Business Unit *</Label>
           <select
             id="businessLine"
-            value={businessLineId}
-            onChange={(e) => setBusinessLineId(e.target.value)}
+            value={businessUnitId}
+            onChange={(e) => setBusinessUnitId(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             required
           >
-            <option value="">Business Line auswählen</option>
-            {(businessLines || []).map((bl) => (
+            <option value="">Business Unit auswählen</option>
+            {(businessUnits || []).map((bl) => (
               <option key={bl.id} value={bl.id}>{bl.name}</option>
             ))}
           </select>

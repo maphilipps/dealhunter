@@ -1,17 +1,17 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { bidOpportunities, businessLines } from '@/lib/db/schema';
+import { bidOpportunities, businessUnits } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { sendBLAssignmentEmail } from '@/lib/notifications/email';
 
-export interface AssignBusinessLineInput {
+export interface AssignBusinessUnitInput {
   bidId: string;
   businessLineName: string;
   overrideReason?: string; // Required if overriding AI recommendation
 }
 
-export interface AssignBusinessLineResult {
+export interface AssignBusinessUnitResult {
   success: boolean;
   error?: string;
 }
@@ -22,9 +22,9 @@ export interface AssignBusinessLineResult {
  * - Allows override with reason (ROUTE-002)
  * - Updates status to 'routed'
  */
-export async function assignBusinessLine(
-  input: AssignBusinessLineInput
-): Promise<AssignBusinessLineResult> {
+export async function assignBusinessUnit(
+  input: AssignBusinessUnitInput
+): Promise<AssignBusinessUnitResult> {
   try {
     const { bidId, businessLineName, overrideReason } = input;
 
@@ -32,7 +32,7 @@ export async function assignBusinessLine(
     if (!bidId || !businessLineName) {
       return {
         success: false,
-        error: 'Bid ID and Business Line sind erforderlich',
+        error: 'Bid ID and Business Unit sind erforderlich',
       };
     }
 
@@ -71,14 +71,14 @@ export async function assignBusinessLine(
     // Get business line details for email notification
     const bls = await db
       .select()
-      .from(businessLines)
-      .where(eq(businessLines.name, businessLineName))
+      .from(businessUnits)
+      .where(eq(businessUnits.name, businessLineName))
       .limit(1);
 
     if (bls.length === 0) {
       return {
         success: false,
-        error: 'Business Line nicht gefunden',
+        error: 'Business Unit nicht gefunden',
       };
     }
 
@@ -96,7 +96,7 @@ export async function assignBusinessLine(
     await db
       .update(bidOpportunities)
       .set({
-        assignedBusinessLineId: businessLineName,
+        assignedBusinessUnitId: businessLineName,
         assignedBLNotifiedAt: notifiedAt,
         status: 'routed',
         updatedAt: new Date(),
@@ -144,7 +144,7 @@ export async function assignBusinessLine(
 /**
  * Get list of available business lines
  */
-export async function getAvailableBusinessLines(): Promise<string[]> {
+export async function getAvailableBusinessUnits(): Promise<string[]> {
   // These are the business lines known to the Quick Scan agent
   // In a production system, these would come from the database
   return [

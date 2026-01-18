@@ -11,7 +11,7 @@ export const users = sqliteTable('users', {
   role: text('role', { enum: ['bd', 'bl', 'admin'] })
     .notNull()
     .default('bd'),
-  businessLineId: text('business_line_id').references(() => businessLines.id),
+  businessUnitId: text('business_unit_id').references(() => businessUnits.id),
   deletedAt: integer('deleted_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
@@ -66,7 +66,7 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
   accountId: text('account_id').references(() => accounts.id),
 
   // Routing
-  assignedBusinessLineId: text('assigned_business_line_id'),
+  assignedBusinessUnitId: text('assigned_business_unit_id'),
   assignedBLNotifiedAt: integer('assigned_bl_notified_at', { mode: 'timestamp' }),
 
   // Extended Evaluation
@@ -219,12 +219,12 @@ export const competencies = sqliteTable('competencies', {
 export type Competency = typeof competencies.$inferSelect;
 export type NewCompetency = typeof competencies.$inferInsert;
 
-export const businessLines = sqliteTable('business_lines', {
+export const businessUnits = sqliteTable('business_units', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
 
-  // Business Line Details
+  // Business Unit Details
   name: text('name').notNull(),
 
   // Leader
@@ -241,8 +241,8 @@ export const businessLines = sqliteTable('business_lines', {
     .$defaultFn(() => new Date())
 });
 
-export type BusinessLine = typeof businessLines.$inferSelect;
-export type NewBusinessLine = typeof businessLines.$inferInsert;
+export type BusinessUnit = typeof businessUnits.$inferSelect;
+export type NewBusinessUnit = typeof businessUnits.$inferInsert;
 
 export const technologies = sqliteTable('technologies', {
   id: text('id')
@@ -252,10 +252,10 @@ export const technologies = sqliteTable('technologies', {
   // Technology Details
   name: text('name').notNull(),
 
-  // Business Line Reference
-  businessLineId: text('business_line_id')
+  // Business Unit Reference
+  businessUnitId: text('business_unit_id')
     .notNull()
-    .references(() => businessLines.id),
+    .references(() => businessUnits.id),
 
   // Baseline Information (optional - not all technologies need baseline data)
   baselineHours: integer('baseline_hours'),
@@ -319,10 +319,10 @@ export const employees = sqliteTable('employees', {
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
 
-  // Business Line
-  businessLineId: text('business_line_id')
+  // Business Unit
+  businessUnitId: text('business_unit_id')
     .notNull()
-    .references(() => businessLines.id),
+    .references(() => businessUnits.id),
 
   // Skills & Roles
   skills: text('skills').notNull(), // JSON array
@@ -422,8 +422,8 @@ export const quickScans = sqliteTable('quick_scans', {
   screenshots: text('screenshots'), // JSON - screenshot paths
   companyIntelligence: text('company_intelligence'), // JSON - company research data
 
-  // Business Line Recommendation
-  recommendedBusinessLine: text('recommended_business_line'),
+  // Business Unit Recommendation
+  recommendedBusinessUnit: text('recommended_business_unit'),
   confidence: integer('confidence'), // 0-100
   reasoning: text('reasoning'),
 

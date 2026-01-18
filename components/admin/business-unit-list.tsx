@@ -2,9 +2,9 @@
 
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { deleteBusinessLine } from '@/lib/admin/business-lines-actions';
+import { deleteBusinessUnit } from '@/lib/admin/business-units-actions';
 
-interface BusinessLine {
+interface BusinessUnit {
   id: string;
   name: string;
   leaderName: string;
@@ -14,21 +14,21 @@ interface BusinessLine {
   updatedAt: Date | null;
 }
 
-interface BusinessLineListProps {
-  businessLines: BusinessLine[] | undefined;
+interface BusinessUnitListProps {
+  businessUnits: BusinessUnit[] | undefined;
 }
 
-export function BusinessLineList({ businessLines }: BusinessLineListProps) {
+export function BusinessUnitList({ businessUnits }: BusinessUnitListProps) {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Möchten Sie "${name}" wirklich löschen?`)) {
       return;
     }
 
     try {
-      const result = await deleteBusinessLine(id);
+      const result = await deleteBusinessUnit(id);
 
       if (result.success) {
-        toast.success('Business Line erfolgreich gelöscht');
+        toast.success('Business Unit erfolgreich gelöscht');
         window.location.reload();
       } else {
         toast.error(result.error || 'Fehler beim Löschen');
@@ -39,17 +39,17 @@ export function BusinessLineList({ businessLines }: BusinessLineListProps) {
     }
   };
 
-  if (!businessLines || businessLines.length === 0) {
+  if (!businessUnits || businessUnits.length === 0) {
     return (
       <div className="text-center py-12 rounded-lg border bg-card">
         <p className="text-muted-foreground mb-4">
-          Noch keine Business Lines erfasst
+          Noch keine Business Units erfasst
         </p>
         <a
-          href="/admin/business-lines/new"
+          href="/admin/business-units/new"
           className="text-primary hover:underline"
         >
-          Erste Business Line erstellen →
+          Erste Business Unit erstellen →
         </a>
       </div>
     );
@@ -57,15 +57,15 @@ export function BusinessLineList({ businessLines }: BusinessLineListProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {businessLines.map((bl) => {
-        const keywords = JSON.parse(bl.keywords || '[]');
+      {businessUnits.map((bu) => {
+        const keywords = JSON.parse(bu.keywords || '[]');
 
         return (
-          <div key={bl.id} className="rounded-lg border bg-card p-6">
+          <div key={bu.id} className="rounded-lg border bg-card p-6">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-semibold">{bl.name}</h3>
+              <h3 className="text-lg font-semibold">{bu.name}</h3>
               <button
-                onClick={() => handleDelete(bl.id, bl.name)}
+                onClick={() => handleDelete(bu.id, bu.name)}
                 className="text-destructive hover:text-destructive/80"
                 title="Löschen"
               >
@@ -76,8 +76,8 @@ export function BusinessLineList({ businessLines }: BusinessLineListProps) {
             <div className="space-y-3 text-sm">
               <div>
                 <span className="text-muted-foreground">Leiter:</span>
-                <p className="font-medium">{bl.leaderName}</p>
-                <p className="text-xs text-muted-foreground">{bl.leaderEmail}</p>
+                <p className="font-medium">{bu.leaderName}</p>
+                <p className="text-xs text-muted-foreground">{bu.leaderEmail}</p>
               </div>
 
               <div>
@@ -95,7 +95,7 @@ export function BusinessLineList({ businessLines }: BusinessLineListProps) {
               </div>
 
               <div className="text-xs text-muted-foreground pt-2 border-t">
-                Erstellt: {bl.createdAt ? new Date(bl.createdAt).toLocaleDateString('de-DE') : 'N/A'}
+                Erstellt: {bu.createdAt ? new Date(bu.createdAt).toLocaleDateString('de-DE') : 'N/A'}
               </div>
             </div>
           </div>

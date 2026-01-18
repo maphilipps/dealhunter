@@ -120,8 +120,8 @@ const allNavItems: Array<{
         url: "/admin/validations",
       },
       {
-        title: "Business Unit",
-        url: "/admin/business-lines",
+        title: "Business Units",
+        url: "/admin/business-units",
       },
       {
         title: "Technologies",

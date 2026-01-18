@@ -2,21 +2,21 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { businessLines } from '@/lib/db/schema';
+import { businessUnits } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
-export async function getBusinessLines() {
+export async function getBusinessUnits() {
   try {
-    const lines = await db.select().from(businessLines).orderBy(businessLines.createdAt);
-    return { success: true, businessLines: lines };
+    const units = await db.select().from(businessUnits).orderBy(businessUnits.createdAt);
+    return { success: true, businessUnits: units };
   } catch (error) {
-    console.error('Error fetching business lines:', error);
-    return { success: false, error: 'Fehler beim Laden der Business Lines' };
+    console.error('Error fetching business units:', error);
+    return { success: false, error: 'Fehler beim Laden der Business Units' };
   }
 }
 
-export async function createBusinessLine(data: {
+export async function createBusinessUnit(data: {
   name: string;
   leaderName: string;
   leaderEmail: string;
@@ -52,8 +52,8 @@ export async function createBusinessLine(data: {
   }
 
   try {
-    const [businessLine] = await db
-      .insert(businessLines)
+    const [businessUnit] = await db
+      .insert(businessUnits)
       .values({
         name: name.trim(),
         leaderName: leaderName.trim(),
@@ -62,16 +62,16 @@ export async function createBusinessLine(data: {
       })
       .returning();
 
-    revalidatePath('/admin/business-lines');
+    revalidatePath('/admin/business-units');
 
-    return { success: true, businessLine };
+    return { success: true, businessUnit };
   } catch (error) {
-    console.error('Error creating business line:', error);
-    return { success: false, error: 'Fehler beim Erstellen der Business Line' };
+    console.error('Error creating business unit:', error);
+    return { success: false, error: 'Fehler beim Erstellen der Business Unit' };
   }
 }
 
-export async function deleteBusinessLine(id: string) {
+export async function deleteBusinessUnit(id: string) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -83,13 +83,13 @@ export async function deleteBusinessLine(id: string) {
   }
 
   try {
-    await db.delete(businessLines).where(eq(businessLines.id, id));
+    await db.delete(businessUnits).where(eq(businessUnits.id, id));
 
-    revalidatePath('/admin/business-lines');
+    revalidatePath('/admin/business-units');
 
     return { success: true };
   } catch (error) {
-    console.error('Error deleting business line:', error);
-    return { success: false, error: 'Fehler beim Löschen der Business Line' };
+    console.error('Error deleting business unit:', error);
+    return { success: false, error: 'Fehler beim Löschen der Business Unit' };
   }
 }

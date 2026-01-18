@@ -48,7 +48,7 @@ export async function sendBLAssignmentEmail(
     }
 
     // Create review link
-    const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/bids/${bidId}`;
+    const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/rfps/${bidId}`;
 
     // Send email using Resend
     await getResendClient().emails.send({
@@ -169,7 +169,7 @@ export async function sendTeamNotificationEmails(
   } = input;
 
   const results: TeamNotificationResult[] = [];
-  const projectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/bids/${bidId}`;
+  const projectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/rfps/${bidId}`;
 
   for (const member of teamMembers) {
     try {

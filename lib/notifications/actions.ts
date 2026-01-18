@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { bidOpportunities, businessUnits, employees } from '@/lib/db/schema';
+import { rfps, businessUnits, employees } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { sendTeamNotificationEmails, type TeamMemberNotification, type TeamNotificationResult } from './email';
 import type { ProjectPlan } from '@/lib/project-planning/schema';
@@ -38,8 +38,8 @@ export async function sendTeamNotifications(bidId: string): Promise<SendTeamNoti
   // Get bid with all needed data
   const [bid] = await db
     .select()
-    .from(bidOpportunities)
-    .where(eq(bidOpportunities.id, bidId))
+    .from(rfps)
+    .where(eq(rfps.id, bidId))
     .limit(1);
 
   if (!bid) {
@@ -149,14 +149,14 @@ export async function sendTeamNotifications(bidId: string): Promise<SendTeamNoti
 
   // Save notification results to bid
   await db
-    .update(bidOpportunities)
+    .update(rfps)
     .set({
       teamNotifications: JSON.stringify(results),
       teamNotifiedAt: new Date(),
       status: success ? 'notified' : bid.status,
       updatedAt: new Date(),
     })
-    .where(eq(bidOpportunities.id, bidId));
+    .where(eq(rfps.id, bidId));
 
   return { success, results };
 }
@@ -177,12 +177,12 @@ export async function getNotificationStatus(bidId: string): Promise<{
 
   const [bid] = await db
     .select({
-      userId: bidOpportunities.userId,
-      teamNotifications: bidOpportunities.teamNotifications,
-      teamNotifiedAt: bidOpportunities.teamNotifiedAt,
+      userId: rfps.userId,
+      teamNotifications: rfps.teamNotifications,
+      teamNotifiedAt: rfps.teamNotifiedAt,
     })
-    .from(bidOpportunities)
-    .where(eq(bidOpportunities.id, bidId))
+    .from(rfps)
+    .where(eq(rfps.id, bidId))
     .limit(1);
 
   if (!bid) {

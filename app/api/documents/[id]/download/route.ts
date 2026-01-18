@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { documents, bidOpportunities } from '@/lib/db/schema';
+import { documents, rfps } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export async function GET(
@@ -21,13 +21,13 @@ export async function GET(
     const [doc] = await db
       .select({
         document: documents,
-        bid: bidOpportunities,
+        bid: rfps,
       })
       .from(documents)
-      .innerJoin(bidOpportunities, eq(documents.bidOpportunityId, bidOpportunities.id))
+      .innerJoin(rfps, eq(documents.rfpId, rfps.id))
       .where(and(
         eq(documents.id, documentId),
-        eq(bidOpportunities.userId, session.user.id) // Ensure user owns this bid
+        eq(rfps.userId, session.user.id) // Ensure user owns this bid
       ))
       .limit(1);
 

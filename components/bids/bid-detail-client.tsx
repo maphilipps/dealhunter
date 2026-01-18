@@ -190,7 +190,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
 
   // Load quick scan if status is quick_scanning or later
   useEffect(() => {
-    if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
+    if (['quick_scanning', 'evaluating', 'decision_made', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
       setIsLoadingQuickScan(true);
       getQuickScanResult(bid.id).then(result => {
         if (result.success && result.quickScan) {
@@ -209,16 +209,16 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     }
   }, [bid.id, bid.status, extractedData]);
 
-  // Load BIT evaluation result if status is bit_decided or later
+  // Load BIT evaluation result if status is decision_made or later
   useEffect(() => {
-    if (['bit_decided', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
+    if (['decision_made', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
       setIsLoadingBitEvaluation(true);
       getBitEvaluationResult(bid.id).then(result => {
         if (result.success && result.result) {
           setBitEvaluationResult(result.result);
 
           // Show low confidence dialog if confidence < 70% and not yet confirmed
-          if (result.result.decision.overallConfidence < 70 && bid.status === 'bit_decided') {
+          if (result.result.decision.overallConfidence < 70 && bid.status === 'decision_made') {
             setShowLowConfidenceDialog(true);
           }
         }
@@ -294,7 +294,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           </Card>
 
           <ActivityStream
-            streamUrl={`/api/bids/${bid.id}/extraction/stream`}
+            streamUrl={`/api/rfps/${bid.id}/extraction/stream`}
             title="AI-Extraktion"
             onComplete={() => {
               toast.success('Extraktion abgeschlossen!');
@@ -344,7 +344,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   }
 
   // Quick Scanning or later states - Show Quick Scan results
-  if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
+  if (['quick_scanning', 'evaluating', 'decision_made', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         <div className="space-y-6">
@@ -416,13 +416,14 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             quickScan={quickScan}
             bidId={bid.id}
             onRefresh={() => router.refresh()}
+            extractedData={extractedData}
           />
         )}
 
         {/* BIT Evaluation Progress (evaluating status) */}
         {bid.status === 'evaluating' && (
           <ActivityStream
-            streamUrl={`/api/bids/${bid.id}/evaluate/stream`}
+            streamUrl={`/api/rfps/${bid.id}/evaluate/stream`}
             title="BIT/NO BIT Evaluierung"
             onComplete={() => {
               toast.success('BIT Evaluierung abgeschlossen!');
@@ -432,8 +433,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           />
         )}
 
-        {/* BIT Evaluation Results (bit_decided status) */}
-        {bid.status === 'bit_decided' && (
+        {/* BIT Evaluation Results (decision_made status) */}
+        {bid.status === 'decision_made' && (
           <>
             {isLoadingBitEvaluation && (
               <Card>

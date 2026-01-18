@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { bidOpportunities, deepMigrationAnalyses } from '@/lib/db/schema';
+import { rfps, deepMigrationAnalyses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateProjectPlan, type ProjectPlanningInput } from './agent';
 import type { ProjectPlan } from './schema';
@@ -28,8 +28,8 @@ export async function triggerProjectPlanning(bidId: string): Promise<GeneratePro
   // Get bid
   const [bid] = await db
     .select()
-    .from(bidOpportunities)
-    .where(eq(bidOpportunities.id, bidId))
+    .from(rfps)
+    .where(eq(rfps.id, bidId))
     .limit(1);
 
   if (!bid) {
@@ -44,7 +44,7 @@ export async function triggerProjectPlanning(bidId: string): Promise<GeneratePro
   const [analysis] = await db
     .select()
     .from(deepMigrationAnalyses)
-    .where(eq(deepMigrationAnalyses.bidOpportunityId, bidId))
+    .where(eq(deepMigrationAnalyses.rfpId, bidId))
     .limit(1);
 
   if (!analysis || analysis.status !== 'completed') {
@@ -112,13 +112,13 @@ export async function triggerProjectPlanning(bidId: string): Promise<GeneratePro
 
   // Save result to bid
   await db
-    .update(bidOpportunities)
+    .update(rfps)
     .set({
       projectPlanningResult: JSON.stringify(plan),
       projectPlanningCompletedAt: new Date(),
       updatedAt: new Date(),
     })
-    .where(eq(bidOpportunities.id, bidId));
+    .where(eq(rfps.id, bidId));
 
   return { success: true, plan };
 }
@@ -139,12 +139,12 @@ export async function getProjectPlan(bidId: string): Promise<{
 
   const [bid] = await db
     .select({
-      userId: bidOpportunities.userId,
-      projectPlanningResult: bidOpportunities.projectPlanningResult,
-      projectPlanningCompletedAt: bidOpportunities.projectPlanningCompletedAt,
+      userId: rfps.userId,
+      projectPlanningResult: rfps.projectPlanningResult,
+      projectPlanningCompletedAt: rfps.projectPlanningCompletedAt,
     })
-    .from(bidOpportunities)
-    .where(eq(bidOpportunities.id, bidId))
+    .from(rfps)
+    .where(eq(rfps.id, bidId))
     .limit(1);
 
   if (!bid) {
@@ -186,11 +186,11 @@ export async function updateProjectPhase(
 
   const [bid] = await db
     .select({
-      userId: bidOpportunities.userId,
-      projectPlanningResult: bidOpportunities.projectPlanningResult,
+      userId: rfps.userId,
+      projectPlanningResult: rfps.projectPlanningResult,
     })
-    .from(bidOpportunities)
-    .where(eq(bidOpportunities.id, bidId))
+    .from(rfps)
+    .where(eq(rfps.id, bidId))
     .limit(1);
 
   if (!bid) {
@@ -229,12 +229,12 @@ export async function updateProjectPhase(
 
     // Save updated plan
     await db
-      .update(bidOpportunities)
+      .update(rfps)
       .set({
         projectPlanningResult: JSON.stringify(plan),
         updatedAt: new Date(),
       })
-      .where(eq(bidOpportunities.id, bidId));
+      .where(eq(rfps.id, bidId));
 
     return { success: true, plan };
   } catch {

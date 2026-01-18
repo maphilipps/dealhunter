@@ -9,6 +9,29 @@ const openai = new OpenAI({
   baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
 });
 
+/**
+ * Recursively remove null values from an object or array
+ * Zod's .optional() accepts undefined but not null
+ */
+function removeNullValues<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return undefined as T;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(item => removeNullValues(item)) as T;
+  }
+  if (typeof obj === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== null) {
+        result[key] = removeNullValues(value);
+      }
+    }
+    return result as T;
+  }
+  return obj;
+}
+
 export interface ExtractionInput {
   rawText: string;
   inputType: 'pdf' | 'email' | 'freetext';
@@ -82,7 +105,7 @@ Respond with a JSON object containing these fields:
         },
       ],
       temperature: 0.3,
-      max_tokens: 2000,
+      max_tokens: 8000,
     });
 
     const responseText = completion.choices[0]?.message?.content || '{}';
@@ -91,17 +114,27 @@ Respond with a JSON object containing these fields:
     let parsedResult: ExtractedRequirements;
     try {
       // Clean up response (remove markdown code blocks if present)
+      // Use robust regex to handle various whitespace patterns
       const cleanedResponse = responseText
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
+        .replace(/^```json\s*/i, '')   // Remove opening ```json
+        .replace(/\s*```\s*$/i, '')     // Remove closing ```
+        .replace(/```json\s*/gi, '')    // Remove any remaining ```json
+        .replace(/```\s*/g, '')         // Remove any remaining ```
         .trim();
 
-      const rawResult = JSON.parse(cleanedResponse);
+      let rawResult;
+      try {
+        rawResult = JSON.parse(cleanedResponse);
+      } catch (jsonError) {
+        console.error('JSON parse error:', jsonError);
+        console.error('Cleaned response length:', cleanedResponse.length);
+        console.error('First 300 chars:', cleanedResponse.substring(0, 300));
+        console.error('Last 300 chars:', cleanedResponse.substring(cleanedResponse.length - 300));
+        throw jsonError;
+      }
 
-      // Convert null values to undefined (Zod .optional() doesn't accept null)
-      const cleanedResult = Object.fromEntries(
-        Object.entries(rawResult).filter(([_, v]) => v !== null)
-      );
+      // Recursively remove null values (Zod .optional() doesn't accept null)
+      const cleanedResult = removeNullValues(rawResult);
 
       // Validate with Zod schema
       parsedResult = extractedRequirementsSchema.parse({
@@ -113,7 +146,8 @@ Respond with a JSON object containing these fields:
         websiteUrls: cleanedResult.websiteUrls || [],
       });
     } catch (parseError) {
-      console.error('Failed to parse AI response:', responseText);
+      console.error('Failed to parse AI response:', responseText.substring(0, 500));
+      console.error('Parse error details:', parseError);
       return {
         requirements: getEmptyRequirements(),
         success: false,
@@ -284,7 +318,7 @@ Respond with a JSON object containing these fields:
         },
       ],
       temperature: 0.3,
-      max_tokens: 3000,
+      max_tokens: 8000,
     });
 
     // Step 3: Parsing response
@@ -302,17 +336,27 @@ Respond with a JSON object containing these fields:
     let parsedResult: ExtractedRequirements;
     try {
       // Clean up response (remove markdown code blocks if present)
+      // Use robust regex to handle various whitespace patterns
       const cleanedResponse = responseText
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
+        .replace(/^```json\s*/i, '')   // Remove opening ```json
+        .replace(/\s*```\s*$/i, '')     // Remove closing ```
+        .replace(/```json\s*/gi, '')    // Remove any remaining ```json
+        .replace(/```\s*/g, '')         // Remove any remaining ```
         .trim();
 
-      const rawResult = JSON.parse(cleanedResponse);
+      let rawResult;
+      try {
+        rawResult = JSON.parse(cleanedResponse);
+      } catch (jsonError) {
+        console.error('JSON parse error:', jsonError);
+        console.error('Cleaned response length:', cleanedResponse.length);
+        console.error('First 300 chars:', cleanedResponse.substring(0, 300));
+        console.error('Last 300 chars:', cleanedResponse.substring(cleanedResponse.length - 300));
+        throw jsonError;
+      }
 
-      // Convert null values to undefined (Zod .optional() doesn't accept null)
-      const cleanedResult = Object.fromEntries(
-        Object.entries(rawResult).filter(([_, v]) => v !== null)
-      );
+      // Recursively remove null values (Zod .optional() doesn't accept null)
+      const cleanedResult = removeNullValues(rawResult);
 
       // Step 4: Validating extracted data
       emit({
@@ -356,7 +400,8 @@ Respond with a JSON object containing these fields:
       });
 
     } catch (parseError) {
-      console.error('Failed to parse AI response:', responseText);
+      console.error('Failed to parse AI response:', responseText.substring(0, 500));
+      console.error('Parse error details:', parseError);
       emit({
         type: AgentEventType.ERROR,
         data: {

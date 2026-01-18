@@ -1,7 +1,77 @@
-import { chromium, type Browser } from 'playwright';
+import { chromium, type Browser, type Page } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
+
+/**
+ * Common cookie consent selectors for auto-dismissal
+ * Covers: OneTrust, Cookiebot, Usercentrics, Borlabs, CookieFirst, etc.
+ */
+const COOKIE_CONSENT_SELECTORS = [
+  // Generic accept buttons (German)
+  'button:has-text("Alle akzeptieren")',
+  'button:has-text("Alle Cookies akzeptieren")',
+  'button:has-text("Akzeptieren")',
+  'button:has-text("Zustimmen")',
+  'button:has-text("Einverstanden")',
+  // Generic accept buttons (English)
+  'button:has-text("Accept all")',
+  'button:has-text("Accept All Cookies")',
+  'button:has-text("Accept")',
+  'button:has-text("I agree")',
+  'button:has-text("Allow all")',
+  // OneTrust
+  '#onetrust-accept-btn-handler',
+  '.onetrust-accept-btn-handler',
+  '[data-testid="accept-btn"]',
+  // Cookiebot
+  '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
+  '#CybotCookiebotDialogBodyButtonAccept',
+  // Usercentrics
+  '#uc-btn-accept-banner',
+  '[data-testid="uc-accept-all-button"]',
+  // Borlabs Cookie
+  '.BorlabsCookie .btn-primary',
+  '[data-cookie-accept-all]',
+  // CookieFirst
+  '[data-cookiefirst-action="accept"]',
+  // Klaro
+  '.klaro .cm-btn-success',
+  '.klaro .cm-btn-accept-all',
+  // Generic patterns
+  '[data-consent="accept"]',
+  '[data-action="accept-all"]',
+  '.cookie-banner button.accept',
+  '.cookie-consent button.accept',
+  '.cc-btn.cc-accept-all',
+  '#cookie-consent-accept',
+  '[aria-label*="cookie" i][aria-label*="accept" i]',
+];
+
+/**
+ * Try to dismiss cookie consent banners
+ */
+async function dismissCookieBanner(page: Page): Promise<boolean> {
+  // Wait a moment for banner to appear
+  await page.waitForTimeout(1000);
+
+  for (const selector of COOKIE_CONSENT_SELECTORS) {
+    try {
+      const button = page.locator(selector).first();
+      if (await button.isVisible({ timeout: 500 })) {
+        await button.click();
+        // Wait for banner to disappear
+        await page.waitForTimeout(500);
+        console.log(`Cookie banner dismissed using selector: ${selector}`);
+        return true;
+      }
+    } catch {
+      // Continue to next selector
+    }
+  }
+
+  return false;
+}
 
 export interface PlaywrightAuditResult {
   screenshots: {
@@ -122,6 +192,9 @@ export async function runPlaywrightAudit(
     });
     performanceMetrics.loadTime = Date.now() - startTime;
 
+    // Try to dismiss cookie consent banner
+    await dismissCookieBanner(page);
+
     // Get performance timing from browser using modern Navigation Timing API
     const timing = await page.evaluate(() => {
       const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
@@ -174,16 +247,16 @@ export async function runPlaywrightAudit(
       const screenshotDir = join(process.cwd(), 'public', 'screenshots', 'quickscan', bidId);
       await mkdir(screenshotDir, { recursive: true });
 
-      // Desktop screenshot (1920x1080)
+      // Desktop screenshot (1920x1080) - fullPage to capture entire viewport
       const desktopPath = join(screenshotDir, 'desktop.png');
       await page.setViewportSize({ width: 1920, height: 1080 });
-      await page.screenshot({ path: desktopPath, fullPage: false });
+      await page.screenshot({ path: desktopPath, fullPage: true });
       result.screenshots.desktop = `/screenshots/quickscan/${bidId}/desktop.png`;
 
-      // Mobile screenshot (375x812 - iPhone X)
+      // Mobile screenshot (375x812 - iPhone X) - fullPage to capture entire viewport
       const mobilePath = join(screenshotDir, 'mobile.png');
       await page.setViewportSize({ width: 375, height: 812 });
-      await page.screenshot({ path: mobilePath, fullPage: false });
+      await page.screenshot({ path: mobilePath, fullPage: true });
       result.screenshots.mobile = `/screenshots/quickscan/${bidId}/mobile.png`;
 
       // Reset viewport
@@ -198,10 +271,12 @@ export async function runPlaywrightAudit(
             : new URL(keyPageUrl, fullUrl).toString();
 
           await page.goto(absoluteUrl, { waitUntil: 'networkidle', timeout: 15000 });
+          // Dismiss cookie banner on key pages too
+          await dismissCookieBanner(page);
           const title = await page.title();
           const filename = `page_${i + 1}.png`;
           const pagePath = join(screenshotDir, filename);
-          await page.screenshot({ path: pagePath, fullPage: false });
+          await page.screenshot({ path: pagePath, fullPage: true });
 
           result.screenshots.keyPages.push({
             url: absoluteUrl,
@@ -339,12 +414,13 @@ export async function runPlaywrightAudit(
 }
 
 /**
- * Take a single screenshot of a URL
+ * Take a single screenshot of a URL (with cookie banner dismissal)
  */
 export async function takeScreenshot(
   url: string,
   outputPath: string,
-  viewport: { width: number; height: number } = { width: 1920, height: 1080 }
+  viewport: { width: number; height: number } = { width: 1920, height: 1080 },
+  fullPage: boolean = true
 ): Promise<string> {
   let browser: Browser | null = null;
 
@@ -359,7 +435,11 @@ export async function takeScreenshot(
 
     const fullUrl = url.startsWith('http') ? url : `https://${url}`;
     await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 30000 });
-    await page.screenshot({ path: outputPath, fullPage: false });
+
+    // Dismiss cookie banner before taking screenshot
+    await dismissCookieBanner(page);
+
+    await page.screenshot({ path: outputPath, fullPage });
 
     await browser.close();
     return outputPath;
@@ -372,7 +452,7 @@ export async function takeScreenshot(
 }
 
 /**
- * Run accessibility audit only
+ * Run accessibility audit only (with cookie banner dismissal)
  */
 export async function runAccessibilityAuditOnly(url: string): Promise<PlaywrightAuditResult['accessibility']> {
   let browser: Browser | null = null;
@@ -388,6 +468,9 @@ export async function runAccessibilityAuditOnly(url: string): Promise<Playwright
 
     const fullUrl = url.startsWith('http') ? url : `https://${url}`;
     await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 30000 });
+
+    // Dismiss cookie banner before running accessibility audit
+    await dismissCookieBanner(page);
 
     const axeResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'])

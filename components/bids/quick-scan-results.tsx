@@ -20,7 +20,11 @@ interface QuickScanResultsProps {
   quickScan: QuickScan;
   bidId: string;
   onRefresh?: () => void;
+  extractedData?: ExtractedRequirements | null;
 }
+
+// Import ExtractedRequirements type for RFP data
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 // Types for parsed fields
 interface TechStackData {
@@ -200,7 +204,7 @@ function parseJsonField<T>(value: string | null | undefined): T | null {
  * - Completed: Shows dynamic json-render visualization
  * - Failed: Shows error state
  */
-export function QuickScanResults({ quickScan, bidId, onRefresh }: QuickScanResultsProps) {
+export function QuickScanResults({ quickScan, bidId, onRefresh, extractedData }: QuickScanResultsProps) {
   const [isRetriggering, setIsRetriggering] = useState(false);
 
   // Handle re-trigger Quick Scan
@@ -265,7 +269,7 @@ export function QuickScanResults({ quickScan, bidId, onRefresh }: QuickScanResul
 
         {/* Live Activity Stream */}
         <ActivityStream
-          streamUrl={`/api/bids/${bidId}/quick-scan/stream`}
+          streamUrl={`/api/rfps/${bidId}/quick-scan/stream`}
           title="Quick Scan Agent Activity"
           autoStart={true}
           onComplete={() => {
@@ -381,9 +385,9 @@ export function QuickScanResults({ quickScan, bidId, onRefresh }: QuickScanResul
       <BUMatchingTab quickScan={quickScan} bidId={bidId} />
     );
 
-    // 10 Questions Tab Content
+    // 10 Questions Tab Content - pass both quickScan and extractedData for comprehensive answers
     const questionsContent = (
-      <TenQuestionsTab quickScan={quickScan} />
+      <TenQuestionsTab quickScan={quickScan} extractedData={extractedData} />
     );
 
     return (

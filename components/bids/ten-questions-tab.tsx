@@ -4,9 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Shield } from 'lucide-react';
 import type { QuickScan } from '@/lib/db/schema';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 interface TenQuestionsTabProps {
   quickScan: QuickScan;
+  extractedData?: ExtractedRequirements | null;
 }
 
 // Types for parsed fields
@@ -98,7 +100,7 @@ function parseJsonField<T>(value: string | null | undefined): T | null {
  * - Zeigt BIT-Entscheidungsfragen basierend auf Quick Scan Daten
  * - Extrahiert aus quick-scan-results.tsx BITDecisionOverview
  */
-export function TenQuestionsTab({ quickScan }: TenQuestionsTabProps) {
+export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabProps) {
   // Parse JSON fields
   const techStack = parseJsonField<TechStackData>(quickScan.techStack);
   const contentVolume = parseJsonField<ContentVolumeData>(quickScan.contentVolume);
@@ -124,90 +126,149 @@ export function TenQuestionsTab({ quickScan }: TenQuestionsTabProps) {
   };
 
   // Helper to determine answer status
-  const getAnswerStatus = (hasAnswer: boolean, value?: string | number | boolean | null) => {
-    if (!hasAnswer || value === null || value === undefined) {
+  // Only checks hasAnswer - simplified to avoid issues with undefined second parameter
+  const getAnswerStatus = (hasAnswer: boolean) => {
+    if (!hasAnswer) {
       return { status: 'unknown', color: 'bg-gray-100 text-gray-700', icon: '❓' };
     }
     return { status: 'answered', color: 'bg-green-50 text-green-800', icon: '✓' };
   };
 
-  // Map data to the 10 BIT questions
+  // Map data to the 10 BIT questions - combining Quick Scan and RFP data
   const questions = [
     {
       id: 1,
       question: 'Wie ist die bisherige Geschäftsbeziehung zum Kunden?',
       answer: companyIntelligence?.basicInfo?.name
         ? `Unternehmen: ${companyIntelligence.basicInfo.name}${companyIntelligence.basicInfo.industry ? `, Branche: ${companyIntelligence.basicInfo.industry}` : ''}`
-        : null,
-      source: 'Company Intelligence',
-      ...getAnswerStatus(!!companyIntelligence, companyIntelligence?.basicInfo?.name),
+        : extractedData?.customerName
+          ? `Unternehmen: ${extractedData.customerName}${extractedData.industry ? `, Branche: ${extractedData.industry}` : ''}`
+          : null,
+      source: companyIntelligence ? 'Company Intelligence' : 'RFP-Extraktion',
+      ...getAnswerStatus(!!companyIntelligence?.basicInfo?.name || !!extractedData?.customerName),
     },
     {
       id: 2,
       question: 'Wie hoch ist das Auftragsvolumen bzw. Budget?',
-      answer: companyIntelligence?.financials?.revenueClass
-        ? `Umsatzklasse: ${companyIntelligence.financials.revenueClass}${companyIntelligence.financials.publiclyTraded ? ' (börsennotiert)' : ''}`
-        : contentVolume && 'estimatedPageCount' in contentVolume && contentVolume.estimatedPageCount
-          ? `Geschätzte Projektgröße basierend auf ${contentVolume.estimatedPageCount} Seiten`
-          : null,
-      source: 'Company Intelligence / Content Volume',
-      ...getAnswerStatus(!!companyIntelligence?.financials || !!(contentVolume && 'estimatedPageCount' in contentVolume)),
+      answer: extractedData?.budgetRange
+        ? `Budget: ${extractedData.budgetRange}`
+        : companyIntelligence?.financials?.revenueClass
+          ? `Umsatzklasse: ${companyIntelligence.financials.revenueClass}${companyIntelligence.financials.publiclyTraded ? ' (börsennotiert)' : ''}`
+          : contentVolume && 'estimatedPageCount' in contentVolume && contentVolume.estimatedPageCount
+            ? `Geschätzte Projektgröße basierend auf ${contentVolume.estimatedPageCount} Seiten`
+            : null,
+      source: extractedData?.budgetRange ? 'RFP-Dokument' : 'Company Intelligence / Content Volume',
+      ...getAnswerStatus(!!extractedData?.budgetRange || !!companyIntelligence?.financials || !!(contentVolume && 'estimatedPageCount' in contentVolume)),
     },
     {
       id: 3,
       question: 'Ist der Zeitplan realistisch?',
-      answer: contentVolume && 'complexity' in contentVolume && contentVolume.complexity
-        ? `Projektkomplexität: ${contentVolume.complexity === 'high' ? 'Hoch' : contentVolume.complexity === 'medium' ? 'Mittel' : 'Gering'}${contentVolume.estimatedPageCount ? `, ${contentVolume.estimatedPageCount} Seiten zu migrieren` : ''}`
-        : null,
-      source: 'Content Volume',
-      ...getAnswerStatus(!!(contentVolume && 'complexity' in contentVolume)),
+      answer: (() => {
+        const parts: string[] = [];
+        if (extractedData?.submissionDeadline) {
+          const deadline = new Date(extractedData.submissionDeadline);
+          parts.push(`Abgabefrist: ${deadline.toLocaleDateString('de-DE')}${extractedData.submissionTime ? ` ${extractedData.submissionTime} Uhr` : ''}`);
+        }
+        if (extractedData?.projectStartDate) {
+          parts.push(`Projektstart: ${new Date(extractedData.projectStartDate).toLocaleDateString('de-DE')}`);
+        }
+        if (extractedData?.timeline) {
+          parts.push(`Laufzeit: ${extractedData.timeline}`);
+        }
+        if (contentVolume && 'complexity' in contentVolume && contentVolume.complexity) {
+          parts.push(`Komplexität: ${contentVolume.complexity === 'high' ? 'Hoch' : contentVolume.complexity === 'medium' ? 'Mittel' : 'Gering'}`);
+        }
+        return parts.length > 0 ? parts.join(' | ') : null;
+      })(),
+      source: extractedData?.submissionDeadline || extractedData?.timeline ? 'RFP-Dokument / Content Volume' : 'Content Volume',
+      ...getAnswerStatus(!!(extractedData?.submissionDeadline || extractedData?.timeline || (contentVolume && 'complexity' in contentVolume))),
     },
     {
       id: 4,
       question: 'Um welche Art von Vertrag handelt es sich?',
-      answer: null, // Not determinable from Quick Scan
-      source: 'Manuell zu ermitteln',
-      ...getAnswerStatus(false),
+      answer: extractedData?.procurementType
+        ? `Vergabeart: ${extractedData.procurementType === 'public' ? 'Öffentliche Ausschreibung' : extractedData.procurementType === 'private' ? 'Private Vergabe' : 'Semi-öffentlich'}`
+        : null,
+      source: extractedData?.procurementType ? 'RFP-Dokument' : 'Manuell zu ermitteln',
+      ...getAnswerStatus(!!extractedData?.procurementType),
     },
     {
       id: 5,
       question: 'Welche Leistungen werden benötigt?',
-      answer: [
-        techStack && 'cms' in techStack && techStack.cms ? `CMS Migration von ${techStack.cms}` : null,
-        features && 'ecommerce' in features && features.ecommerce ? 'E-Commerce Integration' : null,
-        features && 'multiLanguage' in features && features.multiLanguage ? 'Mehrsprachigkeit' : null,
-        features && 'userAccounts' in features && features.userAccounts ? 'User Management' : null,
-        accessibilityAudit && accessibilityAudit.score < 50 ? 'Accessibility Überarbeitung' : null,
-      ].filter(Boolean).join(', ') || null,
-      source: 'Tech Stack / Features / Accessibility',
-      ...getAnswerStatus(!!(techStack || features)),
+      answer: (() => {
+        const services: string[] = [];
+        // From RFP extraction
+        if (extractedData?.scope) services.push(extractedData.scope);
+        // From Quick Scan
+        if (techStack && 'cms' in techStack && techStack.cms) services.push(`CMS Migration von ${techStack.cms}`);
+        if (features && 'ecommerce' in features && features.ecommerce) services.push('E-Commerce Integration');
+        if (features && 'multiLanguage' in features && features.multiLanguage) services.push('Mehrsprachigkeit');
+        if (features && 'userAccounts' in features && features.userAccounts) services.push('User Management');
+        if (accessibilityAudit && accessibilityAudit.score < 50) services.push('Accessibility Überarbeitung');
+        // From key requirements (first 3)
+        if (extractedData?.keyRequirements?.length) {
+          services.push(...extractedData.keyRequirements.slice(0, 3));
+        }
+        return services.length > 0 ? services.join(', ') : null;
+      })(),
+      source: 'RFP-Dokument / Tech Stack / Features',
+      ...getAnswerStatus(!!(extractedData?.scope || extractedData?.keyRequirements?.length || techStack || features)),
     },
     {
       id: 6,
       question: 'Haben wir passende Referenzen?',
-      answer: techStack && 'cms' in techStack && techStack.cms
-        ? `Prüfe Referenzen für ${techStack.cms} Migrationen`
-        : null,
-      source: 'Tech Stack → Referenz-Datenbank',
-      ...getAnswerStatus(!!(techStack && 'cms' in techStack)),
+      answer: (() => {
+        const refs: string[] = [];
+        if (techStack && 'cms' in techStack && techStack.cms) refs.push(`${techStack.cms} Migrationen`);
+        if (extractedData?.industry) refs.push(`${extractedData.industry}-Projekte`);
+        if (extractedData?.technologies?.length) refs.push(`Technologien: ${extractedData.technologies.slice(0, 3).join(', ')}`);
+        return refs.length > 0 ? `Prüfe Referenzen für: ${refs.join(', ')}` : null;
+      })(),
+      source: 'Tech Stack / RFP → Referenz-Datenbank',
+      ...getAnswerStatus(!!(techStack && 'cms' in techStack) || !!extractedData?.industry || !!extractedData?.technologies?.length),
     },
     {
       id: 7,
       question: 'Welche Zuschlagskriterien gelten?',
-      answer: null, // Not determinable from Quick Scan
-      source: 'Ausschreibungsunterlagen',
-      ...getAnswerStatus(false),
+      answer: (() => {
+        // Try to extract criteria from key requirements or deliverables
+        const criteria: string[] = [];
+        if (extractedData?.requiredDeliverables?.length) {
+          const mandatoryDeliverables = extractedData.requiredDeliverables
+            .filter(d => d.mandatory)
+            .map(d => d.name);
+          if (mandatoryDeliverables.length > 0) {
+            criteria.push(`Pflicht-Unterlagen: ${mandatoryDeliverables.join(', ')}`);
+          }
+        }
+        if (extractedData?.constraints?.length) {
+          criteria.push(...extractedData.constraints.slice(0, 2));
+        }
+        return criteria.length > 0 ? criteria.join(' | ') : null;
+      })(),
+      source: extractedData?.requiredDeliverables?.length ? 'RFP-Dokument (Unterlagen)' : 'Ausschreibungsunterlagen',
+      ...getAnswerStatus(!!extractedData?.requiredDeliverables?.length || !!extractedData?.constraints?.length),
     },
     {
       id: 8,
       question: 'Welche Team-Anforderungen bestehen?',
-      answer: results.blRecommendation?.requiredSkills?.length
-        ? `Empfohlene Skills: ${results.blRecommendation.requiredSkills.join(', ')}`
-        : techStack && 'cms' in techStack && techStack.cms
-          ? `${techStack.cms} Expertise benötigt`
-          : null,
-      source: 'BL Recommendation / Tech Stack',
-      ...getAnswerStatus(!!(results.blRecommendation?.requiredSkills || (techStack && 'cms' in techStack))),
+      answer: (() => {
+        const teamReqs: string[] = [];
+        if (results.blRecommendation?.requiredSkills?.length) {
+          teamReqs.push(`Skills: ${results.blRecommendation.requiredSkills.join(', ')}`);
+        }
+        if (extractedData?.teamSize) {
+          teamReqs.push(`Teamgröße: ${extractedData.teamSize} Personen`);
+        }
+        if (extractedData?.technologies?.length) {
+          teamReqs.push(`Tech-Expertise: ${extractedData.technologies.slice(0, 4).join(', ')}`);
+        } else if (techStack && 'cms' in techStack && techStack.cms) {
+          teamReqs.push(`${techStack.cms} Expertise benötigt`);
+        }
+        return teamReqs.length > 0 ? teamReqs.join(' | ') : null;
+      })(),
+      source: 'RFP-Dokument / BL Recommendation / Tech Stack',
+      ...getAnswerStatus(!!(results.blRecommendation?.requiredSkills || extractedData?.teamSize || extractedData?.technologies?.length || (techStack && 'cms' in techStack))),
     },
     {
       id: 9,
@@ -218,8 +279,9 @@ export function TenQuestionsTab({ quickScan }: TenQuestionsTabProps) {
         legalCompliance && legalCompliance.score < 50 ? 'DSGVO-Compliance verbessern' : null,
         contentVolume && 'complexity' in contentVolume && contentVolume.complexity === 'high' ? 'Hohe Inhaltskomplexität' : null,
         features && 'api' in features && features.api ? 'API-Integrationen' : null,
+        extractedData?.constraints?.length ? extractedData.constraints[0] : null,
       ].filter(Boolean).join(', ') || 'Keine besonderen Herausforderungen erkannt',
-      source: 'Performance / A11y / Legal / Content',
+      source: 'Performance / A11y / Legal / Content / RFP',
       ...getAnswerStatus(true),
     },
     {

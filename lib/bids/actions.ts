@@ -2,11 +2,12 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { bidOpportunities, documents } from '@/lib/db/schema';
+import { rfps, documents } from '@/lib/db/schema';
 import { extractTextFromPdf } from './pdf-extractor';
 import { detectPII, cleanText } from '@/lib/pii/pii-cleaner';
 import { extractRequirements } from '@/lib/extraction/agent';
 import { suggestWebsiteUrls } from '@/lib/extraction/url-suggestion-agent';
+import { startQuickScan } from '@/lib/quick-scan/actions';
 import { eq, and, desc } from 'drizzle-orm';
 
 /**
@@ -22,9 +23,9 @@ export async function getBids() {
   try {
     const bids = await db
       .select()
-      .from(bidOpportunities)
-      .where(eq(bidOpportunities.userId, session.user.id))
-      .orderBy(desc(bidOpportunities.createdAt));
+      .from(rfps)
+      .where(eq(rfps.userId, session.user.id))
+      .orderBy(desc(rfps.createdAt));
 
     return { success: true, bids };
   } catch (error) {
@@ -47,10 +48,10 @@ export async function getBidDocuments(bidId: string) {
     // Get bid first to ensure user has access
     const bid = await db
       .select()
-      .from(bidOpportunities)
+      .from(rfps)
       .where(and(
-        eq(bidOpportunities.id, bidId),
-        eq(bidOpportunities.userId, session.user.id)
+        eq(rfps.id, bidId),
+        eq(rfps.userId, session.user.id)
       ))
       .limit(1);
 
@@ -69,7 +70,7 @@ export async function getBidDocuments(bidId: string) {
         uploadedAt: documents.uploadedAt,
       })
       .from(documents)
-      .where(eq(documents.bidOpportunityId, bidId))
+      .where(eq(documents.rfpId, bidId))
       .orderBy(desc(documents.uploadedAt));
 
     return { success: true, documents: docs };
@@ -135,7 +136,7 @@ export async function uploadPdfBid(formData: FormData) {
 
     // Create BidOpportunity record
     const [bidOpportunity] = await db
-      .insert(bidOpportunities)
+      .insert(rfps)
       .values({
         userId: session.user.id,
         accountId: accountId || undefined,
@@ -145,14 +146,14 @@ export async function uploadPdfBid(formData: FormData) {
         rawInput: extractedText,
         metadata: piiData,
         status: 'draft',
-        bitDecision: 'pending',
+        decision: 'pending',
       })
       .returning();
 
     // Save PDF file to documents table
     const base64Data = buffer.toString('base64');
     await db.insert(documents).values({
-      bidOpportunityId: bidOpportunity.id,
+      rfpId: bidOpportunity.id,
       userId: session.user.id,
       fileName: file.name,
       fileType: file.type,
@@ -202,7 +203,7 @@ export async function uploadFreetextBid(data: {
 
     // Create BidOpportunity record
     const [bidOpportunity] = await db
-      .insert(bidOpportunities)
+      .insert(rfps)
       .values({
         userId: session.user.id,
         accountId: accountId || undefined,
@@ -211,7 +212,7 @@ export async function uploadFreetextBid(data: {
         inputType: 'freetext',
         rawInput,
         status: 'draft',
-        bitDecision: 'pending',
+        decision: 'pending',
       })
       .returning();
 
@@ -258,7 +259,7 @@ export async function uploadEmailBid(data: {
 
     // Create BidOpportunity record
     const [bidOpportunity] = await db
-      .insert(bidOpportunities)
+      .insert(rfps)
       .values({
         userId: session.user.id,
         accountId: accountId || undefined,
@@ -267,7 +268,7 @@ export async function uploadEmailBid(data: {
         inputType: 'email',
         rawInput: emailContent,
         status: 'draft',
-        bitDecision: 'pending',
+        decision: 'pending',
         metadata: JSON.stringify(metadata),
       })
       .returning();
@@ -298,8 +299,8 @@ export async function startExtraction(bidId: string) {
     // Get the bid opportunity
     const [bid] = await db
       .select()
-      .from(bidOpportunities)
-      .where(eq(bidOpportunities.id, bidId))
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
       .limit(1);
 
     if (!bid) {
@@ -312,13 +313,13 @@ export async function startExtraction(bidId: string) {
 
     // Update status to extracting with optimistic locking
     const updated = await db
-      .update(bidOpportunities)
+      .update(rfps)
       .set({
         status: 'extracting',
         version: bid.version + 1,
         updatedAt: new Date()
       })
-      .where(and(eq(bidOpportunities.id, bidId), eq(bidOpportunities.version, bid.version)))
+      .where(and(eq(rfps.id, bidId), eq(rfps.version, bid.version)))
       .returning();
 
     if (!updated || updated.length === 0) {
@@ -339,12 +340,12 @@ export async function startExtraction(bidId: string) {
 
     // Save extracted requirements and update status to reviewing
     await db
-      .update(bidOpportunities)
+      .update(rfps)
       .set({
         extractedRequirements: JSON.stringify(extractionResult.requirements),
         status: 'reviewing',
       })
-      .where(eq(bidOpportunities.id, bidId));
+      .where(eq(rfps.id, bidId));
 
     return {
       success: true,
@@ -371,8 +372,8 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
     // Get the bid opportunity
     const [bid] = await db
       .select()
-      .from(bidOpportunities)
-      .where(eq(bidOpportunities.id, bidId))
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
       .limit(1);
 
     if (!bid) {
@@ -385,14 +386,20 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
 
     // Update requirements and move to quick_scanning status
     await db
-      .update(bidOpportunities)
+      .update(rfps)
       .set({
         extractedRequirements: JSON.stringify(requirements),
         status: 'quick_scanning',
       })
-      .where(eq(bidOpportunities.id, bidId));
+      .where(eq(rfps.id, bidId));
 
-    return { success: true };
+    // Auto-launch Quick Scan (fire-and-forget)
+    // Don't await - let it run in background while user sees success
+    startQuickScan(bidId).catch((error) => {
+      console.error('Auto Quick Scan launch failed:', error);
+    });
+
+    return { success: true, quickScanStarted: true };
   } catch (error) {
     console.error('Update requirements error:', error);
     return { success: false, error: 'Update fehlgeschlagen' };
@@ -496,7 +503,7 @@ export async function uploadCombinedBid(formData: FormData) {
 
     // Create BidOpportunity record
     const [bidOpportunity] = await db
-      .insert(bidOpportunities)
+      .insert(rfps)
       .values({
         userId: session.user.id,
         accountId: accountId || undefined,
@@ -506,7 +513,7 @@ export async function uploadCombinedBid(formData: FormData) {
         rawInput,
         metadata: piiData,
         status: 'draft',
-        bitDecision: 'pending',
+        decision: 'pending',
       })
       .returning();
 
@@ -517,7 +524,7 @@ export async function uploadCombinedBid(formData: FormData) {
       const base64Data = buffer.toString('base64');
 
       await db.insert(documents).values({
-        bidOpportunityId: bidOpportunity.id,
+        rfpId: bidOpportunity.id,
         userId: session.user.id,
         fileName: file.name,
         fileType: file.type,

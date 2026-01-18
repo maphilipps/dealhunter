@@ -60,26 +60,26 @@ const allNavItems: Array<{
     roles: ['bd', 'bl', 'admin'],
   },
   {
-    title: "Bids",
-    url: "/bids",
+    title: "RFPs",
+    url: "/rfps",
     icon: FileText,
     roles: ['bd', 'bl', 'admin'],
     items: [
       {
-        title: "All Bids",
-        url: "/bids",
+        title: "Alle RFPs",
+        url: "/rfps",
       },
       {
-        title: "New Bid",
-        url: "/bids/new",
+        title: "Neuer RFP",
+        url: "/rfps/new",
       },
       {
-        title: "Pending Review",
-        url: "/bids?status=pending",
+        title: "In Prüfung",
+        url: "/rfps?status=pending",
       },
       {
-        title: "Approved",
-        url: "/bids?status=approved",
+        title: "Genehmigt",
+        url: "/rfps?status=approved",
       },
     ],
   },
@@ -143,7 +143,7 @@ const allProjects: Array<{
 }> = [
   {
     name: "Quick Actions",
-    url: "/bids/new",
+    url: "/rfps/new",
     icon: PlusCircle,
     roles: ['bd', 'bl', 'admin'],
   },

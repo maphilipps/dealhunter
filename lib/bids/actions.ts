@@ -430,6 +430,19 @@ export async function uploadCombinedBid(formData: FormData) {
     return { success: false, error: 'Mindestens eine Eingabe (PDF, URL oder Text) ist erforderlich' };
   }
 
+  // Validate accountId if provided
+  let validAccountId: string | undefined = undefined;
+  if (accountId && accountId.trim() !== '' && accountId !== 'null') {
+    // Check if account exists
+    const { accounts } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+    const [account] = await db.select().from(accounts).where(eq(accounts.id, accountId)).limit(1);
+    if (!account) {
+      return { success: false, error: 'Ausgewählter Account existiert nicht' };
+    }
+    validAccountId = accountId;
+  }
+
   try {
     let extractedText = '';
     let piiData = null;
@@ -506,7 +519,7 @@ export async function uploadCombinedBid(formData: FormData) {
       .insert(rfps)
       .values({
         userId: session.user.id,
-        accountId: accountId || undefined,
+        accountId: validAccountId,
         source,
         stage,
         inputType,

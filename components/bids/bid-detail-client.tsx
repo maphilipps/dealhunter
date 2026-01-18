@@ -9,7 +9,8 @@ import { toast } from 'sonner';
 import { updateExtractedRequirements } from '@/lib/bids/actions';
 import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
 import { startBitEvaluation, getBitEvaluationResult, retriggerBitEvaluation } from '@/lib/bit-evaluation/actions';
-import type { BidOpportunity } from '@/lib/db/schema';
+import type { BidOpportunity, QuickScan } from '@/lib/db/schema';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 import { ExtractionPreview } from './extraction-preview';
 import { QuickScanResults } from './quick-scan-results';
@@ -35,7 +36,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   const [extractedData, setExtractedData] = useState(
     bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null
   );
-  const [quickScan, setQuickScan] = useState<any>(null);
+  const [quickScan, setQuickScan] = useState<QuickScan | null>(null);
   const [isLoadingQuickScan, setIsLoadingQuickScan] = useState(false);
   const [bitEvaluationResult, setBitEvaluationResult] = useState<BitEvaluationResult | null>(null);
   const [isLoadingBitEvaluation, setIsLoadingBitEvaluation] = useState(false);
@@ -53,7 +54,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   };
 
   // Handle requirements confirmation
-  const handleConfirmRequirements = async (updatedRequirements: any) => {
+  const handleConfirmRequirements = async (updatedRequirements: ExtractedRequirements) => {
     toast.info('Speichere Änderungen...');
 
     try {
@@ -500,124 +501,94 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             )}
           </>
         )}
-        </div>
-        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
-          <DocumentsSidebar bidId={bid.id} />
-        </aside>
-      </div>
-    );
-  }
 
-  // Routed status and later - Show Team Builder, Baseline, Planning, Notifications
-  if (['routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
-    // Check what data is available for the new components
-    const hasDeepAnalysis = bid.deepMigrationAnalysisId !== null;
-    const hasTeam = bid.assignedTeam !== null;
+        {/* Phase 6/7/9: Routed status and later - Show Team Builder, Baseline, Planning, Notifications */}
+        {['routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status) && (() => {
+          // Check what data is available for the new components
+          const hasDeepAnalysis = bid.deepMigrationAnalysisId !== null;
+          const hasTeam = bid.assignedTeam !== null;
 
-    // Parse results if available
-    let baselineResult = null;
-    let projectPlan = null;
-    let notificationResults = null;
+          // Parse results if available
+          let baselineResult = null;
+          let projectPlan = null;
+          let notificationResults = null;
 
-    if (bid.baselineComparisonResult) {
-      try { baselineResult = JSON.parse(bid.baselineComparisonResult); } catch {}
-    }
-    if (bid.projectPlanningResult) {
-      try { projectPlan = JSON.parse(bid.projectPlanningResult); } catch {}
-    }
-    if (bid.teamNotifications) {
-      try { notificationResults = JSON.parse(bid.teamNotifications); } catch {}
-    }
+          if (bid.baselineComparisonResult) {
+            try { baselineResult = JSON.parse(bid.baselineComparisonResult); } catch {}
+          }
+          if (bid.projectPlanningResult) {
+            try { projectPlan = JSON.parse(bid.projectPlanningResult); } catch {}
+          }
+          if (bid.teamNotifications) {
+            try { notificationResults = JSON.parse(bid.teamNotifications); } catch {}
+          }
 
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-        <div className="space-y-6">
-        {/* Show extracted requirements summary */}
-        {extractedData && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Projekt-Übersicht</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                {extractedData.customerName && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Kunde</p>
-                    <p className="text-lg">{extractedData.customerName}</p>
-                  </div>
-                )}
-                {bid.assignedBusinessLineId && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Business Line</p>
-                    <p className="text-lg">{bid.assignedBusinessLineId}</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          return (
+            <>
+              {/* Deep Analysis */}
+              <DeepAnalysisCard
+                bidId={bid.id}
+                websiteUrl={bid.websiteUrl}
+                existingAnalysis={null}
+              />
 
-        {/* Deep Analysis */}
-        <DeepAnalysisCard
-          bidId={bid.id}
-          websiteUrl={bid.websiteUrl}
-          existingAnalysis={null}
-        />
+              {/* Phase 6: Baseline-Vergleich */}
+              <BaselineComparisonCard
+                bidId={bid.id}
+                initialResult={baselineResult}
+                hasDeepAnalysis={hasDeepAnalysis}
+              />
 
-        {/* Phase 6: Baseline-Vergleich */}
-        <BaselineComparisonCard
-          bidId={bid.id}
-          initialResult={baselineResult}
-          hasDeepAnalysis={hasDeepAnalysis}
-        />
+              {/* Phase 7: Projekt-Planung */}
+              <ProjectPlanningCard
+                bidId={bid.id}
+                initialPlan={projectPlan}
+                hasDeepAnalysis={hasDeepAnalysis}
+              />
 
-        {/* Phase 7: Projekt-Planung */}
-        <ProjectPlanningCard
-          bidId={bid.id}
-          initialPlan={projectPlan}
-          hasDeepAnalysis={hasDeepAnalysis}
-        />
+              {/* Team Builder */}
+              {bid.status === 'routed' && <TeamBuilder bidId={bid.id} />}
 
-        {/* Team Builder */}
-        {bid.status === 'routed' && <TeamBuilder bidId={bid.id} />}
+              {/* Team Assignment Summary (if team_assigned or later) */}
+              {['team_assigned', 'notified', 'handed_off'].includes(bid.status) && bid.assignedTeam && (
+                <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
+                  <CardHeader>
+                    <CardTitle className="text-green-900 dark:text-green-100">Team zugewiesen</CardTitle>
+                    <CardDescription className="text-green-700 dark:text-green-300">
+                      Das Team wurde erfolgreich zugewiesen
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <pre className="text-sm overflow-auto">{JSON.stringify(JSON.parse(bid.assignedTeam), null, 2)}</pre>
+                  </CardContent>
+                </Card>
+              )}
 
-        {/* Team Assignment Summary (if team_assigned or later) */}
-        {['team_assigned', 'notified', 'handed_off'].includes(bid.status) && bid.assignedTeam && (
-          <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
-            <CardHeader>
-              <CardTitle className="text-green-900 dark:text-green-100">Team zugewiesen</CardTitle>
-              <CardDescription className="text-green-700 dark:text-green-300">
-                Das Team wurde erfolgreich zugewiesen
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <pre className="text-sm overflow-auto">{JSON.stringify(JSON.parse(bid.assignedTeam), null, 2)}</pre>
-            </CardContent>
-          </Card>
-        )}
+              {/* Phase 9: Team-Benachrichtigung */}
+              <NotificationCard
+                bidId={bid.id}
+                hasTeam={hasTeam}
+                initialResults={notificationResults}
+                notifiedAt={bid.teamNotifiedAt}
+              />
 
-        {/* Phase 9: Team-Benachrichtigung */}
-        <NotificationCard
-          bidId={bid.id}
-          hasTeam={hasTeam}
-          initialResults={notificationResults}
-          notifiedAt={bid.teamNotifiedAt}
-        />
-
-        {/* Workflow Complete Badge */}
-        {bid.status === 'handed_off' && (
-          <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
-                <CheckCircle2 className="h-5 w-5" />
-                Workflow abgeschlossen
-              </CardTitle>
-              <CardDescription className="text-blue-700 dark:text-blue-300">
-                Alle Phasen wurden erfolgreich durchlaufen. Das Projekt wurde übergeben.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        )}
+              {/* Workflow Complete Badge */}
+              {bid.status === 'handed_off' && (
+                <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                      <CheckCircle2 className="h-5 w-5" />
+                      Workflow abgeschlossen
+                    </CardTitle>
+                    <CardDescription className="text-blue-700 dark:text-blue-300">
+                      Alle Phasen wurden erfolgreich durchlaufen. Das Projekt wurde übergeben.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              )}
+            </>
+          );
+        })()}
         </div>
         <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
           <DocumentsSidebar bidId={bid.id} />

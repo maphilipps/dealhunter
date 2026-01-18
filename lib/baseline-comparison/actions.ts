@@ -35,6 +35,10 @@ export async function triggerBaselineComparison(bidId: string): Promise<TriggerB
     return { success: false, error: 'Bid nicht gefunden' };
   }
 
+  if (bid.userId !== session.user.id) {
+    return { success: false, error: 'Keine Berechtigung' };
+  }
+
   // Get deep migration analysis
   const [analysis] = await db
     .select()
@@ -128,6 +132,7 @@ export async function getBaselineComparisonResult(bidId: string): Promise<{
 
   const [bid] = await db
     .select({
+      userId: bidOpportunities.userId,
       baselineComparisonResult: bidOpportunities.baselineComparisonResult,
       baselineComparisonCompletedAt: bidOpportunities.baselineComparisonCompletedAt,
     })
@@ -137,6 +142,10 @@ export async function getBaselineComparisonResult(bidId: string): Promise<{
 
   if (!bid) {
     return { success: false, error: 'Bid nicht gefunden' };
+  }
+
+  if (bid.userId !== session.user.id) {
+    return { success: false, error: 'Keine Berechtigung' };
   }
 
   if (!bid.baselineComparisonResult) {

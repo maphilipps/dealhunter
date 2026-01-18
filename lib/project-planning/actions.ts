@@ -36,6 +36,10 @@ export async function triggerProjectPlanning(bidId: string): Promise<GeneratePro
     return { success: false, error: 'Bid nicht gefunden' };
   }
 
+  if (bid.userId !== session.user.id) {
+    return { success: false, error: 'Keine Berechtigung' };
+  }
+
   // Get deep migration analysis for PT estimation
   const [analysis] = await db
     .select()
@@ -135,6 +139,7 @@ export async function getProjectPlan(bidId: string): Promise<{
 
   const [bid] = await db
     .select({
+      userId: bidOpportunities.userId,
       projectPlanningResult: bidOpportunities.projectPlanningResult,
       projectPlanningCompletedAt: bidOpportunities.projectPlanningCompletedAt,
     })
@@ -144,6 +149,10 @@ export async function getProjectPlan(bidId: string): Promise<{
 
   if (!bid) {
     return { success: false, error: 'Bid nicht gefunden' };
+  }
+
+  if (bid.userId !== session.user.id) {
+    return { success: false, error: 'Keine Berechtigung' };
   }
 
   if (!bid.projectPlanningResult) {
@@ -177,13 +186,22 @@ export async function updateProjectPhase(
 
   const [bid] = await db
     .select({
+      userId: bidOpportunities.userId,
       projectPlanningResult: bidOpportunities.projectPlanningResult,
     })
     .from(bidOpportunities)
     .where(eq(bidOpportunities.id, bidId))
     .limit(1);
 
-  if (!bid?.projectPlanningResult) {
+  if (!bid) {
+    return { success: false, error: 'Bid nicht gefunden' };
+  }
+
+  if (bid.userId !== session.user.id) {
+    return { success: false, error: 'Keine Berechtigung' };
+  }
+
+  if (!bid.projectPlanningResult) {
     return { success: false, error: 'Kein Projekt-Plan vorhanden' };
   }
 

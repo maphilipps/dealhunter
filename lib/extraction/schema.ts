@@ -8,7 +8,17 @@ export const extractedRequirementsSchema = z.object({
   // Customer Information
   customerName: z.string().describe('Name of the customer company or organization'),
   industry: z.string().optional().describe('Industry sector of the customer'),
-  websiteUrl: z.string().optional().describe('Customer website URL for quick scan'),
+
+  // Website URLs for Quick Scan (multiple possible)
+  websiteUrls: z.array(z.object({
+    url: z.string().describe('Website URL'),
+    type: z.enum(['primary', 'product', 'regional', 'related']).describe('Type of website'),
+    description: z.string().optional().describe('Brief description of this website'),
+    extractedFromDocument: z.boolean().describe('Whether this URL was found in the document'),
+  })).optional().describe('Customer website URLs for quick scan analysis'),
+
+  // Keep single websiteUrl for backwards compatibility (deprecated)
+  websiteUrl: z.string().optional().describe('Customer website URL (deprecated, use websiteUrls)'),
 
   // Project Details
   projectDescription: z.string().describe('Detailed description of the project requirements'),
@@ -22,6 +32,26 @@ export const extractedRequirementsSchema = z.object({
   budgetRange: z.string().optional().describe('Budget range or estimated cost if mentioned'),
   timeline: z.string().optional().describe('Project timeline or deadline if mentioned'),
   teamSize: z.number().optional().describe('Required team size if mentioned'),
+
+  // Submission Details
+  submissionDeadline: z.string().optional().describe('Deadline for bid submission (ISO date format YYYY-MM-DD)'),
+  submissionTime: z.string().optional().describe('Exact time for submission if specified (HH:MM)'),
+  projectStartDate: z.string().optional().describe('Expected project start date (ISO date format YYYY-MM-DD)'),
+  projectEndDate: z.string().optional().describe('Expected project end date (ISO date format YYYY-MM-DD)'),
+
+  // Required Deliverables
+  requiredDeliverables: z.array(z.object({
+    name: z.string().describe('Name of the deliverable'),
+    description: z.string().optional().describe('Description of what is required'),
+    format: z.string().optional().describe('Required format (e.g., PDF, Word, hardcopy)'),
+    copies: z.number().optional().describe('Number of copies required'),
+    mandatory: z.boolean().default(true).describe('Whether this deliverable is mandatory'),
+  })).optional().describe('List of documents/deliverables to be submitted'),
+
+  // Contact Information
+  contactPerson: z.string().optional().describe('Name of contact person at customer'),
+  contactEmail: z.string().optional().describe('Email of contact person'),
+  contactPhone: z.string().optional().describe('Phone number of contact person'),
 
   // Additional Context
   keyRequirements: z.array(z.string()).describe('List of key functional or non-functional requirements'),

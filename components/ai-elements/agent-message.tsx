@@ -43,6 +43,7 @@ export function AgentMessage({ event }: AgentMessageProps) {
   const data = event.data as {
     agent: string;
     message?: string;
+    details?: string;
     reasoning?: string;
     toolCalls?: Array<{
       name: string;
@@ -72,6 +73,16 @@ export function AgentMessage({ event }: AgentMessageProps) {
       'Strategic Fit': 'bg-orange-500/10 text-orange-700 border-orange-200',
       Competition: 'bg-red-500/10 text-red-700 border-red-200',
       'Quick Scan': 'bg-indigo-500/10 text-indigo-700 border-indigo-200',
+      // Quick Scan Sub-Agents
+      'Website Crawler': 'bg-cyan-500/10 text-cyan-700 border-cyan-200',
+      Wappalyzer: 'bg-violet-500/10 text-violet-700 border-violet-200',
+      'Sitemap Parser': 'bg-teal-500/10 text-teal-700 border-teal-200',
+      'Tech Stack Analyzer': 'bg-blue-500/10 text-blue-700 border-blue-200',
+      'Content Analyzer': 'bg-emerald-500/10 text-emerald-700 border-emerald-200',
+      'Feature Detector': 'bg-amber-500/10 text-amber-700 border-amber-200',
+      'Business Analyst': 'bg-rose-500/10 text-rose-700 border-rose-200',
+      'AI Reasoning': 'bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-200',
+      Error: 'bg-red-500/10 text-red-700 border-red-200',
     };
     return colors[agent] || 'bg-gray-500/10 text-gray-700 border-gray-200';
   };
@@ -104,7 +115,14 @@ export function AgentMessage({ event }: AgentMessageProps) {
         <div className="flex-1 min-w-0">
           {/* Message */}
           {data.message && (
-            <p className="text-sm text-foreground">{data.message}</p>
+            <p className="text-sm text-foreground font-medium">{data.message}</p>
+          )}
+
+          {/* Details (Chain of Thought) */}
+          {data.details && (
+            <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">
+              {data.details}
+            </p>
           )}
 
           {/* Confidence Indicator */}

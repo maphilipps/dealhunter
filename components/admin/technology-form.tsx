@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, X, Loader2 } from 'lucide-react';
+import { Plus, X, Loader2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
-import { createTechnology, getBusinessLinesForSelect } from '@/lib/admin/technologies-actions';
+import { createTechnology } from '@/lib/admin/technologies-actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface BusinessLineOption {
   id: string;
@@ -95,12 +96,13 @@ export function TechnologyForm({ businessLines }: TechnologyFormProps) {
   const [baselineName, setBaselineName] = useState('');
   const [entityCounts, setEntityCounts] = useState<Record<string, number>>({});
   const [isDefault, setIsDefault] = useState(false);
+  const [baselineOpen, setBaselineOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim() || !businessLineId || !baselineHours || !baselineName.trim() || Object.keys(entityCounts).length === 0) {
-      toast.error('Bitte alle Pflichtfelder ausfüllen');
+    if (!name.trim() || !businessLineId) {
+      toast.error('Bitte Name und Business Line ausfüllen');
       return;
     }
 
@@ -110,14 +112,16 @@ export function TechnologyForm({ businessLines }: TechnologyFormProps) {
       const result = await createTechnology({
         name: name.trim(),
         businessLineId,
-        baselineHours: parseInt(baselineHours),
-        baselineName: baselineName.trim(),
-        baselineEntityCounts: entityCounts,
+        baselineHours: baselineHours ? parseInt(baselineHours) : undefined,
+        baselineName: baselineName.trim() || undefined,
+        baselineEntityCounts: Object.keys(entityCounts).length > 0 ? entityCounts : undefined,
         isDefault,
       });
 
       if (result.success) {
         toast.success('Technologie erfolgreich erstellt');
+        // Offer to run research
+        toast.info('Tipp: Klicken Sie auf den Refresh-Button um AI-Recherche zu starten');
         router.push('/admin/technologies');
         router.refresh();
       } else {
@@ -140,8 +144,11 @@ export function TechnologyForm({ businessLines }: TechnologyFormProps) {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="z.B. Drupal"
+            placeholder="z.B. Drupal, WordPress, React"
           />
+          <p className="text-xs text-muted-foreground">
+            Geben Sie den offiziellen Namen der Technologie ein
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -162,36 +169,6 @@ export function TechnologyForm({ businessLines }: TechnologyFormProps) {
           </select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="baselineHours">Baseline Stunden *</Label>
-          <Input
-            id="baselineHours"
-            type="number"
-            value={baselineHours}
-            onChange={(e) => setBaselineHours(e.target.value)}
-            placeholder="z.B. 693"
-            min="1"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="baselineName">Baseline Name *</Label>
-          <Input
-            id="baselineName"
-            value={baselineName}
-            onChange={(e) => setBaselineName(e.target.value)}
-            placeholder="z.B. adessoCMS"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Baseline Entity Counts *</Label>
-          <p className="text-xs text-muted-foreground">
-            Fügen Sie Entity-Typen mit ihren Anzahlen hinzu
-          </p>
-          <EntityCountsInput entityCounts={entityCounts} setEntityCounts={setEntityCounts} />
-        </div>
-
         <div className="flex items-center space-x-2">
           <input
             type="checkbox"
@@ -203,6 +180,69 @@ export function TechnologyForm({ businessLines }: TechnologyFormProps) {
           <Label htmlFor="isDefault" className="cursor-pointer">
             Als Default für diese Business Line setzen
           </Label>
+        </div>
+
+        {/* Collapsible Baseline Section */}
+        <Collapsible open={baselineOpen} onOpenChange={setBaselineOpen}>
+          <CollapsibleTrigger asChild>
+            <Button type="button" variant="outline" className="w-full justify-between">
+              <span className="flex items-center gap-2">
+                Baseline-Daten (optional)
+                {(baselineHours || baselineName || Object.keys(entityCounts).length > 0) && (
+                  <Badge variant="secondary" className="text-xs">Ausgefüllt</Badge>
+                )}
+              </span>
+              {baselineOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground">
+              Baseline-Daten werden für PT-Schätzungen verwendet. Lassen Sie diese leer, wenn Sie keine Baseline für diese Technologie haben.
+            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="baselineHours">Baseline Stunden</Label>
+              <Input
+                id="baselineHours"
+                type="number"
+                value={baselineHours}
+                onChange={(e) => setBaselineHours(e.target.value)}
+                placeholder="z.B. 693"
+                min="1"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="baselineName">Baseline Name</Label>
+              <Input
+                id="baselineName"
+                value={baselineName}
+                onChange={(e) => setBaselineName(e.target.value)}
+                placeholder="z.B. adessoCMS"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Baseline Entity Counts</Label>
+              <p className="text-xs text-muted-foreground">
+                Fügen Sie Entity-Typen mit ihren Anzahlen hinzu
+              </p>
+              <EntityCountsInput entityCounts={entityCounts} setEntityCounts={setEntityCounts} />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        <div className="bg-muted/50 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Sparkles className="h-5 w-5 text-primary mt-0.5" />
+            <div>
+              <p className="text-sm font-medium">AI-Recherche verfügbar</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Nach dem Erstellen können Sie die AI-Recherche starten, um automatisch Logo, Beschreibung,
+                Lizenzinfos, USPs und weitere Metadaten zu sammeln.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 

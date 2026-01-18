@@ -1,6 +1,13 @@
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import OpenAI from 'openai';
 import { extractedRequirementsSchema, type ExtractedRequirements } from './schema';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import { AgentEventType } from '@/lib/streaming/event-types';
+
+// Initialize OpenAI client with adesso AI Hub
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+});
 
 export interface ExtractionInput {
   rawText: string;
@@ -20,7 +27,7 @@ export interface ExtractionOutput {
 
 /**
  * AI Agent for extracting structured requirements from bid documents
- * Uses generateObject with Zod schema for type-safe extraction
+ * Uses native OpenAI SDK with adesso AI Hub (gemini-3-pro-preview)
  */
 export async function extractRequirements(
   input: ExtractionInput
@@ -28,16 +35,88 @@ export async function extractRequirements(
   try {
     const prompt = buildExtractionPrompt(input);
 
-    const result = await generateObject({
-      // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
-      model: openai('gpt-4o-mini'), // Using gpt-4o-mini for faster extraction
-      schema: extractedRequirementsSchema,
-      prompt,
-      temperature: 0.3, // Lower temperature for more consistent extraction
+    const completion = await openai.chat.completions.create({
+      model: 'claude-haiku-4.5',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a business development analyst. Always respond with valid JSON matching the requested schema. Do not include markdown code blocks or any other formatting - just the raw JSON object.',
+        },
+        {
+          role: 'user',
+          content: prompt + `
+
+IMPORTANT: Actively search for website URLs in the document!
+- Look for any URLs mentioned (http/https links, www. domains)
+- Look for domain names even without http (e.g., "customer.com", "example.de")
+- Consider the customer name and try to identify their likely website
+- For sports organizations, look for official league/team websites
+- For companies, look for corporate websites, product sites, regional sites
+
+Respond with a JSON object containing these fields:
+- customerName (string, required): Name of the customer
+- industry (string, optional): Industry sector
+- websiteUrls (array of objects, optional): Array of website URLs found or inferred:
+  - url (string): The full URL (add https:// if missing)
+  - type (string: "primary", "product", "regional", or "related"): Type of website
+  - description (string, optional): Brief description
+  - extractedFromDocument (boolean): true if found in document, false if inferred
+- websiteUrl (string, optional): Primary customer website URL (deprecated, for backwards compatibility)
+- projectDescription (string, required): Project description
+- projectName (string, optional): Project name
+- technologies (array of strings, required): Technologies mentioned
+- scope (string, optional): Project scope
+- budgetRange (string, optional): Budget if mentioned
+- timeline (string, optional): Timeline if mentioned
+- teamSize (number, optional): Team size if mentioned
+- keyRequirements (array of strings, required): Key requirements
+- constraints (array of strings, optional): Constraints
+- confidenceScore (number 0-1, required): Your confidence in the extraction
+- extractedAt (string, required): Current ISO timestamp`,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 2000,
     });
 
+    const responseText = completion.choices[0]?.message?.content || '{}';
+
+    // Parse and validate response
+    let parsedResult: ExtractedRequirements;
+    try {
+      // Clean up response (remove markdown code blocks if present)
+      const cleanedResponse = responseText
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
+
+      const rawResult = JSON.parse(cleanedResponse);
+
+      // Convert null values to undefined (Zod .optional() doesn't accept null)
+      const cleanedResult = Object.fromEntries(
+        Object.entries(rawResult).filter(([_, v]) => v !== null)
+      );
+
+      // Validate with Zod schema
+      parsedResult = extractedRequirementsSchema.parse({
+        ...cleanedResult,
+        extractedAt: cleanedResult.extractedAt || new Date().toISOString(),
+        technologies: cleanedResult.technologies || [],
+        keyRequirements: cleanedResult.keyRequirements || [],
+        confidenceScore: cleanedResult.confidenceScore || 0.5,
+        websiteUrls: cleanedResult.websiteUrls || [],
+      });
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', responseText);
+      return {
+        requirements: getEmptyRequirements(),
+        success: false,
+        error: 'Failed to parse AI response',
+      };
+    }
+
     return {
-      requirements: result.object,
+      requirements: parsedResult,
       success: true,
     };
   } catch (error) {
@@ -105,4 +184,201 @@ function getEmptyRequirements(): ExtractedRequirements {
     confidenceScore: 0,
     extractedAt: new Date().toISOString(),
   };
+}
+
+/**
+ * AI Agent for extracting structured requirements with streaming support
+ * Emits progress events during extraction for real-time UI updates
+ */
+export async function runExtractionWithStreaming(
+  input: ExtractionInput,
+  emit: EventEmitter
+): Promise<ExtractionOutput> {
+  try {
+    // Step 1: Analyzing document
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Extraktion',
+        message: `Analysiere ${input.inputType === 'pdf' ? 'PDF-Dokument' : input.inputType === 'email' ? 'E-Mail' : 'Freitext'}...`,
+      },
+    });
+
+    const prompt = buildExtractionPrompt(input);
+
+    // Step 2: Starting AI extraction
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Extraktion',
+        message: 'Starte AI-Extraktion der Anforderungen...',
+      },
+    });
+
+    const completion = await openai.chat.completions.create({
+      model: 'claude-haiku-4.5',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a business development analyst. Always respond with valid JSON matching the requested schema. Do not include markdown code blocks or any other formatting - just the raw JSON object.',
+        },
+        {
+          role: 'user',
+          content: prompt + `
+
+IMPORTANT: Actively search for website URLs in the document!
+- Look for any URLs mentioned (http/https links, www. domains)
+- Look for domain names even without http (e.g., "customer.com", "example.de")
+- Consider the customer name and try to identify their likely website
+- For sports organizations, look for official league/team websites
+- For companies, look for corporate websites, product sites, regional sites
+
+IMPORTANT: Look for submission deadlines and required deliverables!
+- Search for submission deadlines (Abgabefrist, Einreichungsfrist, deadline)
+- Look for exact times for submission
+- Find required documents/deliverables that must be submitted
+- Note any format requirements (PDF, hardcopy, number of copies)
+
+Respond with a JSON object containing these fields:
+- customerName (string, required): Name of the customer
+- industry (string, optional): Industry sector
+- websiteUrls (array of objects, optional): Array of website URLs found or inferred:
+  - url (string): The full URL (add https:// if missing)
+  - type (string: "primary", "product", "regional", or "related"): Type of website
+  - description (string, optional): Brief description
+  - extractedFromDocument (boolean): true if found in document, false if inferred
+- websiteUrl (string, optional): Primary customer website URL (deprecated, for backwards compatibility)
+- projectDescription (string, required): Project description
+- projectName (string, optional): Project name
+- technologies (array of strings, required): Technologies mentioned
+- scope (string, optional): Project scope
+- budgetRange (string, optional): Budget if mentioned
+- timeline (string, optional): Timeline if mentioned
+- teamSize (number, optional): Team size if mentioned
+- submissionDeadline (string, optional): Deadline for bid submission in ISO format YYYY-MM-DD
+- submissionTime (string, optional): Exact time for submission if specified (HH:MM)
+- projectStartDate (string, optional): Expected project start date (YYYY-MM-DD)
+- projectEndDate (string, optional): Expected project end date (YYYY-MM-DD)
+- requiredDeliverables (array of objects, optional): Documents/deliverables to be submitted:
+  - name (string): Name of the deliverable
+  - description (string, optional): Description of what is required
+  - format (string, optional): Required format (e.g., PDF, Word, hardcopy)
+  - copies (number, optional): Number of copies required
+  - mandatory (boolean): Whether this deliverable is mandatory
+- contactPerson (string, optional): Name of contact person at customer
+- contactEmail (string, optional): Email of contact person
+- contactPhone (string, optional): Phone number of contact person
+- keyRequirements (array of strings, required): Key requirements
+- constraints (array of strings, optional): Constraints
+- confidenceScore (number 0-1, required): Your confidence in the extraction
+- extractedAt (string, required): Current ISO timestamp`,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 3000,
+    });
+
+    // Step 3: Parsing response
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Extraktion',
+        message: 'Verarbeite AI-Antwort...',
+      },
+    });
+
+    const responseText = completion.choices[0]?.message?.content || '{}';
+
+    // Parse and validate response
+    let parsedResult: ExtractedRequirements;
+    try {
+      // Clean up response (remove markdown code blocks if present)
+      const cleanedResponse = responseText
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
+
+      const rawResult = JSON.parse(cleanedResponse);
+
+      // Convert null values to undefined (Zod .optional() doesn't accept null)
+      const cleanedResult = Object.fromEntries(
+        Object.entries(rawResult).filter(([_, v]) => v !== null)
+      );
+
+      // Step 4: Validating extracted data
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: 'Extraktion',
+          message: 'Validiere extrahierte Daten...',
+        },
+      });
+
+      // Validate with Zod schema
+      parsedResult = extractedRequirementsSchema.parse({
+        ...cleanedResult,
+        extractedAt: cleanedResult.extractedAt || new Date().toISOString(),
+        technologies: cleanedResult.technologies || [],
+        keyRequirements: cleanedResult.keyRequirements || [],
+        confidenceScore: cleanedResult.confidenceScore || 0.5,
+        websiteUrls: cleanedResult.websiteUrls || [],
+      });
+
+      // Step 5: Extraction complete - report what was found
+      const foundItems: string[] = [];
+      if (parsedResult.customerName) foundItems.push('Kunde');
+      if (parsedResult.technologies.length > 0) foundItems.push(`${parsedResult.technologies.length} Technologien`);
+      if (parsedResult.keyRequirements.length > 0) foundItems.push(`${parsedResult.keyRequirements.length} Anforderungen`);
+      if (parsedResult.submissionDeadline) foundItems.push('Abgabefrist');
+      if (parsedResult.requiredDeliverables && parsedResult.requiredDeliverables.length > 0) {
+        foundItems.push(`${parsedResult.requiredDeliverables.length} Unterlagen`);
+      }
+      if (parsedResult.websiteUrls && parsedResult.websiteUrls.length > 0) {
+        foundItems.push(`${parsedResult.websiteUrls.length} Website-URLs`);
+      }
+
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: 'Extraktion',
+          message: `Extraktion erfolgreich: ${foundItems.join(', ')}`,
+          confidence: parsedResult.confidenceScore,
+        },
+      });
+
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', responseText);
+      emit({
+        type: AgentEventType.ERROR,
+        data: {
+          message: 'AI-Antwort konnte nicht verarbeitet werden',
+          code: 'PARSE_ERROR',
+        },
+      });
+      return {
+        requirements: getEmptyRequirements(),
+        success: false,
+        error: 'Failed to parse AI response',
+      };
+    }
+
+    return {
+      requirements: parsedResult,
+      success: true,
+    };
+  } catch (error) {
+    console.error('Extraction error:', error);
+    emit({
+      type: AgentEventType.ERROR,
+      data: {
+        message: error instanceof Error ? error.message : 'Unbekannter Fehler',
+        code: 'EXTRACTION_ERROR',
+      },
+    });
+    return {
+      requirements: getEmptyRequirements(),
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown extraction error',
+    };
+  }
 }

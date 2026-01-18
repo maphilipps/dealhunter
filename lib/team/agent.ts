@@ -1,7 +1,12 @@
-import { openai } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
+import OpenAI from 'openai';
 import { teamSuggestionSchema, type TeamSuggestion } from './schema';
 import type { Employee } from '@/lib/db/schema';
+
+// Initialize OpenAI client with adesso AI Hub
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+});
 
 export interface TeamSuggestionInput {
   bidId: string;
@@ -28,11 +33,16 @@ export async function suggestTeam(input: TeamSuggestionInput): Promise<TeamSugge
     availability: emp.availabilityStatus,
   }));
 
-  const result = await generateObject({
-    // @ts-expect-error - AI SDK v5 type mismatch between LanguageModelV3 and LanguageModel
-    model: openai('gpt-4o-mini'),
-    schema: teamSuggestionSchema,
-    prompt: `You are an expert team builder for software development projects at adesso SE, a German IT consulting company.
+  const completion = await openai.chat.completions.create({
+    model: 'claude-haiku-4.5',
+    messages: [
+      {
+        role: 'system',
+        content: 'You are an expert team builder for software development projects at adesso SE. Always respond with valid JSON. Do not include markdown code blocks.',
+      },
+      {
+        role: 'user',
+        content: `You are an expert team builder for software development projects at adesso SE, a German IT consulting company.
 
 Your task is to suggest an optimal team composition for this bid opportunity.
 
@@ -118,14 +128,42 @@ Employee ${idx + 1}:
    - Describe the required profile
    - Explain the gap
 
-Return a complete team suggestion with:
-- Suggested team members with roles and reasoning
-- Identified skill gaps with severity
-- Overall confidence score
-- Required roles coverage check
-- Any warnings about team composition`,
+Respond with JSON containing:
+- members (array of objects): Suggested team members with:
+  - employeeId (string): Employee ID or "new_hire"
+  - name (string): Employee name or role placeholder
+  - role (string: "project_manager", "technical_lead", "senior_developer", "developer", "frontend_developer", "backend_developer", "ux_designer", "qa_engineer", "devops_engineer", "business_analyst"): Assigned role
+  - skillMatchScore (number 0-100): How well skills match
+  - matchingSkills (array of strings): Matching skills
+  - missingSkills (array of strings): Missing skills
+  - availabilityStatus (string: "available", "on_project", or "unavailable"): Availability
+  - availabilityNote (string, optional): Additional context
+  - similarProjectExperience (string, optional): Relevant past projects
+  - reasoning (string): Why this person was suggested
+  - confidence (number 0-100): Confidence in suggestion
+- skillGaps (array of objects with skill, severity ["critical", "important", "nice-to-have"], recommendation): Skill gaps
+- overallConfidence (number 0-100): Overall team confidence
+- reasoning (string): Overall reasoning
+- hasProjectManager (boolean): Team has PM
+- hasTechnicalLead (boolean): Team has Tech Lead
+- hasMinimumDevelopers (boolean): Team has 2+ devs
+- warnings (array of strings): Warnings about composition`,
+      },
+    ],
     temperature: 0.3,
+    max_tokens: 8000,
   });
 
-  return result.object;
+  const responseText = completion.choices[0]?.message?.content || '{}';
+  const cleanedResponse = responseText
+    .replace(/```json\n?/g, '')
+    .replace(/```\n?/g, '')
+    .trim();
+
+  const rawResult = JSON.parse(cleanedResponse);
+  const cleanedResult = Object.fromEntries(
+    Object.entries(rawResult).filter(([_, v]) => v !== null)
+  );
+
+  return teamSuggestionSchema.parse(cleanedResult);
 }

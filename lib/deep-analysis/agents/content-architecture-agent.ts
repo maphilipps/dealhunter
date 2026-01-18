@@ -4,11 +4,76 @@
  * Expected duration: 6-10 minutes
  */
 
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import OpenAI from 'openai';
 import { z } from 'zod';
 import { ContentArchitectureSchema, type ContentArchitecture } from '../schemas';
 import { fetchSitemap, samplePages, fetchPageContent, extractPageMetadata } from '../utils/crawler';
+
+// Initialize OpenAI client with adesso AI Hub
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+});
+
+// Schema for page classification
+const pageClassificationSchema = z.object({
+  pageType: z.enum([
+    'homepage',
+    'product',
+    'service',
+    'blog',
+    'news',
+    'landing',
+    'contact',
+    'about',
+    'event',
+    'job',
+    'custom',
+  ]),
+  confidence: z.number().min(0).max(100),
+  reasoning: z.string(),
+});
+
+// Schema for Drupal mapping
+const drupalMappingSchema = z.object({
+  contentTypeMapping: z.array(
+    z.object({
+      pageType: z.string(),
+      drupalContentType: z.string(),
+      confidence: z.number().min(0).max(100),
+      reasoning: z.string(),
+    })
+  ),
+  paragraphEstimate: z.number().int().nonnegative(),
+});
+
+/**
+ * Helper function to call AI and parse JSON response
+ */
+async function callAI<T>(systemPrompt: string, userPrompt: string, schema: z.ZodSchema<T>): Promise<T> {
+  const completion = await openai.chat.completions.create({
+    model: 'claude-haiku-4.5',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature: 0.3,
+    max_tokens: 4000,
+  });
+
+  const responseText = completion.choices[0]?.message?.content || '{}';
+  const cleanedResponse = responseText
+    .replace(/```json\n?/g, '')
+    .replace(/```\n?/g, '')
+    .trim();
+
+  const rawResult = JSON.parse(cleanedResponse);
+  const cleanedResult = Object.fromEntries(
+    Object.entries(rawResult).filter(([_, v]) => v !== null)
+  );
+
+  return schema.parse(cleanedResult);
+}
 
 export async function analyzeContentArchitecture(
   websiteUrl: string,
@@ -45,26 +110,9 @@ export async function analyzeContentArchitecture(
       const html = await fetchPageContent(url);
       const metadata = extractPageMetadata(html);
 
-      const { object } = await generateObject({
-        model: openai('gpt-4o-mini'),
-        schema: z.object({
-          pageType: z.enum([
-            'homepage',
-            'product',
-            'service',
-            'blog',
-            'news',
-            'landing',
-            'contact',
-            'about',
-            'event',
-            'job',
-            'custom',
-          ]),
-          confidence: z.number().min(0).max(100),
-          reasoning: z.string(),
-        }),
-        prompt: `Classify this page based on its URL, title, and HTML structure:
+      const result = await callAI(
+        'You are a page classification expert. Always respond with valid JSON. Do not include markdown code blocks.',
+        `Classify this page based on its URL, title, and HTML structure:
 
 URL: ${url}
 Title: ${metadata.title || 'N/A'}
@@ -73,12 +121,18 @@ Description: ${metadata.description || 'N/A'}
 HTML (first 2000 chars):
 ${html.substring(0, 2000)}
 
-What type of page is this? Choose the most specific category that fits.`,
-      });
+What type of page is this? Choose the most specific category that fits.
+
+Respond with JSON containing:
+- pageType (string: "homepage", "product", "service", "blog", "news", "landing", "contact", "about", "event", "job", or "custom"): Page type
+- confidence (number 0-100): Classification confidence
+- reasoning (string): Brief explanation`,
+        pageClassificationSchema
+      );
 
       pageClassifications.push({
         url,
-        ...object,
+        ...result,
       });
     } catch (error) {
       console.warn(`Failed to classify page ${url}:`, error);
@@ -108,20 +162,9 @@ What type of page is this? Choose the most specific category that fits.`,
   // Step 5: Map page types to Drupal Content Types using LLM
   onProgress?.('Mapping to Drupal Content Types...');
 
-  const { object: mapping } = await generateObject({
-    model: openai('gpt-4o-mini'),
-    schema: z.object({
-      contentTypeMapping: z.array(
-        z.object({
-          pageType: z.string(),
-          drupalContentType: z.string(),
-          confidence: z.number().min(0).max(100),
-          reasoning: z.string(),
-        })
-      ),
-      paragraphEstimate: z.number().int().nonnegative(),
-    }),
-    prompt: `You are a Drupal migration expert. Map these page types to Drupal Content Types and estimate Paragraph types needed.
+  const mapping = await callAI(
+    'You are a Drupal migration expert. Always respond with valid JSON. Do not include markdown code blocks.',
+    `Map these page types to Drupal Content Types and estimate Paragraph types needed.
 
 Website: ${websiteUrl}
 Total Pages: ${totalPages}
@@ -135,8 +178,13 @@ Task:
 3. Provide confidence scores (0-100) for each mapping
 4. Explain your reasoning
 
-Be conservative with estimates - only suggest custom Content Types when standard ones don't fit.`,
-  });
+Be conservative with estimates - only suggest custom Content Types when standard ones don't fit.
+
+Respond with JSON containing:
+- contentTypeMapping (array of objects with pageType, drupalContentType, confidence 0-100, reasoning): Mapping
+- paragraphEstimate (number): Estimated Paragraph types needed`,
+    drupalMappingSchema
+  );
 
   onProgress?.('Content architecture analysis complete');
 

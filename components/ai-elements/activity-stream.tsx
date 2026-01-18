@@ -10,10 +10,11 @@ import { useAgentStream } from '@/hooks/use-agent-stream';
 import type { AgentEvent } from '@/lib/streaming/event-types';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
-interface ActivityStreamProps {
+export interface ActivityStreamProps {
   streamUrl: string;
   title?: string;
   onComplete?: (decision?: unknown) => void;
+  onError?: (error: string) => void;
   autoStart?: boolean;
 }
 
@@ -26,32 +27,38 @@ export function ActivityStream({
   streamUrl,
   title = 'Agent Activity',
   onComplete,
+  onError,
   autoStart = false,
 }: ActivityStreamProps) {
   const { events, isStreaming, error, decision, start, abort } =
     useAgentStream();
   const bottomRef = useRef<HTMLDivElement>(null);
-  const hasStarted = useRef(false);
 
   // Auto-start on mount if requested
   useEffect(() => {
-    if (autoStart && !hasStarted.current) {
-      hasStarted.current = true;
+    if (autoStart && !isStreaming && events.length === 0) {
       start(streamUrl);
     }
-  }, [autoStart, streamUrl, start]);
+  }, [autoStart, streamUrl, start, isStreaming, events.length]);
 
   // Auto-scroll to bottom when new events arrive
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [events]);
 
-  // Call onComplete callback when streaming finishes
+  // Call onComplete callback when streaming finishes successfully
   useEffect(() => {
-    if (!isStreaming && events.length > 0 && onComplete) {
+    if (!isStreaming && events.length > 0 && !error && onComplete) {
       onComplete(decision);
     }
-  }, [isStreaming, events.length, decision, onComplete]);
+  }, [isStreaming, events.length, decision, error, onComplete]);
+
+  // Call onError callback when an error occurs
+  useEffect(() => {
+    if (!isStreaming && error && onError) {
+      onError(error);
+    }
+  }, [isStreaming, error, onError]);
 
   // Filter events to show only relevant ones
   const visibleEvents = events.filter(
@@ -79,10 +86,10 @@ export function ActivityStream({
                 {isStreaming ? (
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="h-8 w-8 animate-spin" />
-                    <p className="text-sm">Starting analysis...</p>
+                    <p className="text-sm">Starte Analyse...</p>
                   </div>
                 ) : (
-                  <p className="text-sm">No activity yet</p>
+                  <p className="text-sm">Noch keine Aktivität</p>
                 )}
               </div>
             )}
@@ -91,7 +98,7 @@ export function ActivityStream({
               <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-red-900">Error</p>
+                  <p className="text-sm font-medium text-red-900">Fehler</p>
                   <p className="text-sm text-red-700">{error}</p>
                 </div>
               </div>
@@ -106,10 +113,10 @@ export function ActivityStream({
                 <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-green-900">
-                    Analysis Complete
+                    Analyse abgeschlossen
                   </p>
                   <p className="text-sm text-green-700">
-                    All agents have finished processing
+                    Alle Agenten haben die Verarbeitung abgeschlossen
                   </p>
                 </div>
               </div>

@@ -99,6 +99,61 @@ export async function startBitEvaluation(bidId: string) {
 }
 
 /**
+ * Re-trigger BIT/NO BIT evaluation
+ * Sets status to 'evaluating' - the actual evaluation is executed via streaming endpoint
+ */
+export async function retriggerBitEvaluation(bidId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Get the bid opportunity
+    const [bid] = await db
+      .select()
+      .from(bidOpportunities)
+      .where(eq(bidOpportunities.id, bidId))
+      .limit(1);
+
+    if (!bid) {
+      return { success: false, error: 'Bid nicht gefunden' };
+    }
+
+    if (bid.userId !== session.user.id) {
+      return { success: false, error: 'Keine Berechtigung' };
+    }
+
+    // Ensure we have extracted requirements
+    if (!bid.extractedRequirements) {
+      return { success: false, error: 'Keine extrahierten Anforderungen vorhanden' };
+    }
+
+    // Reset evaluation data and set status to 'evaluating'
+    // The actual evaluation will be executed via the streaming endpoint
+    await db
+      .update(bidOpportunities)
+      .set({
+        status: 'evaluating',
+        bitDecision: 'pending',
+        bitDecisionData: null,
+        bitEvaluation: null,
+        alternativeRecommendation: null,
+      })
+      .where(eq(bidOpportunities.id, bidId));
+
+    return {
+      success: true,
+      status: 'evaluating',
+    };
+  } catch (error) {
+    console.error('BIT evaluation re-trigger error:', error);
+    return { success: false, error: 'BIT Re-Evaluierung fehlgeschlagen' };
+  }
+}
+
+/**
  * Get BIT evaluation result
  */
 export async function getBitEvaluationResult(bidId: string) {

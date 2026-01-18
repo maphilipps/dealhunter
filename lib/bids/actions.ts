@@ -417,6 +417,15 @@ export async function uploadCombinedBid(formData: FormData) {
     return { success: false, error: 'Nicht authentifiziert' };
   }
 
+  // Verify user exists in database (for FOREIGN KEY constraint)
+  const { users } = await import('@/lib/db/schema');
+  const { eq } = await import('drizzle-orm');
+  const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+
+  if (!user) {
+    return { success: false, error: 'Benutzer nicht gefunden. Bitte melden Sie sich erneut an.' };
+  }
+
   const file = formData.get('file') as File | null;
   const websiteUrl = (formData.get('websiteUrl') as string)?.trim() || '';
   const additionalText = (formData.get('additionalText') as string)?.trim() || '';

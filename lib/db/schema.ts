@@ -17,7 +17,7 @@ export const users = sqliteTable('users', {
     .$defaultFn(() => new Date())
 });
 
-export const bidOpportunities = sqliteTable('bid_opportunities', {
+export const rfps = sqliteTable('rfps', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
@@ -40,9 +40,9 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
       'extracting',       // AI is extracting requirements
       'reviewing',        // User is reviewing extracted data
       'quick_scanning',   // AI is doing quick scan
-      'evaluating',       // AI is doing full bit/no bit evaluation
-      'bit_decided',      // Decision made
-      'archived',         // NO BIT - Archiviert
+      'evaluating',       // AI is doing full decision evaluation
+      'decision_made',    // Decision made (Bid/No-Bid)
+      'archived',         // NO BID - Archiviert
       'routed',           // Routed to BL
       'full_scanning',    // Deep Analysis läuft
       'bl_reviewing',     // BL prüft Ergebnisse
@@ -55,11 +55,11 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
     .notNull()
     .default('draft'),
 
-  // Bit Decision
-  bitDecision: text('bit_decision', { enum: ['bit', 'no_bit', 'pending'] })
+  // Decision (Bid/No-Bid)
+  decision: text('decision', { enum: ['bid', 'no_bid', 'pending'] })
     .notNull()
     .default('pending'),
-  bitDecisionData: text('bit_decision_data'), // JSON
+  decisionData: text('decision_data'), // JSON
   alternativeRecommendation: text('alternative_recommendation'),
 
   // Account Link
@@ -92,7 +92,7 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
 
   // Analysis Results (TODO: move to separate tables)
   quickScanResults: text('quick_scan_results'), // JSON
-  bitEvaluation: text('bit_evaluation'), // JSON
+  decisionEvaluation: text('decision_evaluation'), // JSON
 
   // Company Analysis Links
   quickScanId: text('quick_scan_id'),
@@ -106,7 +106,15 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
     .$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
-});
+}, (table) => ({
+  // CRITICAL: Performance Indexes (TODO-029 Fix)
+  assignedBusinessUnitIdx: index("rfps_assigned_bu_idx")
+    .on(table.assignedBusinessUnitId),
+  statusIdx: index("rfps_status_idx")
+    .on(table.status),
+  userIdIdx: index("rfps_user_id_idx")
+    .on(table.userId),
+}));
 
 export const references = sqliteTable('references', {
   id: text('id')
@@ -165,8 +173,13 @@ export const references = sqliteTable('references', {
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
-export type BidOpportunity = typeof bidOpportunities.$inferSelect;
-export type NewBidOpportunity = typeof bidOpportunities.$inferInsert;
+export type Rfp = typeof rfps.$inferSelect;
+export type NewRfp = typeof rfps.$inferInsert;
+// Backwards compatibility aliases
+export type RfpOpportunity = Rfp;
+export type NewRfpOpportunity = NewRfp;
+export type BidOpportunity = Rfp;
+export type NewBidOpportunity = NewRfp;
 export type Reference = typeof references.$inferSelect;
 export type NewReference = typeof references.$inferInsert;
 
@@ -336,7 +349,11 @@ export const employees = sqliteTable('employees', {
     .$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
-});
+}, (table) => ({
+  // CRITICAL: Performance Indexes (TODO-029 Fix)
+  businessUnitIdx: index("employees_business_unit_idx")
+    .on(table.businessUnitId),
+}));
 
 export type Employee = typeof employees.$inferSelect;
 export type NewEmployee = typeof employees.$inferInsert;
@@ -389,9 +406,9 @@ export const quickScans = sqliteTable('quick_scans', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
-  bidOpportunityId: text('bid_opportunity_id')
+  rfpId: text('rfp_id')
     .notNull()
-    .references(() => bidOpportunities.id),
+    .references(() => rfps.id),
 
   // Target Website
   websiteUrl: text('website_url').notNull(),
@@ -438,7 +455,9 @@ export const quickScans = sqliteTable('quick_scans', {
   completedAt: integer('completed_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date()),
-});
+}, (table) => ({
+  rfpIdx: index('quick_scans_rfp_idx').on(table.rfpId),
+}));
 
 export type QuickScan = typeof quickScans.$inferSelect;
 export type NewQuickScan = typeof quickScans.$inferInsert;
@@ -447,9 +466,9 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
-  bidOpportunityId: text('bid_opportunity_id')
+  rfpId: text('rfp_id')
     .notNull()
-    .references(() => bidOpportunities.id),
+    .references(() => rfps.id),
   userId: text('user_id')
     .notNull()
     .references(() => users.id),
@@ -489,9 +508,9 @@ export const documents = sqliteTable('documents', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
-  bidOpportunityId: text('bid_opportunity_id')
+  rfpId: text('rfp_id')
     .notNull()
-    .references(() => bidOpportunities.id),
+    .references(() => rfps.id),
   userId: text('user_id')
     .notNull()
     .references(() => users.id),
@@ -514,7 +533,9 @@ export const documents = sqliteTable('documents', {
     .$defaultFn(() => new Date()),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
-});
+}, (table) => ({
+  rfpIdx: index('documents_rfp_idx').on(table.rfpId),
+}));
 
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;

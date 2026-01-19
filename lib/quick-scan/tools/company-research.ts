@@ -1,14 +1,12 @@
 import OpenAI from 'openai';
 import { companyIntelligenceSchema, type CompanyIntelligence } from '../schema';
-import Exa from 'exa-js';
+import { searchAndContents } from '@/lib/search/web-search';
 
 // Initialize clients
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
 });
-
-const exa = process.env.EXA_API_KEY ? new Exa(process.env.EXA_API_KEY) : null;
 
 interface ImprintData {
   companyName?: string;
@@ -58,7 +56,7 @@ export async function extractFromImprint(html: string, _url: string): Promise<Im
 }
 
 /**
- * Search for company news using Exa
+ * Search for company news using DuckDuckGo (free, no API key)
  */
 async function searchCompanyNews(companyName: string): Promise<Array<{
   title: string;
@@ -66,57 +64,39 @@ async function searchCompanyNews(companyName: string): Promise<Array<{
   date?: string;
   url?: string;
 }>> {
-  if (!exa) {
-    return [];
-  }
-
   try {
-    const results = await exa.searchAndContents(
+    const results = await searchAndContents(
       `"${companyName}" news OR pressemitteilung OR announcement`,
-      {
-        type: 'neural',
-        numResults: 5,
-        useAutoprompt: true,
-        text: { maxCharacters: 500 },
-      }
+      { numResults: 5, summary: true }
     );
 
-    return results.results.map((r) => ({
+    return results.results.map((r: any) => ({
       title: r.title || 'Untitled',
       source: new URL(r.url).hostname.replace('www.', ''),
       date: r.publishedDate,
       url: r.url,
     }));
   } catch (error) {
-    console.error('Exa search failed:', error);
+    console.error('DuckDuckGo search failed:', error);
     return [];
   }
 }
 
 /**
- * Search for company information using Exa
+ * Search for company information using DuckDuckGo (free, no API key)
  */
 async function searchCompanyInfo(companyName: string, _websiteUrl: string): Promise<string> {
-  if (!exa) {
-    return '';
-  }
-
   try {
-    const results = await exa.searchAndContents(
+    const results = await searchAndContents(
       `"${companyName}" company profile employees revenue founded headquarters`,
-      {
-        type: 'neural',
-        numResults: 3,
-        useAutoprompt: true,
-        text: { maxCharacters: 2000 },
-      }
+      { numResults: 3, summary: true }
     );
 
     return results.results
-      .map((r) => `Source: ${r.url}\n${r.text}`)
+      .map((r: any) => `Source: ${r.url}\n${r.text}`)
       .join('\n\n');
   } catch (error) {
-    console.error('Exa company search failed:', error);
+    console.error('DuckDuckGo company search failed:', error);
     return '';
   }
 }
@@ -140,19 +120,17 @@ export async function gatherCompanyIntelligence(
     }
   }
 
-  // Step 2: Search for company info and news
+  // Step 2: Search for company info and news (DuckDuckGo - always available)
   let searchResults = '';
   let newsResults: Awaited<ReturnType<typeof searchCompanyNews>> = [];
 
-  if (exa) {
-    [searchResults, newsResults] = await Promise.all([
-      searchCompanyInfo(companyName, websiteUrl),
-      searchCompanyNews(companyName),
-    ]);
+  [searchResults, newsResults] = await Promise.all([
+    searchCompanyInfo(companyName, websiteUrl),
+    searchCompanyNews(companyName),
+  ]);
 
-    if (searchResults) {
-      sources.push('Web Search');
-    }
+  if (searchResults) {
+    sources.push('Web Search');
   }
 
   // Step 3: Use AI to synthesize all information

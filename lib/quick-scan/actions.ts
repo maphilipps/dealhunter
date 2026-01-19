@@ -4,11 +4,56 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, quickScans } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { runQuickScan } from './agent';
+
+// Phase: Rate limiting for Quick Scan retrigger (5 minutes cooldown)
+const RETRIGGER_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const retriggerTimestamps = new Map<string, number>();
+
+/**
+ * Check if a retrigger is allowed based on rate limiting
+ */
+function isRetriggerAllowed(bidId: string): { allowed: boolean; waitTimeMs?: number } {
+  const lastRetrigger = retriggerTimestamps.get(bidId);
+  const now = Date.now();
+
+  if (lastRetrigger) {
+    const elapsed = now - lastRetrigger;
+    if (elapsed < RETRIGGER_COOLDOWN_MS) {
+      return {
+        allowed: false,
+        waitTimeMs: RETRIGGER_COOLDOWN_MS - elapsed,
+      };
+    }
+  }
+
+  return { allowed: true };
+}
+
+/**
+ * Record a retrigger timestamp for rate limiting
+ */
+function recordRetrigger(bidId: string): void {
+  retriggerTimestamps.set(bidId, Date.now());
+
+  // Cleanup old entries (older than 2x cooldown period)
+  const cutoff = Date.now() - (RETRIGGER_COOLDOWN_MS * 2);
+  for (const [id, timestamp] of retriggerTimestamps.entries()) {
+    if (timestamp < cutoff) {
+      retriggerTimestamps.delete(id);
+    }
+  }
+}
 
 /**
  * Start Quick Scan for a bid opportunity
- * Automatically triggered after extraction confirmation
+ * Creates QuickScan record with 'running' status and returns immediately.
+ * The actual scan is executed via the SSE streaming endpoint.
+ *
+ * Flow:
+ * 1. startQuickScan() creates record + sets status='running' + returns immediately
+ * 2. UI renders QuickScanResults which connects to SSE stream
+ * 3. SSE endpoint executes the scan and streams live updates
+ * 4. On completion, SSE endpoint updates DB status to 'completed'
  */
 export async function startQuickScan(bidId: string) {
   const session = await auth();
@@ -53,7 +98,8 @@ export async function startQuickScan(bidId: string) {
       };
     }
 
-    // Create QuickScan record
+    // Create QuickScan record with 'running' status
+    // The actual scan will be executed via the SSE streaming endpoint
     const [quickScan] = await db
       .insert(quickScans)
       .values({
@@ -64,7 +110,7 @@ export async function startQuickScan(bidId: string) {
       })
       .returning();
 
-    // Update bid status
+    // Update bid status to quick_scanning
     await db
       .update(rfps)
       .set({
@@ -73,35 +119,12 @@ export async function startQuickScan(bidId: string) {
       })
       .where(eq(rfps.id, bidId));
 
-    // Run quick scan asynchronously
-    const scanResult = await runQuickScan({
-      websiteUrl,
-      extractedRequirements: extractedReqs,
-    });
-
-    // Update QuickScan with results
-    await db
-      .update(quickScans)
-      .set({
-        status: 'completed',
-        techStack: JSON.stringify(scanResult.techStack),
-        cms: scanResult.techStack.cms || null,
-        framework: scanResult.techStack.framework || null,
-        hosting: scanResult.techStack.hosting || null,
-        contentVolume: JSON.stringify(scanResult.contentVolume),
-        features: JSON.stringify(scanResult.features),
-        recommendedBusinessUnit: scanResult.blRecommendation.primaryBusinessLine,
-        confidence: scanResult.blRecommendation.confidence,
-        reasoning: scanResult.blRecommendation.reasoning,
-        activityLog: JSON.stringify(scanResult.activityLog),
-        completedAt: new Date(),
-      })
-      .where(eq(quickScans.id, quickScan.id));
-
+    // Return immediately - scan is executed via SSE stream
+    // The UI will connect to /api/rfps/[id]/quick-scan/stream which runs the actual scan
     return {
       success: true,
       quickScanId: quickScan.id,
-      result: scanResult,
+      status: 'running',
     };
   } catch (error) {
     console.error('Quick Scan error:', error);
@@ -116,12 +139,26 @@ export async function startQuickScan(bidId: string) {
  * Re-trigger Quick Scan for a bid
  * Deletes existing Quick Scan and creates a new one in 'running' status
  * The actual scan is executed via the streaming endpoint
+ *
+ * Rate limited: 5 minute cooldown between retriggering scans for the same bid
  */
 export async function retriggerQuickScan(bidId: string) {
   const session = await auth();
 
   if (!session?.user?.id) {
     return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  // Check rate limiting
+  const rateCheck = isRetriggerAllowed(bidId);
+  if (!rateCheck.allowed) {
+    const waitMinutes = Math.ceil((rateCheck.waitTimeMs || 0) / 60000);
+    return {
+      success: false,
+      error: `Bitte warten Sie noch ${waitMinutes} Minute(n), bevor Sie den Quick Scan erneut starten.`,
+      rateLimited: true,
+      waitTimeMs: rateCheck.waitTimeMs,
+    };
   }
 
   try {
@@ -189,6 +226,9 @@ export async function retriggerQuickScan(bidId: string) {
       })
       .where(eq(rfps.id, bidId));
 
+    // Record successful retrigger for rate limiting
+    recordRetrigger(bidId);
+
     return {
       success: true,
       quickScanId: quickScan.id,
@@ -242,14 +282,32 @@ export async function getQuickScanResult(bidId: string) {
       return { success: false, error: 'Quick Scan nicht gefunden' };
     }
 
+    // Parse ALL JSON fields - FIX: Previously only 4 fields were parsed
     return {
       success: true,
       quickScan: {
         ...quickScan,
+        // Core fields
         techStack: quickScan.techStack ? JSON.parse(quickScan.techStack) : null,
         contentVolume: quickScan.contentVolume ? JSON.parse(quickScan.contentVolume) : null,
         features: quickScan.features ? JSON.parse(quickScan.features) : null,
         activityLog: quickScan.activityLog ? JSON.parse(quickScan.activityLog) : [],
+        // Enhanced audit fields
+        navigationStructure: quickScan.navigationStructure ? JSON.parse(quickScan.navigationStructure) : null,
+        accessibilityAudit: quickScan.accessibilityAudit ? JSON.parse(quickScan.accessibilityAudit) : null,
+        seoAudit: quickScan.seoAudit ? JSON.parse(quickScan.seoAudit) : null,
+        legalCompliance: quickScan.legalCompliance ? JSON.parse(quickScan.legalCompliance) : null,
+        performanceIndicators: quickScan.performanceIndicators ? JSON.parse(quickScan.performanceIndicators) : null,
+        screenshots: quickScan.screenshots ? JSON.parse(quickScan.screenshots) : null,
+        companyIntelligence: quickScan.companyIntelligence ? JSON.parse(quickScan.companyIntelligence) : null,
+        // QuickScan 2.0 fields
+        siteTree: quickScan.siteTree ? JSON.parse(quickScan.siteTree) : null,
+        contentTypes: quickScan.contentTypes ? JSON.parse(quickScan.contentTypes) : null,
+        migrationComplexity: quickScan.migrationComplexity ? JSON.parse(quickScan.migrationComplexity) : null,
+        decisionMakers: quickScan.decisionMakers ? JSON.parse(quickScan.decisionMakers) : null,
+        enhancedAccessibility: quickScan.enhancedAccessibility ? JSON.parse(quickScan.enhancedAccessibility) : null,
+        // Raw data for debugging
+        rawScanData: quickScan.rawScanData ? JSON.parse(quickScan.rawScanData) : null,
       },
     };
   } catch (error) {

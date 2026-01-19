@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { updateExtractedRequirements } from '@/lib/bids/actions';
+import { calculateAnsweredQuestionsCount } from '@/lib/bids/ten-questions';
 import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
 import { startBitEvaluation, getBitEvaluationResult, retriggerBitEvaluation } from '@/lib/bit-evaluation/actions';
 import type { BidOpportunity, QuickScan } from '@/lib/db/schema';
@@ -25,6 +26,9 @@ import { DocumentsSidebar } from './documents-sidebar';
 import { BaselineComparisonCard } from './baseline-comparison-card';
 import { ProjectPlanningCard } from './project-planning-card';
 import { NotificationCard } from './notification-card';
+import { BitDecisionActions } from './bit-decision-actions';
+import { DuplicateWarning } from './duplicate-warning';
+import type { DuplicateCheckResult } from '@/lib/bids/duplicate-check';
 
 interface BidDetailClientProps {
   bid: BidOpportunity;
@@ -44,6 +48,19 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   const [needsWebsiteUrl, setNeedsWebsiteUrl] = useState(false);
   const [isSubmittingUrl, setIsSubmittingUrl] = useState(false);
   const [isRetriggeringBit, setIsRetriggeringBit] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [duplicateCheck, setDuplicateCheck] = useState<DuplicateCheckResult | null>(
+    bid.duplicateCheckResult ? JSON.parse(bid.duplicateCheckResult) : null
+  );
+
+  // Phase 1.1: Ref to prevent double-start race condition in React Strict Mode
+  const hasAutoStartedQuickScanRef = useRef(false);
+  const [autoStartState, setAutoStartState] = useState<'idle' | 'starting' | 'polling'>('idle');
+
+  const handleRefresh = async () => {
+    router.refresh();
+    setRefreshKey(prev => prev + 1);
+  };
 
   // Handle extraction start - now uses streaming
   const handleStartExtraction = () => {
@@ -70,10 +87,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             toast.success('Quick Scan erfolgreich gestartet!');
             router.refresh();
 
-            // Auto-start BIT evaluation after Quick Scan completes
-            // Wait a bit for the router refresh, then poll for completion
             setTimeout(() => {
-              checkQuickScanAndStartEvaluation();
+              checkQuickScanCompletion();
             }, 2000);
           } else if (scanResult.needsWebsiteUrl) {
             toast.error('Bitte Website-URL in den Anforderungen angeben');
@@ -89,24 +104,18 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     }
   };
 
-  // Check if Quick Scan completed and start BIT evaluation
-  const checkQuickScanAndStartEvaluation = async () => {
+  // Check if Quick Scan completed - no longer auto-starts BIT evaluation
+  // Two-Workflow: BD Manager makes manual BIT/NO BIT decision via BitDecisionActions
+  const checkQuickScanCompletion = async () => {
     const scanResult = await getQuickScanResult(bid.id);
 
     if (scanResult.success && scanResult.quickScan?.status === 'completed') {
-      toast.info('Quick Scan abgeschlossen! Starte BIT/NO BIT Evaluierung...');
-
-      const evalResult = await startBitEvaluation(bid.id);
-      if (evalResult.success) {
-        toast.success('BIT Evaluierung abgeschlossen!');
-        router.refresh();
-      } else {
-        toast.error(evalResult.error || 'BIT Evaluierung fehlgeschlagen');
-      }
+      toast.success('Quick Scan abgeschlossen! Bitte prüfen Sie die 10 Fragen und treffen Sie eine BIT/NO BIT Entscheidung.');
+      router.refresh();
     } else if (scanResult.success && scanResult.quickScan?.status === 'running') {
       // Quick Scan still running, poll again
       setTimeout(() => {
-        checkQuickScanAndStartEvaluation();
+        checkQuickScanCompletion();
       }, 3000);
     }
   };
@@ -150,9 +159,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         toast.success('Quick Scan gestartet!');
         router.refresh();
 
-        // Wait and start BIT evaluation
         setTimeout(() => {
-          checkQuickScanAndStartEvaluation();
+          checkQuickScanCompletion();
         }, 2000);
       } else {
         toast.error(scanResult.error || 'Quick Scan konnte nicht gestartet werden');
@@ -190,28 +198,29 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
 
   // Load quick scan if status is quick_scanning or later
   useEffect(() => {
-    if (['quick_scanning', 'evaluating', 'decision_made', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
-      setIsLoadingQuickScan(true);
-      getQuickScanResult(bid.id).then(result => {
+    const loadQuickScan = async () => {
+      if (['quick_scanning', 'questions_ready', 'bit_pending', 'evaluating', 'decision_made', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
+        setIsLoadingQuickScan(true);
+        const result = await getQuickScanResult(bid.id);
         if (result.success && result.quickScan) {
           setQuickScan(result.quickScan);
           setNeedsWebsiteUrl(false);
         } else if (bid.status === 'quick_scanning') {
-          // Quick Scan status but no results - likely missing URL
-          // Check if extractedData has a websiteUrl
           const hasUrl = extractedData?.websiteUrl || (extractedData?.websiteUrls && extractedData.websiteUrls.length > 0);
           if (!hasUrl) {
             setNeedsWebsiteUrl(true);
           }
         }
         setIsLoadingQuickScan(false);
-      });
-    }
-  }, [bid.id, bid.status, extractedData]);
+      }
+    };
+    
+    loadQuickScan();
+  }, [bid.id, bid.status, extractedData, refreshKey]);
 
   // Load BIT evaluation result if status is decision_made or later
   useEffect(() => {
-    if (['decision_made', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
+    if (['decision_made', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off', 'archived'].includes(bid.status)) {
       setIsLoadingBitEvaluation(true);
       getBitEvaluationResult(bid.id).then(result => {
         if (result.success && result.result) {
@@ -227,10 +236,61 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     }
   }, [bid.id, bid.status]);
 
+  // Phase 1.1: Auto-start Quick Scan when URLs are available after extraction
+  // Uses ref to prevent double-start in React Strict Mode
+  useEffect(() => {
+    // Only auto-start if:
+    // 1. Status is 'reviewing' (extraction complete, but not yet started quick scan)
+    // 2. No quickScan exists yet
+    // 3. We haven't already started (ref check)
+    // 4. URLs are available in extracted data
+    if (
+      bid.status === 'reviewing' &&
+      !quickScan &&
+      !hasAutoStartedQuickScanRef.current &&
+      extractedData
+    ) {
+      const urls = extractedData?.websiteUrls;
+      const hasUrls = urls && Array.isArray(urls) && urls.length > 0;
+
+      if (hasUrls) {
+        hasAutoStartedQuickScanRef.current = true;
+        setAutoStartState('starting');
+
+        startQuickScan(bid.id)
+          .then((result) => {
+            if (result.success) {
+              setAutoStartState('polling');
+              toast.success('Quick Scan automatisch gestartet!');
+              router.refresh();
+              // Start polling for completion
+              setTimeout(() => {
+                checkQuickScanCompletion();
+              }, 2000);
+            } else if (result.needsWebsiteUrl) {
+              // Reset ref so user can manually trigger after adding URL
+              hasAutoStartedQuickScanRef.current = false;
+              setAutoStartState('idle');
+              setNeedsWebsiteUrl(true);
+            } else {
+              // Reset ref on error so retry is possible
+              hasAutoStartedQuickScanRef.current = false;
+              setAutoStartState('idle');
+              toast.error(result.error || 'Quick Scan konnte nicht automatisch gestartet werden');
+            }
+          })
+          .catch(() => {
+            hasAutoStartedQuickScanRef.current = false;
+            setAutoStartState('idle');
+          });
+      }
+    }
+  }, [bid.status, bid.id, quickScan, extractedData, router]);
+
   // Draft state - Show raw input and start extraction button
   if (bid.status === 'draft' && !isExtracting) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -264,7 +324,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             </CardContent>
           </Card>
         </div>
-        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+        <aside className="lg:sticky lg:top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
           <DocumentsSidebar bidId={bid.id} />
         </aside>
       </div>
@@ -274,7 +334,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Extracting state - Show ActivityStream with real-time progress
   if (isExtracting || bid.status === 'extracting') {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -308,7 +368,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             autoStart={true}
           />
         </div>
-        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+        <aside className="lg:sticky lg:top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
           <DocumentsSidebar bidId={bid.id} />
         </aside>
       </div>
@@ -318,25 +378,35 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Reviewing state - Show extraction preview and edit form
   if (bid.status === 'reviewing' && extractedData) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              Extraktion abgeschlossen
-            </CardTitle>
-            <CardDescription>
-              Überprüfen und korrigieren Sie die extrahierten Daten
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ExtractionPreview
-              initialData={extractedData}
-              onConfirm={handleConfirmRequirements}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+        <div className="space-y-6">
+          {/* Duplicate Warning */}
+          {duplicateCheck?.hasDuplicates && (
+            <DuplicateWarning
+              duplicateCheck={duplicateCheck}
+              onDismiss={() => setDuplicateCheck(null)}
             />
-          </CardContent>
-        </Card>
-        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                Extraktion abgeschlossen
+              </CardTitle>
+              <CardDescription>
+                Überprüfen und korrigieren Sie die extrahierten Daten
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ExtractionPreview
+                initialData={extractedData}
+                onConfirm={handleConfirmRequirements}
+              />
+            </CardContent>
+          </Card>
+        </div>
+        <aside className="lg:sticky lg:top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
           <DocumentsSidebar bidId={bid.id} />
         </aside>
       </div>
@@ -344,9 +414,9 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   }
 
   // Quick Scanning or later states - Show Quick Scan results
-  if (['quick_scanning', 'evaluating', 'decision_made', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
+  if (['quick_scanning', 'questions_ready', 'bit_pending', 'evaluating', 'decision_made', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off', 'archived'].includes(bid.status)) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
         <div className="space-y-6">
         {/* Extracted Requirements Summary */}
         {extractedData && (
@@ -415,10 +485,23 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           <QuickScanResults
             quickScan={quickScan}
             bidId={bid.id}
-            onRefresh={() => router.refresh()}
+            onRefresh={handleRefresh}
             extractedData={extractedData}
           />
         )}
+
+        {/* BD Qualification Decision (questions_ready or bit_pending status) */}
+        {['questions_ready', 'bit_pending'].includes(bid.status) && quickScan && (() => {
+          const questionsCount = calculateAnsweredQuestionsCount(quickScan, extractedData);
+          return (
+            <BitDecisionActions
+              bidId={bid.id}
+              answeredQuestionsCount={questionsCount.answered}
+              totalQuestionsCount={questionsCount.total}
+              overallScore={quickScan.confidence || undefined}
+            />
+          );
+        })()}
 
         {/* BIT Evaluation Progress (evaluating status) */}
         {bid.status === 'evaluating' && (
@@ -427,7 +510,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             title="BIT/NO BIT Evaluierung"
             onComplete={() => {
               toast.success('BIT Evaluierung abgeschlossen!');
-              router.refresh();
+              handleRefresh();
             }}
             autoStart={true}
           />
@@ -587,11 +670,31 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
                   </CardHeader>
                 </Card>
               )}
+
+              {/* Archived (NO BIT) Status */}
+              {bid.status === 'archived' && (
+                <Card className="border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                      <CheckCircle2 className="h-5 w-5" />
+                      Opportunity archiviert (NO BIT)
+                    </CardTitle>
+                    <CardDescription className="text-gray-600 dark:text-gray-400">
+                      Diese Opportunity wurde als NO BIT markiert und archiviert.
+                      {bid.alternativeRecommendation && (
+                        <span className="block mt-2">
+                          <strong>Begründung:</strong> {bid.alternativeRecommendation}
+                        </span>
+                      )}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              )}
             </>
           );
         })()}
         </div>
-        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+        <aside className="lg:sticky lg:top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
           <DocumentsSidebar bidId={bid.id} />
         </aside>
       </div>
@@ -601,7 +704,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Other states - Show extracted data readonly
   if (extractedData) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Extrahierte Anforderungen</CardTitle>
@@ -641,7 +744,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             </div>
           </CardContent>
         </Card>
-        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+        <aside className="lg:sticky lg:top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
           <DocumentsSidebar bidId={bid.id} />
         </aside>
       </div>

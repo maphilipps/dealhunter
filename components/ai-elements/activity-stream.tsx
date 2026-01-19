@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { AgentMessage } from './agent-message';
+import { AgentActivityView } from './agent-activity-view';
 import { AbortButton } from './abort-button';
 import { useAgentStream } from '@/hooks/use-agent-stream';
 import type { AgentEvent } from '@/lib/streaming/event-types';
@@ -16,6 +17,8 @@ export interface ActivityStreamProps {
   onComplete?: (decision?: unknown) => void;
   onError?: (error: string) => void;
   autoStart?: boolean;
+  /** Use grouped agent view instead of flat list */
+  grouped?: boolean;
 }
 
 /**
@@ -29,6 +32,7 @@ export function ActivityStream({
   onComplete,
   onError,
   autoStart = false,
+  grouped = false,
 }: ActivityStreamProps) {
   const { events, isStreaming, error, decision, start, abort } =
     useAgentStream();
@@ -67,6 +71,30 @@ export function ActivityStream({
       e.type === AgentEventType.AGENT_COMPLETE
   );
 
+  // Grouped view - shows agents with collapsible sections
+  if (grouped) {
+    return (
+      <div className="space-y-4">
+        {error && (
+          <Card className="border-red-200">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-red-900">Fehler</p>
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        <AgentActivityView events={events} isStreaming={isStreaming} />
+        <div ref={bottomRef} />
+      </div>
+    );
+  }
+
+  // Flat list view (default)
   return (
     <Card>
       <CardHeader>

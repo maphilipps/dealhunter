@@ -1117,13 +1117,41 @@ function extractCompanyName(html: string, url: string): string | null {
 }
 
 /**
+ * Phase 2: Enhanced blacklist for company name extraction
+ * Extended list of generic page titles that shouldn't be used as company name
+ */
+const TITLE_BLACKLIST = new Set([
+  // German generic titles
+  'startseite', 'willkommen', 'home', 'homepage', 'index',
+  'hauptseite', 'start', 'übersicht', 'overview', 'portal',
+  'aktuelles', 'news', 'blog', 'kontakt', 'contact',
+  'impressum', 'imprint', 'über uns', 'about', 'about us',
+  'menü', 'menu', 'navigation', 'login', 'anmeldung',
+  // English generic titles
+  'welcome', 'main', 'landing', 'enter', 'intro',
+  'introduction', 'sign in', 'log in', 'register',
+  // Common section titles
+  'produkte', 'products', 'leistungen', 'services',
+  'unternehmen', 'company', 'karriere', 'career', 'jobs',
+  'presse', 'press', 'media', 'referenzen', 'references',
+  'datenschutz', 'privacy', 'agb', 'terms', 'cookie',
+]);
+
+/**
  * Check if a string is a generic page title that shouldn't be used as company name
  */
 function isGenericPageTitle(text: string): boolean {
+  const normalizedText = text.trim().toLowerCase();
+
+  // Direct blacklist match
+  if (TITLE_BLACKLIST.has(normalizedText)) {
+    return true;
+  }
+
+  // Pattern-based checks for compound generic titles
   const genericPatterns = [
-    /^(startseite|home|homepage|willkommen|welcome|start)$/i,
-    /^(aktuelles|news|blog|kontakt|contact|impressum|imprint|über uns|about|about us)$/i,
-    /^(menü|menu|navigation)$/i,
+    /^(startseite|home|homepage|willkommen|welcome|start)\s/i,
+    /\s(startseite|home|homepage)$/i,
   ];
   return genericPatterns.some(pattern => pattern.test(text.trim()));
 }
@@ -1510,8 +1538,13 @@ export async function runQuickScanWithStreaming(
       sitemapUrls: websiteData.sitemapUrls,
     };
 
-    // Extract company name for research
-    const companyName = extractCompanyName(websiteData.html, fullUrl);
+    // Phase 2: Extract company name with fallback chain
+    // 1. Try to extract from HTML (og:site_name, JSON-LD, title)
+    // 2. Fallback to customerName from extractedRequirements
+    // 3. Fallback to domain name
+    const extractedCompanyName = extractCompanyName(websiteData.html, fullUrl);
+    const customerNameFromRfp = input.extractedRequirements?.customerName;
+    const companyName = extractedCompanyName || customerNameFromRfp || null;
 
     // Run enhanced audits in parallel
     emitThought('Coordinator', 'Starte erweiterte Analysen...',

@@ -5,6 +5,45 @@ import { db } from '@/lib/db';
 import { rfps, quickScans } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
+// Phase: Rate limiting for Quick Scan retrigger (5 minutes cooldown)
+const RETRIGGER_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const retriggerTimestamps = new Map<string, number>();
+
+/**
+ * Check if a retrigger is allowed based on rate limiting
+ */
+function isRetriggerAllowed(bidId: string): { allowed: boolean; waitTimeMs?: number } {
+  const lastRetrigger = retriggerTimestamps.get(bidId);
+  const now = Date.now();
+
+  if (lastRetrigger) {
+    const elapsed = now - lastRetrigger;
+    if (elapsed < RETRIGGER_COOLDOWN_MS) {
+      return {
+        allowed: false,
+        waitTimeMs: RETRIGGER_COOLDOWN_MS - elapsed,
+      };
+    }
+  }
+
+  return { allowed: true };
+}
+
+/**
+ * Record a retrigger timestamp for rate limiting
+ */
+function recordRetrigger(bidId: string): void {
+  retriggerTimestamps.set(bidId, Date.now());
+
+  // Cleanup old entries (older than 2x cooldown period)
+  const cutoff = Date.now() - (RETRIGGER_COOLDOWN_MS * 2);
+  for (const [id, timestamp] of retriggerTimestamps.entries()) {
+    if (timestamp < cutoff) {
+      retriggerTimestamps.delete(id);
+    }
+  }
+}
+
 /**
  * Start Quick Scan for a bid opportunity
  * Creates QuickScan record with 'running' status and returns immediately.
@@ -100,12 +139,26 @@ export async function startQuickScan(bidId: string) {
  * Re-trigger Quick Scan for a bid
  * Deletes existing Quick Scan and creates a new one in 'running' status
  * The actual scan is executed via the streaming endpoint
+ *
+ * Rate limited: 5 minute cooldown between retriggering scans for the same bid
  */
 export async function retriggerQuickScan(bidId: string) {
   const session = await auth();
 
   if (!session?.user?.id) {
     return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  // Check rate limiting
+  const rateCheck = isRetriggerAllowed(bidId);
+  if (!rateCheck.allowed) {
+    const waitMinutes = Math.ceil((rateCheck.waitTimeMs || 0) / 60000);
+    return {
+      success: false,
+      error: `Bitte warten Sie noch ${waitMinutes} Minute(n), bevor Sie den Quick Scan erneut starten.`,
+      rateLimited: true,
+      waitTimeMs: rateCheck.waitTimeMs,
+    };
   }
 
   try {
@@ -172,6 +225,9 @@ export async function retriggerQuickScan(bidId: string) {
         alternativeRecommendation: null,
       })
       .where(eq(rfps.id, bidId));
+
+    // Record successful retrigger for rate limiting
+    recordRetrigger(bidId);
 
     return {
       success: true,

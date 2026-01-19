@@ -453,6 +453,26 @@ export function QuickScanResults({ quickScan, bidId, onRefresh, extractedData }:
             // Trigger refresh to get updated results
             onRefresh?.();
 
+            // Phase 1.2: Element polling helper for reliable navigation after page refresh
+            const scrollToDecisionWithPolling = (maxAttempts = 10, interval = 300) => {
+              let attempts = 0;
+              const poll = () => {
+                const decisionElement = document.querySelector('[data-decision-actions]');
+                if (decisionElement) {
+                  decisionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  // Add highlight animation
+                  decisionElement.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+                  setTimeout(() => {
+                    decisionElement.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+                  }, 3000);
+                } else if (attempts < maxAttempts) {
+                  attempts++;
+                  setTimeout(poll, interval);
+                }
+              };
+              poll();
+            };
+
             // Show toast with CTA to scroll to decision
             toast.success('Quick Scan abgeschlossen!', {
               description: 'Bitte prüfen Sie die Ergebnisse und treffen Sie eine BIT/NO BIT Entscheidung.',
@@ -460,21 +480,14 @@ export function QuickScanResults({ quickScan, bidId, onRefresh, extractedData }:
               action: {
                 label: 'Zur Entscheidung',
                 onClick: () => {
-                  // Scroll to BitDecisionActions after short delay for page refresh
-                  setTimeout(() => {
-                    const decisionElement = document.querySelector('[data-decision-actions]');
-                    if (decisionElement) {
-                      decisionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      // Add highlight animation
-                      decisionElement.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
-                      setTimeout(() => {
-                        decisionElement.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
-                      }, 3000);
-                    }
-                  }, 500);
+                  // Use polling to find element after page refresh
+                  scrollToDecisionWithPolling();
                 },
               },
             });
+
+            // Auto-scroll after refresh with polling
+            setTimeout(() => scrollToDecisionWithPolling(), 500);
           }}
         />
       </div>

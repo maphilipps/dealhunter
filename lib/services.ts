@@ -12,7 +12,7 @@ import {
 } from '@/lib/types';
 import { sendSlackMessageWithButtons } from '@/lib/slack';
 import { z } from 'zod';
-import { exa } from '@/lib/exa';
+import { searchAndContents, getContents } from '@/lib/search/web-search';
 
 /**
  * Qualify the lead
@@ -93,12 +93,7 @@ export const fetchUrl = tool({
     url: z.string().describe('Absolute URL, including http:// or https://')
   }),
   execute: async ({ url }) => {
-    if (!exa) {
-      return { error: 'Exa API not configured. Set EXA_API_KEY.' };
-    }
-    const result = await exa.getContents(url, {
-      text: true
-    });
+    const result = await getContents(url, { text: true });
     return result;
   }
 });
@@ -160,14 +155,11 @@ const search = tool({
       .describe('The category of the result you are looking for')
   }),
   execute: async ({ keywords, resultCategory }) => {
-    if (!exa) {
-      return { error: 'Exa API not configured. Set EXA_API_KEY.' };
-    }
     /**
-     * Deep research using exa.ai
+     * Deep research using DuckDuckGo (free, no API key required)
      * Return the results in markdown format
      */
-    const result = await exa.searchAndContents(keywords, {
+    const result = await searchAndContents(keywords, {
       numResults: 2,
       type: 'keyword',
       category: resultCategory,

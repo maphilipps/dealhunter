@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Loader2, CheckCircle2, Globe, RefreshCw, AlertCircle, RotateCcw,
-  Search, Scale, Gauge, Navigation, Building2, Newspaper, Image, Eye
+  Search, Scale, Gauge, Navigation, Building2, Newspaper, Image, Eye,
+  FileText, GitBranch, Users, Mail, Phone, Linkedin, TriangleAlert, Lightbulb
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ActivityStream } from '@/components/ai-elements/activity-stream';
@@ -14,6 +15,7 @@ import { retriggerQuickScan } from '@/lib/quick-scan/actions';
 import { BidTabs } from './bid-tabs';
 import { BUMatchingTab } from './bu-matching-tab';
 import { TenQuestionsTab } from './ten-questions-tab';
+import { ScrapedFactsPhase } from './phases/scraped-facts-phase';
 import type { QuickScan } from '@/lib/db/schema';
 
 interface QuickScanResultsProps {
@@ -33,8 +35,23 @@ interface TechStackData {
   cmsConfidence?: number;
   framework?: string;
   hosting?: string;
+  cdn?: string;
+  server?: string;
   backend?: string[];
   libraries?: string[];
+  analytics?: string[];
+  marketing?: string[];
+  javascriptFrameworks?: Array<{ name: string; version?: string; confidence: number }>;
+  cssFrameworks?: Array<{ name: string; version?: string; confidence: number }>;
+  apiEndpoints?: {
+    rest?: string[];
+    graphql?: boolean;
+    graphqlEndpoint?: string;
+  };
+  headlessCms?: string[];
+  serverSideRendering?: boolean;
+  buildTools?: string[];
+  cdnProviders?: string[];
 }
 
 interface ContentVolumeData {
@@ -123,8 +140,12 @@ interface PerformanceData {
 }
 
 interface NavigationData {
-  mainNav: Array<{ label: string }>;
-  footerNav?: Array<{ label: string }>;
+  mainNav: Array<{
+    label: string;
+    url?: string;
+    children?: Array<{ label: string; url?: string }>;
+  }>;
+  footerNav?: Array<{ label: string; url?: string }>;
   hasSearch: boolean;
   hasBreadcrumbs: boolean;
   hasMegaMenu: boolean;
@@ -173,6 +194,69 @@ interface CompanyIntelligenceData {
   };
 }
 
+// QuickScan 2.0 Types
+interface ContentTypesData {
+  pagesAnalyzed: number;
+  distribution: Array<{
+    type: string;
+    count: number;
+    percentage: number;
+  }>;
+  complexity: 'simple' | 'moderate' | 'complex';
+  estimatedContentTypes: number;
+  customFieldsNeeded?: number;
+  recommendations?: string[];
+}
+
+interface MigrationComplexityData {
+  score: number;
+  recommendation: 'simple' | 'moderate' | 'complex' | 'very_complex';
+  factors: {
+    cmsExportability?: { score: number; notes: string };
+    dataQuality?: { score: number; notes: string };
+    contentComplexity?: { score: number; notes: string };
+    integrationComplexity?: { score: number; notes: string };
+  };
+  warnings?: string[];
+  opportunities?: string[];
+  estimatedEffort?: {
+    minPT: number;
+    maxPT: number;
+    confidence: number;
+  };
+}
+
+interface DecisionMakersData {
+  decisionMakers: Array<{
+    name: string;
+    role: string;
+    linkedInUrl?: string;
+    xingUrl?: string;
+    email?: string;
+    emailConfidence?: 'high' | 'medium' | 'low' | 'unknown';
+    phone?: string;
+    source: 'impressum' | 'linkedin' | 'xing' | 'website' | 'web_search' | 'derived';
+  }>;
+  genericContacts?: {
+    mainEmail?: string;
+    salesEmail?: string;
+    techEmail?: string;
+    marketingEmail?: string;
+    supportEmail?: string;
+    phone?: string;
+    fax?: string;
+  };
+  researchQuality: {
+    linkedInFound: number;
+    xingFound?: number;
+    emailsConfirmed: number;
+    emailsDerived: number;
+    confidence: number;
+    sources: string[];
+    lastUpdated: string;
+  };
+}
+
 interface ResultsData {
   techStack: TechStackData | Record<string, never>;
   contentVolume: ContentVolumeData | Record<string, never>;
@@ -186,16 +270,103 @@ interface ResultsData {
   navigationStructure?: NavigationData | null;
   screenshots?: ScreenshotsData | null;
   companyIntelligence?: CompanyIntelligenceData | null;
+  // QuickScan 2.0
+  contentTypes?: ContentTypesData | null;
+  migrationComplexity?: MigrationComplexityData | null;
+  decisionMakers?: DecisionMakersData | null;
+}
+
+/**
+ * Collapsible Navigation Tree Item Component
+ */
+function NavigationTreeItem({
+  item,
+  depth
+}: {
+  item: { label: string; url?: string; children?: Array<{ label: string; url?: string }> };
+  depth: number;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const hasChildren = item.children && item.children.length > 0;
+  const paddingLeft = depth * 16;
+
+  return (
+    <div className="text-sm">
+      <div
+        className="flex items-center gap-1 py-1 hover:bg-muted/50 rounded px-1 -mx-1 group"
+        style={{ paddingLeft }}
+      >
+        {hasChildren && (
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="p-0.5 hover:bg-muted rounded"
+          >
+            <svg
+              className={`h-3 w-3 text-muted-foreground transition-transform ${isOpen ? 'rotate-90' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
+        {!hasChildren && <span className="w-4" />}
+        {item.url ? (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline flex-1 truncate"
+            title={item.url}
+          >
+            {item.label}
+          </a>
+        ) : (
+          <span className="text-foreground flex-1 truncate">{item.label}</span>
+        )}
+        {hasChildren && (
+          <Badge variant="outline" className="text-[10px] h-4 opacity-60 group-hover:opacity-100">
+            {item.children!.length}
+          </Badge>
+        )}
+      </div>
+      {hasChildren && isOpen && (
+        <div className="border-l border-muted ml-2">
+          {item.children!.slice(0, 10).map((child, childIdx) => (
+            <NavigationTreeItem key={childIdx} item={child} depth={depth + 1} />
+          ))}
+          {item.children!.length > 10 && (
+            <div
+              className="text-xs text-muted-foreground py-1"
+              style={{ paddingLeft: (depth + 1) * 16 + 16 }}
+            >
+              +{item.children!.length - 10} weitere
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Helper to parse JSON fields safely
-function parseJsonField<T>(value: string | null | undefined): T | null {
+// Handles both string (from raw DB) and already-parsed objects (from getQuickScanResult)
+function parseJsonField<T>(value: unknown): T | null {
   if (!value) return null;
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return null;
+  // If already an object, return as-is
+  if (typeof value === 'object') {
+    return value as T;
   }
+  // Otherwise parse the JSON string
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 /**
@@ -243,6 +414,11 @@ export function QuickScanResults({ quickScan, bidId, onRefresh, extractedData }:
   const screenshots = parseJsonField<ScreenshotsData>(quickScan.screenshots);
   const companyIntelligence = parseJsonField<CompanyIntelligenceData>(quickScan.companyIntelligence);
 
+  // QuickScan 2.0 fields
+  const contentTypes = parseJsonField<ContentTypesData>(quickScan.contentTypes);
+  const migrationComplexity = parseJsonField<MigrationComplexityData>(quickScan.migrationComplexity);
+  const decisionMakers = parseJsonField<DecisionMakersData>(quickScan.decisionMakers);
+
   // Check if we have results to display
   const hasResults = quickScan.recommendedBusinessUnit || techStack || contentVolume || features;
 
@@ -267,14 +443,51 @@ export function QuickScanResults({ quickScan, bidId, onRefresh, extractedData }:
           </CardHeader>
         </Card>
 
-        {/* Live Activity Stream */}
+        {/* Live Activity Stream - Grouped by Agent */}
         <ActivityStream
           streamUrl={`/api/rfps/${bidId}/quick-scan/stream`}
           title="Quick Scan Agent Activity"
           autoStart={true}
+          grouped={true}
           onComplete={() => {
             // Trigger refresh to get updated results
             onRefresh?.();
+
+            // Phase 1.2: Element polling helper for reliable navigation after page refresh
+            const scrollToDecisionWithPolling = (maxAttempts = 10, interval = 300) => {
+              let attempts = 0;
+              const poll = () => {
+                const decisionElement = document.querySelector('[data-decision-actions]');
+                if (decisionElement) {
+                  decisionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  // Add highlight animation
+                  decisionElement.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+                  setTimeout(() => {
+                    decisionElement.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+                  }, 3000);
+                } else if (attempts < maxAttempts) {
+                  attempts++;
+                  setTimeout(poll, interval);
+                }
+              };
+              poll();
+            };
+
+            // Show toast with CTA to scroll to decision
+            toast.success('Quick Scan abgeschlossen!', {
+              description: 'Bitte prüfen Sie die Ergebnisse und treffen Sie eine BIT/NO BIT Entscheidung.',
+              duration: 8000,
+              action: {
+                label: 'Zur Entscheidung',
+                onClick: () => {
+                  // Use polling to find element after page refresh
+                  scrollToDecisionWithPolling();
+                },
+              },
+            });
+
+            // Auto-scroll after refresh with polling
+            setTimeout(() => scrollToDecisionWithPolling(), 500);
           }}
         />
       </div>
@@ -329,6 +542,10 @@ export function QuickScanResults({ quickScan, bidId, onRefresh, extractedData }:
       navigationStructure,
       screenshots,
       companyIntelligence,
+      // QuickScan 2.0
+      contentTypes,
+      migrationComplexity,
+      decisionMakers,
     };
 
     // Overview Tab Content (static results view only)
@@ -390,6 +607,11 @@ export function QuickScanResults({ quickScan, bidId, onRefresh, extractedData }:
       <TenQuestionsTab quickScan={quickScan} extractedData={extractedData} />
     );
 
+    // Workflow Tab Content - Simplified view with all facts and BL forwarding
+    const workflowContent = (
+      <ScrapedFactsPhase quickScan={quickScan} extractedData={extractedData} bidId={bidId} />
+    );
+
     return (
       <BidTabs
         quickScan={quickScan}
@@ -397,6 +619,7 @@ export function QuickScanResults({ quickScan, bidId, onRefresh, extractedData }:
         overviewContent={overviewContent}
         buMatchingContent={buMatchingContent}
         questionsContent={questionsContent}
+        workflowContent={workflowContent}
       />
     );
   }
@@ -425,6 +648,10 @@ function StaticResultsView({
   const navigationStructure = results.navigationStructure;
   const screenshots = results.screenshots;
   const companyIntelligence = results.companyIntelligence;
+  // QuickScan 2.0
+  const contentTypes = results.contentTypes;
+  const migrationComplexity = results.migrationComplexity;
+  const decisionMakers = results.decisionMakers;
 
   return (
     <div className="space-y-6">
@@ -533,6 +760,98 @@ function StaticResultsView({
                   </div>
                 </div>
               )}
+
+              {techStack.javascriptFrameworks && techStack.javascriptFrameworks.length > 0 && (
+                <div className="md:col-span-2">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">JavaScript Frameworks</p>
+                  <div className="flex flex-wrap gap-2">
+                    {techStack.javascriptFrameworks.map((fw, idx) => (
+                      <Badge key={idx} variant="outline">
+                        {fw.name}
+                        {fw.version && <span className="ml-1 text-xs text-muted-foreground">v{fw.version}</span>}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {techStack.cssFrameworks && techStack.cssFrameworks.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">CSS Frameworks</p>
+                  <div className="flex flex-wrap gap-2">
+                    {techStack.cssFrameworks.map((fw, idx) => (
+                      <Badge key={idx} variant="outline">
+                        {fw.name}
+                        {fw.version && <span className="ml-1 text-xs text-muted-foreground">v{fw.version}</span>}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {techStack.headlessCms && techStack.headlessCms.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Headless CMS</p>
+                  <div className="flex flex-wrap gap-2">
+                    {techStack.headlessCms.map((cms, idx) => (
+                      <Badge key={idx} variant="secondary">{cms}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {techStack.serverSideRendering !== undefined && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Server-Side Rendering</p>
+                  <Badge variant={techStack.serverSideRendering ? "default" : "secondary"}>
+                    {techStack.serverSideRendering ? "Aktiv" : "Nicht aktiv"}
+                  </Badge>
+                </div>
+              )}
+
+              {techStack.buildTools && techStack.buildTools.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Build Tools</p>
+                  <div className="flex flex-wrap gap-2">
+                    {techStack.buildTools.map((tool, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs">{tool}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {techStack.apiEndpoints && (techStack.apiEndpoints.rest?.length || techStack.apiEndpoints.graphql) && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">API Endpoints</p>
+                  <div className="space-y-2">
+                    {techStack.apiEndpoints.rest && techStack.apiEndpoints.rest.length > 0 && (
+                      <div>
+                        <span className="text-xs text-muted-foreground">REST:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {techStack.apiEndpoints.rest.slice(0, 5).map((ep, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">{ep}</Badge>
+                          ))}
+                          {techStack.apiEndpoints.rest.length > 5 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{techStack.apiEndpoints.rest.length - 5}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {techStack.apiEndpoints.graphql && (
+                      <div>
+                        <span className="text-xs text-muted-foreground">GraphQL:</span>
+                        <div className="mt-1">
+                          <Badge variant="default" className="text-xs">
+                            {techStack.apiEndpoints.graphqlEndpoint || 'Erkannt'}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {techStack.libraries && techStack.libraries.length > 0 && (
@@ -543,6 +862,44 @@ function StaticResultsView({
                     <Badge key={idx} variant="outline" className="text-xs">{lib}</Badge>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {((techStack.analytics && techStack.analytics.length > 0) || (techStack.marketing && techStack.marketing.length > 0) || techStack.cdn) && (
+              <div className="mt-4 pt-4 border-t grid gap-4 md:grid-cols-2">
+                {techStack.analytics && techStack.analytics.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Analytics</p>
+                    <div className="flex flex-wrap gap-2">
+                      {techStack.analytics.map((tool: string, idx: number) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">{tool}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {techStack.marketing && techStack.marketing.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Marketing & Compliance</p>
+                    <div className="flex flex-wrap gap-2">
+                      {techStack.marketing.map((tool: string, idx: number) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">{tool}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(techStack.cdn || (techStack.cdnProviders && techStack.cdnProviders.length > 0)) && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">CDN</p>
+                    <div className="flex flex-wrap gap-2">
+                      {techStack.cdn && (
+                        <Badge variant="outline">{techStack.cdn}</Badge>
+                      )}
+                      {techStack.cdnProviders && techStack.cdnProviders.map((provider, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">{provider}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -944,50 +1301,95 @@ function StaticResultsView({
             </Card>
           )}
 
-          {/* Navigation Structure */}
+          {/* Navigation Structure - Enhanced with Collapsible Tree */}
           {navigationStructure && (
             <Card>
               <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Navigation className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle className="text-base">Navigation</CardTitle>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Navigation className="h-5 w-5 text-muted-foreground" />
+                    <CardTitle className="text-base">Navigation</CardTitle>
+                  </div>
+                  {navigationStructure.totalItems > 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      {navigationStructure.totalItems} Items
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Nav Items</p>
-                      <p className="font-medium">{navigationStructure.totalItems}</p>
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-3 gap-3 text-sm">
+                    <div className="p-2 bg-muted/50 rounded">
+                      <p className="text-muted-foreground text-xs">Items</p>
+                      <p className="font-medium">{navigationStructure.totalItems || 0}</p>
                     </div>
-                    <div>
-                      <p className="text-muted-foreground">Max Tiefe</p>
-                      <p className="font-medium">{navigationStructure.maxDepth} Ebenen</p>
+                    <div className="p-2 bg-muted/50 rounded">
+                      <p className="text-muted-foreground text-xs">Max Tiefe</p>
+                      <p className="font-medium">{navigationStructure.maxDepth || 1} Ebenen</p>
+                    </div>
+                    <div className="p-2 bg-muted/50 rounded">
+                      <p className="text-muted-foreground text-xs">Features</p>
+                      <p className="font-medium text-xs">
+                        {[
+                          navigationStructure.hasSearch && 'Suche',
+                          navigationStructure.hasBreadcrumbs && 'Breadcrumbs',
+                          navigationStructure.hasMegaMenu && 'Mega Menu',
+                        ].filter(Boolean).join(', ') || 'Standard'}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2 pt-2 border-t">
-                    {navigationStructure.hasSearch && (
-                      <Badge variant="secondary" className="text-xs">Suche</Badge>
-                    )}
-                    {navigationStructure.hasBreadcrumbs && (
-                      <Badge variant="secondary" className="text-xs">Breadcrumbs</Badge>
-                    )}
-                    {navigationStructure.hasMegaMenu && (
-                      <Badge variant="secondary" className="text-xs">Mega Menu</Badge>
-                    )}
-                  </div>
+
+                  {/* Warning wenn keine Navigation gefunden */}
+                  {(!navigationStructure.mainNav || navigationStructure.mainNav.length === 0) && (
+                    <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+                      <TriangleAlert className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                      <span className="text-yellow-800">
+                        Keine Hauptnavigation erkannt. Die Website könnte JavaScript-basierte Navigation verwenden.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Main Navigation Tree */}
                   {navigationStructure.mainNav && navigationStructure.mainNav.length > 0 && (
-                    <div className="pt-2">
-                      <p className="text-xs text-muted-foreground mb-1">Hauptnavigation:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {navigationStructure.mainNav.slice(0, 6).map((item, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
-                            {item.label}
-                          </Badge>
+                    <div className="pt-2 border-t">
+                      <p className="text-xs text-muted-foreground mb-2 font-medium">Hauptnavigation:</p>
+                      <div className="space-y-1 max-h-64 overflow-y-auto pr-2">
+                        {navigationStructure.mainNav.map((item, idx) => (
+                          <NavigationTreeItem key={idx} item={item} depth={0} />
                         ))}
-                        {navigationStructure.mainNav.length > 6 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{navigationStructure.mainNav.length - 6} mehr
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Footer Navigation */}
+                  {navigationStructure.footerNav && navigationStructure.footerNav.length > 0 && (
+                    <div className="pt-2 border-t">
+                      <p className="text-xs text-muted-foreground mb-1 font-medium">Footer Navigation:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {navigationStructure.footerNav.slice(0, 15).map((item, idx) => (
+                          item.url ? (
+                            <a
+                              key={idx}
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline"
+                            >
+                              <Badge variant="outline" className="text-xs cursor-pointer hover:bg-blue-50">
+                                {item.label}
+                              </Badge>
+                            </a>
+                          ) : (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {item.label}
+                            </Badge>
+                          )
+                        ))}
+                        {navigationStructure.footerNav.length > 15 && (
+                          <Badge variant="outline" className="text-xs bg-muted">
+                            +{navigationStructure.footerNav.length - 15} mehr
                           </Badge>
                         )}
                       </div>
@@ -1106,6 +1508,318 @@ function StaticResultsView({
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* QuickScan 2.0: Content Types Card */}
+      {contentTypes && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Content-Typen Analyse</CardTitle>
+              </div>
+              <Badge variant={
+                contentTypes.complexity === 'simple' ? 'default' :
+                contentTypes.complexity === 'moderate' ? 'secondary' : 'destructive'
+              }>
+                {contentTypes.complexity === 'simple' ? 'Einfach' :
+                 contentTypes.complexity === 'moderate' ? 'Moderat' : 'Komplex'}
+              </Badge>
+            </div>
+            <CardDescription>
+              {contentTypes.pagesAnalyzed} Seiten analysiert • {contentTypes.estimatedContentTypes} Content-Typen erkannt
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Distribution */}
+            {contentTypes.distribution && contentTypes.distribution.length > 0 && (
+              <div className="space-y-2">
+                {contentTypes.distribution.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="capitalize">{item.type}</span>
+                        <span className="text-muted-foreground">{item.count} ({item.percentage}%)</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
+                          style={{ width: `${item.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Custom Fields */}
+            {contentTypes.customFieldsNeeded && (
+              <div className="pt-4 border-t">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Geschätzte Custom Fields benötigt</span>
+                  <Badge variant="outline">{contentTypes.customFieldsNeeded}</Badge>
+                </div>
+              </div>
+            )}
+
+            {/* Recommendations */}
+            {contentTypes.recommendations && contentTypes.recommendations.length > 0 && (
+              <div className="pt-4 border-t">
+                <p className="text-sm font-medium text-muted-foreground mb-2">Empfehlungen</p>
+                <ul className="space-y-1">
+                  {contentTypes.recommendations.map((rec, idx) => (
+                    <li key={idx} className="text-sm flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* QuickScan 2.0: Migration Complexity Card */}
+      {migrationComplexity && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <GitBranch className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Migrations-Komplexität</CardTitle>
+              </div>
+              <Badge variant={
+                migrationComplexity.recommendation === 'simple' ? 'default' :
+                migrationComplexity.recommendation === 'moderate' ? 'secondary' :
+                migrationComplexity.recommendation === 'complex' ? 'outline' : 'destructive'
+              }>
+                {migrationComplexity.score}% Score
+              </Badge>
+            </div>
+            <CardDescription>
+              Bewertung: {
+                migrationComplexity.recommendation === 'simple' ? 'Einfache Migration' :
+                migrationComplexity.recommendation === 'moderate' ? 'Moderate Komplexität' :
+                migrationComplexity.recommendation === 'complex' ? 'Komplexe Migration' :
+                'Sehr komplexe Migration'
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Factors */}
+            {migrationComplexity.factors && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {migrationComplexity.factors.cmsExportability && (
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">CMS Export</span>
+                      <Badge variant="outline" className="text-xs">{migrationComplexity.factors.cmsExportability.score}%</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{migrationComplexity.factors.cmsExportability.notes}</p>
+                  </div>
+                )}
+                {migrationComplexity.factors.dataQuality && (
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">Datenqualität</span>
+                      <Badge variant="outline" className="text-xs">{migrationComplexity.factors.dataQuality.score}%</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{migrationComplexity.factors.dataQuality.notes}</p>
+                  </div>
+                )}
+                {migrationComplexity.factors.contentComplexity && (
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">Content-Komplexität</span>
+                      <Badge variant="outline" className="text-xs">{migrationComplexity.factors.contentComplexity.score}%</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{migrationComplexity.factors.contentComplexity.notes}</p>
+                  </div>
+                )}
+                {migrationComplexity.factors.integrationComplexity && (
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">Integration</span>
+                      <Badge variant="outline" className="text-xs">{migrationComplexity.factors.integrationComplexity.score}%</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{migrationComplexity.factors.integrationComplexity.notes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Warnings & Opportunities */}
+            <div className="grid gap-4 sm:grid-cols-2 pt-4 border-t">
+              {migrationComplexity.warnings && migrationComplexity.warnings.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-orange-700 mb-2 flex items-center gap-1">
+                    <TriangleAlert className="h-4 w-4" />
+                    Risiken
+                  </p>
+                  <ul className="space-y-1">
+                    {migrationComplexity.warnings.map((warning, idx) => (
+                      <li key={idx} className="text-xs text-orange-600">{warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {migrationComplexity.opportunities && migrationComplexity.opportunities.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-green-700 mb-2 flex items-center gap-1">
+                    <Lightbulb className="h-4 w-4" />
+                    Chancen
+                  </p>
+                  <ul className="space-y-1">
+                    {migrationComplexity.opportunities.map((opp, idx) => (
+                      <li key={idx} className="text-xs text-green-600">{opp}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Effort Estimation */}
+            {migrationComplexity.estimatedEffort && (
+              <div className="pt-4 border-t">
+                <p className="text-sm font-medium text-muted-foreground mb-2">Geschätzter Aufwand</p>
+                <div className="flex items-center gap-4">
+                  <Badge variant="secondary" className="text-base px-4 py-1">
+                    {migrationComplexity.estimatedEffort.minPT} - {migrationComplexity.estimatedEffort.maxPT} PT
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    ({migrationComplexity.estimatedEffort.confidence}% Confidence)
+                  </span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* QuickScan 2.0: Decision Makers Card */}
+      {decisionMakers && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Entscheidungsträger</CardTitle>
+              </div>
+              <Badge variant="outline">
+                {decisionMakers.researchQuality.confidence}% Confidence
+              </Badge>
+            </div>
+            <CardDescription>
+              Quellen: {decisionMakers.researchQuality.sources.join(', ')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Decision Makers */}
+            {decisionMakers.decisionMakers && decisionMakers.decisionMakers.length > 0 && (
+              <div className="space-y-3">
+                {decisionMakers.decisionMakers.map((contact, idx) => (
+                  <div key={idx} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">{contact.name}</p>
+                      <p className="text-sm text-muted-foreground">{contact.role}</p>
+                      {contact.email && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          <a href={`mailto:${contact.email}`} className="text-xs text-blue-600 hover:underline">
+                            {contact.email}
+                          </a>
+                          {contact.emailConfidence && (
+                            <Badge variant="outline" className="text-xs ml-1">
+                              {contact.emailConfidence}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                      {contact.phone && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          <a href={`tel:${contact.phone}`} className="text-xs text-blue-600 hover:underline">
+                            {contact.phone}
+                          </a>
+                        </div>
+                      )}
+                      <Badge variant="outline" className="text-xs mt-2 capitalize">
+                        {contact.source}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2">
+                      {contact.linkedInUrl && (
+                        <a
+                          href={contact.linkedInUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800"
+                          title="LinkedIn"
+                        >
+                          <Linkedin className="h-5 w-5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Generic Contacts */}
+            {decisionMakers.genericContacts && (
+              <div className="pt-4 border-t">
+                <p className="text-sm font-medium text-muted-foreground mb-2">Allgemeine Kontakte</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {decisionMakers.genericContacts.mainEmail && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <a href={`mailto:${decisionMakers.genericContacts.mainEmail}`} className="text-blue-600 hover:underline">
+                        {decisionMakers.genericContacts.mainEmail}
+                      </a>
+                    </div>
+                  )}
+                  {decisionMakers.genericContacts.salesEmail && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <a href={`mailto:${decisionMakers.genericContacts.salesEmail}`} className="text-blue-600 hover:underline">
+                        {decisionMakers.genericContacts.salesEmail}
+                      </a>
+                    </div>
+                  )}
+                  {decisionMakers.genericContacts.phone && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <a href={`tel:${decisionMakers.genericContacts.phone}`} className="text-blue-600 hover:underline">
+                        {decisionMakers.genericContacts.phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Research Quality */}
+            <div className="pt-4 border-t">
+              <div className="grid grid-cols-3 gap-4 text-center text-sm">
+                <div>
+                  <p className="text-lg font-semibold text-blue-600">{decisionMakers.researchQuality.linkedInFound}</p>
+                  <p className="text-xs text-muted-foreground">LinkedIn gefunden</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-green-600">{decisionMakers.researchQuality.emailsConfirmed}</p>
+                  <p className="text-xs text-muted-foreground">Emails bestätigt</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-orange-600">{decisionMakers.researchQuality.emailsDerived}</p>
+                  <p className="text-xs text-muted-foreground">Emails abgeleitet</p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

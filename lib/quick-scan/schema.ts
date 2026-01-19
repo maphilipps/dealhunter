@@ -26,6 +26,27 @@ export const techStackSchema = z.object({
   analytics: z.array(z.string()).optional().default([]).describe('Analytics tools (Google Analytics, Matomo, etc.)'),
   marketing: z.array(z.string()).optional().default([]).describe('Marketing tools (HubSpot, Mailchimp, etc.)'),
 
+  // Enhanced Detection (from Playwright)
+  javascriptFrameworks: z.array(z.object({
+    name: z.string(),
+    version: z.string().optional(),
+    confidence: z.number(),
+  })).optional().default([]).describe('JavaScript frameworks with version detection'),
+  cssFrameworks: z.array(z.object({
+    name: z.string(),
+    version: z.string().optional(),
+    confidence: z.number(),
+  })).optional().default([]).describe('CSS frameworks with version detection'),
+  apiEndpoints: z.object({
+    rest: z.array(z.string()).optional().default([]),
+    graphql: z.boolean().default(false),
+    graphqlEndpoint: z.string().optional(),
+  }).optional().describe('API endpoints discovered'),
+  headlessCms: z.array(z.string()).optional().default([]).describe('Headless CMS detected (Contentful, Sanity, etc.)'),
+  serverSideRendering: z.boolean().optional().describe('Whether SSR is detected'),
+  buildTools: z.array(z.string()).optional().default([]).describe('Build tools detected (Webpack, Vite, etc.)'),
+  cdnProviders: z.array(z.string()).optional().default([]).describe('CDN providers detected'),
+
   // Overall Assessment
   overallConfidence: z.number().min(0).max(100).optional().describe('Overall confidence in tech stack detection'),
 });
@@ -362,3 +383,238 @@ export const extendedQuickScanSchema = z.object({
 });
 
 export type ExtendedQuickScan = z.infer<typeof extendedQuickScanSchema>;
+
+// ========================================
+// QuickScan 2.0: Extended Schemas
+// ========================================
+
+/**
+ * Schema for site tree structure (full sitemap with hierarchy)
+ */
+export const siteTreeNodeSchema: z.ZodType<SiteTreeNode> = z.lazy(() => z.object({
+  path: z.string().describe('URL path segment'),
+  url: z.string().optional().describe('Full URL if this is a page'),
+  count: z.number().describe('Number of pages at this path and below'),
+  children: z.array(siteTreeNodeSchema).optional().describe('Child nodes'),
+}));
+
+export interface SiteTreeNode {
+  path: string;
+  url?: string;
+  count: number;
+  children?: SiteTreeNode[];
+}
+
+export const siteTreeSchema = z.object({
+  totalPages: z.number().describe('Total number of discovered pages'),
+  maxDepth: z.number().describe('Maximum depth of the site structure'),
+  crawledAt: z.string().describe('Timestamp of the crawl'),
+  sources: z.object({
+    sitemap: z.number().describe('Pages found in sitemap'),
+    linkDiscovery: z.number().describe('Pages found via link crawling'),
+    navigation: z.number().describe('Pages found in navigation'),
+  }),
+  sections: z.array(z.object({
+    path: z.string().describe('Section root path'),
+    label: z.string().optional().describe('Section label from navigation'),
+    count: z.number().describe('Number of pages in this section'),
+    depth: z.number().describe('Section depth level'),
+    children: z.array(siteTreeNodeSchema).optional(),
+  })).describe('Top-level site sections'),
+  navigation: z.object({
+    mainNav: z.array(z.object({
+      label: z.string(),
+      url: z.string().optional(),
+      children: z.array(z.object({
+        label: z.string(),
+        url: z.string().optional(),
+      })).optional(),
+    })),
+    footerNav: z.array(z.object({
+      label: z.string(),
+      url: z.string().optional(),
+    })),
+    breadcrumbs: z.boolean().describe('Uses breadcrumb navigation'),
+    megaMenu: z.boolean().describe('Has mega menu pattern'),
+    stickyHeader: z.boolean().optional().describe('Header stays visible on scroll'),
+    mobileMenu: z.boolean().optional().describe('Has mobile hamburger menu'),
+  }),
+});
+
+export type SiteTree = z.infer<typeof siteTreeSchema>;
+
+/**
+ * Schema for content type distribution (AI-classified page types)
+ */
+export const contentTypeDistributionSchema = z.object({
+  pagesAnalyzed: z.number().describe('Number of pages sampled for classification'),
+  distribution: z.array(z.object({
+    type: z.enum([
+      'homepage', 'product', 'service', 'blog', 'news', 'event',
+      'job', 'person', 'contact', 'about', 'landing', 'category',
+      'search', 'legal', 'faq', 'download', 'form', 'custom'
+    ]).describe('Page type'),
+    count: z.number().describe('Number of pages of this type'),
+    percentage: z.number().describe('Percentage of total (0-100)'),
+    examples: z.array(z.string()).optional().describe('Example URLs'),
+  })),
+  complexity: z.enum(['simple', 'moderate', 'complex', 'very_complex']).describe('Content structure complexity'),
+  estimatedContentTypes: z.number().describe('Estimated number of distinct content types for CMS'),
+  customFieldsNeeded: z.number().optional().describe('Estimated custom fields for CMS migration'),
+  recommendations: z.array(z.string()).optional().describe('Content architecture recommendations'),
+});
+
+export type ContentTypeDistribution = z.infer<typeof contentTypeDistributionSchema>;
+
+/**
+ * Schema for migration complexity assessment
+ */
+export const migrationComplexitySchema = z.object({
+  score: z.number().min(0).max(100).describe('Migration complexity score (0=easy, 100=very complex)'),
+  recommendation: z.enum(['easy', 'moderate', 'complex', 'very_complex']).describe('Overall recommendation'),
+  factors: z.object({
+    cmsExportability: z.object({
+      score: z.number().min(0).max(100),
+      hasRestApi: z.boolean(),
+      hasXmlExport: z.boolean(),
+      hasCli: z.boolean(),
+      notes: z.string().optional(),
+    }).describe('How easy is it to export data from the current CMS'),
+    dataQuality: z.object({
+      score: z.number().min(0).max(100),
+      brokenLinks: z.number().optional(),
+      duplicateContent: z.boolean().optional(),
+      inconsistentStructure: z.boolean(),
+      notes: z.string().optional(),
+    }).describe('Quality of existing content and data'),
+    contentComplexity: z.object({
+      score: z.number().min(0).max(100),
+      embeddedMedia: z.boolean(),
+      customFields: z.number().optional(),
+      complexLayouts: z.boolean(),
+      notes: z.string().optional(),
+    }).describe('Complexity of content structure'),
+    integrationComplexity: z.object({
+      score: z.number().min(0).max(100),
+      externalApis: z.number(),
+      ssoRequired: z.boolean(),
+      thirdPartyPlugins: z.number().optional(),
+      notes: z.string().optional(),
+    }).describe('External integrations to migrate'),
+  }),
+  warnings: z.array(z.string()).describe('Migration warnings and risks'),
+  opportunities: z.array(z.string()).optional().describe('Opportunities for improvement during migration'),
+  estimatedEffort: z.object({
+    minPT: z.number().describe('Minimum person-days'),
+    maxPT: z.number().describe('Maximum person-days'),
+    confidence: z.number().min(0).max(100).describe('Confidence in estimate'),
+  }).optional(),
+});
+
+export type MigrationComplexity = z.infer<typeof migrationComplexitySchema>;
+
+/**
+ * Schema for decision maker / contact research
+ */
+export const decisionMakerSchema = z.object({
+  name: z.string().describe('Full name'),
+  role: z.string().describe('Job title/role'),
+  linkedInUrl: z.string().url().optional().describe('LinkedIn profile URL'),
+  xingUrl: z.string().url().optional().describe('Xing profile URL'),
+  email: z.string().email().optional().describe('Email address'),
+  emailConfidence: z.enum(['confirmed', 'likely', 'derived', 'unknown']).optional()
+    .describe('Confidence in email correctness'),
+  phone: z.string().optional().describe('Phone number'),
+  source: z.enum(['impressum', 'linkedin', 'xing', 'website', 'web_search', 'derived', 'team_page'])
+    .describe('Where this contact was found'),
+});
+
+export type DecisionMaker = z.infer<typeof decisionMakerSchema>;
+
+export const decisionMakersResearchSchema = z.object({
+  decisionMakers: z.array(decisionMakerSchema).describe('Key decision makers found'),
+  genericContacts: z.object({
+    mainEmail: z.string().email().optional().describe('General contact email'),
+    salesEmail: z.string().email().optional().describe('Sales contact email'),
+    techEmail: z.string().email().optional().describe('Technical contact email'),
+    marketingEmail: z.string().email().optional().describe('Marketing contact email'),
+    supportEmail: z.string().email().optional().describe('Support contact email'),
+    phone: z.string().optional().describe('Main phone number'),
+    fax: z.string().optional().describe('Fax number'),
+  }).optional(),
+  researchQuality: z.object({
+    linkedInFound: z.number().describe('Number of LinkedIn profiles found'),
+    xingFound: z.number().optional().describe('Number of Xing profiles found'),
+    emailsConfirmed: z.number().describe('Number of confirmed emails'),
+    emailsDerived: z.number().describe('Number of derived/guessed emails'),
+    confidence: z.number().min(0).max(100).describe('Overall confidence in research quality'),
+    sources: z.array(z.string()).describe('Sources used for research'),
+    lastUpdated: z.string().describe('Timestamp of research'),
+  }),
+});
+
+export type DecisionMakersResearch = z.infer<typeof decisionMakersResearchSchema>;
+
+/**
+ * Schema for enhanced accessibility audit (multi-page with axe-core)
+ */
+export const enhancedAccessibilityAuditSchema = z.object({
+  wcagLevel: z.enum(['A', 'AA', 'AAA', 'fail']).describe('Achieved WCAG compliance level'),
+  targetLevel: z.enum(['A', 'AA', 'AAA']).describe('Target WCAG level'),
+  score: z.number().min(0).max(100).describe('Overall accessibility score'),
+  pagesAudited: z.number().describe('Number of pages audited'),
+  auditMethod: z.enum(['html_parsing', 'axe_core', 'manual']).describe('Audit method used'),
+  violations: z.object({
+    critical: z.number(),
+    serious: z.number(),
+    moderate: z.number(),
+    minor: z.number(),
+    total: z.number(),
+  }),
+  topIssues: z.array(z.object({
+    rule: z.string().describe('axe-core rule ID'),
+    count: z.number().describe('Number of occurrences'),
+    impact: z.enum(['critical', 'serious', 'moderate', 'minor']),
+    description: z.string(),
+    helpUrl: z.string().optional(),
+    affectedPages: z.array(z.string()).optional().describe('URLs where this issue was found'),
+  })).describe('Most common accessibility issues'),
+  passingRules: z.number().describe('Number of passing accessibility rules'),
+  recommendations: z.array(z.object({
+    priority: z.enum(['high', 'medium', 'low']),
+    issue: z.string(),
+    recommendation: z.string(),
+    wcagCriteria: z.string().optional(),
+  })).optional(),
+});
+
+export type EnhancedAccessibilityAudit = z.infer<typeof enhancedAccessibilityAuditSchema>;
+
+/**
+ * Extended Quick Scan 2.0 result schema
+ */
+export const extendedQuickScan2Schema = z.object({
+  // Existing fields
+  techStack: techStackSchema,
+  contentVolume: contentVolumeSchema,
+  features: featuresSchema,
+  blRecommendation: blRecommendationSchema,
+
+  // Original enhanced fields
+  navigationStructure: navigationStructureSchema.optional(),
+  accessibilityAudit: accessibilityAuditSchema.optional(),
+  seoAudit: seoAuditSchema.optional(),
+  legalCompliance: legalComplianceSchema.optional(),
+  performanceIndicators: performanceIndicatorsSchema.optional(),
+  screenshots: screenshotsSchema.optional(),
+  companyIntelligence: companyIntelligenceSchema.optional(),
+
+  // NEW QuickScan 2.0 fields
+  siteTree: siteTreeSchema.optional().describe('Full sitemap structure with hierarchy'),
+  contentTypes: contentTypeDistributionSchema.optional().describe('AI-classified content types'),
+  migrationComplexity: migrationComplexitySchema.optional().describe('Migration complexity assessment'),
+  decisionMakers: decisionMakersResearchSchema.optional().describe('Decision makers and contacts'),
+  enhancedAccessibility: enhancedAccessibilityAuditSchema.optional().describe('Multi-page axe-core audit'),
+});
+
+export type ExtendedQuickScan2 = z.infer<typeof extendedQuickScan2Schema>;

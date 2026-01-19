@@ -120,6 +120,15 @@ export async function GET(
         emit
       );
 
+      // Debug-Logging for QuickScan 2.0 fields before DB save
+      console.log('[QuickScan Stream] Saving to DB:', {
+        quickScanId: quickScan.id,
+        hasContentTypes: !!result.contentTypes,
+        hasMigrationComplexity: !!result.migrationComplexity,
+        hasDecisionMakers: !!result.decisionMakers,
+        hasRawScanData: !!result.rawScanData,
+      });
+
       // Update QuickScan record with results (including new enhanced audit fields)
       await db
         .update(quickScans)
@@ -134,7 +143,7 @@ export async function GET(
           recommendedBusinessUnit: result.blRecommendation.primaryBusinessLine,
           confidence: result.blRecommendation.confidence,
           reasoning: result.blRecommendation.reasoning,
-          // Enhanced audit fields (NEW)
+          // Enhanced audit fields
           navigationStructure: result.navigationStructure ? JSON.stringify(result.navigationStructure) : null,
           accessibilityAudit: result.accessibilityAudit ? JSON.stringify(result.accessibilityAudit) : null,
           seoAudit: result.seoAudit ? JSON.stringify(result.seoAudit) : null,
@@ -142,10 +151,24 @@ export async function GET(
           performanceIndicators: result.performanceIndicators ? JSON.stringify(result.performanceIndicators) : null,
           screenshots: result.screenshots ? JSON.stringify(result.screenshots) : null,
           companyIntelligence: result.companyIntelligence ? JSON.stringify(result.companyIntelligence) : null,
+          // QuickScan 2.0 fields
+          contentTypes: result.contentTypes ? JSON.stringify(result.contentTypes) : null,
+          migrationComplexity: result.migrationComplexity ? JSON.stringify(result.migrationComplexity) : null,
+          decisionMakers: result.decisionMakers ? JSON.stringify(result.decisionMakers) : null,
+          rawScanData: result.rawScanData ? JSON.stringify(result.rawScanData) : null,
           activityLog: JSON.stringify(result.activityLog),
           completedAt: new Date(),
         })
         .where(eq(quickScans.id, quickScan.id));
+
+      // Transition RFP to questions_ready status (Two-Workflow Structure Phase 3)
+      await db
+        .update(rfps)
+        .set({
+          status: 'questions_ready',
+          updatedAt: new Date(),
+        })
+        .where(eq(rfps.id, id));
 
       // Emit completion event
       emit({

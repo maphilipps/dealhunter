@@ -91,6 +91,26 @@ npm run db:studio    # Drizzle Studio öffnen
 - **AI:** Vercel AI SDK v5
 - **Database:** Drizzle ORM (SQLite)
 - **Auth:** NextAuth.js v5
+- **Embeddings:** text-embedding-3-large via adesso AI Hub (3072 dimensions)
+- **Vector Search:** SQLite vec0 extension (planned for future implementation)
+
+## Database Schema
+
+The application uses SQLite with Drizzle ORM. Key tables include:
+
+- **Core Tables:** `users`, `rfps` (bids), `business_units`, `technologies`, `employees`, `accounts`
+- **Scan Tables:** `quick_scans`, `deep_migration_analyses`
+- **Master Data:** `references`, `competencies`, `competitors`
+- **Support Tables:** `team_assignments`, `subjective_assessments`, `audit_trails`, `documents`
+
+### Vector Search (Future)
+
+For duplicate detection and semantic search, the application is designed to use SQLite's vec0 extension:
+- **Embedding Model:** `text-embedding-3-large` (3072 dimensions)
+- **Expected Scale:** < 10,000 RFPs
+- **Use Cases:** Duplicate RFP detection, semantic similarity matching
+
+**Note:** Vec0 extension needs to be installed separately when vector search features are implemented. The schema is already prepared for embedding storage in JSON columns.
 
 ## Architecture
 

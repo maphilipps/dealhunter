@@ -49,3 +49,8 @@ next-env.d.ts
 
 # env files
 .env*.local
+
+# workflow checkpoints (temporary state files)
+/tmp/checkpoints/
+*.checkpoint
+*.completed

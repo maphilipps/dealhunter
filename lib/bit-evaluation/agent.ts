@@ -11,7 +11,9 @@ import {
   type CompetitionCheck,
   type LegalAssessment,
   type ReferenceMatch,
+  type CoordinatorOutput,
 } from './schema';
+import { runCoordinatorAgent } from './coordinator-agent';
 import { runCapabilityAgent } from './agents/capability-agent';
 import { runDealQualityAgent } from './agents/deal-quality-agent';
 import { runStrategicFitAgent } from './agents/strategic-fit-agent';
@@ -164,25 +166,33 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
       ...referenceMatch.criticalBlockers,
     ];
 
-    // Determine if we should BIT or NO BIT
-    // BIT if: overall score >= 55 AND no critical blockers
-    // NO BIT if: overall score < 55 OR critical blockers present
-    const shouldBit = weightedScores.overall >= 55 && allCriticalBlockers.length === 0;
+    // Run Coordinator Agent for decision synthesis
+    logActivity('Running Coordinator Agent', 'Synthesizing results and building decision tree');
 
-    logActivity('Making final decision', shouldBit ? 'Recommendation: BIT' : 'Recommendation: NO BIT');
-
-    // Generate final decision with AI
-    const decision = await generateBitDecision({
-      scores: weightedScores,
+    const coordinatorOutput = await runCoordinatorAgent({
       capabilityMatch,
       dealQuality,
       strategicFit,
       competitionCheck,
       legalAssessment,
       referenceMatch,
+      scores: weightedScores,
       allCriticalBlockers,
-      initialRecommendation: shouldBit ? 'bit' : 'no_bit',
     });
+
+    logActivity('Coordinator completed', `Decision: ${coordinatorOutput.recommendation.toUpperCase()}, Confidence: ${coordinatorOutput.confidence.toFixed(1)}%`);
+
+    // Build BitDecision from coordinator output
+    const decision: BitDecision = {
+      decision: coordinatorOutput.recommendation,
+      scores: weightedScores,
+      overallConfidence: coordinatorOutput.confidence,
+      keyStrengths: coordinatorOutput.synthesis.keyStrengths,
+      keyRisks: coordinatorOutput.synthesis.keyRisks,
+      criticalBlockers: coordinatorOutput.synthesis.criticalBlockers,
+      reasoning: coordinatorOutput.synthesis.executiveSummary,
+      nextSteps: coordinatorOutput.nextSteps,
+    };
 
     logActivity('Final decision generated', `Decision: ${decision.decision.toUpperCase()}`);
 
@@ -211,6 +221,7 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
       referenceMatch,
       decision,
       alternative,
+      coordinatorOutput,
       evaluatedAt: new Date().toISOString(),
       evaluationDuration: duration,
     };
@@ -524,29 +535,46 @@ export async function runBitEvaluationWithStreaming(
       ...referenceMatch.criticalBlockers,
     ];
 
-    // Determine if we should BIT or NO BIT
-    const shouldBit = weightedScores.overall >= 55 && allCriticalBlockers.length === 0;
-
+    // Run Coordinator Agent
     emit({
       type: AgentEventType.AGENT_PROGRESS,
       data: {
         agent: 'Coordinator',
-        message: `Making final decision (Overall score: ${weightedScores.overall.toFixed(1)}/100)...`,
+        message: `Synthesizing results and building decision tree (Overall score: ${weightedScores.overall.toFixed(1)}/100)...`,
       },
     });
 
-    // Generate final decision with AI
-    const decision = await generateBitDecision({
-      scores: weightedScores,
+    const coordinatorOutput = await runCoordinatorAgent({
       capabilityMatch,
       dealQuality,
       strategicFit,
       competitionCheck,
       legalAssessment,
       referenceMatch,
+      scores: weightedScores,
       allCriticalBlockers,
-      initialRecommendation: shouldBit ? 'bit' : 'no_bit',
     });
+
+    emit({
+      type: AgentEventType.AGENT_COMPLETE,
+      data: {
+        agent: 'Coordinator',
+        result: coordinatorOutput,
+        confidence: coordinatorOutput.confidence,
+      },
+    });
+
+    // Build BitDecision from coordinator output
+    const decision: BitDecision = {
+      decision: coordinatorOutput.recommendation,
+      scores: weightedScores,
+      overallConfidence: coordinatorOutput.confidence,
+      keyStrengths: coordinatorOutput.synthesis.keyStrengths,
+      keyRisks: coordinatorOutput.synthesis.keyRisks,
+      criticalBlockers: coordinatorOutput.synthesis.criticalBlockers,
+      reasoning: coordinatorOutput.synthesis.executiveSummary,
+      nextSteps: coordinatorOutput.nextSteps,
+    };
 
     // Generate alternative recommendation if NO BIT
     let alternative: AlternativeRec | undefined;
@@ -580,6 +608,7 @@ export async function runBitEvaluationWithStreaming(
       referenceMatch,
       decision,
       alternative,
+      coordinatorOutput,
       evaluatedAt: new Date().toISOString(),
       evaluationDuration: duration,
     };

@@ -281,6 +281,65 @@ export const alternativeRecSchema = z.object({
 export type AlternativeRec = z.infer<typeof alternativeRecSchema>;
 
 /**
+ * Decision Tree Node Schema
+ * For visualizing the decision-making process
+ */
+export const decisionNodeSchema: z.ZodType<DecisionNode> = z.lazy(() => z.object({
+  id: z.string().describe('Unique node ID'),
+  type: z.enum(['decision', 'criterion', 'outcome', 'blocker']).describe('Node type'),
+  label: z.string().describe('Node label/question'),
+  value: z.union([z.string(), z.number(), z.boolean()]).optional().describe('Node value/answer'),
+  weight: z.number().min(0).max(1).optional().describe('Weight in decision (0-1)'),
+  score: z.number().min(0).max(100).optional().describe('Score for this criterion'),
+  sentiment: z.enum(['positive', 'negative', 'neutral', 'critical']).optional().describe('Sentiment indicator'),
+  children: z.array(decisionNodeSchema).optional().describe('Child nodes'),
+  reasoning: z.string().optional().describe('Explanation for this decision point'),
+}));
+
+export type DecisionNode = {
+  id: string;
+  type: 'decision' | 'criterion' | 'outcome' | 'blocker';
+  label: string;
+  value?: string | number | boolean;
+  weight?: number;
+  score?: number;
+  sentiment?: 'positive' | 'negative' | 'neutral' | 'critical';
+  children?: DecisionNode[];
+  reasoning?: string;
+};
+
+/**
+ * Enhanced Coordinator Output Schema
+ * Includes decision tree and synthesis
+ */
+export const coordinatorOutputSchema = z.object({
+  recommendation: z.enum(['bit', 'no_bit']).describe('Final recommendation'),
+  confidence: z.number().min(0).max(100).describe('Confidence in recommendation'),
+  decisionTree: decisionNodeSchema.describe('Decision tree for visualization'),
+  synthesis: z.object({
+    executiveSummary: z.string().describe('Executive summary in German'),
+    keyStrengths: z.array(z.string()).describe('Top strengths'),
+    keyRisks: z.array(z.string()).describe('Top risks'),
+    criticalBlockers: z.array(z.string()).describe('Critical blockers'),
+    proArguments: z.array(z.string()).describe('Arguments for BIT'),
+    contraArguments: z.array(z.string()).describe('Arguments against BIT'),
+  }).describe('Synthesized analysis'),
+  agentResults: z.object({
+    capability: z.number().min(0).max(100),
+    dealQuality: z.number().min(0).max(100),
+    strategicFit: z.number().min(0).max(100),
+    winProbability: z.number().min(0).max(100),
+    legal: z.number().min(0).max(100),
+    reference: z.number().min(0).max(100),
+    overall: z.number().min(0).max(100),
+  }).describe('Agent result scores'),
+  nextSteps: z.array(z.string()).describe('Recommended next steps'),
+  escalationRequired: z.boolean().describe('Whether human review is required (confidence <70%)'),
+});
+
+export type CoordinatorOutput = z.infer<typeof coordinatorOutputSchema>;
+
+/**
  * Complete BIT Evaluation Result
  * Combines all agent outputs
  */
@@ -298,6 +357,9 @@ export const bitEvaluationResultSchema = z.object({
 
   // Alternative (if NO BIT)
   alternative: alternativeRecSchema.optional(),
+
+  // Coordinator output (NEW)
+  coordinatorOutput: coordinatorOutputSchema.optional(),
 
   // Metadata
   evaluatedAt: z.string().describe('ISO timestamp of evaluation'),

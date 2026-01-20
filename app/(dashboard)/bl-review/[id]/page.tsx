@@ -33,6 +33,8 @@ import { TeamBuilder } from '@/components/bids/team-builder';
 import { NotificationCard } from '@/components/bids/notification-card';
 import { BUMatchingTab } from '@/components/bl-review/bu-matching-tab';
 import { OverviewSection } from '@/components/rfp-overview';
+import { TimelineChart } from '@/components/bids/timeline-chart';
+import { Progress } from '@/components/ui/progress';
 import type {
   TechStack,
   AccessibilityAudit,
@@ -43,6 +45,7 @@ import type {
   CompanyIntelligence,
 } from '@/lib/quick-scan/schema';
 import type { OverviewData } from '@/components/rfp-overview';
+import type { ProjectTimeline } from '@/lib/timeline/schema';
 
 interface BLReviewDetailPageProps {
   params: Promise<{ id: string }>;
@@ -145,6 +148,9 @@ export default async function BLReviewDetailPage({
   );
   const teamNotifications = safeJsonParseOrNull<TeamNotificationResult[]>(
     bid.teamNotifications
+  );
+  const timelineData = safeJsonParseOrNull<ProjectTimeline>(
+    bid.timeline
   );
 
   // Parse QuickScan JSON data server-side for Overview section
@@ -311,7 +317,7 @@ export default async function BLReviewDetailPage({
               </CardContent>
             </Card>
 
-            {/* Decision Summary */}
+            {/* Decision Summary with Scoring Bars */}
             <Card>
               <CardHeader>
                 <CardTitle>BIT Entscheidung</CardTitle>
@@ -335,12 +341,31 @@ export default async function BLReviewDetailPage({
                     {decisionOverview.decision.reasoning}
                   </p>
                 )}
+
+                {/* Scoring Bars */}
+                {decisionData?.decision?.scores && (
+                  <div className="space-y-3 pt-4 border-t">
+                    <p className="text-sm font-medium">Bewertungskriterien</p>
+                    <ScoringBar label="Capability Match" value={decisionData.decision.scores.capability} weight={25} />
+                    <ScoringBar label="Deal Quality" value={decisionData.decision.scores.dealQuality} weight={20} />
+                    <ScoringBar label="Strategic Fit" value={decisionData.decision.scores.strategicFit} weight={15} />
+                    <ScoringBar label="Win Probability" value={decisionData.decision.scores.winProbability} weight={15} />
+                    <ScoringBar label="Legal Assessment" value={decisionData.decision.scores.legal} weight={15} />
+                    <ScoringBar label="Reference Match" value={decisionData.decision.scores.reference} weight={10} />
+                    <div className="pt-2 border-t">
+                      <ScoringBar label="Gesamt-Score" value={decisionData.decision.scores.overall} isOverall />
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
           {/* Enhanced Overview Section with QuickScan Data */}
           <OverviewSection data={overviewData} />
+
+          {/* Timeline Preview */}
+          {timelineData && <TimelineChart timeline={timelineData} />}
 
           {/* Quick Actions */}
           <Card>
@@ -464,4 +489,49 @@ function StatusBadge({ status }: { status: string }) {
   const config = statusConfig[status] || { label: status, variant: 'secondary' as const };
 
   return <Badge variant={config.variant}>{config.label}</Badge>;
+}
+
+function ScoringBar({
+  label,
+  value,
+  weight,
+  isOverall = false
+}: {
+  label: string;
+  value: number;
+  weight?: number;
+  isOverall?: boolean;
+}) {
+  const getColorClass = (score: number) => {
+    if (score >= 80) return 'bg-green-500';
+    if (score >= 60) return 'bg-yellow-500';
+    if (score >= 40) return 'bg-orange-500';
+    return 'bg-red-500';
+  };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-1.5">
+        <div className="flex items-center gap-2">
+          <span className={`text-sm ${isOverall ? 'font-bold' : 'font-medium'}`}>
+            {label}
+          </span>
+          {weight !== undefined && (
+            <span className="text-xs text-muted-foreground">
+              ({weight}% Gewichtung)
+            </span>
+          )}
+        </div>
+        <span className={`text-sm ${isOverall ? 'font-bold' : 'text-muted-foreground'}`}>
+          {value}/100
+        </span>
+      </div>
+      <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
+        <div
+          className={`h-full transition-all ${getColorClass(value)}`}
+          style={{ width: `${value}%` }}
+        />
+      </div>
+    </div>
+  );
 }

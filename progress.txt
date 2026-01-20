@@ -1,3 +1,47 @@
+## 2026-01-20 - DEA-17: Database Schema & Drizzle ORM Setup
+
+**Issue:** DEA-17 - Database Schema & Drizzle ORM Setup
+**Status:** ✅ Complete
+**Priority:** 1 (Urgent) - Blocked 15 other issues
+
+**Implemented:**
+- Added missing tables: `team_assignments` and `subjective_assessments`
+- Defined comprehensive Drizzle Relations for all 15 tables
+- Added vec0 vector search documentation to README
+- Verified all database commands work (db:push, db:seed)
+
+**Tables Added:**
+- `team_assignments` - Track team member assignments to RFPs with roles
+- `subjective_assessments` - BD subjective ratings (5 metrics on 1-5 scale)
+
+**Relations Defined:**
+- Core entities: users, rfps, businessUnits, technologies, employees, accounts
+- Scan entities: quickScans, deepMigrationAnalyses
+- Master data: references, competencies, competitors
+- Support tables: teamAssignments, subjectiveAssessments, documents
+
+**Documentation:**
+- Added Database Schema section to README
+- Documented vec0 vector search strategy (text-embedding-3-large, 3072 dims)
+- Noted vec0 extension is planned for future implementation
+
+**Acceptance Criteria:**
+✅ All schemas in lib/db/schema.ts
+✅ Drizzle Relations defined for all tables
+✅ Performance indexes already comprehensive
+✅ vec0 Extension documented
+✅ Seed Data works (Business Lines & Technologies)
+✅ db:push and db:seed Commands verified
+
+**Commit:** cc905e2
+**Linear:** https://linear.app/adessocms/issue/DEA-17
+
+**Notes:**
+- This was a foundational issue blocking 15 other features
+- All existing indexes retained (already well-optimized)
+- Seed script already comprehensive, no changes needed
+- Ready for agent implementations (DEA-1 through DEA-10)
+
 
 ## 2026-01-20 - DEA-30: Documentation & Deployment Guide
 

@@ -37,7 +37,7 @@ export const WorkflowStateSchema = z.object({
   startedAt: z.date(),
   updatedAt: z.date(),
   completedAt: z.date().optional(),
-  data: z.record(z.any()), // Workflow-specific data
+  data: z.record(z.string(), z.any()), // Workflow-specific data
   errors: z.array(z.object({
     step: z.string(),
     message: z.string(),

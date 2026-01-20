@@ -119,7 +119,7 @@ Technologies: ${bu.technologies.join(', ') || 'Keine'}
 
     // Call AI to match business line
     const result = await generateObject({
-      model: openai('gpt-4o'),
+      model: openai('gpt-4o') as any,
       schema: BusinessLineRoutingSchema,
       system: `Du bist ein Business Line Routing Agent für adesso SE.
 

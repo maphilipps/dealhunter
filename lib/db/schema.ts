@@ -513,6 +513,7 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
   websiteUrl: text('website_url').notNull(),
 
   // Results (JSON columns)
+  fullScanResult: text('full_scan_result'), // JSON stringified - Full-Scan Agent output
   contentArchitecture: text('content_architecture'), // JSON stringified
   migrationComplexity: text('migration_complexity'), // JSON stringified
   accessibilityAudit: text('accessibility_audit'), // JSON stringified

@@ -71,12 +71,12 @@ export function DecisionCard({ result }: DecisionCardProps) {
 
   // Confidence breakdown
   const confidenceBreakdown = [
-    { label: 'Capability', confidence: result.capability?.confidence || 0, weight: 0.25 },
+    { label: 'Capability', confidence: result.capabilityMatch?.confidence || 0, weight: 0.25 },
     { label: 'Deal Quality', confidence: result.dealQuality?.confidence || 0, weight: 0.2 },
     { label: 'Strategic Fit', confidence: result.strategicFit?.confidence || 0, weight: 0.15 },
-    { label: 'Competition', confidence: result.competition?.confidence || 0, weight: 0.15 },
-    { label: 'Legal', confidence: result.legal?.confidence || 0, weight: 0.15 },
-    { label: 'References', confidence: result.reference?.confidence || 0, weight: 0.1 },
+    { label: 'Competition', confidence: result.competitionCheck?.confidence || 0, weight: 0.15 },
+    { label: 'Legal', confidence: result.legalAssessment?.confidence || 0, weight: 0.15 },
+    { label: 'References', confidence: result.referenceMatch?.confidence || 0, weight: 0.1 },
   ];
 
   return (
@@ -241,8 +241,8 @@ export function DecisionCard({ result }: DecisionCardProps) {
         </TabsContent>
 
         <TabsContent value="tree">
-          {result.coordinator?.decisionTree ? (
-            <DecisionTree tree={result.coordinator.decisionTree} />
+          {result.coordinatorOutput?.decisionTree ? (
+            <DecisionTree tree={result.coordinatorOutput.decisionTree} />
           ) : (
             <Card>
               <CardContent className="p-6 text-center text-muted-foreground">
@@ -256,15 +256,38 @@ export function DecisionCard({ result }: DecisionCardProps) {
           <ConfidenceBreakdown breakdown={confidenceBreakdown} />
 
           {/* Detailed Synthesis from Coordinator */}
-          {result.coordinator?.synthesis && (
+          {result.coordinatorOutput?.synthesis && (
             <Card>
               <CardHeader>
                 <CardTitle>AI-Synthese</CardTitle>
                 <CardDescription>Detaillierte Analyse vom Coordinator Agent</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="prose prose-sm max-w-none">
-                  <pre className="whitespace-pre-wrap text-sm">{result.coordinator.synthesis}</pre>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">Executive Summary</h4>
+                    <p className="text-sm text-muted-foreground">{result.coordinatorOutput.synthesis.executiveSummary}</p>
+                  </div>
+                  {result.coordinatorOutput.synthesis.keyStrengths.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold mb-2">Key Strengths</h4>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                        {result.coordinatorOutput.synthesis.keyStrengths.map((strength, i) => (
+                          <li key={i}>{strength}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {result.coordinatorOutput.synthesis.keyRisks.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold mb-2">Key Risks</h4>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                        {result.coordinatorOutput.synthesis.keyRisks.map((risk, i) => (
+                          <li key={i}>{risk}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

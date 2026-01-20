@@ -423,3 +423,95 @@ This issue was primarily already implemented. The authentication system with Nex
 - All acceptance criteria fulfilled
 - Ready for integration with protected features
 
+
+## 2026-01-20 - DEA-5: Routing Agent implementieren
+
+**Issue:** DEA-5 - Routing Agent implementieren
+**Status:** ✅ Complete
+**Priority:** 3 (Medium)
+
+**Summary:**
+Implemented comprehensive AI-powered Business Line routing agent using Vercel AI SDK with structured output, confidence scoring, and audit logging for manual overrides.
+
+**Key Implementation:**
+
+**1. Routing Agent** (`lib/routing/routing-agent.ts`)
+- `matchBusinessLine()` - AI-powered BL matching using GPT-4o
+- NLP-based matching against Business Line keywords and technologies
+- Structured output via Vercel AI SDK `generateObject`
+- Zod schema validation (`BusinessLineRoutingSchema`)
+- Returns: `{ recommendedBU, confidence, reasoning, alternativeBUs, matchedKeywords, matchedTechnologies }`
+
+**2. Confidence Scoring**
+- 90-100%: Perfect technology + keyword matches
+- 70-89%: Good technology match, partial keywords
+- 50-69%: Partial match, user review recommended
+- 0-49%: Weak match, manual selection required
+- **Threshold: 70%** - Below this, frontend should prompt user selection
+
+**3. Alternative Recommendations**
+- AI provides minimum 2 alternative BUs with confidence scores
+- Each alternative includes reasoning for transparency
+- Helps users make informed decisions when confidence is low
+
+**4. Business Line Recommendation API** (`lib/routing/actions.ts`)
+- `getBusinessLineRecommendation(bidId)` - Server action for AI suggestions
+- Integrates with existing RFP data (extracted requirements, quick scan results)
+- Builds comprehensive context from:
+  - Customer name and industry
+  - Project description and requirements
+  - Website URL
+  - Detected technologies from Quick Scan
+
+**5. Audit Logging for Overrides**
+- Integrated `createAuditLog()` in `assignBusinessUnit()` action
+- Logs `bl_routing_override` action when user overrides AI recommendation
+- Stores: assigned BU, override reason, previous AI recommendation
+- Full audit trail for governance and improvement
+
+**Matching Logic:**
+- Exact technology matches weighted highest (CMS, frameworks)
+- Keyword matching for broader alignment
+- CMS projects route to CMS-focused BUs
+- Framework projects (React, Vue, etc.) to corresponding BUs
+- Multi-technology projects route to BU with broadest coverage
+
+**Tech Stack:**
+- Vercel AI SDK v5 (`generateObject`)
+- GPT-4o via adesso AI Hub
+- Zod schemas for type safety
+- Drizzle ORM (businessUnits, technologies queries)
+- Server Actions for API endpoints
+
+**Files Created:**
+- `lib/routing/routing-agent.ts` (218 lines)
+
+**Files Modified:**
+- `lib/routing/actions.ts` (+93 lines)
+  - Added `getBusinessLineRecommendation()` function
+  - Integrated audit logging for overrides
+  - Import routing agent and audit functions
+
+**Acceptance Criteria:**
+✅ Vercel AI SDK Tool: matchBusinessLine
+✅ Matching gegen BusinessLine.technologies und .keywords
+✅ Output: { recommendedBU, confidence, reasoning, alternativeBUs, matchedKeywords, matchedTechnologies }
+✅ Confidence < 70% → User-Auswahl (frontend integration needed)
+✅ Audit-Log bei Manual Override
+
+**Integration Points:**
+- Ready for integration in Bid/No-Bid evaluation workflow
+- Can be called after Quick Scan completes
+- Supports manual override with audit trail
+- Frontend needs to display recommendations and handle low-confidence cases
+
+**Commit:** 8610c99
+**Linear:** https://linear.app/adessocms/issue/DEA-5
+
+**Notes:**
+- No frontend UI implemented yet (separate issue)
+- Backend fully functional and ready for integration
+- Build successful with no errors
+- Agent follows AI SDK best practices with structured outputs
+- Ready for DEA-9 (Decision Agent) to consume routing recommendations
+

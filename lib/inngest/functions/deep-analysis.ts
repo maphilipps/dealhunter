@@ -15,6 +15,15 @@ import {
   PTEstimationSchema,
 } from '@/lib/deep-analysis/schemas';
 import { fullScanResultSchema } from '@/lib/full-scan/agent';
+import {
+  saveCheckpoint,
+  loadCheckpoint,
+  resumeFromCheckpoint,
+  cleanupCheckpoint,
+  createWorkflowState,
+  updateWorkflowState,
+  DeepAnalysisState,
+} from '@/lib/workflow/checkpoints';
 
 /**
  * Deep Migration Analysis Background Job
@@ -32,8 +41,12 @@ export const deepAnalysisFunction = inngest.createFunction(
   async ({ event, step }) => {
     const { bidId, userId, jobId } = event.data;
 
-    // Step 1: Fetch bid data and create analysis record + job tracking
-    const { bid, analysis, quickScan, jobRecord } = await step.run('init-analysis', async () => {
+    // Step 1: Check for existing checkpoint and resume if needed
+    const workflowId = event.id || createId();
+    const existingCheckpoint = await resumeFromCheckpoint(workflowId);
+
+    // Step 2: Fetch bid data and create analysis record + job tracking
+    const { bid, analysis, quickScan, jobRecord, workflowState } = await step.run('init-analysis', async () => {
       console.log('[Inngest] Starting deep analysis for bid:', bidId);
 
       const [bidData] = await db
@@ -92,11 +105,34 @@ export const deepAnalysisFunction = inngest.createFunction(
         })
         .returning();
 
+      // Initialize workflow state checkpoint
+      const state = createWorkflowState<DeepAnalysisState>({
+        workflowId,
+        workflowType: 'deep-analysis',
+        rfpId: bidId,
+        userId,
+        status: 'running',
+        currentStep: 'init-analysis',
+        stepIndex: 0,
+        totalSteps: 6, // full-scan, content-arch, complexity, accessibility, pt-estimation, finalize
+        progress: 0,
+        data: {
+          analysisId: analysisRecord.id,
+          websiteUrl: bidData.websiteUrl!,
+          sourceCMS: quickScanData?.cms || 'Unknown',
+          targetCMS: 'Drupal',
+        },
+      });
+
+      // Save initial checkpoint
+      await saveCheckpoint(state);
+
       return {
         bid: bidData,
         quickScan: quickScanData,
         analysis: analysisRecord,
         jobRecord: job,
+        workflowState: state,
       };
     });
 
@@ -155,6 +191,22 @@ export const deepAnalysisFunction = inngest.createFunction(
             updatedAt: new Date(),
           })
           .where(eq(backgroundJobs.id, jobRecord.id));
+
+        // Save checkpoint after full-scan
+        const currentState = await loadCheckpoint(workflowId);
+        if (currentState) {
+          const deepAnalysisState = currentState as DeepAnalysisState;
+          const updatedState = updateWorkflowState(deepAnalysisState, {
+            currentStep: 'full-scan',
+            stepIndex: 1,
+            progress: 20,
+            data: {
+              ...deepAnalysisState.data,
+              fullScanResult: result,
+            },
+          });
+          await saveCheckpoint(updatedState);
+        }
 
         console.log('[Inngest] Full-Scan complete');
         return result;
@@ -365,6 +417,10 @@ export const deepAnalysisFunction = inngest.createFunction(
             updatedAt: new Date(),
           })
           .where(eq(backgroundJobs.id, jobRecord.id));
+
+        // Cleanup checkpoint (or keep for debug based on env var)
+        const keepForDebug = process.env.KEEP_CHECKPOINTS === 'true';
+        await cleanupCheckpoint(workflowId, keepForDebug);
 
         console.log('[Inngest] Bid status updated to analysis_complete');
       });

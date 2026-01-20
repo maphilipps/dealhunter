@@ -373,16 +373,45 @@ export const auditTrails = sqliteTable('audit_trails', {
     .$defaultFn(() => createId()),
 
   // Audit Details
-  userId: text('user_id').notNull(),
-  action: text('action').notNull(),
-  entityType: text('entity_type').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
+  action: text('action', {
+    enum: [
+      'bl_override',
+      'bid_override',
+      'team_change',
+      'status_change',
+      'create',
+      'update',
+      'delete',
+      'validate',
+      'reject'
+    ]
+  }).notNull(),
+  entityType: text('entity_type', {
+    enum: ['rfp', 'business_unit', 'employee', 'reference', 'competency', 'competitor', 'team_assignment']
+  }).notNull(),
   entityId: text('entity_id').notNull(),
-  changes: text('changes'),
+
+  // Override Details (DEA-25)
+  previousValue: text('previous_value'), // JSON or text
+  newValue: text('new_value'), // JSON or text
+  reason: text('reason'), // Required for manual overrides
+
+  // Legacy field (for backwards compatibility)
+  changes: text('changes'), // JSON - deprecated, use previousValue/newValue
 
   // Timestamps
   createdAt: integer('created_at', { mode: 'timestamp' })
     .$defaultFn(() => new Date())
-});
+}, (table) => ({
+  userIdx: index('audit_trails_user_idx').on(table.userId),
+  actionIdx: index('audit_trails_action_idx').on(table.action),
+  entityTypeIdx: index('audit_trails_entity_type_idx').on(table.entityType),
+  entityIdIdx: index('audit_trails_entity_id_idx').on(table.entityId),
+  createdAtIdx: index('audit_trails_created_at_idx').on(table.createdAt),
+}));
 
 export type AuditTrail = typeof auditTrails.$inferSelect;
 export type NewAuditTrail = typeof auditTrails.$inferInsert;
@@ -897,6 +926,13 @@ export const backgroundJobsRelations = relations(backgroundJobs, ({ one }) => ({
   }),
   user: one(users, {
     fields: [backgroundJobs.userId],
+    references: [users.id],
+  }),
+}));
+
+export const auditTrailsRelations = relations(auditTrails, ({ one }) => ({
+  user: one(users, {
+    fields: [auditTrails.userId],
     references: [users.id],
   }),
 }));

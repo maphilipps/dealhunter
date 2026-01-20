@@ -862,3 +862,65 @@ Implemented comprehensive evaluation UI with interactive decision tree visualiza
 - Integration with coordinator agent seamless
 - Next: Consider adding export functionality (PDF/PNG) for decision tree
 
+
+## 2026-01-20 - DEA-16: Account Management Implementation
+
+**Issue:** DEA-16 - Account Management implementieren
+**Status:** ✅ Complete
+**Priority:** 3 (Medium)
+
+**Implemented:**
+- Complete Account Management system with CRUD operations
+- Account list page with card-based layout
+- Account detail page with opportunity overview
+- Full edit functionality with form validation
+- Safe delete with opportunity check
+- Seamless navigation integration in sidebar
+
+**Components Created:**
+1. `EditAccountForm` - Edit form with pre-filled data
+2. `DeleteAccountButton` - Confirmation dialog with safe delete logic
+
+**Pages Created:**
+1. `/accounts` - Already existed, displays all accounts
+2. `/accounts/new` - Already existed, create new account
+3. `/accounts/[id]` - NEW: Account detail with statistics and opportunities
+4. `/accounts/[id]/edit` - NEW: Edit account information
+
+**Server Actions Added:**
+- `updateAccount()` - Update existing account with ownership check
+- `deleteAccount()` - Delete account with opportunity validation
+- Existing: `getAccounts()`, `createAccount()`, `getAccountById()`, `getAccountWithOpportunities()`
+
+**Features:**
+- Account statistics (opportunity count, last activity)
+- Opportunity list with status badges, source/stage indicators
+- Click-through to opportunity details
+- Edit and delete with proper authorization
+- Prevents deletion of accounts with linked opportunities
+- Fully responsive layout with ShadCN components
+
+**Acceptance Criteria:**
+✅ Accounts List Route (/accounts)
+✅ Account Detail Route (/accounts/:id)
+✅ Account Create/Edit Form
+✅ AccountCard Komponente (integrated in list view)
+✅ OpportunityList Komponente (Table in detail view)
+✅ Server Action: getAccounts
+✅ Server Action: createAccount
+✅ Server Action: updateAccount
+✅ Server Action: deleteAccount
+
+**Files Changed:**
+- `app/(dashboard)/accounts/[id]/page.tsx` - NEW: Account detail page
+- `app/(dashboard)/accounts/[id]/edit/page.tsx` - NEW: Edit page
+- `components/edit-account-form.tsx` - NEW: Edit form component
+- `components/delete-account-button.tsx` - NEW: Delete button with dialog
+- `lib/accounts-actions.ts` - Added updateAccount() and deleteAccount()
+
+**Tech Stack:**
+- Next.js App Router with async Server Components
+- ShadCN UI (Card, Table, Button, Badge, AlertDialog, Form)
+- Drizzle ORM for database operations
+- Server Actions for mutations
+- Toast notifications via Sonner

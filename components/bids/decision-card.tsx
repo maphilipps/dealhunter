@@ -3,8 +3,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2, XCircle, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CheckCircle2, XCircle, AlertTriangle, ThumbsUp, ThumbsDown, GitBranch } from 'lucide-react';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
+import { DecisionTree } from './decision-tree';
+import { ConfidenceIndicator, ConfidenceBreakdown } from './confidence-indicator';
+import { RedFlagAlert } from './red-flag-alert';
+import { CompetitorWarning } from './competitor-warning';
+import { ReferenceMatchCard } from './reference-match-card';
+import type { RedFlag, Competitor, ReferenceMatch } from './types';
 
 interface DecisionCardProps {
   result: BitEvaluationResult;
@@ -13,6 +20,61 @@ interface DecisionCardProps {
 export function DecisionCard({ result }: DecisionCardProps) {
   const isBit = result.decision.decision === 'bit';
   const isLowConfidence = result.decision.overallConfidence < 70;
+
+  // Extract red flags from legal and other agents
+  const redFlags: RedFlag[] = [];
+  if (result.legal?.risks) {
+    result.legal.risks.forEach((risk) => {
+      if (risk.severity === 'critical' || risk.severity === 'high') {
+        redFlags.push({
+          category: 'legal',
+          severity: risk.severity as 'critical' | 'high' | 'medium',
+          title: risk.type,
+          description: risk.description,
+        });
+      }
+    });
+  }
+
+  // Extract competitors
+  const competitors: Competitor[] = [];
+  if (result.competition?.competitors) {
+    result.competition.competitors.forEach((comp) => {
+      competitors.push({
+        name: comp.name,
+        strength: comp.strength,
+        advantages: comp.advantages,
+        disadvantages: comp.disadvantages,
+      });
+    });
+  }
+
+  // Extract reference matches
+  const referenceMatches: ReferenceMatch[] = [];
+  if (result.reference?.matches) {
+    result.reference.matches.forEach((match) => {
+      referenceMatches.push({
+        projectName: match.projectName,
+        customerName: match.customerName,
+        year: match.year,
+        matchScore: match.matchScore,
+        matchingCriteria: match.matchingCriteria,
+        technologies: match.technologies || [],
+        teamSize: match.teamSize,
+        summary: match.summary,
+      });
+    });
+  }
+
+  // Confidence breakdown
+  const confidenceBreakdown = [
+    { label: 'Capability', confidence: result.capability?.confidence || 0, weight: 0.25 },
+    { label: 'Deal Quality', confidence: result.dealQuality?.confidence || 0, weight: 0.2 },
+    { label: 'Strategic Fit', confidence: result.strategicFit?.confidence || 0, weight: 0.15 },
+    { label: 'Competition', confidence: result.competition?.confidence || 0, weight: 0.15 },
+    { label: 'Legal', confidence: result.legal?.confidence || 0, weight: 0.15 },
+    { label: 'References', confidence: result.reference?.confidence || 0, weight: 0.1 },
+  ];
 
   return (
     <div className="space-y-6">
@@ -92,77 +154,139 @@ export function DecisionCard({ result }: DecisionCardProps) {
         </CardContent>
       </Card>
 
-      {/* Strengths & Risks */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Strengths */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-900">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              Key Strengths
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {result.decision.keyStrengths.map((strength, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span>{strength}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+      {/* Red Flags Alert (if any) */}
+      {redFlags.length > 0 && <RedFlagAlert flags={redFlags} />}
 
-        {/* Risks */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-900">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
-              Key Risks
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {result.decision.keyRisks.map((risk, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-sm">
-                  <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span>{risk}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Confidence Indicator */}
+      <ConfidenceIndicator
+        confidence={result.decision.overallConfidence}
+        label="Gesamt-Confidence"
+        showThreshold={true}
+        threshold={70}
+      />
 
-      {/* Critical Blockers (if any) */}
-      {result.decision.criticalBlockers.length > 0 && (
-        <Alert variant="destructive">
-          <XCircle className="h-4 w-4" />
-          <AlertDescription>
-            <p className="font-medium mb-2">Kritische Blocker gefunden:</p>
-            <ul className="list-disc list-inside space-y-1">
-              {result.decision.criticalBlockers.map((blocker, idx) => (
-                <li key={idx} className="text-sm">{blocker}</li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Tabbed Views */}
+      <Tabs defaultValue="summary" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="summary">Übersicht</TabsTrigger>
+          <TabsTrigger value="tree">
+            <GitBranch className="h-4 w-4 mr-2" />
+            Entscheidungsbaum
+          </TabsTrigger>
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="competition">Wettbewerb</TabsTrigger>
+          <TabsTrigger value="references">Referenzen</TabsTrigger>
+        </TabsList>
 
-      {/* Next Steps */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Nächste Schritte</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ol className="list-decimal list-inside space-y-2">
-            {result.decision.nextSteps.map((step, idx) => (
-              <li key={idx} className="text-sm">{step}</li>
-            ))}
-          </ol>
-        </CardContent>
-      </Card>
+        <TabsContent value="summary" className="space-y-6">
+          {/* Strengths & Risks */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Strengths */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-900">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  Key Strengths
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {result.decision.keyStrengths.map((strength, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>{strength}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Risks */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-amber-900">
+                  <AlertTriangle className="h-5 w-5 text-amber-600" />
+                  Key Risks
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {result.decision.keyRisks.map((risk, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <span>{risk}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Next Steps */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Nächste Schritte</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ol className="list-decimal list-inside space-y-2">
+                {result.decision.nextSteps.map((step, idx) => (
+                  <li key={idx} className="text-sm">{step}</li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="tree">
+          {result.coordinator?.decisionTree ? (
+            <DecisionTree tree={result.coordinator.decisionTree} />
+          ) : (
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                Kein Entscheidungsbaum verfügbar
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="details" className="space-y-6">
+          <ConfidenceBreakdown breakdown={confidenceBreakdown} />
+
+          {/* Detailed Synthesis from Coordinator */}
+          {result.coordinator?.synthesis && (
+            <Card>
+              <CardHeader>
+                <CardTitle>AI-Synthese</CardTitle>
+                <CardDescription>Detaillierte Analyse vom Coordinator Agent</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="prose prose-sm max-w-none">
+                  <pre className="whitespace-pre-wrap text-sm">{result.coordinator.synthesis}</pre>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="competition">
+          {competitors.length > 0 ? (
+            <CompetitorWarning
+              competitors={competitors}
+              winProbability={result.decision.scores.winProbability}
+            />
+          ) : (
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                Keine Wettbewerber-Daten verfügbar
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="references">
+          <ReferenceMatchCard matches={referenceMatches} />
+        </TabsContent>
+      </Tabs>
 
       {/* Alternative Recommendation (for NO BIT) */}
       {!isBit && result.alternative && (

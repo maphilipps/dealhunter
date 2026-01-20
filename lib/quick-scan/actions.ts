@@ -251,6 +251,8 @@ export async function getQuickScanResult(bidId: string) {
         decisionMakers: quickScan.decisionMakers ? JSON.parse(quickScan.decisionMakers) : null,
         // Raw data for debugging
         rawScanData: quickScan.rawScanData ? JSON.parse(quickScan.rawScanData) : null,
+        // Timeline (Phase 1 estimate)
+        timeline: quickScan.timeline ? JSON.parse(quickScan.timeline) : null,
       },
     };
   } catch (error) {

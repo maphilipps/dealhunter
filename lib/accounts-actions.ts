@@ -136,3 +136,104 @@ export async function getAccountWithOpportunities(accountId: string) {
     return { success: false, error: 'Fehler beim Laden der Account-Details' };
   }
 }
+
+export async function updateAccount(
+  accountId: string,
+  data: {
+    name: string;
+    industry: string;
+    website?: string;
+    notes?: string;
+  }
+) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Check ownership
+    const [existingAccount] = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, accountId))
+      .limit(1);
+
+    if (!existingAccount) {
+      return { success: false, error: 'Account nicht gefunden' };
+    }
+
+    if (existingAccount.userId !== session.user.id) {
+      return { success: false, error: 'Keine Berechtigung' };
+    }
+
+    // Update account
+    const [updatedAccount] = await db
+      .update(accounts)
+      .set({
+        name: data.name.trim(),
+        industry: data.industry.trim(),
+        website: data.website?.trim() || null,
+        notes: data.notes?.trim() || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(accounts.id, accountId))
+      .returning();
+
+    revalidatePath('/accounts');
+    revalidatePath(`/accounts/${accountId}`);
+    return { success: true, account: updatedAccount };
+  } catch (error) {
+    console.error('Error updating account:', error);
+    return { success: false, error: 'Fehler beim Aktualisieren des Accounts' };
+  }
+}
+
+export async function deleteAccount(accountId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Check ownership
+    const [existingAccount] = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, accountId))
+      .limit(1);
+
+    if (!existingAccount) {
+      return { success: false, error: 'Account nicht gefunden' };
+    }
+
+    if (existingAccount.userId !== session.user.id) {
+      return { success: false, error: 'Keine Berechtigung' };
+    }
+
+    // Check if account has linked opportunities
+    const linkedOpportunities = await db
+      .select()
+      .from(rfps)
+      .where(eq(rfps.accountId, accountId))
+      .limit(1);
+
+    if (linkedOpportunities.length > 0) {
+      return {
+        success: false,
+        error: 'Account kann nicht gelöscht werden, da noch Opportunities verknüpft sind',
+      };
+    }
+
+    // Delete account
+    await db.delete(accounts).where(eq(accounts.id, accountId));
+
+    revalidatePath('/accounts');
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    return { success: false, error: 'Fehler beim Löschen des Accounts' };
+  }
+}

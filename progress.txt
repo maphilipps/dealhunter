@@ -1381,3 +1381,65 @@ User Trigger → Inngest Event → Worker Function → Progress Updates → SSE 
 - Cleanup job prevents database bloat automatically
 - Next: Integrate SSE progress UI component for live updates
 
+
+## 2026-01-20 - DEA-10: Enhanced Staffing Agent Implementation
+
+**Issue:** DEA-10 - Staffing Agent implementieren
+**Status:** ✅ Complete
+**Priority:** 4 (Low)
+
+**Implemented:**
+- Enhanced AI-powered Staffing Agent with comprehensive skill matching algorithm
+- Automatic extraction of technical requirements from Quick Scan results
+- Advanced match scoring system (0-100 scale) based on multiple criteria
+- Three new agent tools for skill matching and employee discovery
+- Integration with existing employee database and team assignment workflow
+
+**Enhanced Skill Matching Algorithm:**
+1. **CMS/Framework Exact Match** (+30 points) - CRITICAL for project success
+2. **Component Framework Match** (+20 points) - React, Vue, Angular expertise
+3. **Integration Experience** (+15 points each) - APIs, Elasticsearch, third-party services
+4. **Complexity Skills** (+10 points each):
+   - Animation skills (GSAP, framer-motion)
+   - i18n/translation management
+   - Advanced component architecture
+5. **Tech Stack Matches** (+5 points each) - Related technologies
+6. **Availability Modifiers**: available (+10), on_project (+5), unavailable (-10)
+7. **Experience Bonus** (+10 points) - Similar project experience
+
+**New Agent Tools:**
+- `staffing.calculateSkillMatch` - Calculate 0-100 match score for employee vs. requirements
+- `staffing.findEmployeesBySkills` - Find and rank employees by match scores
+- `staffing.checkAvailability` - Check availability status of multiple employees
+
+**Confidence Scoring Tiers:**
+- 90-100: Perfect match (exact CMS/framework, all skills, immediately available)
+- 70-89: Good match (CMS OR most skills, minor trainable gaps)
+- 50-69: Acceptable match (some gaps, coordination needed)
+- <50: Weak match (critical skill gaps, significant training required)
+
+**Files Changed:**
+- `lib/team/agent.ts` - Enhanced with technical requirements extraction and improved prompts
+- `lib/agent-tools/tools/staffing.ts` - New file with 3 staffing tools
+- `lib/agent-tools/types.ts` - Added 'staffing' category to TOOL_CATEGORIES
+- `lib/agent-tools/index.ts` - Registered staffing tools
+
+**Acceptance Criteria:**
+✅ StaffingProposal Schema (existing schema retained, enhanced usage)
+✅ Tool: matchEmployeeSkills (staffing.calculateSkillMatch)
+✅ Tool: checkAvailability (staffing.checkAvailability)
+✅ Rollen-Mapping (10 roles supported: PM, Tech Lead, Sr Dev, Dev, FE Dev, BE Dev, UX, QA, DevOps, BA)
+✅ Match-Score-Berechnung (0-100 with transparent formula)
+✅ Team-Gesamt-Match (overall confidence scoring)
+✅ Alternative Vorschläge bei niedrigem Match (new_hire placeholder with required profile)
+
+**Integration Points:**
+- Works with existing `lib/team/actions.ts` (suggestTeamForBid)
+- Leverages Quick Scan results from `quickScans` table
+- Uses employee data from `employees` table with business unit filtering
+- Integrates with BL Review workflow for team assignment
+
+**Next Steps:**
+- Can be used immediately in BL Review Dashboard for team suggestions
+- Ready for integration with Team Builder UI component
+- Extensible for future enhancements (e.g., project history matching, certification requirements)

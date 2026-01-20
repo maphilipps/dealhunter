@@ -1583,3 +1583,60 @@ User Trigger → Inngest Event → Worker Function → Progress Updates → SSE 
 - Pre-existing TypeScript errors in decision-card.tsx for unimplemented agents (legal, competition, reference) have been disabled with TODO comments
 - Build still has type errors in decision-card.tsx related to unimplemented agent features (outside scope of DEA-24)
 
+
+## 2026-01-20 - DEA-6: Full-Scan Agent Implementation
+
+**Issue:** DEA-6 - Full-Scan Agent implementieren
+**Status:** ✅ Complete
+**Priority:** 4 (Low)
+
+**Implemented:**
+- Full-Scan Agent as part of the deep-analysis workflow for comprehensive website audits
+- Component pattern analysis with complexity scoring
+- External integration and third-party service detection
+- Content volume and structure analysis
+- Migration complexity scoring (0-100 scale)
+
+**Architecture:**
+1. **Agent Structure** - `/lib/full-scan/agent.ts`:
+   - Component Analysis: UI patterns, complexity levels, frequency
+   - Integration Analysis: APIs, third-party services (Analytics, Payment, CRM, etc.)
+   - Content Volume Analysis: Page types, content types, sitemap parsing (planned)
+   - Migration Complexity: Weighted scoring based on components, integrations, and content
+
+2. **Deep Analysis Integration**:
+   - Added as Step 2 in deep-analysis Inngest workflow
+   - Runs after initialization, before content architecture analysis
+   - Duration: 10-30 minutes (configurable based on website size)
+   - Results stored in `deep_migration_analyses.fullScanResult` (JSON)
+
+3. **Database Schema**:
+   - Added `fullScanResult` column to `deep_migration_analyses` table
+   - Schema pushed to database successfully
+
+4. **Event Streaming**:
+   - Integrated with AgentEventType.AGENT_PROGRESS
+   - Real-time progress updates during scanning phases
+
+**Technical Details:**
+- Uses AI SDK generateStructuredOutput for structured data extraction
+- Zod schemas for type-safe agent outputs
+- Error handling with event emission
+- Modular sub-agents for different analysis types
+
+**Future Enhancements (Planned - See TODOs in code):**
+- MCP Chrome DevTools integration for actual page analysis
+- Screenshot capture and storage
+- Sitemap parsing for content volume
+- Network request analysis for integration detection
+- Performance metrics (Core Web Vitals)
+
+**Files Modified:**
+- `lib/full-scan/agent.ts` (new)
+- `lib/inngest/functions/deep-analysis.ts`
+- `lib/db/schema.ts`
+- `components/bids/decision-card.tsx` (type fixes)
+- `components/bids/decision-tree.tsx` (type fixes)
+
+**Commit:** feat(DEA-6): implement Full-Scan Agent with comprehensive website audit
+

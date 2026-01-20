@@ -4,6 +4,7 @@ import * as React from "react"
 import {
   BarChart3,
   Building2,
+  Database,
   FileText,
   Home,
   PlusCircle,
@@ -108,6 +109,26 @@ const allNavItems: Array<{
     url: "/analytics",
     icon: BarChart3,
     roles: ['bd', 'bl', 'admin'],
+  },
+  {
+    title: "Master Data",
+    url: "/master-data",
+    icon: Database,
+    roles: ['bd', 'bl', 'admin'],
+    items: [
+      {
+        title: "Referenzen",
+        url: "/master-data/references",
+      },
+      {
+        title: "Kompetenzen",
+        url: "/master-data/competencies",
+      },
+      {
+        title: "Wettbewerber",
+        url: "/master-data/competitors",
+      },
+    ],
   },
   {
     title: "Admin",

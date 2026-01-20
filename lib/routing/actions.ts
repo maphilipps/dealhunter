@@ -6,6 +6,8 @@ import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { sendBLAssignmentEmail } from '@/lib/notifications/email';
 import { auth } from '@/lib/auth';
+import { matchBusinessLine, type RouteBusinessUnitInput } from './routing-agent';
+import { createAuditLog } from '@/lib/admin/audit-actions';
 
 export interface AssignBusinessUnitInput {
   bidId: string;
@@ -100,6 +102,22 @@ export async function assignBusinessUnit(
     const customerName = extractedReqs.customerName || 'Unbekannter Kunde';
     const projectDescription = extractedReqs.projectDescription || 'Keine Beschreibung verfügbar';
 
+    // DEA-5: Create audit log if this is an override
+    if (overrideReason) {
+      await createAuditLog({
+        action: 'bl_routing_override',
+        entityType: 'rfp',
+        entityId: bidId,
+        changes: {
+          assignedBusinessUnit: businessLineName,
+          overrideReason,
+          previousRecommendation: bid.quickScanResults
+            ? JSON.parse(bid.quickScanResults).recommendedBusinessUnit
+            : null,
+        },
+      });
+    }
+
     // Update bid with assigned business line
     const notifiedAt = new Date();
     await db
@@ -165,4 +183,77 @@ export async function getAvailableBusinessUnits(): Promise<string[]> {
     .orderBy(businessUnits.name);
 
   return units.map(u => u.name);
+}
+
+/**
+ * DEA-5: Get AI-powered Business Line recommendation
+ *
+ * Analyzes bid requirements and recommends the best-matching business line
+ * with confidence score and reasoning.
+ *
+ * @param bidId - ID of the bid opportunity
+ * @returns AI recommendation with confidence score
+ */
+export async function getBusinessLineRecommendation(bidId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Get bid with extracted requirements
+    const bids = await db
+      .select()
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
+      .limit(1);
+
+    if (bids.length === 0) {
+      return { success: false, error: 'Bid nicht gefunden' };
+    }
+
+    const bid = bids[0];
+
+    // Parse extracted requirements
+    const extractedReqs = bid.extractedRequirements
+      ? JSON.parse(bid.extractedRequirements)
+      : {};
+
+    // Parse quick scan results if available
+    const quickScan = bid.quickScanResults
+      ? JSON.parse(bid.quickScanResults)
+      : {};
+
+    // Build input for routing agent
+    const routingInput: RouteBusinessUnitInput = {
+      customerName: extractedReqs.customerName,
+      projectDescription: extractedReqs.projectDescription,
+      requirements: extractedReqs.requirements,
+      websiteUrl: bid.websiteUrl || extractedReqs.websiteUrl,
+      industry: extractedReqs.industry,
+      technologies: quickScan.techStack?.detected || extractedReqs.technologies || [],
+    };
+
+    // Call AI routing agent
+    const result = await matchBusinessLine(routingInput);
+
+    if (!result.success || !result.result) {
+      return {
+        success: false,
+        error: result.error || 'Routing-Empfehlung konnte nicht erstellt werden',
+      };
+    }
+
+    return {
+      success: true,
+      recommendation: result.result,
+    };
+  } catch (error) {
+    console.error('Error getting business line recommendation:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
 }

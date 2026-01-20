@@ -1,3 +1,64 @@
+## 2026-01-20 - DEA-8: Legal Agent Implementation
+
+**Issue:** DEA-8 - Legal Agent implementieren
+**Status:** ✅ Complete
+**Priority:** 4 (Low)
+
+**Implemented:**
+- Two-level Legal Agent with BD-Level Quick Check and BL-Level Full Review
+- Legal Red Flag categorization (liability, penalty, ip, warranty, termination, jurisdiction)
+- Comprehensive Compliance Check (procurement law, framework agreements, subcontractors)
+- Legal Risk Score calculation (1-10 scale)
+- Clause extraction and referencing
+- Integration with Bid Decision workflow
+
+**Features:**
+1. **Two-Level Analysis:**
+   - **BD-Level (Quick Check):** Fast risk assessment focusing on critical red flags
+   - **BL-Level (Full Check):** Comprehensive legal review after BL routing
+
+2. **Legal Red Flags (6 Categories):**
+   - **liability:** Unbegrenzte Haftung, unfaire Haftungsklauseln
+   - **penalty:** Unrealistische Pönalen (>10% Budget)
+   - **ip:** Problematische IP-Übertragungsklauseln
+   - **warranty:** Überzogene Gewährleistungsanforderungen
+   - **termination:** Unfaire Kündigungsklauseln
+   - **jurisdiction:** Problematische Gerichtsstände
+
+3. **Compliance Check (BL-Level):**
+   - **Procurement Law (Vergaberecht):** VoB, VgV, UVgO, EU threshold detection
+   - **Framework Agreements (Rahmenverträge):** Call-off rules, existing frameworks
+   - **Subcontractor Rules:** Restrictions, reporting requirements
+
+4. **Risk Scoring:**
+   - **Quick Risk Score (1-10):** Fast assessment during BD phase
+   - **Legal Risk Score (1-10):** Comprehensive score after full check
+   - **Overall Legal Score (0-100):** Inverted risk score for consistency
+
+5. **Clause Referencing:**
+   - Optional clause references for all red flags
+   - Document position tracking
+   - Easy navigation to problematic contract sections
+
+**Schema Changes:**
+- Added `LegalRedFlag` schema with 6 categories
+- Added `LegalQuickCheck` schema for BD-level fast assessment
+- Added `ComplianceCheck` schema for comprehensive compliance analysis
+- Enhanced `LegalAssessment` schema to support `quickCheck` and `fullCheck` levels
+- Added `legalRiskScore` (1-10) alongside `overallLegalScore` (0-100)
+
+**API Changes:**
+- `runLegalQuickCheck(input)`: New function for BD-level quick checks
+- `runLegalAgent(input)`: Enhanced with `level: 'quick' | 'full'` parameter
+- Backward compatible - defaults to 'full' check if level not specified
+
+**Integration:**
+- Updated coordinator-agent.ts to handle new schema structure
+- Legal assessment now supports both quick and full workflows
+- Coordinator accesses `fullCheck` properties with optional chaining
+
+---
+
 ## 2026-01-20 - DEA-7: Contract Agent Implementation
 
 **Issue:** DEA-7 - Contract Agent implementieren

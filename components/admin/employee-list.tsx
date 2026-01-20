@@ -1,7 +1,8 @@
 'use client';
 
-import { Trash2 } from 'lucide-react';
+import { Trash2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import { deleteEmployee } from '@/lib/admin/employees-actions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +21,8 @@ interface Employee {
 }
 
 export function EmployeeList({ employees }: { employees: Employee[] | undefined }) {
+  const router = useRouter();
+
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Möchten Sie "${name}" wirklich löschen?`)) return;
     try {
@@ -56,9 +59,14 @@ export function EmployeeList({ employees }: { employees: Employee[] | undefined 
           <Card key={emp.id}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-medium">{emp.name}</CardTitle>
-              <Button variant="ghost" size="icon" onClick={() => handleDelete(emp.id, emp.name)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              <div className="flex gap-1">
+                <Button variant="ghost" size="icon" onClick={() => router.push(`/admin/employees/${emp.id}`)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => handleDelete(emp.id, emp.name)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div>

@@ -1,22 +1,38 @@
 # Dealhunter
 
-AI-gestützte BD-Entscheidungsplattform für adesso SE.
+> AI-powered Business Development decision platform for adesso SE
+
+Dealhunter automates the complete RFP (Request for Proposal) evaluation workflow - from document upload to BIT/NO BIT decision and team assignment - using AI agents powered by Vercel AI SDK v5.
+
+## Features
+
+- **AI-Powered Extraction** - Automatically extract key information from RFPs (PDF, DOCX, text)
+- **Quick Scan** - Detect tech stack and match to Business Units in seconds
+- **BIT Evaluation** - Multi-agent analysis for bid/no-bid recommendations
+- **Deep Analysis** - Background jobs for comprehensive company research
+- **Team Assignment** - AI-suggested team composition based on skills
+- **Analytics Dashboard** - Track bid rates, conversion metrics, and performance
+- **Admin Panel** - Manage Business Units, Technologies, and Users
 
 ## Quick Start
 
 ```bash
-# Dependencies installieren
+# 1. Install dependencies
 npm install
 
-# Datenbank initialisieren und Seed-Daten laden
+# 2. Set up environment
+cp .env.example .env.local
+# Edit .env.local and add your API keys
+
+# 3. Initialize database and load seed data
 npm run db:push
 npm run db:seed
 
-# Development Server starten
+# 4. Start development server
 npm run dev
 ```
 
-App öffnen: [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Testbenutzer
 
@@ -137,6 +153,110 @@ OPENAI_BASE_URL=https://adesso-ai-hub.3asabc.de/v1
 DATABASE_URL=file:./local.db
 AUTH_SECRET=your-secret-key
 ```
+
+## Troubleshooting
+
+### Common Issues
+
+#### Database Connection Failed
+
+**Error:** `Error: Database connection failed`
+
+**Solution:**
+```bash
+# Recreate database
+rm local.db
+npm run db:push
+npm run db:seed
+```
+
+#### AI API Errors (401 Unauthorized)
+
+**Error:** `401 Unauthorized` when calling AI endpoints
+
+**Solution:**
+1. Check your `.env.local` file has `OPENAI_API_KEY` set
+2. Verify the API key is correct
+3. Check `OPENAI_BASE_URL` is set to `https://adesso-ai-hub.3asabc.de/v1`
+
+#### Build Errors
+
+**Error:** `Module not found: @/lib/...`
+
+**Solution:**
+Check `tsconfig.json` has correct path aliases:
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./*"]
+    }
+  }
+}
+```
+
+#### Session/Auth Issues
+
+**Error:** `Session not found` or unable to login
+
+**Solution:**
+```bash
+# Generate new AUTH_SECRET
+openssl rand -base64 32
+
+# Add to .env.local
+AUTH_SECRET=<your-generated-secret>
+
+# Restart dev server
+npm run dev
+```
+
+#### Port Already in Use
+
+**Error:** `Port 3000 is already in use`
+
+**Solution:**
+```bash
+# Kill process on port 3000
+lsof -ti:3000 | xargs kill -9
+
+# Or use different port
+PORT=3001 npm run dev
+```
+
+#### File Upload Fails
+
+**Error:** File upload returns 500 error
+
+**Solution:**
+1. Check file size (max 10MB)
+2. Verify file type (PDF, DOCX, TXT)
+3. Check disk space
+4. Review server logs in terminal
+
+#### Slow AI Responses
+
+**Issue:** AI agents take too long to respond
+
+**Solution:**
+1. Check your internet connection
+2. Verify adesso AI Hub availability
+3. Consider using smaller models (GPT-4o-mini)
+4. Check Vercel function timeout settings
+
+### Development Tips
+
+- **Clear Cache:** Delete `.next` folder and restart: `rm -rf .next && npm run dev`
+- **View Database:** Use Drizzle Studio: `npm run db:studio`
+- **Check Logs:** Monitor terminal output for detailed error messages
+- **Update Dependencies:** Run `npm install` after pulling latest changes
+
+### Getting Help
+
+- **Documentation:** Check [CONTRIBUTING.md](CONTRIBUTING.md) and [ARCHITECTURE.md](ARCHITECTURE.md)
+- **API Reference:** See [API.md](API.md)
+- **Deployment:** Review [DEPLOYMENT.md](DEPLOYMENT.md)
+- **Team Support:** Contact adesso DevOps team
 
 ## License
 

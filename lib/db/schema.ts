@@ -94,6 +94,7 @@ export const rfps = sqliteTable('rfps', {
 
   // Duplicate Check
   duplicateCheckResult: text('duplicate_check_result'), // JSON - result of duplicate detection
+  descriptionEmbedding: text('description_embedding'), // JSON array - text-embedding-3-large (3072 dimensions)
 
   // Analysis Results (TODO: move to separate tables)
   quickScanResults: text('quick_scan_results'), // JSON

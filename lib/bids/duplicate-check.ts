@@ -2,6 +2,15 @@ import { db } from '@/lib/db';
 import { rfps } from '@/lib/db/schema';
 import { ne, and, isNotNull } from 'drizzle-orm';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
+import {
+  generateRfpEmbedding,
+  cosineSimilarity,
+  similarityToPercentage,
+  parseEmbedding,
+} from './embedding-service';
+
+// Re-export embedding generation for use in other modules
+export { generateRfpEmbedding } from './embedding-service';
 
 /**
  * Duplicate Check Result Types
@@ -137,17 +146,19 @@ function extractUrls(requirements: ExtractedRequirements): string[] {
 }
 
 /**
- * Main function to check for duplicate RFPs
+ * Main function to check for duplicate RFPs with semantic similarity
  *
  * @param extractedRequirements - The extracted requirements to check
  * @param accountId - Optional account ID for exact matching
  * @param excludeRfpId - RFP ID to exclude from results (own ID for updates)
+ * @param currentEmbedding - Optional pre-generated embedding (to avoid regenerating)
  * @returns DuplicateCheckResult with exact and similar matches
  */
 export async function checkForDuplicates(
   extractedRequirements: ExtractedRequirements,
   accountId?: string,
-  excludeRfpId?: string
+  excludeRfpId?: string,
+  currentEmbedding?: number[]
 ): Promise<DuplicateCheckResult> {
   const exactMatches: DuplicateMatch[] = [];
   const similarMatches: Array<DuplicateMatch & { similarity: number }> = [];
@@ -157,6 +168,17 @@ export async function checkForDuplicates(
   const submissionDeadline = extractedRequirements.submissionDeadline;
   const urls = extractUrls(extractedRequirements);
   const normalizedUrls = urls.map(normalizeUrl).filter(u => u.length > 0);
+
+  // Generate embedding for semantic similarity (if not provided)
+  let embedding: number[] | null = currentEmbedding || null;
+  try {
+    if (!embedding) {
+      embedding = await generateRfpEmbedding(extractedRequirements);
+    }
+  } catch (error) {
+    console.error('[Duplicate Check] Failed to generate embedding:', error);
+    // Continue without semantic similarity if embedding fails
+  }
 
   // Build query conditions
   const conditions = [];
@@ -169,13 +191,14 @@ export async function checkForDuplicates(
   // Only check RFPs that have extracted requirements
   conditions.push(isNotNull(rfps.extractedRequirements));
 
-  // Fetch potential duplicates
+  // Fetch potential duplicates (including embeddings)
   const existingRfps = await db
     .select({
       id: rfps.id,
       accountId: rfps.accountId,
       websiteUrl: rfps.websiteUrl,
       extractedRequirements: rfps.extractedRequirements,
+      descriptionEmbedding: rfps.descriptionEmbedding,
       createdAt: rfps.createdAt,
     })
     .from(rfps)
@@ -260,6 +283,29 @@ export async function checkForDuplicates(
           submissionDeadline: existingDeadline,
           createdAt: existing.createdAt,
         });
+      }
+    }
+
+    // Check 4: Semantic similarity via embeddings (NEW)
+    if (embedding && existing.descriptionEmbedding) {
+      const existingEmbedding = parseEmbedding(existing.descriptionEmbedding);
+
+      if (existingEmbedding) {
+        const cosineSim = cosineSimilarity(embedding, existingEmbedding);
+        const semanticSimilarity = similarityToPercentage(cosineSim);
+
+        // High semantic similarity (>85%) indicates potential duplicate
+        if (semanticSimilarity >= 85) {
+          similarMatches.push({
+            rfpId: existing.id,
+            customerName: existingCustomerName,
+            similarity: semanticSimilarity,
+            reason: `Hohe semantische Ähnlichkeit (${semanticSimilarity}% via Embeddings)`,
+            websiteUrl: normalizedExistingUrls[0],
+            submissionDeadline: existingDeadline,
+            createdAt: existing.createdAt,
+          });
+        }
       }
     }
   }

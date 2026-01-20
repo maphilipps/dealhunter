@@ -3,7 +3,7 @@
  * Ensures that XML parsing is protected against XML External Entity (XXE) attacks
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, jest } from 'vitest';
 import { fetchSitemap } from '../utils/crawler';
 import { validateXml } from '../utils/xml-validator';
 

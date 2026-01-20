@@ -3,7 +3,7 @@
  * Tests URL validation to prevent Server-Side Request Forgery attacks
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { isAllowedUrl } from '../utils/url-validator';
 
 describe('SSRF Protection - URL Validation', () => {

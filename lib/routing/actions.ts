@@ -102,19 +102,19 @@ export async function assignBusinessUnit(
     const customerName = extractedReqs.customerName || 'Unbekannter Kunde';
     const projectDescription = extractedReqs.projectDescription || 'Keine Beschreibung verfügbar';
 
-    // DEA-5: Create audit log if this is an override
+    // DEA-25: Create audit log if this is an override
+    const aiRecommendation = bid.quickScanResults
+      ? JSON.parse(bid.quickScanResults).recommendedBusinessUnit
+      : null;
+
     if (overrideReason) {
       await createAuditLog({
-        action: 'bl_routing_override',
+        action: 'bl_override',
         entityType: 'rfp',
         entityId: bidId,
-        changes: {
-          assignedBusinessUnit: businessLineName,
-          overrideReason,
-          previousRecommendation: bid.quickScanResults
-            ? JSON.parse(bid.quickScanResults).recommendedBusinessUnit
-            : null,
-        },
+        previousValue: aiRecommendation,
+        newValue: businessLineName,
+        reason: overrideReason,
       });
     }
 

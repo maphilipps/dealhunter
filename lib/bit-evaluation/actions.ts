@@ -6,6 +6,7 @@ import { rfps } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { runBitEvaluation } from './agent';
 import { getQuickScanResult } from '@/lib/quick-scan/actions';
+import { createAuditLog } from '@/lib/admin/audit-actions';
 
 /**
  * Start BIT/NO BIT evaluation
@@ -257,5 +258,67 @@ export async function confirmLowConfidenceDecision(
   } catch (error) {
     console.error('Confirm decision error:', error);
     return { success: false, error: 'Bestätigung fehlgeschlagen' };
+  }
+}
+
+/**
+ * DEA-25: Manual bid decision override
+ * Allows BL to override AI recommendation with mandatory reason
+ */
+export async function overrideBidDecision(
+  bidId: string,
+  newDecision: 'bid' | 'no_bid',
+  reason: string
+) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  if (!reason || reason.trim().length < 10) {
+    return { success: false, error: 'Begründung muss mindestens 10 Zeichen lang sein' };
+  }
+
+  try {
+    const [bid] = await db
+      .select()
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
+      .limit(1);
+
+    if (!bid) {
+      return { success: false, error: 'Bid nicht gefunden' };
+    }
+
+    // Only BL or admin can override
+    if (session.user.role !== 'bl' && session.user.role !== 'admin') {
+      return { success: false, error: 'Nur BL oder Admin können Entscheidungen überschreiben' };
+    }
+
+    // DEA-25: Create audit log for bid override
+    await createAuditLog({
+      action: 'bid_override',
+      entityType: 'rfp',
+      entityId: bidId,
+      previousValue: bid.decision,
+      newValue: newDecision,
+      reason,
+    });
+
+    // Update bid decision
+    await db
+      .update(rfps)
+      .set({
+        decision: newDecision,
+        status: 'decision_made',
+        updatedAt: new Date(),
+      })
+      .where(eq(rfps.id, bidId));
+
+    return { success: true };
+  } catch (error) {
+    console.error('Override bid decision error:', error);
+    return { success: false, error: 'Override fehlgeschlagen' };
   }
 }

@@ -40,3 +40,33 @@
 - Ready for onboarding new developers
 - Production deployment ready
 
+
+## 2026-01-20 - DEA-2: Extraction Agent implementieren
+
+**Status:** ✅ Complete
+
+**What was implemented:**
+- Migrated extraction agent from raw OpenAI SDK to Vercel AI SDK's `generateObject`
+- Type-safe structured output with automatic Zod schema validation
+- Removed 200 lines of manual JSON parsing and null handling code
+- Maintained existing streaming support for real-time UI updates
+- Uses claude-haiku-4.5 via adesso AI Hub (OpenAI-compatible endpoint)
+- Consistent with other agents in codebase (baseline-comparison, project-planning)
+
+**Benefits:**
+- Cleaner, more maintainable code
+- Better type safety and error handling
+- Automatic Zod validation
+- No more manual JSON cleaning
+
+**Files Changed:**
+- `lib/extraction/agent.ts` - Core extraction agent migration
+
+**Not Implemented (Future Enhancements):**
+- Multi-Pass Extraction (not critical for MVP)
+- Per-field confidence scores (has overall confidence)
+- DSGVO-Bereinigung (complex, better as separate issue)
+
+**Commit:** 52d2311
+**Linear:** https://linear.app/adessocms/issue/DEA-2
+

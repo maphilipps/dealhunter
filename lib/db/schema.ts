@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { relations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
 export const users = sqliteTable('users', {
@@ -613,3 +614,221 @@ export const competitors = sqliteTable('competitors', {
 
 export type Competitor = typeof competitors.$inferSelect;
 export type NewCompetitor = typeof competitors.$inferInsert;
+
+export const teamAssignments = sqliteTable('team_assignments', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+
+  // References
+  rfpId: text('rfp_id')
+    .notNull()
+    .references(() => rfps.id),
+  employeeId: text('employee_id')
+    .notNull()
+    .references(() => employees.id),
+
+  // Assignment Details
+  role: text('role', {
+    enum: ['lead', 'architect', 'developer', 'designer', 'qa', 'pm', 'consultant']
+  }).notNull(),
+
+  // Timestamps
+  assignedAt: integer('assigned_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+  notifiedAt: integer('notified_at', { mode: 'timestamp' })
+}, (table) => ({
+  rfpIdx: index('team_assignments_rfp_idx').on(table.rfpId),
+  employeeIdx: index('team_assignments_employee_idx').on(table.employeeId),
+}));
+
+export type TeamAssignment = typeof teamAssignments.$inferSelect;
+export type NewTeamAssignment = typeof teamAssignments.$inferInsert;
+
+export const subjectiveAssessments = sqliteTable('subjective_assessments', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+
+  // References
+  rfpId: text('rfp_id')
+    .notNull()
+    .references(() => rfps.id),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
+
+  // Assessment Ratings (1-5 scale)
+  customerRelationship: integer('customer_relationship').notNull(), // 1-5
+  strategicImportance: integer('strategic_importance').notNull(), // 1-5
+  winProbability: integer('win_probability').notNull(), // 1-5
+  resourceAvailability: integer('resource_availability').notNull(), // 1-5
+  technicalFit: integer('technical_fit').notNull(), // 1-5
+
+  // Additional Notes
+  notes: text('notes'),
+
+  // Optimistic Locking
+  version: integer('version').notNull().default(1),
+
+  // Timestamps
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+}, (table) => ({
+  rfpIdx: index('subjective_assessments_rfp_idx').on(table.rfpId),
+  userIdx: index('subjective_assessments_user_idx').on(table.userId),
+}));
+
+export type SubjectiveAssessment = typeof subjectiveAssessments.$inferSelect;
+export type NewSubjectiveAssessment = typeof subjectiveAssessments.$inferInsert;
+
+// ===== Drizzle Relations =====
+
+export const usersRelations = relations(users, ({ many, one }) => ({
+  rfps: many(rfps),
+  references: many(references),
+  competencies: many(competencies),
+  accounts: many(accounts),
+  subjectiveAssessments: many(subjectiveAssessments),
+  businessUnit: one(businessUnits, {
+    fields: [users.businessUnitId],
+    references: [businessUnits.id],
+  }),
+}));
+
+export const rfpsRelations = relations(rfps, ({ one, many }) => ({
+  user: one(users, {
+    fields: [rfps.userId],
+    references: [users.id],
+  }),
+  account: one(accounts, {
+    fields: [rfps.accountId],
+    references: [accounts.id],
+  }),
+  quickScan: one(quickScans, {
+    fields: [rfps.quickScanId],
+    references: [quickScans.id],
+  }),
+  deepMigrationAnalysis: one(deepMigrationAnalyses, {
+    fields: [rfps.deepMigrationAnalysisId],
+    references: [deepMigrationAnalyses.id],
+  }),
+  documents: many(documents),
+  teamAssignments: many(teamAssignments),
+  subjectiveAssessments: many(subjectiveAssessments),
+}));
+
+export const businessUnitsRelations = relations(businessUnits, ({ many }) => ({
+  technologies: many(technologies),
+  employees: many(employees),
+  users: many(users),
+}));
+
+export const technologiesRelations = relations(technologies, ({ one }) => ({
+  businessUnit: one(businessUnits, {
+    fields: [technologies.businessUnitId],
+    references: [businessUnits.id],
+  }),
+}));
+
+export const employeesRelations = relations(employees, ({ one, many }) => ({
+  businessUnit: one(businessUnits, {
+    fields: [employees.businessUnitId],
+    references: [businessUnits.id],
+  }),
+  teamAssignments: many(teamAssignments),
+}));
+
+export const accountsRelations = relations(accounts, ({ one, many }) => ({
+  user: one(users, {
+    fields: [accounts.userId],
+    references: [users.id],
+  }),
+  rfps: many(rfps),
+}));
+
+export const quickScansRelations = relations(quickScans, ({ one }) => ({
+  rfp: one(rfps, {
+    fields: [quickScans.rfpId],
+    references: [rfps.id],
+  }),
+}));
+
+export const deepMigrationAnalysesRelations = relations(deepMigrationAnalyses, ({ one }) => ({
+  rfp: one(rfps, {
+    fields: [deepMigrationAnalyses.rfpId],
+    references: [rfps.id],
+  }),
+  user: one(users, {
+    fields: [deepMigrationAnalyses.userId],
+    references: [users.id],
+  }),
+}));
+
+export const documentsRelations = relations(documents, ({ one }) => ({
+  rfp: one(rfps, {
+    fields: [documents.rfpId],
+    references: [rfps.id],
+  }),
+  user: one(users, {
+    fields: [documents.userId],
+    references: [users.id],
+  }),
+}));
+
+export const referencesRelations = relations(references, ({ one }) => ({
+  user: one(users, {
+    fields: [references.userId],
+    references: [users.id],
+  }),
+  validatedBy: one(users, {
+    fields: [references.validatedByUserId],
+    references: [users.id],
+  }),
+}));
+
+export const competenciesRelations = relations(competencies, ({ one }) => ({
+  user: one(users, {
+    fields: [competencies.userId],
+    references: [users.id],
+  }),
+  validatedBy: one(users, {
+    fields: [competencies.validatedByUserId],
+    references: [users.id],
+  }),
+}));
+
+export const competitorsRelations = relations(competitors, ({ one }) => ({
+  user: one(users, {
+    fields: [competitors.userId],
+    references: [users.id],
+  }),
+  validatedBy: one(users, {
+    fields: [competitors.validatedByUserId],
+    references: [users.id],
+  }),
+}));
+
+export const teamAssignmentsRelations = relations(teamAssignments, ({ one }) => ({
+  rfp: one(rfps, {
+    fields: [teamAssignments.rfpId],
+    references: [rfps.id],
+  }),
+  employee: one(employees, {
+    fields: [teamAssignments.employeeId],
+    references: [employees.id],
+  }),
+}));
+
+export const subjectiveAssessmentsRelations = relations(subjectiveAssessments, ({ one }) => ({
+  rfp: one(rfps, {
+    fields: [subjectiveAssessments.rfpId],
+    references: [rfps.id],
+  }),
+  user: one(users, {
+    fields: [subjectiveAssessments.userId],
+    references: [users.id],
+  }),
+}));

@@ -515,3 +515,137 @@ Implemented comprehensive AI-powered Business Line routing agent using Vercel AI
 - Agent follows AI SDK best practices with structured outputs
 - Ready for DEA-9 (Decision Agent) to consume routing recommendations
 
+
+## 2026-01-20 - DEA-9: Decision Agent (Coordinator) implementieren
+
+**Issue:** DEA-9 - Decision Agent (Coordinator) implementieren
+**Status:** ✅ Complete
+**Priority:** 3 (Medium)
+
+**Summary:**
+Implemented comprehensive Coordinator Agent that synthesizes all agent results, generates decision trees, and provides AI-powered recommendations with confidence-based escalation.
+
+**Core Features:**
+
+**1. Decision Tree Generation** (`buildDecisionTree()`)
+- Hierarchical tree structure for UI visualization
+- Root node with overall recommendation (BIT/NO BIT)
+- Critical blockers branch (if any exist)
+- 6 criterion branches with weighted scores:
+  - Capability Match (25% weight)
+  - Deal Quality (20% weight)
+  - Strategic Fit (15% weight)
+  - Competition Analysis (15% weight)
+  - Legal Assessment (15% weight)
+  - Reference Match (10% weight)
+- Each criterion shows score, weight, sentiment, and sub-criteria
+- Final outcome node with detailed reasoning
+- Sentiment indicators: positive, negative, neutral, critical
+
+**2. Confidence Calculation** (`calculateConfidence()`)
+- Aggregates confidence levels from all 6 agents
+- Applies consistency penalty based on variance
+- Reduces overall confidence if agent confidence levels are inconsistent
+- Max 20-point penalty for high standard deviation
+- Returns confidence score 0-100
+
+**3. AI-Powered Synthesis** (`runCoordinatorAgent()`)
+- German-language executive summary (2-3 sentences)
+- Top 3-5 key strengths and risks
+- Pro/Contra arguments (balanced analysis, even for NO BIT)
+- Recommended next steps
+- Critical blockers aggregation
+- Uses Claude Sonnet 4 via `generateStructuredOutput`
+
+**4. Escalation Logic**
+- Flags decisions with confidence < 70% for human review
+- `escalationRequired` boolean in output
+- Ensures low-confidence decisions get manual review
+
+**Architecture:**
+
+**New File:** `lib/bit-evaluation/coordinator-agent.ts` (464 lines)
+- `buildDecisionTree()` - Creates hierarchical decision tree
+- `calculateConfidence()` - Aggregates agent confidences
+- `runCoordinatorAgent()` - Main coordinator function
+
+**Enhanced Schema:** `lib/bit-evaluation/schema.ts`
+- `DecisionNode` - Recursive tree node type
+- `CoordinatorOutput` - Complete coordinator output
+- Added to `BitEvaluationResult` schema
+
+**Integration:** `lib/bit-evaluation/agent.ts`
+- Coordinator runs after all 6 agents complete (parallel execution)
+- Used in both streaming and non-streaming flows
+- Emits coordinator events for real-time UI updates
+- `coordinatorOutput` included in evaluation results
+
+**Decision Tree Structure:**
+```
+Root (Bid/No-Bid Decision)
+├── Critical Blockers (if any)
+│   ├── Blocker 1
+│   └── Blocker 2
+├── Capability Match (25% weight)
+│   ├── Technology Match
+│   └── Scale Match
+├── Deal Quality (20% weight)
+│   ├── Budget Adequacy
+│   ├── Timeline Realism
+│   └── Expected Margin
+├── Strategic Fit (15% weight)
+│   ├── Customer Type Match
+│   └── Industry Alignment
+├── Competition (15% weight)
+│   ├── Competition Level
+│   └── Incumbent Advantage
+├── Legal (15% weight)
+│   ├── Contract Type
+│   └── Liability Risk
+├── Reference (10% weight)
+│   ├── Similar Projects
+│   └── Success Rate
+└── Outcome (Final Recommendation)
+```
+
+**Tech Stack:**
+- Vercel AI SDK (`generateStructuredOutput` from @/lib/ai/config)
+- Claude Sonnet 4 for AI synthesis
+- Zod schemas with recursive types (`z.lazy()` for DecisionNode)
+- Promise.all for parallel agent execution (preserved existing pattern)
+- TypeScript with full type safety
+
+**Acceptance Criteria:**
+✅ CoordinatorOutput Schema (recommendation, confidence, decisionTree, synthesis)
+✅ Tools: buildDecisionTree, calculateConfidence
+✅ Parallel: Tech, Legal, Commercial, Competition, Reference Agents
+✅ Sequential: Coordinator synthesizes after agents complete
+✅ DecisionNode Schema für Tree-Visualisierung
+✅ Reasoning Chain documented in tree nodes
+✅ Confidence-based escalation (<70%)
+✅ Pro/Contra-Argumentation
+
+**Files Modified:**
+- `lib/bit-evaluation/agent.ts` - Integrated coordinator
+- `lib/bit-evaluation/schema.ts` - Added DecisionNode + CoordinatorOutput schemas
+
+**Files Created:**
+- `lib/bit-evaluation/coordinator-agent.ts` - Standalone coordinator implementation
+
+**Integration Points:**
+- Compatible with existing evaluation API endpoints
+- Works with streaming and non-streaming flows
+- Ready for UI consumption (decision tree visualization)
+- `coordinatorOutput` available in `BitEvaluationResult`
+
+**Commit:** 5eaf674
+**Linear:** https://linear.app/adessocms/issue/DEA-9
+
+**Notes:**
+- Uses existing AI config pattern (no new dependencies)
+- Fallback logic if AI synthesis fails
+- Decision tree provides clear visualization path for UI
+- German-language synthesis for adesso SE context
+- Ready for UI integration (tree component needed)
+- No breaking changes to existing evaluation flow
+

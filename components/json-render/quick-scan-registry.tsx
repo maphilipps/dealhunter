@@ -5,7 +5,57 @@ import type { ComponentType, ReactNode } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, XCircle, Server, Package, Lightbulb, Code } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
+  CheckCircle2,
+  XCircle,
+  Server,
+  Package,
+  Lightbulb,
+  Code,
+  HelpCircle,
+  Globe,
+  Shield,
+  Scale,
+  Zap,
+  Navigation,
+  Building,
+  Image,
+  FileText,
+  Users,
+  FolderTree,
+  Menu,
+  BarChart3,
+  Linkedin,
+  Layers,
+  FormInput,
+  Play,
+  MousePointer,
+  Mail,
+  Phone,
+  ExternalLink,
+  ChevronDown,
+  ChevronRight,
+  Maximize2,
+  Monitor,
+  Smartphone,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Types for json-render elements
@@ -27,6 +77,19 @@ const iconMap = {
   content: Package,
   features: Code,
   recommendation: Lightbulb,
+  accessibility: Shield,
+  seo: Globe,
+  legal: Scale,
+  performance: Zap,
+  navigation: Navigation,
+  company: Building,
+  migration: FileText,
+  screenshots: Image,
+  questions: HelpCircle,
+  decisionMakers: Users,
+  siteTree: FolderTree,
+  contentTypes: BarChart3,
+  extractedComponents: Layers,
 };
 
 // Variant styles for ResultCard
@@ -477,16 +540,1216 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
       </div>
     );
   },
+
+  QuestionChecklist: ({ element }) => {
+    const { title, projectType, questions, summary } = element.props as {
+      title?: string;
+      projectType?: 'migration' | 'greenfield' | 'relaunch';
+      questions: Array<{
+        id: number;
+        question: string;
+        answered: boolean;
+        answer?: string;
+      }>;
+      summary?: {
+        answered: number;
+        total: number;
+      };
+    };
+
+    const projectTypeLabels = {
+      migration: 'Migration',
+      greenfield: 'Greenfield',
+      relaunch: 'Relaunch',
+    };
+
+    const projectTypeColors = {
+      migration: 'bg-blue-100 text-blue-800 border-blue-200',
+      greenfield: 'bg-green-100 text-green-800 border-green-200',
+      relaunch: 'bg-purple-100 text-purple-800 border-purple-200',
+    };
+
+    const answeredCount = summary?.answered ?? questions.filter(q => q.answered).length;
+    const totalCount = summary?.total ?? questions.length;
+    const progressPercent = totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <HelpCircle className="h-5 w-5 text-violet-600" />
+            {title && <h3 className="font-medium">{title}</h3>}
+          </div>
+          <div className="flex items-center gap-2">
+            {projectType && (
+              <Badge className={cn('text-xs', projectTypeColors[projectType])}>
+                {projectTypeLabels[projectType]}
+              </Badge>
+            )}
+            <Badge variant="secondary">
+              {answeredCount}/{totalCount} beantwortet
+            </Badge>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <Progress value={progressPercent} className="flex-1 h-2" />
+          <span className="text-sm font-medium text-muted-foreground">{progressPercent}%</span>
+        </div>
+
+        <div className="space-y-2">
+          {questions.map((q) => (
+            <div key={q.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50">
+              {q.answered ? (
+                <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+              ) : (
+                <XCircle className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className={cn('text-sm', !q.answered && 'text-muted-foreground')}>
+                  {q.id}. {q.question}
+                </p>
+                {q.answered && q.answer && (
+                  <p className="text-xs text-green-700 mt-1 line-clamp-2">
+                    → {q.answer}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  },
+
+  ScoreCard: ({ element }) => {
+    const { label, score, maxScore = 100, variant = 'default', showProgress = true } = element.props as {
+      label: string;
+      score: number;
+      maxScore?: number;
+      variant?: 'default' | 'success' | 'warning' | 'danger';
+      showProgress?: boolean;
+    };
+
+    const variantColors = {
+      default: 'text-blue-600',
+      success: 'text-green-600',
+      warning: 'text-yellow-600',
+      danger: 'text-red-600',
+    };
+
+    const progressColors = {
+      default: '[&>div]:bg-blue-500',
+      success: '[&>div]:bg-green-500',
+      warning: '[&>div]:bg-yellow-500',
+      danger: '[&>div]:bg-red-500',
+    };
+
+    const percent = Math.min(100, Math.round((score / maxScore) * 100));
+
+    return (
+      <div className="p-4 rounded-lg bg-muted/50 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">{label}</span>
+          <span className={cn('text-xl font-bold', variantColors[variant])}>
+            {score}{maxScore !== 100 && `/${maxScore}`}
+          </span>
+        </div>
+        {showProgress && (
+          <Progress value={percent} className={cn('h-2', progressColors[variant])} />
+        )}
+      </div>
+    );
+  },
+
+  Screenshots: ({ element }) => {
+    const { desktop, mobile, timestamp } = element.props as {
+      desktop?: string;
+      mobile?: string;
+      timestamp?: string;
+    };
+
+    const [isOpen, setIsOpen] = React.useState(false);
+
+    // Lightbox-Komponente für ein einzelnes Bild
+    const ImageWithLightbox = ({
+      src,
+      alt,
+      label,
+      icon: Icon,
+      maxWidth,
+    }: {
+      src: string;
+      alt: string;
+      label: string;
+      icon: React.ComponentType<{ className?: string }>;
+      maxWidth?: string;
+    }) => (
+      <Dialog>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Icon className="h-4 w-4" />
+            <span>{label}</span>
+          </div>
+          <DialogTrigger asChild>
+            <div
+              className={cn(
+                'relative rounded-lg border overflow-hidden cursor-pointer group',
+                maxWidth
+              )}
+            >
+              <img
+                src={src}
+                alt={alt}
+                className="w-full h-auto object-cover transition-transform group-hover:scale-[1.02]"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-full p-2">
+                  <Maximize2 className="h-5 w-5 text-white" />
+                </div>
+              </div>
+            </div>
+          </DialogTrigger>
+        </div>
+        <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 overflow-hidden">
+          <DialogTitle className="sr-only">{alt}</DialogTitle>
+          <img
+            src={src}
+            alt={alt}
+            className="w-full h-full object-contain"
+          />
+        </DialogContent>
+      </Dialog>
+    );
+
+    if (!desktop && !mobile) {
+      return (
+        <div className="p-4 rounded-lg bg-muted/50 text-center text-muted-foreground">
+          Keine Screenshots verfügbar
+        </div>
+      );
+    }
+
+    return (
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-2">
+              <Image className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium text-sm">Screenshots</span>
+              <Badge variant="secondary" className="text-xs">
+                {[desktop, mobile].filter(Boolean).length} Bild{[desktop, mobile].filter(Boolean).length > 1 ? 'er' : ''}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              {timestamp && (
+                <span className="text-xs hidden sm:inline">
+                  {new Date(timestamp).toLocaleDateString('de-DE')}
+                </span>
+              )}
+              <ChevronDown className={cn(
+                'h-4 w-4 transition-transform',
+                isOpen && 'rotate-180'
+              )} />
+            </div>
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="pt-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {desktop && (
+                <ImageWithLightbox
+                  src={desktop}
+                  alt="Desktop Screenshot"
+                  label="Desktop"
+                  icon={Monitor}
+                />
+              )}
+              {mobile && (
+                <ImageWithLightbox
+                  src={mobile}
+                  alt="Mobile Screenshot"
+                  label="Mobile"
+                  icon={Smartphone}
+                  maxWidth="max-w-[200px] mx-auto"
+                />
+              )}
+            </div>
+            {timestamp && (
+              <p className="text-xs text-muted-foreground text-center">
+                Erstellt: {new Date(timestamp).toLocaleString('de-DE')}
+              </p>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  },
+
+  // ========================================
+  // NEW: Decision Makers List Component
+  // ========================================
+  DecisionMakersList: ({ element }) => {
+    const { decisionMakers, researchQuality } = element.props as {
+      decisionMakers: Array<{
+        name: string;
+        role: string;
+        email?: string;
+        emailConfidence?: 'confirmed' | 'likely' | 'derived';
+        phone?: string;
+        linkedInUrl?: string;
+        xingUrl?: string;
+        source?: string;
+      }>;
+      researchQuality?: {
+        linkedInFound?: number;
+        emailsConfirmed?: number;
+        emailsDerived?: number;
+      };
+    };
+
+    if (!decisionMakers || decisionMakers.length === 0) {
+      return (
+        <div className="p-4 rounded-lg bg-muted/50 text-center text-muted-foreground">
+          Keine Entscheidungsträger gefunden
+        </div>
+      );
+    }
+
+    const confidenceColors = {
+      confirmed: 'bg-green-100 text-green-800 border-green-200',
+      likely: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      derived: 'bg-orange-100 text-orange-800 border-orange-200',
+    };
+
+    return (
+      <div className="space-y-4">
+        {researchQuality && (
+          <div className="flex gap-3 text-xs text-muted-foreground mb-3">
+            {researchQuality.linkedInFound !== undefined && (
+              <span>{researchQuality.linkedInFound} LinkedIn Profile</span>
+            )}
+            {researchQuality.emailsConfirmed !== undefined && (
+              <span>{researchQuality.emailsConfirmed} bestätigte Emails</span>
+            )}
+            {researchQuality.emailsDerived !== undefined && (
+              <span>{researchQuality.emailsDerived} abgeleitete Emails</span>
+            )}
+          </div>
+        )}
+        <div className="grid gap-3">
+          {decisionMakers.map((dm, idx) => (
+            <div key={idx} className="p-3 rounded-lg border bg-card space-y-2">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-medium">{dm.name}</p>
+                  <p className="text-sm text-muted-foreground">{dm.role}</p>
+                </div>
+                <div className="flex gap-1">
+                  {dm.linkedInUrl && (
+                    <a
+                      href={dm.linkedInUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-md hover:bg-muted"
+                    >
+                      <Linkedin className="h-4 w-4 text-blue-600" />
+                    </a>
+                  )}
+                  {dm.xingUrl && (
+                    <a
+                      href={dm.xingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-md hover:bg-muted"
+                    >
+                      <ExternalLink className="h-4 w-4 text-green-600" />
+                    </a>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 text-sm">
+                {dm.email && (
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    <a href={`mailto:${dm.email}`} className="text-blue-600 hover:underline">
+                      {dm.email}
+                    </a>
+                    {dm.emailConfidence && (
+                      <Badge className={cn('text-[10px] px-1.5 py-0', confidenceColors[dm.emailConfidence])}>
+                        {dm.emailConfidence}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+                {dm.phone && (
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                    <a href={`tel:${dm.phone}`} className="text-blue-600 hover:underline">
+                      {dm.phone}
+                    </a>
+                  </div>
+                )}
+              </div>
+              {dm.source && (
+                <p className="text-xs text-muted-foreground">Quelle: {dm.source}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  },
+
+  // ========================================
+  // NEW: Site Tree Component - Vollständiger rekursiver Baum
+  // ========================================
+  SiteTree: ({ element }) => {
+    // Erweiterte Typdefinition für alle verfügbaren Daten
+    interface SiteTreeNode {
+      path: string;
+      url?: string;
+      count: number;
+      children?: SiteTreeNode[];
+    }
+
+    interface NavItem {
+      label: string;
+      url?: string;
+      children?: NavItem[];
+    }
+
+    interface SiteTreeProps {
+      totalPages: number;
+      maxDepth: number;
+      crawledAt?: string;
+      sources?: {
+        sitemap?: number;
+        linkDiscovery?: number;
+        navigation?: number;
+      };
+      sections?: Array<{
+        path: string;
+        label?: string;
+        count: number;
+        depth?: number;
+        children?: SiteTreeNode[];
+      }>;
+      navigation?: {
+        mainNav?: NavItem[];
+        footerNav?: NavItem[];
+        breadcrumbs?: boolean;
+        megaMenu?: boolean;
+        stickyHeader?: boolean;
+        mobileMenu?: boolean;
+      };
+    }
+
+    const props = element.props as unknown as SiteTreeProps;
+    const { totalPages, maxDepth, crawledAt, sources, sections, navigation } = props;
+
+    // State für alle expandierten Nodes (mit Pfad als Key)
+    const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
+    const [expandAll, setExpandAll] = React.useState(false);
+
+    const toggleNode = (path: string) => {
+      setExpanded(prev => ({ ...prev, [path]: !prev[path] }));
+    };
+
+    const toggleExpandAll = () => {
+      if (expandAll) {
+        setExpanded({});
+      } else {
+        // Alle Pfade sammeln und expandieren
+        const allPaths: Record<string, boolean> = {};
+        const collectPaths = (nodes: SiteTreeNode[] | undefined, prefix: string) => {
+          nodes?.forEach((node, idx) => {
+            const key = `${prefix}/${node.path}-${idx}`;
+            if (node.children?.length) {
+              allPaths[key] = true;
+              collectPaths(node.children, key);
+            }
+          });
+        };
+        sections?.forEach((section, idx) => {
+          const key = `section-${idx}`;
+          if (section.children?.length) {
+            allPaths[key] = true;
+            collectPaths(section.children, key);
+          }
+        });
+        setExpanded(allPaths);
+      }
+      setExpandAll(!expandAll);
+    };
+
+    // Rekursive Tree-Node Komponente
+    const TreeNode = ({
+      node,
+      depth = 0,
+      pathKey
+    }: {
+      node: SiteTreeNode;
+      depth?: number;
+      pathKey: string;
+    }) => {
+      const hasChildren = node.children && node.children.length > 0;
+      const isExpanded = expanded[pathKey] || false;
+      const paddingLeft = 12 + (depth * 16);
+
+      return (
+        <div className="border-l border-muted ml-2">
+          <button
+            onClick={() => hasChildren && toggleNode(pathKey)}
+            className={cn(
+              'w-full flex items-center justify-between py-1.5 px-2 hover:bg-muted/50 text-left text-sm',
+              hasChildren ? 'cursor-pointer' : 'cursor-default'
+            )}
+            style={{ paddingLeft: `${paddingLeft}px` }}
+          >
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              {hasChildren ? (
+                isExpanded ? (
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                )
+              ) : (
+                <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              )}
+              <span className={cn(
+                'truncate',
+                hasChildren ? 'font-medium' : 'text-muted-foreground'
+              )}>
+                {node.path || '/'}
+              </span>
+              {node.url && (
+                <a
+                  href={node.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+            <Badge variant="outline" className="text-xs ml-2 shrink-0">{node.count}</Badge>
+          </button>
+          {isExpanded && hasChildren && (
+            <div className="bg-muted/20">
+              {node.children!.map((child, idx) => (
+                <TreeNode
+                  key={`${pathKey}/${child.path}-${idx}`}
+                  node={child}
+                  depth={depth + 1}
+                  pathKey={`${pathKey}/${child.path}-${idx}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // Navigation Menu Komponente
+    const NavMenu = ({ items, title }: { items: NavItem[]; title: string }) => (
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
+        <div className="space-y-0.5">
+          {items.map((item, idx) => (
+            <div key={idx} className="text-sm">
+              <div className="flex items-center gap-2 py-1">
+                <Menu className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">{item.label}</span>
+                {item.url && (
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+              {item.children && item.children.length > 0 && (
+                <div className="ml-5 border-l border-muted pl-2 space-y-0.5">
+                  {item.children.map((child, cidx) => (
+                    <div key={cidx} className="flex items-center gap-2 py-0.5 text-muted-foreground">
+                      <span>{child.label}</span>
+                      {child.url && (
+                        <a
+                          href={child.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+
+    return (
+      <div className="space-y-4">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="p-3 rounded-lg bg-muted/50">
+            <p className="text-sm text-muted-foreground">Gesamte Seiten</p>
+            <p className="text-2xl font-bold">{totalPages}</p>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/50">
+            <p className="text-sm text-muted-foreground">Max. Tiefe</p>
+            <p className="text-2xl font-bold">{maxDepth}</p>
+          </div>
+          {sources?.sitemap !== undefined && sources.sitemap > 0 && (
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-sm text-muted-foreground">Aus Sitemap</p>
+              <p className="text-2xl font-bold">{sources.sitemap}</p>
+            </div>
+          )}
+          {sources?.linkDiscovery !== undefined && sources.linkDiscovery > 0 && (
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-sm text-muted-foreground">Link Discovery</p>
+              <p className="text-2xl font-bold">{sources.linkDiscovery}</p>
+            </div>
+          )}
+          {sources?.navigation !== undefined && sources.navigation > 0 && (
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-sm text-muted-foreground">Aus Navigation</p>
+              <p className="text-2xl font-bold">{sources.navigation}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Navigation Features */}
+        {navigation && (
+          <div className="flex flex-wrap gap-2">
+            {navigation.breadcrumbs && (
+              <Badge variant="secondary" className="text-xs">Breadcrumbs</Badge>
+            )}
+            {navigation.megaMenu && (
+              <Badge variant="secondary" className="text-xs">Mega-Menü</Badge>
+            )}
+            {navigation.stickyHeader && (
+              <Badge variant="secondary" className="text-xs">Sticky Header</Badge>
+            )}
+            {navigation.mobileMenu && (
+              <Badge variant="secondary" className="text-xs">Mobile Menü</Badge>
+            )}
+          </div>
+        )}
+
+        {/* Main Navigation */}
+        {navigation?.mainNav && navigation.mainNav.length > 0 && (
+          <div className="border rounded-lg p-3">
+            <NavMenu items={navigation.mainNav} title="Hauptnavigation" />
+          </div>
+        )}
+
+        {/* Footer Navigation */}
+        {navigation?.footerNav && navigation.footerNav.length > 0 && (
+          <div className="border rounded-lg p-3">
+            <NavMenu items={navigation.footerNav} title="Footer Navigation" />
+          </div>
+        )}
+
+        {/* Full Site Tree */}
+        {sections && sections.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">Vollständige Seitenstruktur</p>
+              <button
+                onClick={toggleExpandAll}
+                className="text-xs text-blue-600 hover:text-blue-800"
+              >
+                {expandAll ? 'Alle einklappen' : 'Alle aufklappen'}
+              </button>
+            </div>
+            <div className="border rounded-lg overflow-hidden max-h-[500px] overflow-y-auto">
+              {sections.map((section, idx) => {
+                const sectionKey = `section-${idx}`;
+                const hasChildren = section.children && section.children.length > 0;
+                const isExpanded = expanded[sectionKey] || false;
+
+                return (
+                  <div key={idx} className="border-b last:border-b-0">
+                    <button
+                      onClick={() => hasChildren && toggleNode(sectionKey)}
+                      className={cn(
+                        'w-full flex items-center justify-between p-2 hover:bg-muted/50 text-left',
+                        hasChildren ? 'cursor-pointer' : 'cursor-default'
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        {hasChildren ? (
+                          isExpanded ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          )
+                        ) : (
+                          <FolderTree className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <span className="font-medium text-sm">
+                          {section.label || section.path || '/'}
+                        </span>
+                        {section.label && section.path && section.label !== section.path && (
+                          <span className="text-xs text-muted-foreground">({section.path})</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {section.depth !== undefined && (
+                          <span className="text-xs text-muted-foreground">Tiefe: {section.depth}</span>
+                        )}
+                        <Badge variant="secondary">{section.count}</Badge>
+                      </div>
+                    </button>
+                    {isExpanded && hasChildren && (
+                      <div className="border-t bg-muted/10">
+                        {section.children!.map((child, cidx) => (
+                          <TreeNode
+                            key={`${sectionKey}/${child.path}-${cidx}`}
+                            node={child}
+                            depth={0}
+                            pathKey={`${sectionKey}/${child.path}-${cidx}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Crawl Timestamp */}
+        {crawledAt && (
+          <p className="text-xs text-muted-foreground text-right">
+            Gecrawlt: {new Date(crawledAt).toLocaleString('de-DE')}
+          </p>
+        )}
+      </div>
+    );
+  },
+
+  // ========================================
+  // NEW: Navigation Stats Component
+  // ========================================
+  NavigationStats: ({ element }) => {
+    const { totalItems, maxDepth, mainNav, features } = element.props as {
+      totalItems?: number;
+      maxDepth?: number;
+      mainNav?: Array<{ label: string; url?: string }>;
+      features?: {
+        hasSearch?: boolean;
+        hasBreadcrumbs?: boolean;
+        hasMegaMenu?: boolean;
+        hasStickyHeader?: boolean;
+        hasFooterNav?: boolean;
+      };
+    };
+
+    const navFeatures = features ? [
+      { name: 'Suche', detected: !!features.hasSearch },
+      { name: 'Breadcrumbs', detected: !!features.hasBreadcrumbs },
+      { name: 'Mega Menu', detected: !!features.hasMegaMenu },
+      { name: 'Sticky Header', detected: !!features.hasStickyHeader },
+      { name: 'Footer Navigation', detected: !!features.hasFooterNav },
+    ] : [];
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          {totalItems !== undefined && (
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-sm text-muted-foreground">Nav-Items</p>
+              <p className="text-2xl font-bold">{totalItems}</p>
+            </div>
+          )}
+          {maxDepth !== undefined && (
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-sm text-muted-foreground">Max. Tiefe</p>
+              <p className="text-2xl font-bold">{maxDepth}</p>
+            </div>
+          )}
+        </div>
+
+        {mainNav && mainNav.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">Hauptnavigation</p>
+            <div className="flex flex-wrap gap-2">
+              {mainNav.map((item, idx) => (
+                <Badge key={idx} variant="outline" className="text-sm">
+                  <Menu className="h-3 w-3 mr-1" />
+                  {item.label}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {navFeatures.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">Features</p>
+            <div className="grid gap-1">
+              {navFeatures.map((feature, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  {feature.detected ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <span className={cn('text-sm', !feature.detected && 'text-muted-foreground')}>
+                    {feature.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  },
+
+  // ========================================
+  // NEW: Content Type Distribution Component
+  // ========================================
+  ContentTypeDistribution: ({ element }) => {
+    const { estimatedContentTypes, distribution, recommendations } = element.props as {
+      estimatedContentTypes?: number;
+      distribution: Array<{
+        type: string;
+        count: number;
+        percentage: number;
+        color?: string;
+      }>;
+      recommendations?: string[];
+    };
+
+    // Default colors for content types
+    const typeColors: Record<string, string> = {
+      'Seiten': 'bg-blue-500',
+      'Blog-Artikel': 'bg-green-500',
+      'Produkte': 'bg-purple-500',
+      'News': 'bg-orange-500',
+      'Events': 'bg-pink-500',
+      'Downloads': 'bg-cyan-500',
+      'FAQ': 'bg-yellow-500',
+      'Jobs': 'bg-red-500',
+    };
+
+    const maxCount = Math.max(...distribution.map(d => d.count), 1);
+
+    return (
+      <div className="space-y-4">
+        {estimatedContentTypes !== undefined && (
+          <div className="p-3 rounded-lg bg-muted/50 w-fit">
+            <p className="text-sm text-muted-foreground">Content Types</p>
+            <p className="text-2xl font-bold">{estimatedContentTypes}</p>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {distribution.map((item, idx) => (
+            <div key={idx} className="space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">{item.type}</span>
+                <span className="text-muted-foreground">
+                  {item.count} ({item.percentage}%)
+                </span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all',
+                    item.color || typeColors[item.type] || 'bg-primary'
+                  )}
+                  style={{ width: `${(item.count / maxCount) * 100}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {recommendations && recommendations.length > 0 && (
+          <div className="space-y-2 pt-2 border-t">
+            <p className="text-sm font-medium text-muted-foreground">Migration-Empfehlungen</p>
+            <ul className="space-y-1">
+              {recommendations.map((rec, idx) => (
+                <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                  <span className="text-blue-500 mt-1">•</span>
+                  {rec}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  },
+
+  // ========================================
+  // NEW: TechStack Component (for grouped tech display)
+  // ========================================
+  TechStack: ({ element }) => {
+    const { title, technologies } = element.props as {
+      title?: string;
+      technologies: Array<{
+        name: string;
+        version?: string;
+        confidence?: number;
+        category?: string;
+      }>;
+    };
+
+    const categoryColors: Record<string, string> = {
+      cms: 'bg-purple-100 text-purple-800 border-purple-200',
+      framework: 'bg-blue-100 text-blue-800 border-blue-200',
+      backend: 'bg-green-100 text-green-800 border-green-200',
+      hosting: 'bg-orange-100 text-orange-800 border-orange-200',
+      library: 'bg-gray-100 text-gray-800 border-gray-200',
+      tool: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    };
+
+    return (
+      <div className="space-y-2">
+        {title && <p className="font-medium text-sm">{title}</p>}
+        <div className="flex flex-wrap gap-2">
+          {technologies.map((tech, idx) => (
+            <div
+              key={idx}
+              className={cn(
+                'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border',
+                tech.category ? categoryColors[tech.category] : 'bg-muted border-border'
+              )}
+            >
+              <span className="font-medium">{tech.name}</span>
+              {tech.version && <span className="text-xs opacity-70">v{tech.version}</span>}
+              {tech.confidence !== undefined && (
+                <Badge variant="secondary" className="text-xs">
+                  {tech.confidence}%
+                </Badge>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  },
+
+  // ========================================
+  // NEW: Extracted Components Display
+  // ========================================
+  ExtractedComponents: ({ element }) => {
+    interface NavigationComponent {
+      type: 'mega_menu' | 'sticky_header' | 'mobile_menu' | 'sidebar' | 'breadcrumbs' | 'pagination' | 'standard';
+      features: string[];
+      itemCount?: number;
+      maxDepth?: number;
+    }
+
+    interface ContentBlockComponent {
+      type: string;
+      count: number;
+      examples: string[];
+      hasImages?: boolean;
+      hasLinks?: boolean;
+    }
+
+    interface FormComponent {
+      type: 'contact' | 'newsletter' | 'search' | 'login' | 'registration' | 'checkout' | 'filter' | 'generic';
+      fields: number;
+      hasValidation?: boolean;
+      hasFileUpload?: boolean;
+      hasCaptcha?: boolean;
+    }
+
+    interface MediaComponent {
+      type: 'image_gallery' | 'video_embed' | 'video_player' | 'audio_player' | 'carousel' | 'lightbox' | 'background_video';
+      count: number;
+      providers?: string[];
+    }
+
+    interface ExtractedComponentsProps {
+      navigation: NavigationComponent[];
+      contentBlocks: ContentBlockComponent[];
+      forms: FormComponent[];
+      mediaElements: MediaComponent[];
+      interactiveElements: string[];
+      summary: {
+        totalComponents: number;
+        complexity: 'simple' | 'moderate' | 'complex' | 'very_complex';
+        uniquePatterns: number;
+        estimatedComponentTypes: number;
+      };
+    }
+
+    const props = element.props as unknown as ExtractedComponentsProps;
+    const { navigation, contentBlocks, forms, mediaElements, interactiveElements, summary } = props;
+
+    const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>({
+      navigation: true,
+      contentBlocks: true,
+      forms: false,
+      media: false,
+      interactive: false,
+    });
+
+    const toggleSection = (section: string) => {
+      setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+    };
+
+    const complexityColors = {
+      simple: 'bg-green-100 text-green-800 border-green-200',
+      moderate: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      complex: 'bg-orange-100 text-orange-800 border-orange-200',
+      very_complex: 'bg-red-100 text-red-800 border-red-200',
+    };
+
+    const typeIcons: Record<string, React.ReactNode> = {
+      // Navigation types
+      mega_menu: <Menu className="h-4 w-4" />,
+      sticky_header: <Navigation className="h-4 w-4" />,
+      mobile_menu: <Menu className="h-4 w-4" />,
+      sidebar: <Menu className="h-4 w-4" />,
+      breadcrumbs: <Navigation className="h-4 w-4" />,
+      pagination: <Navigation className="h-4 w-4" />,
+      standard: <Navigation className="h-4 w-4" />,
+      // Content block types
+      hero: <Layers className="h-4 w-4" />,
+      cards: <Layers className="h-4 w-4" />,
+      accordion: <ChevronDown className="h-4 w-4" />,
+      tabs: <Layers className="h-4 w-4" />,
+      slider: <Play className="h-4 w-4" />,
+      carousel: <Play className="h-4 w-4" />,
+      // Form types
+      contact: <FormInput className="h-4 w-4" />,
+      newsletter: <Mail className="h-4 w-4" />,
+      search: <Globe className="h-4 w-4" />,
+      login: <Shield className="h-4 w-4" />,
+      // Media types
+      image_gallery: <Image className="h-4 w-4" />,
+      video_embed: <Play className="h-4 w-4" />,
+      video_player: <Play className="h-4 w-4" />,
+    };
+
+    const SectionHeader = ({
+      title,
+      count,
+      sectionKey
+    }: {
+      title: string;
+      count: number;
+      sectionKey: string;
+    }) => (
+      <button
+        onClick={() => toggleSection(sectionKey)}
+        className="w-full flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg hover:bg-muted/80 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          {expandedSections[sectionKey] ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+          <span className="font-medium text-sm">{title}</span>
+        </div>
+        <Badge variant="secondary">{count}</Badge>
+      </button>
+    );
+
+    return (
+      <div className="space-y-4">
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="flex flex-col p-3 bg-muted/30 rounded-lg">
+            <span className="text-xs text-muted-foreground">Komponenten</span>
+            <span className="text-xl font-bold">{summary.totalComponents}</span>
+          </div>
+          <div className="flex flex-col p-3 bg-muted/30 rounded-lg">
+            <span className="text-xs text-muted-foreground">Muster</span>
+            <span className="text-xl font-bold">{summary.uniquePatterns}</span>
+          </div>
+          <div className="flex flex-col p-3 bg-muted/30 rounded-lg">
+            <span className="text-xs text-muted-foreground">Typen</span>
+            <span className="text-xl font-bold">{summary.estimatedComponentTypes}</span>
+          </div>
+          <div className="flex flex-col p-3 bg-muted/30 rounded-lg">
+            <span className="text-xs text-muted-foreground">Komplexität</span>
+            <Badge className={cn('w-fit mt-1', complexityColors[summary.complexity])}>
+              {summary.complexity.replace('_', ' ')}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Navigation Components */}
+        {navigation.length > 0 && (
+          <div className="space-y-2">
+            <SectionHeader title="Navigation" count={navigation.length} sectionKey="navigation" />
+            {expandedSections.navigation && (
+              <div className="space-y-2 pl-4">
+                {navigation.map((nav, idx) => (
+                  <div key={idx} className="flex items-start gap-3 p-2 bg-blue-50/50 rounded-lg border border-blue-100">
+                    <div className="mt-0.5 text-blue-600">
+                      {typeIcons[nav.type] || <Navigation className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm capitalize">{nav.type.replace('_', ' ')}</span>
+                        {nav.itemCount && (
+                          <Badge variant="outline" className="text-xs">{nav.itemCount} Items</Badge>
+                        )}
+                        {nav.maxDepth && (
+                          <Badge variant="outline" className="text-xs">Tiefe: {nav.maxDepth}</Badge>
+                        )}
+                      </div>
+                      {nav.features.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {nav.features.map((feature, fidx) => (
+                            <Badge key={fidx} variant="secondary" className="text-xs">
+                              {feature}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Content Blocks */}
+        {contentBlocks.length > 0 && (
+          <div className="space-y-2">
+            <SectionHeader title="Content Blocks" count={contentBlocks.length} sectionKey="contentBlocks" />
+            {expandedSections.contentBlocks && (
+              <div className="space-y-2 pl-4">
+                {contentBlocks.map((block, idx) => (
+                  <div key={idx} className="flex items-start gap-3 p-2 bg-purple-50/50 rounded-lg border border-purple-100">
+                    <div className="mt-0.5 text-purple-600">
+                      {typeIcons[block.type] || <Layers className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm capitalize">{block.type.replace('_', ' ')}</span>
+                        <Badge variant="outline" className="text-xs">{block.count}x gefunden</Badge>
+                        {block.hasImages && <Badge variant="secondary" className="text-xs">Bilder</Badge>}
+                        {block.hasLinks && <Badge variant="secondary" className="text-xs">Links</Badge>}
+                      </div>
+                      {block.examples.length > 0 && (
+                        <div className="text-xs text-muted-foreground mt-1 truncate">
+                          z.B. {block.examples.slice(0, 2).join(', ')}
+                          {block.examples.length > 2 && ` (+${block.examples.length - 2})`}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Forms */}
+        {forms.length > 0 && (
+          <div className="space-y-2">
+            <SectionHeader title="Formulare" count={forms.length} sectionKey="forms" />
+            {expandedSections.forms && (
+              <div className="space-y-2 pl-4">
+                {forms.map((form, idx) => (
+                  <div key={idx} className="flex items-start gap-3 p-2 bg-green-50/50 rounded-lg border border-green-100">
+                    <div className="mt-0.5 text-green-600">
+                      {typeIcons[form.type] || <FormInput className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm capitalize">{form.type.replace('_', ' ')}</span>
+                        <Badge variant="outline" className="text-xs">{form.fields} Felder</Badge>
+                        {form.hasValidation && <Badge variant="secondary" className="text-xs">Validierung</Badge>}
+                        {form.hasFileUpload && <Badge variant="secondary" className="text-xs">Upload</Badge>}
+                        {form.hasCaptcha && <Badge variant="secondary" className="text-xs">Captcha</Badge>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Media Elements */}
+        {mediaElements.length > 0 && (
+          <div className="space-y-2">
+            <SectionHeader title="Medien" count={mediaElements.length} sectionKey="media" />
+            {expandedSections.media && (
+              <div className="space-y-2 pl-4">
+                {mediaElements.map((media, idx) => (
+                  <div key={idx} className="flex items-start gap-3 p-2 bg-orange-50/50 rounded-lg border border-orange-100">
+                    <div className="mt-0.5 text-orange-600">
+                      {typeIcons[media.type] || <Image className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm capitalize">{media.type.replace('_', ' ')}</span>
+                        <Badge variant="outline" className="text-xs">{media.count}x</Badge>
+                        {media.providers && media.providers.length > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            via {media.providers.join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Interactive Elements */}
+        {interactiveElements.length > 0 && (
+          <div className="space-y-2">
+            <SectionHeader title="Interaktive Elemente" count={interactiveElements.length} sectionKey="interactive" />
+            {expandedSections.interactive && (
+              <div className="flex flex-wrap gap-2 pl-4 pt-2">
+                {interactiveElements.map((el, idx) => (
+                  <Badge key={idx} variant="outline" className="capitalize">
+                    <MousePointer className="h-3 w-3 mr-1" />
+                    {el.replace('_', ' ')}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  },
 };
 
 /**
  * Recursive renderer for json-render tree
  */
+export interface RenderTree {
+  root: string | null;
+  elements: Record<string, ElementBase>;
+}
+
 interface RenderTreeProps {
-  tree: {
-    root: string | null;
-    elements: Record<string, ElementBase>;
-  };
+  tree: RenderTree;
 }
 
 export function QuickScanRenderer({ tree }: RenderTreeProps): React.ReactElement | null {

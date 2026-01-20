@@ -17,12 +17,23 @@ import {
   AlertTriangle,
   ThumbsUp,
   ThumbsDown,
+  Search,
+  HelpCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import Link from 'next/link';
 
 interface Technology {
@@ -55,15 +66,46 @@ interface Technology {
   adessoReferenceCount: number | null;
   lastResearchedAt: Date | null;
   researchStatus: string | null;
+  // Feature Support (auto-researched via CMS Evaluation)
+  features: string | null;
 }
 
 interface TechnologyDetailProps {
   technology: Technology;
 }
 
+interface FeatureData {
+  score: number;
+  confidence: number;
+  notes: string;
+  researchedAt?: string;
+  supportType?: 'native' | 'module' | 'extension' | 'contrib' | 'third-party' | 'custom' | 'unknown';
+  moduleName?: string;
+  sourceUrls?: string[];
+  reasoning?: string;
+}
+
 export function TechnologyDetail({ technology }: TechnologyDetailProps) {
   const router = useRouter();
   const [isResearching, setIsResearching] = useState(false);
+  const [featurePrompt, setFeaturePrompt] = useState('');
+  const [isResearchingFeature, setIsResearchingFeature] = useState(false);
+  const [isReviewingFeatures, setIsReviewingFeatures] = useState(false);
+  const [localFeatures, setLocalFeatures] = useState<Record<string, FeatureData> | null>(null);
+  const [lastReviewResult, setLastReviewResult] = useState<{
+    featuresImproved: number;
+    featuresFlagged: number;
+    overallConfidence: number;
+  } | null>(null);
+
+  // Orchestrator State
+  const [isOrchestratorRunning, setIsOrchestratorRunning] = useState(false);
+  const [orchestratorEvents, setOrchestratorEvents] = useState<Array<{
+    agent: string;
+    message: string;
+    timestamp: number;
+    type: string;
+  }>>([]);
 
   const handleResearch = async () => {
     setIsResearching(true);
@@ -90,6 +132,207 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
     }
   };
 
+  const handleFeatureResearch = async () => {
+    if (!featurePrompt.trim()) {
+      toast.error('Bitte Feature-Namen eingeben');
+      return;
+    }
+
+    // Parse Features: Komma, Semikolon oder Newline getrennt
+    const featureNames = featurePrompt
+      .split(/[,;\n]+/)
+      .map(f => f.trim())
+      .filter(Boolean);
+
+    if (featureNames.length === 0) {
+      toast.error('Keine gültigen Feature-Namen gefunden');
+      return;
+    }
+
+    setIsResearchingFeature(true);
+
+    if (featureNames.length === 1) {
+      toast.info(`Recherchiere "${featureNames[0]}" für ${technology.name}...`);
+    } else {
+      toast.info(`Recherchiere ${featureNames.length} Features parallel für ${technology.name}...`);
+    }
+
+    try {
+      const response = await fetch(`/api/admin/technologies/${technology.id}/research-feature`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featureNames }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const { summary } = result;
+        if (summary.total === 1) {
+          const feature = result.results[0];
+          toast.success(`Feature "${feature.name}" recherchiert: ${feature.score}%`);
+        } else {
+          toast.success(`${summary.successful}/${summary.total} Features erfolgreich recherchiert`);
+          if (summary.failed > 0) {
+            toast.warning(`${summary.failed} Features fehlgeschlagen`);
+          }
+        }
+        setLocalFeatures(result.allFeatures);
+        setFeaturePrompt('');
+      } else {
+        toast.error(result.error || 'Recherche fehlgeschlagen');
+      }
+    } catch (error) {
+      toast.error('Fehler bei der Feature-Recherche');
+      console.error('Feature research error:', error);
+    } finally {
+      setIsResearchingFeature(false);
+    }
+  };
+
+  // Orchestrator: Research + Review in einem Workflow
+  const handleOrchestratorResearch = async (reviewMode: 'quick' | 'deep' = 'quick') => {
+    if (!featurePrompt.trim()) {
+      toast.error('Bitte Feature-Namen eingeben');
+      return;
+    }
+
+    const featureNames = featurePrompt
+      .split(/[,;\n]+/)
+      .map(f => f.trim())
+      .filter(Boolean);
+
+    if (featureNames.length === 0) {
+      toast.error('Keine gültigen Feature-Namen gefunden');
+      return;
+    }
+
+    setIsOrchestratorRunning(true);
+    setOrchestratorEvents([]);
+    toast.info(`Orchestrator startet: ${featureNames.length} Features recherchieren + ${reviewMode} Review`);
+
+    try {
+      const response = await fetch(`/api/admin/technologies/${technology.id}/orchestrator`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          featureNames,
+          autoReview: true,
+          reviewMode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Orchestrator-Start fehlgeschlagen');
+      }
+
+      // SSE Stream lesen
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('Stream nicht verfügbar');
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const event = JSON.parse(line.slice(6));
+              if (event.data?.agent && event.data?.message) {
+                setOrchestratorEvents(prev => [...prev, {
+                  agent: event.data.agent,
+                  message: event.data.message,
+                  timestamp: event.timestamp,
+                  type: event.type,
+                }]);
+              }
+
+              // Bei AGENT_COMPLETE mit result: Features aktualisieren
+              if (event.type === 'agent-complete' && event.data?.result?.tasks) {
+                const result = event.data.result;
+                toast.success(`Workflow abgeschlossen: ${result.metadata.successfulResearch} recherchiert, ${result.metadata.featuresImproved} verbessert`);
+
+                // Reload features
+                const techResponse = await fetch(`/api/admin/technologies/${technology.id}`);
+                if (techResponse.ok) {
+                  const techData = await techResponse.json();
+                  if (techData.features) {
+                    setLocalFeatures(JSON.parse(techData.features));
+                  }
+                }
+
+                setLastReviewResult({
+                  featuresImproved: result.metadata.featuresImproved,
+                  featuresFlagged: result.metadata.featuresFlagged,
+                  overallConfidence: result.metadata.overallConfidence,
+                });
+              }
+            } catch {
+              // Ignore parse errors
+            }
+          }
+        }
+      }
+
+      setFeaturePrompt('');
+      router.refresh();
+    } catch (error) {
+      toast.error('Orchestrator fehlgeschlagen');
+      console.error('Orchestrator error:', error);
+    } finally {
+      setIsOrchestratorRunning(false);
+    }
+  };
+
+  const handleReviewFeatures = async (mode: 'quick' | 'deep' = 'quick') => {
+    setIsReviewingFeatures(true);
+    toast.info(`Starte ${mode === 'deep' ? 'Deep' : 'Quick'} Review der Features...`);
+
+    try {
+      const response = await fetch(`/api/admin/technologies/${technology.id}/review-features`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const { review } = result;
+        setLastReviewResult({
+          featuresImproved: review.featuresImproved,
+          featuresFlagged: review.featuresFlagged,
+          overallConfidence: review.overallConfidence,
+        });
+        setLocalFeatures(result.updatedFeatures);
+
+        if (review.featuresImproved > 0) {
+          toast.success(`Review: ${review.featuresImproved} Features verbessert`);
+        }
+        if (review.featuresFlagged > 0) {
+          toast.warning(`${review.featuresFlagged} Features zur manuellen Prüfung markiert`);
+        }
+        if (review.featuresImproved === 0 && review.featuresFlagged === 0) {
+          toast.success('Alle Features OK - keine Korrekturen nötig');
+        }
+      } else {
+        toast.error(result.error || 'Review fehlgeschlagen');
+      }
+    } catch (error) {
+      toast.error('Fehler beim Feature-Review');
+      console.error('Feature review error:', error);
+    } finally {
+      setIsReviewingFeatures(false);
+    }
+  };
+
   // Parse JSON fields safely
   const parseJsonArray = (json: string | null): string[] => {
     if (!json) return [];
@@ -109,13 +352,44 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
     }
   };
 
+  const parseFeatures = (json: string | null): Record<string, FeatureData> => {
+    if (!json) return {};
+    try {
+      return JSON.parse(json);
+    } catch {
+      return {};
+    }
+  };
+
+  // Support-Type Badge Farben
+  const getSupportTypeBadge = (type?: string, moduleName?: string) => {
+    if (!type || type === 'unknown') return null;
+
+    const config: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+      native: { label: 'Nativ', variant: 'default' },
+      module: { label: moduleName ? `Modul: ${moduleName}` : 'Modul', variant: 'secondary' },
+      contrib: { label: moduleName ? `Contrib: ${moduleName}` : 'Contrib', variant: 'secondary' },
+      extension: { label: moduleName ? `Plugin: ${moduleName}` : 'Plugin', variant: 'secondary' },
+      'third-party': { label: 'Drittanbieter', variant: 'outline' },
+      custom: { label: 'Custom', variant: 'destructive' },
+    };
+
+    const cfg = config[type];
+    if (!cfg) return null;
+
+    return <Badge variant={cfg.variant} className="text-xs">{cfg.label}</Badge>;
+  };
+
   const pros = parseJsonArray(technology.pros);
   const cons = parseJsonArray(technology.cons);
   const usps = parseJsonArray(technology.usps);
   const targetAudiences = parseJsonArray(technology.targetAudiences);
   const useCases = parseJsonArray(technology.useCases);
   const entityCounts = parseJsonObject(technology.baselineEntityCounts);
+  // Verwende localFeatures falls vorhanden (nach manueller Recherche), sonst aus Props
+  const features = localFeatures ?? parseFeatures(technology.features);
   const hasBaseline = technology.baselineHours && technology.baselineHours > 0;
+  const hasFeatures = Object.keys(features).length > 0;
 
   return (
     <div className="space-y-6">
@@ -367,6 +641,237 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Feature Support (researched via CMS Evaluation) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5 text-blue-500" />
+            Feature-Recherche
+          </CardTitle>
+          <CardDescription>
+            Automatisch recherchierte Feature-Unterstützung aus CMS-Evaluationen
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Feature-Recherche via Prompt - unterstützt mehrere Features */}
+          <div className="space-y-2">
+            <Textarea
+              placeholder="Features eingeben (kommasepariert oder je Zeile):&#10;Mehrsprachigkeit&#10;E-Commerce&#10;GraphQL API&#10;Benutzerkonten"
+              value={featurePrompt}
+              onChange={(e) => setFeaturePrompt(e.target.value)}
+              disabled={isResearchingFeature}
+              className="min-h-[80px] resize-y"
+              rows={3}
+            />
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Mehrere Features mit Komma, Semikolon oder Zeilenumbruch trennen
+              </p>
+              <div className="flex gap-2">
+                {/* Einfache Recherche (ohne Review) */}
+                <Button
+                  variant="outline"
+                  onClick={handleFeatureResearch}
+                  disabled={isResearchingFeature || isOrchestratorRunning || !featurePrompt.trim()}
+                >
+                  {isResearchingFeature ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Recherchiert...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="mr-2 h-4 w-4" />
+                      Nur Recherche
+                    </>
+                  )}
+                </Button>
+                {/* Orchestrator: Research + Quick Review */}
+                <Button
+                  onClick={() => handleOrchestratorResearch('quick')}
+                  disabled={isOrchestratorRunning || isResearchingFeature || !featurePrompt.trim()}
+                >
+                  {isOrchestratorRunning ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Orchestrator läuft...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Research + Review
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Orchestrator Event Log */}
+          {orchestratorEvents.length > 0 && (
+            <div className="border rounded-lg p-3 bg-slate-50 dark:bg-slate-900 max-h-48 overflow-y-auto">
+              <p className="text-xs font-medium mb-2 text-muted-foreground">Orchestrator Log:</p>
+              <div className="space-y-1">
+                {orchestratorEvents.map((event, i) => (
+                  <div key={i} className="text-xs flex gap-2">
+                    <Badge variant={event.type === 'error' ? 'destructive' : event.type === 'agent-complete' ? 'default' : 'secondary'} className="text-[10px] shrink-0">
+                      {event.agent}
+                    </Badge>
+                    <span className="text-muted-foreground">{event.message}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Review Actions (nur bei bestehenden Features) */}
+          {hasFeatures && (
+            <div className="flex items-center justify-between border-t pt-4">
+              <div className="text-sm text-muted-foreground">
+                {lastReviewResult ? (
+                  <span>
+                    Letzter Review: {lastReviewResult.featuresImproved} verbessert,{' '}
+                    {lastReviewResult.featuresFlagged} markiert,{' '}
+                    Confidence: {lastReviewResult.overallConfidence}%
+                  </span>
+                ) : (
+                  <span>Bestehende Features auf Plausibilität prüfen</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleReviewFeatures('quick')}
+                  disabled={isReviewingFeatures || isOrchestratorRunning}
+                >
+                  {isReviewingFeatures ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Reviewt...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Quick Review
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleReviewFeatures('deep')}
+                  disabled={isReviewingFeatures || isOrchestratorRunning}
+                >
+                  {isReviewingFeatures ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deep Review...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Deep Review (AI)
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {hasFeatures ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Feature</TableHead>
+                    <TableHead className="w-24 text-center">Score</TableHead>
+                    <TableHead className="w-32">Support</TableHead>
+                    <TableHead>Details</TableHead>
+                    <TableHead className="w-32">Recherchiert</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Object.entries(features)
+                    .sort(([, a], [, b]) => b.score - a.score)
+                    .map(([featureName, data]) => {
+                      const isNoData = data.score === 50 && data.confidence <= 40;
+                      // Extrahiere Notizen ohne URLs für bessere Lesbarkeit
+                      const notesWithoutUrls = data.notes?.split(' | Quellen:')[0] || data.notes || '';
+                      return (
+                        <TableRow key={featureName}>
+                          <TableCell className="font-medium">{featureName}</TableCell>
+                          <TableCell className="text-center">
+                            {isNoData ? (
+                              <span className="text-muted-foreground">n/a</span>
+                            ) : (
+                              <div className="flex items-center justify-center gap-1">
+                                {data.score >= 70 ? (
+                                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                ) : data.score >= 40 ? (
+                                  <HelpCircle className="h-4 w-4 text-yellow-500" />
+                                ) : (
+                                  <XCircle className="h-4 w-4 text-red-500" />
+                                )}
+                                <span className={
+                                  data.score >= 70 ? 'text-green-600' :
+                                  data.score >= 40 ? 'text-yellow-600' : 'text-red-600'
+                                }>
+                                  {data.score}%
+                                </span>
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {getSupportTypeBadge(data.supportType, data.moduleName)}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            <div className="space-y-1">
+                              <p className="text-muted-foreground">{notesWithoutUrls || '-'}</p>
+                              {/* Begründung für Score */}
+                              {data.reasoning && (
+                                <p className="text-xs text-slate-500 italic">
+                                  Begründung: {data.reasoning}
+                                </p>
+                              )}
+                              {data.sourceUrls && data.sourceUrls.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {data.sourceUrls.slice(0, 3).map((url, i) => (
+                                    <a
+                                      key={i}
+                                      href={url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-blue-500 hover:underline flex items-center gap-0.5"
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                      Quelle {i + 1}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {data.researchedAt
+                              ? new Date(data.researchedAt).toLocaleDateString('de-DE')
+                              : '-'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+              <AlertTriangle className="h-4 w-4" />
+              Keine Feature-Recherche-Daten vorhanden. Features werden automatisch bei CMS-Evaluationen recherchiert.
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Separator />
 

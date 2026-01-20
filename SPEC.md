@@ -2,11 +2,11 @@
 
 ## Overview
 
-Dealhunter ist eine KI-gestützte **End-to-End Business Development Plattform** für adesso. Sie automatisiert den gesamten Akquise-Prozess: von der Anforderungsaufnahme über die **Bit/No Bit Entscheidung** bis zur **Team-Zusammenstellung** - inklusive umfassender Unternehmensanalyse (Tech Stack, Digital Maturity, Leadership, Valuation).
+Dealhunter ist eine KI-gestützte **End-to-End Business Development Plattform** für adesso. Sie automatisiert den gesamten Akquise-Prozess: von der Anforderungsaufnahme über die **Bid/No Bid Entscheidung** bis zur **Team-Zusammenstellung** - inklusive umfassender Unternehmensanalyse (Tech Stack, Digital Maturity, Leadership, Valuation).
 
 **Der Kern-Flow (Francesco's Vision):**
 ```
-Anforderung hochladen → AI-Extraktion → Bit/No Bit Entscheidung →
+Anforderung hochladen → AI-Extraktion → Bid/No Bid Entscheidung →
 Routing an Bereichsleiter → Erweiterte Auswertung → Team zusammenstellen →
 Team per E-Mail benachrichtigen
 ```
@@ -36,7 +36,7 @@ Team per E-Mail benachrichtigen
 
 Das BD-Team bei adesso Digital Experience:
 1. **Erhält Kundenanfragen** (RFPs, E-Mails, CRM-Leads) in verschiedenen Formaten
-2. **Muss entscheiden**: Bieten wir an? ("Bit or No Bit")
+2. **Muss entscheiden**: Bieten wir an? ("Bid or No Bid")
 3. **Muss routen**: Welcher Bereichsleiter ist zuständig?
 4. **Muss evaluieren**: Aufwand, Wirtschaftlichkeit, benötigte Skills
 5. **Muss Team zusammenstellen**: Wer arbeitet am Angebot?
@@ -45,12 +45,155 @@ Dealhunter automatisiert diesen gesamten Prozess mit AI-Unterstützung.
 
 ---
 
+## RFP-to-Lead Lifecycle
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                      DEALHUNTER: RFP-TO-LEAD LIFECYCLE                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+                              ┌─ PHASE 1: QUALIFICATION ─┐
+                              │    (BD Manager)          │
+                              └──────────────────────────┘
+                                        │
+                    ┌───────────────────┼───────────────────┐
+                    │                   │                   │
+                    ▼                   ▼                   ▼
+            ┌────────────────┐   ┌──────────────┐   ┌────────────────┐
+            │  DUPLICATE     │   │  EXTRACT     │   │  QUICK SCAN    │
+            │  CHECK AGENT   │   │  AGENT       │   │  AGENT         │
+            └────────────────┘   └──────────────┘   └────────────────┘
+                    │                   │                   │
+                    └───────────────────┼───────────────────┘
+                                        │
+                                        ▼
+                            ┌────────────────────────┐
+                            │ TIMELINE + ROUTING     │
+                            │ AGENT                  │
+                            └────────────────────────┘
+                                        │
+                    ┌───────DECISION────┴──────────────────┐
+                    │                                       │
+                 HIGH CONFIDENCE                    LOW CONFIDENCE
+                    │                            (< 70% → User Input)
+                    └────────────────┬────────────────────┘
+                                     │
+                                     ▼
+                    ┌─────────────────────────────────┐
+                    │ RFP BECOMES "LEAD"              │
+                    │ (Status: routed)                │
+                    └─────────────────────────────────┘
+                                     │
+                    ┌────── PHASE 2: DEEP ANALYSIS ────┐
+                    │    (BU Lead, Background Job)     │
+                    └──────────────────────────────────┘
+                                     │
+        ┌────────────────────────────┼────────────────────────────┐
+        │                            │                            │
+        ▼                            ▼                            ▼
+    ┌─────────────┐         ┌────────────────┐         ┌────────────────┐
+    │ FULL-SCAN   │         │ CONTRACT       │         │ LEGAL          │
+    │ AGENT       │         │ AGENT          │         │ AGENT          │
+    └─────────────┘         └────────────────┘         └────────────────┘
+        │                            │                            │
+        └────────────────────────────┼────────────────────────────┘
+                                     │
+                                     ▼
+                        ┌────────────────────────┐
+                        │ DECISION AGENT         │
+                        │ (Coordinator)          │
+                        └────────────────────────┘
+                                     │
+                    ┌────────DECISION─┴────────┐
+                    │                          │
+                    ▼                          ▼
+            ┌────────────────┐        ┌──────────────────┐
+            │ ✅ BID         │        │ ❌ NO-BID        │
+            │ (proceed)      │        │ (alternative)    │
+            └────────────────┘        └──────────────────┘
+                    │                          │
+                    │                   Alternative BU
+                    │                          │
+                    └──────────────┬───────────┘
+                                   │
+                    ┌─────PHASE 3: TEAM STAFFING ───┐
+                    │   (After BID Decision)        │
+                    └───────────────────────────────┘
+                                   │
+                                   ▼
+                      ┌────────────────────────┐
+                      │ STAFFING AGENT         │
+                      │ → Team Proposal        │
+                      │ → Skill Matching       │
+                      │ → Availability Check   │
+                      └────────────────────────┘
+                                   │
+                                   ▼
+                      ┌────────────────────────┐
+                      │ BU LEAD CONFIRMS TEAM  │
+                      └────────────────────────┘
+                                   │
+                                   ▼
+                      ┌────────────────────────┐
+                      │ TEAM NOTIFICATION      │
+                      │ (Email + PDF)          │
+                      └────────────────────────┘
+                                   │
+                                   ▼
+                      ┌────────────────────────┐
+                      │ 🎯 HANDED OFF          │
+                      └────────────────────────┘
+```
+
+### Status-Flow
+
+```
+draft → extracting → quick_scanning → evaluating → bid_decided
+                                                       │
+                                                  [Bid/No-Bid]
+                                                  ↙        ↘
+                                               BID       NO-BID
+                                                │            │
+                                           routing    (Alt. Routing)
+                                                │
+                                           routed (LEAD)
+                                                │
+                                         deep_analyzing
+                                                │
+                                         pending_decision
+                                                │
+                                            staffing
+                                                │
+                                         team_assigned
+                                                │
+                                            notified
+                                                │
+                                         handed_off ✓
+```
+
+### Agents (10 Total)
+
+| Phase | Agent | Funktion |
+|-------|-------|----------|
+| 1 | Duplicate-Check | Prüft auf existierende RFPs |
+| 1 | Extraction | PDF/Email/Text → Strukturierte Daten |
+| 1 | Quick-Scan | Website-Crawl (schnell) |
+| 1 | Timeline | Projekt-Phasen schätzen |
+| 1 | Routing | BU-Empfehlung |
+| 2 | Full-Scan | Umfassender Website-Audit |
+| 2 | Contract | Vertragstyp + Risiken |
+| 2 | Legal | Compliance-Review |
+| 2 | Decision | Coordinator: Bid/No-Bid + Tree |
+| 3 | Staffing | Skill-Match + Team-Vorschlag |
+
+---
+
 ## User Stories
 
 ### BD Manager
-- Als **BD Manager** möchte ich Anforderungen hochladen (PDF, CRM, Freitext) und automatisch eine Bit/No Bit Empfehlung erhalten
+- Als **BD Manager** möchte ich Anforderungen hochladen (PDF, CRM, Freitext) und automatisch eine Bid/No Bid Empfehlung erhalten
 - Als **BD Manager** möchte ich den kompletten Pipeline-Status in Echtzeit sehen (volle Transparenz)
-- Als **BD Manager** möchte ich bei "No Bit" eine Alternative Empfehlung (anderer Bereich) erhalten
+- Als **BD Manager** möchte ich bei "No Bid" eine Alternative Empfehlung (anderer Bereich) erhalten
 
 ### Bereichsleiter (BL)
 - Als **Bereichsleiter** möchte ich automatisch über relevante Opportunities informiert werden
@@ -62,18 +205,18 @@ Dealhunter automatisiert diesen gesamten Prozess mit AI-Unterstützung.
 ### Administrator
 - Als **Administrator** möchte ich die BL-Struktur (Bereiche, Technologien, Zuständigkeiten) pflegen
 - Als **Administrator** möchte ich Mitarbeiter mit Skills anlegen und verwalten
-- Als **Administrator** möchte ich Analytics über Bit/No Bit Entscheidungen sehen
+- Als **Administrator** möchte ich Analytics über Bid/No Bid Entscheidungen sehen
 
 ---
 
 ## MVP Scope & Goals
 
 ### Vision Statement
-Dealhunter automatisiert den gesamten BD-Entscheidungsprozess bei adesso: Von der Anforderungsaufnahme zur Team-Benachrichtigung - AI-gestützt, transparent, und mit einer Bit/No Bit Genauigkeit als oberste Priorität.
+Dealhunter automatisiert den gesamten BD-Entscheidungsprozess bei adesso: Von der Anforderungsaufnahme zur Team-Benachrichtigung - AI-gestützt, transparent, und mit einer Bid/No Bid Genauigkeit als oberste Priorität.
 
 ### MVP Goals
 1. **Smart Upload**: Mixed-Format-Upload (PDF, CRM, Freitext) mit AI-Extraktion
-2. **Bit/No Bit Entscheidung**: Vollständige Bewertung (Capability, Deal Quality, Strategic Fit, Wettbewerb)
+2. **Bid/No Bid Entscheidung**: Vollständige Bewertung (Capability, Deal Quality, Strategic Fit, Wettbewerb)
 3. **BL-Routing**: Automatische Weiterleitung an zuständigen Bereichsleiter
 4. **Erweiterte Auswertung**: Szenario-basierte Kalkulation (Best/Worst/Expected)
 5. **Team-Assignment**: AI-Vorschlag mit festen Rollen
@@ -82,7 +225,7 @@ Dealhunter automatisiert den gesamten BD-Entscheidungsprozess bei adesso: Von de
 
 ### Success Criteria
 - ✅ BD kann Anforderungen in beliebigem Format hochladen
-- ✅ Bit/No Bit Entscheidung in 10-30 Minuten
+- ✅ Bid/No Bid Entscheidung in 10-30 Minuten
 - ✅ Automatisches Routing an korrekten Bereichsleiter
 - ✅ BL erhält Szenario-basierte Wirtschaftlichkeitsanalyse
 - ✅ AI schlägt optimales Team vor
@@ -171,9 +314,9 @@ interface ExtractedRequirements {
 1. User lädt Dokument hoch oder gibt Text ein
 2. AI extrahiert strukturierte Daten
 3. User bestätigt/korrigiert extrahierte Daten
-4. Weiter zu Bit/No Bit Bewertung
+4. Weiter zu Bid/No Bid Bewertung
 
-### 2. Bit/No Bit Entscheidung & BD-Bewertung
+### 2. Bid/No Bid Entscheidung & BD-Bewertung
 
 **Document Upload & AI-Extraktion:**
 - **PDF + Text Upload**: BD kann Ausschreibungsdokumente (PDF) direkt hochladen
@@ -271,8 +414,8 @@ interface Risk {
 
 **Output:**
 ```typescript
-interface BitDecision {
-  decision: 'bit' | 'no_bit'
+interface BidDecision {
+  decision: 'bid' | 'no_bid'
   confidence: number // 0-100
   reasoning: string
   decisionTree: DecisionNode       // Visualisierung
@@ -293,10 +436,10 @@ interface DecisionNode {
 }
 ```
 
-**Bei "No Bit":**
+**Bei "No Bid":**
 - System prüft ob ein anderer Bereich besser passt
 - Gibt Alternative Empfehlung (z.B. "Könnte zu WEM passen")
-- Zeigt Entscheidungsbaum warum No Bit
+- Zeigt Entscheidungsbaum warum No Bid
 
 ### 2b. Legal Agent & Compliance
 
@@ -482,7 +625,7 @@ interface BusinessLine {
 
 ### 4. Erweiterte Auswertung für BL
 
-**Trigger:** Automatisch nach Bit-Entscheidung
+**Trigger:** Automatisch nach Bid-Entscheidung
 
 **Szenario-basierte Kalkulation:**
 ```typescript
@@ -519,190 +662,6 @@ interface FinancialProjection {
 - Filter nach Skills, Verfügbarkeit
 - Drill-Down in einzelne Aspekte
 
-### 5. Team-Assignment
-
-**AI-Vorschlag:**
-- System schlägt optimales Team vor basierend auf:
-  - Required Skills (NLP-Match)
-  - Verfügbarkeit
-  - Erfahrung mit ähnlichen Projekten
-  - Rollen-Anforderungen
-
-**Feste Rollen:**
-```typescript
-type TeamRole =
-  | 'project_manager'
-  | 'architect'
-  | 'lead_developer'
-  | 'developer'
-  | 'consultant'
-  | 'analyst'
-  | 'qa_engineer'
-```
-
-**Team-Größe:** Variabel (2-15+ Personen)
-
-**Keine Ablehnung:** BL-Entscheidung ist final
-
-### 6. Benachrichtigungs-System
-
-**Team-Benachrichtigung per E-Mail:**
-```
-Betreff: [Dealhunter] Angebotsteam für {CustomerName}
-
-Hallo {Name},
-
-du wurdest von {BL-Name} in das Angebotsteam für {CustomerName} aufgenommen.
-
-Deine Rolle: {Role}
-
-Im Anhang findest du alle wichtigen Informationen zum Projekt.
-
-Beste Grüße,
-{BL-Name}
-
----
-Automatisch generiert von Dealhunter
-```
-
-**PDF-Attachment:**
-- Kundenname & Kontakt
-- Projekt-Beschreibung
-- Scope & Requirements
-- Timeline
-- Team-Zusammensetzung
-- Nächste Schritte
-
-### 7. Zwei-Phasen Company Analysis
-
-Die Company Analysis ist in zwei Phasen aufgeteilt - passend zum BD-Workflow:
-
-#### Phase 1: Quick Scan (für BD, während Bit/No Bit)
-
-**Läuft automatisch nach Upload:**
-- **Tech Stack Detection**: CMS, Frameworks, Hosting, Libraries identifizieren
-- **Content Volume**: Sitemap analysieren, Seitenanzahl, URL-Patterns
-- **Features & Integrations**: Formulare, Suche, APIs, externe Services
-
-**Dauer:** 2-5 Minuten
-**Output:** Structured JSON für Bit/No Bit Entscheidung
-
-```typescript
-interface QuickScanResult {
-  techStack: {
-    cms: string | null          // "WordPress", "Drupal", "Typo3", etc.
-    cmsVersion?: string
-    frameworks: string[]        // ["React", "Vue", "jQuery"]
-    hosting: string | null      // "AWS", "Azure", "On-Premise"
-  }
-  contentVolume: {
-    totalPages: number
-    pagesByType: { type: string; count: number }[]
-    sitemapFound: boolean
-  }
-  features: {
-    forms: string[]             // ["Contact", "Newsletter", "Search"]
-    integrations: string[]      // ["Google Analytics", "HubSpot", "Stripe"]
-    hasEcommerce: boolean
-    hasUserAccounts: boolean
-  }
-  blRecommendation: {
-    recommendedBL: string       // "PHP", "WEM"
-    confidence: number          // 0-100
-    reasoning: string
-    matchedTechnologies: string[]
-  }
-}
-```
-
-#### Phase 2: Deep Migration Analysis (nach BL-Zuweisung)
-
-**Läuft automatisch als Background Job nach Bit + BL-Assignment:**
-- **Content Architecture Mapping**: Page Types → Content Types, Components → Paragraphs
-- **Migration Complexity**: Export-Möglichkeiten, Datenqualität, Cleanup-Aufwand
-- **Accessibility Audit**: WCAG 2.1 Level AA Prüfung, Remediation Effort
-- **Aufwandsschätzung**: PT-Schätzung basierend auf Entity-Counts und CMS-Baseline
-
-**Dauer:** 10-30 Minuten (Background Job)
-**Trigger:** Automatisch nach `bitDecision: 'bit'` UND `assignedBusinessLineId` gesetzt
-**Notification:** BL wird benachrichtigt wenn Analysis fertig
-
-```typescript
-interface DeepMigrationResult {
-  contentArchitecture: {
-    pageTypes: PageTypeAnalysis[]
-    components: ComponentAnalysis[]
-    taxonomies: TaxonomyAnalysis[]
-    mediaTypes: MediaTypeAnalysis[]
-  }
-  migrationComplexity: {
-    exportCapability: 'structured' | 'database' | 'api' | 'scraping'
-    dataQuality: 'clean' | 'moderate_cleanup' | 'heavy_cleanup'
-    estimatedNodes: number
-    complexityScore: 'simple' | 'medium' | 'complex'
-  }
-  accessibility: {
-    wcagLevel: 'A' | 'AA' | 'AAA' | 'non_compliant'
-    issueCount: { critical: number; serious: number; moderate: number; minor: number }
-    remediationEffort: number // Stunden
-  }
-  estimation: {
-    targetCMS: string              // "Drupal", "Ibexa", "Magnolia"
-    baselineUsed: string           // "adessoCMS", "Ibexa Standard", etc.
-    totalHours: number
-    breakdown: {
-      contentTypes: number
-      components: number
-      migration: number
-      accessibility: number
-      testing: number
-      buffer: number
-    }
-    confidenceLevel: 'high' | 'medium' | 'low'
-    assumptions: string[]
-    risks: string[]
-  }
-}
-
-interface PageTypeAnalysis {
-  name: string
-  count: number
-  fields: string[]
-  complexity: 'simple' | 'medium' | 'complex'
-  mappedTo: string  // Drupal Content Type, Ibexa Content Type, etc.
-}
-
-interface ComponentAnalysis {
-  name: string
-  frequency: 'high' | 'medium' | 'low'
-  complexity: 'simple' | 'medium' | 'complex'
-  mappedTo: string  // Paragraph Type, Block Type, etc.
-}
-```
-
-#### BL-Spezifische Analyse
-
-Die Deep Migration Analysis ist **CMS-spezifisch** basierend auf der BL-Zuweisung:
-
-| Business Line | Technologien | Baselines |
-|--------------|--------------|-----------|
-| PHP | Drupal, Sulu | adessoCMS (693h), Sulu Standard |
-| WEM | Ibexa, Magnolia, Firstspirit | Ibexa Standard, Magnolia Base |
-
-Das Ziel-CMS wird automatisch aus der `BusinessLine.technologies` ermittelt oder vom BL manuell gewählt.
-
-#### BL-Routing mit AI-Empfehlung
-
-**Automatische BL-Empfehlung basierend auf Quick Scan:**
-1. AI analysiert detektierten Tech Stack
-2. Matched gegen `BusinessLine.technologies` und `keywords`
-3. Gibt Empfehlung mit Confidence Score
-
-**BD kann überschreiben:**
-- BD sieht AI-Empfehlung
-- BD kann anderen BL wählen
-- Override wird mit Begründung geloggt
-
 ---
 
 ## Data Model
@@ -722,9 +681,9 @@ interface BidOpportunity {
   rawInput: string
   extractedRequirements: ExtractedRequirements
 
-  // Bit Decision
-  bitDecision: 'bit' | 'no_bit' | 'pending'
-  bitDecisionData?: BitDecision
+  // Bid Decision
+  bidDecision: 'bid' | 'no_bid' | 'pending'
+  bidDecisionData?: BidDecision
   alternativeRecommendation?: string
 
   // Routing
@@ -752,8 +711,8 @@ type BidStatus =
   | 'draft'              // BD erstellt
   | 'extracting'         // AI extrahiert Anforderungen
   | 'quick_scanning'     // Phase 1: Quick Scan läuft
-  | 'evaluating'         // Bit/No Bit läuft
-  | 'bit_decided'        // Bit-Entscheidung getroffen
+  | 'evaluating'         // Bid/No Bid läuft
+  | 'bid_decided'        // Bid-Entscheidung getroffen
   | 'routing'            // BL-Zuweisung
   | 'deep_analyzing'     // Phase 2: Deep Migration Analysis läuft (Background)
   | 'bl_reviewing'       // BL prüft Ergebnisse
@@ -846,7 +805,7 @@ interface AuditTrailEntry {
   id: string
   bidOpportunityId: string
   userId: string
-  action: 'bl_override' | 'bit_override' | 'team_change' | 'status_change'
+  action: 'bl_override' | 'bid_override' | 'team_change' | 'status_change'
   previousValue: string
   newValue: string
   reason: string                  // Pflicht bei Override
@@ -952,7 +911,7 @@ interface CompetitorEncounter {
 | GET | /api/bids/:id | Get single bid with all data |
 | PATCH | /api/bids/:id | Update bid (confirm extraction, etc.) |
 | DELETE | /api/bids/:id | Delete bid |
-| POST | /api/bids/:id/evaluate | Trigger Bit/No Bit evaluation |
+| POST | /api/bids/:id/evaluate | Trigger Bid/No Bid evaluation |
 | POST | /api/bids/:id/assign-team | Assign team to bid |
 | POST | /api/bids/:id/notify-team | Send notifications |
 | GET | /api/bids/:id/stream | SSE stream for live updates |
@@ -995,7 +954,7 @@ interface CompetitorEncounter {
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | /api/analytics/overview | Dashboard stats |
-| GET | /api/analytics/bit-rate | Bit/No Bit statistics |
+| GET | /api/analytics/bid-rate | Bid/No Bid statistics |
 | GET | /api/analytics/by-bl | Stats per Business Line |
 
 ### Accounts (Kunden-Hierarchie)
@@ -1049,27 +1008,15 @@ interface CompetitorEncounter {
 
 ## Agent Architecture (Vercel AI SDK)
 
-### Multi-Agent System mit Coordinator
+> **Agent-Liste:** Siehe [Agent-Native Architektur](#agent-native-architektur) im Abschnitt "Refined RFP-to-Lead Pipeline" für die vollständige Liste der 10 Agents.
 
-**Agent-Übersicht:**
+### Orchestrierung (Agentic Loop)
 
-| Agent | Aufgabe | Phase |
-|-------|---------|-------|
-| **Extraction Agent** | Dokument-Analyse, Strukturierte Extraktion | Upload |
-| **Tech Agent** | Tech-Anforderungen analysieren, Kompetenz-Matching | BD |
-| **Legal Agent** | Vertragstyp, Risiken, Compliance | BD + BL |
-| **Commercial Agent** | Budget, Marge, Wirtschaftlichkeit | BD |
-| **Competition Agent** | Wettbewerber identifizieren, Strategie | BD |
-| **Reference Agent** | Passende Referenzen finden | BD |
-| **Coordinator Agent** | Alle Ergebnisse zusammenführen, Empfehlung erstellen | BD |
-| **Deep Analysis Agent** | Migration, Accessibility, PT-Schätzung | BL |
-
-### Hybrid-Orchestrierung
-
-**Ablauf:**
-1. **Parallel (Extraktion):** Extraction Agent, Tech Agent, Legal Agent (Quick), Commercial Agent, Competition Agent, Reference Agent laufen gleichzeitig
-2. **Sequenziell (Bewertung):** Coordinator Agent erhält alle Ergebnisse, erstellt Gesamtbewertung mit Kontext
-3. **Background (Deep):** Nach Bit + BL-Zuweisung startet Deep Analysis Agent
+**Ablauf (dynamisch vom Coordinator gesteuert):**
+1. **Coordinator entscheidet dynamisch** welche Agents wann laufen (Agentic Loop)
+2. **Parallel wo möglich:** Unabhängige Agents laufen gleichzeitig
+3. **Checkpoints:** Zwischenstände als JSON im Filesystem gespeichert
+4. **Confidence < 70%:** Eskalation an User
 
 ```typescript
 // Orchestration Flow
@@ -1108,7 +1055,7 @@ async function evaluateBidOpportunity(bidId: string) {
 
 ```typescript
 interface CoordinatorOutput {
-  recommendation: 'bit' | 'no_bit'
+  recommendation: 'bid' | 'no_bid'
   confidence: number
   decisionTree: DecisionNode
   synthesis: {
@@ -1135,7 +1082,7 @@ const coordinatorAgent = async (partialResults: PartialResults) => {
     model: anthropic('claude-sonnet-4-20250514'),
     system: `Du bist der Coordinator Agent bei Dealhunter.
     Deine Aufgabe ist es, alle Teil-Analysen zusammenzuführen und eine
-    fundierte Bit/No Bit Empfehlung zu erstellen.
+    fundierte Bid/No Bid Empfehlung zu erstellen.
 
     Erstelle einen Entscheidungsbaum der alle Faktoren visualisiert.
     Sei objektiv und nenne sowohl Pro als auch Contra Argumente.`,
@@ -1221,7 +1168,7 @@ const techAgent = async (requirements: ExtractedRequirements) => {
 // Frontend: useChat für Live-Updates
 import { useChat } from '@ai-sdk/react'
 
-function BitEvaluationProgress({ bidId }) {
+function BidEvaluationProgress({ bidId }) {
   const { messages, isLoading } = useChat({
     api: `/api/bids/${bidId}/evaluate`,
     onFinish: (message) => {
@@ -1239,14 +1186,14 @@ function BitEvaluationProgress({ bidId }) {
 }
 ```
 
-### Structured Output für Bit-Decision
+### Structured Output für Bid-Decision
 
 ```typescript
 import { generateObject } from 'ai'
 import { z } from 'zod'
 
-const BitDecisionSchema = z.object({
-  decision: z.enum(['bit', 'no_bit']),
+const BidDecisionSchema = z.object({
+  decision: z.enum(['bid', 'no_bid']),
   confidence: z.number().min(0).max(100),
   reasoning: z.string(),
   capabilityScore: z.number().min(0).max(100),
@@ -1258,8 +1205,8 @@ const BitDecisionSchema = z.object({
 
 const result = await generateObject({
   model: anthropic('claude-sonnet-4-20250514'),
-  schema: BitDecisionSchema,
-  prompt: `Triff eine Bit/No Bit Entscheidung für: ${JSON.stringify(requirements)}`
+  schema: BidDecisionSchema,
+  prompt: `Triff eine Bid/No Bid Entscheidung für: ${JSON.stringify(requirements)}`
 })
 ```
 
@@ -1283,7 +1230,7 @@ interface AgentActivityEvent {
   id: string
   timestamp: Date
   type: 'thought' | 'tool_call' | 'tool_result' | 'decision' | 'error'
-  agent: string                   // "bit_evaluator", "quick_scan", "deep_analysis"
+  agent: string                   // "bid_evaluator", "quick_scan", "deep_analysis"
   content: {
     thought?: string              // Chain-of-Thought
     toolName?: string             // z.B. "checkCapabilities"
@@ -1340,7 +1287,7 @@ interface AgentActivityEvent {
 #### 1. Dashboard (BD View)
 - **Account-basierte Ansicht**: Opportunities gruppiert nach Kunde/Account
 - **Pipeline Overview**: Alle Bids mit Status
-- **Quick Stats**: Bit-Rate, offene Evaluierungen, zugewiesene Teams
+- **Quick Stats**: Bid-Rate, offene Evaluierungen, zugewiesene Teams
 - **Deadline-Tracking**: Anstehende Deadlines im Dashboard sichtbar
 - **New Bid CTA**: Upload starten
 - **Filters**: Status, Datum, BL, Source, Account
@@ -1362,7 +1309,7 @@ interface AgentActivityEvent {
 - **System-Vorschläge**: Basierend auf Historie, BD kann überschreiben
 - **Freitext-Notizen**: Zusätzliche Einschätzungen
 
-#### 4. Bit/No Bit Progress & Entscheidungsbaum
+#### 4. Bid/No Bid Progress & Entscheidungsbaum
 - **Agent Transparency**: Live Agent-Aktionen sichtbar (Full Chain-of-Thought)
 - **Multi-Agent Progress**: Zeigt alle parallel laufenden Agents
   - Tech Agent Status
@@ -1423,7 +1370,7 @@ interface AgentActivityEvent {
   - Zuordnung zu Business Lines
 - **Employees**: CRUD für Mitarbeiter + Skills
 - **Master Data Validation**: Referenzen, Kompetenzen, Wettbewerber validieren
-- **Analytics**: Bit/No Bit Stats, Pipeline-Metriken
+- **Analytics**: Bid/No Bid Stats, Pipeline-Metriken
 - **Audit Trail**: Override-Logs einsehen
 
 ---
@@ -1431,17 +1378,17 @@ interface AgentActivityEvent {
 ## Analytics Dashboard
 
 ### Metrics
-- **Bit Rate**: % der Bids die "Bit" werden
-- **Time to Decision**: Durchschnittliche Zeit bis Bit/No Bit
+- **Bid Rate**: % der RFPs die zu "Bid" werden
+- **Time to Decision**: Durchschnittliche Zeit bis Bid/No Bid
 - **Per BL**: Verteilung nach Bereichsleiter
 - **Source Distribution**: Reactive vs Proactive
 - **Stage Distribution**: Cold/Warm/RFP
 
 ### Visualizations
-- Bit/No Bit Pie Chart
+- Bid/No Bid Pie Chart
 - Timeline: Bids over time
 - BL Heatmap: Welcher Bereich bekommt wie viele?
-- Funnel: Draft → Bit → Assigned → Notified
+- Funnel: Draft → Bid → Assigned → Notified
 
 ---
 
@@ -1473,7 +1420,7 @@ interface AgentActivityEvent {
 
 ### Unit Tests
 - [ ] AI Extraction Logic
-- [ ] Bit/No Bit Scoring Algorithm
+- [ ] Bid/No Bid Scoring Algorithm
 - [ ] BL Routing Logic
 - [ ] Skill Matching (NLP)
 - [ ] Szenario Calculation
@@ -1485,8 +1432,8 @@ interface AgentActivityEvent {
 - [ ] Email Notification Delivery
 
 ### E2E Tests (Playwright)
-- [ ] Happy Path: Upload → Bit → Team → Notify
-- [ ] No Bit with Alternative Recommendation
+- [ ] Happy Path: Upload → Bid → Team → Notify
+- [ ] No Bid with Alternative Recommendation
 - [ ] Admin: Create BL, Create Employee
 - [ ] BD Pipeline View
 
@@ -1499,7 +1446,7 @@ interface AgentActivityEvent {
 | Smart Upload Processing | <30 sec |
 | AI Extraction | <60 sec |
 | Quick Scan (Phase 1) | 2-5 min |
-| Bit/No Bit Decision | 5-15 min |
+| Bid/No Bid Decision | 5-15 min |
 | Deep Migration Analysis (Phase 2) | 10-30 min (Background) |
 | Extended Evaluation | <2 min |
 | Team Notification | <30 sec |
@@ -1516,116 +1463,612 @@ interface AgentActivityEvent {
 
 ---
 
-## Open Questions (Resolved)
+## Refined RFP-to-Lead Pipeline (2026-01 Update)
 
-### Runde 1 (Basis-Interview)
-- [x] **AI SDK**: Vercel AI SDK (ai-sdk.dev) - ✅ RESOLVED
-- [x] **Document Cleaning**: Optional DSGVO-Bereinigung vor Verarbeitung - ✅ RESOLVED
-- [x] **Input Format**: Mixed/Hybrid → Smart Upload - ✅ RESOLVED
-- [x] **Bit Criteria**: Vollständige Bewertung - ✅ RESOLVED
-- [x] **Routing**: AI-basiert, konfigurierbar - ✅ RESOLVED
-- [x] **Kalkulation**: Szenario-basiert - ✅ RESOLVED
-- [x] **Team Selection**: AI-Vorschlag - ✅ RESOLVED
-- [x] **Slide Deck**: MVP nur PDF - ✅ RESOLVED
-- [x] **BD Visibility**: Volle Transparenz - ✅ RESOLVED
-- [x] **Wettbewerb**: Nur Präsenz-Check - ✅ RESOLVED
-- [x] **Learning**: Kein Learning - ✅ RESOLVED
-- [x] **Mobile**: Desktop Only - ✅ RESOLVED
-- [x] **Analytics**: Dashboard - ✅ RESOLVED
-- [x] **Ablehnung**: Keine (BL final) - ✅ RESOLVED
-- [x] **Multi-BL**: Ein BL Only - ✅ RESOLVED
-- [x] **Post-Team**: Handoff Complete - ✅ RESOLVED
-- [x] **HR Data**: Neu aufbauen - ✅ RESOLVED
+### Übersicht: Der verfeinerte Qualifikationsprozess
 
-### Runde 2 (Company Analysis)
-- [x] **Analysis Scope**: Zwei-Phasen (Quick Scan + Deep Migration) - ✅ RESOLVED
-- [x] **Quick Scan**: Tech Stack, Content Volume, Features - ✅ RESOLVED
-- [x] **Deep Analysis**: Content Architecture, Migration, Accessibility, PT-Schätzung - ✅ RESOLVED
-- [x] **Output Format**: In-App JSON Display (kein VitePress) - ✅ RESOLVED
-- [x] **CMS Baselines**: Pro Technologie (Drupal, Ibexa, Magnolia, etc.) - ✅ RESOLVED
-- [x] **Target System**: Multi-CMS basierend auf BL-Zuweisung - ✅ RESOLVED
-- [x] **BL Routing**: AI-Empfehlung + BD kann überschreiben - ✅ RESOLVED
-- [x] **Deep Analysis Trigger**: Automatisch nach Bit + BL-Zuweisung - ✅ RESOLVED
-- [x] **Analysis Duration**: Background Job (10-30 min) - ✅ RESOLVED
-- [x] **Agent Native**: Volle Chain-of-Thought Transparenz - ✅ RESOLVED
+```
+RFP Upload (BD)
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 1: QUALIFIKATION (BD Manager)                        │
+│  ───────────────────────────────────────────────────────── │
+│  - AI-Extraktion aus PDF/E-Mail/Freitext                   │
+│  - Quick Scan der Kunden-Website                           │
+│  - Erste Bid/No-Bid Empfehlung (AI-gestützt)              │
+│  - Timeline-Vorschau (grobe Projektphasen)                 │
+│  - Routing-Empfehlung an Business Unit                     │
+└─────────────────────────────────────────────────────────────┘
+     │
+     ▼ Routing an Business Unit Lead
+┌─────────────────────────────────────────────────────────────┐
+│  RFP wird zu LEAD                                           │
+│  (Status-Transformation bei BU-Zuweisung)                   │
+└─────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 2: VOLLUMFÄNGLICHER SCAN (Business Unit Lead)        │
+│  ───────────────────────────────────────────────────────── │
+│  - Website Audit (Komponenten, Häufigkeiten, Screenshots)  │
+│  - Technische Analyse (CMS, Framework, Integrationen)      │
+│  - Content-Typen und Migrationsaufwand                     │
+│  - Vertragsmodell-Analyse (T&M vs. Festpreis)             │
+│  - Rechtliche Risiken und Compliance                       │
+│  - Projekt-Timeline (Setup → Go-Live)                      │
+└─────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  BIT / NO-BIT ENTSCHEIDUNG (durch BU Lead)                  │
+│  ───────────────────────────────────────────────────────── │
+│  - Alle Daten auf einen Blick                              │
+│  - Entscheidung mit Begründung                             │
+│  - Bei NO-BIT: Alternative BU-Empfehlung                   │
+└─────────────────────────────────────────────────────────────┘
+     │
+     ▼ Bei BIT
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 3: TEAM-STAFFING (Business Unit Lead)                │
+│  ───────────────────────────────────────────────────────── │
+│  - Mitarbeiter-Auswahl basierend auf gecrawlten Daten     │
+│  - Skill-Matching mit Website-Anforderungen                │
+│  - Verfügbarkeits-Check                                    │
+│  - Team-Benachrichtigung                                   │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### Runde 3 (BD Evaluation Criteria)
-- [x] **Subjektive Daten**: Hybrid (System schlägt vor, BD bestätigt/korrigiert) - ✅ RESOLVED
-- [x] **Multi-Stage Prozesse**: Nicht in MVP (nur Single-Stage) - ✅ RESOLVED
-- [x] **Referenz-Matching**: Ja, mit zentraler Referenz-DB + AI-Matching - ✅ RESOLVED
-- [x] **Vertragstyp-Erkennung**: Auto-Erkennung + Risiko-Bewertung - ✅ RESOLVED
-- [x] **Zuschlagskriterien**: Deep Analysis (extrahiert, matcht, empfiehlt) - ✅ RESOLVED
-- [x] **Dokument-Upload**: PDF + Text Upload möglich - ✅ RESOLVED
-- [x] **Red Flags**: Auto-Erkennung basierend auf Scope - ✅ RESOLVED
-- [x] **Legal Agent**: Fokus Risiko (BD), Umfassend (BL) - ✅ RESOLVED
-- [x] **Compliance**: Vollständig (Vergaberecht, Rahmenverträge, Subunternehmer) - ✅ RESOLVED
-- [x] **Risiko-Kategorien**: Multi-Dimensional (Tech, Legal, Commercial, Org, Timeline) - ✅ RESOLVED
-- [x] **Hard Stops**: Informativ (zeigt Issues, entscheidet nicht automatisch) - ✅ RESOLVED
-- [x] **Output Format**: Angepasstes Web-UI Format - ✅ RESOLVED
-- [x] **Referenz-DB**: Zentral (adesso-weit) - ✅ RESOLVED
-- [x] **Kompetenz-Matching**: Auto-Matching mit Kompetenz-DB - ✅ RESOLVED
-- [x] **Wettbewerber**: Ja, mit Wettbewerber-DB - ✅ RESOLVED
-- [x] **Scoring-Modell**: Qualitativ (kein numerisches Scoring) - ✅ RESOLVED
-- [x] **Gewichtungen**: Global + Override pro Opportunity - ✅ RESOLVED
-- [x] **Empfehlung**: Entscheidungsbaum-Visualisierung - ✅ RESOLVED
-- [x] **ML/Historie**: Nicht in MVP - ✅ RESOLVED
-- [x] **DB-Pflege**: Crowdsourced mit Admin-Validierung - ✅ RESOLVED
-- [x] **Approval**: Kein Approval-Workflow (BD entscheidet) - ✅ RESOLVED
-- [x] **Deadline-Tracking**: Dashboard-Anzeige (keine Notifications) - ✅ RESOLVED
-- [x] **Website-Analyse**: Automatisch nach Bit - ✅ RESOLVED
-- [x] **Subjektive Inputs**: Slider/Rating - ✅ RESOLVED
-- [x] **Quick Mode**: Nein, immer volle Analyse - ✅ RESOLVED
-- [x] **Dokument-Storage**: Nur extrahierte Daten (kein Original) - ✅ RESOLVED
-- [x] **Portal-Integration**: Nicht in MVP - ✅ RESOLVED
-- [x] **Outcome-Tracking**: Nur Status (gewonnen/verloren) - ✅ RESOLVED
-- [x] **Export**: Nicht in MVP - ✅ RESOLVED
-- [x] **Account-View**: Account-Hierarchie - ✅ RESOLVED
-- [x] **Agent-Orchestrierung**: Hybrid (Extraktion parallel, Bewertung sequenziell) - ✅ RESOLVED
-- [x] **Coordinator Agent**: Ja, dediziert - ✅ RESOLVED
-- [x] **Transparenz**: Full Chain-of-Thought - ✅ RESOLVED
-- [x] **Re-Run**: Nur komplette Neu-Analyse - ✅ RESOLVED
+### Agent-Native Architektur
+
+**Kernprinzip:** Die gesamte Logik wird durch AI-Agents abgebildet. Jeder Prozessschritt ist ein Agent, der eigenständig arbeitet und seine Ergebnisse strukturiert zurückgibt.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  AGENT-NATIVE PIPELINE                                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. DUPLICATE-CHECK AGENT                                       │
+│     Input:  RFP-Text, Kundenname, URL                          │
+│     Output: { isDuplicate, existingRfps[], similarity }        │
+│                                                                 │
+│  2. EXTRACTION AGENT                                            │
+│     Input:  RFP-Dokument (PDF/Email/Text)                      │
+│     Output: { extractedFields, confidence, missingFields }     │
+│                                                                 │
+│  3. QUICK-SCAN AGENT                                            │
+│     Input:  Kunden-URL                                         │
+│     Output: { techStack, contentVolume, blRecommendation }     │
+│                                                                 │
+│  4. TIMELINE AGENT                                              │
+│     Input:  QuickScan-Result, RFP-Anforderungen                │
+│     Output: { phases[], totalDays, milestones }                │
+│                                                                 │
+│  5. ROUTING AGENT                                               │
+│     Input:  All previous outputs                               │
+│     Output: { recommendedBU, confidence, reasoning }           │
+│                                                                 │
+│  ─── Nach Routing: RFP → LEAD ───                              │
+│                                                                 │
+│  6. FULL-SCAN AGENT (Website Audit)                            │
+│     Input:  Kunden-URL, Deep=true                              │
+│     Output: { components, screenshots, migrations, audits }    │
+│                                                                 │
+│  7. CONTRACT AGENT                                              │
+│     Input:  RFP-Text                                           │
+│     Output: { type, riskFlags[], budget, penalties }           │
+│                                                                 │
+│  8. LEGAL AGENT                                                 │
+│     Input:  RFP-Text, ContractAnalysis                         │
+│     Output: { riskScore, issues[], compliance }                │
+│                                                                 │
+│  9. DECISION AGENT (Coordinator)                                │
+│     Input:  All previous outputs                               │
+│     Output: { recommendation, scores, reasoning }              │
+│                                                                 │
+│  ─── Nach BIT-Entscheidung ───                                 │
+│                                                                 │
+│  10. STAFFING AGENT                                             │
+│      Input:  FullScan, Mitarbeiter-DB                          │
+│      Output: { teamProposal[], matchScores, availability }     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Agent-Eigenschaften:**
+- Jeder Agent ist **idempotent** (kann mehrfach ausgeführt werden)
+- Jeder Agent liefert **strukturierte Outputs** (Zod-validiert)
+- Jeder Agent hat **Confidence Scores**
+- Jeder Agent loggt seine **Reasoning Chain**
+- Agents können **parallel** oder **sequentiell** orchestriert werden
+
+### Duplikat-Prüfung (Duplicate Check Agent)
+
+**Problem:** RFPs für denselben Kunden/dasselbe Projekt können mehrfach eingehen (z.B. "Saudi Pro League", "VHS Frankfurt"). Ohne Duplikat-Check entstehen redundante Einträge.
+
+**Lösung:** Bei jedem neuen RFP prüft der Duplicate-Check Agent:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DUPLICATE CHECK                                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Neuer RFP: "VHS Frankfurt - Website Relaunch"              │
+│                                                             │
+│  ⚠️  Mögliche Duplikate gefunden:                           │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────────┐
+│  │ 1. "VHS Frankfurt Redesign" (RFP-2024-089)              │
+│  │    Status: qualified | Erstellt: 15.12.2024             │
+│  │    Similarity: 92%                                       │
+│  │    [Zusammenführen] [Trotzdem anlegen] [Abbrechen]      │
+│  └─────────────────────────────────────────────────────────┘
+│                                                             │
+│  ┌─────────────────────────────────────────────────────────┐
+│  │ 2. "Volkshochschule Frankfurt Portal" (RFP-2024-045)    │
+│  │    Status: no_bid | Erstellt: 03.09.2024                │
+│  │    Similarity: 78%                                       │
+│  │    [Verknüpfen] [Trotzdem anlegen] [Details]            │
+│  └─────────────────────────────────────────────────────────┘
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Matching-Kriterien:**
+
+| Kriterium | Gewicht | Beschreibung |
+|-----------|---------|--------------|
+| Kundenname | 40% | Fuzzy-Match auf Account/Company Name |
+| URL/Domain | 30% | Gleiche Website = hohe Wahrscheinlichkeit |
+| Projektbeschreibung | 20% | Semantic Similarity (Embeddings) |
+| Zeitraum | 10% | RFPs < 6 Monate auseinander |
+
+**Aktionen bei Duplikat:**
+- **Automatisch Zusammenführen** (Default): Neuer RFP wird mit existierendem gemerged
+  - Neue Informationen werden zum existierenden RFP hinzugefügt
+  - Kein manueller Eingriff nötig bei hoher Similarity (> 90%)
+- **Manuell Verknüpfen**: Bei mittlerer Similarity (70-90%) User-Bestätigung
+- **Trotzdem anlegen**: Explizit als neuer RFP behandeln (User Override)
+
+**API für Duplicate Check:**
+```typescript
+// POST /api/rfps/duplicate-check
+{
+  customerName: string;
+  projectTitle: string;
+  websiteUrl?: string;
+  description?: string;
+}
+
+// Response
+{
+  hasDuplicates: boolean;
+  matches: Array<{
+    rfpId: string;
+    title: string;
+    status: OpportunityStatus;
+    similarity: number;       // 0-100
+    matchedFields: string[];  // ['customerName', 'url']
+    createdAt: Date;
+  }>;
+}
+```
+
+### Architecture Decisions (Interview 2026-01-20)
+
+Die folgenden Entscheidungen wurden im Detail-Interview mit dem Product Owner getroffen:
+
+#### MCP & Datensammlung
+
+| Entscheidung | Wert | Begründung |
+|--------------|------|------------|
+| **MCP Scope** | Multi-Source über MCP | LinkedIn, Handelsregister, etc. alles via Browser-Automation |
+| **MCP Auth** | Nur öffentliche Daten | Kein Login für externe Dienste (erstmal), ToS-konform |
+| **Crawling Legalität** | Ignorieren | Internes Tool, robots.txt nicht relevant |
+
+#### Embeddings & Vektor-Suche
+
+| Entscheidung | Wert | Begründung |
+|--------------|------|------------|
+| **Embedding Model** | `text-embedding-3-large` | Via adesso AI Hub, 3072 Dimensionen |
+| **Vektor-DB** | SQLite mit vec0 Extension | < 10.000 RFPs erwartet, reicht völlig |
+| **Embedding Lifecycle** | Speichern + Reindex | Bei RFP-Änderungen neu berechnen |
+
+#### Agent-Orchestrierung
+
+| Entscheidung | Wert | Begründung |
+|--------------|------|------------|
+| **Orchestrierung** | Coordinator entscheidet dynamisch | Agentic Loop, AI wählt welche Agents wann |
+| **Human-in-Loop** | Nein, vollautomatisch | Agent trifft alle Entscheidungen selbst |
+| **Agent-Konflikte** | Kontextabhängig | AI Coordinator löst je nach Severity |
+| **Timeline-Kalibrierung** | Agenten als Experten | AI mimen Experten für Validierung |
+
+#### Error Handling & Checkpoints
+
+| Entscheidung | Wert | Begründung |
+|--------------|------|------------|
+| **Rollback-Strategie** | Checkpoint-basiert | Zwischenstände speichern, bei Checkpoint fortsetzen |
+| **Checkpoint-Storage** | Filesystem (JSON-Files) | Pro Workflow ein File, einfach zu debuggen |
+
+#### UI & Notifications
+
+| Entscheidung | Wert | Begründung |
+|--------------|------|------------|
+| **Agent UI** | Alles live streamen | Volle Transparenz, jeder Agent-Schritt sichtbar |
+| **Notifications** | In-App only | Slack komplett raus, Dashboard-Benachrichtigungen |
+| **Confidence Threshold** | < 70% → User eskalieren | Bei niedriger Confidence manuelle Entscheidung |
+
+#### Governance & Audit
+
+| Entscheidung | Wert | Begründung |
+|--------------|------|------------|
+| **Override-Governance** | Nur Audit-Log | BD Manager wird vertraut, Log reicht |
+| **Log Retention** | Unbegrenzt (komprimiert) | Alles behalten, nach 90 Tagen archivieren |
+| **Original-Dokumente** | Extrahierte Daten reichen | Kein Audit ohne Original nötig |
+
+#### Daten-Management
+
+| Entscheidung | Wert | Begründung |
+|--------------|------|------------|
+| **Daten-Freshness** | Warnung nach X Tagen | Alert wenn Scan-Daten veraltet |
+| **Full-Scan bei Website-Änderung** | Immer neu crawlen | Unabhängig vom Quick-Scan |
+| **HR-Daten Sync** | Manuelle Pflege | Admin pflegt Mitarbeiter-DB, kein HR-System |
+
+#### Duplicate Handling
+
+| Entscheidung | Wert | Begründung |
+|--------------|------|------------|
+| **Duplicate Action** | Automatisch mergen | Neue Infos zum existierenden RFP hinzufügen |
+
+#### Feedback & Learning
+
+| Entscheidung | Wert | Begründung |
+|--------------|------|------------|
+| **No-Bid Reason** | Optionales Freitext | BU Lead kann Grund angeben, muss nicht |
+
+#### Internationalisierung
+
+| Entscheidung | Wert | Begründung |
+|--------------|------|------------|
+| **Timezone** | Immer lokale Zeit (Berlin) | Alle Zeiten in deutscher Zeitzone |
 
 ---
 
-## Phase 2 Features (NOT in MVP)
+### Technische Umsetzung (basierend auf Decisions)
 
-- Slide Deck Generation (PowerPoint)
-- Learning/Feedback Loop (Won/Lost → verbesserte Prognosen, Win-Rate Prediction)
-- Mobile Support
-- Multi-BL Deals (Joint Bids)
-- Post-Handoff Tracking (detailliertes Lessons Learned)
-- CRM Integration (HubSpot, Salesforce)
-- Team-Member Ablehnung
-- Competitor Analysis (tiefgehend)
-- Batch Analysis
-- Portal-Integration (DTVP, TED, evergabe)
-- PDF/Excel Export
-- E-Mail Notifications für Deadlines
-- Multi-Stage Prozesse (Teilnahmeantrag → Angebot)
-- Granularer Agent Re-Run (einzelne Agents wiederholen)
+**Datenhaltung:**
+- [x] MCP-Layer für Multi-Source Datensammlung (nur öffentliche Daten)
+- [x] Alle Crawl-Daten in DB speichern (SQLite + JSON)
+- [x] Embeddings mit `text-embedding-3-large` via adesso AI Hub
+- [x] SQLite vec0 Extension für Vektor-Suche (< 10k RFPs)
+
+**Integration:**
+- [x] Playwright/Chrome DevTools MCP für Screenshots
+- [x] Wappalyzer für Tech-Detection
+- [x] Filesystem-Checkpoints (JSON) für Workflow-State
+
+**Agent-Orchestrierung:**
+- [x] Vercel AI SDK mit streamText/generateObject
+- [x] Agentic Loop: Coordinator entscheidet dynamisch
+- [x] Vollautomatisch (kein Human-in-Loop während Workflow)
+- [x] Confidence < 70% → Eskalation an User
+
+### Phase 1: Qualifikation (BD Manager)
+
+#### RFP-Extraktion (bestehend, zu verbessern)
+
+**Probleme mit aktuellem Stand:**
+- Extraktion liefert nicht immer brauchbare Ergebnisse
+- Fehlende Strukturierung der extrahierten Daten
+- Keine Validierung gegen bekannte Patterns
+
+**Verbesserungen:**
+- Structured Output mit strikten Zod-Schemas
+- Multi-Pass Extraktion (erst grob, dann Detail)
+- Confidence Scores für jeden extrahierten Wert
+- Human-in-the-Loop für niedrige Confidence
+
+#### Quick Scan (während Qualifikation)
+
+Der Quick Scan läuft bereits während der BD-Qualifikation und liefert:
+- Tech Stack der Kunden-Website
+- Content-Volumen Schätzung
+- Erste BU-Routing-Empfehlung
+- Grobe Migrations-Komplexität
+
+**Wichtig:** Timeline muss bereits hier sichtbar sein!
+
+#### Timeline-Vorschau (NEU)
+
+Die Timeline soll **dauerhaft** im RFP/Lead angezeigt werden:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  PROJEKT-TIMELINE (geschätzt)                                │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Setup & Konzeption    ████████░░░░░░░░░░░░░░░░  15 Tage    │
+│  Design & Prototyping  ░░░░░░░░████████░░░░░░░░  20 Tage    │
+│  Frontend Development  ░░░░░░░░░░░░░░░░████████  30 Tage    │
+│  Backend/CMS           ░░░░░░░░░░░░████████████  25 Tage    │
+│  Integration & Test    ░░░░░░░░░░░░░░░░░░░░████  10 Tage    │
+│  Go-Live & Hypercare   ░░░░░░░░░░░░░░░░░░░░░░██   5 Tage    │
+│                                                              │
+│  Gesamt: ~105 Tage (ca. 5 Monate)                           │
+│  Projektstart: [Datum aus RFP oder TBD]                     │
+│  Go-Live Target: [Berechnet oder aus RFP]                   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Berechnung basiert auf:**
+- Content-Volumen (Seiten, Content-Typen)
+- Komponenten-Komplexität
+- Integrations-Anforderungen
+- Team-Größe (Standard: 3-4 Personen)
+
+### Phase 2: Vollumfänglicher Scan (BU Lead)
+
+Wenn ein RFP an eine Business Unit geroutet wird, wird er zum **Lead** und erhält einen vollumfänglichen Scan.
+
+#### Website Audit Integration
+
+Der bestehende **Website Audit Skill** liefert:
+
+| Daten | Beschreibung | Nutzen für BU Lead |
+|-------|--------------|-------------------|
+| **Komponenten** | UI-Patterns, Häufigkeit, Varianten | Aufwandsschätzung |
+| **Screenshots** | Visuelle Dokumentation aller Seiten | Schneller Überblick |
+| **Content-Typen** | Strukturierte vs. unstrukturierte Inhalte | Migrations-Planung |
+| **Tech Stack** | CMS, Frameworks, Libraries | Team-Staffing |
+| **Integrationen** | APIs, Third-Party Services | Risiko-Assessment |
+| **Performance** | Core Web Vitals, Page Speed | Benchmark |
+| **SEO** | Meta, Structure, Accessibility | Scope-Definition |
+| **Legal** | Cookie-Banner, Datenschutz, Impressum | Compliance |
+
+#### Vertragsmodell-Analyse (NEU)
+
+**Automatische Erkennung aus RFP:**
+
+| Vertragstyp | Indikatoren | Risiko-Level |
+|-------------|-------------|--------------|
+| **Time & Material (T&M)** | "nach Aufwand", "Stundensätze", "agil" | Niedrig |
+| **Festpreis** | "Pauschal", "Budget: X€", "nicht zu überschreiten" | Hoch |
+| **Rahmenvertrag** | "Abruf", "Kontingent", "Laufzeit X Jahre" | Mittel |
+| **Hybrid** | "Festpreis für Phase 1, T&M für Phase 2" | Mittel |
+
+**Risiko-Flags bei Festpreis:**
+- [ ] Unrealistische Timeline
+- [ ] Unklare Anforderungen ("und weitere Features")
+- [ ] Kein Change Request Prozess definiert
+- [ ] Penalty-Klauseln bei Verzug
+
+#### Rechtliche Analyse (NEU - erweitert)
+
+**Zu prüfende Aspekte:**
+
+| Kategorie | Prüfpunkte |
+|-----------|------------|
+| **Haftung** | Haftungsbegrenzung, Gewährleistung, SLA-Penalties |
+| **IP/Rechte** | Urheberrecht, Lizenzen, Open Source Compliance |
+| **Datenschutz** | DSGVO, Auftragsverarbeitung, Datenexport |
+| **Compliance** | Branchenspezifisch (Pharma, Finance, Public Sector) |
+| **Kündigungs-Klauseln** | Exit-Szenarien, Übergabe-Pflichten |
+
+**Output: Legal Risk Score (1-10) mit Begründung**
+
+#### Projekt-Timeline (Detail für BU Lead)
+
+Erweiterte Timeline mit Abhängigkeiten:
+
+```
+Phase                    | Dauer  | Abhängig von        | Team
+-------------------------|--------|---------------------|------------------
+1. Kickoff & Discovery   | 5 Tage | -                   | PL, UX, Tech Lead
+2. Konzeption            | 10 Tage| Phase 1             | UX, Architect
+3. Design System         | 15 Tage| Phase 2             | Designer, Frontend
+4. CMS Setup             | 10 Tage| Phase 2             | Backend, DevOps
+5. Content-Modellierung  | 10 Tage| Phase 4             | Backend, Content
+6. Frontend Development  | 30 Tage| Phase 3, 4          | Frontend Team
+7. Backend/Integrationen | 25 Tage| Phase 4             | Backend Team
+8. Content-Migration     | 15 Tage| Phase 5             | Content, Backend
+9. QA & Testing          | 10 Tage| Phase 6, 7          | QA, Alle
+10. Go-Live              | 5 Tage | Phase 9             | DevOps, PL
+```
+
+### Phase 3: Bid/No-Bid Entscheidung (BU Lead)
+
+#### Entscheidungs-Dashboard
+
+Der BU Lead sieht alle relevanten Daten auf einen Blick:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  LEAD: [Kundenname] - [Projektname]                         │
+│  Status: Awaiting BU Decision                               │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  QUICK FACTS                                                │
+│  ───────────                                                │
+│  Budget: 250.000 € (Festpreis)          ⚠️ Risiko: Mittel   │
+│  Timeline: 6 Monate                     ✅ Realistisch      │
+│  Vertragstyp: Festpreis                 ⚠️ Change Requests? │
+│  Tech Stack: Drupal 10                  ✅ Kernkompetenz    │
+│                                                             │
+│  SCORING                                                    │
+│  ───────                                                    │
+│  Capability Match:     ████████░░  85%                      │
+│  Strategic Fit:        ██████░░░░  60%                      │
+│  Deal Quality:         ███████░░░  70%                      │
+│  Competition Risk:     ████░░░░░░  40% (niedrig = gut)      │
+│  Legal Risk:           ███░░░░░░░  30% (niedrig = gut)      │
+│                                                             │
+│  TIMELINE PREVIEW                                           │
+│  ────────────────                                           │
+│  [Gantt-Chart oder Timeline-Balken]                         │
+│                                                             │
+│  ┌─────────────┐  ┌─────────────┐                          │
+│  │   🟢 BIT    │  │  🔴 NO BIT  │                          │
+│  └─────────────┘  └─────────────┘                          │
+│                                                             │
+│  Bei NO-BIT (optional):                                     │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │ Grund (Freitext):                                       ││
+│  │ [________________________________________________]      ││
+│  │ z.B. "Budget unrealistisch", "Kein Drupal-Fit"          ││
+│  └─────────────────────────────────────────────────────────┘│
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Phase 4: Team-Staffing (nach BIT)
+
+#### Mitarbeiter-Matching basierend auf Website-Audit
+
+Die gecrawlten Daten werden für intelligentes Staffing genutzt:
+
+| Website-Daten | Matching-Kriterium | Mitarbeiter-Skills |
+|---------------|-------------------|-------------------|
+| CMS: Drupal 10 | Exact Match | drupal, drupal-10 |
+| React Components | Framework | react, typescript |
+| GSAP Animations | Specialty | animation, gsap |
+| Elasticsearch | Integration | elasticsearch, search |
+| Multilingual (5 Sprachen) | Complexity | i18n, translation-mgmt |
+
+#### Staffing-Vorschlag
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  TEAM-VORSCHLAG                                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Rolle              │ Vorschlag        │ Match │ Verfügbar │
+│  ─────────────────────────────────────────────────────────│
+│  Project Lead       │ Max Mustermann   │  95%  │ ✅ Ab 01.03│
+│  Tech Lead          │ Anna Schmidt     │  90%  │ ✅ Ab 15.02│
+│  Frontend Dev       │ Tim Weber        │  85%  │ ⚠️ 50%    │
+│  Frontend Dev       │ Lisa Müller      │  80%  │ ✅ Ab 01.03│
+│  Backend Dev        │ Jan Becker       │  92%  │ ✅ Ab 01.03│
+│  UX Designer        │ Sarah Koch       │  88%  │ ✅ Sofort  │
+│                                                             │
+│  Gesamt-Match: 88%                                          │
+│  Team-Verfügbarkeit: Ab 01.03.2026                          │
+│                                                             │
+│  [Team bestätigen & benachrichtigen]                        │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Datenmodell-Erweiterungen
+
+#### RFP → Lead Transformation
+
+```typescript
+// Status-Enum erweitern
+type OpportunityStatus =
+  | 'draft'           // RFP angelegt
+  | 'qualifying'      // Quick Scan läuft
+  | 'qualified'       // Quick Scan fertig, wartet auf Routing
+  | 'routed'          // An BU geroutet → wird zu "Lead"
+  | 'scanning'        // Vollumfänglicher Scan läuft
+  | 'pending_decision'// Wartet auf BU Lead Entscheidung
+  | 'bid'             // BIT entschieden
+  | 'no_bid'          // NO BIT entschieden
+  | 'staffing'        // Team wird zusammengestellt
+  | 'handed_off';     // An Team übergeben
+
+// Neues Feld für Lead-Transformation
+interface Opportunity {
+  // ... existing fields ...
+
+  // NEU: Lead-spezifische Felder (nach Routing)
+  becameLeadAt?: Date;           // Zeitpunkt der Transformation
+  fullScanResult?: FullScanResult;
+  contractAnalysis?: ContractAnalysis;
+  legalRiskAssessment?: LegalRiskAssessment;
+  projectTimeline?: ProjectTimeline;
+  staffingProposal?: StaffingProposal;
+}
+```
+
+#### Timeline-Schema
+
+```typescript
+interface ProjectTimeline {
+  phases: ProjectPhase[];
+  totalDays: number;
+  estimatedStart?: Date;
+  estimatedGoLive?: Date;
+  confidence: number; // 0-100
+  assumptions: string[];
+}
+
+interface ProjectPhase {
+  name: string;
+  durationDays: number;
+  dependencies: string[]; // Phase names
+  requiredRoles: string[];
+  parallelizable: boolean;
+}
+```
+
+#### Contract Analysis Schema
+
+```typescript
+interface ContractAnalysis {
+  type: 'tm' | 'fixed_price' | 'framework' | 'hybrid';
+  budget?: number;
+  currency: string;
+  indicators: string[];      // Textstellen die zum Typ führten
+  riskFlags: RiskFlag[];
+  changeRequestProcess: boolean;
+  penaltyClauses: boolean;
+  confidence: number;
+}
+
+interface RiskFlag {
+  category: 'timeline' | 'scope' | 'budget' | 'legal' | 'technical';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  mitigation?: string;
+}
+```
 
 ---
 
 **Status**: MVP Specification Complete - Ready for Implementation
-**Last Updated**: 2026-01-15
+**Last Updated**: 2026-01-20
 **Author**: Marc Philipps + Claude
-**Source**: Francesco Raaphorst Interview + BD Evaluation Criteria Session
-**Tech Stack**: Vercel AI SDK + Next.js 15 + ShadCN + Tailwind v4
+**Source**: Francesco Raaphorst Interview + BD Evaluation Criteria Session + Architecture Interview 2026-01-20
+**Tech Stack**: Vercel AI SDK + Next.js 16 + ShadCN + Tailwind v4
 
 **Key Features (MVP)**:
-- **Multi-Agent System**: 8 spezialisierte Agents mit Coordinator
+- **Multi-Agent System**: 10 spezialisierte Agents mit dynamischem Coordinator
+- **Agent-Native Architecture**: Agentic Loop, Coordinator entscheidet dynamisch
+- **Embeddings**: text-embedding-3-large via adesso AI Hub, SQLite vec0
+- **Checkpoint System**: Filesystem-basiert (JSON), crash-resilient
 - **Legal Agent**: Vertragstyp-Erkennung, Risiko-Assessment, Compliance-Check
 - **Master Data**: Zentrale DBs für Referenzen, Kompetenzen, Wettbewerber (Crowdsourced)
-- **Entscheidungsbaum**: Interaktive Visualisierung der Bit/No Bit Empfehlung
+- **Entscheidungsbaum**: Interaktive Visualisierung der Bid/No Bid Empfehlung
 - **Red Flag Detection**: Automatische Erkennung unrealistischer Budget/Timeline
 - **Account-Hierarchie**: Opportunities gruppiert nach Kunden
 - **Two-Phase Company Analysis**: Quick Scan (BD) + Deep Migration (BL)
 - **Multi-CMS Baselines**: Drupal, Ibexa, Magnolia, Sulu, Firstspirit
-- **Agent Native Transparency**: Full Chain-of-Thought
+- **Agent Native Transparency**: Full Chain-of-Thought, Live Streaming
+- **Duplicate Detection**: Automatisches Mergen bei hoher Similarity
+
+**Architecture Decisions (2026-01-20)**:
+- MCP: Multi-Source (öffentliche Daten), kein Login
+- Embeddings: text-embedding-3-large, SQLite vec0 (< 10k RFPs)
+- Orchestrierung: Agentic Loop (Coordinator entscheidet dynamisch)
+- Error Handling: Checkpoint-basiert (Filesystem JSON)
+- Human-in-Loop: Nein (vollautomatisch, < 70% Confidence → Eskalation)
+- Notifications: In-App only (kein Slack)
+- Retention: Unbegrenzt (komprimiert nach 90 Tagen)
+- Timezone: Berlin (lokal)
 
 **Hybrid-Orchestrierung**:
 1. Parallel: Extraction, Tech, Legal (Quick), Commercial, Competition, Reference Agents
-2. Sequenziell: Coordinator Agent synthetisiert alle Ergebnisse
+2. Dynamisch: Coordinator Agent wählt zur Laufzeit welche Agents wann
 3. Background: Deep Analysis Agent nach BL-Zuweisung
 
 **Next Step**: `/plan` for implementation plan

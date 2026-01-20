@@ -1,0 +1,384 @@
+{
+  "project_name": "Example Website Audit",
+  "url": "https://example.com",
+  "current_cms": "WordPress",
+  "audit_date": "2025-11-13",
+
+  "summary": {
+    "content_types": 6,
+    "paragraphs": 25,
+    "taxonomies": 4,
+    "media_types": 4,
+    "views": 15,
+    "webforms": 3,
+    "theme_components": 45,
+    "custom_modules": 2,
+    "total_pages": 350,
+    "estimated_hours": 650,
+    "timeline_weeks": 16.25
+  },
+
+  "key_findings": {
+    "executive_summary": "This medium-sized website requires a comprehensive Drupal relaunch with modern architecture patterns. The project is comparable to ~60-70% of the adessoCMS baseline project, with moderate complexity.",
+
+    "strengths": [
+      "Well-organized content structure with clear hierarchies",
+      "Good performance baseline (LCP < 3s)",
+      "Clean URL structure and navigation",
+      "Structured data exports available for migration"
+    ],
+
+    "opportunities": [
+      "Modernize with paragraph-based flexible layouts",
+      "Implement Single Directory Components (SDC) for maintainability",
+      "Improve accessibility to WCAG 2.1 Level AA compliance",
+      "Optimize asset loading and caching strategy",
+      "Enhance mobile experience and responsive design"
+    ],
+
+    "challenges": [
+      "Migration requires HTML cleanup and content restructuring",
+      "Multiple taxonomy vocabularies need consolidation",
+      "Legacy custom functionality requires reimplementation",
+      "Performance optimization needed for large image galleries",
+      "Accessibility remediation across all templates"
+    ],
+
+    "project_size": "Medium",
+    "baseline_percentage": "60-70%",
+    "complexity": "Medium",
+    "complexity_rationale": "The project requires standard Drupal architecture patterns with some custom development. Migration complexity is moderate due to HTML cleanup requirements. No unusual technical challenges identified.",
+
+    "migration_priority": "Structured export approach with automated HTML cleanup",
+    "performance_target": "Achieve Core Web Vitals: LCP < 2.5s, FID < 100ms, CLS < 0.1",
+    "accessibility_target": "Full WCAG 2.1 Level AA compliance",
+    "timeline_note": "16-week timeline @ 40h/week includes 20% buffer for risk mitigation",
+
+    "immediate_actions": [
+      "Finalize content type specifications with stakeholders",
+      "Set up DDEV development environment",
+      "Begin migration planning and test exports",
+      "Review and approve paragraph architecture pattern"
+    ],
+
+    "strategic_decisions": [
+      "Adopt paragraph-based flexible layout architecture",
+      "Use Tailwind CSS + SDC for theme development",
+      "Implement comprehensive testing strategy (Vitest + Cypress + Percy)",
+      "Choose Gin admin theme for improved editor experience",
+      "Plan for Storybook component documentation"
+    ]
+  },
+
+  "technology_stack": {
+    "current": {
+      "cms": "WordPress",
+      "version": "6.2",
+      "theme": "Custom theme (Genesis Framework)",
+      "plugins": [
+        "Advanced Custom Fields Pro",
+        "Yoast SEO",
+        "WPForms",
+        "WP Rocket",
+        "Wordfence Security"
+      ],
+      "hosting": "Managed WordPress hosting",
+      "database": "MySQL 8.0",
+      "php_version": "8.1"
+    },
+    "recommended_drupal": {
+      "drupal_version": "11.2",
+      "php_version": "8.3+",
+      "database": "MySQL 8.0 / MariaDB 10.6+ / PostgreSQL 16+",
+      "frontend": "Tailwind CSS 3.x, SDC, Lucide Icons",
+      "admin_theme": "Gin 5.x",
+      "key_modules": [
+        "Paragraphs 1.17",
+        "Webform 6.3-beta1",
+        "Pathauto",
+        "Yoast SEO for Drupal",
+        "Focal Point",
+        "Media Library",
+        "Search API",
+        "Gin Admin Theme"
+      ],
+      "development": [
+        "DDEV",
+        "npm",
+        "Storybook 7.x",
+        "Vitest",
+        "Cypress",
+        "Percy.io"
+      ]
+    }
+  },
+
+  "content_volume": {
+    "total_pages": 350,
+    "by_type": [
+      {"type": "Pages", "count": 120},
+      {"type": "News/Blog", "count": 180},
+      {"type": "Events", "count": 30},
+      {"type": "Team Members", "count": 15},
+      {"type": "Landing Pages", "count": 5}
+    ],
+    "media_files": 850,
+    "documents": 45
+  },
+
+  "content_architecture": {
+    "page_types": [
+      {
+        "name": "Landing Page",
+        "count": 5,
+        "drupal_content_type": "landing_page",
+        "complexity": "complex",
+        "key_fields": ["Title", "Hero section", "Flexible content (paragraphs)", "SEO metadata"],
+        "paragraphs_allowed": ["hero", "text", "image", "gallery", "cta", "card_grid", "stats", "accordion", "sidebyside"]
+      },
+      {
+        "name": "Standard Page",
+        "count": 120,
+        "drupal_content_type": "page",
+        "complexity": "simple",
+        "key_fields": ["Title", "Flexible content (paragraphs)", "SEO metadata"],
+        "paragraphs_allowed": ["text", "image", "gallery", "cta", "accordion"]
+      },
+      {
+        "name": "News/Blog Article",
+        "count": 180,
+        "drupal_content_type": "article",
+        "complexity": "medium",
+        "key_fields": ["Title", "Teaser", "Hero image", "Author", "Date", "Categories", "Tags", "Flexible content"],
+        "paragraphs_allowed": ["text", "image", "gallery", "quote", "video", "accordion"]
+      },
+      {
+        "name": "Event",
+        "count": 30,
+        "drupal_content_type": "event",
+        "complexity": "medium",
+        "key_fields": ["Title", "Date range", "Location (address)", "Registration link", "Hero image", "Flexible content"],
+        "paragraphs_allowed": ["text", "image", "map", "cta"]
+      },
+      {
+        "name": "Person",
+        "count": 15,
+        "drupal_content_type": "person",
+        "complexity": "medium",
+        "key_fields": ["Name", "Role", "Photo", "Bio", "Email", "Phone", "Social media links", "Flexible content"],
+        "paragraphs_allowed": ["text", "image", "quote"]
+      }
+    ],
+
+    "paragraph_types": [
+      {"name": "Text", "complexity": "simple", "usage": "High"},
+      {"name": "Hero", "complexity": "complex", "usage": "Medium"},
+      {"name": "Image", "complexity": "simple", "usage": "High"},
+      {"name": "Gallery", "complexity": "medium", "usage": "Medium"},
+      {"name": "Video", "complexity": "medium", "usage": "Low"},
+      {"name": "Quote", "complexity": "simple", "usage": "Low"},
+      {"name": "CTA", "complexity": "simple", "usage": "High"},
+      {"name": "Accordion", "complexity": "medium", "usage": "Medium"},
+      {"name": "Card", "complexity": "medium", "usage": "High"},
+      {"name": "Card Grid", "complexity": "medium", "usage": "Medium"},
+      {"name": "Sidebyside", "complexity": "medium", "usage": "Medium"},
+      {"name": "Stats/Counter", "complexity": "medium", "usage": "Low"},
+      {"name": "Map", "complexity": "medium", "usage": "Low"},
+      {"name": "Carousel", "complexity": "complex", "usage": "Low"},
+      {"name": "Block Reference", "complexity": "medium", "usage": "Low"},
+      {"name": "Views Embed", "complexity": "medium", "usage": "Medium"}
+    ],
+
+    "taxonomies": [
+      {"name": "Categories", "terms": 12, "hierarchical": true, "usage": "News, Events"},
+      {"name": "Tags", "terms": 85, "hierarchical": false, "usage": "News"},
+      {"name": "Locations", "terms": 8, "hierarchical": false, "usage": "Events"},
+      {"name": "Departments", "terms": 6, "hierarchical": false, "usage": "Team Members"}
+    ],
+
+    "media_types": [
+      {"name": "Image", "count": 750, "notes": "JPEG, PNG, WebP"},
+      {"name": "Document", "count": 45, "notes": "PDF files"},
+      {"name": "Video", "count": 15, "notes": "YouTube embeds"},
+      {"name": "SVG", "count": 40, "notes": "Icons and logos"}
+    ]
+  },
+
+  "features": {
+    "interactive": [
+      {"name": "Contact Form", "type": "webform", "complexity": "medium"},
+      {"name": "Event Registration", "type": "webform", "complexity": "complex"},
+      {"name": "Newsletter Signup", "type": "webform", "complexity": "simple"},
+      {"name": "Site Search", "type": "search_api", "complexity": "medium"},
+      {"name": "Social Media Integration", "type": "custom", "complexity": "simple"}
+    ],
+
+    "views": [
+      {"name": "Recent News", "type": "block", "complexity": "simple"},
+      {"name": "News Archive", "type": "page", "complexity": "medium"},
+      {"name": "Upcoming Events", "type": "block", "complexity": "medium"},
+      {"name": "Event Calendar", "type": "page", "complexity": "complex"},
+      {"name": "Team Directory", "type": "page", "complexity": "simple"},
+      {"name": "Search Results", "type": "page", "complexity": "medium"}
+    ]
+  },
+
+  "performance": {
+    "core_web_vitals": {
+      "lcp": 2.8,
+      "fid": 85,
+      "cls": 0.12,
+      "overall": "Needs Improvement"
+    },
+    "page_size": {
+      "homepage": "2.4 MB",
+      "average": "1.8 MB"
+    },
+    "recommendations": [
+      "Implement image lazy loading",
+      "Optimize and compress images (convert to WebP)",
+      "Enable CSS/JS aggregation and minification",
+      "Implement proper caching headers",
+      "Use CDN for static assets",
+      "Optimize database queries"
+    ]
+  },
+
+  "accessibility": {
+    "wcag_level": "Partial A",
+    "issues_found": 47,
+    "by_severity": {
+      "critical": 5,
+      "serious": 12,
+      "moderate": 18,
+      "minor": 12
+    },
+    "common_issues": [
+      "Missing alt text on images",
+      "Insufficient color contrast (15 instances)",
+      "Missing form labels",
+      "Invalid ARIA attributes",
+      "Poor heading hierarchy",
+      "Missing skip links",
+      "Keyboard navigation issues"
+    ],
+    "remediation_hours": 35
+  },
+
+  "migration": {
+    "approach": "WordPress XML export + custom parsing",
+    "nodes": 350,
+    "complexity": "medium",
+    "estimated_hours": 85,
+    "cleanup_required": [
+      "HTML tag cleanup (remove inline styles)",
+      "Image path corrections",
+      "Shortcode conversion to paragraphs",
+      "Taxonomy term mapping",
+      "URL redirect mapping"
+    ],
+    "phases": [
+      "Phase 1: Content type migration (Pages, Articles)",
+      "Phase 2: Taxonomy and media migration",
+      "Phase 3: Events and team members",
+      "Phase 4: Content cleanup and QA",
+      "Phase 5: URL redirects and final testing"
+    ]
+  },
+
+  "comparison": {
+    "current_to_drupal": {
+      "source_system": "WordPress",
+      "migration_complexity": "Medium",
+      "can_be_preserved": [
+        "Content text and structure",
+        "Media files (with re-processing)",
+        "URL patterns (with redirects)",
+        "User accounts (with password reset)"
+      ],
+      "must_be_rebuilt": [
+        "Theme/templates (Genesis → Twig/SDC)",
+        "Custom functionality (plugins → modules)",
+        "Workflows",
+        "Integrations"
+      ],
+      "risks": [
+        {"risk": "Gutenberg block parsing complexity", "mitigation": "Use dedicated WordPress Migrate module with block parser"},
+        {"risk": "ACF field mapping", "mitigation": "Map ACF fields to Drupal field types during planning phase"}
+      ]
+    },
+
+    "cms_matrix": {
+      "criteria": [
+        {"name": "Licensing & TCO", "drupal": 5, "drupal_cms": 5, "magnolia": 1, "umbraco": 2, "ibexa": 1, "notes": "Drupal: 0 CHF, Umbraco: 70k CHF (Heartcore), Magnolia/Ibexa: 300k+ CHF"},
+        {"name": "Development Costs", "drupal": 5, "drupal_cms": 5, "magnolia": 2, "umbraco": 2, "ibexa": 2, "notes": "PHP günstiger als .NET/Java"},
+        {"name": "Hosting Costs", "drupal": 5, "drupal_cms": 5, "magnolia": 2, "umbraco": 3, "ibexa": 2, "notes": "Linux/PHP 40% günstiger als .NET/Java"},
+        {"name": "Time to Market", "drupal": 3, "drupal_cms": 5, "magnolia": 3, "umbraco": 3, "ibexa": 3},
+        {"name": "AI Capabilities", "drupal": 5, "drupal_cms": 5, "magnolia": 2, "umbraco": 2, "ibexa": 2},
+        {"name": "Editor Experience", "drupal": 4, "drupal_cms": 5, "magnolia": 5, "umbraco": 4, "ibexa": 5},
+        {"name": "Scalability", "drupal": 5, "drupal_cms": 5, "magnolia": 4, "umbraco": 3, "ibexa": 5},
+        {"name": "Security", "drupal": 5, "drupal_cms": 5, "magnolia": 4, "umbraco": 3, "ibexa": 4},
+        {"name": "Ecosystem", "drupal": 5, "drupal_cms": 5, "magnolia": 2, "umbraco": 3, "ibexa": 2},
+        {"name": "Developer Availability", "drupal": 5, "drupal_cms": 5, "magnolia": 1, "umbraco": 2, "ibexa": 1, "notes": "PHP Devs häufiger und günstiger"}
+      ],
+      "recommendation": "Drupal CMS 2.0",
+      "rationale": "50% günstigerer 5-Jahres-TCO durch: Zero Lizenzkosten, günstigere PHP-Entwickler, niedrigere Hosting-Kosten (Linux vs Windows), größtes Ecosystem",
+      "tco_comparison": {
+        "drupal": {"5_year_tco": 548400, "development_rate": 150, "hosting_yearly": 30000, "license_5yr": 0},
+        "umbraco": {"5_year_tco": 824100, "development_rate": 185, "hosting_yearly": 48000, "license_5yr": 70000},
+        "magnolia": {"5_year_tco": 963995, "development_rate": 200, "hosting_yearly": 54600, "license_5yr": 345000}
+      }
+    }
+  },
+
+  "drupal_cms": {
+    "applicable_recipes": [
+      {"name": "drupal_cms_starter", "pt_savings": 20, "reason": "Base platform with Canvas, Mercury, Admin UI"},
+      {"name": "drupal_cms_page", "pt_savings": 5, "reason": "Basic page content type"},
+      {"name": "drupal_cms_blog", "pt_savings": 10, "reason": "Blog/news content type and listing"},
+      {"name": "drupal_cms_events", "pt_savings": 25, "reason": "Full event management with calendar, maps, registration"},
+      {"name": "drupal_cms_person", "pt_savings": 10, "reason": "Team directory"},
+      {"name": "drupal_cms_forms", "pt_savings": 8, "reason": "Contact forms"},
+      {"name": "drupal_cms_search", "pt_savings": 12, "reason": "Site search"},
+      {"name": "drupal_cms_seo_tools", "pt_savings": 10, "reason": "Advanced SEO"},
+      {"name": "drupal_cms_google_analytics", "pt_savings": 5, "reason": "Analytics integration"},
+      {"name": "drupal_cms_ai", "pt_savings": 30, "reason": "AI content creation and automation"}
+    ],
+    "total_pt_savings": 135,
+    "custom_development_still_needed": [
+      "Custom theme styling beyond Mercury",
+      "Complex paragraph types not in recipes",
+      "Custom integrations",
+      "Migration scripts"
+    ],
+    "benefits": [
+      "60-70% faster initial setup",
+      "Pre-configured best practices",
+      "AI-native content creation",
+      "Automatic updates",
+      "Canvas visual editing"
+    ]
+  },
+
+  "ai_opportunities": {
+    "content_creation": [
+      {"use_case": "Blog post drafting", "current": "Manual", "ai_enabled": "AI-assisted first draft", "module": "AI CKEditor", "time_savings": "50-75% per article"},
+      {"use_case": "Meta descriptions", "current": "Manual", "ai_enabled": "Auto-generated with SEO optimization", "module": "AI Automators", "time_savings": "95% (fully automated)"},
+      {"use_case": "Alt text generation", "current": "Often missing", "ai_enabled": "Automatic on upload", "module": "AI Automators", "time_savings": "100% automated"}
+    ],
+    "content_enhancement": [
+      {"use_case": "Tone consistency", "current": "Manual review", "ai_enabled": "Automatic brand voice check", "module": "AI Content", "time_savings": "80% review time"},
+      {"use_case": "Grammar/spelling", "current": "Manual proofing", "ai_enabled": "Real-time correction", "module": "AI CKEditor", "time_savings": "90% proofing time"}
+    ],
+    "automation": [
+      {"use_case": "Content tagging", "current": "Manual selection", "ai_enabled": "Auto-suggested taxonomy terms", "module": "AI Content", "time_savings": "70% tagging time"},
+      {"use_case": "Content summarization", "current": "Manual writing", "ai_enabled": "Automatic teaser generation", "module": "AI Automators", "time_savings": "80% per item"}
+    ],
+    "search_discovery": [
+      {"use_case": "Site search", "current": "Keyword matching", "ai_enabled": "Semantic search with natural language", "module": "AI Search", "time_savings": "Better results, higher user satisfaction"}
+    ],
+    "estimated_implementation_hours": 60,
+    "estimated_annual_content_savings_hours": 200,
+    "roi_payback_months": 4
+  }
+}

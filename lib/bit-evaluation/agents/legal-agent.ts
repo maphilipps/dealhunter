@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { legalAssessmentSchema, type LegalAssessment } from '../schema';
+import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
@@ -10,13 +11,62 @@ const openai = new OpenAI({
 export interface LegalAgentInput {
   extractedRequirements: any;
   quickScanResults?: any;
+  useWebSearch?: boolean; // Web Search für Vertrags-Recherche
 }
 
 /**
  * BIT-006: Legal Assessment Agent
  * Evaluates legal and contractual risks
+ * UPGRADED: Mit Web Search für Vertrags- und Compliance-Recherche
  */
 export async function runLegalAgent(input: LegalAgentInput): Promise<LegalAssessment> {
+  // === Intelligent Research Phase ===
+  let contractInsights = '';
+  let complianceInsights = '';
+
+  if (input.useWebSearch !== false) {
+    const intelligentTools = createIntelligentTools({ agentName: 'Legal Researcher' });
+
+    try {
+      const contractType = input.extractedRequirements?.contractType;
+      const industry = input.quickScanResults?.companyIntelligence?.basicInfo?.industry;
+
+      // EVB-IT / Vertragstyp Recherche
+      if (contractType && contractType.toLowerCase().includes('evb')) {
+        const evbSearch = await intelligentTools.webSearch(
+          `EVB-IT ${contractType} Vertrag Risiken Konditionen IT-Dienstleistung`,
+          3
+        );
+
+        if (evbSearch && evbSearch.length > 0) {
+          contractInsights = `\n\n**EVB-IT Vertrags-Insights (EXA):**\n${evbSearch
+            .slice(0, 2)
+            .map(r => `- ${r.title}: ${r.snippet}`)
+            .join('\n')}`;
+          console.log(`[Legal Agent] ${evbSearch.length} Vertrags-Insights gefunden`);
+        }
+      }
+
+      // Branchenspezifische Compliance-Anforderungen
+      if (industry) {
+        const complianceSearch = await intelligentTools.webSearch(
+          `${industry} IT compliance DSGVO Anforderungen Deutschland 2024`,
+          3
+        );
+
+        if (complianceSearch && complianceSearch.length > 0) {
+          complianceInsights = `\n\n**Branchenspezifische Compliance (EXA):**\n${complianceSearch
+            .slice(0, 2)
+            .map(r => `- ${r.title}: ${r.snippet}`)
+            .join('\n')}`;
+          console.log(`[Legal Agent] ${complianceSearch.length} Compliance-Insights gefunden`);
+        }
+      }
+    } catch (error) {
+      console.warn('[Legal Agent] Research fehlgeschlagen:', error);
+    }
+  }
+
   const completion = await openai.chat.completions.create({
     model: 'claude-haiku-4.5',
     messages: [
@@ -39,6 +89,8 @@ ${input.quickScanResults ? `
 Quick Scan Results:
 ${JSON.stringify(input.quickScanResults, null, 2)}
 ` : ''}
+${contractInsights}
+${complianceInsights}
 
 adesso's Standard Legal Position:
 - **Contract Types:** Preferred T&M or hybrid models; Fixed Price only with clear scope

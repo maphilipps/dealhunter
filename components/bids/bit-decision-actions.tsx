@@ -45,7 +45,7 @@ export function BitDecisionActions({
     setIsSubmitting(true);
     
     try {
-      const result = await makeBitDecision(bidId, 'bit');
+      const result = await makeBitDecision(bidId, 'bid');
       
       if (result.success) {
         toast.success('BIT-Entscheidung gespeichert! Weiterleitung an BL...');

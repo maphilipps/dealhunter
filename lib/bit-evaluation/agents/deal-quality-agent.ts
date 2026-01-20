@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { dealQualitySchema, type DealQuality } from '../schema';
+import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
@@ -10,14 +11,61 @@ const openai = new OpenAI({
 export interface DealQualityAgentInput {
   extractedRequirements: any; // From extraction phase
   quickScanResults?: any; // Content volume, complexity
+  useWebSearch?: boolean; // Web Search für Markt- und Kunden-Recherche
 }
 
 /**
  * BIT-003: Deal Quality Agent
  * Evaluates budget adequacy, timeline realism, margin potential, and bid-specific factors
  * Answers the 10 critical questions for BIT/NO BIT decisions
+ * UPGRADED: Mit Web Search für Markt- und Projekt-Recherche
  */
 export async function runDealQualityAgent(input: DealQualityAgentInput): Promise<DealQuality> {
+  // === Intelligent Research Phase ===
+  let marketInsights = '';
+  let customerNews = '';
+
+  if (input.useWebSearch !== false) {
+    const intelligentTools = createIntelligentTools({ agentName: 'Deal Quality Researcher' });
+
+    try {
+      const customerName = input.extractedRequirements?.customerName;
+      const projectType = input.extractedRequirements?.projectType || 'IT Projekt';
+
+      // Kunden-News: Aktuelle Projekte, Ausschreibungen, IT-Strategie
+      if (customerName) {
+        const newsSearch = await intelligentTools.webSearch(
+          `"${customerName}" IT Projekt Ausschreibung digital 2024`,
+          3
+        );
+
+        if (newsSearch && newsSearch.length > 0) {
+          customerNews = `\n\n**Aktuelle Kunden-News (EXA):**\n${newsSearch
+            .slice(0, 2)
+            .map(r => `- ${r.title}: ${r.snippet}`)
+            .join('\n')}`;
+          console.log(`[Deal Quality Agent] ${newsSearch.length} Kunden-News gefunden`);
+        }
+      }
+
+      // Markt-Recherche: Übliche Budgets für ähnliche Projekte
+      const budgetSearch = await intelligentTools.webSearch(
+        `${projectType} Budget Kosten Enterprise Deutschland 2024`,
+        3
+      );
+
+      if (budgetSearch && budgetSearch.length > 0) {
+        marketInsights = `\n\n**Markt-Benchmarks (EXA):**\n${budgetSearch
+          .slice(0, 2)
+          .map(r => `- ${r.title}: ${r.snippet}`)
+          .join('\n')}`;
+        console.log(`[Deal Quality Agent] ${budgetSearch.length} Markt-Insights gefunden`);
+      }
+    } catch (error) {
+      console.warn('[Deal Quality Agent] Research fehlgeschlagen:', error);
+    }
+  }
+
   const completion = await openai.chat.completions.create({
     model: 'claude-haiku-4.5',
     messages: [
@@ -40,6 +88,8 @@ ${input.quickScanResults ? `
 **Quick Scan Ergebnisse (Website-Analyse):**
 ${JSON.stringify(input.quickScanResults, null, 2)}
 ` : ''}
+${customerNews}
+${marketInsights}
 
 **adesso Kommerzieller Kontext:**
 - Stundensätze: €80-€150 pro Stunde (Senior: €120+)

@@ -83,6 +83,12 @@ export function AgentMessage({ event }: AgentMessageProps) {
       'Business Analyst': 'bg-rose-500/10 text-rose-700 border-rose-200',
       'AI Reasoning': 'bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-200',
       Error: 'bg-red-500/10 text-red-700 border-red-200',
+      // Intelligent Agent Framework - NEW
+      Researcher: 'bg-sky-500/10 text-sky-700 border-sky-200',
+      Evaluator: 'bg-lime-500/10 text-lime-700 border-lime-200',
+      Optimizer: 'bg-orange-500/10 text-orange-700 border-orange-200',
+      'Competition Researcher': 'bg-pink-500/10 text-pink-700 border-pink-200',
+      'CMS Researcher': 'bg-teal-500/10 text-teal-700 border-teal-200',
     };
     return colors[agent] || 'bg-gray-500/10 text-gray-700 border-gray-200';
   };

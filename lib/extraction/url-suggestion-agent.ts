@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
@@ -27,16 +28,48 @@ export interface UrlSuggestionInput {
   industry?: string;
   projectDescription?: string;
   technologies?: string[];
+  useWebSearch?: boolean; // Web Search für echte URL-Suche nutzen
 }
 
 /**
  * AI Agent for suggesting website URLs when none are found in the document
- * Uses web knowledge and common patterns to suggest likely URLs
+ * UPGRADED: Uses EXA Web Search to find actual URLs, then validates with AI
  */
 export async function suggestWebsiteUrls(
   input: UrlSuggestionInput
 ): Promise<UrlSuggestion> {
   try {
+    // === PHASE 1: Web Search for actual URLs ===
+    let webSearchResults: Array<{ url: string; title: string; snippet: string }> = [];
+
+    if (input.useWebSearch !== false) {
+      const intelligentTools = createIntelligentTools({ agentName: 'URL Researcher' });
+
+      try {
+        // Search for company website
+        const searchQuery = input.industry
+          ? `"${input.customerName}" ${input.industry} official website`
+          : `"${input.customerName}" official website homepage`;
+
+        console.log(`[URL Suggestion] Searching: "${searchQuery}"`);
+        const searchResults = await intelligentTools.webSearch(searchQuery, 5);
+
+        if (searchResults && searchResults.length > 0) {
+          webSearchResults = searchResults
+            .filter(r => r.url && r.title)
+            .map(r => ({
+              url: r.url!,
+              title: r.title || 'Untitled',
+              snippet: r.snippet || '',
+            }));
+          console.log(`[URL Suggestion] Found ${webSearchResults.length} URLs via Web Search`);
+        }
+      } catch (error) {
+        console.warn('[URL Suggestion] Web Search failed:', error);
+      }
+    }
+
+    // === PHASE 2: AI Validation & Ranking ===
     // Build context string from all available information
     const contextParts: string[] = [];
     contextParts.push(`Company/Organization: ${input.customerName}`);
@@ -47,6 +80,15 @@ export async function suggestWebsiteUrls(
     }
     if (input.technologies && input.technologies.length > 0) {
       contextParts.push(`Technologies mentioned: ${input.technologies.join(', ')}`);
+    }
+
+    // Add web search results to context
+    let webSearchContext = '';
+    if (webSearchResults.length > 0) {
+      webSearchContext = `\n\nWEB SEARCH RESULTS (found via EXA):\n${webSearchResults
+        .slice(0, 5)
+        .map((r, i) => `${i + 1}. ${r.url}\n   Title: ${r.title}\n   Snippet: ${r.snippet.substring(0, 150)}`)
+        .join('\n\n')}`;
     }
 
     const completion = await openai.chat.completions.create({
@@ -78,9 +120,13 @@ URL RESEARCH STRATEGIES:
           role: 'user',
           content: `Find website URLs for this organization:
 
-${contextParts.join('\n')}
+${contextParts.join('\n')}${webSearchContext}
 
-Based on the company name, industry, and context, suggest the most likely official website URLs.
+${webSearchResults.length > 0
+  ? `IMPORTANT: Web search found ${webSearchResults.length} URLs. Analyze these and select the most relevant ones. Prioritize URLs from web search over guessing.`
+  : 'No web search results available - suggest URLs based on company name and common patterns.'}
+
+Based on the company name, industry, and context (and web search results if available), suggest the most likely official website URLs.
 
 Consider:
 - The company's likely main corporate website

@@ -331,17 +331,82 @@ lib/
 - Technische Details gehören in den Code selbst, nicht in die Planung
 - **Regel:** EPICS.md = WAS gebaut wird, Code = WIE es gebaut wird
 
+## Plan Mode
+
+Plan Mode trennt Research von Execution - Claude analysiert und plant, ohne Änderungen vorzunehmen, bis du den Plan genehmigst.
+
+### Aktivierung
+
+- **Keyboard Shortcut:** `Shift+Tab` zweimal drücken (erneut drücken zum Beenden)
+- **Command:** `/plan` eingeben
+- **CLI Flag:** `claude --permission-mode plan`
+
+### Verfügbare Tools in Plan Mode
+
+| Tool | Funktion |
+|------|----------|
+| `Read` | Dateien lesen |
+| `LS` | Verzeichnisse auflisten |
+| `Glob` | Datei-Pattern suchen |
+| `Grep` | Inhalte durchsuchen |
+| `Task` | Research Agents starten |
+| `TodoWrite` | Aufgaben planen |
+| `WebFetch` | Web-Inhalte abrufen |
+| `WebSearch` | Web-Suchen |
+
+**Gesperrt:** File edits, Bash commands, state-modifying operations.
+
+### Wann Plan Mode nutzen
+
+- **Komplexe Features:** Mehrere Dateien betroffen, Architektur-Entscheidungen nötig
+- **Unbekannte Codebases:** Erst verstehen, dann ändern
+- **Riskante Änderungen:** DB Migrations, API-Änderungen, Security-relevantes
+- **Requirements klären:** Tradeoffs diskutieren, Edge Cases identifizieren
+
+### Best Practices
+
+1. **Konkrete Requirements:** Plan Mode erzwingt strukturiertes Denken - keine vagen Anforderungen
+2. **Context Priming:** Der Plan-Prozess lädt relevanten Context, der bei der Execution hilft
+3. **Iterative Planung:** Plan reviewen → Fragen stellen → Plan verfeinern → Genehmigen
+4. **Plan-Datei nutzen:** Plans werden in `.claude/plans/` gespeichert und können bearbeitet werden
+
+### Workflow mit Plan Mode
+
+```
+1. /plan oder Shift+Tab+Tab → Plan Mode aktivieren
+2. Feature beschreiben
+3. Claude erkundet Codebase, stellt Klärungsfragen
+4. Claude erstellt step-by-step Plan
+5. Plan reviewen und ggf. anpassen
+6. Plan genehmigen → Execution startet
+7. Claude implementiert mit vollem Context aus Planning-Phase
+```
+
+### Plan Mode vs. Direkte Implementierung
+
+| Situation | Empfehlung |
+|-----------|------------|
+| Typo fixen, kleine Änderung | Direkt implementieren |
+| Neues Feature, mehrere Dateien | **Plan Mode** |
+| Bug mit klarer Ursache | Direkt implementieren |
+| Architektur-Entscheidung nötig | **Plan Mode** |
+| Bekanntes Pattern anwenden | Direkt implementieren |
+| Unbekannte Codebase erkunden | **Plan Mode** |
+
+> **Tipp:** Im Zweifel Plan Mode nutzen - es ist besser, einen kurzen Plan zu erstellen, als Code zu produzieren, der verworfen werden muss.
+
 ## Feature Implementation Workflow
 
 ```
-1. TodoWrite → Task planen
-2. ShadCN MCP → Komponenten finden
-3. Context7 MCP → AI SDK Docs lesen (bei Agents)
-4. Implementieren
-5. Chrome DevTools MCP → Visual Testing
-6. Next.js DevTools MCP → Error Check
-7. Git Commit: feat(FEATURE-ID): description
-8. progress.txt + FEATURES.json updaten
+1. /plan → Plan Mode für komplexe Features
+2. TodoWrite → Tasks aus Plan erstellen
+3. ShadCN MCP → Komponenten finden
+4. Context7 MCP → AI SDK Docs lesen (bei Agents)
+5. Implementieren
+6. Chrome DevTools MCP → Visual Testing
+7. Next.js DevTools MCP → Error Check
+8. Git Commit: feat(FEATURE-ID): description
+9. progress.txt + FEATURES.json updaten
 ```
 
 ## Environment Variables
@@ -401,6 +466,57 @@ nextjs_call(port: '3000', toolName: 'get_errors')
 nextjs_call(port: '3000', toolName: 'get_routes')
 ```
 
+### Build Errors mit d3k (fix_my_app)
+
+Bei Build-Fehlern, TypeScript-Errors oder Runtime-Problemen kann `mcp__dev3000__fix_my_app` verwendet werden:
+
+```typescript
+// Build-Fehler analysieren
+fix_my_app(focusArea: 'build', timeRangeMinutes: 5)
+
+// Runtime/Browser Fehler
+fix_my_app(focusArea: 'runtime', timeRangeMinutes: 10)
+
+// Alle Fehler prüfen
+fix_my_app(focusArea: 'all')
+```
+
+**Workflow bei Build-Fehlern:**
+1. `fix_my_app(focusArea: 'build')` aufrufen
+2. Höchstpriorisierten Fehler beheben
+3. Erneut `fix_my_app` aufrufen um zu verifizieren
+4. Wiederholen bis keine Fehler mehr
+
+### Browser Testing mit agent-browser (BEVORZUGT)
+
+**Nutze `mcp__dev3000__agent_browser_action` statt Chrome DevTools!**
+
+```typescript
+// Seite öffnen
+agent_browser_action(action: 'open', params: { url: 'http://localhost:3000' }, session: 'test')
+
+// Snapshot (Accessibility Tree mit Refs)
+agent_browser_action(action: 'snapshot', session: 'test')
+
+// Element klicken (mit @ref aus Snapshot)
+agent_browser_action(action: 'click', params: { target: '@e5' }, session: 'test')
+
+// Formular ausfüllen
+agent_browser_action(action: 'fill', params: { target: '@e10', value: 'Test' }, session: 'test')
+
+// Screenshot
+agent_browser_action(action: 'screenshot', session: 'test')
+
+// Scrollen
+agent_browser_action(action: 'scroll', params: { direction: 'down', amount: 3 }, session: 'test')
+```
+
+**Vorteile von agent-browser:**
+- Zuverlässiger als Chrome DevTools in Sandbox-Umgebungen
+- Ref-basiertes Klicken (@e1, @e2, etc.)
+- Session-Isolation für parallele Tests
+- Playwright-basiert
+
 ## Testing Strategy
 
 1. **Visual Testing:** Chrome DevTools MCP Screenshots
@@ -411,10 +527,11 @@ nextjs_call(port: '3000', toolName: 'get_routes')
 
 ## When Implementing Features
 
-1. **Read existing code first** - Never propose changes to code you haven't read
-2. **Use TodoWrite** - Plan tasks before implementing
-3. **ShadCN Components** - Always use ShadCN, never custom UI
-4. **MCP for Docs** - Context7 MCP für AI SDK/Next.js Docs
-5. **Visual Verify** - Screenshot after every UI change
-6. **No over-engineering** - Keep it simple, YAGNI principle
-7. **Agent-Native** - Make agent activity visible in UI
+1. **Plan Mode für komplexe Tasks** - `/plan` für Features mit mehreren Dateien oder Architektur-Entscheidungen
+2. **Read existing code first** - Never propose changes to code you haven't read
+3. **Use TodoWrite** - Plan tasks before implementing
+4. **ShadCN Components** - Always use ShadCN, never custom UI
+5. **MCP for Docs** - Context7 MCP für AI SDK/Next.js Docs
+6. **Visual Verify** - Screenshot after every UI change
+7. **No over-engineering** - Keep it simple, YAGNI principle
+8. **Agent-Native** - Make agent activity visible in UI

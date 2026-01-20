@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
 import { competitionCheckSchema, type CompetitionCheck } from '../schema';
+// Intelligent Agent Framework - NEW
+import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
@@ -10,13 +12,65 @@ const openai = new OpenAI({
 export interface CompetitionAgentInput {
   extractedRequirements: any; // From extraction phase
   quickScanResults?: any; // Tech stack, industry insights
+  useWebSearch?: boolean; // NEW: Web Search für aktuelle Wettbewerber-Infos
 }
 
 /**
  * BIT-005: Competition Check Agent
  * Analyzes competitive situation and estimates win probability
+ * UPGRADED: Mit Web Search für aktuelle Wettbewerber-Infos
  */
 export async function runCompetitionAgent(input: CompetitionAgentInput): Promise<CompetitionCheck> {
+  // === Intelligent Research Phase (NEW) ===
+  let competitorNews = '';
+  let marketInsights = '';
+
+  if (input.useWebSearch !== false) {
+    const intelligentTools = createIntelligentTools({ agentName: 'Competition Researcher' });
+
+    try {
+      // Extrahiere Industrie und Kunde für gezielte Recherche
+      const industry = input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
+                       input.extractedRequirements?.industry || '';
+      const customerName = input.extractedRequirements?.customerName || '';
+
+      // Web Search für aktuelle Wettbewerber-Aktivitäten im Markt
+      if (industry) {
+        const marketSearch = await intelligentTools.webSearch(
+          `${industry} IT consulting competitors Germany 2024 digital transformation`,
+          5
+        );
+
+        if (marketSearch && marketSearch.length > 0) {
+          marketInsights = `\n\nAktuelle Markt-Insights (Web Search):\n${marketSearch
+            .slice(0, 3)
+            .map(r => `- ${r.title}: ${r.snippet}`)
+            .join('\n')}`;
+          console.log(`[Competition Agent] ${marketSearch.length} Markt-Insights gefunden`);
+        }
+      }
+
+      // Web Search für Kunden-spezifische IT-Projekte/Ausschreibungen
+      if (customerName) {
+        const customerSearch = await intelligentTools.webSearch(
+          `"${customerName}" IT projekt ausschreibung tender 2024`,
+          3
+        );
+
+        if (customerSearch && customerSearch.length > 0) {
+          competitorNews = `\n\nKunden-spezifische Insights (Web Search):\n${customerSearch
+            .slice(0, 2)
+            .map(r => `- ${r.title}: ${r.snippet}`)
+            .join('\n')}`;
+          console.log(`[Competition Agent] ${customerSearch.length} Kunden-Insights gefunden`);
+        }
+      }
+    } catch (error) {
+      console.warn('[Competition Agent] Web Search fehlgeschlagen:', error);
+      // Non-critical: Continue without web search results
+    }
+  }
+
   const completion = await openai.chat.completions.create({
     model: 'claude-haiku-4.5',
     messages: [
@@ -39,6 +93,8 @@ ${input.quickScanResults ? `
 Quick Scan Results:
 ${JSON.stringify(input.quickScanResults, null, 2)}
 ` : ''}
+${marketInsights}
+${competitorNews}
 
 adesso's Competitive Position:
 

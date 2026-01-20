@@ -159,3 +159,59 @@ export async function deleteTechnology(id: string) {
     return { success: false, error: 'Fehler beim Löschen der Technologie' };
   }
 }
+
+/**
+ * Update an existing technology
+ */
+export async function updateTechnology(
+  id: string,
+  data: {
+    name?: string;
+    businessUnitId?: string;
+    baselineHours?: number;
+    baselineName?: string;
+    baselineEntityCounts?: Record<string, number>;
+    isDefault?: boolean;
+  }
+) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  if (session.user.role !== 'admin') {
+    return { success: false, error: 'Keine Berechtigung' };
+  }
+
+  try {
+    const updateData: Record<string, unknown> = {};
+
+    if (data.name !== undefined) updateData.name = data.name.trim();
+    if (data.businessUnitId !== undefined) updateData.businessUnitId = data.businessUnitId;
+    if (data.baselineHours !== undefined) updateData.baselineHours = data.baselineHours;
+    if (data.baselineName !== undefined) updateData.baselineName = data.baselineName.trim();
+    if (data.baselineEntityCounts !== undefined) {
+      updateData.baselineEntityCounts = JSON.stringify(data.baselineEntityCounts);
+    }
+    if (data.isDefault !== undefined) updateData.isDefault = data.isDefault;
+
+    const [technology] = await db
+      .update(technologies)
+      .set(updateData)
+      .where(eq(technologies.id, id))
+      .returning();
+
+    revalidatePath('/admin/technologies');
+
+    return { success: true, technology };
+  } catch (error) {
+    console.error('Error updating technology:', error);
+    return { success: false, error: 'Fehler beim Aktualisieren der Technologie' };
+  }
+}
+
+// Baseline-specific aliases (for backwards compatibility)
+export const createTechnologyBaseline = createTechnology;
+export const updateTechnologyBaseline = updateTechnology;
+export const deleteTechnologyBaseline = deleteTechnology;

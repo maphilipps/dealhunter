@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { strategicFitSchema, type StrategicFit } from '../schema';
+import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
@@ -10,13 +11,64 @@ const openai = new OpenAI({
 export interface StrategicFitAgentInput {
   extractedRequirements: any; // From extraction phase
   quickScanResults?: any; // BL recommendation, industry
+  useWebSearch?: boolean; // Web Search für Kunden-Recherche
 }
 
 /**
  * BIT-004: Strategic Fit Agent
  * Evaluates alignment with adesso strategy and target customer profile
+ * UPGRADED: Mit Web Search für Kunden- und Markt-Recherche
  */
 export async function runStrategicFitAgent(input: StrategicFitAgentInput): Promise<StrategicFit> {
+  // === Intelligent Research Phase ===
+  let customerInsights = '';
+  let industryInsights = '';
+
+  if (input.useWebSearch !== false) {
+    const intelligentTools = createIntelligentTools({ agentName: 'Strategic Researcher' });
+
+    try {
+      const customerName = input.extractedRequirements?.customerName ||
+                           input.quickScanResults?.companyIntelligence?.basicInfo?.name;
+      const industry = input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
+                       input.extractedRequirements?.industry;
+
+      // Kunden-Recherche: Größe, Umsatz, digitale Strategie
+      if (customerName) {
+        const customerSearch = await intelligentTools.webSearch(
+          `"${customerName}" Unternehmen Mitarbeiter Umsatz digital transformation`,
+          3
+        );
+
+        if (customerSearch && customerSearch.length > 0) {
+          customerInsights = `\n\n**Kunden-Intelligence (EXA):**\n${customerSearch
+            .slice(0, 2)
+            .map(r => `- ${r.title}: ${r.snippet}`)
+            .join('\n')}`;
+          console.log(`[Strategic Fit Agent] ${customerSearch.length} Kunden-Insights gefunden`);
+        }
+      }
+
+      // Branchentrends recherchieren
+      if (industry) {
+        const industrySearch = await intelligentTools.webSearch(
+          `${industry} digital transformation trends Germany 2024`,
+          3
+        );
+
+        if (industrySearch && industrySearch.length > 0) {
+          industryInsights = `\n\n**Branchen-Trends (EXA):**\n${industrySearch
+            .slice(0, 2)
+            .map(r => `- ${r.title}: ${r.snippet}`)
+            .join('\n')}`;
+          console.log(`[Strategic Fit Agent] ${industrySearch.length} Branchen-Insights gefunden`);
+        }
+      }
+    } catch (error) {
+      console.warn('[Strategic Fit Agent] Research fehlgeschlagen:', error);
+    }
+  }
+
   const completion = await openai.chat.completions.create({
     model: 'claude-haiku-4.5',
     messages: [
@@ -39,6 +91,8 @@ ${input.quickScanResults ? `
 Quick Scan Results:
 ${JSON.stringify(input.quickScanResults, null, 2)}
 ` : ''}
+${customerInsights}
+${industryInsights}
 
 adesso's Strategic Focus:
 

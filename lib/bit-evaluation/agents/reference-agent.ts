@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { referenceMatchSchema, type ReferenceMatch } from '../schema';
+import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
@@ -10,13 +11,64 @@ const openai = new OpenAI({
 export interface ReferenceAgentInput {
   extractedRequirements: any;
   quickScanResults?: any;
+  useWebSearch?: boolean; // Web Search für Referenz-Recherche
 }
 
 /**
  * BIT-007: Reference Match Agent
  * Evaluates matching with existing reference projects and experience
+ * UPGRADED: Mit Web Search für adesso Referenz-Recherche
  */
 export async function runReferenceAgent(input: ReferenceAgentInput): Promise<ReferenceMatch> {
+  // === Intelligent Research Phase ===
+  let adessoReferences = '';
+  let industryProjects = '';
+
+  if (input.useWebSearch !== false) {
+    const intelligentTools = createIntelligentTools({ agentName: 'Reference Researcher' });
+
+    try {
+      const industry = input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
+                       input.extractedRequirements?.industry;
+      const techStack = input.quickScanResults?.techStack;
+      const cms = techStack?.cms;
+
+      // Suche nach adesso Referenzen in der Branche
+      if (industry) {
+        const referenceSearch = await intelligentTools.webSearch(
+          `adesso SE ${industry} Projekt Referenz Kunde case study`,
+          3
+        );
+
+        if (referenceSearch && referenceSearch.length > 0) {
+          adessoReferences = `\n\n**adesso Referenzen in ${industry} (EXA):**\n${referenceSearch
+            .slice(0, 2)
+            .map(r => `- ${r.title}: ${r.snippet}`)
+            .join('\n')}`;
+          console.log(`[Reference Agent] ${referenceSearch.length} adesso Referenzen gefunden`);
+        }
+      }
+
+      // Suche nach ähnlichen Projekten mit der Technologie
+      if (cms) {
+        const techProjectSearch = await intelligentTools.webSearch(
+          `adesso ${cms} Projekt Enterprise Implementation`,
+          3
+        );
+
+        if (techProjectSearch && techProjectSearch.length > 0) {
+          industryProjects = `\n\n**adesso ${cms} Projekte (EXA):**\n${techProjectSearch
+            .slice(0, 2)
+            .map(r => `- ${r.title}: ${r.snippet}`)
+            .join('\n')}`;
+          console.log(`[Reference Agent] ${techProjectSearch.length} Tech-Projekte gefunden`);
+        }
+      }
+    } catch (error) {
+      console.warn('[Reference Agent] Research fehlgeschlagen:', error);
+    }
+  }
+
   const completion = await openai.chat.completions.create({
     model: 'claude-haiku-4.5',
     messages: [
@@ -39,6 +91,8 @@ ${input.quickScanResults ? `
 Quick Scan Results:
 ${JSON.stringify(input.quickScanResults, null, 2)}
 ` : ''}
+${adessoReferences}
+${industryProjects}
 
 adesso's Reference Project Portfolio:
 

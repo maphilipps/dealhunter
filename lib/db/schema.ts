@@ -40,7 +40,8 @@ export const rfps = sqliteTable('rfps', {
       'extracting',       // AI is extracting requirements
       'reviewing',        // User is reviewing extracted data
       'quick_scanning',   // AI is doing quick scan
-      'evaluating',       // AI is doing full decision evaluation
+      'bit_pending',      // Quick Scan done, waiting for manual BIT/NO BIT decision
+      'evaluating',       // AI is doing full decision evaluation (after manual trigger)
       'decision_made',    // Decision made (Bid/No-Bid)
       'archived',         // NO BID - Archiviert
       'routed',           // Routed to BL
@@ -89,6 +90,9 @@ export const rfps = sqliteTable('rfps', {
 
   // Website URL (for analysis)
   websiteUrl: text('website_url'),
+
+  // Duplicate Check
+  duplicateCheckResult: text('duplicate_check_result'), // JSON - result of duplicate detection
 
   // Analysis Results (TODO: move to separate tables)
   quickScanResults: text('quick_scan_results'), // JSON
@@ -305,6 +309,9 @@ export const technologies = sqliteTable('technologies', {
   targetAudiences: text('target_audiences'), // Zielgruppen (JSON array)
   useCases: text('use_cases'), // Typische Use Cases (JSON array)
 
+  // Feature Support (auto-researched via CMS Evaluation)
+  features: text('features'), // JSON object: { featureName: { supported: boolean, score: number, notes: string, researchedAt: string } }
+
   // adesso-spezifisch
   adessoExpertise: text('adesso_expertise'),
   adessoReferenceCount: integer('adesso_reference_count'),
@@ -439,6 +446,14 @@ export const quickScans = sqliteTable('quick_scans', {
   screenshots: text('screenshots'), // JSON - screenshot paths
   companyIntelligence: text('company_intelligence'), // JSON - company research data
 
+  // QuickScan 2.0 Fields
+  siteTree: text('site_tree'), // JSON - hierarchical sitemap structure
+  contentTypes: text('content_types'), // JSON - content type distribution
+  migrationComplexity: text('migration_complexity'), // JSON - migration complexity analysis
+  decisionMakers: text('decision_makers'), // JSON - identified decision makers
+  tenQuestions: text('ten_questions'), // JSON - generated questions for BL
+  rawScanData: text('raw_scan_data'), // JSON - raw scan data for debugging/reprocessing
+
   // Business Unit Recommendation
   recommendedBusinessUnit: text('recommended_business_unit'),
   confidence: integer('confidence'), // 0-100
@@ -449,6 +464,10 @@ export const quickScans = sqliteTable('quick_scans', {
 
   // Visualization (json-render tree - cached)
   visualizationTree: text('visualization_tree'), // JSON - cached json-render tree
+
+  // CMS Evaluation (persisted after matching)
+  cmsEvaluation: text('cms_evaluation'), // JSON - CMSMatchingResult
+  cmsEvaluationCompletedAt: integer('cms_evaluation_completed_at', { mode: 'timestamp' }),
 
   // Timestamps
   startedAt: integer('started_at', { mode: 'timestamp' }),

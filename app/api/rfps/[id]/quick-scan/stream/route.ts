@@ -145,7 +145,19 @@ export async function GET(
           projectDescription: extractedReqs?.projectDescription,
           websiteUrl: quickScan.websiteUrl,
           extractedRequirements: extractedReqs,
-          quickScanResult: result,
+          quickScanResult: {
+            techStack: result.techStack,
+            contentVolume: result.contentVolume ? {
+              estimatedPages: result.contentVolume.estimatedPageCount,
+              estimatedContentTypes: result.contentVolume.contentTypes?.length,
+            } : undefined,
+            features: {
+              detectedFeatures: result.features ? Object.entries(result.features)
+                .filter(([key, value]) => value === true && key !== 'customFeatures')
+                .map(([key]) => key)
+                .concat(result.features.customFeatures || []) : [],
+            },
+          },
         });
 
         timelineGeneratedAt = new Date();

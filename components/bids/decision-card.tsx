@@ -23,48 +23,51 @@ export function DecisionCard({ result }: DecisionCardProps) {
 
   // Extract red flags from legal and other agents
   const redFlags: RedFlag[] = [];
-  if (result.legal?.risks) {
-    result.legal.risks.forEach((risk) => {
-      if (risk.severity === 'critical' || risk.severity === 'high') {
-        redFlags.push({
-          category: 'legal',
-          severity: risk.severity as 'critical' | 'high' | 'medium',
-          title: risk.type,
-          description: risk.description,
-        });
-      }
-    });
-  }
+  // TODO: Re-enable legal red flags once legal agent is implemented
+  // if (result.legal?.risks) {
+  //   result.legal.risks.forEach((risk) => {
+  //     if (risk.severity === 'critical' || risk.severity === 'high') {
+  //       redFlags.push({
+  //         category: 'legal',
+  //         severity: risk.severity as 'critical' | 'high' | 'medium',
+  //         title: risk.type,
+  //         description: risk.description,
+  //       });
+  //     }
+  //   });
+  // }
 
   // Extract competitors
   const competitors: Competitor[] = [];
-  if (result.competition?.competitors) {
-    result.competition.competitors.forEach((comp) => {
-      competitors.push({
-        name: comp.name,
-        strength: comp.strength,
-        advantages: comp.advantages,
-        disadvantages: comp.disadvantages,
-      });
-    });
-  }
+  // TODO: Re-enable competition analysis once competition agent is implemented
+  // if (result.competition?.competitors) {
+  //   result.competition.competitors.forEach((comp) => {
+  //     competitors.push({
+  //       name: comp.name,
+  //       strength: comp.strength,
+  //       advantages: comp.advantages,
+  //       disadvantages: comp.disadvantages,
+  //     });
+  //   });
+  // }
 
   // Extract reference matches
   const referenceMatches: ReferenceMatch[] = [];
-  if (result.reference?.matches) {
-    result.reference.matches.forEach((match) => {
-      referenceMatches.push({
-        projectName: match.projectName,
-        customerName: match.customerName,
-        year: match.year,
-        matchScore: match.matchScore,
-        matchingCriteria: match.matchingCriteria,
-        technologies: match.technologies || [],
-        teamSize: match.teamSize,
-        summary: match.summary,
-      });
-    });
-  }
+  // TODO: Re-enable reference matching once reference agent is implemented
+  // if (result.reference?.matches) {
+  //   result.reference.matches.forEach((match) => {
+  //     referenceMatches.push({
+  //       projectName: match.projectName,
+  //       customerName: match.customerName,
+  //       year: match.year,
+  //       matchScore: match.matchScore,
+  //       matchingCriteria: match.matchingCriteria,
+  //       technologies: match.technologies || [],
+  //       teamSize: match.teamSize,
+  //       summary: match.summary,
+  //     });
+  //   });
+  // }
 
   // Confidence breakdown
   const confidenceBreakdown = [

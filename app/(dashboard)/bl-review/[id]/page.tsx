@@ -150,7 +150,7 @@ export default async function BLReviewDetailPage({
     bid.teamNotifications
   );
   const timelineData = safeJsonParseOrNull<ProjectTimeline>(
-    bid.timeline
+    quickScan?.timeline
   );
 
   // Parse QuickScan JSON data server-side for Overview section

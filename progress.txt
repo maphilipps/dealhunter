@@ -1137,3 +1137,98 @@ New tests all passing
 ## Linear Issue
 
 DEA-28: Testing Setup (Unit, Integration, E2E) - COMPLETED
+
+## 2026-01-20 - DEA-14: Team Staffing UI Enhancement
+
+**Issue:** DEA-14 - Team Staffing UI implementieren
+**Status:** ✅ Complete
+**Priority:** 4 (Low)
+
+**Summary:**
+Enhanced existing Team Builder UI with Email Preview dialog and integrated notification workflow, improving the team assignment experience with transparency before sending notifications.
+
+**What Already Existed:**
+- Complete team-builder.tsx with AI suggestions (lib/team/agent.ts)
+- Team assignment server action (lib/team/actions.ts)
+- Team notification system with Resend (lib/notifications/actions.ts, lib/notifications/email.ts)
+- Notification tracking UI (components/bids/notification-card.tsx)
+- Skill matching, availability badges, confidence scoring
+- Skill gap warnings with confirmation dialogs
+
+**What Was Added:**
+1. **Email Preview Dialog**
+   - Shows preview before sending team notifications
+   - Lists all recipients with their roles
+   - Displays email subject and content structure
+   - Confirmation step before sending
+
+2. **Integrated Notification Flow**
+   - Checkbox: "Team sofort per E-Mail benachrichtigen"
+   - Single-button workflow: "Team zuweisen & benachrichtigen"
+   - Automatic notification after team assignment (if checkbox enabled)
+   - Clear visual distinction between assign-only vs assign+notify
+
+3. **Enhanced User Experience**
+   - Email preview only shown when notifications are enabled
+   - Toast notifications for each workflow step
+   - Error handling for failed notifications
+   - Status tracking after notifications sent
+
+**Components Enhanced:**
+- `components/bids/team-builder.tsx` - Added email preview dialog and notification checkbox
+
+**ShadCN Components Used:**
+- Dialog, DialogContent, DialogHeader, DialogFooter (email preview)
+- Checkbox (notification toggle)
+- Label (checkbox label)
+- Alert (email preview info box)
+
+**Workflow:**
+1. User reviews AI team suggestions
+2. User can remove/modify team members
+3. User checks/unchecks "Team sofort per E-Mail benachrichtigen"
+4. User clicks "Team zuweisen & benachrichtigen" (or "Team zuweisen")
+5. If notifications enabled: Email preview dialog appears
+6. User confirms → Team assigned + emails sent (if enabled)
+7. UI refreshes to show notification status
+
+**Acceptance Criteria:**
+✅ TeamProposal Komponente (existing - card-based layout)
+✅ MatchIndicator Komponente (existing - skill match %)
+✅ AvailabilityBadge Komponente (existing)
+❌ AlternativeSuggestions Komponente (deferred - AI doesn't generate alternatives yet)
+✅ TeamConfirmDialog Komponente (existing - skill gap warning)
+✅ EmailPreview Komponente (NEW)
+✅ Integrated notification flow (NEW)
+✅ API: assignTeam (existing)
+✅ API: sendTeamNotifications (existing)
+
+**Not Implemented (Deferred):**
+- Drag & Drop für manuelle Anpassung (not critical for MVP, optional per requirements)
+- Team Availability Date (would require additional data modeling)
+- Alternative Suggestions UI (AI agent doesn't generate alternatives yet)
+
+**Additional Work:**
+- Fixed pre-existing TypeScript errors in `app/api/bids/route.ts` (status/source enum type casting)
+
+**Files Modified:**
+- components/bids/team-builder.tsx (+161 lines, -24 lines)
+- app/api/bids/route.ts (TypeScript fixes)
+
+**Tech Stack:**
+- ShadCN Dialog, Checkbox, Label components
+- Existing notification infrastructure (Resend email service)
+- Server Actions (assignTeam, sendTeamNotifications)
+- Toast notifications via Sonner
+
+**Commit:** f59dd3a
+**Linear:** https://linear.app/adessocms/issue/DEA-14
+
+**Notes:**
+- Most functionality was already implemented in previous work
+- Focus was on improving UX with email preview and integrated workflow
+- No breaking changes to existing team assignment flow
+- Alternative suggestions deferred until AI agent enhanced
+- Drag & Drop considered optional (not critical for workflow)
+- Team Availability Date would require schema changes (deferred)
+

@@ -1,6 +1,6 @@
 import { inngest } from '../client';
 import { db } from '@/lib/db';
-import { deepMigrationAnalyses, rfps, quickScans } from '@/lib/db/schema';
+import { deepMigrationAnalyses, rfps, quickScans, backgroundJobs } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { analyzeContentArchitecture } from '@/lib/deep-analysis/agents/content-architecture-agent';
@@ -27,10 +27,10 @@ export const deepAnalysisFunction = inngest.createFunction(
   },
   { event: 'deep-analysis.run' },
   async ({ event, step }) => {
-    const { bidId, userId } = event.data;
+    const { bidId, userId, jobId } = event.data;
 
-    // Step 1: Fetch bid data and create analysis record
-    const { bid, analysis, quickScan } = await step.run('init-analysis', async () => {
+    // Step 1: Fetch bid data and create analysis record + job tracking
+    const { bid, analysis, quickScan, jobRecord } = await step.run('init-analysis', async () => {
       console.log('[Inngest] Starting deep analysis for bid:', bidId);
 
       const [bidData] = await db
@@ -71,10 +71,29 @@ export const deepAnalysisFunction = inngest.createFunction(
         })
         .returning();
 
+      // Create job tracking record
+      const [job] = await db
+        .insert(backgroundJobs)
+        .values({
+          id: jobId || createId(),
+          jobType: 'deep-analysis',
+          inngestRunId: event.id || 'manual-trigger',
+          rfpId: bidId,
+          userId,
+          status: 'running',
+          progress: 0,
+          currentStep: 'Initializing deep analysis',
+          startedAt: new Date(),
+          attemptNumber: 1,
+          maxAttempts: 2,
+        })
+        .returning();
+
       return {
         bid: bidData,
         quickScan: quickScanData,
         analysis: analysisRecord,
+        jobRecord: job,
       };
     });
 
@@ -82,6 +101,16 @@ export const deepAnalysisFunction = inngest.createFunction(
       // Step 2: Content Architecture Analysis (6-10 minutes)
       const contentArchitecture = await step.run('content-architecture', async () => {
         console.log('[Inngest] Running Content Architecture analysis...');
+
+        // Update progress: Starting content architecture
+        await db
+          .update(backgroundJobs)
+          .set({
+            progress: 10,
+            currentStep: 'Analyzing content architecture',
+            updatedAt: new Date(),
+          })
+          .where(eq(backgroundJobs.id, jobRecord.id));
 
         const result = await analyzeContentArchitecture(
           bid.websiteUrl!,
@@ -100,6 +129,16 @@ export const deepAnalysisFunction = inngest.createFunction(
           })
           .where(eq(deepMigrationAnalyses.id, analysis.id));
 
+        // Update progress: Content architecture complete
+        await db
+          .update(backgroundJobs)
+          .set({
+            progress: 30,
+            currentStep: 'Content architecture complete',
+            updatedAt: new Date(),
+          })
+          .where(eq(backgroundJobs.id, jobRecord.id));
+
         console.log('[Inngest] Content Architecture complete');
         return result;
       });
@@ -107,6 +146,15 @@ export const deepAnalysisFunction = inngest.createFunction(
       // Step 3: Migration Complexity Scoring (4-6 minutes)
       const migrationComplexity = await step.run('migration-complexity', async () => {
         console.log('[Inngest] Running Migration Complexity analysis...');
+
+        await db
+          .update(backgroundJobs)
+          .set({
+            progress: 40,
+            currentStep: 'Scoring migration complexity',
+            updatedAt: new Date(),
+          })
+          .where(eq(backgroundJobs.id, jobRecord.id));
 
         const result = await scoreMigrationComplexity(
           bid.websiteUrl!,
@@ -128,6 +176,15 @@ export const deepAnalysisFunction = inngest.createFunction(
           })
           .where(eq(deepMigrationAnalyses.id, analysis.id));
 
+        await db
+          .update(backgroundJobs)
+          .set({
+            progress: 50,
+            currentStep: 'Migration complexity complete',
+            updatedAt: new Date(),
+          })
+          .where(eq(backgroundJobs.id, jobRecord.id));
+
         console.log('[Inngest] Migration Complexity complete');
         return result;
       });
@@ -135,6 +192,15 @@ export const deepAnalysisFunction = inngest.createFunction(
       // Step 4: Accessibility Audit (10-14 minutes)
       const accessibilityAudit = await step.run('accessibility-audit', async () => {
         console.log('[Inngest] Running Accessibility audit...');
+
+        await db
+          .update(backgroundJobs)
+          .set({
+            progress: 60,
+            currentStep: 'Running accessibility audit',
+            updatedAt: new Date(),
+          })
+          .where(eq(backgroundJobs.id, jobRecord.id));
 
         const sampleUrls = contentArchitecture.pageTypes.flatMap(pt => pt.sampleUrls);
 
@@ -156,6 +222,15 @@ export const deepAnalysisFunction = inngest.createFunction(
           })
           .where(eq(deepMigrationAnalyses.id, analysis.id));
 
+        await db
+          .update(backgroundJobs)
+          .set({
+            progress: 80,
+            currentStep: 'Accessibility audit complete',
+            updatedAt: new Date(),
+          })
+          .where(eq(backgroundJobs.id, jobRecord.id));
+
         console.log('[Inngest] Accessibility audit complete');
         return result;
       });
@@ -163,6 +238,15 @@ export const deepAnalysisFunction = inngest.createFunction(
       // Step 5: PT Estimation (1-3 minutes)
       const ptEstimation = await step.run('pt-estimation', async () => {
         console.log('[Inngest] Running PT estimation...');
+
+        await db
+          .update(backgroundJobs)
+          .set({
+            progress: 90,
+            currentStep: 'Estimating project effort (PT)',
+            updatedAt: new Date(),
+          })
+          .where(eq(backgroundJobs.id, jobRecord.id));
 
         const result = await estimatePT({
           targetCMS: 'Drupal',
@@ -191,7 +275,7 @@ export const deepAnalysisFunction = inngest.createFunction(
         return result;
       });
 
-      // Step 6: Update bid status
+      // Step 6: Update bid status and complete job
       await step.run('update-bid-status', async () => {
         await db
           .update(rfps)
@@ -202,6 +286,24 @@ export const deepAnalysisFunction = inngest.createFunction(
           })
           .where(eq(rfps.id, bidId));
 
+        // Mark job as completed
+        await db
+          .update(backgroundJobs)
+          .set({
+            status: 'completed',
+            progress: 100,
+            currentStep: 'Deep analysis completed successfully',
+            result: JSON.stringify({
+              analysisId: analysis.id,
+              totalPages: contentArchitecture.totalPages,
+              contentTypes: contentArchitecture.contentTypeMapping.length,
+              totalHours: ptEstimation.totalHours,
+            }),
+            completedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(backgroundJobs.id, jobRecord.id));
+
         console.log('[Inngest] Bid status updated to analysis_complete');
       });
 
@@ -209,6 +311,7 @@ export const deepAnalysisFunction = inngest.createFunction(
         success: true,
         bidId,
         analysisId: analysis.id,
+        jobId: jobRecord.id,
         message: 'Deep analysis completed successfully',
         summary: {
           totalPages: contentArchitecture.totalPages,
@@ -228,6 +331,7 @@ export const deepAnalysisFunction = inngest.createFunction(
         console.error('[Inngest] Deep analysis failed:', {
           bidId,
           analysisId: analysis.id,
+          jobId: jobRecord.id,
           error: errorMessage,
         });
 
@@ -241,6 +345,17 @@ export const deepAnalysisFunction = inngest.createFunction(
             updatedAt: new Date(),
           })
           .where(eq(deepMigrationAnalyses.id, analysis.id));
+
+        // Update job status to failed
+        await db
+          .update(backgroundJobs)
+          .set({
+            status: 'failed',
+            errorMessage,
+            completedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(backgroundJobs.id, jobRecord.id));
 
         return { success: false };
       });

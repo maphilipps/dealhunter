@@ -184,6 +184,63 @@ export const legalAssessmentSchema = z.object({
 export type LegalAssessment = z.infer<typeof legalAssessmentSchema>;
 
 /**
+ * BIT-006b: Contract Analysis Schema (DEA-7)
+ * Dedicated contract type detection and risk assessment
+ * Focuses on contract model, budget extraction, and risk flags
+ */
+export const contractAnalysisSchema = z.object({
+  contractType: z.enum(['tm', 'fixed_price', 'framework', 'hybrid', 'sla', 'unknown']).describe('Detected contract type'),
+
+  contractTypeIndicators: z.array(z.string()).describe('Text patterns/keywords that indicate the contract type'),
+
+  budgetAnalysis: z.object({
+    hasBudget: z.boolean().describe('Is budget information available?'),
+    budgetValue: z.number().optional().describe('Budget amount if found'),
+    currency: z.string().optional().describe('Currency (e.g., EUR, USD)'),
+    budgetType: z.enum(['fixed', 'range', 'estimate', 'unknown']).optional().describe('Type of budget specification'),
+    budgetRisks: z.array(z.string()).describe('Budget-related risks'),
+  }),
+
+  riskFlags: z.array(z.object({
+    category: z.enum(['timeline', 'scope', 'budget', 'legal', 'technical']).describe('Risk category'),
+    severity: z.enum(['low', 'medium', 'high', 'critical']).describe('Risk severity'),
+    description: z.string().describe('Risk description in German'),
+    mitigation: z.string().optional().describe('Suggested mitigation strategy'),
+  })).describe('Identified risk flags'),
+
+  changeRequestProcess: z.object({
+    hasProcess: z.boolean().describe('Is change request process defined?'),
+    processDescription: z.string().optional().describe('Description of CR process if found'),
+    isFlexible: z.boolean().describe('Is the process flexible/reasonable?'),
+  }),
+
+  penaltyClauses: z.object({
+    hasPenalties: z.boolean().describe('Are penalty clauses present?'),
+    penaltyDescription: z.array(z.string()).describe('List of penalty clauses found'),
+    penaltyRiskLevel: z.enum(['low', 'medium', 'high', 'critical']).describe('Overall penalty risk'),
+  }),
+
+  timelineAssessment: z.object({
+    isRealistic: z.boolean().describe('Is the timeline realistic?'),
+    timelineRisks: z.array(z.string()).describe('Timeline-related risks'),
+    deadlines: z.array(z.string()).optional().describe('Key deadlines mentioned'),
+  }),
+
+  scopeClarity: z.object({
+    isClear: z.boolean().describe('Is scope clearly defined?'),
+    unclearAreas: z.array(z.string()).describe('Areas with unclear scope'),
+    scopeRisks: z.array(z.string()).describe('Scope-related risks'),
+  }),
+
+  overallContractScore: z.number().min(0).max(100).describe('Overall contract quality score'),
+  confidence: z.number().min(0).max(100).describe('Confidence in this analysis'),
+  reasoning: z.string().describe('Detailed explanation of contract analysis in German'),
+  criticalBlockers: z.array(z.string()).describe('Critical contract-related blockers'),
+});
+
+export type ContractAnalysis = z.infer<typeof contractAnalysisSchema>;
+
+/**
  * BIT-007: Reference Match Schema
  * Evaluates matching with existing reference projects and experience
  */
@@ -350,6 +407,7 @@ export const bitEvaluationResultSchema = z.object({
   strategicFit: strategicFitSchema,
   competitionCheck: competitionCheckSchema,
   legalAssessment: legalAssessmentSchema,
+  contractAnalysis: contractAnalysisSchema, // DEA-7: Contract Agent
   referenceMatch: referenceMatchSchema,
 
   // Coordinated decision

@@ -10,6 +10,7 @@ import {
   type StrategicFit,
   type CompetitionCheck,
   type LegalAssessment,
+  type ContractAnalysis,
   type ReferenceMatch,
 } from './schema';
 
@@ -32,6 +33,7 @@ export function buildDecisionTree(context: {
   strategicFit: StrategicFit;
   competitionCheck: CompetitionCheck;
   legalAssessment: LegalAssessment;
+  contractAnalysis: ContractAnalysis;
   referenceMatch: ReferenceMatch;
   allCriticalBlockers: string[];
   recommendation: 'bit' | 'no_bit';
@@ -315,6 +317,7 @@ export async function runCoordinatorAgent(context: {
   strategicFit: StrategicFit;
   competitionCheck: CompetitionCheck;
   legalAssessment: LegalAssessment;
+  contractAnalysis: ContractAnalysis;
   referenceMatch: ReferenceMatch;
   scores: {
     capability: number;

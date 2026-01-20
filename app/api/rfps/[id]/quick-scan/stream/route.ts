@@ -6,6 +6,7 @@ import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event
 import { AgentEventType } from '@/lib/streaming/event-types';
 import { runQuickScanWithStreaming } from '@/lib/quick-scan/agent';
 import { auth } from '@/lib/auth';
+import { generateTimelineFromQuickScan } from '@/lib/timeline/integration';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -129,6 +130,47 @@ export async function GET(
         hasRawScanData: !!result.rawScanData,
       });
 
+      // Generate Timeline Estimate (Phase 1)
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: { agent: 'Timeline Agent', message: 'Generiere Projekt-Timeline...' },
+      });
+
+      let timeline: any = null;
+      let timelineGeneratedAt: Date | null = null;
+
+      try {
+        timeline = await generateTimelineFromQuickScan({
+          projectName: extractedReqs?.projectTitle || extractedReqs?.projectDescription || 'Projekt',
+          projectDescription: extractedReqs?.projectDescription,
+          websiteUrl: quickScan.websiteUrl,
+          extractedRequirements: extractedReqs,
+          quickScanResult: result,
+        });
+
+        timelineGeneratedAt = new Date();
+
+        emit({
+          type: AgentEventType.AGENT_COMPLETE,
+          data: {
+            agent: 'Timeline Agent',
+            result: {
+              totalWeeks: timeline.totalWeeks,
+              confidence: timeline.confidence,
+            },
+          },
+        });
+      } catch (error) {
+        console.error('[Timeline Agent] Error:', error);
+        emit({
+          type: AgentEventType.ERROR,
+          data: {
+            agent: 'Timeline Agent',
+            error: error instanceof Error ? error.message : 'Timeline generation failed',
+          },
+        });
+      }
+
       // Update QuickScan record with results (including new enhanced audit fields)
       await db
         .update(quickScans)
@@ -157,6 +199,9 @@ export async function GET(
           decisionMakers: result.decisionMakers ? JSON.stringify(result.decisionMakers) : null,
           rawScanData: result.rawScanData ? JSON.stringify(result.rawScanData) : null,
           activityLog: JSON.stringify(result.activityLog),
+          // Timeline (Phase 1 estimate)
+          timeline: timeline ? JSON.stringify(timeline) : null,
+          timelineGeneratedAt,
           completedAt: new Date(),
         })
         .where(eq(quickScans.id, quickScan.id));

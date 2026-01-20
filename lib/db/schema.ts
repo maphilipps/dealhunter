@@ -471,6 +471,10 @@ export const quickScans = sqliteTable('quick_scans', {
   cmsEvaluation: text('cms_evaluation'), // JSON - CMSMatchingResult
   cmsEvaluationCompletedAt: integer('cms_evaluation_completed_at', { mode: 'timestamp' }),
 
+  // Timeline Estimate (Phase 1 - Quick Scan)
+  timeline: text('timeline'), // JSON - ProjectTimeline from Timeline Agent
+  timelineGeneratedAt: integer('timeline_generated_at', { mode: 'timestamp' }),
+
   // Timestamps
   startedAt: integer('started_at', { mode: 'timestamp' }),
   completedAt: integer('completed_at', { mode: 'timestamp' }),

@@ -22,7 +22,7 @@ export interface ToolResult<T = unknown> {
 export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
   name: string;
   description: string;
-  category: 'rfp' | 'account' | 'reference' | 'competency' | 'employee' | 'technology' | 'business-unit' | 'user' | 'validation' | 'team' | 'routing' | 'notification' | 'document' | 'quickscan' | 'research';
+  category: 'rfp' | 'account' | 'reference' | 'competency' | 'employee' | 'technology' | 'business-unit' | 'user' | 'validation' | 'team' | 'routing' | 'notification' | 'document' | 'quickscan' | 'research' | 'staffing';
   inputSchema: z.ZodSchema<TInput>;
   execute: (input: TInput, context: ToolContext) => Promise<ToolResult<TOutput>>;
 }
@@ -68,4 +68,5 @@ export const TOOL_CATEGORIES = {
   document: 'Document Management',
   quickscan: 'QuickScan Website Analysis',
   research: 'Company & Contact Research',
+  staffing: 'Team Staffing & Skill Matching',
 } as const;

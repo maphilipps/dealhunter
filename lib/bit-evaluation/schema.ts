@@ -135,50 +135,114 @@ export const competitionCheckSchema = z.object({
 export type CompetitionCheck = z.infer<typeof competitionCheckSchema>;
 
 /**
- * BIT-006: Legal Assessment Schema
- * Evaluates legal and contractual risks
+ * Legal Red Flag (DEA-8)
+ * Critical legal issues categorized by type
+ */
+export const legalRedFlagSchema = z.object({
+  category: z.enum(['liability', 'penalty', 'ip', 'warranty', 'termination', 'jurisdiction']).describe('Red flag category'),
+  severity: z.enum(['critical', 'warning']).describe('Severity level'),
+  description: z.string().describe('Description of the red flag in German'),
+  clauseReference: z.string().optional().describe('Reference to document location/clause'),
+});
+
+export type LegalRedFlag = z.infer<typeof legalRedFlagSchema>;
+
+/**
+ * Legal Quick Check (DEA-8: BD-Level)
+ * Fast risk assessment focusing on critical red flags
+ */
+export const legalQuickCheckSchema = z.object({
+  criticalFlags: z.array(legalRedFlagSchema).describe('Critical red flags found'),
+  complianceHints: z.array(z.string()).describe('Hints about relevant compliance topics'),
+  requiresDetailedReview: z.boolean().describe('Whether detailed legal review is required'),
+  quickRiskScore: z.number().min(1).max(10).describe('Quick risk score (1=low, 10=critical)'),
+  confidence: z.number().min(0).max(100).describe('Confidence in quick check'),
+  reasoning: z.string().describe('Quick assessment reasoning in German'),
+});
+
+export type LegalQuickCheck = z.infer<typeof legalQuickCheckSchema>;
+
+/**
+ * Compliance Check (DEA-8: Full Check)
+ * Comprehensive compliance assessment
+ */
+export const complianceCheckSchema = z.object({
+  procurementLaw: z.object({
+    applicable: z.boolean().describe('Is procurement law applicable?'),
+    type: z.enum(['vob', 'vgv', 'uvgo', 'eu_threshold', 'none']).optional().describe('Type of procurement law'),
+    requirements: z.array(z.string()).describe('Procurement law requirements'),
+    deadlines: z.array(z.object({
+      name: z.string(),
+      date: z.string().optional(),
+    })).describe('Procurement deadlines'),
+  }).describe('Procurement law assessment (Vergaberecht)'),
+
+  frameworkAgreement: z.object({
+    isFramework: z.boolean().describe('Is this a framework agreement?'),
+    existingFramework: z.string().optional().describe('Existing framework name if applicable'),
+    callOffRules: z.array(z.string()).describe('Call-off rules for framework'),
+  }).describe('Framework agreement assessment (Rahmenvertrag)'),
+
+  subcontractor: z.object({
+    allowed: z.boolean().describe('Are subcontractors allowed?'),
+    restrictions: z.array(z.string()).describe('Restrictions on subcontractors'),
+    reportingRequirements: z.array(z.string()).describe('Reporting requirements for subcontractors'),
+  }).describe('Subcontractor assessment'),
+});
+
+export type ComplianceCheck = z.infer<typeof complianceCheckSchema>;
+
+/**
+ * BIT-006: Legal Assessment Schema (DEA-8 Enhanced)
+ * Evaluates legal and contractual risks with two-level analysis support
  */
 export const legalAssessmentSchema = z.object({
-  contractTypeAssessment: z.object({
-    contractType: z.string().describe('Type of contract (fixed price, T&M, outcome-based, etc.)'),
-    isAcceptable: z.boolean().describe('Is this contract type acceptable for adesso?'),
-    contractRisks: z.array(z.string()).describe('Risks related to contract type'),
-  }),
+  // Quick Check (BD-Level) - always present
+  quickCheck: legalQuickCheckSchema.optional().describe('Quick BD-level risk assessment'),
 
-  paymentRiskAssessment: z.object({
-    paymentTerms: z.string().describe('Payment terms description (e.g., "30 days net", "milestone-based")'),
-    paymentRiskLevel: z.enum(['low', 'medium', 'high']).describe('Risk level for payment'),
-    paymentRisks: z.array(z.string()).describe('Payment-related risks'),
-  }),
+  // Full Check (BL-Level) - only after routing
+  fullCheck: z.object({
+    contractTypeAssessment: z.object({
+      contractType: z.string().describe('Type of contract (fixed price, T&M, outcome-based, etc.)'),
+      isAcceptable: z.boolean().describe('Is this contract type acceptable for adesso?'),
+      contractRisks: z.array(z.string()).describe('Risks related to contract type'),
+    }),
 
-  liabilityAssessment: z.object({
-    hasUnlimitedLiability: z.boolean().describe('Does contract require unlimited liability?'),
-    liabilityCaps: z.string().describe('Description of liability caps if any'),
-    liabilityRisks: z.array(z.string()).describe('Liability-related risks'),
-  }),
+    paymentRiskAssessment: z.object({
+      paymentTerms: z.string().describe('Payment terms description (e.g., "30 days net", "milestone-based")'),
+      paymentRiskLevel: z.enum(['low', 'medium', 'high']).describe('Risk level for payment'),
+      paymentRisks: z.array(z.string()).describe('Payment-related risks'),
+    }),
 
-  ipAndLicenseAssessment: z.object({
-    ipTransferRequired: z.boolean().describe('Is IP transfer to customer required?'),
-    licenseRequirements: z.array(z.string()).describe('License requirements or restrictions'),
-    ipRisks: z.array(z.string()).describe('IP and licensing risks'),
-  }),
+    liabilityAssessment: z.object({
+      hasUnlimitedLiability: z.boolean().describe('Does contract require unlimited liability?'),
+      liabilityCaps: z.string().describe('Description of liability caps if any'),
+      liabilityRisks: z.array(z.string()).describe('Liability-related risks'),
+    }),
 
-  complianceAssessment: z.object({
-    hasSpecialCompliance: z.boolean().describe('Are there special compliance requirements?'),
-    complianceRequirements: z.array(z.string()).describe('List of compliance requirements (GDPR, SOC2, etc.)'),
-    complianceRisks: z.array(z.string()).describe('Compliance-related risks'),
-  }),
+    ipAndLicenseAssessment: z.object({
+      ipTransferRequired: z.boolean().describe('Is IP transfer to customer required?'),
+      licenseRequirements: z.array(z.string()).describe('License requirements or restrictions'),
+      ipRisks: z.array(z.string()).describe('IP and licensing risks'),
+    }),
 
-  exitClauseAssessment: z.object({
-    hasReasonableExit: z.boolean().describe('Are exit clauses reasonable?'),
-    exitConditions: z.array(z.string()).describe('Exit conditions in contract'),
-    exitRisks: z.array(z.string()).describe('Exit-related risks'),
-  }),
+    complianceCheck: complianceCheckSchema.describe('Comprehensive compliance check'),
 
-  overallLegalScore: z.number().min(0).max(100).describe('Overall legal/contractual score'),
+    exitClauseAssessment: z.object({
+      hasReasonableExit: z.boolean().describe('Are exit clauses reasonable?'),
+      exitConditions: z.array(z.string()).describe('Exit conditions in contract'),
+      exitRisks: z.array(z.string()).describe('Exit-related risks'),
+    }),
+
+    allRedFlags: z.array(legalRedFlagSchema).describe('All identified red flags with clause references'),
+  }).optional().describe('Full BL-level legal review'),
+
+  // Overall scores
+  overallLegalScore: z.number().min(0).max(100).describe('Overall legal/contractual score (0-100)'),
+  legalRiskScore: z.number().min(1).max(10).describe('Legal risk score (1=low, 10=critical)'),
   confidence: z.number().min(0).max(100).describe('Confidence in this assessment'),
-  reasoning: z.string().describe('Detailed explanation of legal assessment'),
-  criticalBlockers: z.array(z.string()).describe('Critical legal blockers'),
+  reasoning: z.string().describe('Detailed explanation of legal assessment in German'),
+  criticalBlockers: z.array(z.string()).describe('Critical legal blockers in German'),
 });
 
 export type LegalAssessment = z.infer<typeof legalAssessmentSchema>;

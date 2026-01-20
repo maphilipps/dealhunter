@@ -689,6 +689,57 @@ export const subjectiveAssessments = sqliteTable('subjective_assessments', {
 export type SubjectiveAssessment = typeof subjectiveAssessments.$inferSelect;
 export type NewSubjectiveAssessment = typeof subjectiveAssessments.$inferInsert;
 
+export const backgroundJobs = sqliteTable('background_jobs', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+
+  // Job Details
+  jobType: text('job_type', { enum: ['deep-analysis', 'team-notification', 'cleanup'] }).notNull(),
+  inngestRunId: text('inngest_run_id'), // Inngest execution ID for tracking
+
+  // References
+  rfpId: text('rfp_id').references(() => rfps.id),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
+
+  // Status
+  status: text('status', {
+    enum: ['pending', 'running', 'completed', 'failed', 'cancelled']
+  })
+    .notNull()
+    .default('pending'),
+
+  // Progress (0-100)
+  progress: integer('progress').notNull().default(0),
+  currentStep: text('current_step'), // Description of current operation
+
+  // Results
+  result: text('result'), // JSON - success result data
+  errorMessage: text('error_message'),
+
+  // Retry Tracking
+  attemptNumber: integer('attempt_number').notNull().default(1),
+  maxAttempts: integer('max_attempts').notNull().default(3),
+
+  // Timestamps
+  startedAt: integer('started_at', { mode: 'timestamp' }),
+  completedAt: integer('completed_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+}, (table) => ({
+  rfpIdx: index('background_jobs_rfp_idx').on(table.rfpId),
+  statusIdx: index('background_jobs_status_idx').on(table.status),
+  jobTypeIdx: index('background_jobs_job_type_idx').on(table.jobType),
+  createdAtIdx: index('background_jobs_created_at_idx').on(table.createdAt),
+}));
+
+export type BackgroundJob = typeof backgroundJobs.$inferSelect;
+export type NewBackgroundJob = typeof backgroundJobs.$inferInsert;
+
 // ===== Drizzle Relations =====
 
 export const usersRelations = relations(users, ({ many, one }) => ({
@@ -834,6 +885,17 @@ export const subjectiveAssessmentsRelations = relations(subjectiveAssessments, (
   }),
   user: one(users, {
     fields: [subjectiveAssessments.userId],
+    references: [users.id],
+  }),
+}));
+
+export const backgroundJobsRelations = relations(backgroundJobs, ({ one }) => ({
+  rfp: one(rfps, {
+    fields: [backgroundJobs.rfpId],
+    references: [rfps.id],
+  }),
+  user: one(users, {
+    fields: [backgroundJobs.userId],
     references: [users.id],
   }),
 }));

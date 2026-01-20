@@ -1,3 +1,111 @@
+## 2026-01-21 - DEA-21: Checkpoint System Implementation
+
+**Issue:** DEA-21 - Checkpoint System (Filesystem-basiert)
+**Status:** ✅ Complete
+**Priority:** 0 (None)
+
+**Implemented:**
+- Filesystem-based checkpoint system for crash-resilient agent workflows
+- Comprehensive state management with JSON checkpoint files
+- Automatic save/load/resume functionality with crash recovery
+- Automated cleanup cron job for old checkpoints (>7 days)
+- Integration with deep-analysis Inngest workflow
+- Debug mode to preserve checkpoints for inspection
+
+**Core Features:**
+
+1. **Checkpoint Helper Functions** (lib/workflow/checkpoints.ts):
+   - `saveCheckpoint()` - Save workflow state to JSON file
+   - `loadCheckpoint()` - Load workflow state from checkpoint file
+   - `resumeFromCheckpoint()` - Resume incomplete workflows after crash
+   - `cleanupCheckpoint()` - Delete or archive completed checkpoints
+   - `cleanupOldCheckpoints()` - Automated cleanup of old files
+   - `createWorkflowState()` - Initialize new workflow state
+   - `updateWorkflowState()` - Update state with progress tracking
+   - `listCheckpoints()` - List all active checkpoints (debugging)
+
+2. **Workflow State Schemas:**
+   - `WorkflowStateSchema` - Generic workflow state with Zod validation
+   - `DeepAnalysisState` - Specific schema for deep-analysis workflows
+   - Support for 4 workflow types: deep-analysis, bit-evaluation, team-staffing, extraction
+   - Status tracking: pending, running, paused, completed, failed
+   - Progress tracking (0-100%), step index, error logging
+   - Serialization/deserialization with proper Date handling
+
+3. **Deep Analysis Integration:**
+   - Integrated checkpoints into deep-analysis Inngest workflow (lib/inngest/functions/deep-analysis.ts)
+   - Initial checkpoint save after workflow initialization
+   - Checkpoint save after each major agent step (full-scan, content-arch, etc.)
+   - Automatic cleanup on successful completion
+   - Optional debug mode to preserve completed checkpoints
+
+4. **Automated Cleanup:**
+   - New Inngest cron job: `checkpoint-cleanup.ts`
+   - Runs daily at 3 AM via cron trigger
+   - Deletes checkpoints older than configurable retention period (default: 7 days)
+   - Prevents filesystem bloat from abandoned workflows
+   - Registered in Inngest route with other background jobs
+
+5. **Configuration:**
+   - `CHECKPOINT_DIR` - Custom checkpoint directory (default: ./tmp/checkpoints)
+   - `KEEP_CHECKPOINTS` - Debug mode flag (rename .completed instead of deleting)
+   - `CHECKPOINT_RETENTION_DAYS` - Retention period in days (default: 7)
+   - All variables documented in .env.example
+   - Checkpoint directories added to .gitignore
+
+**Architecture:**
+- Filesystem-based storage (no Redis or external dependencies)
+- JSON files with human-readable format for debugging
+- One file per workflow: `{workflowId}.json`
+- Automatic directory creation on first save
+- Graceful handling of missing files (null return)
+- Complementary to Inngest step functions (adds explicit persistence)
+
+**Benefits:**
+- **Crash Resilience:** Workflows can resume from last checkpoint after crashes
+- **Debugging:** Checkpoints can be preserved and inspected for troubleshooting
+- **Transparency:** JSON format is human-readable and easy to understand
+- **No Dependencies:** Pure filesystem-based, works in any environment
+- **Scalable:** Handles multiple concurrent workflows without conflicts
+- **Flexible:** Supports any workflow type with generic state schema
+
+**Files Created:**
+- `lib/workflow/checkpoints.ts` (329 lines) - Core checkpoint system
+- `lib/inngest/functions/checkpoint-cleanup.ts` (45 lines) - Automated cleanup job
+
+**Files Modified:**
+- `lib/inngest/functions/deep-analysis.ts` (+40 lines) - Checkpoint integration
+- `app/api/inngest/route.ts` (+2 lines) - Registered cleanup function
+- `.env.example` (+12 lines) - Configuration documentation
+- `.gitignore` (+4 lines) - Exclude checkpoint files
+
+**Acceptance Criteria:**
+✅ JSON-File pro Workflow (`/tmp/checkpoints/{workflowId}.json`)
+✅ Checkpoint Helper Functions (save, load, resume, cleanup)
+✅ Zwischenstände speichern bei jedem Agent-Abschluss
+✅ Resume bei Failure (from last checkpoint)
+✅ Cleanup nach erfolgreichem Abschluss
+✅ Debugging-Support (optional keep checkpoints)
+✅ File-basiert unter `/tmp/checkpoints`
+✅ Auto-Save nach jedem Agent
+✅ Zod Validation for Workflow State
+
+**Integration:**
+- Currently integrated with deep-analysis workflow
+- Ready for integration with bit-evaluation, team-staffing, and extraction workflows
+- Checkpoint cleanup runs automatically via Inngest cron
+- No breaking changes to existing workflows
+
+**Next Steps:**
+- Integrate checkpoints into other workflows (bit-evaluation, team-staffing, extraction)
+- Add checkpoint UI for monitoring workflow progress
+- Consider adding checkpoint metrics/observability
+
+**Commit:** 52cba3c
+**Linear:** https://linear.app/adessocms/issue/DEA-21
+
+---
+
 ## 2026-01-20 - DEA-8: Legal Agent Implementation
 
 **Issue:** DEA-8 - Legal Agent implementieren

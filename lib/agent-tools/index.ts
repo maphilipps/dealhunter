@@ -10,6 +10,7 @@ import './tools/competency';
 import './tools/employee';
 import './tools/technology';
 import './tools/business-unit';
+import './tools/staffing';
 
 // QuickScan 2.0 Agent Tools
 import './quick-scan-tools';

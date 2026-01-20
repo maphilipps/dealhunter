@@ -10,6 +10,7 @@ import {
   type StrategicFit,
   type CompetitionCheck,
   type LegalAssessment,
+  type ContractAnalysis,
   type ReferenceMatch,
   type CoordinatorOutput,
 } from './schema';
@@ -19,6 +20,7 @@ import { runDealQualityAgent } from './agents/deal-quality-agent';
 import { runStrategicFitAgent } from './agents/strategic-fit-agent';
 import { runCompetitionAgent } from './agents/competition-agent';
 import { runLegalAgent } from './agents/legal-agent';
+import { runContractAgent } from './agents/contract-agent';
 import { runReferenceAgent } from './agents/reference-agent';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
@@ -91,17 +93,18 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
   try {
     logActivity('Starting BIT evaluation', `Bid ID: ${input.bidId}`);
 
-    // Run all six agents in parallel
+    // Run all seven agents in parallel (including Contract Agent - DEA-7)
     logActivity('Running parallel agent evaluation');
     // useWebSearch für alle Agents aktivieren
     const useWebSearch = input.useWebSearch ?? true;
 
-    const [capabilityMatch, dealQuality, strategicFit, competitionCheck, legalAssessment, referenceMatch]: [
+    const [capabilityMatch, dealQuality, strategicFit, competitionCheck, legalAssessment, contractAnalysis, referenceMatch]: [
       CapabilityMatch,
       DealQuality,
       StrategicFit,
       CompetitionCheck,
       LegalAssessment,
+      ContractAnalysis,
       ReferenceMatch
     ] = await Promise.all([
       runCapabilityAgent({
@@ -128,6 +131,11 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
         useWebSearch, // Vertrags- + Compliance-Recherche
+      }),
+      runContractAgent({
+        extractedRequirements: input.extractedRequirements,
+        quickScanResults: input.quickScanResults,
+        useWebSearch, // Vertragsmodell-Recherche (DEA-7)
       }),
       runReferenceAgent({
         extractedRequirements: input.extractedRequirements,
@@ -156,13 +164,14 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
         referenceMatch.overallReferenceScore * 0.10,
     };
 
-    // Collect all critical blockers
+    // Collect all critical blockers (including Contract Agent - DEA-7)
     const allCriticalBlockers = [
       ...capabilityMatch.criticalBlockers,
       ...dealQuality.criticalBlockers,
       ...strategicFit.criticalBlockers,
       ...competitionCheck.criticalBlockers,
       ...legalAssessment.criticalBlockers,
+      ...contractAnalysis.criticalBlockers,
       ...referenceMatch.criticalBlockers,
     ];
 
@@ -175,6 +184,7 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
       strategicFit,
       competitionCheck,
       legalAssessment,
+      contractAnalysis,
       referenceMatch,
       scores: weightedScores,
       allCriticalBlockers,
@@ -218,6 +228,7 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
       strategicFit,
       competitionCheck,
       legalAssessment,
+      contractAnalysis, // DEA-7: Contract Agent results
       referenceMatch,
       decision,
       alternative,
@@ -377,13 +388,13 @@ export async function runBitEvaluationWithStreaming(
       },
     });
 
-    // Run all six agents in parallel (best practice: async-parallel)
+    // Run all seven agents in parallel (best practice: async-parallel)
     // Emit progress as each agent starts
     emit({
       type: AgentEventType.AGENT_PROGRESS,
       data: {
         agent: 'Coordinator',
-        message: 'Running parallel agent evaluation (Capability, Deal Quality, Strategic Fit, Competition, Legal, Reference)',
+        message: 'Running parallel agent evaluation (Capability, Deal Quality, Strategic Fit, Competition, Legal, Contract, Reference)',
       },
     });
 
@@ -396,6 +407,7 @@ export async function runBitEvaluationWithStreaming(
       Promise<StrategicFit>,
       Promise<CompetitionCheck>,
       Promise<LegalAssessment>,
+      Promise<ContractAnalysis>,
       Promise<ReferenceMatch>
     ] = [
       runCapabilityAgent({
@@ -473,6 +485,21 @@ export async function runBitEvaluationWithStreaming(
         });
         return result;
       }),
+      runContractAgent({
+        extractedRequirements: input.extractedRequirements,
+        quickScanResults: input.quickScanResults,
+        useWebSearch, // Vertragsmodell-Recherche (DEA-7)
+      }).then((result) => {
+        emit({
+          type: AgentEventType.AGENT_COMPLETE,
+          data: {
+            agent: 'Contract',
+            result,
+            confidence: result.confidence,
+          },
+        });
+        return result;
+      }),
       runReferenceAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
@@ -490,12 +517,13 @@ export async function runBitEvaluationWithStreaming(
       }),
     ];
 
-    const [capabilityMatch, dealQuality, strategicFit, competitionCheck, legalAssessment, referenceMatch]: [
+    const [capabilityMatch, dealQuality, strategicFit, competitionCheck, legalAssessment, contractAnalysis, referenceMatch]: [
       CapabilityMatch,
       DealQuality,
       StrategicFit,
       CompetitionCheck,
       LegalAssessment,
+      ContractAnalysis,
       ReferenceMatch
     ] = await Promise.all(agentPromises);
 
@@ -525,13 +553,14 @@ export async function runBitEvaluationWithStreaming(
         referenceMatch.overallReferenceScore * 0.10,
     };
 
-    // Collect all critical blockers
+    // Collect all critical blockers (including Contract Agent - DEA-7)
     const allCriticalBlockers = [
       ...capabilityMatch.criticalBlockers,
       ...dealQuality.criticalBlockers,
       ...strategicFit.criticalBlockers,
       ...competitionCheck.criticalBlockers,
       ...legalAssessment.criticalBlockers,
+      ...contractAnalysis.criticalBlockers,
       ...referenceMatch.criticalBlockers,
     ];
 
@@ -550,6 +579,7 @@ export async function runBitEvaluationWithStreaming(
       strategicFit,
       competitionCheck,
       legalAssessment,
+      contractAnalysis,
       referenceMatch,
       scores: weightedScores,
       allCriticalBlockers,
@@ -605,6 +635,7 @@ export async function runBitEvaluationWithStreaming(
       strategicFit,
       competitionCheck,
       legalAssessment,
+      contractAnalysis, // DEA-7: Contract Agent results
       referenceMatch,
       decision,
       alternative,

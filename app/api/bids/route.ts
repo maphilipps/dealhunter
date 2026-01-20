@@ -25,11 +25,11 @@ export async function GET(request: NextRequest) {
     const conditions = []
 
     if (status && status !== 'all') {
-      conditions.push(eq(rfps.status, status))
+      conditions.push(eq(rfps.status, status as any))
     }
 
     if (source && source !== 'all') {
-      conditions.push(eq(rfps.source, source))
+      conditions.push(eq(rfps.source, source as any))
     }
 
     if (accountId) {

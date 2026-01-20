@@ -16,9 +16,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Users, CheckCircle2, AlertTriangle, Sparkles } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Loader2, Users, CheckCircle2, AlertTriangle, Sparkles, Mail, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { suggestTeamForBid, assignTeam } from '@/lib/team/actions';
+import { sendTeamNotifications } from '@/lib/notifications/actions';
 import type { TeamSuggestion, TeamMemberSuggestion, TeamAssignment } from '@/lib/team/schema';
 
 interface TeamBuilderProps {
@@ -31,6 +42,8 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
   const [suggestion, setSuggestion] = useState<TeamSuggestion | null>(null);
   const [selectedMembers, setSelectedMembers] = useState<TeamMemberSuggestion[]>([]);
   const [showGapWarning, setShowGapWarning] = useState(false);
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const [sendNotifications, setSendNotifications] = useState(true);
   const [isAssigning, setIsAssigning] = useState(false);
 
   // Load AI suggestion on mount
@@ -64,7 +77,7 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
     toast.info('Team-Mitglied entfernt');
   };
 
-  const handleAssignTeam = async () => {
+  const handlePrepareAssignment = () => {
     // Validate minimum requirements
     const hasProjectManager = selectedMembers.some((m) => m.role === 'project_manager');
     const developerCount = selectedMembers.filter((m) =>
@@ -93,7 +106,17 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
       return;
     }
 
+    // Show email preview if notifications are enabled
+    if (sendNotifications) {
+      setShowEmailPreview(true);
+    } else {
+      handleAssignTeam();
+    }
+  };
+
+  const handleAssignTeam = async () => {
     setIsAssigning(true);
+    setShowEmailPreview(false);
     toast.info('Weise Team zu...');
 
     try {
@@ -110,13 +133,27 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
 
       const result = await assignTeam(bidId, teamAssignment);
 
-      if (result.success) {
-        toast.success('Team erfolgreich zugewiesen!');
-        router.refresh();
-      } else {
+      if (!result.success) {
         toast.error(result.error || 'Team-Zuweisung fehlgeschlagen');
         setIsAssigning(false);
+        return;
       }
+
+      toast.success('Team erfolgreich zugewiesen!');
+
+      // Send notifications if enabled
+      if (sendNotifications) {
+        toast.info('Sende Benachrichtigungen...');
+        const notifyResult = await sendTeamNotifications(bidId);
+
+        if (notifyResult.success) {
+          toast.success('Team-Benachrichtigungen versendet!');
+        } else {
+          toast.warning('Team zugewiesen, aber Benachrichtigungen fehlgeschlagen');
+        }
+      }
+
+      router.refresh();
     } catch (error) {
       toast.error('Ein Fehler ist aufgetreten');
       setIsAssigning(false);
@@ -391,21 +428,121 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
       )}
 
       {/* Actions */}
-      <div className="flex gap-3">
-        <Button onClick={handleAssignTeam} disabled={isAssigning} className="flex-1">
-          {isAssigning ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Wird zugewiesen...
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Team zuweisen
-            </>
-          )}
-        </Button>
-      </div>
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="send-notifications"
+              checked={sendNotifications}
+              onCheckedChange={(checked) => setSendNotifications(checked as boolean)}
+            />
+            <Label htmlFor="send-notifications" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Team sofort per E-Mail benachrichtigen
+            </Label>
+          </div>
+
+          <Button onClick={handlePrepareAssignment} disabled={isAssigning} className="w-full">
+            {isAssigning ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Wird verarbeitet...
+              </>
+            ) : sendNotifications ? (
+              <>
+                <Mail className="mr-2 h-4 w-4" />
+                Team zuweisen & benachrichtigen
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Team zuweisen
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Email Preview Dialog */}
+      <Dialog open={showEmailPreview} onOpenChange={setShowEmailPreview}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              E-Mail-Vorschau
+            </DialogTitle>
+            <DialogDescription>
+              Diese E-Mails werden an {selectedMembers.length} Team-Mitglieder versendet
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-lg border bg-muted/50 p-4">
+              <h4 className="font-medium mb-2">Betreff:</h4>
+              <p className="text-sm">Projekt-Zuweisung: [Projektname]</p>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-medium">Empfänger:</h4>
+              <div className="grid gap-2">
+                {selectedMembers.map((member) => (
+                  <div
+                    key={member.employeeId}
+                    className="flex items-center justify-between rounded-md border bg-card p-2 text-sm"
+                  >
+                    <span>{member.name}</span>
+                    <Badge variant="outline">{roleLabels[member.role] || member.role}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-card p-4">
+              <h4 className="font-medium mb-3">E-Mail-Inhalt:</h4>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>Hallo [Name],</p>
+                <p>Du wurdest dem folgenden Projekt als <strong>[Rolle]</strong> zugewiesen:</p>
+                <div className="bg-muted rounded p-3 my-3">
+                  <p className="font-medium text-foreground">[Projektname]</p>
+                  <p className="text-xs mt-1">Kunde: [Kunde]</p>
+                </div>
+                <p><strong>Nächste Schritte:</strong></p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li>Projekt-Details und Anforderungen reviewen</li>
+                  <li>Mit BL Lead abstimmen</li>
+                  <li>Verfügbarkeit im Kalender blocken</li>
+                  <li>Kick-off Meeting vorbereiten</li>
+                </ol>
+              </div>
+            </div>
+
+            <Alert>
+              <Mail className="h-4 w-4" />
+              <AlertDescription>
+                E-Mails werden im Hintergrund versendet. Der Status wird nach dem Versand angezeigt.
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEmailPreview(false)} disabled={isAssigning}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleAssignTeam} disabled={isAssigning}>
+              {isAssigning ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Wird verarbeitet...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Bestätigen & Senden
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Gap Warning Dialog */}
       <AlertDialog open={showGapWarning} onOpenChange={setShowGapWarning}>
@@ -433,7 +570,7 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
             <AlertDialogCancel onClick={() => setShowGapWarning(false)}>
               Abbrechen
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleAssignTeam}>
+            <AlertDialogAction onClick={handlePrepareAssignment}>
               Trotzdem zuweisen
             </AlertDialogAction>
           </AlertDialogFooter>

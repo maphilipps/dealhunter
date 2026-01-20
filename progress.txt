@@ -1,3 +1,97 @@
+## 2026-01-21 - DEA-25: Audit Trail & Override-Tracking
+
+**Issue:** DEA-25 - Audit Trail & Override-Tracking
+**Status:** ✅ Complete
+**Priority:** 0 (None)
+
+**Implemented:**
+- Comprehensive audit trail system for tracking all manual overrides in the system
+- Enhanced database schema with previousValue, newValue, and reason tracking
+- Admin UI for viewing and filtering audit logs with real-time updates
+- Type-safe audit logging with mandatory reasons for override actions
+- Integration into BL routing and bid decision workflows
+
+**Core Features:**
+
+1. **Enhanced Audit Schema** (lib/db/schema.ts:370-414):
+   - Added `previousValue` and `newValue` fields for change tracking
+   - Added `reason` field (mandatory for overrides)
+   - Action enums: bl_override, bid_override, team_change, status_change, create, update, delete, validate, reject
+   - EntityType enums: rfp, business_unit, employee, reference, competency, competitor, team_assignment
+   - Performance indexes on user_id, action, entity_type, entity_id, created_at
+   - Foreign key reference to users table for data integrity
+
+2. **Audit Helper Functions** (lib/admin/audit-actions.ts):
+   - `createAuditLog()` - Type-safe audit log creation with validation
+   - `getAuditLogs()` - Filtered retrieval with support for:
+     - Filter by entityId, entityType, action, userId
+     - Date range filtering (startDate, endDate)
+     - Pagination with configurable limit
+   - Automatic reason validation for override actions (bl_override, bid_override, team_change, status_change)
+   - Type exports: AuditAction, AuditEntityType for type safety
+
+3. **Admin Audit UI** (/admin/audit):
+   - Real-time audit log table with filtering controls
+   - Filter dropdowns for action type and entity type
+   - Entity ID search filter
+   - Badge variants for visual action differentiation:
+     - Destructive (red): bl_override, bid_override
+     - Default (blue): team_change, status_change
+     - Secondary (gray): create, update, delete
+   - Before/after value display with JSON formatting
+   - Reason display (highlighted for overrides)
+   - User attribution with name and email
+   - Relative timestamps (date-fns with German locale)
+   - Filter reset functionality
+
+4. **API Integration** (app/api/admin/audit/route.ts):
+   - GET /api/admin/audit endpoint with query parameter support
+   - Admin-only access control via session.user.role
+   - Dynamic filtering based on URL query params
+   - Returns formatted audit logs with user join
+
+5. **Workflow Integration:**
+   - **BL Routing Override** (lib/routing/actions.ts:105-118):
+     - Captures AI recommendation vs. manual override
+     - Logs previousValue (AI recommendation), newValue (manual selection)
+     - Requires reason when overriding AI recommendation
+   - **Bid Decision Override** (lib/bit-evaluation/actions.ts:264-324):
+     - New `overrideBidDecision()` function
+     - BL/Admin role enforcement
+     - Minimum 10-character reason requirement
+     - Tracks previous decision → new decision changes
+
+6. **Database Migration:**
+   - Manual ALTER TABLE commands for backward compatibility
+   - Added previous_value, new_value, reason columns
+   - Created 5 performance indexes
+   - Preserved existing audit_trails data
+
+**Integration Points:**
+- BL routing override workflow (assignBusinessUnit with overrideReason)
+- Bid decision override workflow (overrideBidDecision function)
+- Ready for team assignment changes and status overrides
+- Audit logs automatically link to user records via userId foreign key
+
+**Tech Stack:**
+- Drizzle ORM with SQLite
+- Next.js API Routes
+- ShadCN UI (Table, Select, Input, Badge, Card, Button)
+- date-fns for timestamp formatting
+- Zod validation via Drizzle schema enums
+
+**Files Changed:**
+- lib/db/schema.ts - Enhanced audit_trails table
+- lib/admin/audit-actions.ts - Audit helper functions
+- lib/routing/actions.ts - BL override integration
+- lib/bit-evaluation/actions.ts - Bid override function
+- app/(dashboard)/admin/audit/page.tsx - Admin UI page
+- app/api/admin/audit/route.ts - API endpoint
+- components/admin/audit-trail-table.tsx - Audit table component
+- local.db - Database schema migration
+
+---
+
 ## 2026-01-21 - DEA-21: Checkpoint System Implementation
 
 **Issue:** DEA-21 - Checkpoint System (Filesystem-basiert)

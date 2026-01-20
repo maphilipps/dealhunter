@@ -44,12 +44,14 @@ function TreeNode({ node, level }: TreeNodeProps) {
     positive: 'text-green-600 dark:text-green-400',
     negative: 'text-red-600 dark:text-red-400',
     neutral: 'text-yellow-600 dark:text-yellow-400',
+    critical: 'text-red-700 dark:text-red-300',
   }[node.sentiment || 'neutral'];
 
   const sentimentBg = {
     positive: 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800',
     negative: 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800',
     neutral: 'bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800',
+    critical: 'bg-red-100 dark:bg-red-900 border-red-300 dark:border-red-700',
   }[node.sentiment || 'neutral'];
 
   const getIcon = () => {

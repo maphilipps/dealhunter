@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { deepMigrationAnalyses, rfps, quickScans, backgroundJobs } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
+import { runFullScan } from '@/lib/full-scan/agent';
 import { analyzeContentArchitecture } from '@/lib/deep-analysis/agents/content-architecture-agent';
 import { scoreMigrationComplexity } from '@/lib/deep-analysis/agents/migration-complexity-agent';
 import { auditAccessibility } from '@/lib/deep-analysis/agents/accessibility-audit-agent';
@@ -13,11 +14,13 @@ import {
   AccessibilityAuditSchema,
   PTEstimationSchema,
 } from '@/lib/deep-analysis/schemas';
+import { fullScanResultSchema } from '@/lib/full-scan/agent';
 
 /**
  * Deep Migration Analysis Background Job
- * Runs 4 analysis agents in sequence: Content Architecture → Migration Complexity → Accessibility → PT Estimation
- * Expected duration: 25-30 minutes
+ * Runs 5 analysis agents in sequence:
+ * Full-Scan → Content Architecture → Migration Complexity → Accessibility → PT Estimation
+ * Expected duration: 35-60 minutes
  */
 export const deepAnalysisFunction = inngest.createFunction(
   {
@@ -98,7 +101,66 @@ export const deepAnalysisFunction = inngest.createFunction(
     });
 
     try {
-      // Step 2: Content Architecture Analysis (6-10 minutes)
+      // Step 2: Full-Scan (Website Audit) (10-30 minutes)
+      const fullScanResult = await step.run('full-scan', async () => {
+        console.log('[Inngest] Running Full-Scan (comprehensive website audit)...');
+
+        // Update progress: Starting full-scan
+        await db
+          .update(backgroundJobs)
+          .set({
+            progress: 5,
+            currentStep: 'Running comprehensive website audit',
+            updatedAt: new Date(),
+          })
+          .where(eq(backgroundJobs.id, jobRecord.id));
+
+        // Update RFP status to 'full_scanning'
+        await db
+          .update(rfps)
+          .set({
+            status: 'full_scanning',
+            updatedAt: new Date(),
+          })
+          .where(eq(rfps.id, bidId));
+
+        const result = await runFullScan({
+          websiteUrl: bid.websiteUrl!,
+          quickScanData: {
+            cms: quickScan?.cms ?? undefined,
+            techStack: quickScan?.techStack ? (typeof quickScan.techStack === 'string' ? JSON.parse(quickScan.techStack) : quickScan.techStack) : undefined,
+            features: quickScan?.features ? (typeof quickScan.features === 'string' ? JSON.parse(quickScan.features) : quickScan.features) : undefined,
+          },
+          targetCMS: 'Drupal',
+        });
+
+        // SECURITY: Validate AI output against schema
+        const validated = fullScanResultSchema.parse(result);
+
+        // Store full-scan result
+        await db
+          .update(deepMigrationAnalyses)
+          .set({
+            fullScanResult: JSON.stringify(validated),
+            updatedAt: new Date(),
+          })
+          .where(eq(deepMigrationAnalyses.id, analysis.id));
+
+        // Update progress: Full-scan complete
+        await db
+          .update(backgroundJobs)
+          .set({
+            progress: 20,
+            currentStep: 'Website audit complete',
+            updatedAt: new Date(),
+          })
+          .where(eq(backgroundJobs.id, jobRecord.id));
+
+        console.log('[Inngest] Full-Scan complete');
+        return result;
+      });
+
+      // Step 3: Content Architecture Analysis (6-10 minutes)
       const contentArchitecture = await step.run('content-architecture', async () => {
         console.log('[Inngest] Running Content Architecture analysis...');
 
@@ -106,7 +168,7 @@ export const deepAnalysisFunction = inngest.createFunction(
         await db
           .update(backgroundJobs)
           .set({
-            progress: 10,
+            progress: 30,
             currentStep: 'Analyzing content architecture',
             updatedAt: new Date(),
           })
@@ -133,7 +195,7 @@ export const deepAnalysisFunction = inngest.createFunction(
         await db
           .update(backgroundJobs)
           .set({
-            progress: 30,
+            progress: 45,
             currentStep: 'Content architecture complete',
             updatedAt: new Date(),
           })
@@ -143,14 +205,14 @@ export const deepAnalysisFunction = inngest.createFunction(
         return result;
       });
 
-      // Step 3: Migration Complexity Scoring (4-6 minutes)
+      // Step 4: Migration Complexity Scoring (4-6 minutes)
       const migrationComplexity = await step.run('migration-complexity', async () => {
         console.log('[Inngest] Running Migration Complexity analysis...');
 
         await db
           .update(backgroundJobs)
           .set({
-            progress: 40,
+            progress: 55,
             currentStep: 'Scoring migration complexity',
             updatedAt: new Date(),
           })
@@ -179,7 +241,7 @@ export const deepAnalysisFunction = inngest.createFunction(
         await db
           .update(backgroundJobs)
           .set({
-            progress: 50,
+            progress: 65,
             currentStep: 'Migration complexity complete',
             updatedAt: new Date(),
           })
@@ -189,14 +251,14 @@ export const deepAnalysisFunction = inngest.createFunction(
         return result;
       });
 
-      // Step 4: Accessibility Audit (10-14 minutes)
+      // Step 5: Accessibility Audit (10-14 minutes)
       const accessibilityAudit = await step.run('accessibility-audit', async () => {
         console.log('[Inngest] Running Accessibility audit...');
 
         await db
           .update(backgroundJobs)
           .set({
-            progress: 60,
+            progress: 70,
             currentStep: 'Running accessibility audit',
             updatedAt: new Date(),
           })
@@ -235,7 +297,7 @@ export const deepAnalysisFunction = inngest.createFunction(
         return result;
       });
 
-      // Step 5: PT Estimation (1-3 minutes)
+      // Step 6: PT Estimation (1-3 minutes)
       const ptEstimation = await step.run('pt-estimation', async () => {
         console.log('[Inngest] Running PT estimation...');
 
@@ -275,7 +337,7 @@ export const deepAnalysisFunction = inngest.createFunction(
         return result;
       });
 
-      // Step 6: Update bid status and complete job
+      // Step 7: Update bid status and complete job
       await step.run('update-bid-status', async () => {
         await db
           .update(rfps)

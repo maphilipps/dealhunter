@@ -1,0 +1,57 @@
+export { registry, listToolsForAgent, getToolsByCategory } from './registry';
+export type { ToolDefinition, ToolContext, ToolResult, ToolRegistry } from './types';
+export { TOOL_CATEGORIES } from './types';
+
+// Register all tools by importing their modules
+import './tools/rfp';
+import './tools/account';
+import './tools/reference';
+import './tools/competency';
+import './tools/employee';
+import './tools/technology';
+import './tools/business-unit';
+
+// QuickScan 2.0 Agent Tools
+import './quick-scan-tools';
+export { QUICKSCAN_TOOLS, type QuickScanToolName } from './quick-scan-tools';
+
+// Intelligent Agent Framework
+export {
+  createIntelligentTools,
+  webSearchAITool,
+  githubAITool,
+  crawlSiteAITool,
+  intelligentAITools,
+  KNOWN_GITHUB_REPOS,
+  type IntelligentTools,
+  type IntelligentToolsContext,
+  type SearchResult,
+  type GitHubInfo,
+  type PageContent,
+  type SiteCrawlResult,
+} from './intelligent-tools';
+
+export {
+  evaluateResults,
+  quickEvaluate,
+  evaluateQuickScanResults,
+  evaluateCMSMatchingResults,
+  evaluateBITResults,
+  QUICKSCAN_EVALUATION_SCHEMA,
+  CMS_MATCHING_EVALUATION_SCHEMA,
+  BIT_EVALUATION_SCHEMA,
+  type EvaluationResult,
+  type EvaluationIssue,
+  type EvaluationSchema,
+  type EvaluatorContext,
+} from './evaluator';
+
+export {
+  optimizeResults,
+  optimizeArea,
+  optimizeQuickScanResults,
+  optimizeCMSMatchingResults,
+  evaluateAndOptimize,
+  type OptimizerContext,
+  type OptimizationResult,
+} from './optimizer';

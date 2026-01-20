@@ -603,3 +603,110 @@ export async function suggestWebsiteUrlsAction(data: {
     return { success: false, error: 'Vorschläge konnten nicht generiert werden', suggestions: [] };
   }
 }
+
+/**
+ * Forward a bid to a business leader for review
+ * Updates the RFP status and assigns the business unit
+ */
+export async function forwardToBusinessLeader(bidId: string, businessUnitId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Get the bid
+    const [bid] = await db
+      .select()
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
+      .limit(1);
+
+    if (!bid) {
+      return { success: false, error: 'Bid nicht gefunden' };
+    }
+
+    if (bid.userId !== session.user.id) {
+      return { success: false, error: 'Keine Berechtigung' };
+    }
+
+    // Get the business unit
+    const { businessUnits } = await import('@/lib/db/schema');
+    const [businessUnit] = await db
+      .select()
+      .from(businessUnits)
+      .where(eq(businessUnits.id, businessUnitId))
+      .limit(1);
+
+    if (!businessUnit) {
+      return { success: false, error: 'Business Unit nicht gefunden' };
+    }
+
+    // Update RFP with business unit assignment and status
+    await db
+      .update(rfps)
+      .set({
+        assignedBusinessUnitId: businessUnitId,
+        status: 'bl_reviewing',
+        updatedAt: new Date(),
+      })
+      .where(eq(rfps.id, bidId));
+
+    return {
+      success: true,
+      businessUnit: businessUnit.name,
+      leaderName: businessUnit.leaderName,
+    };
+  } catch (error) {
+    console.error('Forward to business leader error:', error);
+    return { success: false, error: 'Weiterleitung fehlgeschlagen' };
+  }
+}
+
+/**
+ * Make a BIT or NO BIT decision for a bid
+ */
+export async function makeBitDecision(bidId: string, decision: 'bid' | 'no_bid', reason?: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Get the bid
+    const [bid] = await db
+      .select()
+      .from(rfps)
+      .where(eq(rfps.id, bidId))
+      .limit(1);
+
+    if (!bid) {
+      return { success: false, error: 'Bid nicht gefunden' };
+    }
+
+    if (bid.userId !== session.user.id) {
+      return { success: false, error: 'Keine Berechtigung' };
+    }
+
+    // Update RFP with decision
+    await db
+      .update(rfps)
+      .set({
+        decision: decision,
+        status: decision === 'bid' ? 'routed' : 'archived',
+        alternativeRecommendation: reason || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(rfps.id, bidId));
+
+    return {
+      success: true,
+      decision,
+    };
+  } catch (error) {
+    console.error('Make bit decision error:', error);
+    return { success: false, error: 'Entscheidung fehlgeschlagen' };
+  }
+}

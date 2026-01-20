@@ -20,6 +20,8 @@ import { runLegalAgent } from './agents/legal-agent';
 import { runReferenceAgent } from './agents/reference-agent';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
+// Intelligent Agent Framework - NEW
+import { quickEvaluate, BIT_EVALUATION_SCHEMA } from '@/lib/agent-tools/evaluator';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
@@ -59,6 +61,7 @@ export interface BitEvaluationInput {
   bidId: string;
   extractedRequirements: any;
   quickScanResults?: any;
+  useWebSearch?: boolean; // NEW: Enable web search for Competition Agent
 }
 
 export interface BitEvaluationActivityLog {
@@ -88,6 +91,9 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
 
     // Run all six agents in parallel
     logActivity('Running parallel agent evaluation');
+    // useWebSearch für alle Agents aktivieren
+    const useWebSearch = input.useWebSearch ?? true;
+
     const [capabilityMatch, dealQuality, strategicFit, competitionCheck, legalAssessment, referenceMatch]: [
       CapabilityMatch,
       DealQuality,
@@ -99,26 +105,32 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
       runCapabilityAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
+        useWebSearch, // GitHub + Web Search für Tech-Infos
       }),
       runDealQualityAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
+        useWebSearch, // Markt-Benchmarks + Kunden-News
       }),
       runStrategicFitAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
+        useWebSearch, // Kunden- + Branchen-Recherche
       }),
       runCompetitionAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
+        useWebSearch, // Wettbewerber-Recherche
       }),
       runLegalAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
+        useWebSearch, // Vertrags- + Compliance-Recherche
       }),
       runReferenceAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
+        useWebSearch, // adesso Referenz-Recherche
       }),
     ]);
 
@@ -364,6 +376,9 @@ export async function runBitEvaluationWithStreaming(
       },
     });
 
+    // useWebSearch für alle Agents aktivieren
+    const useWebSearch = input.useWebSearch ?? true;
+
     const agentPromises: [
       Promise<CapabilityMatch>,
       Promise<DealQuality>,
@@ -375,6 +390,7 @@ export async function runBitEvaluationWithStreaming(
       runCapabilityAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
+        useWebSearch, // GitHub + Web Search für Tech-Infos
       }).then((result) => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
@@ -389,6 +405,7 @@ export async function runBitEvaluationWithStreaming(
       runDealQualityAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
+        useWebSearch, // Markt-Benchmarks + Kunden-News
       }).then((result) => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
@@ -403,6 +420,7 @@ export async function runBitEvaluationWithStreaming(
       runStrategicFitAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
+        useWebSearch, // Kunden- + Branchen-Recherche
       }).then((result) => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
@@ -417,6 +435,7 @@ export async function runBitEvaluationWithStreaming(
       runCompetitionAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
+        useWebSearch, // Wettbewerber-Recherche
       }).then((result) => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
@@ -431,6 +450,7 @@ export async function runBitEvaluationWithStreaming(
       runLegalAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
+        useWebSearch, // Vertrags- + Compliance-Recherche
       }).then((result) => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
@@ -445,6 +465,7 @@ export async function runBitEvaluationWithStreaming(
       runReferenceAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
+        useWebSearch, // adesso Referenz-Recherche
       }).then((result) => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
@@ -549,15 +570,8 @@ export async function runBitEvaluationWithStreaming(
 
     const duration = Date.now() - startTime;
 
-    emit({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: 'Coordinator',
-        message: `BIT evaluation completed in ${(duration / 1000).toFixed(1)}s`,
-      },
-    });
-
-    return {
+    // Build result object
+    const result = {
       capabilityMatch,
       dealQuality,
       strategicFit,
@@ -569,6 +583,28 @@ export async function runBitEvaluationWithStreaming(
       evaluatedAt: new Date().toISOString(),
       evaluationDuration: duration,
     };
+
+    // Quality evaluation (NEW)
+    const quickEval = quickEvaluate(result as Record<string, unknown>, BIT_EVALUATION_SCHEMA);
+
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Evaluator',
+        message: `Qualitäts-Score: ${quickEval.score}/100`,
+        details: quickEval.issues.length > 0 ? `${quickEval.issues.length} Bereiche prüfen` : 'Alle Kriterien erfüllt',
+      },
+    });
+
+    emit({
+      type: AgentEventType.AGENT_PROGRESS,
+      data: {
+        agent: 'Coordinator',
+        message: `BIT evaluation completed in ${(duration / 1000).toFixed(1)}s`,
+      },
+    });
+
+    return result;
   } catch (error) {
     emit({
       type: AgentEventType.ERROR,

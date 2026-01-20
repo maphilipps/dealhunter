@@ -3,7 +3,8 @@
 import { useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { AgentMessage } from './agent-message';
 import { AgentActivityView } from './agent-activity-view';
 import { AbortButton } from './abort-button';
@@ -16,6 +17,8 @@ export interface ActivityStreamProps {
   title?: string;
   onComplete?: (decision?: unknown) => void;
   onError?: (error: string) => void;
+  /** Callback when a URL suggestion is provided (e.g., redirect target) */
+  onUrlSuggestion?: (suggestedUrl: string) => void;
   autoStart?: boolean;
   /** Use grouped agent view instead of flat list */
   grouped?: boolean;
@@ -31,10 +34,11 @@ export function ActivityStream({
   title = 'Agent Activity',
   onComplete,
   onError,
+  onUrlSuggestion,
   autoStart = false,
   grouped = false,
 }: ActivityStreamProps) {
-  const { events, isStreaming, error, decision, start, abort } =
+  const { events, isStreaming, error, decision, urlSuggestion, start, abort } =
     useAgentStream();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -78,11 +82,35 @@ export function ActivityStream({
         {error && (
           <Card className="border-red-200">
             <CardContent className="pt-4">
-              <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-                <div>
+              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-red-900">Fehler</p>
                   <p className="text-sm text-red-700">{error}</p>
+                  {urlSuggestion && (
+                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                      <p className="text-sm text-amber-800 mb-2">
+                        <strong>Vorgeschlagene URL:</strong>
+                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <code className="text-xs bg-amber-100 px-2 py-1 rounded break-all">
+                          {urlSuggestion.suggestedUrl}
+                        </code>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => onUrlSuggestion?.(urlSuggestion.suggestedUrl)}
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Mit dieser URL scannen
+                        </Button>
+                      </div>
+                      <p className="text-xs text-amber-600 mt-2">
+                        {urlSuggestion.reason}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -123,11 +151,35 @@ export function ActivityStream({
             )}
 
             {error && (
-              <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-                <div>
+              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-red-900">Fehler</p>
                   <p className="text-sm text-red-700">{error}</p>
+                  {urlSuggestion && (
+                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                      <p className="text-sm text-amber-800 mb-2">
+                        <strong>Vorgeschlagene URL:</strong>
+                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <code className="text-xs bg-amber-100 px-2 py-1 rounded break-all">
+                          {urlSuggestion.suggestedUrl}
+                        </code>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => onUrlSuggestion?.(urlSuggestion.suggestedUrl)}
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Mit dieser URL scannen
+                        </Button>
+                      </div>
+                      <p className="text-xs text-amber-600 mt-2">
+                        {urlSuggestion.reason}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

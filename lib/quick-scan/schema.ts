@@ -478,6 +478,7 @@ export const migrationComplexitySchema = z.object({
       hasRestApi: z.boolean(),
       hasXmlExport: z.boolean(),
       hasCli: z.boolean(),
+      knownExportMethods: z.array(z.string()).optional().describe('Available export methods'),
       notes: z.string().optional(),
     }).describe('How easy is it to export data from the current CMS'),
     dataQuality: z.object({
@@ -485,6 +486,7 @@ export const migrationComplexitySchema = z.object({
       brokenLinks: z.number().optional(),
       duplicateContent: z.boolean().optional(),
       inconsistentStructure: z.boolean(),
+      cleanupRequired: z.enum(['minimal', 'moderate', 'significant']).optional().describe('Cleanup level required'),
       notes: z.string().optional(),
     }).describe('Quality of existing content and data'),
     contentComplexity: z.object({
@@ -492,6 +494,7 @@ export const migrationComplexitySchema = z.object({
       embeddedMedia: z.boolean(),
       customFields: z.number().optional(),
       complexLayouts: z.boolean(),
+      richTextComplexity: z.enum(['simple', 'moderate', 'complex']).optional().describe('Rich text complexity'),
       notes: z.string().optional(),
     }).describe('Complexity of content structure'),
     integrationComplexity: z.object({
@@ -499,6 +502,7 @@ export const migrationComplexitySchema = z.object({
       externalApis: z.number(),
       ssoRequired: z.boolean(),
       thirdPartyPlugins: z.number().optional(),
+      integrationList: z.array(z.string()).optional().describe('List of detected integrations'),
       notes: z.string().optional(),
     }).describe('External integrations to migrate'),
   }),
@@ -508,6 +512,7 @@ export const migrationComplexitySchema = z.object({
     minPT: z.number().describe('Minimum person-days'),
     maxPT: z.number().describe('Maximum person-days'),
     confidence: z.number().min(0).max(100).describe('Confidence in estimate'),
+    assumptions: z.array(z.string()).optional().describe('Assumptions for the estimate'),
   }).optional(),
 });
 
@@ -618,3 +623,94 @@ export const extendedQuickScan2Schema = z.object({
 });
 
 export type ExtendedQuickScan2 = z.infer<typeof extendedQuickScan2Schema>;
+
+// ========================================
+// Multi-Page Analysis Schemas
+// ========================================
+
+/**
+ * Schema for navigation component detection
+ */
+export const navigationComponentSchema = z.object({
+  type: z.enum(['mega_menu', 'sticky_header', 'mobile_menu', 'sidebar', 'breadcrumbs', 'pagination', 'standard'])
+    .describe('Navigation component type'),
+  features: z.array(z.string()).describe('Additional features like search, language switcher, cart'),
+  itemCount: z.number().optional().describe('Number of navigation items'),
+  maxDepth: z.number().optional().describe('Maximum navigation depth'),
+});
+
+export type NavigationComponent = z.infer<typeof navigationComponentSchema>;
+
+/**
+ * Schema for content block detection
+ */
+export const contentBlockComponentSchema = z.object({
+  type: z.enum([
+    'hero', 'cards', 'teaser', 'accordion', 'tabs', 'slider', 'testimonials',
+    'timeline', 'grid', 'list', 'cta', 'pricing', 'faq', 'team', 'stats', 'features'
+  ]).describe('Content block type'),
+  count: z.number().describe('Number of occurrences across analyzed pages'),
+  examples: z.array(z.string()).describe('CSS class or ID examples'),
+  hasImages: z.boolean().optional().describe('Contains images'),
+  hasLinks: z.boolean().optional().describe('Contains links'),
+});
+
+export type ContentBlockComponent = z.infer<typeof contentBlockComponentSchema>;
+
+/**
+ * Schema for form component detection
+ */
+export const formComponentSchema = z.object({
+  type: z.enum(['contact', 'newsletter', 'search', 'login', 'registration', 'checkout', 'filter', 'generic'])
+    .describe('Form type'),
+  fields: z.number().describe('Number of form fields'),
+  hasValidation: z.boolean().optional().describe('Has client-side validation'),
+  hasFileUpload: z.boolean().optional().describe('Has file upload field'),
+  hasCaptcha: z.boolean().optional().describe('Has CAPTCHA protection'),
+});
+
+export type FormComponent = z.infer<typeof formComponentSchema>;
+
+/**
+ * Schema for media element detection
+ */
+export const mediaComponentSchema = z.object({
+  type: z.enum(['image_gallery', 'video_embed', 'video_player', 'audio_player', 'carousel', 'lightbox', 'background_video'])
+    .describe('Media element type'),
+  count: z.number().describe('Number of occurrences'),
+  providers: z.array(z.string()).optional().describe('Video providers like YouTube, Vimeo'),
+});
+
+export type MediaComponent = z.infer<typeof mediaComponentSchema>;
+
+/**
+ * Schema for extracted UI components summary
+ */
+export const extractedComponentsSchema = z.object({
+  navigation: z.array(navigationComponentSchema).describe('Navigation components found'),
+  contentBlocks: z.array(contentBlockComponentSchema).describe('Content block patterns found'),
+  forms: z.array(formComponentSchema).describe('Form types found'),
+  mediaElements: z.array(mediaComponentSchema).describe('Media elements found'),
+  interactiveElements: z.array(z.string()).describe('Interactive elements like modals, tooltips, maps'),
+  summary: z.object({
+    totalComponents: z.number().describe('Total components found'),
+    complexity: z.enum(['simple', 'moderate', 'complex', 'very_complex']).describe('UI complexity assessment'),
+    uniquePatterns: z.number().describe('Number of unique component patterns'),
+    estimatedComponentTypes: z.number().describe('Estimated CMS component types needed'),
+  }),
+});
+
+export type ExtractedComponents = z.infer<typeof extractedComponentsSchema>;
+
+/**
+ * Schema for multi-page analysis metadata
+ */
+export const multiPageAnalysisSchema = z.object({
+  pagesAnalyzed: z.number().describe('Number of pages analyzed'),
+  analyzedUrls: z.array(z.string()).describe('URLs that were analyzed'),
+  pageCategories: z.record(z.string(), z.array(z.string())).optional().describe('URLs grouped by category'),
+  detectionMethod: z.enum(['multi-page', 'single-page', 'httpx-fallback']).describe('Tech detection method used'),
+  analysisTimestamp: z.string().describe('When analysis was performed'),
+});
+
+export type MultiPageAnalysis = z.infer<typeof multiPageAnalysisSchema>;

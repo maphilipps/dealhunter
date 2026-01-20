@@ -24,17 +24,267 @@ import {
   type CompanyIntelligence,
 } from './schema';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import { AgentEventType } from '@/lib/streaming/event-types';
+import { AgentEventType, type QuickScanPhase } from '@/lib/streaming/event-types';
+import { db } from '@/lib/db';
+import { businessUnits as businessUnitsTable } from '@/lib/db/schema';
 import { validateUrlForFetch } from '@/lib/utils/url-validation';
-import { runPlaywrightAudit, runHttpxTechDetection, detectEnhancedTechStack, type PlaywrightAuditResult, type HttpxTechResult, type EnhancedTechStackResult } from './tools/playwright';
-import { runTechStackDetection } from '@/lib/tech-stack/agent';
+import { runPlaywrightAudit, runHttpxTechDetection, detectEnhancedTechStack, fetchHtmlWithPlaywright, type PlaywrightAuditResult, type HttpxTechResult, type EnhancedTechStackResult } from './tools/playwright';
+// TODO: Restore when tech-stack module is complete
+// import { runTechStackDetection } from '@/lib/tech-stack/agent';
+interface TechStackDetectionInput {
+  url: string;
+  html?: string | null;
+  headers?: Record<string, string>;
+  wappalyzerResults?: Array<{ name: string; categories: string[]; version?: string; confidence: number }>;
+}
+
+interface TechStackDetectionResult {
+  technologies: Array<{ name: string; category: string; confidence: number }>;
+  cms?: string;
+  cmsVersion?: string;
+  cmsConfidence?: number;
+  framework?: string;
+  frameworkVersion?: string;
+  backend?: string[];
+  hosting?: string;
+  cdn?: string;
+  server?: string;
+  libraries?: string[];
+  analytics?: string[];
+  marketing?: string[];
+  overallConfidence?: number;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BUSINESS UNITS SINGLETON CACHE
+// Prevents multiple DB loads per session - loaded once, reused everywhere
+// ═══════════════════════════════════════════════════════════════════════════════
+
+type CachedBusinessUnit = { name: string; keywords: string[] };
+let cachedBusinessUnits: CachedBusinessUnit[] | null = null;
+
+/**
+ * Get business units from cache or load from DB once
+ * This is the ONLY way to get business units in the QuickScan flow
+ */
+async function getBusinessUnitsOnce(): Promise<CachedBusinessUnit[]> {
+  if (!cachedBusinessUnits) {
+    try {
+      const units = await db.select().from(businessUnitsTable);
+      cachedBusinessUnits = units.map(unit => ({
+        name: unit.name,
+        keywords: typeof unit.keywords === 'string' ? JSON.parse(unit.keywords) : (unit.keywords || []),
+      }));
+      console.log(`[QuickScan] Business Units loaded from DB: ${cachedBusinessUnits.length}`);
+    } catch (error) {
+      console.error('[QuickScan] Error loading business units from DB:', error);
+      cachedBusinessUnits = [];
+    }
+  }
+  return cachedBusinessUnits;
+}
+
+/**
+ * Clear the business units cache (for testing or refresh)
+ */
+function clearBusinessUnitsCache(): void {
+  cachedBusinessUnits = null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Real tech stack detection using analyzePageTech from multi-page-analyzer
+ * Combines Wappalyzer + HTML pattern detection for reliable CMS identification
+ */
+const runTechStackDetection = async (
+  input: TechStackDetectionInput,
+  _options?: { emit?: EventEmitter }
+): Promise<TechStackDetectionResult> => {
+  const technologies: Array<{ name: string; category: string; confidence: number }> = [];
+  let cms: string | undefined;
+  let cmsVersion: string | undefined;
+  let cmsConfidence: number | undefined;
+  let framework: string | undefined;
+  let frameworkVersion: string | undefined;
+  const backend: string[] = [];
+  let hosting: string | undefined;
+  let cdn: string | undefined;
+  let server: string | undefined;
+  const libraries: string[] = [];
+  const analytics: string[] = [];
+  const marketing: string[] = [];
+
+  // Use Wappalyzer results if provided
+  if (input.wappalyzerResults && input.wappalyzerResults.length > 0) {
+    for (const tech of input.wappalyzerResults) {
+      const category = tech.categories[0] || 'Other';
+      technologies.push({
+        name: tech.name,
+        category,
+        confidence: tech.confidence,
+      });
+
+      // Categorize technologies
+      if (tech.categories.includes('CMS')) {
+        if (!cms || tech.confidence > (cmsConfidence || 0)) {
+          cms = tech.name;
+          cmsVersion = tech.version;
+          cmsConfidence = tech.confidence;
+        }
+      }
+
+      if (tech.categories.some(c => ['JavaScript frameworks', 'Frontend frameworks', 'Web frameworks'].includes(c))) {
+        if (!framework || tech.confidence > 50) {
+          framework = tech.name;
+          frameworkVersion = tech.version;
+        }
+      }
+
+      if (tech.categories.some(c => ['Programming languages', 'Web servers'].includes(c))) {
+        backend.push(tech.name);
+      }
+
+      if (tech.categories.some(c => ['PaaS', 'Hosting', 'IaaS'].includes(c))) {
+        hosting = hosting || tech.name;
+      }
+
+      if (tech.categories.includes('CDN')) {
+        cdn = cdn || tech.name;
+      }
+
+      if (tech.categories.includes('Web servers')) {
+        server = server || tech.name;
+      }
+
+      if (tech.categories.some(c => ['JavaScript libraries', 'UI frameworks', 'CSS frameworks'].includes(c))) {
+        libraries.push(tech.name);
+      }
+
+      if (tech.categories.some(c => ['Analytics', 'Tag managers', 'RUM'].includes(c))) {
+        analytics.push(tech.name);
+      }
+
+      if (tech.categories.some(c => ['Marketing automation', 'Cookie compliance', 'A/B testing', 'Personalization', 'Advertising', 'Live chat'].includes(c))) {
+        marketing.push(tech.name);
+      }
+    }
+  }
+
+  // HTML Pattern detection for CMS (if no CMS found via Wappalyzer or low confidence)
+  if (input.html && (!cms || (cmsConfidence || 0) < 70)) {
+    const cmsPatterns = [
+      { name: 'Drupal', patterns: [/Drupal\.settings/i, /drupal\.js/i, /\/sites\/default\/files\//i, /data-drupal/i, /X-Drupal-Cache/i, /generator.*Drupal/i], version: /Drupal\s*(\d+(\.\d+)?)/i },
+      { name: 'WordPress', patterns: [/wp-content/i, /wp-includes/i, /wp-json/i, /\/wp-admin\//i], version: /WordPress\s*(\d+(\.\d+)?(\.\d+)?)/i },
+      { name: 'TYPO3', patterns: [/typo3/i, /t3js/i, /\/typo3conf\//i, /\/typo3temp\//i, /generator.*TYPO3/i], version: /TYPO3\s*(CMS\s*)?(\d+(\.\d+)?)/i },
+      { name: 'Joomla', patterns: [/joomla/i, /\/media\/jui\//i, /\/components\/com_/i], version: /Joomla!\s*(\d+(\.\d+)?)/i },
+      { name: 'Contao', patterns: [/contao/i, /\/system\/modules\//i, /data-contao/i] },
+      { name: 'Magento', patterns: [/Magento/i, /Mage\.Cookies/i, /\/skin\/frontend\//i], version: /Magento\/(\d+(\.\d+)?)/i },
+      { name: 'Shopify', patterns: [/Shopify\.shop/i, /cdn\.shopify/i, /shopify\.com/i] },
+      { name: 'Sitecore', patterns: [/sitecore/i, /sc_mode/i, /\/sitecore\//i] },
+      { name: 'Adobe Experience Manager', patterns: [/cq-wcm-edit/i, /\/content\/dam\//i, /Adobe Experience Manager/i] },
+    ];
+
+    const headersStr = JSON.stringify(input.headers || {});
+
+    for (const cmsPattern of cmsPatterns) {
+      let matchCount = 0;
+      for (const pattern of cmsPattern.patterns) {
+        if (pattern.test(input.html) || pattern.test(headersStr)) {
+          matchCount++;
+        }
+      }
+
+      if (matchCount > 0) {
+        const patternConfidence = Math.min(95, 50 + matchCount * 15);
+
+        // Only override if pattern detection has higher confidence
+        if (!cms || patternConfidence > (cmsConfidence || 0)) {
+          cms = cmsPattern.name;
+          cmsConfidence = patternConfidence;
+
+          // Try to extract version
+          if (cmsPattern.version) {
+            const versionMatch = input.html.match(cmsPattern.version);
+            if (versionMatch) {
+              cmsVersion = versionMatch[1] || versionMatch[2];
+            }
+          }
+
+          technologies.push({
+            name: cmsPattern.name,
+            category: 'CMS',
+            confidence: patternConfidence,
+          });
+        }
+      }
+    }
+  }
+
+  // Header-based detection
+  if (input.headers) {
+    if (input.headers['server'] && !server) {
+      server = input.headers['server'];
+      technologies.push({ name: server, category: 'Web servers', confidence: 100 });
+    }
+
+    if (input.headers['x-powered-by']) {
+      const poweredBy = input.headers['x-powered-by'];
+      backend.push(poweredBy);
+      technologies.push({ name: poweredBy, category: 'Programming languages', confidence: 100 });
+    }
+
+    if (input.headers['x-generator']) {
+      const generator = input.headers['x-generator'];
+      if (!cms) {
+        cms = generator;
+        cmsConfidence = 90;
+      }
+      technologies.push({ name: generator, category: 'CMS', confidence: 90 });
+    }
+  }
+
+  // Calculate overall confidence
+  const confidenceValues = [cmsConfidence, ...technologies.map(t => t.confidence)].filter((c): c is number => c !== undefined);
+  const overallConfidence = confidenceValues.length > 0
+    ? Math.round(confidenceValues.reduce((sum, c) => sum + c, 0) / confidenceValues.length)
+    : undefined;
+
+  return {
+    technologies,
+    cms,
+    cmsVersion,
+    cmsConfidence,
+    framework,
+    frameworkVersion,
+    backend: backend.length > 0 ? [...new Set(backend)] : undefined,
+    hosting,
+    cdn,
+    server,
+    libraries: libraries.length > 0 ? [...new Set(libraries)] : undefined,
+    analytics: analytics.length > 0 ? [...new Set(analytics)] : undefined,
+    marketing: marketing.length > 0 ? [...new Set(marketing)] : undefined,
+    overallConfidence,
+  };
+};
 import { gatherCompanyIntelligence } from './tools/company-research';
 import { buildAgentContext, formatContextForPrompt } from '@/lib/agent-tools/context-builder';
+// Multi-Page Analysis Tools - NEW
+import { selectDiversePages, type SampledPages } from './tools/page-sampler';
+import { fetchPages, analyzePageTech, aggregateTechResults, type PageData, type AggregatedTechResult } from './tools/multi-page-analyzer';
+import { extractComponents, type ExtractedComponents } from './tools/component-extractor';
 // QuickScan 2.0 Tools - NEW
 import { classifyContentTypes, estimateContentTypesFromUrls } from './tools/content-classifier';
 import { analyzeMigrationComplexity } from './tools/migration-analyzer';
 import { searchDecisionMakers } from './tools/decision-maker-research';
 import type { ContentTypeDistribution, MigrationComplexity, DecisionMakersResearch } from './schema';
+// Intelligent Agent Framework - NEW
+import {
+  createIntelligentTools,
+  KNOWN_GITHUB_REPOS,
+} from '@/lib/agent-tools/intelligent-tools';
+import { quickEvaluate } from '@/lib/agent-tools/evaluator';
+import { optimizeQuickScanResults } from '@/lib/agent-tools/optimizer';
 
 async function callAI<T>(systemPrompt: string, userPrompt: string, schema: any, contextSection?: string): Promise<T> {
   const fullSystemPrompt = contextSection ? `${systemPrompt}\n\n${contextSection}` : systemPrompt;
@@ -70,12 +320,22 @@ export interface QuickScanResult {
   contentTypes?: ContentTypeDistribution;
   migrationComplexity?: MigrationComplexity;
   decisionMakers?: DecisionMakersResearch;
+  // Multi-Page Analysis fields - NEW
+  extractedComponents?: ExtractedComponents;
+  multiPageAnalysis?: {
+    pagesAnalyzed: number;
+    analyzedUrls: string[];
+    pageCategories?: Record<string, string[]>;
+    detectionMethod: 'multi-page' | 'single-page' | 'httpx-fallback' | 'wappalyzer';
+    analysisTimestamp: string;
+  };
   // Raw data for debugging/reprocessing
   rawScanData?: {
     wappalyzer?: any[];
     httpx?: any;
     playwright?: any;
     sitemapUrls?: string[];
+    multiPageTech?: AggregatedTechResult;
   };
   // Activity tracking
   activityLog: Array<{
@@ -138,11 +398,12 @@ export async function runQuickScan(input: QuickScanInput): Promise<QuickScanResu
       throw new Error('Failed to fetch website content');
     }
 
-    logActivity('Running parallel analysis: tech stack, content volume, and features');
-    const [techStack, contentVolume, features] = await Promise.all([
+    logActivity('Running parallel analysis: tech stack, content volume, features, and loading BUs');
+    const [techStack, contentVolume, features, cachedBusinessUnits] = await Promise.all([
       detectTechStack(websiteData),
       analyzeContentVolume(websiteData),
       detectFeatures(websiteData.html),
+      getBusinessUnitsOnce(),  // Singleton cache
     ]);
 
     logActivity('Generating business line recommendation');
@@ -152,6 +413,7 @@ export async function runQuickScan(input: QuickScanInput): Promise<QuickScanResu
       features,
       extractedRequirements: input.extractedRequirements,
       contextSection,
+      cachedBusinessUnits,  // Use pre-loaded BUs
     });
 
     logActivity('Quick Scan completed successfully');
@@ -167,6 +429,201 @@ export async function runQuickScan(input: QuickScanInput): Promise<QuickScanResu
     logActivity('Quick Scan failed', error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
+}
+
+/**
+ * URL reachability check result
+ */
+interface UrlCheckResult {
+  reachable: boolean;
+  finalUrl: string;
+  suggestedUrl?: string;
+  reason?: string;
+  statusCode?: number;
+  redirectChain?: string[];
+}
+
+/**
+ * Check if a URL is reachable and suggest alternatives if not
+ * - Follows redirects and captures the final URL
+ * - Detects canonical URLs from HTML
+ * - Provides clear error messages for unreachable URLs
+ */
+async function checkAndSuggestUrl(url: string): Promise<UrlCheckResult> {
+  const fullUrl = url.startsWith('http') ? url : `https://${url}`;
+
+  // Validate URL format and security
+  try {
+    validateUrlForFetch(fullUrl);
+  } catch (error) {
+    return {
+      reachable: false,
+      finalUrl: fullUrl,
+      reason: error instanceof Error ? error.message : 'Ungültiges URL-Format',
+    };
+  }
+
+  const redirectChain: string[] = [fullUrl];
+
+  try {
+    // Quick HEAD request with redirect following disabled to capture chain
+    const response = await fetch(fullUrl, {
+      method: 'HEAD',
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html',
+      },
+      signal: AbortSignal.timeout(10000), // 10 second timeout for quick check
+    });
+
+    // Capture final URL after redirects
+    const finalUrl = response.url;
+    if (finalUrl !== fullUrl) {
+      redirectChain.push(finalUrl);
+    }
+
+    // Check status code
+    if (response.ok) {
+      // URL is reachable
+      return {
+        reachable: true,
+        finalUrl,
+        statusCode: response.status,
+        redirectChain: redirectChain.length > 1 ? redirectChain : undefined,
+        // Suggest the final URL if it differs from input
+        suggestedUrl: finalUrl !== fullUrl ? finalUrl : undefined,
+      };
+    }
+
+    // Handle specific error codes
+    if (response.status === 404) {
+      // Try common alternatives
+      const alternatives = await tryUrlAlternatives(fullUrl);
+      return {
+        reachable: false,
+        finalUrl,
+        statusCode: 404,
+        reason: 'Seite nicht gefunden (404)',
+        suggestedUrl: alternatives,
+        redirectChain,
+      };
+    }
+
+    if (response.status === 403) {
+      return {
+        reachable: false,
+        finalUrl,
+        statusCode: 403,
+        reason: 'Zugriff verweigert (403) - Website blockiert möglicherweise automatisierte Zugriffe',
+      };
+    }
+
+    if (response.status >= 500) {
+      return {
+        reachable: false,
+        finalUrl,
+        statusCode: response.status,
+        reason: `Server-Fehler (${response.status}) - Website ist momentan nicht erreichbar`,
+      };
+    }
+
+    return {
+      reachable: false,
+      finalUrl,
+      statusCode: response.status,
+      reason: `HTTP-Fehler ${response.status}`,
+    };
+
+  } catch (error) {
+    // Network errors, DNS failures, timeouts
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+
+    // Try to provide helpful suggestions based on error type
+    if (errorMessage.includes('ENOTFOUND') || errorMessage.includes('getaddrinfo')) {
+      // DNS resolution failed - domain doesn't exist
+      const suggestedUrl = await tryUrlAlternatives(fullUrl);
+      return {
+        reachable: false,
+        finalUrl: fullUrl,
+        reason: 'Domain nicht gefunden - prüfen Sie die Schreibweise',
+        suggestedUrl,
+      };
+    }
+
+    if (errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT')) {
+      return {
+        reachable: false,
+        finalUrl: fullUrl,
+        reason: 'Zeitüberschreitung - Website antwortet nicht',
+      };
+    }
+
+    if (errorMessage.includes('ECONNREFUSED')) {
+      return {
+        reachable: false,
+        finalUrl: fullUrl,
+        reason: 'Verbindung abgelehnt - Server nicht erreichbar',
+      };
+    }
+
+    if (errorMessage.includes('certificate') || errorMessage.includes('SSL')) {
+      // Try HTTP if HTTPS fails
+      if (fullUrl.startsWith('https://')) {
+        const httpUrl = fullUrl.replace('https://', 'http://');
+        return {
+          reachable: false,
+          finalUrl: fullUrl,
+          reason: 'SSL/Zertifikatsfehler',
+          suggestedUrl: httpUrl,
+        };
+      }
+    }
+
+    return {
+      reachable: false,
+      finalUrl: fullUrl,
+      reason: `Verbindungsfehler: ${errorMessage}`,
+    };
+  }
+}
+
+/**
+ * Try common URL alternatives when the original fails
+ */
+async function tryUrlAlternatives(originalUrl: string): Promise<string | undefined> {
+  const url = new URL(originalUrl);
+  const alternatives: string[] = [];
+
+  // If path exists, try without it (homepage)
+  if (url.pathname !== '/' && url.pathname !== '') {
+    alternatives.push(`${url.protocol}//${url.host}/`);
+  }
+
+  // Try with/without www
+  if (url.hostname.startsWith('www.')) {
+    alternatives.push(`${url.protocol}//${url.hostname.replace('www.', '')}${url.pathname}`);
+  } else {
+    alternatives.push(`${url.protocol}//www.${url.hostname}${url.pathname}`);
+  }
+
+  // Try each alternative with a quick check
+  for (const altUrl of alternatives) {
+    try {
+      const response = await fetch(altUrl, {
+        method: 'HEAD',
+        redirect: 'follow',
+        signal: AbortSignal.timeout(5000),
+      });
+      if (response.ok) {
+        return response.url; // Return the final URL after redirects
+      }
+    } catch {
+      // Continue to next alternative
+    }
+  }
+
+  return undefined;
 }
 
 /**
@@ -190,7 +647,7 @@ async function fetchWebsiteData(url: string): Promise<WebsiteData> {
   };
 
   try {
-    // Fetch main page with headers
+    // First try: Simple fetch (fast, works for most sites)
     const response = await fetch(fullUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -208,30 +665,49 @@ async function fetchWebsiteData(url: string): Promise<WebsiteData> {
         result.headers[key.toLowerCase()] = value;
       });
     }
+  } catch (error) {
+    console.error('Simple fetch failed:', error);
+  }
 
-    // Run Wappalyzer analysis
+  // Fallback: Use Playwright for bot-protected sites
+  if (!result.html || result.html.length < 500) {
+    console.log('Simple fetch returned empty/minimal HTML, trying Playwright fallback...');
     try {
-      // simple-wappalyzer returns array directly
+      const playwrightResult = await fetchHtmlWithPlaywright(fullUrl);
+      if (playwrightResult.html && playwrightResult.html.length > result.html.length) {
+        result.html = playwrightResult.html;
+        result.headers = playwrightResult.headers;
+        result.url = playwrightResult.finalUrl;
+        console.log('Playwright fallback successful, got', Math.round(result.html.length / 1024), 'KB');
+      }
+    } catch (playwrightError) {
+      console.error('Playwright fallback also failed:', playwrightError);
+    }
+  }
+
+  // Run Wappalyzer analysis
+  if (result.html) {
+    try {
       const wappalyzerResult = wappalyzer({
         url: fullUrl,
         html: result.html,
         headers: result.headers,
       });
-      // Ensure we always have an array
       result.wappalyzerResults = Array.isArray(wappalyzerResult) ? wappalyzerResult : [];
     } catch (e) {
       console.error('Wappalyzer error:', e);
       result.wappalyzerResults = [];
     }
+  }
 
-    // Try to fetch sitemap
+  // Try to fetch sitemap
+  try {
     const sitemapResult = await fetchSitemapUrls(fullUrl);
     result.sitemapUrls = sitemapResult.urls;
     result.sitemapFound = sitemapResult.found;
     result.sitemapUrl = sitemapResult.sitemapUrl;
-
-  } catch (error) {
-    console.error('Fetch error:', error);
+  } catch (sitemapError) {
+    console.error('Sitemap fetch error:', sitemapError);
   }
 
   return result;
@@ -702,71 +1178,466 @@ function countMediaAssets(html: string): { images: number; videos: number; docum
 }
 
 /**
- * Detect features from HTML
+ * Extract internal links from HTML for link discovery fallback
+ * Used when sitemap is not available or has few URLs
  */
-async function detectFeatures(html: string): Promise<Features> {
-  const htmlLower = html.toLowerCase();
+function extractLinksFromHtml(html: string, baseUrl: string): string[] {
+  const links = new Set<string>();
 
-  // E-Commerce: Cart, Shop, Product pages
-  const ecommercePatterns = /cart|checkout|add-to-cart|warenkorb|kasse|shop|woocommerce|shopify|magento|produkt|product|bestellen|order|preis|price|€|\$|ecommerce|e-commerce|online-shop|webshop/i;
-  
-  // User Accounts: Login areas, account pages
-  const userAccountPatterns = /login|signin|sign-in|sign-up|signup|register|account|anmelden|registrieren|mein-konto|my-account|passwort|password|logout|abmelden|profil|profile|member|mitglied/i;
-  
-  // Search: Search forms, search functionality
-  const searchPatterns = /<input[^>]*type=["']search["']|search-form|searchbox|suche|suchfeld|search|recherche|such-|find|finden/i;
-  
-  // Multi-Language: Language indicators (more permissive)
-  const multiLangPatterns = /hreflang|language-switcher|lang-switch|\/en\/|\/de\/|\/fr\/|\/es\/|\/it\/|sprache|language|lang=|xml:lang|translate|übersetzung|i18n|locale|multilingual/i;
-  
-  // Blog/News: Blog sections (more permissive - just needs indicators, not WordPress classes)
-  const blogPatterns = /blog|news|artikel|article|beitrag|beiträge|post|posts|aktuelles|pressemitteilung|press|media|magazine|magazin|insights|updates|neuigkeiten/i;
-  
-  // Forms: Contact forms, newsletter, any form with action
-  const formPatterns = /<form[^>]*>/i;
-  const contactFormPatterns = /contact|kontakt|newsletter|subscribe|anfrage|request|feedback|message|nachricht|formular|form|senden|submit|absenden/i;
-  const hasForms = formPatterns.test(html) && contactFormPatterns.test(html);
-  
-  // API: API endpoints, GraphQL, REST indicators
-  const apiPatterns = /api\.|\/api\/|graphql|swagger|rest|endpoint|webhook|integration|json|xml/i;
-  
-  // Mobile App: App store links, app download prompts
-  const mobileAppPatterns = /app-store|play-store|itunes|google-play|download-app|mobile-app|ios-app|android-app|appstore|playstore/i;
+  try {
+    const baseUrlObj = new URL(baseUrl);
+    const baseDomain = baseUrlObj.hostname.replace(/^www\./, '');
+    const baseOrigin = baseUrlObj.origin;
 
-  const features: Features = {
-    ecommerce: ecommercePatterns.test(html),
-    userAccounts: userAccountPatterns.test(html),
-    search: searchPatterns.test(html),
-    multiLanguage: multiLangPatterns.test(html),
-    blog: blogPatterns.test(html),
-    forms: hasForms,
-    api: apiPatterns.test(html),
-    mobileApp: mobileAppPatterns.test(html),
-    customFeatures: detectCustomFeatures(htmlLower),
-  };
+    // Extract all href attributes from anchor tags
+    const hrefRegex = /<a[^>]+href=["']([^"']+)["']/gi;
+    let match;
 
-  return featuresSchema.parse(features);
+    while ((match = hrefRegex.exec(html)) !== null) {
+      const href = match[1];
+      if (!href) continue;
+
+      // Skip anchors, javascript, mailto, tel
+      if (href.startsWith('#') || href.startsWith('javascript:') ||
+          href.startsWith('mailto:') || href.startsWith('tel:')) {
+        continue;
+      }
+
+      try {
+        // Resolve relative URLs
+        const url = new URL(href, baseOrigin);
+        const urlDomain = url.hostname.replace(/^www\./, '');
+
+        // Only internal links
+        if (urlDomain === baseDomain) {
+          // Clean URL (remove trailing slash, fragments, query params for deduplication)
+          const cleanPath = url.pathname.replace(/\/$/, '') || '/';
+          const cleanUrl = `${url.origin}${cleanPath}`;
+
+          // Skip common non-content URLs
+          if (!cleanPath.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|pdf|zip|xml)$/i)) {
+            links.add(cleanUrl);
+          }
+        }
+      } catch {
+        // Invalid URL, skip
+      }
+    }
+  } catch (error) {
+    console.error('Error extracting links from HTML:', error);
+  }
+
+  return Array.from(links);
 }
 
 /**
- * Detect custom/notable features
+ * Detect features from HTML using AI-based analysis
+ * Combines DOM structure analysis with AI verification for accuracy
  */
-function detectCustomFeatures(html: string): string[] {
-  const features: string[] = [];
+async function detectFeatures(html: string, url?: string): Promise<Features> {
+  // First pass: DOM-based evidence collection
+  const evidence = collectFeatureEvidence(html);
 
-  if (/chat|messenger|intercom|zendesk|freshdesk/i.test(html)) features.push('Live Chat');
-  if (/map|google-maps|mapbox|openstreetmap/i.test(html)) features.push('Maps Integration');
-  if (/video|youtube|vimeo|wistia/i.test(html)) features.push('Video Content');
-  if (/social|facebook|twitter|linkedin|instagram/i.test(html)) features.push('Social Media Integration');
-  if (/calendar|booking|reservation|termin/i.test(html)) features.push('Booking/Calendar');
-  if (/payment|stripe|paypal|klarna/i.test(html)) features.push('Payment Integration');
-  if (/download|\.pdf|whitepaper/i.test(html)) features.push('Downloadable Content');
+  // If we have strong DOM evidence, use it directly (fast path)
+  if (evidence.highConfidenceCount >= 3) {
+    return featuresSchema.parse({
+      ecommerce: evidence.ecommerce.confidence > 60,
+      userAccounts: evidence.userAccounts.confidence > 60,
+      search: evidence.search.confidence > 60,
+      multiLanguage: evidence.multiLanguage.confidence > 60,
+      blog: evidence.blog.confidence > 60,
+      forms: evidence.forms.confidence > 60,
+      api: evidence.api.confidence > 60,
+      mobileApp: evidence.mobileApp.confidence > 60,
+      customFeatures: evidence.customFeatures,
+    });
+  }
 
-  return features;
+  // Use AI to analyze ambiguous cases
+  try {
+    const aiFeatures = await detectFeaturesWithAI(html, url, evidence);
+    return featuresSchema.parse(aiFeatures);
+  } catch (error) {
+    console.error('AI feature detection failed, using DOM evidence:', error);
+    // Fallback to DOM evidence
+    return featuresSchema.parse({
+      ecommerce: evidence.ecommerce.confidence > 40,
+      userAccounts: evidence.userAccounts.confidence > 40,
+      search: evidence.search.confidence > 40,
+      multiLanguage: evidence.multiLanguage.confidence > 40,
+      blog: evidence.blog.confidence > 40,
+      forms: evidence.forms.confidence > 40,
+      api: evidence.api.confidence > 40,
+      mobileApp: evidence.mobileApp.confidence > 40,
+      customFeatures: evidence.customFeatures,
+    });
+  }
+}
+
+interface FeatureEvidence {
+  confidence: number;
+  indicators: string[];
+}
+
+interface CollectedEvidence {
+  ecommerce: FeatureEvidence;
+  userAccounts: FeatureEvidence;
+  search: FeatureEvidence;
+  multiLanguage: FeatureEvidence;
+  blog: FeatureEvidence;
+  forms: FeatureEvidence;
+  api: FeatureEvidence;
+  mobileApp: FeatureEvidence;
+  customFeatures: string[];
+  highConfidenceCount: number;
+}
+
+/**
+ * Collect DOM-based evidence for each feature
+ * Returns confidence scores based on actual DOM elements, not just keywords
+ */
+function collectFeatureEvidence(html: string): CollectedEvidence {
+  const evidence: CollectedEvidence = {
+    ecommerce: { confidence: 0, indicators: [] },
+    userAccounts: { confidence: 0, indicators: [] },
+    search: { confidence: 0, indicators: [] },
+    multiLanguage: { confidence: 0, indicators: [] },
+    blog: { confidence: 0, indicators: [] },
+    forms: { confidence: 0, indicators: [] },
+    api: { confidence: 0, indicators: [] },
+    mobileApp: { confidence: 0, indicators: [] },
+    customFeatures: [],
+    highConfidenceCount: 0,
+  };
+
+  // E-Commerce: Look for actual cart/checkout elements
+  const ecommerceChecks = [
+    { pattern: /<[^>]*class="[^"]*cart[^"]*"/i, weight: 30, name: 'cart class' },
+    { pattern: /<[^>]*id="[^"]*cart[^"]*"/i, weight: 30, name: 'cart id' },
+    { pattern: /<button[^>]*add[^>]*cart/i, weight: 40, name: 'add to cart button' },
+    { pattern: /data-product|data-price|data-sku/i, weight: 35, name: 'product data attributes' },
+    { pattern: /WooCommerce|Shopify|Magento/i, weight: 50, name: 'e-commerce platform' },
+    { pattern: /<form[^>]*checkout/i, weight: 40, name: 'checkout form' },
+    { pattern: /shopping.cart|warenkorb/i, weight: 25, name: 'cart references' },
+  ];
+  for (const check of ecommerceChecks) {
+    if (check.pattern.test(html)) {
+      evidence.ecommerce.confidence += check.weight;
+      evidence.ecommerce.indicators.push(check.name);
+    }
+  }
+
+  // User Accounts: Look for login/register forms
+  const accountChecks = [
+    { pattern: /<form[^>]*login|<form[^>]*signin/i, weight: 40, name: 'login form' },
+    { pattern: /<input[^>]*type=["']password["']/i, weight: 35, name: 'password field' },
+    { pattern: /<[^>]*class="[^"]*login[^"]*"|<[^>]*id="[^"]*login[^"]*"/i, weight: 25, name: 'login element' },
+    { pattern: /my.?account|mein.?konto/i, weight: 20, name: 'account link' },
+    { pattern: /<a[^>]*href="[^"]*(?:register|signup|anmelden)[^"]*"/i, weight: 30, name: 'register link' },
+    { pattern: /logout|abmelden|sign.?out/i, weight: 25, name: 'logout link' },
+  ];
+  for (const check of accountChecks) {
+    if (check.pattern.test(html)) {
+      evidence.userAccounts.confidence += check.weight;
+      evidence.userAccounts.indicators.push(check.name);
+    }
+  }
+
+  // Search: Look for actual search inputs
+  const searchChecks = [
+    { pattern: /<input[^>]*type=["']search["']/i, weight: 50, name: 'search input type' },
+    { pattern: /<form[^>]*search|<form[^>]*role=["']search["']/i, weight: 40, name: 'search form' },
+    { pattern: /<[^>]*class="[^"]*search[^"]*"[^>]*>/i, weight: 20, name: 'search class' },
+    { pattern: /aria-label=["'][^"]*such|aria-label=["'][^"]*search/i, weight: 30, name: 'search aria-label' },
+    { pattern: /<button[^>]*type=["']submit["'][^>]*search/i, weight: 35, name: 'search submit button' },
+  ];
+  for (const check of searchChecks) {
+    if (check.pattern.test(html)) {
+      evidence.search.confidence += check.weight;
+      evidence.search.indicators.push(check.name);
+    }
+  }
+
+  // Multi-Language: Look for language switchers and hreflang
+  const langChecks = [
+    { pattern: /hreflang=["'][a-z]{2}["']/i, weight: 50, name: 'hreflang tags' },
+    { pattern: /<[^>]*class="[^"]*language[^"]*switcher[^"]*"/i, weight: 40, name: 'language switcher class' },
+    { pattern: /\/(?:en|de|fr|es|it|nl|pl|pt)\/[^"'>\s]/i, weight: 30, name: 'language URL paths' },
+    { pattern: /data-lang|data-locale/i, weight: 25, name: 'language data attributes' },
+    { pattern: /<html[^>]*lang=["'][a-z]{2}/i, weight: 15, name: 'html lang attribute' },
+  ];
+  for (const check of langChecks) {
+    if (check.pattern.test(html)) {
+      evidence.multiLanguage.confidence += check.weight;
+      evidence.multiLanguage.indicators.push(check.name);
+    }
+  }
+  // Require multiple hreflang or URL paths for multi-language
+  const hreflangMatches = (html.match(/hreflang/gi) || []).length;
+  if (hreflangMatches >= 2) evidence.multiLanguage.confidence += 30;
+
+  // Blog/News: Look for article structures
+  const blogChecks = [
+    { pattern: /<article[^>]*>/i, weight: 30, name: 'article elements' },
+    { pattern: /<[^>]*class="[^"]*(?:blog|post|article)[^"]*"/i, weight: 25, name: 'blog/post classes' },
+    { pattern: /\/blog\/|\/news\/|\/aktuelles\//i, weight: 35, name: 'blog URL paths' },
+    { pattern: /<time[^>]*datetime/i, weight: 20, name: 'datetime elements' },
+    { pattern: /<[^>]*class="[^"]*author[^"]*"/i, weight: 15, name: 'author classes' },
+    { pattern: /category|kategorie|tag/i, weight: 10, name: 'category/tag references' },
+  ];
+  for (const check of blogChecks) {
+    if (check.pattern.test(html)) {
+      evidence.blog.confidence += check.weight;
+      evidence.blog.indicators.push(check.name);
+    }
+  }
+
+  // Forms: Look for actual form elements with inputs
+  const formChecks = [
+    { pattern: /<form[^>]*action/i, weight: 30, name: 'form with action' },
+    { pattern: /<form[^>]*contact|<form[^>]*kontakt/i, weight: 40, name: 'contact form' },
+    { pattern: /<input[^>]*type=["'](?:text|email|tel)["']/i, weight: 20, name: 'text/email inputs' },
+    { pattern: /<textarea/i, weight: 25, name: 'textarea element' },
+    { pattern: /<button[^>]*type=["']submit["']/i, weight: 20, name: 'submit button' },
+    { pattern: /newsletter|subscribe|abonnieren/i, weight: 30, name: 'newsletter form' },
+  ];
+  for (const check of formChecks) {
+    if (check.pattern.test(html)) {
+      evidence.forms.confidence += check.weight;
+      evidence.forms.indicators.push(check.name);
+    }
+  }
+
+  // API: Look for API indicators
+  const apiChecks = [
+    { pattern: /\/api\/v?\d?/i, weight: 40, name: 'API versioned path' },
+    { pattern: /graphql|__APOLLO|__RELAY/i, weight: 50, name: 'GraphQL indicators' },
+    { pattern: /application\/json|fetch\(/i, weight: 25, name: 'JSON/fetch usage' },
+    { pattern: /swagger|openapi/i, weight: 45, name: 'API documentation' },
+    { pattern: /data-api|api-endpoint/i, weight: 35, name: 'API data attributes' },
+  ];
+  for (const check of apiChecks) {
+    if (check.pattern.test(html)) {
+      evidence.api.confidence += check.weight;
+      evidence.api.indicators.push(check.name);
+    }
+  }
+
+  // Mobile App: Look for app store links
+  const appChecks = [
+    { pattern: /apps\.apple\.com|itunes\.apple\.com/i, weight: 50, name: 'Apple App Store link' },
+    { pattern: /play\.google\.com\/store/i, weight: 50, name: 'Google Play Store link' },
+    { pattern: /<[^>]*class="[^"]*app[^"]*(?:badge|download|store)[^"]*"/i, weight: 35, name: 'app store badge' },
+    { pattern: /download[^>]*app|app[^>]*download/i, weight: 20, name: 'app download text' },
+  ];
+  for (const check of appChecks) {
+    if (check.pattern.test(html)) {
+      evidence.mobileApp.confidence += check.weight;
+      evidence.mobileApp.indicators.push(check.name);
+    }
+  }
+
+  // Custom features: Only add if confidence is high
+  const customChecks = [
+    { pattern: /intercom|zendesk|freshdesk|drift|crisp/i, feature: 'Live Chat', minMatches: 1 },
+    { pattern: /google.?maps|mapbox|openstreetmap|leaflet/i, feature: 'Maps Integration', minMatches: 1 },
+    { pattern: /youtube\.com\/embed|vimeo\.com\/video|wistia\.com/i, feature: 'Video Embeds', minMatches: 1 },
+    { pattern: /facebook\.com\/plugins|twitter\.com\/widgets|linkedin\.com\/embed/i, feature: 'Social Widgets', minMatches: 1 },
+    { pattern: /calendly|booking\.com|reservation|terminbuchung/i, feature: 'Booking System', minMatches: 1 },
+    { pattern: /stripe\.com|paypal\.com|klarna/i, feature: 'Payment Provider', minMatches: 1 },
+    { pattern: /\.pdf["']|download[^>]*pdf/i, feature: 'PDF Downloads', minMatches: 1 },
+    { pattern: /recaptcha|hcaptcha|turnstile/i, feature: 'Bot Protection', minMatches: 1 },
+    { pattern: /cookie.?consent|cookie.?banner|gdpr/i, feature: 'Cookie Consent', minMatches: 1 },
+  ];
+  for (const check of customChecks) {
+    const matches = (html.match(check.pattern) || []).length;
+    if (matches >= check.minMatches) {
+      evidence.customFeatures.push(check.feature);
+    }
+  }
+
+  // Count high confidence features
+  const allConfidences = [
+    evidence.ecommerce.confidence,
+    evidence.userAccounts.confidence,
+    evidence.search.confidence,
+    evidence.multiLanguage.confidence,
+    evidence.blog.confidence,
+    evidence.forms.confidence,
+    evidence.api.confidence,
+    evidence.mobileApp.confidence,
+  ];
+  evidence.highConfidenceCount = allConfidences.filter(c => c >= 60).length;
+
+  // Cap confidences at 100
+  evidence.ecommerce.confidence = Math.min(100, evidence.ecommerce.confidence);
+  evidence.userAccounts.confidence = Math.min(100, evidence.userAccounts.confidence);
+  evidence.search.confidence = Math.min(100, evidence.search.confidence);
+  evidence.multiLanguage.confidence = Math.min(100, evidence.multiLanguage.confidence);
+  evidence.blog.confidence = Math.min(100, evidence.blog.confidence);
+  evidence.forms.confidence = Math.min(100, evidence.forms.confidence);
+  evidence.api.confidence = Math.min(100, evidence.api.confidence);
+  evidence.mobileApp.confidence = Math.min(100, evidence.mobileApp.confidence);
+
+  return evidence;
+}
+
+/**
+ * AI-based feature detection for ambiguous cases
+ */
+async function detectFeaturesWithAI(
+  html: string,
+  url: string | undefined,
+  evidence: CollectedEvidence
+): Promise<Features> {
+  const htmlSnippet = html.substring(0, 15000); // Limit for AI context
+
+  const systemPrompt = `Du bist ein Website-Feature-Analyst. Analysiere das HTML und bestimme welche Features die Website hat.
+Antworte NUR mit validem JSON ohne Markdown-Code-Blöcke.
+
+WICHTIG: Basiere deine Analyse auf konkreten DOM-Elementen und Strukturen, nicht nur auf Keyword-Vorkommen.`;
+
+  const userPrompt = `Analysiere diese Website und bestimme welche Features vorhanden sind.
+
+URL: ${url || 'unbekannt'}
+
+Vorläufige Evidenz (DOM-basiert):
+- E-Commerce: ${evidence.ecommerce.confidence}% (${evidence.ecommerce.indicators.join(', ') || 'keine'})
+- User Accounts: ${evidence.userAccounts.confidence}% (${evidence.userAccounts.indicators.join(', ') || 'keine'})
+- Search: ${evidence.search.confidence}% (${evidence.search.indicators.join(', ') || 'keine'})
+- Multi-Language: ${evidence.multiLanguage.confidence}% (${evidence.multiLanguage.indicators.join(', ') || 'keine'})
+- Blog/News: ${evidence.blog.confidence}% (${evidence.blog.indicators.join(', ') || 'keine'})
+- Forms: ${evidence.forms.confidence}% (${evidence.forms.indicators.join(', ') || 'keine'})
+- API: ${evidence.api.confidence}% (${evidence.api.indicators.join(', ') || 'keine'})
+- Mobile App: ${evidence.mobileApp.confidence}% (${evidence.mobileApp.indicators.join(', ') || 'keine'})
+- Custom Features: ${evidence.customFeatures.join(', ') || 'keine'}
+
+HTML Auszug:
+${htmlSnippet}
+
+Antworte mit JSON:
+{
+  "ecommerce": true/false,
+  "userAccounts": true/false,
+  "search": true/false,
+  "multiLanguage": true/false,
+  "blog": true/false,
+  "forms": true/false,
+  "api": true/false,
+  "mobileApp": true/false,
+  "customFeatures": ["Feature1", "Feature2"]
+}`;
+
+  const result = await generateStructuredOutput({
+    schema: featuresSchema,
+    system: systemPrompt,
+    prompt: userPrompt,
+  });
+
+  return result;
+}
+
+/**
+ * @deprecated Use getBusinessUnitsOnce() from singleton cache instead
+ * This function is kept for backwards compatibility but will be removed in future versions.
+ */
+async function loadBusinessUnitsFromDB(): Promise<Array<{ name: string; keywords: string[] }>> {
+  try {
+    const units = await db.select().from(businessUnitsTable);
+    return units.map(unit => ({
+      name: unit.name,
+      keywords: typeof unit.keywords === 'string' ? JSON.parse(unit.keywords) : (unit.keywords || []),
+    }));
+  } catch (error) {
+    console.error('Error loading business units from DB:', error);
+    // Fallback to empty array - validation will use keyword matching
+    return [];
+  }
+}
+
+/**
+ * Validate and match BL recommendation against DB entries
+ * Falls back to keyword-based matching if AI returns unknown BL
+ */
+function validateAndMatchBL(
+  aiRecommendation: BLRecommendation,
+  businessUnits: Array<{ name: string; keywords: string[] }>,
+  context: { techStack: TechStack; features: Features }
+): BLRecommendation {
+  if (businessUnits.length === 0) {
+    // No BUs in DB - return AI recommendation as-is
+    return aiRecommendation;
+  }
+
+  const recommendedLower = aiRecommendation.primaryBusinessLine.toLowerCase();
+
+  // Check if AI recommendation matches exactly
+  const exactMatch = businessUnits.find(bu => bu.name.toLowerCase() === recommendedLower);
+  if (exactMatch) {
+    return { ...aiRecommendation, primaryBusinessLine: exactMatch.name };
+  }
+
+  // Check for partial match (e.g., "eCommerce" matches "eCommerce & Retail")
+  const partialMatch = businessUnits.find(bu =>
+    bu.name.toLowerCase().includes(recommendedLower) ||
+    recommendedLower.includes(bu.name.toLowerCase())
+  );
+  if (partialMatch) {
+    return { ...aiRecommendation, primaryBusinessLine: partialMatch.name };
+  }
+
+  // Fallback: Keyword-based matching
+  const contextKeywords = [
+    context.techStack.cms?.toLowerCase(),
+    context.techStack.framework?.toLowerCase(),
+    ...(context.techStack.backend?.map(b => b.toLowerCase()) || []),
+    ...(context.techStack.libraries?.map(l => l.toLowerCase()) || []),
+    context.features.ecommerce ? 'ecommerce' : null,
+    context.features.ecommerce ? 'shop' : null,
+    context.features.userAccounts ? 'portal' : null,
+    context.features.api ? 'api' : null,
+  ].filter(Boolean) as string[];
+
+  let bestMatch: { name: string; score: number } | null = null;
+
+  for (const bu of businessUnits) {
+    let score = 0;
+    for (const keyword of bu.keywords) {
+      const keywordLower = keyword.toLowerCase();
+      // Check if any context keyword matches
+      if (contextKeywords.some(ck => ck.includes(keywordLower) || keywordLower.includes(ck))) {
+        score++;
+      }
+      // Check if recommended BL name contains keyword
+      if (recommendedLower.includes(keywordLower)) {
+        score += 2;
+      }
+    }
+    if (!bestMatch || score > bestMatch.score) {
+      bestMatch = { name: bu.name, score };
+    }
+  }
+
+  if (bestMatch && bestMatch.score > 0) {
+    return {
+      ...aiRecommendation,
+      primaryBusinessLine: bestMatch.name,
+      reasoning: aiRecommendation.reasoning + ` (Zugeordnet zu "${bestMatch.name}" basierend auf Keyword-Matching)`,
+    };
+  }
+
+  // If no match found, use first BU as fallback with reduced confidence
+  return {
+    ...aiRecommendation,
+    primaryBusinessLine: businessUnits[0].name,
+    confidence: Math.min(aiRecommendation.confidence, 40),
+    reasoning: aiRecommendation.reasoning + ` (Keine direkte Übereinstimmung - Standard-Zuordnung zu "${businessUnits[0].name}")`,
+  };
 }
 
 /**
  * Recommend business line based on analysis
+ * Uses singleton cache for business units (loaded once per session)
  */
 async function recommendBusinessLine(context: {
   techStack: TechStack;
@@ -774,11 +1645,31 @@ async function recommendBusinessLine(context: {
   features: Features;
   extractedRequirements?: any;
   contextSection?: string;
+  cachedBusinessUnits?: CachedBusinessUnit[];  // Pre-loaded BUs from bootstrap
 }): Promise<BLRecommendation> {
+  // Use cached BUs if provided, otherwise use singleton cache
+  const businessUnits = context.cachedBusinessUnits ?? await getBusinessUnitsOnce();
+
+  // Build dynamic BU list for prompt
+  let buListPrompt: string;
+  if (businessUnits.length > 0) {
+    buListPrompt = businessUnits.map(bu =>
+      `- ${bu.name} (Keywords: ${bu.keywords.join(', ')})`
+    ).join('\n');
+  } else {
+    // Fallback if no BUs in DB
+    buListPrompt = `- Technology & Innovation (Custom Development, Cloud Migration, Modernisierung)
+- Microsoft (SharePoint, Dynamics 365, Azure, Power Platform)
+- Public Sector (Behördenportale, OZG, Bürgerservices)`;
+  }
+
   const systemPrompt = `Du bist ein Business Development Experte bei adesso SE, einem führenden IT-Beratungsunternehmen.
 Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
 
-WICHTIG: Gib immer eine fundierte Empfehlung ab, auch wenn die Datenlage begrenzt ist. Nutze dein Expertenwissen über typische Projekt-Patterns.`;
+WICHTIG:
+- Gib immer eine fundierte Empfehlung ab, auch wenn die Datenlage begrenzt ist.
+- Wähle NUR aus den unten aufgeführten Business Lines - erfinde KEINE neuen Namen!
+- Verwende den EXAKTEN Namen der Business Line wie in der Liste angegeben.`;
 
   const userPrompt = `Analysiere die Website-Daten und empfehle die optimale Business Line für dieses Projekt.
 
@@ -796,38 +1687,33 @@ ${context.extractedRequirements ? `
 ${JSON.stringify(context.extractedRequirements, null, 2)}
 ` : '**Keine Ausschreibungsdaten verfügbar - Empfehlung basiert nur auf Website-Analyse**'}
 
-**adesso Business Lines:**
-- Banking & Insurance (Drupal CMS, komplexe Finanzsysteme, Compliance)
-- Automotive (Industry 4.0, IoT, Connected Vehicles, E-Mobility)
-- Energy & Utilities (Smart Grids, Energiemanagement, Nachhaltigkeit)
-- Retail & E-Commerce (Online Shops, Omnichannel, PIM/DAM)
-- Healthcare (Patientenportale, DiGA, ePA, medizinische Systeme)
-- Public Sector (Behördenportale, OZG, Bürgerservices)
-- Manufacturing (ERP, MES, Produktionssysteme)
-- Technology & Innovation (Custom Development, Cloud Migration, Modernisierung)
-- Microsoft (SharePoint, Dynamics 365, Azure, Power Platform)
+**VERFÜGBARE Business Lines (wähle NUR aus dieser Liste!):**
+${buListPrompt}
 
 **ANALYSE-KRITERIEN:**
 1. Welche Business Line passt am besten zum erkannten Tech Stack?
-2. Welche Branchen-Indikatoren sind erkennbar (Finanz, Gesundheit, Öffentlich, etc.)?
-3. Welche Komplexität erfordert das Projekt?
+2. Welche Keywords der Business Lines matchen mit den erkannten Technologien?
+3. Welche Branchen-Indikatoren sind erkennbar?
 4. Welche speziellen Kompetenzen werden benötigt?
 
-**OUTPUT-ANFORDERUNGEN:**
-- primaryBusinessLine: Die am besten passende Business Line
-- confidence: Deine Sicherheit in Prozent (MUSS angegeben werden, 0-100)
+**KRITISCH - OUTPUT-ANFORDERUNGEN:**
+- primaryBusinessLine: MUSS exakt einer der oben aufgeführten Business Line Namen sein!
+- confidence: Deine Sicherheit in Prozent (0-100)
 - reasoning: Ausführliche Begründung auf Deutsch (min. 2-3 Sätze)
-- alternativeBusinessLines: 2-3 alternative BLs mit Begründung
+- alternativeBusinessLines: 2-3 alternative BLs aus der obigen Liste mit Begründung
 - requiredSkills: Konkrete Skills für dieses Projekt
 
 Antworte mit JSON:
-- primaryBusinessLine (string): Primär empfohlene Business Line
+- primaryBusinessLine (string): Exakt einer der verfügbaren Business Line Namen
 - confidence (number 0-100): Confidence in der Empfehlung
 - reasoning (string): Deutsche Erklärung für die Empfehlung
-- alternativeBusinessLines (array of {name: string, confidence: number, reason: string}): Alternativen mit deutscher Begründung
+- alternativeBusinessLines (array of {name: string, confidence: number, reason: string}): Alternativen aus der verfügbaren Liste
 - requiredSkills (array of strings): Benötigte Skills für das Projekt`;
 
-  return callAI<BLRecommendation>(systemPrompt, userPrompt, blRecommendationSchema, context.contextSection);
+  const aiResult = await callAI<BLRecommendation>(systemPrompt, userPrompt, blRecommendationSchema, context.contextSection);
+
+  // Validate and match against actual DB entries
+  return validateAndMatchBL(aiResult, businessUnits, context);
 }
 
 /**
@@ -1394,16 +2280,118 @@ export async function runQuickScanWithStreaming(
     logActivity(thought, details);
   };
 
+  // Helper to emit agent completion - used for progress tracking in UI
+  const emitAgentComplete = (agent: string, result?: unknown) => {
+    emit({
+      type: AgentEventType.AGENT_COMPLETE,
+      data: {
+        agent,
+        result: result || { status: 'completed' },
+      },
+    });
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // PHASE EVENT HELPERS - QuickScan 2.0 Workflow
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Emit a phase start event for UI progress tracking
+   * Phases: bootstrap, multi_page, analysis, synthesis
+   */
+  const emitPhase = (phase: QuickScanPhase, message: string) => {
+    emit({
+      type: AgentEventType.PHASE_START,
+      data: {
+        phase,
+        message,
+        timestamp: Date.now(),
+      },
+    });
+    logActivity(`Phase: ${phase}`, message);
+  };
+
+  /**
+   * Emit an analysis completion event for tracking individual analysis results
+   */
+  const emitAnalysisComplete = (analysis: string, success: boolean, duration: number, details?: string) => {
+    emit({
+      type: AgentEventType.ANALYSIS_COMPLETE,
+      data: {
+        analysis,
+        success,
+        duration,
+        details,
+      },
+    });
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+
   try {
     emitThought('Quick Scan', `Starte Quick Scan Analyse...`, `URL: ${input.websiteUrl}`);
 
-    emitThought('Website Crawler', `Prüfe URL-Format und Sicherheit...`);
-    const fullUrl = input.websiteUrl.startsWith('http') ? input.websiteUrl : `https://${input.websiteUrl}`;
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // PRE-CHECK: URL Reachability (Fast-Fail before expensive operations)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    emitThought('Website Crawler', `Prüfe URL-Erreichbarkeit...`);
+    const urlCheck = await checkAndSuggestUrl(input.websiteUrl);
 
-    // === PHASE 2: Data Collection ===
-    emitThought('Website Crawler', `Lade Website-Inhalt...`, fullUrl);
+    // Emit URL check result
+    emit({
+      type: AgentEventType.URL_CHECK,
+      data: {
+        originalUrl: input.websiteUrl,
+        finalUrl: urlCheck.finalUrl,
+        reachable: urlCheck.reachable,
+        statusCode: urlCheck.statusCode,
+        redirectChain: urlCheck.redirectChain,
+      },
+    });
 
-    const websiteData = await fetchWebsiteData(input.websiteUrl);
+    if (!urlCheck.reachable) {
+      // If we have a suggestion, emit it before throwing
+      if (urlCheck.suggestedUrl) {
+        emit({
+          type: AgentEventType.URL_SUGGESTION,
+          data: {
+            originalUrl: input.websiteUrl,
+            suggestedUrl: urlCheck.suggestedUrl,
+            reason: urlCheck.reason || 'URL nicht erreichbar',
+          },
+        });
+        throw new Error(`Website nicht erreichbar: ${urlCheck.reason}. Vorgeschlagene URL: ${urlCheck.suggestedUrl}`);
+      }
+      throw new Error(`Website nicht erreichbar: ${urlCheck.reason}`);
+    }
+
+    // Use the final URL (after redirects) for the rest of the scan
+    const fullUrl = urlCheck.finalUrl;
+
+    // Log if URL was redirected
+    if (urlCheck.redirectChain && urlCheck.redirectChain.length > 1) {
+      emitThought('Website Crawler',
+        `URL wurde weitergeleitet`,
+        `${input.websiteUrl} → ${fullUrl}`
+      );
+    } else {
+      emitThought('Website Crawler', `URL erreichbar (${urlCheck.statusCode || 'OK'})`, fullUrl);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // PHASE 1: BOOTSTRAP (Parallel: Website Data + Business Units)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    emitPhase('bootstrap', 'Initialisiere Scan - lade Website und Business Units...');
+
+    // Run bootstrap tasks in parallel - use fullUrl (validated, after redirects)
+    const bootstrapStart = Date.now();
+    const [websiteData, cachedBusinessUnits] = await Promise.all([
+      fetchWebsiteData(fullUrl),
+      getBusinessUnitsOnce(),  // Singleton cache - loaded once per session
+    ]);
+
+    emitAnalysisComplete('bootstrap', true, Date.now() - bootstrapStart,
+      `Website + ${cachedBusinessUnits.length} Business Units geladen`);
 
     if (!websiteData.html) {
       throw new Error('Website konnte nicht geladen werden');
@@ -1436,15 +2424,167 @@ export async function runQuickScanWithStreaming(
         'Schätze Seitenanzahl aus Navigation');
     }
 
-    // === PHASE 3: Parallel Analysis ===
+    // Mark data collection agents as complete
+    emitAgentComplete('Website Crawler', { htmlSize, headersCount: Object.keys(websiteData.headers).length });
+    emitAgentComplete('Wappalyzer', { technologiesFound: websiteData.wappalyzerResults.length });
+    emitAgentComplete('Sitemap Parser', { urlsFound: websiteData.sitemapUrls.length });
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // PHASE 1.2: MULTI-PAGE FETCH (Parallel page loading)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    emitPhase('multi_page', 'Lade diverse Seiten für Analyse...');
+    const multiPageStart = Date.now();
+
+    // Select diverse pages for analysis
+    let multiPageData: {
+      sampledPages: SampledPages;
+      pageDataArray: PageData[];
+      aggregatedTech: AggregatedTechResult | null;
+      extractedComponents: ExtractedComponents | null;
+    } | null = null;
+
+    // Determine URLs for analysis - combine sitemap + link discovery
+    let urlPool = [...websiteData.sitemapUrls];
+    let urlSource: 'sitemap' | 'link_discovery' | 'combined' = 'sitemap';
+
+    // Link Discovery Fallback: If sitemap has < 5 URLs, extract links from HTML
+    if (urlPool.length < 5 && websiteData.html) {
+      emitThought('Link Discovery', 'Sitemap hat wenig URLs, extrahiere Links aus Homepage...',
+        `Sitemap URLs: ${urlPool.length}`);
+
+      const discoveredLinks = extractLinksFromHtml(websiteData.html, fullUrl);
+
+      // Merge with sitemap URLs, deduplicate
+      const existingUrls = new Set([fullUrl, ...urlPool]);
+      let newLinksAdded = 0;
+      for (const link of discoveredLinks) {
+        if (!existingUrls.has(link)) {
+          urlPool.push(link);
+          existingUrls.add(link);
+          newLinksAdded++;
+        }
+      }
+
+      urlSource = urlPool.length === newLinksAdded ? 'link_discovery' : 'combined';
+      emitThought('Link Discovery',
+        `${discoveredLinks.length} Links aus Homepage extrahiert`,
+        `Neu hinzugefügt: ${newLinksAdded} | Total Pool: ${urlPool.length}`
+      );
+      emitAgentComplete('Link Discovery', {
+        discoveredLinks: discoveredLinks.length,
+        newLinksAdded,
+        totalPool: urlPool.length,
+        source: urlSource,
+      });
+    }
+
+    // Run multi-page analysis if we have enough URLs (5+)
+    if (urlPool.length >= 5) {
+      emitThought('Page Sampler', 'Wähle diverse Seiten für Analyse...',
+        `Pool: ${urlPool.length} URLs (Quelle: ${urlSource})`);
+
+      const sampledPages = selectDiversePages(
+        [fullUrl, ...urlPool],
+        10, // Analyze 10 pages
+        fullUrl
+      );
+
+      emitThought('Page Sampler',
+        `${sampledPages.urls.length} diverse Seiten ausgewählt`,
+        Object.entries(sampledPages.categories)
+          .filter(([, urls]) => urls.length > 0)
+          .map(([cat, urls]) => `${cat}: ${urls.length}`)
+          .join(', ')
+      );
+
+      emitAgentComplete('Page Sampler', { selectedCount: sampledPages.urls.length, categories: Object.keys(sampledPages.categories).length });
+
+      // Fetch all selected pages in parallel
+      emitThought('Multi-Page Fetcher', `Lade ${sampledPages.urls.length} Seiten parallel...`);
+
+      const pageDataArray = await fetchPages(sampledPages.urls, {
+        timeout: 10000,
+        maxConcurrent: 5,
+        onProgress: (completed, total) => {
+          if (completed % 3 === 0 || completed === total) {
+            emitThought('Multi-Page Fetcher', `${completed}/${total} Seiten geladen`);
+          }
+        },
+      });
+
+      const successfulPages = pageDataArray.filter(p => !p.error);
+      emitThought('Multi-Page Fetcher',
+        `${successfulPages.length}/${pageDataArray.length} Seiten erfolgreich geladen`,
+        pageDataArray.filter(p => p.error).map(p => p.error).slice(0, 3).join(', ') || undefined
+      );
+
+      emitAgentComplete('Multi-Page Fetcher', { successful: successfulPages.length, failed: pageDataArray.length - successfulPages.length });
+
+      // Analyze tech stack on all pages
+      if (successfulPages.length > 0) {
+        emitThought('Multi-Page Tech Analyzer', 'Analysiere Tech Stack auf allen Seiten...');
+
+        const techResults = successfulPages.map(page => analyzePageTech(page));
+        const aggregatedTech = aggregateTechResults(techResults);
+
+        emitThought('Multi-Page Tech Analyzer',
+          aggregatedTech.cms
+            ? `CMS: ${aggregatedTech.cms.name} (${aggregatedTech.cms.detectedOn}/${aggregatedTech.pagesAnalyzed} Seiten, ${aggregatedTech.cms.confidence}% Confidence)`
+            : 'Kein CMS eindeutig erkannt',
+          [
+            aggregatedTech.framework && `Framework: ${aggregatedTech.framework.name}`,
+            aggregatedTech.backend.length > 0 && `Backend: ${aggregatedTech.backend.map(b => b.name).join(', ')}`,
+          ].filter(Boolean).join(' | ') || undefined
+        );
+
+        emitAgentComplete('Multi-Page Tech Analyzer', {
+          cms: aggregatedTech.cms?.name,
+          confidence: aggregatedTech.cms?.confidence,
+          pagesAnalyzed: aggregatedTech.pagesAnalyzed,
+        });
+
+        // Extract UI components
+        emitThought('Component Extractor', 'Extrahiere UI-Komponenten...');
+
+        const extractedComponents = extractComponents(successfulPages);
+
+        emitThought('Component Extractor',
+          `${extractedComponents.summary.totalComponents} Komponenten gefunden`,
+          `${extractedComponents.summary.uniquePatterns} Muster | Komplexität: ${extractedComponents.summary.complexity}`
+        );
+
+        emitAgentComplete('Component Extractor', {
+          components: extractedComponents.summary.totalComponents,
+          patterns: extractedComponents.summary.uniquePatterns,
+          complexity: extractedComponents.summary.complexity,
+        });
+
+        multiPageData = {
+          sampledPages,
+          pageDataArray,
+          aggregatedTech,
+          extractedComponents,
+        };
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // PHASE 1.3: ANALYSIS (All analyses in parallel)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    emitPhase('analysis', 'Führe alle Analysen parallel aus...');
+    emitAnalysisComplete('multiPage', !!multiPageData, Date.now() - multiPageStart,
+      multiPageData ? `${multiPageData.pageDataArray.length} Seiten analysiert` : 'Single-Page Mode');
+
     emitThought('Coordinator', 'Starte parallele Analyse...',
       '1. Tech Stack Analyse\n2. Content Volume Analyse\n3. Feature Detection');
 
     // Tech Stack Analysis with progress
     emitThought('Tech Stack Analyzer', 'Analysiere Technology Stack...',
-      websiteData.wappalyzerResults.length >= 3
-        ? 'Verwende Wappalyzer-Ergebnisse'
-        : 'Starte AI-gestützte Analyse'
+      multiPageData?.aggregatedTech
+        ? 'Verwende Multi-Page-Analyse-Ergebnisse'
+        : (websiteData.wappalyzerResults.length >= 3
+            ? 'Verwende Wappalyzer-Ergebnisse'
+            : 'Starte AI-gestützte Analyse')
     );
 
     // Run analyses in parallel
@@ -1453,6 +2593,42 @@ export async function runQuickScanWithStreaming(
       analyzeContentVolume(websiteData),
       detectFeatures(websiteData.html),
     ]);
+
+    // Track which method provided the final CMS detection
+    let cmsDetectionSource: 'wappalyzer' | 'multi-page' | 'httpx-fallback' | 'single-page' =
+      techStack.cms ? 'wappalyzer' : 'single-page';
+
+    // Merge multi-page tech results into techStack if available
+    if (multiPageData?.aggregatedTech) {
+      const mpTech = multiPageData.aggregatedTech;
+
+      // Only override if multi-page has higher confidence
+      if (mpTech.cms && (!techStack.cms || (mpTech.cms.confidence > (techStack.cmsConfidence || 0)))) {
+        techStack.cms = mpTech.cms.name;
+        techStack.cmsVersion = mpTech.cms.version;
+        techStack.cmsConfidence = mpTech.cms.confidence;
+        cmsDetectionSource = 'multi-page';
+      }
+
+      if (mpTech.framework && !techStack.framework) {
+        techStack.framework = mpTech.framework.name;
+        techStack.frameworkVersion = mpTech.framework.version;
+      }
+
+      // Merge libraries
+      if (mpTech.libraries.length > 0) {
+        const existingLibs = new Set(techStack.libraries || []);
+        for (const lib of mpTech.libraries) {
+          existingLibs.add(lib.name);
+        }
+        techStack.libraries = Array.from(existingLibs);
+      }
+
+      // Update overall confidence
+      if (mpTech.overallConfidence > (techStack.overallConfidence || 0)) {
+        techStack.overallConfidence = mpTech.overallConfidence;
+      }
+    }
 
     // Report Tech Stack results
     const techSummary = [
@@ -1518,6 +2694,99 @@ export async function runQuickScanWithStreaming(
         features.customFeatures.join(', ')
       );
     }
+
+    // Mark Phase 3 analysis agents as complete
+    emitAgentComplete('Tech Stack Analyzer', techStack);
+    emitAgentComplete('Content Analyzer', contentVolume);
+    emitAgentComplete('Feature Detector', features);
+
+    // === PHASE 3.5: Intelligent Research (Web Search + GitHub API) ===
+    // Initialize intelligent tools for verification and enrichment
+    const intelligentTools = createIntelligentTools({
+      emit,
+      agentName: 'Researcher',
+    });
+
+    // Web Search for CMS verification if detected
+    if (techStack.cms) {
+      emitThought('Researcher', `Verifiziere ${techStack.cms} via Web Search...`);
+
+      try {
+        // Search for CMS info and latest version
+        const searchResults = await intelligentTools.webSearch(
+          `${techStack.cms} CMS latest version features 2024`,
+          5
+        );
+
+        if (searchResults && searchResults.length > 0) {
+          emitThought('Researcher',
+            `${searchResults.length} Web-Ergebnisse für ${techStack.cms}`,
+            searchResults.slice(0, 2).map(r => r.title || 'Untitled').join(' | ')
+          );
+        }
+
+        // GitHub API for CMS if known repo exists
+        const cmsLower = techStack.cms.toLowerCase();
+        const knownRepoUrl = KNOWN_GITHUB_REPOS[cmsLower as keyof typeof KNOWN_GITHUB_REPOS];
+
+        if (knownRepoUrl) {
+          emitThought('Researcher', `Prüfe ${techStack.cms} auf GitHub...`);
+
+          const repoInfo = await intelligentTools.githubRepo(knownRepoUrl);
+
+          if (repoInfo && !repoInfo.error) {
+            if (repoInfo.latestVersion) {
+              techStack.cmsVersion = repoInfo.latestVersion;
+              emitThought('Researcher',
+                `${techStack.cms} aktuelle Version: ${repoInfo.latestVersion}`,
+                `GitHub Stars: ${repoInfo.githubStars?.toLocaleString() || 'N/A'}`
+              );
+            }
+          }
+        }
+      } catch (error) {
+        // Non-critical: Continue without verification
+        emitThought('Researcher',
+          'Web-Recherche übersprungen',
+          error instanceof Error ? error.message : 'Fehler bei Recherche'
+        );
+      }
+    }
+
+    // Additional page discovery if sitemap is limited
+    if (websiteData.sitemapUrls.length < 10) {
+      emitThought('Researcher', 'Wenige Seiten in Sitemap, suche weitere via Web Search...');
+
+      try {
+        const siteSearch = await intelligentTools.webSearch(
+          `site:${new URL(fullUrl).hostname}`,
+          20
+        );
+
+        if (siteSearch && siteSearch.length > 0) {
+          const additionalUrls = siteSearch
+            .map(r => r.url)
+            .filter((url): url is string => !!url);
+
+          if (additionalUrls.length > websiteData.sitemapUrls.length) {
+            emitThought('Researcher',
+              `${additionalUrls.length} zusätzliche Seiten via Web Search gefunden`,
+              'Ergänze Content-Analyse'
+            );
+            // Merge with existing URLs (deduplicated)
+            const allUrls = [...new Set([...websiteData.sitemapUrls, ...additionalUrls])];
+            websiteData.sitemapUrls = allUrls.slice(0, 500);
+          }
+        }
+      } catch {
+        // Continue without additional pages
+      }
+    }
+
+    emitAgentComplete('Researcher', {
+      cmsVerified: !!techStack.cmsVersion,
+      additionalPages: websiteData.sitemapUrls.length,
+    });
 
     // === PHASE 4: Enhanced Audits (Playwright + Company Intel) ===
     let playwrightResult: PlaywrightAuditResult | null = null;
@@ -1650,22 +2919,21 @@ export async function runQuickScanWithStreaming(
         // Navigation structure - with URLs and hierarchy
         if (playwrightResult.navigation) {
           const nav = playwrightResult.navigation;
-          // Count total items including children
-          const totalItems = nav.mainNav.reduce(
-            (sum, item) => sum + 1 + (item.children?.length || 0),
-            nav.footerNav.length
-          );
+          // Count total items (handling both string[] and object[] formats)
+          const totalItems = nav.mainNav.length + nav.footerNav.length;
+
+          // Convert string items to NavItem objects if needed
+          type NavItem = { label: string; url?: string; children?: NavItem[] };
+          const normalizeNav = (items: (string | NavItem)[]): NavItem[] =>
+            items.map(item =>
+              typeof item === 'string'
+                ? { label: item }
+                : { label: item.label, url: item.url, children: item.children }
+            );
 
           navigationStructure = navigationStructureSchema.parse({
-            mainNav: nav.mainNav.map(item => ({
-              label: item.label,
-              url: item.url,
-              children: item.children?.map(child => ({
-                label: child.label,
-                url: child.url,
-              })),
-            })),
-            footerNav: nav.footerNav.map(item => ({
+            mainNav: normalizeNav(nav.mainNav as (string | NavItem)[]),
+            footerNav: normalizeNav(nav.footerNav as (string | NavItem)[]).map(item => ({
               label: item.label,
               url: item.url,
             })),
@@ -1676,9 +2944,10 @@ export async function runQuickScanWithStreaming(
             totalItems,
           });
 
-          // Count items with URLs
-          const urlCount = nav.mainNav.filter(i => i.url).length +
-            nav.mainNav.reduce((sum, i) => sum + (i.children?.filter(c => c.url).length || 0), 0);
+          // Count items with URLs (only for object items)
+          const normalizedMainNav = normalizeNav(nav.mainNav as (string | NavItem)[]);
+          const urlCount = normalizedMainNav.filter(i => i.url).length +
+            normalizedMainNav.reduce((sum, i) => sum + (i.children?.filter((c: NavItem) => c.url).length || 0), 0);
 
           emitThought('Navigation Analyzer',
             `${nav.mainNav.length} Haupt-Navigation Items (${urlCount} mit URLs)`,
@@ -1746,54 +3015,76 @@ export async function runQuickScanWithStreaming(
       if (enhancedTechRes.status === 'fulfilled' && enhancedTechRes.value) {
         const enhancedTech = enhancedTechRes.value;
 
-        techStack.javascriptFrameworks = enhancedTech.javascriptFrameworks;
-        techStack.cssFrameworks = enhancedTech.cssFrameworks;
-        techStack.apiEndpoints = enhancedTech.apiEndpoints;
-        techStack.headlessCms = enhancedTech.headlessCms;
-        techStack.serverSideRendering = enhancedTech.serverSideRendering;
-        techStack.buildTools = enhancedTech.buildTools;
-        techStack.cdnProviders = enhancedTech.cdnUsage;
+        // Apply available fields from EnhancedTechStackResult
+        if (enhancedTech.cms) {
+          techStack.cms = enhancedTech.cms.name;
+        }
+        if (enhancedTech.framework) {
+          techStack.framework = enhancedTech.framework.name;
+        }
+        if (enhancedTech.cdn) {
+          techStack.cdnProviders = [enhancedTech.cdn];
+        }
+        if (enhancedTech.hosting) {
+          techStack.hosting = enhancedTech.hosting;
+        }
+        if (enhancedTech.analytics.length > 0) {
+          techStack.analytics = enhancedTech.analytics;
+        }
 
-        if (enhancedTech.javascriptFrameworks.length > 0) {
-          const jsFrameworks = enhancedTech.javascriptFrameworks
+        // Map libraries to JavaScript frameworks if detected
+        const jsLibraries = enhancedTech.libraries.filter(lib =>
+          ['react', 'vue', 'angular', 'svelte', 'next', 'nuxt', 'gatsby'].some(fw =>
+            lib.name.toLowerCase().includes(fw)
+          )
+        );
+        if (jsLibraries.length > 0) {
+          techStack.javascriptFrameworks = jsLibraries.map(lib => ({
+            name: lib.name,
+            confidence: lib.confidence,
+          }));
+          const jsFrameworks = jsLibraries
             .map(f => `${f.name}${f.version ? ` (${f.version})` : ''}`)
             .join(', ');
           emitThought('Enhanced Tech Stack',
-            `${enhancedTech.javascriptFrameworks.length} JavaScript Framework(s) erkannt`,
+            `${jsLibraries.length} JavaScript Framework(s) erkannt`,
             jsFrameworks);
         }
 
-        if (enhancedTech.cssFrameworks.length > 0) {
-          const cssFrameworks = enhancedTech.cssFrameworks
+        // Map libraries to CSS frameworks if detected
+        const cssLibraries = enhancedTech.libraries.filter(lib =>
+          ['tailwind', 'bootstrap', 'bulma', 'material', 'foundation'].some(css =>
+            lib.name.toLowerCase().includes(css)
+          )
+        );
+        if (cssLibraries.length > 0) {
+          techStack.cssFrameworks = cssLibraries.map(lib => ({
+            name: lib.name,
+            confidence: lib.confidence,
+          }));
+          const cssFrameworks = cssLibraries
             .map(f => `${f.name}${f.version ? ` (${f.version})` : ''}`)
             .join(', ');
           emitThought('Enhanced Tech Stack',
-            `${enhancedTech.cssFrameworks.length} CSS Framework(s) erkannt`,
+            `${cssLibraries.length} CSS Framework(s) erkannt`,
             cssFrameworks);
         }
 
-        if (enhancedTech.apiEndpoints.rest.length > 0 || enhancedTech.apiEndpoints.graphql) {
-          const apiInfo = [
-            enhancedTech.apiEndpoints.rest.length > 0 && `${enhancedTech.apiEndpoints.rest.length} REST Endpoint(s)`,
-            enhancedTech.apiEndpoints.graphql && `GraphQL${enhancedTech.apiEndpoints.graphqlEndpoint ? `: ${enhancedTech.apiEndpoints.graphqlEndpoint}` : ''}`,
-          ].filter(Boolean).join(', ');
-          emitThought('Enhanced Tech Stack', 'APIs entdeckt', apiInfo);
+        // Report CMS if detected
+        if (enhancedTech.cms) {
+          emitThought('Enhanced Tech Stack',
+            `CMS erkannt: ${enhancedTech.cms.name}`,
+            `Confidence: ${enhancedTech.cms.confidence}%`);
         }
 
-        if (enhancedTech.headlessCms.length > 0) {
-          emitThought('Enhanced Tech Stack', 'Headless CMS erkannt', enhancedTech.headlessCms.join(', '));
+        // Report analytics
+        if (enhancedTech.analytics.length > 0) {
+          emitThought('Enhanced Tech Stack', 'Analytics erkannt', enhancedTech.analytics.join(', '));
         }
 
-        if (enhancedTech.serverSideRendering) {
-          emitThought('Enhanced Tech Stack', 'Server-Side Rendering', 'SSR aktiv erkannt');
-        }
-
-        if (enhancedTech.buildTools.length > 0) {
-          emitThought('Enhanced Tech Stack', 'Build Tools erkannt', enhancedTech.buildTools.join(', '));
-        }
-
-        if (enhancedTech.cdnUsage.length > 0) {
-          emitThought('Enhanced Tech Stack', 'CDN-Provider', enhancedTech.cdnUsage.join(', '));
+        // Report CDN if detected
+        if (enhancedTech.cdn) {
+          emitThought('Enhanced Tech Stack', 'CDN-Provider', enhancedTech.cdn);
         }
       }
 
@@ -1819,8 +3110,8 @@ export async function runQuickScanWithStreaming(
             const httpxConfidence = 100; // httpx ist sehr zuverlässig
             if (!techStack.cms || (techStack.cmsConfidence && techStack.cmsConfidence < httpxConfidence)) {
               techStack.cms = tech.name;
-              techStack.cmsVersion = tech.version;
               techStack.cmsConfidence = httpxConfidence;
+              cmsDetectionSource = 'httpx-fallback';
             }
           }
 
@@ -1940,7 +3231,11 @@ export async function runQuickScanWithStreaming(
         error instanceof Error ? error.message : 'Unbekannter Fehler');
     }
 
-    // === PHASE 5: Business Line Recommendation ===
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // PHASE 2: SYNTHESIS - BL Recommendation (LETZTE Aktion, hat alle Daten)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    emitPhase('synthesis', 'Erstelle Gesamtbild und BL-Empfehlung...');
+
     emitThought('Business Analyst',
       'Generiere Business Line Empfehlung...',
       'Analysiere Tech Stack, Content, Features und Company Intelligence für optimale BL-Zuordnung'
@@ -1951,13 +3246,16 @@ export async function runQuickScanWithStreaming(
       'Berücksichtige: Technologie-Expertise, Projekt-Komplexität, Feature-Anforderungen, Unternehmensprofil'
     );
 
+    const blRecommendationStart = Date.now();
     const blRecommendation = await recommendBusinessLine({
       techStack,
       contentVolume,
       features,
       extractedRequirements: input.extractedRequirements,
       contextSection,
+      cachedBusinessUnits,  // Use pre-loaded BUs from bootstrap (no extra DB query)
     });
+    emitAnalysisComplete('blRecommendation', true, Date.now() - blRecommendationStart);
 
     // Report recommendation reasoning
     emitThought('Business Analyst',
@@ -1984,6 +3282,110 @@ export async function runQuickScanWithStreaming(
       );
     }
 
+    // Mark Business Analyst as complete
+    emitAgentComplete('Business Analyst', blRecommendation);
+
+    // === PHASE 5.5: Evaluator-Optimizer Loop ===
+    // Build results object for evaluation
+    let finalResults = {
+      techStack,
+      contentVolume,
+      features,
+      blRecommendation,
+      navigationStructure,
+      accessibilityAudit,
+      seoAudit,
+      legalCompliance,
+      performanceIndicators,
+      screenshots,
+      companyIntelligence: companyIntel,
+      contentTypes,
+      migrationComplexity,
+      decisionMakers: decisionMakersResult,
+      // Multi-Page Analysis fields (NEW)
+      extractedComponents: multiPageData?.extractedComponents ?? undefined,
+      multiPageAnalysis: multiPageData ? {
+        pagesAnalyzed: multiPageData.pageDataArray.filter(p => !p.error).length,
+        analyzedUrls: multiPageData.sampledPages.urls,
+        pageCategories: multiPageData.sampledPages.categories,
+        detectionMethod: cmsDetectionSource === 'httpx-fallback' ? 'httpx-fallback' : 'multi-page',
+        analysisTimestamp: new Date().toISOString(),
+      } : {
+        pagesAnalyzed: 1,
+        analyzedUrls: [fullUrl],
+        detectionMethod: cmsDetectionSource,
+        analysisTimestamp: new Date().toISOString(),
+      },
+    };
+
+    // Quick evaluation to check if optimization is needed
+    const quickEval = quickEvaluate(finalResults, {
+      requiredFields: [
+        { path: 'techStack.cms', minConfidence: 70, description: 'CMS Detection' },
+        { path: 'contentVolume.estimatedPageCount', description: 'Page Count' },
+        { path: 'features', description: 'Feature Detection' },
+        { path: 'blRecommendation.primaryBusinessLine', minConfidence: 60, description: 'BL Recommendation' },
+      ],
+      optionalFields: [
+        { path: 'techStack.cmsVersion', bonusPoints: 5, description: 'CMS Version' },
+        { path: 'companyIntelligence', bonusPoints: 10, description: 'Company Intel' },
+        { path: 'accessibilityAudit', bonusPoints: 5, description: 'Accessibility Audit' },
+        { path: 'seoAudit', bonusPoints: 5, description: 'SEO Audit' },
+        { path: 'migrationComplexity', bonusPoints: 10, description: 'Migration Analysis' },
+        { path: 'decisionMakers', bonusPoints: 10, description: 'Decision Makers' },
+      ],
+      minQualityScore: 70,
+      context: 'QuickScan Website Analysis',
+    });
+
+    emitThought('Evaluator',
+      `Qualitäts-Score: ${quickEval.score}/100`,
+      quickEval.issues.length > 0 ? `${quickEval.issues.length} Verbesserungen möglich` : 'Alle Kriterien erfüllt'
+    );
+
+    // If score is low and improvements are possible, run optimizer
+    if (quickEval.score < 70 && quickEval.canImprove) {
+      emitThought('Optimizer', 'Starte Optimierung...', quickEval.issues.slice(0, 3).join(', '));
+
+      try {
+        const optimization = await optimizeQuickScanResults(
+          finalResults,
+          {
+            qualityScore: quickEval.score,
+            confidencesMet: quickEval.issues.length === 0,
+            completeness: quickEval.score,
+            issues: quickEval.issues.map(issue => ({
+              area: issue.split(':')[0] || 'general',
+              severity: 'major' as const,
+              description: issue,
+              suggestion: 'Verbessere über zusätzliche Recherche',
+              canAutoFix: true,
+            })),
+            canImprove: true,
+            summary: `Score ${quickEval.score}/100`,
+          },
+          intelligentTools,
+          { emit, agentName: 'Optimizer' }
+        );
+
+        if (optimization.finalScore > quickEval.score) {
+          finalResults = { ...finalResults, ...optimization.optimized };
+          emitThought('Optimizer',
+            `Optimierung erfolgreich: ${optimization.finalScore}/100`,
+            optimization.improvements.join(', ')
+          );
+        }
+      } catch (error) {
+        // Non-critical: Continue with original results
+        emitThought('Optimizer',
+          'Optimierung übersprungen',
+          error instanceof Error ? error.message : 'Fehler'
+        );
+      }
+    }
+
+    emitAgentComplete('Evaluator', { score: quickEval.score, issues: quickEval.issues.length });
+
     // === PHASE 6: Completion ===
     emit({
       type: AgentEventType.AGENT_COMPLETE,
@@ -2001,10 +3403,24 @@ export async function runQuickScanWithStreaming(
           performanceIndicators,
           screenshots,
           companyIntelligence: companyIntel,
-          // QuickScan 2.0 fields - NEW
+          // QuickScan 2.0 fields
           contentTypes,
           migrationComplexity,
           decisionMakers: decisionMakersResult,
+          // Multi-Page Analysis fields (NEW)
+          extractedComponents: multiPageData?.extractedComponents ?? undefined,
+          multiPageAnalysis: multiPageData ? {
+            pagesAnalyzed: multiPageData.pageDataArray.filter(p => !p.error).length,
+            analyzedUrls: multiPageData.sampledPages.urls,
+            pageCategories: multiPageData.sampledPages.categories,
+            detectionMethod: cmsDetectionSource === 'httpx-fallback' ? 'httpx-fallback' : 'multi-page',
+            analysisTimestamp: new Date().toISOString(),
+          } : {
+            pagesAnalyzed: 1,
+            analyzedUrls: [fullUrl],
+            detectionMethod: cmsDetectionSource,
+            analysisTimestamp: new Date().toISOString(),
+          },
         },
         confidence: blRecommendation.confidence,
       },
@@ -2021,6 +3437,11 @@ export async function runQuickScanWithStreaming(
       hasDecisionMakers: !!decisionMakersResult,
       decisionMakersCount: decisionMakersResult?.decisionMakers?.length || 0,
       hasRawScanData: !!rawScanData,
+      // Multi-Page Analysis fields
+      hasMultiPageAnalysis: !!multiPageData,
+      pagesAnalyzed: multiPageData?.pageDataArray.filter(p => !p.error).length || 0,
+      hasExtractedComponents: !!multiPageData?.extractedComponents,
+      componentsCount: multiPageData?.extractedComponents?.summary?.totalComponents || 0,
     });
 
     return {
@@ -2035,10 +3456,24 @@ export async function runQuickScanWithStreaming(
       performanceIndicators,
       screenshots,
       companyIntelligence: companyIntel,
-      // QuickScan 2.0 fields - NEW
+      // QuickScan 2.0 fields
       contentTypes,
       migrationComplexity,
       decisionMakers: decisionMakersResult,
+      // Multi-Page Analysis fields (NEW)
+      extractedComponents: multiPageData?.extractedComponents ?? undefined,
+      multiPageAnalysis: multiPageData ? {
+        pagesAnalyzed: multiPageData.pageDataArray.filter(p => !p.error).length,
+        analyzedUrls: multiPageData.sampledPages.urls,
+        pageCategories: multiPageData.sampledPages.categories,
+        detectionMethod: cmsDetectionSource === 'httpx-fallback' ? 'httpx-fallback' : 'multi-page',
+        analysisTimestamp: new Date().toISOString(),
+      } : {
+        pagesAnalyzed: 1,
+        analyzedUrls: [fullUrl],
+        detectionMethod: cmsDetectionSource,
+        analysisTimestamp: new Date().toISOString(),
+      },
       rawScanData,
       activityLog,
     };

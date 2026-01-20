@@ -3,6 +3,10 @@ import {
   technologyResearchResultSchema,
   type TechnologyResearchResult,
 } from './schema';
+import {
+  createIntelligentTools,
+  KNOWN_GITHUB_REPOS,
+} from '@/lib/agent-tools/intelligent-tools';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
@@ -31,6 +35,7 @@ export interface TechnologyResearchInput {
     adessoExpertise?: string | null;
     lastResearchedAt?: Date | null;
   };
+  useWebSearch?: boolean; // Web Search + GitHub API für echte Daten nutzen
 }
 
 export interface TechnologyResearchOutput {
@@ -80,13 +85,77 @@ export async function runTechnologyResearch(
       };
     }
 
+    // === PHASE 1: Intelligent Research (GitHub API + Web Search) ===
+    let githubInsights = '';
+    let webSearchInsights = '';
+    let githubData: {
+      latestVersion?: string;
+      githubStars?: number;
+      lastRelease?: string;
+      license?: string;
+      description?: string;
+      githubUrl?: string;
+    } = {};
+
+    if (input.useWebSearch !== false) {
+      const intelligentTools = createIntelligentTools({ agentName: 'Tech Researcher' });
+
+      try {
+        // GitHub API: Prüfe bekannte Repos
+        const techLower = input.name.toLowerCase();
+        const knownRepoUrl = KNOWN_GITHUB_REPOS[techLower as keyof typeof KNOWN_GITHUB_REPOS];
+
+        if (knownRepoUrl) {
+          logActivity('GitHub Research', `Fetching data from ${knownRepoUrl}`);
+          const repoInfo = await intelligentTools.githubRepo(knownRepoUrl);
+
+          if (repoInfo && !repoInfo.error) {
+            githubData = {
+              latestVersion: repoInfo.latestVersion || undefined,
+              githubStars: repoInfo.githubStars || undefined,
+              lastRelease: repoInfo.lastRelease || undefined,
+              license: repoInfo.license || undefined,
+              description: repoInfo.description || undefined,
+              githubUrl: knownRepoUrl,
+            };
+
+            githubInsights = `\n\n**GitHub Data (live):**
+- Repository: ${knownRepoUrl}
+- Latest Version: ${repoInfo.latestVersion || 'N/A'}
+- GitHub Stars: ${repoInfo.githubStars?.toLocaleString() || 'N/A'}
+- Last Release: ${repoInfo.lastRelease || 'N/A'}
+- License: ${repoInfo.license || 'N/A'}`;
+
+            logActivity('GitHub Research', `Found: v${repoInfo.latestVersion}, ${repoInfo.githubStars} stars`);
+          }
+        }
+
+        // Web Search: Aktuelle Infos zur Technologie
+        const searchResults = await intelligentTools.webSearch(
+          `${input.name} technology latest version features 2024`,
+          5
+        );
+
+        if (searchResults && searchResults.length > 0) {
+          webSearchInsights = `\n\n**Web Search Results (EXA):**\n${searchResults
+            .slice(0, 3)
+            .map(r => `- ${r.title}: ${r.snippet}`)
+            .join('\n')}`;
+
+          logActivity('Web Search', `${searchResults.length} Ergebnisse gefunden`);
+        }
+      } catch (error) {
+        logActivity('Research Warning', `Intelligent research failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
     // Build context for AI
     const existingContext = buildExistingContext(input.existingData);
 
     logActivity('Researching technology information', `Fields to fill: ${emptyFields.length > 0 ? emptyFields.join(', ') : 'refreshing stale data'}`);
 
-    // Run AI research using native OpenAI SDK
-    const prompt = buildResearchPrompt(input.name, emptyFields, existingContext, isStale);
+    // === PHASE 2: AI Research for remaining fields ===
+    const prompt = buildResearchPrompt(input.name, emptyFields, existingContext, isStale, githubInsights, webSearchInsights);
 
     const completion = await openai.chat.completions.create({
       model: 'claude-haiku-4.5',
@@ -126,6 +195,22 @@ export async function runTechnologyResearch(
     }
 
     logActivity('Research completed', `Found data for ${Object.keys(parsedResult).length} fields`);
+
+    // === PHASE 3: Merge GitHub data with AI results (GitHub data takes priority for technical facts) ===
+    if (Object.keys(githubData).length > 0) {
+      logActivity('Merging GitHub data', `Adding ${Object.keys(githubData).length} fields from GitHub API`);
+      parsedResult = {
+        ...parsedResult,
+        // GitHub data overrides AI guesses for technical facts
+        ...(githubData.latestVersion && { latestVersion: githubData.latestVersion }),
+        ...(githubData.githubStars && { githubStars: githubData.githubStars }),
+        ...(githubData.lastRelease && { lastRelease: githubData.lastRelease }),
+        ...(githubData.license && { license: githubData.license }),
+        ...(githubData.githubUrl && { githubUrl: githubData.githubUrl }),
+        // Only use GitHub description if AI didn't provide one
+        ...(!parsedResult.description && githubData.description && { description: githubData.description }),
+      };
+    }
 
     // Filter out fields that already have values (incremental update)
     const filteredResult = filterNewFields(parsedResult, input.existingData, isStale);
@@ -194,7 +279,9 @@ function buildResearchPrompt(
   name: string,
   emptyFields: string[],
   existingContext: string,
-  isStale: boolean
+  isStale: boolean,
+  githubInsights: string = '',
+  webSearchInsights: string = ''
 ): string {
   const fieldDescriptions: Record<string, string> = {
     logoUrl: 'Official logo URL (prefer SVG or PNG, official sources only)',
@@ -219,12 +306,18 @@ function buildResearchPrompt(
     ? emptyFields.map(f => `- ${f}: ${fieldDescriptions[f] || f}`).join('\n')
     : Object.entries(fieldDescriptions).map(([k, v]) => `- ${k}: ${v}`).join('\n');
 
+  // Include live research data if available
+  const researchData = [githubInsights, webSearchInsights].filter(Boolean).join('\n');
+  const researchSection = researchData
+    ? `\n**LIVE RESEARCH DATA (use this for accurate technical data):**${researchData}\n`
+    : '';
+
   return `You are a technology researcher for adesso SE, a leading German IT consulting company.
 
 Research the technology "${name}" and provide accurate, up-to-date information.
 
 ${existingContext}
-
+${researchSection}
 ${isStale ? 'Note: Existing data may be outdated. Please verify and update as needed.' : ''}
 
 Please provide information for these fields:
@@ -232,8 +325,8 @@ ${fieldsToFill}
 
 IMPORTANT GUIDELINES:
 1. Only provide information you are confident about
-2. For logo URLs, use official sources (official website, GitHub, Wikipedia)
-3. For GitHub data, provide approximate current figures
+2. ${researchData ? 'PRIORITIZE the live research data above for technical facts (version, stars, release date)' : 'For GitHub data, provide approximate current figures'}
+3. For logo URLs, use official sources (official website, GitHub, Wikipedia)
 4. For marketing content (USPs, pros/cons), write from adesso SE's perspective as an IT consulting company
 5. Be specific and actionable in your recommendations
 6. Use German cultural context where appropriate (adesso SE is based in Germany)

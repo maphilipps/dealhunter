@@ -45,7 +45,7 @@
     "@vercel/slack-bolt": "^1.0.2",
     "ai": "^5.0.121",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.6.0",
+    "better-sqlite3": "^12.6.2",
     "botid": "^1.5.10",
     "cheerio": "^1.1.2",
     "class-variance-authority": "^0.7.1",

@@ -1,0 +1,345 @@
+================================================================================
+QUICKSCAN 2-PHASEN-WORKFLOW-REFACTORING: ZUSAMMENFASSUNG
+================================================================================
+
+PROJECT: Dealhunter - AI-gestützte BD-Entscheidungsplattform
+DATE: 2026-01-20
+SCOPE: QuickScan Workflow-Refactoring für Website Audit Skill
+
+
+EXECUTIVE SUMMARY
+================================================================================
+The QuickScan system is a robust, production-ready AI-driven multi-agent 
+architecture for automated website analysis. The refactoring enables a 2-phase 
+workflow (COLLECT + SYNTHESIZE) with Business Units singleton caching and 
+Drupal-specific mapping hints.
+
+STATUS: ✅ READY FOR IMPLEMENTATION
+
+
+KEY FINDINGS
+================================================================================
+
+1. STREAMING INFRASTRUCTURE: ✅ COMPLETE
+   - SSE streaming via Web Streams API (event-emitter.ts)
+   - Phase Events already defined (PHASE_START, ANALYSIS_COMPLETE)
+   - Proper HTTP headers (Cache-Control, X-Accel-Buffering, Keep-Alive)
+   - Event ID auto-generation + timestamps
+   - Error handling with fallback events
+
+2. BUSINESS UNITS CACHING: ✅ IMPLEMENTED
+   - Singleton pattern in agent.ts (lines 66-92)
+   - Loaded once per session from DB
+   - getBusinessUnitsOnce() + clearBusinessUnitsCache()
+   - Ready to use in SYNTHESIZE phase
+
+3. PHASE EVENT SYSTEM: ✅ READY
+   - QuickScanPhase type: 'bootstrap' | 'multi_page' | 'analysis' | 'synthesis'
+   - PhaseStartData: { phase, message, timestamp }
+   - AnalysisCompleteData: { analysis, success, duration, details }
+   - Can be emitted for COLLECT and SYNTHESIZE phases
+
+4. SCHEMA DEFINITIONS: ✅ COMPLETE
+   - 20+ schemas defined (techStack, contentVolume, features, etc.)
+   - QuickScan 2.0 schemas: siteTree, contentTypes, migrationComplexity
+   - DrupalMappingData: { paragraphTypes[], contentTypes[], taxonomies[], mediaTypes[] }
+   - ExtractedComponentsData includes drupalMapping field
+   - Database table has 18 JSON fields ready to persist
+
+5. UI COMPONENTS: ✅ COMPLETE
+   - AgentActivityView: Groups events by agent, shows progress
+   - AgentMessage: Individual message rendering with copy/expand
+   - 15+ agent colors defined
+   - Collapsible reasoning & tool calls
+   - Timestamp formatting (de-DE)
+
+6. TOOLS: ✅ COMPLETE & READY
+   - 10 specialized sub-tools
+   - Multi-page analyzer (Wappalyzer + HTML patterns)
+   - Component extractor (navigation, content blocks, forms, media)
+   - Migration analyzer (CMS export capabilities DB)
+   - Decision maker research (web search based)
+   - ALL ready for COLLECT phase parallelization
+
+
+CURRENT ARCHITECTURE
+================================================================================
+
+[User] → startQuickScan() → Create DB Record (status='running')
+                                    ↓
+                        SSE Endpoint: /api/rfps/[id]/quick-scan/stream
+                                    ↓
+                    getBusinessUnitsOnce() [SINGLETON LOAD]
+                                    ↓
+                    runQuickScanWithStreaming()
+                                    ↓
+            ┌─────────────────────────────────────┐
+            │ Sub-Agents (Sequential/Parallel Mix)│
+            │ - Tech Stack Detection              │
+            │ - Content Volume Analysis           │
+            │ - Feature Detection                 │
+            │ - Navigation Analysis               │
+            │ - Component Extraction              │
+            │ - Migration Complexity              │
+            │ - Decision Maker Research           │
+            └─────────────────────────────────────┘
+                                    ↓
+            ┌─────────────────────────────────────┐
+            │ Business Unit Recommendation         │
+            │ + Drupal Mapping Hints               │
+            │ (using cached BUs)                  │
+            └─────────────────────────────────────┘
+                                    ↓
+            ┌─────────────────────────────────────┐
+            │ Database Persist (15+ JSON fields)   │
+            │ RFP: quick_scanning → bit_pending    │
+            └─────────────────────────────────────┘
+
+
+REFACTORING NEEDED
+================================================================================
+
+PRIORITY 1 (MUST):
+  ☐ Emit PHASE_START for COLLECT phase (multi_page)
+  ☐ Emit ANALYSIS_COMPLETE when all COLLECT tasks done
+  ☐ Emit PHASE_START for SYNTHESIZE phase (synthesis)
+  ☐ Emit ANALYSIS_COMPLETE when all SYNTHESIZE tasks done
+  ☐ Generate DrupalMappingData in SYNTHESIZE phase
+  ☐ Persist drupalMapping to DB (schema already supports it)
+
+PRIORITY 2 (SHOULD):
+  ☐ Create PhaseProgressCard UI component
+  ☐ Show task checklist per phase
+  ☐ Display phase duration
+  ☐ Test parallelization in COLLECT phase
+
+PRIORITY 3 (NICE):
+  ☐ Create Drupal-specific result display
+  ☐ Generate "Ten Questions for BL" from hints
+  ☐ Add Drupal baseline comparison logic
+
+
+FILE STRUCTURE
+================================================================================
+
+CORE FILES:
+  lib/streaming/
+    ├─ event-types.ts              (126 lines) - Enum + Data Structures
+    └─ event-emitter.ts            (71 lines)  - SSE Streaming
+
+  lib/quick-scan/
+    ├─ agent.ts                    (3000+ lines) - Main Agent + Singleton Cache
+    ├─ actions.ts                  (260 lines) - Server Actions
+    ├─ schema.ts                   (717 lines) - All Zod Schemas
+    ├─ types.ts                    (459 lines) - Runtime Types + DrupalMappingData
+    └─ tools/
+        ├─ multi-page-analyzer.ts  (400+ lines) - Tech Detection
+        ├─ component-extractor.ts  (400+ lines) - UI Components
+        ├─ migration-analyzer.ts   (250+ lines) - Complexity Scoring
+        ├─ decision-maker-research.ts (150+ lines) - Contact Research
+        └─ [7 more tools]
+
+  lib/db/
+    └─ schema.ts                   (68 lines for quickScans table)
+
+  app/api/rfps/[id]/quick-scan/
+    └─ stream/route.ts             (200 lines) - SSE Endpoint
+
+  components/ai-elements/
+    ├─ agent-activity-view.tsx     (281 lines) - Agent Activity Display
+    └─ agent-message.tsx           (201 lines) - Message Component
+
+
+KEY CODE SECTIONS
+================================================================================
+
+Business Units Singleton Cache (agent.ts:66-92):
+  • getBusinessUnitsOnce(): Promise<CachedBusinessUnit[]>
+  • Loads from DB once, caches, reuses
+  • ONLY way to get business units in QuickScan
+
+Phase Events (event-types.ts:11-31):
+  • PHASE_START = 'phase-start'
+  • ANALYSIS_COMPLETE = 'analysis-complete'
+  • QuickScanPhase = 'bootstrap' | 'multi_page' | 'analysis' | 'synthesis'
+
+Drupal Mapping Data (types.ts:392-399):
+  • suggestedParagraphTypes: string[]
+  • suggestedContentTypes: string[]
+  • suggestedTaxonomies: string[]
+  • suggestedMediaTypes: string[]
+  • estimatedViews: number
+
+Database QuickScans Table (schema.ts:412-479):
+  • 18 JSON fields ready to persist
+  • activityLog for streaming replay
+  • visualizationTree for json-render
+  • cmsEvaluation for adessoCMS baseline
+
+
+INTEGRATION POINTS
+================================================================================
+
+Website Audit Skill Integration:
+  1. Input: Website URL + BID Context
+  2. Output: QuickScanResult + DrupalMappingData
+  3. Drupal mapping includes:
+     - Paragraph types for page blocks
+     - Content types for content structure
+     - Taxonomies for categorization
+     - Views estimation for entity references
+     - PT effort estimation
+
+Schema Mapping:
+  • techStack.cms → CMS Selection
+  • contentTypes → Paragraph Types
+  • extractedComponents.contentBlocks → Block Types
+  • siteTree → Views + Entity Reference Fields
+  • migrationComplexity → PT Estimation
+  • navigationStructure → Menu Block Config
+  • decisionMakers → Stakeholder Analysis
+
+
+PERFORMANCE NOTES
+================================================================================
+
+Business Units Cache Impact:
+  • Before: 1-2 DB queries per QuickScan session
+  • After: 1 DB query per session (at first access)
+  • Impact: Minimal for 8 BUs, but pattern is scalable
+
+Parallelization:
+  • COLLECT phase: 10 pages analyzed in parallel
+  • SYNTHESIZE phase: AI operations can be batched
+  • SSE streaming: Real-time updates during processing
+
+Database Persistence:
+  • Single batch update per QuickScan
+  • 15+ JSON fields persisted atomically
+  • Activity log enables replay for completed scans
+
+
+TESTING REQUIREMENTS
+================================================================================
+
+Unit Tests:
+  ✓ getBusinessUnitsOnce() cache behavior
+  ✓ Phase event emission timing
+  ✓ DrupalMappingData generation logic
+  ✓ Component extraction patterns
+
+Integration Tests:
+  ✓ Full 2-phase workflow with timing
+  ✓ COLLECT before SYNTHESIZE phase order
+  ✓ Event sequence correctness
+  ✓ Database persistence of all fields
+
+End-to-End Tests:
+  ✓ Website → QuickScan → UI rendering
+  ✓ Agent activity streaming
+  ✓ Drupal mapping output validation
+
+
+NEXT STEPS
+================================================================================
+
+IMMEDIATE (This Week):
+  1. Read both analysis documents
+  2. Review agent.ts (business units cache pattern)
+  3. Verify phase event structure in event-types.ts
+  4. Check schema definitions in types.ts
+
+SHORT-TERM (Next Week):
+  1. Implement COLLECT phase event emission
+  2. Implement SYNTHESIZE phase event emission
+  3. Generate DrupalMappingData in synthesis
+  4. Test end-to-end flow
+
+MEDIUM-TERM (2 Weeks):
+  1. Create PhaseProgressCard UI component
+  2. Test with Website Audit Skill
+  3. Performance optimization
+  4. Documentation & examples
+
+
+DOCUMENTATION PROVIDED
+================================================================================
+
+1. QUICKSCAN_REFACTORING_ANALYSIS.md (COMPREHENSIVE)
+   • 14 sections covering all aspects
+   • Architecture overview with diagrams
+   • Detailed component breakdown
+   • Schema explanations with Drupal mapping
+   • Testing strategy
+   • 3000+ lines of detailed analysis
+
+2. QUICKSCAN_LINE_REFERENCE.md (QUICK LOOKUP)
+   • Exact line numbers for all components
+   • Table-based cross-reference
+   • Quick copy/paste code snippets
+   • Phase implementation blueprint
+   • 400+ lines of line-by-line references
+
+
+CRITICAL SUCCESS FACTORS
+================================================================================
+
+✅ Business Units caching is already implemented (SINGLETON pattern)
+✅ Phase event types are already defined
+✅ All schemas are defined and ready
+✅ UI components are complete and functional
+✅ Tools are complete and parallelizable
+✅ Database schema supports all fields
+
+⚠️  Need to:
+   • Explicitly emit PHASE_START/ANALYSIS_COMPLETE events
+   • Generate DrupalMappingData in synthesis
+   • Integrate with Website Audit Skill
+
+
+GLOSSARY
+================================================================================
+
+COLLECT Phase:
+  • Parallel data gathering from website
+  • Tech stack detection
+  • Navigation & component analysis
+  • Decision maker research
+  • Content type classification
+
+SYNTHESIZE Phase:
+  • Sequential AI processing
+  • Business unit recommendation (using cached BUs)
+  • Drupal mapping hint generation
+  • Migration complexity assessment
+  • Decision maker summary
+
+QuickScanPhase:
+  • bootstrap: Initial setup
+  • multi_page: COLLECT phase
+  • analysis: Legacy
+  • synthesis: SYNTHESIZE phase
+
+Drupal Mapping:
+  • suggestedParagraphTypes: UI block types
+  • suggestedContentTypes: Content structure
+  • suggestedTaxonomies: Tag/category system
+  • estimatedViews: Entity reference counts
+
+
+CONTACT & SUPPORT
+================================================================================
+
+For questions about this analysis:
+  • Check QUICKSCAN_REFACTORING_ANALYSIS.md (Section X)
+  • Reference QUICKSCAN_LINE_REFERENCE.md (exact line numbers)
+  • All code paths are absolute: /Users/marc.philipps/Sites/dealhunter/...
+
+
+STATUS: ✅ ANALYSIS COMPLETE - READY FOR IMPLEMENTATION
+
+================================================================================
+Generated: 2026-01-20
+Analyst: Repository Research System
+Classification: Internal Technical Documentation
+================================================================================

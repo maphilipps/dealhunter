@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { capabilityMatchSchema, type CapabilityMatch } from '../schema';
+import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
@@ -10,13 +11,60 @@ const openai = new OpenAI({
 export interface CapabilityAgentInput {
   extractedRequirements: any; // From extraction phase
   quickScanResults?: any; // Tech stack detection
+  useWebSearch?: boolean; // Web Search für Technologie-Recherche
 }
 
 /**
  * BIT-002: Capability Match Agent
  * Evaluates if adesso has the technical capabilities to deliver this project
+ * UPGRADED: Mit Web Search & GitHub für aktuelle Technologie-Infos
  */
 export async function runCapabilityAgent(input: CapabilityAgentInput): Promise<CapabilityMatch> {
+  // === Intelligent Research Phase ===
+  let technologyInsights = '';
+  let githubInsights = '';
+
+  if (input.useWebSearch !== false) {
+    const intelligentTools = createIntelligentTools({ agentName: 'Capability Researcher' });
+
+    try {
+      // Extrahiere Technologien aus QuickScan
+      const techStack = input.quickScanResults?.techStack;
+      const cms = techStack?.cms || input.extractedRequirements?.technologies?.cms;
+      const frameworks = techStack?.frameworks || [];
+
+      // GitHub-Recherche für CMS/Framework Versionen
+      if (cms) {
+        const githubInfo = await intelligentTools.githubRepo(cms);
+        if (githubInfo && !githubInfo.error) {
+          githubInsights = `\n\n**GitHub Intelligence für ${cms}:**
+- Aktuelle Version: ${githubInfo.latestVersion || 'N/A'}
+- GitHub Stars: ${githubInfo.githubStars || 'N/A'}
+- Letztes Release: ${githubInfo.lastRelease || 'N/A'}
+- Lizenz: ${githubInfo.license || 'N/A'}`;
+          console.log(`[Capability Agent] GitHub Info für ${cms}: v${githubInfo.latestVersion}`);
+        }
+      }
+
+      // Web Search für Technologie-Trends und Best Practices
+      const primaryTech = cms || frameworks[0] || 'enterprise web development';
+      const techSearch = await intelligentTools.webSearch(
+        `${primaryTech} enterprise best practices 2024 capabilities requirements`,
+        3
+      );
+
+      if (techSearch && techSearch.length > 0) {
+        technologyInsights = `\n\n**Aktuelle Technologie-Insights (EXA):**\n${techSearch
+          .slice(0, 2)
+          .map(r => `- ${r.title}: ${r.snippet}`)
+          .join('\n')}`;
+        console.log(`[Capability Agent] ${techSearch.length} Tech-Insights gefunden`);
+      }
+    } catch (error) {
+      console.warn('[Capability Agent] Research fehlgeschlagen:', error);
+    }
+  }
+
   const completion = await openai.chat.completions.create({
     model: 'claude-haiku-4.5',
     messages: [
@@ -39,6 +87,8 @@ ${input.quickScanResults ? `
 **Quick Scan Ergebnisse (Tech Stack des Kunden):**
 ${JSON.stringify(input.quickScanResults, null, 2)}
 ` : ''}
+${githubInsights}
+${technologyInsights}
 
 **adesso Kernkompetenzen:**
 - **CMS & Portale:** Drupal (20+ Jahre Expertise), WordPress, Typo3, Magnolia, Sitecore

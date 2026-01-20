@@ -15,8 +15,12 @@ import {
   AlertCircle,
   Clock,
   ChevronDown,
+  Rocket,
+  FileStack,
+  Search,
+  Sparkles,
 } from 'lucide-react';
-import type { AgentEvent } from '@/lib/streaming/event-types';
+import type { AgentEvent, PhaseStartData, AnalysisCompleteData, QuickScanPhase } from '@/lib/streaming/event-types';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
 interface AgentGroup {
@@ -25,6 +29,14 @@ interface AgentGroup {
   events: AgentEvent[];
   startTime?: number;
   endTime?: number;
+}
+
+// Phase info for 2-phase workflow display
+interface PhaseInfo {
+  phase: QuickScanPhase;
+  message: string;
+  timestamp: number;
+  analyses: Array<{ name: string; success: boolean; duration: number; details?: string }>;
 }
 
 interface AgentActivityViewProps {
@@ -39,17 +51,89 @@ interface AgentActivityViewProps {
 export function AgentActivityView({ events, isStreaming }: AgentActivityViewProps) {
   const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
 
+  // Extract phase information from events
+  const phaseInfo = useMemo(() => {
+    const phases: PhaseInfo[] = [];
+    let currentPhase: PhaseInfo | null = null;
+
+    events.forEach((event) => {
+      if (event.type === AgentEventType.PHASE_START && event.data) {
+        const data = event.data as PhaseStartData;
+        // Save previous phase if exists
+        if (currentPhase) {
+          phases.push(currentPhase);
+        }
+        currentPhase = {
+          phase: data.phase,
+          message: data.message,
+          timestamp: data.timestamp,
+          analyses: [],
+        };
+      } else if (event.type === AgentEventType.ANALYSIS_COMPLETE && event.data && currentPhase) {
+        const data = event.data as AnalysisCompleteData;
+        currentPhase.analyses.push({
+          name: data.analysis,
+          success: data.success,
+          duration: data.duration,
+          details: data.details,
+        });
+      }
+    });
+
+    // Add current phase if exists
+    if (currentPhase) {
+      phases.push(currentPhase);
+    }
+
+    return phases;
+  }, [events]);
+
+  // Get current phase for header display
+  const currentPhase = phaseInfo.length > 0 ? phaseInfo[phaseInfo.length - 1] : null;
+
   // Group events by agent name
   const agentGroups = useMemo(() => {
     const groups: Record<string, AgentGroup> = {};
 
     // Define expected agents for Quick Scan (for progress calculation)
+    // Includes all agents from 2-Phase QuickScan Workflow
     const expectedAgents = [
+      // Phase 1: Bootstrap
       'Website Crawler',
+      'Wappalyzer',
+      'Sitemap Parser',
+      // Phase 1.2: Multi-Page
+      'Link Discovery',
+      'Page Sampler',
+      'Multi-Page Fetcher',
+      'Multi-Page Tech Analyzer',
+      'Component Extractor',
+      // Phase 1.3: Analysis
       'Tech Stack Analyzer',
       'Content Analyzer',
       'Feature Detector',
+      'Coordinator',
+      // Intelligent Agent Framework
+      'Researcher',
+      'Evaluator',
+      'Optimizer',
+      // Phase 4: Enhanced Audits
+      'Playwright',
+      'Accessibility Audit',
+      'Navigation Analyzer',
+      'Performance Analyzer',
+      'SEO Audit',
+      'Legal Compliance',
+      'Company Intelligence',
+      'Enhanced Tech Stack',
+      'httpx Tech Detection',
+      // QuickScan 2.0
+      'Content Classifier',
+      'Migration Analyzer',
+      'Decision Maker Research',
+      // Phase 2: Synthesis
       'Business Analyst',
+      'AI Reasoning',
     ];
 
     // Initialize expected agents
@@ -134,10 +218,40 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
 
   const getAgentColor = (agent: string) => {
     const colors: Record<string, string> = {
+      // Phase 1: Bootstrap
       'Website Crawler': 'bg-cyan-500/10 text-cyan-700 border-cyan-200',
+      'Wappalyzer': 'bg-cyan-500/10 text-cyan-700 border-cyan-200',
+      'Sitemap Parser': 'bg-cyan-500/10 text-cyan-700 border-cyan-200',
+      // Phase 1.2: Multi-Page
+      'Link Discovery': 'bg-purple-500/10 text-purple-700 border-purple-200',
+      'Page Sampler': 'bg-purple-500/10 text-purple-700 border-purple-200',
+      'Multi-Page Fetcher': 'bg-purple-500/10 text-purple-700 border-purple-200',
+      'Multi-Page Tech Analyzer': 'bg-purple-500/10 text-purple-700 border-purple-200',
+      'Component Extractor': 'bg-purple-500/10 text-purple-700 border-purple-200',
+      // Phase 1.3: Analysis
       'Tech Stack Analyzer': 'bg-violet-500/10 text-violet-700 border-violet-200',
       'Content Analyzer': 'bg-emerald-500/10 text-emerald-700 border-emerald-200',
       'Feature Detector': 'bg-amber-500/10 text-amber-700 border-amber-200',
+      'Coordinator': 'bg-indigo-500/10 text-indigo-700 border-indigo-200',
+      // Intelligent Agent Framework
+      'Researcher': 'bg-sky-500/10 text-sky-700 border-sky-200',
+      'Evaluator': 'bg-lime-500/10 text-lime-700 border-lime-200',
+      'Optimizer': 'bg-orange-500/10 text-orange-700 border-orange-200',
+      // Phase 4: Enhanced Audits
+      'Playwright': 'bg-teal-500/10 text-teal-700 border-teal-200',
+      'Accessibility Audit': 'bg-teal-500/10 text-teal-700 border-teal-200',
+      'Navigation Analyzer': 'bg-teal-500/10 text-teal-700 border-teal-200',
+      'Performance Analyzer': 'bg-teal-500/10 text-teal-700 border-teal-200',
+      'SEO Audit': 'bg-teal-500/10 text-teal-700 border-teal-200',
+      'Legal Compliance': 'bg-teal-500/10 text-teal-700 border-teal-200',
+      'Company Intelligence': 'bg-blue-500/10 text-blue-700 border-blue-200',
+      'Enhanced Tech Stack': 'bg-violet-500/10 text-violet-700 border-violet-200',
+      'httpx Tech Detection': 'bg-violet-500/10 text-violet-700 border-violet-200',
+      // QuickScan 2.0
+      'Content Classifier': 'bg-emerald-500/10 text-emerald-700 border-emerald-200',
+      'Migration Analyzer': 'bg-amber-500/10 text-amber-700 border-amber-200',
+      'Decision Maker Research': 'bg-blue-500/10 text-blue-700 border-blue-200',
+      // Phase 2: Synthesis
       'Business Analyst': 'bg-rose-500/10 text-rose-700 border-rose-200',
       'AI Reasoning': 'bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-200',
       'Quick Scan': 'bg-indigo-500/10 text-indigo-700 border-indigo-200',
@@ -145,12 +259,20 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
     return colors[agent] || 'bg-gray-500/10 text-gray-700 border-gray-200';
   };
 
-  const formatDuration = (startTime?: number, endTime?: number) => {
-    if (!startTime) return null;
-    const end = endTime || Date.now();
-    const durationMs = end - startTime;
-    const seconds = Math.round(durationMs / 1000);
-    return `${seconds}s`;
+  // Calculate earliest timestamp from all events for relative timing
+  const streamStartTime = useMemo(() => {
+    if (events.length === 0) return Date.now();
+    return Math.min(...events.map(e => e.timestamp));
+  }, [events]);
+
+  const formatDuration = (_startTime?: number, endTime?: number) => {
+    if (!endTime && !_startTime) return null;
+    // Calculate duration relative to stream start for meaningful times
+    // This ensures agents show their completion time from scan start
+    const relativeEnd = (endTime || Date.now()) - streamStartTime;
+    const durationSec = Math.round(relativeEnd / 1000);
+    // Show completion time from stream start, not internal duration
+    return `${durationSec}s`;
   };
 
   const formatTime = (timestamp: number) => {
@@ -159,6 +281,52 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
       minute: '2-digit',
       second: '2-digit',
     });
+  };
+
+  const getPhaseIcon = (phase: QuickScanPhase) => {
+    switch (phase) {
+      case 'bootstrap':
+        return <Rocket className="h-4 w-4" />;
+      case 'multi_page':
+        return <FileStack className="h-4 w-4" />;
+      case 'analysis':
+        return <Search className="h-4 w-4" />;
+      case 'synthesis':
+        return <Sparkles className="h-4 w-4" />;
+      default:
+        return <Loader2 className="h-4 w-4" />;
+    }
+  };
+
+  const getPhaseLabel = (phase: QuickScanPhase) => {
+    switch (phase) {
+      case 'bootstrap':
+        return 'Bootstrap';
+      case 'multi_page':
+        return 'Multi-Page Fetch';
+      case 'analysis':
+        return 'Analyse';
+      case 'synthesis':
+        return 'Synthese';
+      default:
+        return phase;
+    }
+  };
+
+  const getPhaseColor = (phase: QuickScanPhase, isActive: boolean) => {
+    if (!isActive) return 'bg-green-100 text-green-800 border-green-200';
+    switch (phase) {
+      case 'bootstrap':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'multi_page':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'analysis':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'synthesis':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
   };
 
   return (
@@ -174,6 +342,41 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
           </Badge>
         </div>
         <Progress value={progress} className="h-2 mt-2" />
+
+        {/* Phase Indicators - 2-Phase Workflow */}
+        {phaseInfo.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {phaseInfo.map((phase, idx) => {
+              const isActive = idx === phaseInfo.length - 1 && isStreaming;
+              return (
+                <Badge
+                  key={phase.phase + '-' + idx}
+                  variant="outline"
+                  className={`flex items-center gap-1.5 ${getPhaseColor(phase.phase, isActive)}`}
+                >
+                  {isActive ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    getPhaseIcon(phase.phase)
+                  )}
+                  {getPhaseLabel(phase.phase)}
+                  {phase.analyses.length > 0 && (
+                    <span className="ml-1 text-xs opacity-70">
+                      ({phase.analyses.filter(a => a.success).length}/{phase.analyses.length})
+                    </span>
+                  )}
+                </Badge>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Current Phase Message */}
+        {currentPhase && (
+          <p className="text-sm text-muted-foreground mt-2">
+            {currentPhase.message}
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-2">
         {agentGroups.length === 0 && (

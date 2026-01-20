@@ -1,561 +1,440 @@
-import { searchDuckDuckGo, fetchUrlContents } from '@/lib/search/duckduckgo-search';
+import { searchAndContents, getContents } from '@/lib/search/web-search';
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { z } from 'zod';
 import type { DecisionMakersResearch, DecisionMaker } from '../schema';
 
+// Valid source types for DecisionMaker
+type DecisionMakerSource = 'impressum' | 'linkedin' | 'xing' | 'website' | 'web_search' | 'derived' | 'team_page';
+
 /**
- * Decision Maker Research Tool
- * Researches decision makers via LinkedIn, web search, and email pattern derivation
+ * Decision Maker Research Tool - SMART VERSION
+ * Uses web search to find decision makers instead of manually iterating URLs
+ *
+ * Strategy:
+ * 1. Web search for team/management/leadership pages
+ * 2. Web search for specific roles (CEO, CTO, etc.)
+ * 3. LinkedIn search as fallback
+ * 4. Extract from found pages with AI
+ * 5. Iterate until enough contacts are found
  */
 
 // Schema for AI-extracted person data
 const extractedPersonSchema = z.object({
   name: z.string(),
   role: z.string(),
-  linkedInUrl: z.string().url().optional(),
-  source: z.enum(['LinkedIn', 'Xing', 'WebSearch', 'Impressum']),
+  email: z.string().optional(),
+  linkedInUrl: z.string().optional(),
+  xingUrl: z.string().optional(),
+  phone: z.string().optional(),
 });
 
-// Common role patterns to search for
-const DECISION_MAKER_ROLES = [
-  { de: 'Geschäftsführer', en: 'CEO', priority: 1 },
-  { de: 'IT-Leiter', en: 'CTO', priority: 2 },
-  { de: 'IT-Verantwortlicher', en: 'Head of IT', priority: 2 },
-  { de: 'Marketingleiter', en: 'CMO', priority: 3 },
-  { de: 'Digital-Verantwortlicher', en: 'Head of Digital', priority: 3 },
-  { de: 'Leiter Web', en: 'Web Director', priority: 3 },
-  { de: 'Vorstand', en: 'Board Member', priority: 1 },
+// Search strategies - ordered by effectiveness
+const SEARCH_STRATEGIES = [
+  // Strategy 1: Direct team/management page search
+  (company: string) => `"${company}" Team Management Geschäftsführung site:`,
+  (company: string) => `"${company}" Über uns Team Führung`,
+  (company: string) => `"${company}" Impressum Geschäftsführer`,
+
+  // Strategy 2: Role-specific searches
+  (company: string) => `"${company}" Geschäftsführer CEO`,
+  (company: string) => `"${company}" IT-Leiter CTO "Head of IT"`,
+  (company: string) => `"${company}" Marketingleiter CMO "Head of Marketing"`,
+  (company: string) => `"${company}" "Digital" Director Head`,
+
+  // Strategy 3: LinkedIn searches
+  (company: string) => `"${company}" Geschäftsführer site:linkedin.com/in`,
+  (company: string) => `"${company}" CEO CTO site:linkedin.com/in`,
+
+  // Strategy 4: Xing searches (DACH region)
+  (company: string) => `"${company}" Geschäftsführer site:xing.com`,
+
+  // Strategy 5: Press/News searches
+  (company: string) => `"${company}" CEO ernennt neuer Geschäftsführer`,
+  (company: string) => `"${company}" Management Vorstand Pressemitteilung`,
 ];
 
-// Common email patterns
+// Common email patterns for derivation
 const EMAIL_PATTERNS = [
   (first: string, last: string, domain: string) => `${first.toLowerCase()}.${last.toLowerCase()}@${domain}`,
   (first: string, last: string, domain: string) => `${first.toLowerCase()[0]}.${last.toLowerCase()}@${domain}`,
   (first: string, last: string, domain: string) => `${first.toLowerCase()}@${domain}`,
-  (first: string, last: string, domain: string) => `${last.toLowerCase()}@${domain}`,
   (first: string, last: string, domain: string) => `${first.toLowerCase()[0]}${last.toLowerCase()}@${domain}`,
-];
-
-// Team page paths to search
-const TEAM_PAGE_PATHS = [
-  '/team',
-  '/ueber-uns',
-  '/about-us',
-  '/about',
-  '/unternehmen',
-  '/company',
-  '/wir',
-  '/mitarbeiter',
-  '/management',
-  '/fuehrung',
-  '/leadership',
+  (first: string, last: string, domain: string) => `${last.toLowerCase()}@${domain}`,
 ];
 
 /**
- * Sleep utility with jitter for rate limiting
+ * Sleep utility for rate limiting
  */
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
- * Retry wrapper with exponential backoff and jitter
+ * Extract domain from URL
  */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3,
-  operationName: string = 'operation'
-): Promise<T | null> {
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      const isLastAttempt = attempt === maxRetries - 1;
-      if (isLastAttempt) {
-        console.error(`[Decision Makers] ${operationName} failed after ${maxRetries} attempts:`, error);
-        return null;
-      }
-      // Exponential backoff with jitter: 1s, 2s, 4s + random 0-500ms
-      const backoffMs = Math.min(1000 * Math.pow(2, attempt) + Math.random() * 500, 10000);
-      console.log(`[Decision Makers] ${operationName} failed, retrying in ${Math.round(backoffMs)}ms...`);
-      await sleep(backoffMs);
-    }
-  }
-  return null;
-}
-
-/**
- * Search for decision makers on LinkedIn via DuckDuckGo
- */
-async function searchLinkedIn(
-  companyName: string,
-  role: { de: string; en: string }
-): Promise<Array<{ name: string; linkedInUrl?: string; role: string }>> {
-  const results: Array<{ name: string; linkedInUrl?: string; role: string }> = [];
-
-  // Search in German
-  const queryDe = `${companyName} ${role.de} site:linkedin.com/in`;
-  const searchResultsDe = await searchDuckDuckGo(queryDe, 3);
-
-  for (const result of searchResultsDe.results) {
-    if (result.url.includes('linkedin.com/in/')) {
-      // Extract name from title (usually "Name - Role - Company | LinkedIn")
-      const nameParts = result.title.split(' - ');
-      if (nameParts.length > 0) {
-        const name = nameParts[0].replace('| LinkedIn', '').trim();
-        if (name && !results.some(r => r.name === name)) {
-          results.push({
-            name,
-            linkedInUrl: result.url,
-            role: role.de,
-          });
-        }
-      }
-    }
-  }
-
-  // Search in English as fallback
-  if (results.length === 0) {
-    const queryEn = `${companyName} ${role.en} site:linkedin.com/in`;
-    const searchResultsEn = await searchDuckDuckGo(queryEn, 3);
-
-    for (const result of searchResultsEn.results) {
-      if (result.url.includes('linkedin.com/in/')) {
-        const nameParts = result.title.split(' - ');
-        if (nameParts.length > 0) {
-          const name = nameParts[0].replace('| LinkedIn', '').trim();
-          if (name && !results.some(r => r.name === name)) {
-            results.push({
-              name,
-              linkedInUrl: result.url,
-              role: role.en,
-            });
-          }
-        }
-      }
-    }
-  }
-
-  return results;
-}
-
-/**
- * Extract contacts from Impressum page
- */
-async function extractImpressumContacts(
-  websiteUrl: string
-): Promise<{
-  people: Array<{ name: string; role: string; email?: string }>;
-  genericEmails: string[];
-  phones: string[];
-}> {
-  const result = {
-    people: [] as Array<{ name: string; role: string; email?: string }>,
-    genericEmails: [] as string[],
-    phones: [] as string[],
-  };
-
-  // Try common impressum paths
-  const impressumPaths = [
-    '/impressum',
-    '/imprint',
-    '/legal',
-    '/kontakt',
-    '/contact',
-    '/about/impressum',
-    '/ueber-uns/impressum',
-  ];
-
-  const baseUrl = new URL(websiteUrl);
-  let impressumHtml = '';
-
-  for (const path of impressumPaths) {
-    try {
-      const response = await fetchUrlContents(`${baseUrl.origin}${path}`);
-      if (response.content && response.content.length > 500) {
-        impressumHtml = response.content;
-        break;
-      }
-    } catch {
-      continue;
-    }
-  }
-
-  if (!impressumHtml) {
-    return result;
-  }
-
-  // Extract emails
-  const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-  const emails = impressumHtml.match(emailPattern) || [];
-
-  for (const email of emails) {
-    const normalizedEmail = email.toLowerCase();
-    // Check if it's a generic email
-    if (
-      normalizedEmail.startsWith('info@') ||
-      normalizedEmail.startsWith('kontakt@') ||
-      normalizedEmail.startsWith('mail@') ||
-      normalizedEmail.startsWith('office@') ||
-      normalizedEmail.startsWith('service@') ||
-      normalizedEmail.startsWith('support@')
-    ) {
-      if (!result.genericEmails.includes(normalizedEmail)) {
-        result.genericEmails.push(normalizedEmail);
-      }
-    }
-  }
-
-  // Extract phone numbers
-  const phonePattern = /\+?[0-9]{1,4}[\s.-]?[0-9]{2,4}[\s.-]?[0-9]{3,8}/g;
-  const phones = impressumHtml.match(phonePattern) || [];
-  result.phones = [...new Set(phones.filter(p => p.length >= 8))].slice(0, 3);
-
-  // Use AI to extract named people with roles
+function extractDomain(url: string): string {
   try {
-    const extractionResult = await generateStructuredOutput<z.ZodObject<{
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+  }
+}
+
+/**
+ * Derive email addresses from name and domain
+ */
+function deriveEmails(name: string, domain: string): Array<{ email: string; confidence: number }> {
+  const nameParts = name.trim().split(/\s+/);
+  if (nameParts.length < 2) return [];
+
+  // Handle German titles
+  const titlesToRemove = ['Dr.', 'Prof.', 'Dipl.', 'Ing.', 'MBA', 'M.Sc.', 'B.Sc.'];
+  const cleanParts = nameParts.filter(p => !titlesToRemove.includes(p));
+
+  if (cleanParts.length < 2) return [];
+
+  const firstName = cleanParts[0];
+  const lastName = cleanParts[cleanParts.length - 1];
+  const cleanDomain = domain.replace(/^www\./, '').toLowerCase();
+
+  return EMAIL_PATTERNS.map((pattern, index) => ({
+    email: pattern(firstName, lastName, cleanDomain),
+    confidence: 100 - (index * 15),
+  })).slice(0, 3);
+}
+
+/**
+ * Extract people from a web page using AI
+ */
+async function extractPeopleFromPage(
+  pageContent: string,
+  pageUrl: string,
+  companyName: string
+): Promise<Array<{ name: string; role: string; email?: string; linkedInUrl?: string; phone?: string; source: DecisionMakerSource }>> {
+  try {
+    const result = await generateStructuredOutput<z.ZodObject<{
       people: z.ZodArray<z.ZodObject<{
         name: z.ZodString;
         role: z.ZodString;
         email: z.ZodOptional<z.ZodString>;
+        linkedInUrl: z.ZodOptional<z.ZodString>;
+        phone: z.ZodOptional<z.ZodString>;
       }>>;
     }>>({
       schema: z.object({
         people: z.array(z.object({
-          name: z.string(),
-          role: z.string(),
-          email: z.string().optional(),
+          name: z.string().describe('Vollständiger Name der Person'),
+          role: z.string().describe('Position/Rolle in der Firma'),
+          email: z.string().optional().describe('E-Mail-Adresse wenn gefunden'),
+          linkedInUrl: z.string().optional().describe('LinkedIn URL wenn gefunden'),
+          phone: z.string().optional().describe('Telefonnummer wenn gefunden'),
         })),
       }),
-      system: `Du bist ein Experte für die Extraktion von Kontaktinformationen aus Impressum-Texten.
-Extrahiere alle genannten Personen mit Namen, Rolle und E-Mail (wenn vorhanden).
-Gib nur echte Personen zurück, keine generischen Kontakte.`,
-      prompt: `Extrahiere Personen aus diesem Impressum-Text:
+      system: `Du bist ein Experte für die Extraktion von Kontaktinformationen aus Webseiten.
 
-${impressumHtml.slice(0, 5000)}
+AUFGABE: Extrahiere Entscheidungsträger und Führungspersonen von ${companyName}.
 
-Gib zurück: { "people": [{ "name": "...", "role": "...", "email": "..." }] }`,
+WICHTIG:
+- Nur Personen mit Führungsrollen (Geschäftsführer, CEO, CTO, Leiter, Director, Head of, Manager, Vorstand)
+- Ignoriere normale Mitarbeiter ohne Führungsposition
+- Extrahiere echte E-Mails (nicht info@, kontakt@, etc.)
+- Extrahiere LinkedIn URLs wenn vorhanden
+- Maximal 5 relevante Personen`,
+      prompt: `Extrahiere Entscheidungsträger von ${companyName} aus diesem Seiteninhalt:
+
+URL: ${pageUrl}
+
+INHALT:
+${pageContent.slice(0, 10000)}
+
+Gib ein JSON zurück mit allen gefundenen Führungspersonen.`,
     });
 
-    result.people = extractionResult.people;
+    const source: DecisionMakerSource = pageUrl.includes('linkedin.com') ? 'linkedin' :
+              pageUrl.includes('xing.com') ? 'xing' :
+              pageUrl.includes('impressum') ? 'impressum' : 'web_search';
+    return result.people.map(p => ({
+      ...p,
+      source,
+    }));
   } catch (error) {
-    console.error('AI extraction failed:', error);
+    console.error(`[Decision Makers] AI extraction failed for ${pageUrl}:`, error);
+    return [];
   }
-
-  return result;
 }
 
 /**
- * Search for decision makers on team pages
+ * Parse LinkedIn search results to extract basic info
  */
-async function extractFromTeamPages(
-  websiteUrl: string
-): Promise<Array<{ name: string; role: string; source: 'TeamPage' }>> {
-  const results: Array<{ name: string; role: string; source: 'TeamPage' }> = [];
-  const baseUrl = new URL(websiteUrl);
+function parseLinkedInResults(
+  results: Array<{ url: string; title: string; text?: string }>
+): Array<{ name: string; role: string; linkedInUrl: string }> {
+  const people: Array<{ name: string; role: string; linkedInUrl: string }> = [];
 
-  console.log('[Decision Makers] Searching team pages...');
+  for (const result of results) {
+    if (!result.url.includes('linkedin.com/in/')) continue;
 
-  for (const path of TEAM_PAGE_PATHS) {
-    const teamPageUrl = `${baseUrl.origin}${path}`;
+    // LinkedIn titles are usually "Name - Role - Company | LinkedIn"
+    const titleParts = result.title.split(' - ');
+    if (titleParts.length >= 2) {
+      const name = titleParts[0].replace('| LinkedIn', '').trim();
+      const role = titleParts[1]?.replace('| LinkedIn', '').trim() || 'Unknown';
 
-    const pageResult = await withRetry(
-      async () => {
-        const response = await fetchUrlContents(teamPageUrl);
-        if (!response.content || response.content.length < 500) {
-          throw new Error('Page too short or not found');
-        }
-        return response.content;
-      },
-      2,
-      `fetch team page ${path}`
-    );
+      if (name && name.length > 2 && !people.some(p => p.name === name)) {
+        people.push({
+          name,
+          role,
+          linkedInUrl: result.url,
+        });
+      }
+    }
+  }
 
-    if (!pageResult) continue;
+  return people;
+}
 
-    console.log(`[Decision Makers] Found team page at ${path}`);
+/**
+ * Execute a single search strategy and extract people
+ */
+async function executeSearchStrategy(
+  strategy: (company: string) => string,
+  companyName: string,
+  websiteDomain: string,
+  existingNames: Set<string>
+): Promise<Array<{ name: string; role: string; email?: string; linkedInUrl?: string; phone?: string; source: DecisionMakerSource }>> {
+  const query = strategy(companyName);
+  const isLinkedInSearch = query.includes('site:linkedin.com');
+  const isXingSearch = query.includes('site:xing.com');
 
-    // Use AI to extract people from the page
-    try {
-      const extractionResult = await generateStructuredOutput<z.ZodObject<{
-        people: z.ZodArray<z.ZodObject<{
-          name: z.ZodString;
-          role: z.ZodString;
-        }>>;
-      }>>({
-        schema: z.object({
-          people: z.array(z.object({
-            name: z.string(),
-            role: z.string(),
-          })),
-        }),
-        system: `Du bist ein Experte für die Extraktion von Team-Informationen aus Webseiten.
-Extrahiere alle Personen mit Führungsrollen (Geschäftsführer, Leiter, Manager, Director, Head of, etc.).
-Ignoriere normale Mitarbeiter ohne Führungsposition.`,
-        prompt: `Extrahiere Entscheidungsträger aus dieser Team-Seite:
+  console.log(`[Decision Makers] Searching: "${query.slice(0, 60)}..."`);
 
-${pageResult.slice(0, 8000)}
+  try {
+    // Execute web search
+    const searchResults = await searchAndContents(query, {
+      numResults: isLinkedInSearch || isXingSearch ? 5 : 3,
+      category: isLinkedInSearch ? 'people' : 'company',
+    });
 
-Gib zurück: { "people": [{ "name": "...", "role": "..." }] }
-Nur Führungspersonen, maximal 5 Personen.`,
-      });
+    if (!searchResults.results || searchResults.results.length === 0) {
+      return [];
+    }
 
-      for (const person of extractionResult.people) {
-        if (!results.some(r => r.name.toLowerCase() === person.name.toLowerCase())) {
-          results.push({
-            name: person.name,
-            role: person.role,
-            source: 'TeamPage',
+    const foundPeople: Array<{ name: string; role: string; email?: string; linkedInUrl?: string; phone?: string; source: DecisionMakerSource }> = [];
+
+    // For LinkedIn/Xing searches, parse results directly
+    if (isLinkedInSearch) {
+      const linkedInPeople = parseLinkedInResults(searchResults.results);
+      for (const person of linkedInPeople) {
+        if (!existingNames.has(person.name.toLowerCase())) {
+          foundPeople.push({
+            ...person,
+            source: 'linkedin' as const,
           });
         }
       }
-
-      // If we found results, no need to check more pages
-      if (results.length > 0) break;
-    } catch (error) {
-      console.error(`[Decision Makers] AI extraction failed for ${path}:`, error);
+      return foundPeople;
     }
-  }
 
-  console.log(`[Decision Makers] Found ${results.length} people on team pages`);
-  return results;
-}
+    // For other searches, fetch and extract from pages
+    for (const result of searchResults.results.slice(0, 3)) {
+      // Skip if it's a different company's website
+      const resultDomain = extractDomain(result.url);
+      const isSameDomain = resultDomain.includes(websiteDomain) || websiteDomain.includes(resultDomain);
+      const isLinkedIn = result.url.includes('linkedin.com');
+      const isXing = result.url.includes('xing.com');
 
-/**
- * Derive email address from name and domain
- */
-function deriveEmails(name: string, domain: string): Array<{ email: string; confidence: number }> {
-  const nameParts = name.trim().split(/\s+/);
-  if (nameParts.length < 2) {
+      if (!isSameDomain && !isLinkedIn && !isXing) {
+        console.log(`[Decision Makers] Skipping external domain: ${resultDomain}`);
+        continue;
+      }
+
+      try {
+        // Fetch page content
+        const pageContent = await getContents(result.url, { text: true });
+        if (!pageContent.text || pageContent.text.length < 300) continue;
+
+        // Extract people using AI
+        const people = await extractPeopleFromPage(pageContent.text, result.url, companyName);
+
+        for (const person of people) {
+          if (!existingNames.has(person.name.toLowerCase())) {
+            foundPeople.push(person);
+            existingNames.add(person.name.toLowerCase());
+          }
+        }
+
+        // Rate limiting
+        await sleep(500);
+      } catch (error) {
+        console.error(`[Decision Makers] Failed to fetch ${result.url}:`, error);
+      }
+    }
+
+    return foundPeople;
+  } catch (error) {
+    console.error(`[Decision Makers] Search failed for "${query.slice(0, 40)}...":`, error);
     return [];
   }
-
-  // Handle German titles
-  const firstName = nameParts.find(p => !['Dr.', 'Prof.', 'Dipl.', 'Ing.', 'MBA'].includes(p)) || nameParts[0];
-  const lastName = nameParts[nameParts.length - 1];
-
-  // Clean up domain
-  const cleanDomain = domain.replace(/^www\./, '').toLowerCase();
-
-  const derivedEmails = EMAIL_PATTERNS.map((pattern, index) => ({
-    email: pattern(firstName, lastName, cleanDomain),
-    confidence: 100 - (index * 15), // First pattern is most likely
-  }));
-
-  return derivedEmails.slice(0, 3); // Return top 3 patterns
 }
 
 /**
- * Main research function
+ * Main research function - SMART VERSION
+ * Uses web search iteratively until enough contacts are found
  */
 export async function searchDecisionMakers(
   companyName: string,
-  websiteUrl: string
+  websiteUrl: string,
+  options: { minContacts?: number; maxSearches?: number } = {}
 ): Promise<DecisionMakersResearch> {
+  const { minContacts = 3, maxSearches = 6 } = options;
+
   const decisionMakers: DecisionMaker[] = [];
+  const existingNames = new Set<string>();
+  const domain = extractDomain(websiteUrl);
+
   let linkedInFound = 0;
   let emailsConfirmed = 0;
   let emailsDerived = 0;
+  let searchesExecuted = 0;
+  const sourcesUsed = new Set<string>();
 
-  const domain = new URL(websiteUrl).hostname.replace(/^www\./, '');
+  console.log(`[Decision Makers] Starting SMART research for "${companyName}" (domain: ${domain})`);
+  console.log(`[Decision Makers] Target: ${minContacts} contacts, max ${maxSearches} searches`);
 
-  console.log(`[Decision Makers] Starting research for "${companyName}"...`);
-
-  // 1. Search LinkedIn for key roles (with retry)
-  for (const role of DECISION_MAKER_ROLES.slice(0, 4)) { // Limit to top 4 roles
-    const linkedInResults = await withRetry(
-      () => searchLinkedIn(companyName, role),
-      3,
-      `LinkedIn search for ${role.de}`
-    );
-
-    if (!linkedInResults || linkedInResults.length === 0) continue;
-
-    for (const result of linkedInResults.slice(0, 1)) { // Take first result per role
-      linkedInFound++;
-
-      // Derive email
-      const derivedEmails = deriveEmails(result.name, domain);
-      const bestEmail = derivedEmails[0];
-
-      const decisionMaker: DecisionMaker = {
-        name: result.name,
-        role: result.role,
-        linkedInUrl: result.linkedInUrl,
-        email: bestEmail?.email,
-        emailConfidence: bestEmail ? 'derived' : undefined,
-        source: 'linkedin',
-      };
-
-      if (bestEmail) {
-        emailsDerived++;
-      }
-
-      // Avoid duplicates
-      if (!decisionMakers.some(dm => dm.name === decisionMaker.name)) {
-        decisionMakers.push(decisionMaker);
-      }
+  // Execute search strategies until we have enough contacts or exhausted strategies
+  for (const strategy of SEARCH_STRATEGIES) {
+    // Check if we have enough contacts
+    if (decisionMakers.length >= minContacts) {
+      console.log(`[Decision Makers] Found ${decisionMakers.length} contacts - stopping search`);
+      break;
     }
-  }
 
-  console.log(`[Decision Makers] LinkedIn search found ${linkedInFound} contacts`);
+    // Check if we've done enough searches
+    if (searchesExecuted >= maxSearches) {
+      console.log(`[Decision Makers] Reached max searches (${maxSearches}) - stopping`);
+      break;
+    }
 
-  // 2. Search Team Pages (if LinkedIn didn't find enough)
-  if (decisionMakers.length < 3) {
-    const teamPageResults = await extractFromTeamPages(websiteUrl);
+    searchesExecuted++;
 
-    for (const person of teamPageResults) {
-      // Check if already found
-      const existing = decisionMakers.find(dm =>
-        dm.name.toLowerCase() === person.name.toLowerCase()
-      );
+    const foundPeople = await executeSearchStrategy(strategy, companyName, domain, existingNames);
 
-      if (!existing) {
+    for (const person of foundPeople) {
+      // Track source
+      sourcesUsed.add(person.source);
+      if (person.source === 'linkedin') linkedInFound++;
+
+      // Derive email if not found
+      let email = person.email;
+      let emailConfidence: 'confirmed' | 'likely' | 'derived' | undefined = undefined;
+
+      if (email) {
+        emailConfidence = 'confirmed';
+        emailsConfirmed++;
+      } else {
         const derivedEmails = deriveEmails(person.name, domain);
-        const bestEmail = derivedEmails[0];
-
-        decisionMakers.push({
-          name: person.name,
-          role: person.role,
-          email: bestEmail?.email,
-          emailConfidence: bestEmail ? 'derived' : undefined,
-          source: 'team_page',
-        });
-
-        if (bestEmail) {
+        if (derivedEmails.length > 0) {
+          email = derivedEmails[0].email;
+          emailConfidence = 'derived';
           emailsDerived++;
         }
       }
+
+      // Add to results
+      decisionMakers.push({
+        name: person.name,
+        role: person.role,
+        email,
+        emailConfidence,
+        linkedInUrl: person.linkedInUrl,
+        phone: person.phone,
+        source: person.source,
+      });
+
+      existingNames.add(person.name.toLowerCase());
     }
+
+    // Rate limiting between strategies
+    await sleep(1000);
   }
 
-  // 3. Extract from Impressum (with retry)
-  const impressumData = await withRetry(
-    () => extractImpressumContacts(websiteUrl),
-    2,
-    'Impressum extraction'
-  );
+  // Calculate confidence score
+  const confidence = Math.min(100, Math.round(
+    (decisionMakers.length * 15) +
+    (linkedInFound * 10) +
+    (emailsConfirmed * 20) +
+    (emailsDerived * 5)
+  ));
 
-  try {
-    if (!impressumData) {
-      throw new Error('Impressum extraction failed');
-    }
+  console.log(`[Decision Makers] Research complete:`);
+  console.log(`  - Total contacts: ${decisionMakers.length}`);
+  console.log(`  - LinkedIn found: ${linkedInFound}`);
+  console.log(`  - Emails confirmed: ${emailsConfirmed}`);
+  console.log(`  - Emails derived: ${emailsDerived}`);
+  console.log(`  - Searches executed: ${searchesExecuted}`);
+  console.log(`  - Confidence: ${confidence}%`);
 
-    for (const person of impressumData.people) {
-      // Check if already found via LinkedIn
-      const existing = decisionMakers.find(dm =>
-        dm.name.toLowerCase() === person.name.toLowerCase()
-      );
-
-      if (existing) {
-        // Update with confirmed email
-        if (person.email && !existing.email) {
-          existing.email = person.email;
-          existing.emailConfidence = 'confirmed';
-          emailsConfirmed++;
-          emailsDerived--; // Remove from derived count
-        }
-      } else {
-        // Add new person from Impressum
-        const decisionMaker: DecisionMaker = {
-          name: person.name,
-          role: person.role,
-          email: person.email,
-          emailConfidence: person.email ? 'confirmed' : undefined,
-          source: 'impressum',
-        };
-
-        if (person.email) {
-          emailsConfirmed++;
-        }
-
-        decisionMakers.push(decisionMaker);
-      }
-    }
-
-    // Build generic contacts
-    const genericContacts: DecisionMakersResearch['genericContacts'] = {};
-
-    for (const email of impressumData.genericEmails) {
-      if (email.startsWith('info@') || email.startsWith('kontakt@')) {
-        genericContacts.mainEmail = email;
-      } else if (email.includes('vertrieb') || email.includes('sales')) {
-        genericContacts.salesEmail = email;
-      } else if (email.includes('it@') || email.includes('tech')) {
-        genericContacts.techEmail = email;
-      } else if (email.includes('marketing')) {
-        genericContacts.marketingEmail = email;
-      }
-    }
-
-    if (impressumData.phones.length > 0) {
-      genericContacts.phone = impressumData.phones[0];
-    }
-
-    // Calculate confidence score
-    const confidence = Math.min(100, Math.round(
-      (linkedInFound * 20) +
-      (emailsConfirmed * 25) +
-      (emailsDerived * 10) +
-      (Object.keys(genericContacts).length * 5)
-    ));
-
-    // Determine sources used
-    const sources: string[] = [];
-    if (linkedInFound > 0) sources.push('LinkedIn');
-    if (emailsConfirmed > 0) sources.push('Impressum');
-    if (emailsDerived > 0) sources.push('Email Pattern Derivation');
-
-    return {
-      decisionMakers,
-      genericContacts: Object.keys(genericContacts).length > 0 ? genericContacts : undefined,
-      researchQuality: {
-        linkedInFound,
-        emailsConfirmed,
-        emailsDerived,
-        confidence,
-        sources,
-        lastUpdated: new Date().toISOString(),
-      },
-    };
-  } catch (error) {
-    console.error('Impressum extraction failed:', error);
-
-    const sources: string[] = [];
-    if (linkedInFound > 0) sources.push('LinkedIn');
-    if (emailsDerived > 0) sources.push('Email Pattern Derivation');
-
-    return {
-      decisionMakers,
-      researchQuality: {
-        linkedInFound,
-        emailsConfirmed,
-        emailsDerived,
-        confidence: Math.min(100, linkedInFound * 20 + emailsDerived * 10),
-        sources,
-        lastUpdated: new Date().toISOString(),
-      },
-    };
-  }
+  return {
+    decisionMakers,
+    researchQuality: {
+      linkedInFound,
+      emailsConfirmed,
+      emailsDerived,
+      confidence,
+      sources: Array.from(sourcesUsed),
+      lastUpdated: new Date().toISOString(),
+    },
+  };
 }
 
 /**
- * Quick contact search (impressum only, no LinkedIn)
+ * Quick contact search - finds generic contact info fast
  */
 export async function quickContactSearch(websiteUrl: string): Promise<{
   mainEmail?: string;
   phone?: string;
   contactPage?: string;
 }> {
+  const domain = extractDomain(websiteUrl);
+
   try {
-    const impressumData = await extractImpressumContacts(websiteUrl);
+    // Search for contact/impressum page
+    const searchResults = await searchAndContents(`site:${domain} impressum kontakt`, {
+      numResults: 3,
+    });
+
+    if (!searchResults.results || searchResults.results.length === 0) {
+      return {};
+    }
+
+    // Fetch first result
+    const contactUrl = searchResults.results[0].url;
+    const pageContent = await getContents(contactUrl, { text: true });
+
+    if (!pageContent.text) return { contactPage: contactUrl };
+
+    // Extract emails and phones with regex
+    const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const phonePattern = /\+?[0-9]{1,4}[\s.-]?[0-9]{2,4}[\s.-]?[0-9]{3,8}/g;
+
+    const emails = pageContent.text.match(emailPattern) || [];
+    const phones = pageContent.text.match(phonePattern) || [];
+
+    // Find generic contact email
+    const mainEmail = emails.find(e =>
+      e.toLowerCase().startsWith('info@') ||
+      e.toLowerCase().startsWith('kontakt@') ||
+      e.toLowerCase().startsWith('mail@') ||
+      e.toLowerCase().startsWith('office@')
+    ) || emails[0];
 
     return {
-      mainEmail: impressumData.genericEmails[0],
-      phone: impressumData.phones[0],
-      contactPage: impressumData.genericEmails.length > 0 ? `${new URL(websiteUrl).origin}/kontakt` : undefined,
+      mainEmail,
+      phone: phones.find(p => p.length >= 10),
+      contactPage: contactUrl,
     };
-  } catch {
+  } catch (error) {
+    console.error('[Quick Contact] Search failed:', error);
     return {};
   }
 }

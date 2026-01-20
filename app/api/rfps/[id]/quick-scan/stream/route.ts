@@ -161,11 +161,11 @@ export async function GET(
         })
         .where(eq(quickScans.id, quickScan.id));
 
-      // Transition RFP to questions_ready status (Two-Workflow Structure Phase 3)
+      // Transition RFP to bit_pending status (waiting for manual BIT/NO BIT decision)
       await db
         .update(rfps)
         .set({
-          status: 'questions_ready',
+          status: 'bit_pending',
           updatedAt: new Date(),
         })
         .where(eq(rfps.id, id));

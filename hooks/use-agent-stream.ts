@@ -1,7 +1,7 @@
 'use client';
 
 import { useReducer, useRef, useCallback, useEffect } from 'react';
-import type { AgentEvent, StreamState } from '@/lib/streaming/event-types';
+import type { AgentEvent, StreamState, UrlSuggestionData } from '@/lib/streaming/event-types';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
 /**
@@ -29,10 +29,11 @@ type Action =
 function processEvent(
   event: AgentEvent,
   currentAgentStates: StreamState['agentStates']
-): { agentStates: StreamState['agentStates']; decision?: any; error?: string; shouldStopStreaming?: boolean } {
+): { agentStates: StreamState['agentStates']; decision?: any; error?: string; urlSuggestion?: UrlSuggestionData; shouldStopStreaming?: boolean } {
   const newAgentStates = { ...currentAgentStates };
   let decision: any = undefined;
   let error: string | undefined = undefined;
+  let urlSuggestion: UrlSuggestionData | undefined = undefined;
   let shouldStopStreaming = false;
 
   if (event.type === AgentEventType.AGENT_PROGRESS && event.data) {
@@ -54,6 +55,8 @@ function processEvent(
     };
   } else if (event.type === AgentEventType.DECISION && event.data) {
     decision = event.data;
+  } else if (event.type === AgentEventType.URL_SUGGESTION && event.data) {
+    urlSuggestion = event.data as UrlSuggestionData;
   } else if (event.type === AgentEventType.ERROR && event.data) {
     const data = event.data as { message: string };
     error = data.message;
@@ -62,7 +65,7 @@ function processEvent(
     shouldStopStreaming = true;
   }
 
-  return { agentStates: newAgentStates, decision, error, shouldStopStreaming };
+  return { agentStates: newAgentStates, decision, error, urlSuggestion, shouldStopStreaming };
 }
 
 // Best practice: Use reducer instead of multiple useState (rerender-dependencies)
@@ -76,17 +79,40 @@ function streamReducer(state: StreamState, action: Action): StreamState {
       let currentAgentStates = { ...state.agentStates };
       let decision = state.decision;
       let error = state.error;
+      let urlSuggestion = state.urlSuggestion;
       let isStreaming = state.isStreaming;
 
+      // Calculate timestamp range from server timestamps
+      const serverTimestamps = action.events.map(e => e.timestamp);
+      const minTimestamp = Math.min(...serverTimestamps);
+      const maxTimestamp = Math.max(...serverTimestamps);
+      const serverRange = maxTimestamp - minTimestamp;
+
+      // If server timestamps have meaningful range (> 500ms), keep them
+      // Otherwise, spread events over a minimum visible duration
+      const MIN_SPREAD_MS = 2000; // Minimum 2 seconds spread for visual effect
+      const needsSpread = serverRange < 500; // If range is tiny, apply artificial spread
+
       // Process all events in the batch
-      for (const event of action.events) {
-        allEvents.push(event);
-        const result = processEvent(event, currentAgentStates);
+      action.events.forEach((event, index) => {
+        let finalTimestamp = event.timestamp;
+
+        if (needsSpread && action.events.length > 1) {
+          // Spread timestamps artificially to create visual streaming effect
+          // Use minTimestamp as base and spread events evenly
+          const spreadFactor = index / (action.events.length - 1);
+          finalTimestamp = minTimestamp + Math.round(spreadFactor * MIN_SPREAD_MS);
+        }
+
+        const eventWithTime = { ...event, timestamp: finalTimestamp };
+        allEvents.push(eventWithTime);
+        const result = processEvent(eventWithTime, currentAgentStates);
         currentAgentStates = result.agentStates;
         if (result.decision) decision = result.decision;
         if (result.error) error = result.error;
+        if (result.urlSuggestion) urlSuggestion = result.urlSuggestion;
         if (result.shouldStopStreaming) isStreaming = false;
-      }
+      });
 
       // Apply circular buffer limit
       const newEvents =
@@ -98,6 +124,7 @@ function streamReducer(state: StreamState, action: Action): StreamState {
         agentStates: currentAgentStates,
         decision,
         error,
+        urlSuggestion,
         isStreaming,
       };
     }
@@ -137,6 +164,13 @@ function streamReducer(state: StreamState, action: Action): StreamState {
           decision: event.data as any,
           agentStates: newAgentStates,
         };
+      } else if (event.type === AgentEventType.URL_SUGGESTION && event.data) {
+        return {
+          ...state,
+          events: newEvents,
+          urlSuggestion: event.data as UrlSuggestionData,
+          agentStates: newAgentStates,
+        };
       } else if (event.type === AgentEventType.ERROR && event.data) {
         const data = event.data as { message: string };
         return {
@@ -174,6 +208,7 @@ function streamReducer(state: StreamState, action: Action): StreamState {
         isStreaming: false,
         error: null,
         decision: null,
+        urlSuggestion: null,
         agentStates: {},
       };
 
@@ -187,6 +222,7 @@ const initialState: StreamState = {
   isStreaming: false,
   error: null,
   decision: null,
+  urlSuggestion: null,
   agentStates: {},
 };
 
@@ -197,6 +233,10 @@ export function useAgentStream() {
   // Phase 6: Event batching refs for performance optimization
   const eventBufferRef = useRef<AgentEvent[]>([]);
   const flushTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track if stream completed successfully (COMPLETE event received)
+  // Used to distinguish between normal close and error
+  const streamCompletedRef = useRef<boolean>(false);
 
   // Flush buffered events to state (single re-render for entire batch)
   const flushEvents = useCallback(() => {
@@ -238,6 +278,9 @@ export function useAgentStream() {
     }
     eventBufferRef.current = [];
 
+    // Reset completion tracking
+    streamCompletedRef.current = false;
+
     // Reset state
     dispatch({ type: 'RESET' });
     dispatch({ type: 'SET_STREAMING', isStreaming: true });
@@ -249,6 +292,15 @@ export function useAgentStream() {
     eventSource.onmessage = (event) => {
       try {
         const agentEvent: AgentEvent = JSON.parse(event.data);
+
+        // Keep server timestamp - don't override with client time
+        // Server timestamps reflect actual processing order and timing
+        // Client spreading in ADD_EVENTS_BATCH will create visual progression if needed
+
+        // Track if COMPLETE event received (normal stream end)
+        if (agentEvent.type === AgentEventType.COMPLETE) {
+          streamCompletedRef.current = true;
+        }
 
         // Phase 6: Buffer events and schedule batch flush
         eventBufferRef.current.push(agentEvent);
@@ -269,21 +321,36 @@ export function useAgentStream() {
     };
 
     eventSource.onerror = (error) => {
-      console.error('EventSource error:', error);
-
-      // Flush any pending events before handling error
+      // Flush any pending events before handling error/close
       if (flushTimeoutRef.current) {
         clearTimeout(flushTimeoutRef.current);
         flushTimeoutRef.current = null;
       }
       if (eventBufferRef.current.length > 0) {
+        // Check if COMPLETE event is in buffer (not yet processed)
+        const hasCompleteInBuffer = eventBufferRef.current.some(
+          e => e.type === AgentEventType.COMPLETE
+        );
+        if (hasCompleteInBuffer) {
+          streamCompletedRef.current = true;
+        }
         dispatch({ type: 'ADD_EVENTS_BATCH', events: eventBufferRef.current });
         eventBufferRef.current = [];
       }
 
-      // Try to get more specific error info
+      // If stream completed successfully (COMPLETE event received), this is normal close
+      // Don't treat it as an error
+      if (streamCompletedRef.current) {
+        // Normal stream end - just cleanup without error
+        eventSource.close();
+        eventSourceRef.current = null;
+        return;
+      }
+
+      // Real error - log and set error state
+      console.error('EventSource error:', error);
       const errorMessage = eventSource.readyState === EventSource.CLOSED
-        ? 'Verbindung wurde geschlossen - bitte Seite neu laden'
+        ? 'Verbindung wurde unerwartet geschlossen - bitte Seite neu laden'
         : 'Stream-Verbindung fehlgeschlagen - bitte prüfen Sie Ihre Anmeldung';
       dispatch({ type: 'SET_ERROR', error: errorMessage });
       eventSource.close();

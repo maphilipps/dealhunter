@@ -1,0 +1,702 @@
+'use client';
+
+import { useState } from 'react';
+import { toast } from 'sonner';
+import {
+  createTechnologyBaseline,
+  updateTechnologyBaseline,
+  deleteTechnologyBaseline,
+} from '@/lib/admin/technologies-actions';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
+  Plus,
+  Loader2,
+  Trash2,
+  Pencil,
+  Package,
+  Star,
+  Github,
+  CheckCircle2,
+  Layers,
+  ArrowRight,
+  Box,
+} from 'lucide-react';
+import type { TechnologyFeature, TechnologyBaseline } from '@/lib/db/schema';
+
+interface TechnologyBaselinesProps {
+  technologyId: string;
+  technologyName: string;
+  baselines: TechnologyBaseline[];
+  features: TechnologyFeature[];
+  onUpdate: () => Promise<void>;
+}
+
+const FEATURE_CATEGORIES: Record<string, string> = {
+  functional: 'Funktional',
+  technical: 'Technisch',
+  integration: 'Integration',
+  scalability: 'Skalierbarkeit',
+  compliance: 'Compliance',
+  performance: 'Performance',
+  editorial: 'Editorial',
+  development: 'Entwicklung',
+};
+
+const COMMON_MODULES = [
+  'Theme',
+  'Paragraphs/Inhaltselemente',
+  'SEO',
+  'Metatags',
+  'Navigation',
+  'Media Library',
+  'Forms',
+  'Search',
+  'Sitemap',
+  'Analytics',
+  'Cookie Consent',
+  'Multilingual',
+  'Workflow',
+  'Preview',
+  'Caching',
+  'CDN Integration',
+];
+
+export function TechnologyBaselines({
+  technologyId,
+  technologyName,
+  baselines,
+  features,
+  onUpdate,
+}: TechnologyBaselinesProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingBaseline, setEditingBaseline] = useState<TechnologyBaseline | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    baseHours: 0,
+    includedFeatureIds: [] as string[],
+    isStarterKit: false,
+    starterKitRepo: '',
+    isDefault: false,
+    // Hierarchie
+    type: 'baseline' as 'baseline' | 'distribution',
+    parentBaselineId: '' as string,
+    includedModules: [] as string[],
+  });
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      baseHours: 0,
+      includedFeatureIds: [],
+      isStarterKit: false,
+      starterKitRepo: '',
+      isDefault: false,
+      type: 'baseline',
+      parentBaselineId: '',
+      includedModules: [],
+    });
+    setEditingBaseline(null);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      toast.error('Name ist erforderlich');
+      return;
+    }
+
+    if (formData.type === 'distribution' && !formData.parentBaselineId) {
+      toast.error('Distribution benoetigt eine Parent-Baseline');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      if (editingBaseline) {
+        const result = await updateTechnologyBaseline(editingBaseline.id, {
+          ...formData,
+          parentBaselineId: formData.parentBaselineId || null,
+        });
+        if (result.success) {
+          toast.success('Baseline aktualisiert');
+          await onUpdate();
+          setIsDialogOpen(false);
+          resetForm();
+        } else {
+          toast.error(result.error || 'Fehler beim Aktualisieren');
+        }
+      } else {
+        const result = await createTechnologyBaseline({
+          technologyId,
+          ...formData,
+          parentBaselineId: formData.parentBaselineId || undefined,
+        });
+        if (result.success) {
+          toast.success(formData.type === 'distribution' ? 'Distribution erstellt' : 'Baseline erstellt');
+          await onUpdate();
+          setIsDialogOpen(false);
+          resetForm();
+        } else {
+          toast.error(result.error || 'Fehler beim Erstellen');
+        }
+      }
+    } catch (error) {
+      toast.error('Ein Fehler ist aufgetreten');
+      console.error('Save error:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm('"' + name + '" wirklich loeschen?')) {
+      return;
+    }
+
+    try {
+      const result = await deleteTechnologyBaseline(id);
+      if (result.success) {
+        toast.success('Geloescht');
+        await onUpdate();
+      } else {
+        toast.error(result.error || 'Fehler beim Loeschen');
+      }
+    } catch (error) {
+      toast.error('Fehler beim Loeschen');
+      console.error('Delete error:', error);
+    }
+  };
+
+  const handleEdit = (baseline: TechnologyBaseline) => {
+    setEditingBaseline(baseline);
+    const includedIds = baseline.includedFeatureIds
+      ? JSON.parse(baseline.includedFeatureIds)
+      : [];
+    const modules = baseline.includedModules
+      ? JSON.parse(baseline.includedModules)
+      : [];
+    setFormData({
+      name: baseline.name,
+      description: baseline.description || '',
+      baseHours: baseline.baseHours || 0,
+      includedFeatureIds: includedIds,
+      isStarterKit: baseline.isStarterKit || false,
+      starterKitRepo: baseline.starterKitRepo || '',
+      isDefault: baseline.isDefault || false,
+      type: baseline.type || 'baseline',
+      parentBaselineId: baseline.parentBaselineId || '',
+      includedModules: modules,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const toggleFeature = (featureId: string) => {
+    setFormData((prev) => {
+      const ids = prev.includedFeatureIds;
+      if (ids.includes(featureId)) {
+        return { ...prev, includedFeatureIds: ids.filter((id) => id !== featureId) };
+      } else {
+        return { ...prev, includedFeatureIds: [...ids, featureId] };
+      }
+    });
+  };
+
+  const toggleModule = (module: string) => {
+    setFormData((prev) => {
+      const mods = prev.includedModules;
+      if (mods.includes(module)) {
+        return { ...prev, includedModules: mods.filter((m) => m !== module) };
+      } else {
+        return { ...prev, includedModules: [...mods, module] };
+      }
+    });
+  };
+
+  // Group features by category for display
+  const featuresByCategory = features.reduce((acc, feature) => {
+    if (!acc[feature.category]) {
+      acc[feature.category] = [];
+    }
+    acc[feature.category].push(feature);
+    return acc;
+  }, {} as Record<string, TechnologyFeature[]>);
+
+  const getIncludedFeatures = (baseline: TechnologyBaseline): TechnologyFeature[] => {
+    const ids = baseline.includedFeatureIds ? JSON.parse(baseline.includedFeatureIds) : [];
+    return features.filter((f) => ids.includes(f.id));
+  };
+
+  const getParentBaseline = (baseline: TechnologyBaseline): TechnologyBaseline | undefined => {
+    if (!baseline.parentBaselineId) return undefined;
+    return baselines.find((b) => b.id === baseline.parentBaselineId);
+  };
+
+  // Separate baselines and distributions
+  const pureBaselines = baselines.filter((b) => b.type === 'baseline' || !b.type);
+  const distributions = baselines.filter((b) => b.type === 'distribution');
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Baselines & Distributionen</CardTitle>
+              <CardDescription>
+                Baselines definieren Core-Features. Distributionen bauen darauf auf.
+              </CardDescription>
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Hinzufuegen
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingBaseline ? 'Bearbeiten' : 'Neue Baseline / Distribution'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Baselines = Core-Features. Distributionen = StarterKits die auf Baselines aufbauen.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6 py-4">
+                  {/* Type Selection */}
+                  <div className="space-y-2">
+                    <Label>Typ</Label>
+                    <Select
+                      value={formData.type}
+                      onValueChange={(v) => setFormData({ ...formData, type: v as 'baseline' | 'distribution' })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="baseline">
+                          <div className="flex items-center gap-2">
+                            <Box className="h-4 w-4" />
+                            Baseline (Core)
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="distribution">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4" />
+                            Distribution (StarterKit)
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Parent Baseline (for distributions) */}
+                  {formData.type === 'distribution' && (
+                    <div className="space-y-2">
+                      <Label>Basiert auf Baseline *</Label>
+                      <Select
+                        value={formData.parentBaselineId}
+                        onValueChange={(v) => setFormData({ ...formData, parentBaselineId: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Baseline auswaehlen..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pureBaselines.map((bl) => (
+                            <SelectItem key={bl.id} value={bl.id}>
+                              {bl.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Basic Info */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Name *</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder={formData.type === 'distribution' ? 'z.B. StarterKit Webseiten' : 'z.B. Core, Standard'}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Beschreibung</Label>
+                      <Textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        placeholder="Was ist enthalten?"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="baseHours">
+                          {formData.type === 'distribution' ? 'Zusaetzliche Stunden' : 'Basis-Stunden'}
+                        </Label>
+                        <Input
+                          id="baseHours"
+                          type="number"
+                          min={0}
+                          value={formData.baseHours}
+                          onChange={(e) => setFormData({ ...formData, baseHours: parseInt(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2 pt-6">
+                        <Switch
+                          id="isDefault"
+                          checked={formData.isDefault}
+                          onCheckedChange={(checked) => setFormData({ ...formData, isDefault: checked })}
+                        />
+                        <Label htmlFor="isDefault">Als Standard setzen</Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Starter Kit / GitHub */}
+                  <div className="space-y-4 border-t pt-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="isStarterKit"
+                        checked={formData.isStarterKit}
+                        onCheckedChange={(checked) => setFormData({ ...formData, isStarterKit: checked })}
+                      />
+                      <Label htmlFor="isStarterKit">Hat GitHub Repository</Label>
+                    </div>
+                    {formData.isStarterKit && (
+                      <div className="space-y-2">
+                        <Label htmlFor="starterKitRepo">GitHub Repository URL</Label>
+                        <Input
+                          id="starterKitRepo"
+                          type="url"
+                          value={formData.starterKitRepo}
+                          onChange={(e) => setFormData({ ...formData, starterKitRepo: e.target.value })}
+                          placeholder="https://github.com/org/starter-kit"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Included Modules (for distributions) */}
+                  {formData.type === 'distribution' && (
+                    <div className="space-y-4 border-t pt-4">
+                      <div className="flex items-center justify-between">
+                        <Label>Enthaltene Module</Label>
+                        <Badge variant="secondary">{formData.includedModules.length} ausgewaehlt</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {COMMON_MODULES.map((mod) => (
+                          <div key={mod} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={'mod-' + mod}
+                              checked={formData.includedModules.includes(mod)}
+                              onCheckedChange={() => toggleModule(mod)}
+                            />
+                            <label htmlFor={'mod-' + mod} className="text-sm cursor-pointer">
+                              {mod}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Feature Selection (for baselines) */}
+                  {formData.type === 'baseline' && (
+                    <div className="space-y-4 border-t pt-4">
+                      <div className="flex items-center justify-between">
+                        <Label>Enthaltene Core-Features</Label>
+                        <Badge variant="secondary">
+                          {formData.includedFeatureIds.length} ausgewaehlt
+                        </Badge>
+                      </div>
+
+                      {features.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          Keine Features vorhanden. Erstellen Sie zuerst Features im Features-Tab.
+                        </p>
+                      ) : (
+                        <Accordion type="multiple" className="w-full">
+                          {Object.entries(featuresByCategory).map(([category, categoryFeatures]) => (
+                            <AccordionItem key={category} value={category}>
+                              <AccordionTrigger className="text-sm">
+                                <div className="flex items-center gap-2">
+                                  <span>{FEATURE_CATEGORIES[category] || category}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {categoryFeatures.filter((f) => formData.includedFeatureIds.includes(f.id)).length}
+                                    /{categoryFeatures.length}
+                                  </Badge>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent>
+                                <div className="space-y-2 pl-2">
+                                  {categoryFeatures.map((feature) => (
+                                    <div key={feature.id} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={feature.id}
+                                        checked={formData.includedFeatureIds.includes(feature.id)}
+                                        onCheckedChange={() => toggleFeature(feature.id)}
+                                      />
+                                      <label htmlFor={feature.id} className="text-sm cursor-pointer flex-1">
+                                        {feature.name}
+                                      </label>
+                                    </div>
+                                  ))}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => {
+                    setIsDialogOpen(false);
+                    resetForm();
+                  }}>
+                    Abbrechen
+                  </Button>
+                  <Button onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    {editingBaseline ? 'Speichern' : 'Erstellen'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Baselines */}
+      {pureBaselines.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Box className="h-5 w-5" />
+            Baselines (Core)
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            {pureBaselines.map((baseline) => {
+              const includedFeatures = getIncludedFeatures(baseline);
+              const childDistributions = distributions.filter((d) => d.parentBaselineId === baseline.id);
+
+              return (
+                <Card key={baseline.id} className={baseline.isDefault ? 'border-primary' : ''}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <Box className="h-5 w-5 text-blue-600" />
+                        <div>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            {baseline.name}
+                            {baseline.isDefault && (
+                              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                            )}
+                          </CardTitle>
+                          {baseline.description && (
+                            <CardDescription className="mt-1">{baseline.description}</CardDescription>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(baseline)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(baseline.id, baseline.name)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Stunden:</span>
+                        <span className="font-medium ml-1">{baseline.baseHours}h</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Features:</span>
+                        <span className="font-medium ml-1">{includedFeatures.length}</span>
+                      </div>
+                    </div>
+
+                    {includedFeatures.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {includedFeatures.slice(0, 5).map((f) => (
+                          <Badge key={f.id} variant="secondary" className="text-xs">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            {f.name}
+                          </Badge>
+                        ))}
+                        {includedFeatures.length > 5 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{includedFeatures.length - 5}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+
+                    {childDistributions.length > 0 && (
+                      <div className="pt-2 border-t">
+                        <span className="text-xs text-muted-foreground">
+                          {childDistributions.length} Distribution(en) basieren hierauf
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Distributions */}
+      {distributions.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Distributionen (StarterKits)
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            {distributions.map((dist) => {
+              const parent = getParentBaseline(dist);
+              const modules = dist.includedModules ? JSON.parse(dist.includedModules) : [];
+              const totalHours = (parent?.baseHours || 0) + (dist.baseHours || 0);
+
+              return (
+                <Card key={dist.id} className={dist.isDefault ? 'border-primary' : ''}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-5 w-5 text-green-600" />
+                        <div>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            {dist.name}
+                            {dist.isDefault && (
+                              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                            )}
+                          </CardTitle>
+                          {dist.description && (
+                            <CardDescription className="mt-1">{dist.description}</CardDescription>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(dist)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(dist.id, dist.name)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Parent Baseline */}
+                    {parent && (
+                      <div className="flex items-center gap-2 text-sm bg-slate-50 rounded p-2">
+                        <Box className="h-4 w-4 text-blue-600" />
+                        <span className="text-muted-foreground">Basiert auf:</span>
+                        <span className="font-medium">{parent.name}</span>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">{parent.baseHours}h</span>
+                        <span className="text-green-600">+{dist.baseHours}h</span>
+                        <span className="font-bold">= {totalHours}h</span>
+                      </div>
+                    )}
+
+                    {/* GitHub Link */}
+                    {dist.isStarterKit && dist.starterKitRepo && (
+                      <a
+                        href={dist.starterKitRepo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-primary hover:underline"
+                      >
+                        <Github className="h-4 w-4" />
+                        Repository
+                      </a>
+                    )}
+
+                    {/* Included Modules */}
+                    {modules.length > 0 && (
+                      <div className="space-y-2">
+                        <span className="text-xs text-muted-foreground">Enthaltene Module:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {modules.map((mod: string) => (
+                            <Badge key={mod} variant="outline" className="text-xs">
+                              {mod}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {baselines.length === 0 && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground mb-4">
+              Noch keine Baselines oder Distributionen definiert
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Starten Sie mit einer Baseline (Core) und erstellen Sie dann Distributionen (StarterKits) die darauf aufbauen.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

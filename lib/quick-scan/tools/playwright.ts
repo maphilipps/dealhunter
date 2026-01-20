@@ -116,6 +116,69 @@ export interface PlaywrightAuditResult {
 }
 
 /**
+ * Simple Playwright-based HTML fetcher for bot-protected websites
+ * Used as fallback when simple fetch() fails
+ */
+export async function fetchHtmlWithPlaywright(url: string): Promise<{
+  html: string;
+  headers: Record<string, string>;
+  finalUrl: string;
+}> {
+  let browser: Browser | null = null;
+
+  try {
+    browser = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    const context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 },
+      locale: 'de-DE',
+    });
+
+    const page = await context.newPage();
+
+    // Navigate with timeout
+    const response = await page.goto(url, {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
+    });
+
+    // Wait for potential JS rendering
+    await page.waitForTimeout(2000);
+
+    // Try to dismiss cookie banner
+    await dismissCookieBanner(page);
+
+    // Get HTML content
+    const html = await page.content();
+
+    // Get response headers
+    const headers: Record<string, string> = {};
+    if (response) {
+      const responseHeaders = response.headers();
+      for (const [key, value] of Object.entries(responseHeaders)) {
+        headers[key.toLowerCase()] = value;
+      }
+    }
+
+    const finalUrl = page.url();
+
+    await browser.close();
+
+    return { html, headers, finalUrl };
+  } catch (error) {
+    if (browser) {
+      await browser.close();
+    }
+    console.error('Playwright fetch error:', error);
+    return { html: '', headers: {}, finalUrl: url };
+  }
+}
+
+/**
  * Run comprehensive Playwright audit including screenshots, accessibility, and performance
  */
 export async function runPlaywrightAudit(
@@ -512,4 +575,75 @@ export async function runAccessibilityAuditOnly(url: string): Promise<Playwright
     }
     throw error;
   }
+}
+
+// ========================================
+// HTTPX Tech Detection (stub implementation)
+// ========================================
+
+export interface HttpxTechResult {
+  technologies: Array<{
+    name: string;
+    category: string;
+    confidence: number;
+  }>;
+  headers: Record<string, string>;
+  statusCode: number;
+}
+
+/**
+ * Run httpx-based tech detection (stub - returns minimal result)
+ * TODO: Implement actual httpx integration
+ */
+export async function runHttpxTechDetection(url: string): Promise<HttpxTechResult> {
+  // Stub implementation - returns empty result
+  return {
+    technologies: [],
+    headers: {},
+    statusCode: 200,
+  };
+}
+
+// ========================================
+// Enhanced Tech Stack Detection
+// ========================================
+
+export interface EnhancedTechStackResult {
+  cms?: {
+    name: string;
+    version?: string;
+    confidence: number;
+  };
+  framework?: {
+    name: string;
+    version?: string;
+    confidence: number;
+  };
+  hosting?: string;
+  cdn?: string;
+  analytics: string[];
+  marketing: string[];
+  libraries: Array<{
+    name: string;
+    version?: string;
+    confidence: number;
+  }>;
+}
+
+/**
+ * Enhanced tech stack detection combining multiple sources
+ * TODO: Implement actual detection logic
+ */
+export async function detectEnhancedTechStack(url: string): Promise<EnhancedTechStackResult> {
+  // Stub implementation - returns empty result
+  // Actual implementation would combine:
+  // - Wappalyzer signatures
+  // - HTTP headers analysis
+  // - HTML/JS analysis
+  // - Cookie analysis
+  return {
+    analytics: [],
+    marketing: [],
+    libraries: [],
+  };
 }

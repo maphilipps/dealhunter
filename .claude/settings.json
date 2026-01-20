@@ -1,13 +1,10 @@
 {
-    "env": {
-        "ANTHROPIC_AUTH_TOKEN": "fdd8a684b66f49a48d6acfb519a260e3.apXTCpxO2KsVFfOS",
-        "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
-        "API_TIMEOUT_MS": "3000000",
-        "ANTHROPIC_DEFAULT_OPUS_MODEL": "GLM-4.7",
-"ANTHROPIC_DEFAULT_SONNET_MODEL": "GLM-4.7",
-"ANTHROPIC_DEFAULT_HAIKU_MODEL": "GLM-4.5-Air"
-    },
-  "enabledPlugins": {
-    "fullstack-ai@adessocms-marketplace": true
-  }
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://adesso-ai-hub.3asabc.de",
+    "ANTHROPIC_AUTH_TOKEN": "sk-5k6CwWffBgbhd0k5_xz9Xg",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4.5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-v4.5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-v4.5"
+  },
+  "effort": "medium"
 }

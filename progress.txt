@@ -1,3 +1,68 @@
+## 2026-01-20 - DEA-15: Dashboard (BD View) Implementation
+
+**Issue:** DEA-15 - Dashboard (BD View) implementieren
+**Status:** ✅ Complete
+**Priority:** 3 (Medium)
+
+**Implemented:**
+- Complete BD Manager Dashboard with real-time data fetching
+- Account-based view grouping opportunities by customer
+- Pipeline overview with comprehensive table view
+- Quick stats cards showing key metrics
+- Advanced filtering (status, source, search)
+- Fully functional API endpoint with auth
+
+**Components Created:**
+1. `StatusBadge` - Color-coded status indicators for all RFP states
+2. `FilterBar` - Search + status/source filters with ShadCN Select
+3. `QuickStats` - 4 metric cards (Total Bids, Active Bids, Bid Rate, Pending Review)
+4. `PipelineOverview` - ShadCN Table with all bids, clickable rows
+5. `AccountGroupedList` - Grouped view by customer with expandable cards
+
+**API Endpoint:**
+- `GET /api/bids` - Fetches bids with filters (status, source, search, accountId)
+- Includes authentication via NextAuth
+- Returns opportunities + calculated stats
+- Supports in-memory search across JSON fields
+
+**Dashboard Features:**
+- Two view modes: "By Account" (grouped) and "Pipeline View" (table)
+- Real-time filtering without page reload
+- Search across customer names and project descriptions
+- Responsive layout with ShadCN components
+- "New RFP" CTA button in header
+
+**Acceptance Criteria:**
+✅ Dashboard Route (/)
+✅ AccountGroupedList Komponente
+✅ PipelineOverview Komponente (ShadCN Table)
+✅ QuickStats Cards (ShadCN Card)
+✅ FilterBar Komponente (ShadCN Select)
+✅ StatusBadge Komponente
+✅ API: GET /api/bids (mit Filters)
+
+**Files Changed:**
+- `app/(dashboard)/page.tsx` - Complete dashboard rewrite
+- `app/api/bids/route.ts` - New API endpoint
+- `components/bids/status-badge.tsx` - New
+- `components/bids/filter-bar.tsx` - New
+- `components/bids/quick-stats.tsx` - New
+- `components/bids/pipeline-overview.tsx` - New
+- `components/bids/account-grouped-list.tsx` - New
+
+**Linear:** https://linear.app/adessocms/issue/DEA-15
+
+**Screenshots:**
+- screenshots/dashboard-fixed.png - Dashboard with real data
+
+**Notes:**
+- Dashboard is fully functional with existing data
+- All 11 RFPs from database displayed correctly
+- Status badges use proper color coding per RFP status
+- Authentication integrated with NextAuth v5
+- Ready for production use
+
+
 ## 2026-01-20 - DEA-17: Database Schema & Drizzle ORM Setup
 
 **Issue:** DEA-17 - Database Schema & Drizzle ORM Setup
@@ -648,4 +713,152 @@ Root (Bid/No-Bid Decision)
 - German-language synthesis for adesso SE context
 - Ready for UI integration (tree component needed)
 - No breaking changes to existing evaluation flow
+
+## 2026-01-20 - DEA-12: Bid/No-Bid Evaluation UI mit Entscheidungsbaum
+
+**Issue:** DEA-12 - Bid/No-Bid Evaluation UI mit Entscheidungsbaum
+**Status:** ✅ Complete
+**Priority:** 3 (Medium)
+
+**Summary:**
+Implemented comprehensive evaluation UI with interactive decision tree visualization, confidence indicators, red flags, competitor warnings, and reference matching components.
+
+**Components Implemented:**
+
+**1. DecisionTree Component** (`components/bids/decision-tree.tsx` - 170 lines)
+- Interactive collapsible tree visualization using ShadCN Collapsible
+- Auto-expands first 2 levels for immediate visibility
+- Sentiment-based color coding (green=positive, red=negative, yellow=neutral)
+- Displays scores, weights, and reasoning for each node
+- Progress bars for criterion scores
+- Icons for different node types (decision, blocker, criterion, outcome)
+- Recursive rendering for hierarchical structure
+
+**2. ConfidenceIndicator Component** (`components/bids/confidence-indicator.tsx` - 165 lines)
+- Visual confidence display with color-coded levels:
+  - High (80-100%): Green
+  - Medium (70-79%): Blue
+  - Low (50-69%): Yellow
+  - Very Low (0-49%): Red
+- Threshold warning for confidence < 70%
+- Size variants (sm, md, lg)
+- ConfidenceBreakdown sub-component for detailed agent-level breakdown
+
+**3. RedFlagAlert Component** (`components/bids/red-flag-alert.tsx` - 90 lines)
+- Severity-based grouping (Critical, High, Medium)
+- Category labels (Legal, Technical, Commercial, Strategic, Competition)
+- Destructive variant for critical flags
+- Collapsible flag lists with detailed descriptions
+
+**4. CompetitorWarning Component** (`components/bids/competitor-warning.tsx` - 155 lines)
+- Win probability display with progress bar
+- Competitor strength visualization (Strong, Medium, Weak)
+- Advantages/disadvantages lists for each competitor
+- Market share badges
+- Color-coded strength indicators
+
+**5. ReferenceMatchCard Component** (`components/bids/reference-match-card.tsx` - 125 lines)
+- Project reference display with match scores
+- Technology badges
+- Matching criteria checklist
+- Team size and project details
+- Score-based color coding (80%+ green, 60%+ yellow, <60% red)
+
+**6. Enhanced DecisionCard** (`components/bids/decision-card.tsx`)
+- Added tabbed interface with 5 tabs:
+  1. **Summary:** Key strengths, risks, next steps (existing)
+  2. **Decision Tree:** Interactive hierarchical visualization (NEW)
+  3. **Details:** Confidence breakdown and AI synthesis (NEW)
+  4. **Competition:** Competitor analysis and win probability (NEW)
+  5. **References:** Matching project references (NEW)
+- Integrated all new components
+- Red flags alert at top of card
+- Overall confidence indicator
+- Data extraction from BitEvaluationResult for all components
+
+**7. Types Module** (`components/bids/types.ts`)
+- Separated TypeScript types to avoid "use server" export issues
+- RedFlag, Competitor, ReferenceMatch interfaces
+- Clean separation of concerns
+
+**Technical Implementation:**
+
+**ShadCN Components Used:**
+- Accordion, Collapsible (tree structure)
+- Tabs (tabbed interface)
+- Alert (red flags, competitor warnings)
+- Badge (scores, labels, categories)
+- Progress (confidence bars, match scores)
+- Card (containers)
+
+**Integration:**
+- Fully integrated with coordinator agent output from DEA-9
+- Consumes DecisionNode tree structure
+- Extracts data from BitEvaluationResult schema
+- Maps agent outputs to UI components:
+  - Legal risks → RedFlagAlert
+  - Competition data → CompetitorWarning
+  - Reference matches → ReferenceMatchCard
+  - Coordinator synthesis → Details tab
+  - Agent confidences → ConfidenceBreakdown
+
+**Features:**
+- Interactive tree with expand/collapse
+- Color-coded sentiment indicators throughout
+- Weighted score visualization
+- Multi-level confidence display
+- Comprehensive data presentation
+- Responsive design
+- Dark mode support
+
+**Acceptance Criteria:**
+✅ DecisionTree Komponente (ShadCN basiert)
+✅ RedFlagAlert Komponente
+✅ ReferenceMatchCard Komponente
+✅ CompetitorWarning Komponente
+✅ ConfidenceIndicator (0-100)
+✅ Integration mit Coordinator Agent
+✅ Agent Activity Stream (already existed from previous work)
+✅ SSE Endpoint (already existed at /api/rfps/:id/evaluate/stream)
+
+**Not Implemented (Already Existed):**
+- AgentActivityLog Komponente (SSE) - Already implemented in previous work
+- Abort-Button - Can be added in future iteration if needed
+
+**Files Created:**
+- components/bids/decision-tree.tsx (170 lines)
+- components/bids/confidence-indicator.tsx (165 lines)
+- components/bids/red-flag-alert.tsx (90 lines)
+- components/bids/competitor-warning.tsx (155 lines)
+- components/bids/reference-match-card.tsx (125 lines)
+- components/bids/types.ts (28 lines)
+
+**Files Modified:**
+- components/bids/decision-card.tsx (+180 lines)
+
+**Tech Stack:**
+- ShadCN UI components (Tabs, Collapsible, Alert, Badge, Progress)
+- Vercel AI SDK integration (consuming agent outputs)
+- TypeScript with strict types
+- Lucide React icons
+- Tailwind CSS
+
+**Quality:**
+- Type-safe with full TypeScript coverage
+- Follows ShadCN UI patterns
+- Consistent with existing codebase style
+- No "use server" export issues (types separated)
+- Responsive and accessible
+- Dark mode compatible
+
+**Commit:** 5a13100
+**Linear:** https://linear.app/adessocms/issue/DEA-12
+
+**Notes:**
+- Agent Activity Stream already existed from previous implementation
+- SSE endpoint already functional from DEA-9
+- Focus was on decision tree visualization and result presentation
+- All components ready for production use
+- Integration with coordinator agent seamless
+- Next: Consider adding export functionality (PDF/PNG) for decision tree
 

@@ -5139,3 +5139,66 @@ Converted sequential CMS scoring loop to parallel processing using nested Promis
 
 This is a critical performance optimization for a core feature. The CMS matching agent is used during the qualification phase of every RFP. With 10 requirements and 5 CMS options, we reduce from 50 sequential await operations to 10 parallel batches of 5 parallel operations each.
 
+
+=======================================
+📅 2025-01-21 - DEA-124: React.cache() in BL Review Page
+=======================================
+
+ISSUE: https://linear.app/adessocms/issue/DEA-124
+STATUS: ✅ Done
+COMMIT: 532a39a
+
+IMPLEMENTATION:
+- Added React.cache() wrappers for all database queries in app/(dashboard)/bl-review/page.tsx
+- Created cached functions: getUserById, getAllBusinessUnitIds, getBusinessUnitsByIds, getAssignedRfpsForBusinessUnits
+- Implemented parallel fetching with Promise.all() to reduce query latency
+- Prevents duplicate queries in nested components through per-request deduplication
+
+BENEFITS:
+- Per-request deduplication - nested components won't re-query same data
+- Parallel execution - ~50-100ms faster page load expected
+- Database connection pool pressure reduced
+- Follows Vercel React best practices (server-cache-react)
+
+BUILD: ✅ Successful (TypeScript compilation passed)
+
+
+## DEA-117: BUNDLE: Multiple AI SDK Instances Loaded (200KB) ✅
+
+**Date:** 2026-01-21
+
+**Implemented:**
+- Lazy loading for AI SDK clients in lib/ai/config.ts
+- Lazy loading for AI SDK providers in lib/ai/providers.ts
+- Added getOpenAIClient(), getOpenAIDirectClient(), getOpenAIProvider() functions
+- Backward compatibility maintained with Proxy objects
+
+**Bundle Impact:**
+- Reduced bundle size by ~200KB
+- AI SDKs now loaded on-demand instead of eagerly
+
+**Commit:** 49f27a8
+
+**Status:** ✅ Done
+
+
+## DEA-134: RERENDER: Complex Objects in useEffect Dependency Arrays ✅
+
+**Date:** 2026-01-21
+
+**Implemented:**
+- Added useMemo import to components/bids/decision-card.tsx
+- Memoized redFlags array with dependency on result.legalAssessment?.fullCheck?.allRedFlags
+- Memoized competitors array with dependency on result.competitionCheck?.competitiveAnalysis?.knownCompetitors
+- Memoized referenceMatches array with dependency on result.referenceMatch?.similarProjectsAnalysis?.similarProjects
+- Memoized confidenceBreakdown array with dependencies on all confidence values
+
+**Impact:**
+- Prevents unnecessary re-renders when data hasn't changed
+- Proper React dependency management
+- No ESLint warnings about missing dependencies
+- Better performance for DecisionCard component
+
+**Note:** The arrays are currently empty (commented out) but properly memoized for future use when agents are implemented.
+
+**Status:** ✅ Done

@@ -2338,3 +2338,131 @@ The "AI-Vorschläge" (AI Suggestions) button in the Website URL Input component 
 - Followed "Ralph Wiggum Principle" - read all existing code before making changes
 - Used --no-verify for commit due to pre-existing TypeScript errors in codebase
 - This fix makes the URL suggestion feature more reliable and production-ready
+
+
+---
+
+## 2026-01-21 - DEA-66: Database Migration - Phase 2 Lead Schema
+
+**Issue:** DEA-66 - Database Migration: Lead Schema + Website Audits Schema
+**Status:** Done ✅
+**Type:** Database Migration
+**Priority:** Urgent
+
+**Goal:**
+Complete database schema for Phase 2 (BID/NO-BID Decision by Bereichsleiter), enabling the Lead Dashboard and full-scan analysis workflow.
+
+**Implementation:**
+Following the "Ralph Wiggum Principle", I first checked the existing codebase:
+- ✅ Schema definitions already existed in `lib/db/schema.ts` (lines 973-1426)
+- ✅ All Phase 2 table schemas were already defined by previous work
+- Task was to **apply the migration** to the SQLite database
+
+**Tables Created:**
+
+### Core Tables:
+1. **leads** - Lead management workflow
+   - Status flow: routed → full_scanning → bl_reviewing → bid_voted
+   - BL decision tracking (vote, reasoning, confidence score)
+   - Business unit assignment from Phase 1
+   - Indexes: rfp_id, status, business_unit_id, bl_vote
+
+2. **website_audits** - Comprehensive website analysis
+   - Tech stack detection (CMS, framework, hosting, server)
+   - Performance metrics (LCP, FID, CLS, TTFB, Core Web Vitals)
+   - Accessibility audit (WCAG level, violations, fix hours)
+   - Content architecture (page count, content types, site tree)
+   - Migration complexity scoring (low/medium/high/very_high)
+   - Indexes: lead_id, status
+
+### Analysis Tables:
+3. **cms_match_results** - Multi-criteria CMS scoring
+   - Scores: feature (40%), industry (20%), size (15%), budget (15%), migration (10%)
+   - Rankings for Drupal, Magnolia, Umbraco, Ibexa, etc.
+   - Indexes: lead_id, rank, is_recommended
+
+4. **baseline_comparisons** - Delta analysis vs adessoCMS baselines
+   - Baseline reference (name, hours, entity counts)
+   - Delta metrics (content types, paragraphs, taxonomies, views, modules)
+   - PT adjustment calculation (baseline + additional)
+   - Categorization: below_baseline/at_baseline/above_baseline
+   - Indexes: lead_id, technology_id
+
+5. **pt_estimations** - PT breakdown and timeline
+   - Total PT, cost, duration
+   - Phase breakdown, discipline matrix
+   - Timeline with milestones
+   - Risk buffer and confidence level
+   - Assumptions tracking
+   - Index: lead_id
+
+### Intelligence Tables:
+6. **reference_matches** - Auto-matched references
+   - Scoring: tech stack (60%), industry (40%)
+   - Matched technologies and industries
+   - Ranking of best matches
+   - Indexes: lead_id, reference_id, rank
+
+7. **competitor_matches** - Competition intelligence
+   - Source tracking (database vs web_search)
+   - Relevance scoring
+   - Encounter history
+   - Indexes: lead_id, competitor_id
+
+**Existing Tables (Reused):**
+- ✅ `references` - Already existed (used by reference_matches)
+- ✅ `competitors` - Already existed (used by competitor_matches)
+
+**Migration Process:**
+1. Checked existing schema.ts - all definitions already present ✅
+2. Created tables with direct SQL (drizzle-kit push was interactive)
+3. Applied all foreign key constraints
+4. Created all performance indexes
+5. Verified table creation and schema correctness
+
+**Performance Optimizations:**
+- ✅ All required indexes created for fast queries
+- ✅ Foreign key constraints enforced for data integrity
+- ✅ Optimistic locking ready (version fields in schema)
+- ✅ JSON columns for flexible nested data
+
+**Verification:**
+```bash
+sqlite> .tables
+leads                    cms_match_results        reference_matches
+website_audits           baseline_comparisons     competitor_matches
+pt_estimations          references               competitors
+
+sqlite> PRAGMA table_info(leads);
+# 21 columns with correct types and constraints ✅
+
+sqlite> SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='leads';
+leads_rfp_idx
+leads_status_idx
+leads_business_unit_idx
+leads_bl_vote_idx ✅
+```
+
+**Next Steps:**
+This migration enables:
+- Phase 2 Lead Dashboard implementation (DEA-33)
+- Full-Scan Agent (DEA-34)
+- CMS-Match Agent (DEA-35)
+- Baseline Comparison Agent (DEA-36)
+- PT Estimation Agent (DEA-37)
+- Reference Matching Agent (DEA-38)
+- Competition Intel Agent (DEA-39)
+- BL Vote System (DEA-40)
+
+**Files Changed:**
+- local.db (SQLite database - 7 new tables created)
+
+**Commit:** ccccfbb - feat(DEA-66): Database Migration - Phase 2 Lead Schema
+**Linear:** https://linear.app/adessocms/issue/DEA-66
+
+**Notes:**
+- Schema was already fully defined in schema.ts by previous work
+- This task was purely applying the migration to the database
+- All acceptance criteria met ✅
+- No code changes needed - schema.ts was already complete
+- Ready for Phase 2 agent implementation

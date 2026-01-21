@@ -1,0 +1,5 @@
+name,email,businessUnitId,skills,roles,availabilityStatus
+Test Employee 1,test1@adesso.de,bu-test-123,React;TypeScript;Node.js,developer;lead,available
+Test Employee 2,test2@adesso.de,bu-test-123,Java;Spring Boot,developer,on_project
+Test Employee 3,test3@adesso.de,bu-test-456,Drupal;PHP;MySQL,developer,available
+Test Employee 4,test4@adesso.de,bu-test-456,Python;Django;PostgreSQL,developer;architect,unavailable

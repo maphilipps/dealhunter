@@ -17,6 +17,7 @@
  */
 
 import { eq } from 'drizzle-orm';
+
 import { db } from '../db';
 import { rfps, type Rfp } from '../db/schema';
 import type { ExtractedRequirements } from '../extraction/schema';
@@ -104,7 +105,10 @@ const TRIGGER_RULES: Partial<Record<RFPStatus, TriggerRule>> = {
 
       if (rfp.extractedRequirements) {
         const extracted: ExtractedRequirements = JSON.parse(rfp.extractedRequirements);
-        return !!(extracted.websiteUrl || (extracted.websiteUrls && extracted.websiteUrls.length > 0));
+        return !!(
+          extracted.websiteUrl ||
+          (extracted.websiteUrls && extracted.websiteUrls.length > 0)
+        );
       }
 
       return false;
@@ -224,7 +228,9 @@ export async function triggerNextAgent(
   const shouldTrigger = await rule.condition(contextualRfp);
 
   if (!shouldTrigger) {
-    console.error(`[Orchestrator] Skipping ${rule.nextAgent} for ${rfpId}: ${rule.skipReason || 'condition not met'}`);
+    console.error(
+      `[Orchestrator] Skipping ${rule.nextAgent} for ${rfpId}: ${rule.skipReason || 'condition not met'}`
+    );
     return { triggered: false, reason: rule.skipReason || 'Condition not met' };
   }
 

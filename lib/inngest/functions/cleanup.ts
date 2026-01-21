@@ -1,7 +1,9 @@
+import { sql, lt } from 'drizzle-orm';
+
 import { inngest } from '../client';
+
 import { db } from '@/lib/db';
 import { backgroundJobs } from '@/lib/db/schema';
-import { sql, lt } from 'drizzle-orm';
 
 /**
  * Cleanup Job - Deletes completed/failed jobs older than 7 days

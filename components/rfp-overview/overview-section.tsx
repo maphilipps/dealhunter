@@ -1,11 +1,13 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
 import { Building2, Users, MapPin, Calendar, TrendingUp, Globe, ExternalLink } from 'lucide-react';
-import type { OverviewData } from './types';
+
 import { TechStackChartWrapper } from './tech-stack-chart-wrapper';
+import type { OverviewData } from './types';
+
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 interface OverviewSectionProps {
   data: OverviewData | null;

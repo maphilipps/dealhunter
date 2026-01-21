@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from 'react';
 import {
   BarChart3,
   Building2,
@@ -13,6 +12,7 @@ import {
   Target,
   Users,
 } from 'lucide-react';
+import * as React from 'react';
 
 import { NavMain } from '@/components/nav-main';
 import { NavProjects } from '@/components/nav-projects';

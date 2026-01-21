@@ -6,6 +6,7 @@
 
 import OpenAI from 'openai';
 import { z } from 'zod';
+
 import { ContentArchitectureSchema, type ContentArchitecture } from '../schemas';
 import { fetchSitemap, samplePages, fetchPageContent, extractPageMetadata } from '../utils/crawler';
 

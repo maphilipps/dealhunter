@@ -1,5 +1,7 @@
 import { generateStructuredOutput } from '@/lib/ai/config';
+
 import wappalyzer from 'simple-wappalyzer';
+
 import {
   techStackSchema,
   contentVolumeSchema,
@@ -23,20 +25,6 @@ import {
   type NavigationStructure,
   type CompanyIntelligence,
 } from './schema';
-import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import { AgentEventType, type QuickScanPhase } from '@/lib/streaming/event-types';
-import { db } from '@/lib/db';
-import { businessUnits as businessUnitsTable } from '@/lib/db/schema';
-import { validateUrlForFetch } from '@/lib/utils/url-validation';
-import {
-  runPlaywrightAudit,
-  runHttpxTechDetection,
-  detectEnhancedTechStack,
-  fetchHtmlWithPlaywright,
-  type PlaywrightAuditResult,
-  type HttpxTechResult,
-  type EnhancedTechStackResult,
-} from './tools/playwright';
 // TODO: Restore when tech-stack module is complete
 // import { runTechStackDetection } from '@/lib/tech-stack/agent';
 interface TechStackDetectionInput {
@@ -333,17 +321,7 @@ const runTechStackDetection = async (
     overallConfidence,
   };
 };
-import { gatherCompanyIntelligence } from './tools/company-research';
-import { buildAgentContext, formatContextForPrompt } from '@/lib/agent-tools/context-builder';
 // Multi-Page Analysis Tools - NEW
-import { selectDiversePages, type SampledPages } from './tools/page-sampler';
-import {
-  fetchPages,
-  analyzePageTech,
-  aggregateTechResults,
-  type PageData,
-  type AggregatedTechResult,
-} from './tools/multi-page-analyzer';
 import { extractComponents, type ExtractedComponents } from './tools/component-extractor';
 // QuickScan 2.0 Tools - NEW
 import { classifyContentTypes, estimateContentTypesFromUrls } from './tools/content-classifier';
@@ -354,10 +332,35 @@ import type {
   MigrationComplexity,
   DecisionMakersResearch,
 } from './schema';
+import { gatherCompanyIntelligence } from './tools/company-research';
+import {
+  fetchPages,
+  analyzePageTech,
+  aggregateTechResults,
+  type PageData,
+  type AggregatedTechResult,
+} from './tools/multi-page-analyzer';
+import { selectDiversePages, type SampledPages } from './tools/page-sampler';
+import {
+  runPlaywrightAudit,
+  runHttpxTechDetection,
+  detectEnhancedTechStack,
+  fetchHtmlWithPlaywright,
+  type PlaywrightAuditResult,
+  type HttpxTechResult,
+  type EnhancedTechStackResult,
+} from './tools/playwright';
+
+import { buildAgentContext, formatContextForPrompt } from '@/lib/agent-tools/context-builder';
 // Intelligent Agent Framework - NEW
-import { createIntelligentTools, KNOWN_GITHUB_REPOS } from '@/lib/agent-tools/intelligent-tools';
 import { quickEvaluate } from '@/lib/agent-tools/evaluator';
+import { createIntelligentTools, KNOWN_GITHUB_REPOS } from '@/lib/agent-tools/intelligent-tools';
 import { optimizeQuickScanResults } from '@/lib/agent-tools/optimizer';
+import { db } from '@/lib/db';
+import { businessUnits as businessUnitsTable } from '@/lib/db/schema';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import { AgentEventType, type QuickScanPhase } from '@/lib/streaming/event-types';
+import { validateUrlForFetch } from '@/lib/utils/url-validation';
 
 async function callAI<T>(
   systemPrompt: string,
@@ -2803,7 +2806,7 @@ export async function runQuickScanWithStreaming(
     } | null = null;
 
     // Determine URLs for analysis - combine sitemap + link discovery
-    let urlPool = [...websiteData.sitemapUrls];
+    const urlPool = [...websiteData.sitemapUrls];
     let urlSource: 'sitemap' | 'link_discovery' | 'combined' = 'sitemap';
 
     // Link Discovery Fallback: If sitemap has < 5 URLs, extract links from HTML
@@ -3134,7 +3137,7 @@ export async function runQuickScanWithStreaming(
 
         // GitHub API for CMS if known repo exists
         const cmsLower = techStack.cms.toLowerCase();
-        const knownRepoUrl = KNOWN_GITHUB_REPOS[cmsLower as keyof typeof KNOWN_GITHUB_REPOS];
+        const knownRepoUrl = KNOWN_GITHUB_REPOS[cmsLower];
 
         if (knownRepoUrl) {
           emitThought('Researcher', `Prüfe ${techStack.cms} auf GitHub...`);
@@ -3210,7 +3213,7 @@ export async function runQuickScanWithStreaming(
     let migrationComplexity: MigrationComplexity | undefined;
     let decisionMakersResult: DecisionMakersResearch | undefined;
     // Raw data for debugging
-    let rawScanData: QuickScanResult['rawScanData'] = {
+    const rawScanData: QuickScanResult['rawScanData'] = {
       wappalyzer: websiteData.wappalyzerResults,
       sitemapUrls: websiteData.sitemapUrls,
     };

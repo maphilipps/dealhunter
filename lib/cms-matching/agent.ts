@@ -7,16 +7,18 @@
  * Workflow 1: Quick Scan -> CMS Evaluation -> BL Entscheidung
  */
 
+import { eq } from 'drizzle-orm';
+
+import { type CMSMatchingResult, type RequirementMatch, cmsMatchingResultSchema } from './schema';
+
+// Intelligent Agent Framework - NEW
+import { quickEvaluate, CMS_MATCHING_EVALUATION_SCHEMA } from '@/lib/agent-tools/evaluator';
+import { createIntelligentTools, KNOWN_GITHUB_REPOS } from '@/lib/agent-tools/intelligent-tools';
+import { optimizeCMSMatchingResults } from '@/lib/agent-tools/optimizer';
+import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
 import { technologies } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { generateStructuredOutput } from '@/lib/ai/config';
 import { searchAndContents } from '@/lib/search/web-search';
-import { type CMSMatchingResult, type RequirementMatch, cmsMatchingResultSchema } from './schema';
-// Intelligent Agent Framework - NEW
-import { createIntelligentTools, KNOWN_GITHUB_REPOS } from '@/lib/agent-tools/intelligent-tools';
-import { quickEvaluate, CMS_MATCHING_EVALUATION_SCHEMA } from '@/lib/agent-tools/evaluator';
-import { optimizeCMSMatchingResults } from '@/lib/agent-tools/optimizer';
 
 interface QuickScanData {
   techStack?: {
@@ -1192,7 +1194,7 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
   // Füge GitHub-Versionen für bekannte CMS hinzu
   for (const tech of comparedTechnologies) {
     const techLower = tech.name.toLowerCase();
-    const knownRepoUrl = KNOWN_GITHUB_REPOS[techLower as keyof typeof KNOWN_GITHUB_REPOS];
+    const knownRepoUrl = KNOWN_GITHUB_REPOS[techLower];
 
     if (knownRepoUrl) {
       try {

@@ -1,13 +1,4 @@
-import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { rfps, businessUnits, users, quickScans } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { redirect, notFound } from 'next/navigation';
-import { safeJsonParseOrNull } from '@/lib/utils/parse';
-import { getEnabledTabs, getWorkflowProgress } from '@/lib/workflow/bl-review-status';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   FileText,
   ListChecks,
@@ -20,13 +11,13 @@ import {
   Circle,
   Loader2,
 } from 'lucide-react';
-import type { BaselineComparisonResult } from '@/lib/baseline-comparison/schema';
+
 import type { ProjectPlan } from '@/lib/project-planning/schema';
 import type { TeamNotificationResult } from '@/lib/notifications/email';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 import Link from 'next/link';
+import { redirect, notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { TenQuestionsTab } from '@/components/bl-review/ten-questions-tab';
 import { BaselineComparisonCard } from '@/components/bids/baseline-comparison-card';
 import { ProjectPlanningCard } from '@/components/bids/project-planning-card';
 import { TeamBuilder } from '@/components/bids/team-builder';
@@ -34,7 +25,16 @@ import { NotificationCard } from '@/components/bids/notification-card';
 import { BUMatchingTab } from '@/components/bl-review/bu-matching-tab';
 import { OverviewSection } from '@/components/rfp-overview';
 import { TimelineChart } from '@/components/bids/timeline-chart';
+import { TenQuestionsTab } from '@/components/bl-review/ten-questions-tab';
 import { Progress } from '@/components/ui/progress';
+import type { OverviewData } from '@/components/rfp-overview';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { auth } from '@/lib/auth';
+import type { BaselineComparisonResult } from '@/lib/baseline-comparison/schema';
+import { db } from '@/lib/db';
+import { rfps, businessUnits, users, quickScans } from '@/lib/db/schema';
 import type {
   TechStack,
   AccessibilityAudit,
@@ -44,8 +44,9 @@ import type {
   NavigationStructure,
   CompanyIntelligence,
 } from '@/lib/quick-scan/schema';
-import type { OverviewData } from '@/components/rfp-overview';
 import type { ProjectTimeline } from '@/lib/timeline/schema';
+import { safeJsonParseOrNull } from '@/lib/utils/parse';
+import { getEnabledTabs, getWorkflowProgress } from '@/lib/workflow/bl-review-status';
 
 interface BLReviewDetailPageProps {
   params: Promise<{ id: string }>;

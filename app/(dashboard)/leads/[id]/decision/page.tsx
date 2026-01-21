@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
+import DecisionForm from './decision-form';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads } from '@/lib/db/schema';
-
-import DecisionForm from './decision-form';
 
 export default async function DecisionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

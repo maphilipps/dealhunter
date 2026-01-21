@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
+
 import { auth } from '@/lib/auth';
 import { runDuplicateCheckAgent } from '@/lib/bids/duplicate-check-agent';
-import { onAgentComplete } from '@/lib/workflow/orchestrator';
+import { db } from '@/lib/db';
+import { rfps } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
+import { onAgentComplete } from '@/lib/workflow/orchestrator';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,10 +17,7 @@ export const dynamic = 'force-dynamic';
  * Run Duplicate Check Agent for an RFP
  * Called automatically by workflow orchestrator or manually by user
  */
-export async function POST(
-  _request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   // 1. Verify authentication
   const session = await auth();
   if (!session?.user?.id) {
@@ -41,10 +39,7 @@ export async function POST(
 
     // 3. Check if RFP has extracted requirements (needed for duplicate check)
     if (!rfp.extractedRequirements) {
-      return NextResponse.json(
-        { error: 'RFP must be extracted first' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'RFP must be extracted first' }, { status: 400 });
     }
 
     const extractedReqs: ExtractedRequirements = JSON.parse(rfp.extractedRequirements);

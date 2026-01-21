@@ -1,5 +1,8 @@
 'use client';
 
+import { Search } from 'lucide-react';
+
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -7,8 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
 
 interface FilterBarProps {
   statusFilter: string;

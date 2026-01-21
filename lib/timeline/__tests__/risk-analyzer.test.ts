@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { analyzeTimelineRisk, getRiskBadgeVariant, getRiskIcon, formatTimelineSummary } from '../risk-analyzer';
+
+import {
+  analyzeTimelineRisk,
+  getRiskBadgeVariant,
+  getRiskIcon,
+  formatTimelineSummary,
+} from '../risk-analyzer';
 import type { ProjectTimeline } from '../schema';
 
 // Mock timeline for testing

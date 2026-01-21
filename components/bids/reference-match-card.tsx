@@ -1,11 +1,13 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, Building2, Calendar, Users } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
 import type { ReferenceMatch } from './types';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 interface ReferenceMatchCardProps {
   matches: ReferenceMatch[];

@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Loader2, TrendingUp, FileText, Building2, Tags, Zap } from 'lucide-react';
-import type { QuickScan } from '@/lib/db/schema';
+import { useEffect, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import type { BUMatchResult } from '@/lib/business-units/matching';
+import type { QuickScan } from '@/lib/db/schema';
 
 interface BUMatchingTabProps {
   quickScan: QuickScan;

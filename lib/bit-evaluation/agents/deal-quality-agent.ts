@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
+
 import { dealQualitySchema, type DealQuality } from '../schema';
+
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
 // Initialize OpenAI client with adesso AI Hub

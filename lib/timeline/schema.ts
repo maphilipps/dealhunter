@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import DOMPurify from 'isomorphic-dompurify';
+import { z } from 'zod';
 
 const sanitizedString = z.string().transform(val => {
   return DOMPurify.sanitize(val, {
@@ -189,9 +189,7 @@ export const routingDecisionSchema = z.object({
     .optional()
     .describe('Name of the selected business line'),
   reason: sanitizedString.optional().describe('Optional reasoning for BL selection'),
-  overrideRecommendation: z
-    .boolean()
-    .describe('Whether BD Manager overrode AI recommendation'),
+  overrideRecommendation: z.boolean().describe('Whether BD Manager overrode AI recommendation'),
   decidedAt: z.string().datetime().describe('When the decision was made'),
   decidedByUserId: sanitizedString.describe('User ID of the BD Manager who decided'),
   decidedByUserName: sanitizedString.optional().describe('Name of the BD Manager'),

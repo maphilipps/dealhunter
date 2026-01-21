@@ -13,8 +13,9 @@
 
 import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
-import { openai } from '../ai/providers';
+
 import type { ContentArchitectureResult } from './content-architecture-agent';
+import { openai } from '../ai/providers';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES

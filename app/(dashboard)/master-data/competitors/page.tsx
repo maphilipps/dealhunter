@@ -1,4 +1,6 @@
-import { getUserCompetitors } from '@/lib/master-data/actions';
+import Link from 'next/link';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -8,8 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
+import { getUserCompetitors } from '@/lib/master-data/actions';
 
 export default async function CompetitorsPage() {
   const competitors = await getUserCompetitors();

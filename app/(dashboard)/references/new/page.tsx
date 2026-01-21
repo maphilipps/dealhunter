@@ -1,6 +1,6 @@
-import { auth } from '@/lib/auth';
 import { ReferenceForm } from '@/components/references/reference-form';
 import { Card, CardContent } from '@/components/ui/card';
+import { auth } from '@/lib/auth';
 
 export default async function NewReferencePage() {
   const session = await auth();
@@ -17,7 +17,7 @@ export default async function NewReferencePage() {
 
       <Card>
         <CardContent className="pt-6">
-          <ReferenceForm userId={session!.user!.id} />
+          <ReferenceForm userId={session!.user.id} />
         </CardContent>
       </Card>
     </>

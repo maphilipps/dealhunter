@@ -5,16 +5,17 @@
  * POST /api/rfps/[id]/cms-matrix/stream
  */
 
-import { NextRequest } from 'next/server';
-import { db } from '@/lib/db';
-import { rfps, technologies } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { NextRequest } from 'next/server';
+
 import {
   runParallelMatrixResearch,
   saveMatrixToRfp,
   matrixToCMSMatchingResult,
 } from '@/lib/cms-matching/parallel-matrix-orchestrator';
 import type { RequirementMatch } from '@/lib/cms-matching/schema';
+import { db } from '@/lib/db';
+import { rfps, technologies } from '@/lib/db/schema';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
 
 export const runtime = 'nodejs';

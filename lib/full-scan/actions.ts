@@ -3,11 +3,12 @@
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
+import { crawlWebsite } from './website-crawler';
+
+import { analyzeContentArchitecture } from '@/lib/agents/content-architecture-agent';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads, websiteAudits } from '@/lib/db/schema';
-import { crawlWebsite } from './website-crawler';
-import { analyzeContentArchitecture } from '@/lib/agents/content-architecture-agent';
 
 export interface StartFullScanInput {
   leadId: string;

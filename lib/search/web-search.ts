@@ -5,8 +5,9 @@
  * Fallback auf DuckDuckGo wenn kein EXA API Key vorhanden.
  */
 
-import { exa, isExaAvailable } from '@/lib/exa';
 import { searchDuckDuckGo, fetchUrlContents as fetchDuckDuckGo } from './duckduckgo-search';
+
+import { exa, isExaAvailable } from '@/lib/exa';
 
 /**
  * Search results interface

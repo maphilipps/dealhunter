@@ -1,24 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import {
   Globe,
   Server,
@@ -52,16 +33,36 @@ import {
   Copy,
   ExternalLink,
 } from 'lucide-react';
-import type { QuickScan } from '@/lib/db/schema';
-import type { ExtractedRequirements } from '@/lib/extraction/schema';
+import { RotateCcw } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+
+import { CMSEvaluationMatrix } from '@/components/bids/cms-evaluation-matrix';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { getBusinessUnits } from '@/lib/admin/business-units-actions';
 import { forwardToBusinessLeader } from '@/lib/bids/actions';
 import { startCMSEvaluation } from '@/lib/cms-matching/actions';
-import { retriggerQuickScan } from '@/lib/quick-scan/actions';
-import { toast } from 'sonner';
-import { RotateCcw } from 'lucide-react';
-import { CMSEvaluationMatrix } from '@/components/bids/cms-evaluation-matrix';
 import type { CMSMatchingResult } from '@/lib/cms-matching/schema';
+import type { QuickScan } from '@/lib/db/schema';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
+import { retriggerQuickScan } from '@/lib/quick-scan/actions';
 
 interface BusinessUnit {
   id: string;

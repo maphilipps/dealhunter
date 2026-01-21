@@ -1,7 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { Lightbulb, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -12,11 +16,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Lightbulb, ArrowRight } from 'lucide-react';
-import { routeRfpToBusinessLine } from '@/lib/rfps/actions';
 import type { BusinessUnit } from '@/lib/db/schema';
+import { routeRfpToBusinessLine } from '@/lib/rfps/actions';
 
 interface BLRecommendation {
   primaryBusinessLine: string;
@@ -79,7 +80,7 @@ export function RoutingForm({
     })();
   };
 
-  const isOverride = selectedBL && selectedBL !== blRecommendation?.primaryBusinessLine;
+  const isOverride = selectedBL !== '' && selectedBL !== blRecommendation?.primaryBusinessLine;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -92,9 +93,7 @@ export function RoutingForm({
               <div className="flex items-center gap-2">
                 <span className="font-semibold">AI-Empfehlung:</span>
                 <Badge variant="secondary">{blRecommendation.primaryBusinessLine}</Badge>
-                <Badge variant="outline">
-                  Konfidenz: {blRecommendation.confidence}%
-                </Badge>
+                <Badge variant="outline">Konfidenz: {blRecommendation.confidence}%</Badge>
               </div>
               {blRecommendation.reasoning && (
                 <p className="text-sm text-muted-foreground">{blRecommendation.reasoning}</p>
@@ -181,7 +180,7 @@ export function RoutingForm({
         </Button>
         <Button
           type="submit"
-          disabled={isSubmitting || !selectedBL || (isOverride && reason.trim() === '')}
+          disabled={isSubmitting || selectedBL === '' || (isOverride && reason.trim() === '')}
         >
           {isSubmitting ? (
             'Wird weitergeleitet...'

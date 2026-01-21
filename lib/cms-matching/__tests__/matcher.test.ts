@@ -5,10 +5,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { matchCMS, type CMSMatcherInput, type FeatureRequirement } from '../matcher';
+
 import type { ContentArchitectureResult } from '../../agents/content-architecture-agent';
 import type { MigrationComplexityResult } from '../../agents/migration-complexity-agent';
 import type { Technology } from '../../db/schema';
+import { matchCMS, type CMSMatcherInput, type FeatureRequirement } from '../matcher';
 
 // Mock database with vi.hoisted
 const { mockFindMany, mockDelete, mockInsert } = vi.hoisted(() => ({
@@ -61,8 +62,8 @@ describe('CMS Matcher', () => {
       baselineName: 'adessoCMS Drupal',
       baselineEntityCounts: JSON.stringify({ contentTypes: 15, paragraphs: 20 }),
       isDefault: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
       // Extended nullable fields
       logoUrl: null,
       websiteUrl: null,
@@ -81,11 +82,9 @@ describe('CMS Matcher', () => {
       useCases: null,
       features: null,
       adessoExpertise: null,
-      adessoExpertiseLevel: null,
-      adessoReferences: null,
-      adessoCertifications: null,
-      adessoTeamSize: null,
-      adessoSuccessStories: null,
+      adessoReferenceCount: null,
+      lastResearchedAt: null,
+      researchStatus: null,
       ...partial,
     };
   }
@@ -97,13 +96,14 @@ describe('CMS Matcher', () => {
       success: true,
       pageCount: 500,
       pageCountConfidence: 'high',
+      pageCountMethod: 'sitemap',
       contentTypes: [
-        { name: 'Page', estimatedCount: 400, fields: [] },
-        { name: 'News', estimatedCount: 100, fields: [] },
+        { name: 'Page', pattern: '/page/', estimatedCount: 400, characteristics: [] },
+        { name: 'News', pattern: '/news/', estimatedCount: 100, characteristics: [] },
       ],
-      navigationStructure: { depth: 3, breadth: 5 },
-      contentVolume: { images: 200, videos: 10, documents: 50 },
-      siteStructure: 'standard',
+      navigationStructure: { depth: 3, breadth: 5, mainNavItems: [] },
+      siteTree: [],
+      contentVolume: { images: 200, videos: 10, documents: 50, totalAssets: 260 },
       analyzedAt: new Date().toISOString(),
       ...partial,
     };

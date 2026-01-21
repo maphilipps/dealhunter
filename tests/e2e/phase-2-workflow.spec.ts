@@ -137,16 +137,17 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
     await expect(page.locator('h1')).toContainText('Acme Corporation');
 
     // Check for customer info card
-    await expect(
-      page.locator('text=Customer').or(page.locator('text=Client'))
-    ).toBeVisible();
+    await expect(page.locator('text=Customer').or(page.locator('text=Client'))).toBeVisible();
 
     // Check for website URL
     await expect(page.locator('text=https://example.com')).toBeVisible();
 
     // Check for status badge
     await expect(
-      page.locator('text=Routed').or(page.locator('text=Scanning')).or(page.locator('text=Reviewing'))
+      page
+        .locator('text=Routed')
+        .or(page.locator('text=Scanning'))
+        .or(page.locator('text=Reviewing'))
     ).toBeVisible();
 
     // Verify navigation tabs/links are present
@@ -342,9 +343,9 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
           await page.goto(leadUrl);
 
           // Status should be 'bid_voted' or 'approved'
-          await expect(
-            page.locator('text=Voted').or(page.locator('text=Approved'))
-          ).toBeVisible({ timeout: 10000 });
+          await expect(page.locator('text=Voted').or(page.locator('text=Approved'))).toBeVisible({
+            timeout: 10000,
+          });
         }
       }
     }
@@ -374,9 +375,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
 
         const reasoningTextarea = page.locator('textarea');
         if (await reasoningTextarea.isVisible()) {
-          await reasoningTextarea.fill(
-            'E2E test decision - NO-BID due to budget constraints'
-          );
+          await reasoningTextarea.fill('E2E test decision - NO-BID due to budget constraints');
         }
 
         const submitButton = page.locator('button:has-text("Submit")');

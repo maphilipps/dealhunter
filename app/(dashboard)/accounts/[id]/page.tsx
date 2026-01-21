@@ -1,9 +1,11 @@
+import { Edit, ExternalLink, ArrowLeft, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getAccountWithOpportunities } from '@/lib/accounts-actions';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
+import { DeleteAccountButton } from '@/components/delete-account-button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -12,8 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Edit, ExternalLink, ArrowLeft, FileText } from 'lucide-react';
-import { DeleteAccountButton } from '@/components/delete-account-button';
+import { getAccountWithOpportunities } from '@/lib/accounts-actions';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -191,12 +192,8 @@ export default async function AccountDetailPage({ params }: Props) {
                         {statusMap[opp.status]?.label || opp.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      {sourceMap[opp.source as keyof typeof sourceMap] || opp.source}
-                    </TableCell>
-                    <TableCell>
-                      {stageMap[opp.stage as keyof typeof stageMap] || opp.stage}
-                    </TableCell>
+                    <TableCell>{sourceMap[opp.source] || opp.source}</TableCell>
+                    <TableCell>{stageMap[opp.stage] || opp.stage}</TableCell>
                     <TableCell className="uppercase">{opp.inputType}</TableCell>
                     <TableCell>
                       {opp.createdAt ? new Date(opp.createdAt).toLocaleDateString('de-DE') : 'N/A'}

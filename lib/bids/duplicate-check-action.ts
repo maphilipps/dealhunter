@@ -1,12 +1,14 @@
 'use server';
 
+import { eq, and } from 'drizzle-orm';
+
+import { runDuplicateCheckAgent } from './duplicate-check-agent';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { runDuplicateCheckAgent } from './duplicate-check-agent';
-import { onAgentComplete } from '@/lib/workflow/orchestrator';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
+import { onAgentComplete } from '@/lib/workflow/orchestrator';
 
 /**
  * Run Duplicate Check Agent for an RFP
@@ -69,7 +71,9 @@ export async function runDuplicateCheck(rfpId: string): Promise<{
     if (!duplicateResult.hasDuplicates) {
       const result = await onAgentComplete(rfpId, 'DuplicateCheck');
       nextAgent = result.nextAgent;
-      console.log(`[Duplicate Check Action] No duplicates found, triggered next agent: ${nextAgent || 'none'}`);
+      console.log(
+        `[Duplicate Check Action] No duplicates found, triggered next agent: ${nextAgent || 'none'}`
+      );
     } else {
       console.log(`[Duplicate Check Action] Duplicates found, waiting for user override`);
     }

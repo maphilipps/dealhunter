@@ -2,7 +2,6 @@
 
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-
 import { z } from 'zod';
 
 import { createAuditLog } from '@/lib/admin/audit-actions';
@@ -163,7 +162,7 @@ export async function convertRfpToLead(
         .limit(1);
 
       if (quickScan?.decisionMakers) {
-        decisionMakers = JSON.parse(quickScan.decisionMakers as string) as unknown[];
+        decisionMakers = JSON.parse(quickScan.decisionMakers) as unknown[];
       }
     }
 

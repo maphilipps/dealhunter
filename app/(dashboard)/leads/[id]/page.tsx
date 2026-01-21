@@ -1,8 +1,8 @@
-import { cache } from 'react';
 import { eq, desc } from 'drizzle-orm';
 import { Globe, TrendingUp, Package, FileText, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 
 import { LeadOverviewClient } from '@/components/leads/lead-overview-client';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,13 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import {
+  LEAD_PUBLIC_FIELDS,
+  RFP_PUBLIC_FIELDS,
+  BUSINESS_UNIT_PUBLIC_FIELDS,
+  WEBSITE_AUDIT_PUBLIC_FIELDS,
+  PT_ESTIMATION_PUBLIC_FIELDS,
+} from '@/lib/db/projections';
 import {
   leads,
   rfps,
@@ -26,38 +33,43 @@ import {
 
 // Cached function for fetching lead with all related data in parallel
 const getLeadWithDetails = cache(async (id: string) => {
-  // Phase 1: Fetch lead first (dependency root)
-  const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+  // Phase 1: Fetch lead first (dependency root) - only select public fields
+  const [lead] = await db.select(LEAD_PUBLIC_FIELDS).from(leads).where(eq(leads.id, id)).limit(1);
 
   if (!lead) {
     return null;
   }
 
-  // Phase 2: Parallel fetch for all independent queries
-  const [rfp, businessUnit, websiteAudit, cmsMatches, ptEstimation, refMatches] =
-    await Promise.all([
-      // Get related RFP (depends on lead.rfpId)
+  // Phase 2: Parallel fetch for all independent queries - select only needed fields
+  const [rfp, businessUnit, websiteAudit, cmsMatches, ptEstimation, refMatches] = await Promise.all(
+    [
+      // Get related RFP (depends on lead.rfpId) - only public fields
       lead.rfpId
-        ? db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1).then((r) => r[0])
+        ? db
+            .select(RFP_PUBLIC_FIELDS)
+            .from(rfps)
+            .where(eq(rfps.id, lead.rfpId))
+            .limit(1)
+            .then(r => r[0])
         : Promise.resolve(null),
 
-      // Get business unit (depends on lead.businessUnitId)
+      // Get business unit (depends on lead.businessUnitId) - only public fields
       db
-        .select()
+        .select(BUSINESS_UNIT_PUBLIC_FIELDS)
         .from(businessUnits)
         .where(eq(businessUnits.id, lead.businessUnitId))
         .limit(1)
-        .then((r) => r[0]),
+        .then(r => r[0]),
 
-      // Get Website Audit data (depends on lead.id)
+      // Get Website Audit data (depends on lead.id) - only public fields
       db
-        .select()
+        .select(WEBSITE_AUDIT_PUBLIC_FIELDS)
         .from(websiteAudits)
         .where(eq(websiteAudits.leadId, id))
         .limit(1)
-        .then((r) => r[0]),
+        .then(r => r[0]),
 
-      // Get CMS Match Results (depends on lead.id)
+      // Get CMS Match Results (depends on lead.id) - select specific fields
       db
         .select({
           match: cmsMatchResults,
@@ -69,15 +81,15 @@ const getLeadWithDetails = cache(async (id: string) => {
         .orderBy(desc(cmsMatchResults.rank))
         .limit(3),
 
-      // Get PT Estimation (depends on lead.id)
+      // Get PT Estimation (depends on lead.id) - only public fields
       db
-        .select()
+        .select(PT_ESTIMATION_PUBLIC_FIELDS)
         .from(ptEstimations)
         .where(eq(ptEstimations.leadId, id))
         .limit(1)
-        .then((r) => r[0]),
+        .then(r => r[0]),
 
-      // Get Reference Matches (depends on lead.id)
+      // Get Reference Matches (depends on lead.id) - select specific fields
       db
         .select({
           match: referenceMatches,
@@ -88,7 +100,8 @@ const getLeadWithDetails = cache(async (id: string) => {
         .where(eq(referenceMatches.leadId, id))
         .orderBy(desc(referenceMatches.rank))
         .limit(5),
-    ]);
+    ]
+  );
 
   return {
     lead,

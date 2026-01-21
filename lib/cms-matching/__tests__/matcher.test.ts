@@ -33,7 +33,8 @@ vi.mock('../../db', () => ({
 vi.mock('ai', () => ({
   generateObject: vi.fn().mockResolvedValue({
     object: {
-      reasoning: 'Drupal is a strong fit for this project due to excellent feature match and industry alignment.',
+      reasoning:
+        'Drupal is a strong fit for this project due to excellent feature match and industry alignment.',
     },
   }),
 }));

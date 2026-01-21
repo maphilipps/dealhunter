@@ -612,7 +612,9 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
                   <span className="text-sm text-muted-foreground">Kein Budget angegeben</span>
                 )}
                 {data.budgetRange.rawText && (
-                  <p className="text-sm text-muted-foreground">Originaltext: "{data.budgetRange.rawText}"</p>
+                  <p className="text-sm text-muted-foreground">
+                    Originaltext: "{data.budgetRange.rawText}"
+                  </p>
                 )}
               </div>
             </CardContent>
@@ -987,7 +989,9 @@ function RequiredDeliverablesCard({
               variant="outline"
               size="sm"
               className="text-xs"
-              onClick={() => onChange([...deliverables, { name: suggestion, mandatory: true, confidence: 80 }])}
+              onClick={() =>
+                onChange([...deliverables, { name: suggestion, mandatory: true, confidence: 80 }])
+              }
             >
               <Plus className="h-3 w-3 mr-1" />
               {suggestion}

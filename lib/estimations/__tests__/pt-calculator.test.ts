@@ -5,10 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  calculatePTEstimation,
-  type CalculatePTEstimationInput,
-} from '../pt-calculator';
+import { calculatePTEstimation, type CalculatePTEstimationInput } from '../pt-calculator';
 import type { ContentArchitectureResult } from '../../agents/content-architecture-agent';
 import type { MigrationComplexityResult } from '../../agents/migration-complexity-agent';
 import { db } from '../../db';
@@ -299,7 +296,9 @@ describe('PT Estimation Calculator', () => {
       mockFindFirst.mockResolvedValue(mockTech);
 
       const contentArchitecture = createMockContentArchitecture({
-        contentTypes: [{ name: 'Blog', pattern: '/blog/', estimatedCount: 100, characteristics: [] }],
+        contentTypes: [
+          { name: 'Blog', pattern: '/blog/', estimatedCount: 100, characteristics: [] },
+        ],
       });
 
       const input = createMockInput({ contentArchitecture });
@@ -528,7 +527,7 @@ describe('PT Estimation Calculator', () => {
       expect(testing?.percentage).toBe(10);
 
       // Verify hours match percentages (with rounding tolerance)
-      const expectedFoundation = Math.round(result.totalPT * 0.30);
+      const expectedFoundation = Math.round(result.totalPT * 0.3);
       const expectedCustomDev = Math.round(result.totalPT * 0.35);
       expect(foundation?.hours).toBe(expectedFoundation);
       expect(customDev?.hours).toBe(expectedCustomDev);
@@ -609,7 +608,9 @@ describe('PT Estimation Calculator', () => {
       const result = await calculatePTEstimation(input);
 
       expect(result.success).toBe(true);
-      expect(result.assumptions.some(a => a.includes('Baseline: adessoCMS Drupal (693h)'))).toBe(true);
+      expect(result.assumptions.some(a => a.includes('Baseline: adessoCMS Drupal (693h)'))).toBe(
+        true
+      );
     });
 
     it('should add high complexity assumption for score > 50', async () => {
@@ -624,7 +625,9 @@ describe('PT Estimation Calculator', () => {
 
       expect(result.success).toBe(true);
       expect(
-        result.assumptions.some(a => a.includes('High complexity requires additional architecture workshops'))
+        result.assumptions.some(a =>
+          a.includes('High complexity requires additional architecture workshops')
+        )
       ).toBe(true);
     });
 
@@ -640,7 +643,9 @@ describe('PT Estimation Calculator', () => {
 
       expect(result.success).toBe(true);
       expect(
-        result.assumptions.some(a => a.includes('Large content volume requires dedicated migration tooling'))
+        result.assumptions.some(a =>
+          a.includes('Large content volume requires dedicated migration tooling')
+        )
       ).toBe(true);
     });
 
@@ -671,7 +676,9 @@ describe('PT Estimation Calculator', () => {
 
       expect(result.success).toBe(true);
       expect(
-        result.assumptions.some(a => a.includes('Many custom content types require extensive content modeling'))
+        result.assumptions.some(a =>
+          a.includes('Many custom content types require extensive content modeling')
+        )
       ).toBe(true);
     });
   });

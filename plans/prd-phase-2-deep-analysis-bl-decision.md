@@ -12,6 +12,7 @@
 Business Developer (BD) haben in Phase 1 ein RFP durch Quick Scan analysiert und einer Business Unit (BU) zugewiesen. Jetzt benötigt der **Bereichsleiter (BL)** tiefgreifende Informationen, um eine fundierte **BID/NO-BID Entscheidung** zu treffen.
 
 Aktuell fehlt:
+
 - **Automatischer Deep-Scan** nach BU-Zuweisung
 - **Umfassende Website-Analyse** (Tech Stack, Content Architecture, Performance, Accessibility)
 - **PT-Schätzung** basierend auf Baseline-Projekten
@@ -183,12 +184,14 @@ Der BL muss manuell recherchieren, was zu **inkonsistenten Entscheidungen** und 
 ### Architektur & Datenmodell
 
 **Lead-Entity als zentrale Phase 2 Entität:**
+
 - `leads` table ist bereits im Schema vorhanden
 - Status-Enum: `routed | full_scanning | bl_reviewing | bid_voted | archived`
 - Denormalisierte Daten vom RFP (customerName, industry, websiteUrl, projectDescription, budget, requirements) für schnellen Zugriff
 - Foreign Keys: `rfpId` (Source), `businessUnitId` (Routing), `blVotedByUserId` (Decision Maker)
 
 **Agent Output Tables:**
+
 - `websiteAudits` - Full-Scan Results (Tech Stack, Performance, Screenshots)
 - `ptEstimations` - PT Schätzung mit Phasen/Disziplinen
 - `cmsMatchResults` - CMS Ranking mit Scores
@@ -196,6 +199,7 @@ Der BL muss manuell recherchieren, was zu **inkonsistenten Entscheidungen** und 
 - Alle mit Foreign Key `leadId` verknüpft
 
 **Workflow-Status Transitions:**
+
 ```
 RFP (status: routed)
   ↓ [Automatische Lead-Erstellung]
@@ -213,6 +217,7 @@ Lead (status: archived)
 ### Agent Implementation
 
 **Full-Scan Agent:**
+
 - Wiederverwendung von `lib/full-scan/actions.ts` (bereits implementiert)
 - `crawlWebsite()` für Website Crawling (max 10 Seiten)
 - Tech Stack Detection via `tech-stack-detection.ts`
@@ -220,6 +225,7 @@ Lead (status: archived)
 - Async Execution mit Progress Tracking
 
 **Content Architecture Agent:**
+
 - Neue Implementierung in `lib/agents/content-architecture-agent.ts`
 - Nutzt Full-Scan Ergebnisse (crawledPages) als Input
 - Analysiert Navigation Structure, Content Types, Site Tree
@@ -227,6 +233,7 @@ Lead (status: archived)
 - Speichert in `websiteAudits` table (contentTypes, navigationStructure, siteTree, pageCount)
 
 **Migration Complexity Agent:**
+
 - Neue Implementierung in `lib/agents/migration-complexity-agent.ts`
 - Input: Tech Stack (von Full-Scan), Content Volume (von Content Architecture)
 - Berechnet Complexity Score (0-100) basierend auf:
@@ -237,6 +244,7 @@ Lead (status: archived)
 - Speichert in `websiteAudits` table (migrationComplexity, complexityScore, complexityFactors, migrationRisks)
 
 **Accessibility Audit Agent:**
+
 - Neue Implementierung in `lib/agents/accessibility-audit-agent.ts`
 - Nutzt Playwright + Axe-core für WCAG 2.1 AA Checks
 - Generiert Accessibility Score (0-100)
@@ -245,6 +253,7 @@ Lead (status: archived)
 - Speichert in `websiteAudits` table (accessibilityScore, wcagLevel, a11yViolations, a11yIssueCount, estimatedFixHours)
 
 **Agent Orchestration:**
+
 1. Lead erstellt → Status `routed`
 2. Full-Scan Agent startet → Status `full_scanning`
 3. Full-Scan completed → Content/Migration/A11y Agents parallel starten
@@ -254,6 +263,7 @@ Lead (status: archived)
 ### BL Review Interface
 
 **Leads-Bereich (separater Raum):**
+
 - Route: `/leads` (Liste aller Leads für BL's BU)
 - Route: `/leads/[id]` (Lead Overview)
 - Route: `/leads/[id]/website-audit` (Detaillierte Website Audit Ansicht)
@@ -261,6 +271,7 @@ Lead (status: archived)
 - Route: `/leads/[id]/decision` (BID/NO-BID Voting Interface)
 
 **UI Components:**
+
 - `LeadStatusBadge` - Status-Anzeige mit Farben (routed: gray, full_scanning: blue, bl_reviewing: yellow, bid_voted: green, archived: red)
 - `WebsiteAuditCard` - Zusammenfassung Tech Stack, Performance, A11y
 - `PTEstimationChart` - Phasen-Breakdown als Stacked Bar Chart (ShadCN `chart-bar-stacked`)
@@ -269,6 +280,7 @@ Lead (status: archived)
 - `BIDDecisionForm` - Vote + Confidence Slider + Reasoning Textarea
 
 **Datenfluss:**
+
 ```
 Server Component (Lead Page)
   ↓ [db.select() joins]
@@ -286,11 +298,13 @@ Phase 3 oder Archive
 ### PT Estimation Logic
 
 **Baseline Matching:**
+
 - `technologies` table enthält `baselineHours` und `baselineEntityCounts`
 - Matching: CMS aus Full-Scan → Technology Record
 - Baseline nicht gefunden → Fallback auf Default (z.B. Drupal Standard Baseline)
 
 **Delta Calculation:**
+
 ```typescript
 interface DeltaCalculation {
   deltaContentTypes: number; // detected - baseline
@@ -311,6 +325,7 @@ totalPT = baselineHours + additionalPT;
 ```
 
 **Phasen-Breakdown (Standard-Verteilung):**
+
 - Discovery & Planning: 10%
 - Infrastructure Setup: 8%
 - Content Architecture: 20%
@@ -321,6 +336,7 @@ totalPT = baselineHours + additionalPT;
 - Training & Handover: 7%
 
 **Discipline Matrix (Standard-Verteilung):**
+
 - Architect: 15%
 - Senior Developer: 40%
 - Junior Developer: 25%
@@ -330,6 +346,7 @@ totalPT = baselineHours + additionalPT;
 ### CMS Matching Logic
 
 **Scoring-Gewichtung:**
+
 - Feature Score: 40%
 - Industry Score: 20%
 - Size Score: 15%
@@ -337,11 +354,13 @@ totalPT = baselineHours + additionalPT;
 - Migration Score: 10%
 
 **Feature Matching:**
+
 - Required Features aus RFP Requirements extrahieren
 - Pro CMS: Feature-Support aus `technologies.features` abrufen
-- Feature Match % = (Supported Features / Required Features) * 100
+- Feature Match % = (Supported Features / Required Features) \* 100
 
 **Industry Matching:**
+
 - Industry aus Lead extrahieren
 - Pro CMS: `targetAudiences` aus `technologies` table
 - Industry Fit = Fuzzy Match Score (0-100)
@@ -349,6 +368,7 @@ totalPT = baselineHours + additionalPT;
 ### Background Job Tracking
 
 **Verwendung von `backgroundJobs` table:**
+
 - `jobType`: `'deep-analysis'`
 - `rfpId`: Lead ID (für Rückwärtskompatibilität)
 - `status`: `pending | running | completed | failed`
@@ -358,6 +378,7 @@ totalPT = baselineHours + additionalPT;
 - `errorMessage`: Fehler-Details bei Failure
 
 **Job-Update Flow:**
+
 ```typescript
 // 1. Job erstellen
 const job = await db.insert(backgroundJobs).values({
@@ -365,43 +386,46 @@ const job = await db.insert(backgroundJobs).values({
   rfpId: leadId,
   userId: session.user.id,
   status: 'pending',
-  progress: 0
+  progress: 0,
 });
 
 // 2. Full-Scan Start
 await db.update(backgroundJobs).set({
   status: 'running',
   currentStep: 'Full-Scan Agent läuft...',
-  progress: 10
+  progress: 10,
 });
 
 // 3. Full-Scan Complete
 await db.update(backgroundJobs).set({
   currentStep: 'Content/Migration/A11y Agents laufen...',
-  progress: 50
+  progress: 50,
 });
 
 // 4. Alle Agents Complete
 await db.update(backgroundJobs).set({
   status: 'completed',
   progress: 100,
-  result: JSON.stringify({ websiteAuditId, ptEstimationId })
+  result: JSON.stringify({ websiteAuditId, ptEstimationId }),
 });
 ```
 
 ### Testing Strategy
 
 **Unit Tests (Vitest):**
+
 - Agent Logic isoliert testen (Content Architecture, Migration Complexity, A11y)
 - PT Estimation Calculations testen (Delta, Phasen, Disziplinen)
 - CMS Matching Score Berechnung testen
 
 **Integration Tests:**
+
 - Full-Scan Agent mit Mock Website testen
 - Lead Creation + Agent Orchestration testen
 - BL Decision Flow testen (BID/NO-BID)
 
 **E2E Tests (Playwright):**
+
 - Lead Overview Page laden
 - Website Audit Card prüfen
 - PT Estimation Chart prüfen
@@ -409,6 +433,7 @@ await db.update(backgroundJobs).set({
 - Status-Transition verifizieren (bl_reviewing → bid_voted)
 
 **Test Data:**
+
 - Mock Website für Crawling (lokaler HTTP Server)
 - Mock Technology Records mit Baseline-Daten
 - Mock Reference Projects für Matching
@@ -418,12 +443,14 @@ await db.update(backgroundJobs).set({
 ## Testing Decisions
 
 **Gute Tests für Phase 2:**
+
 - Testen **externe Behavior**, nicht interne Implementation
 - Fokus auf **Agent Outputs** (WebsiteAudit, PTEstimation, CMSMatch), nicht wie Agents intern arbeiten
 - **Status-Transitions** verifizieren (routed → full_scanning → bl_reviewing → bid_voted)
 - **BL Decision Logic** testen (Vote speichern, Confidence validieren, Reasoning required)
 
 **Modules die getestet werden:**
+
 1. **Agent Orchestrator** (`lib/agents/orchestrator.ts`)
    - Startet Full-Scan, dann Content/Migration/A11y parallel
    - Fehlerhandling bei Agent Failures
@@ -446,6 +473,7 @@ await db.update(backgroundJobs).set({
    - Audit Trail Logging
 
 **Prior Art:**
+
 - `__tests__/lib/full-scan/website-crawler.test.ts` - Website Crawling Tests
 - `__tests__/lib/cms-matching/actions.test.ts` - CMS Matching Tests
 - `__tests__/e2e/rfp-detail-view.spec.ts` - E2E Tests für RFP Detail View (als Vorlage für Lead View)
@@ -462,59 +490,59 @@ await db.update(backgroundJobs).set({
    - Automatische Team-Zuweisung
    - Skill Matching gegen Employee Pool
    - Team Notifications
-   → Wird in separatem Epic behandelt
+     → Wird in separatem Epic behandelt
 
 2. **Advanced Decision Tree**
    - Multi-Stakeholder Approval
    - Kriterien-basiertes Scoring (mit Gewichtung)
    - Decision Workflows mit Approvals
-   → Simple BID/NO-BID Vote ist ausreichend für MVP
+     → Simple BID/NO-BID Vote ist ausreichend für MVP
 
 3. **Real-time Agent Streaming UI**
    - Live Agent Activity Stream
    - Reasoning Display während Agent läuft
    - Tool Call Visualization
-   → Background Job mit Progress Updates ist einfacher und robuster
+     → Background Job mit Progress Updates ist einfacher und robuster
 
 4. **Competitive Intelligence**
    - Competitor Matching gegen Lead (bereits im Schema, aber nicht implementiert)
    - Web Search für Wettbewerber
-   → Zu aufwendig für Phase 2, kann später ergänzt werden
+     → Zu aufwendig für Phase 2, kann später ergänzt werden
 
 5. **Advanced Baseline Comparison**
    - `baselineComparisons` table existiert, aber detaillierte Comparison UI fehlt
    - Granulare Entity-Level Deltas (Content Types, Paragraphs, Taxonomies, Views)
-   → PT Estimation nutzt vereinfachte Delta-Logik für MVP
+     → PT Estimation nutzt vereinfachte Delta-Logik für MVP
 
 6. **Legal Compliance Audit**
    - GDPR Compliance Check
    - Cookie Banner Analysis
    - Impressum/Datenschutz Prüfung
-   → `websiteAudits.legalCompliance` field existiert, aber Agent nicht implementiert
+     → `websiteAudits.legalCompliance` field existiert, aber Agent nicht implementiert
 
 7. **SEO Audit**
    - Meta Tags Analyse
    - Sitemap Check
    - PageSpeed Insights Integration
-   → `websiteAudits.seoScore` field existiert, aber Agent nicht implementiert
+     → `websiteAudits.seoScore` field existiert, aber Agent nicht implementiert
 
 8. **Custom Migration Strategy**
    - Content Migration Skripte generieren
    - Redirect Mapping erstellen
    - Data Validation Checks
-   → Migration Complexity wird geschätzt, aber keine Implementierungs-Details
+     → Migration Complexity wird geschätzt, aber keine Implementierungs-Details
 
 9. **Cost Estimation**
    - 5-Jahres TCO Berechnung
    - Hosting Cost Estimation
    - License Cost Tracking
-   → PT Estimation liefert Hours, aber keine Euro-Beträge
+     → PT Estimation liefert Hours, aber keine Euro-Beträge
 
 10. **Interactive Decision Support**
     - "Request More Info" Flow (Schema vorhanden, aber UI nicht implementiert)
     - Back-and-forth Chat mit BD
     - Conditional Questions basierend auf Scan Results
-    → Einfacher One-Shot Decision Flow für MVP
+      → Einfacher One-Shot Decision Flow für MVP
 
 ---
 
@@ -523,6 +551,7 @@ await db.update(backgroundJobs).set({
 ### Technische Abhängigkeiten
 
 **Existierende Implementierung nutzen:**
+
 - `lib/full-scan/actions.ts` - Full-Scan Agent (DEA-39 implementiert)
 - `lib/full-scan/website-crawler.ts` - Website Crawling
 - `lib/full-scan/tech-stack-detection.ts` - Tech Stack Detection
@@ -530,6 +559,7 @@ await db.update(backgroundJobs).set({
 - `components/bids/cms-evaluation-matrix.tsx` - CMS Matrix UI (für Leads anpassbar)
 
 **Neue Module benötigt:**
+
 - `lib/agents/content-architecture-agent.ts` - Content Architecture Analysis
 - `lib/agents/migration-complexity-agent.ts` - Migration Complexity Scoring
 - `lib/agents/accessibility-audit-agent.ts` - WCAG Compliance Check
@@ -539,6 +569,7 @@ await db.update(backgroundJobs).set({
 - `lib/leads/conversion.ts` - RFP → Lead Conversion Logic
 
 **UI Routes benötigt:**
+
 - `app/(dashboard)/leads/page.tsx` - Lead List (gefiltert nach BL's BU)
 - `app/(dashboard)/leads/[id]/page.tsx` - Lead Overview (bereits vorhanden, erweitern)
 - `app/(dashboard)/leads/[id]/website-audit/page.tsx` - Website Audit Details
@@ -548,17 +579,20 @@ await db.update(backgroundJobs).set({
 ### Performance Überlegungen
 
 **Background Job Optimierung:**
+
 - Agents parallel starten (Content/Migration/A11y) spart ~30% Zeit vs. sequentiell
 - Crawling auf 10 Seiten limitieren (Trade-off: Schnelligkeit vs. Genauigkeit)
 - Redis Caching für Tech Stack Detection Results (gleiche Website mehrfach scannen)
 - Timeout für Agents setzen (max 5 Minuten pro Agent)
 
 **Database Queries:**
+
 - Eager Loading: Lead + WebsiteAudit + PTEstimation + CMSMatches in einem Query (JOIN)
 - Index auf `leads.businessUnitId` + `leads.status` für BL-Filtered Queries
 - Index auf `websiteAudits.leadId` für schnelles Lookup
 
 **UI Performance:**
+
 - Server Components für Lead Overview (kein JavaScript für statische Daten)
 - Client Components nur für Interactive Parts (BID/NO-BID Form, Charts)
 - Streaming UI mit Suspense für langsame Daten (Screenshots, Large JSONs)
@@ -566,6 +600,7 @@ await db.update(backgroundJobs).set({
 ### Migration Path
 
 **Phase 2 Roll-out:**
+
 1. **Week 1-2:** Agent Implementation (Content, Migration, A11y)
 2. **Week 3:** Agent Orchestration + Background Jobs
 3. **Week 4:** PT Estimation + CMS Matching
@@ -575,6 +610,7 @@ await db.update(backgroundJobs).set({
 7. **Week 9:** Production Deployment
 
 **Backwards Compatibility:**
+
 - Bestehende RFPs unverändert (Phase 1 funktioniert weiter)
 - Lead-Erstellung optional (nur bei BU-Assignment)
 - Alte `rfps.status = 'routed'` migrieren zu neuem Lead-Flow (Data Migration Script)
@@ -582,6 +618,7 @@ await db.update(backgroundJobs).set({
 ### Monitoring & Observability
 
 **Key Metrics:**
+
 - Deep-Scan Success Rate (completed / total)
 - Average Scan Duration (per Agent)
 - BL Decision Time (Lead created → Decision made)
@@ -589,6 +626,7 @@ await db.update(backgroundJobs).set({
 - PT Estimation Accuracy (später: Actual vs. Estimated)
 
 **Alerts:**
+
 - Deep-Scan Failure Rate > 10%
 - Agent Timeout Rate > 5%
 - BL Decision Time > 7 Tage (SLA Breach)
@@ -597,6 +635,7 @@ await db.update(backgroundJobs).set({
 ### Beispiel-Output (Referenz)
 
 **Website Audit ähnlich zu `/audits/audit_lucarnofestival.ch/AUDIT_SUMMARY.md`:**
+
 - Executive Summary mit Budget/Timeline
 - Tech Stack (Magnolia CMS 6.3 → Drupal 11)
 - Content Architecture (23 Content Types, 35 Components, 12.000 Nodes)

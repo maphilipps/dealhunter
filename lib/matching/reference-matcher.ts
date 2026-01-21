@@ -96,7 +96,10 @@ function calculateTechStackMatch(
  * Calculate industry matching score
  * Simple exact match (100) or no match (0)
  */
-function calculateIndustryMatch(leadIndustry: string | null, referenceIndustry: string): IndustryMatch {
+function calculateIndustryMatch(
+  leadIndustry: string | null,
+  referenceIndustry: string
+): IndustryMatch {
   if (!leadIndustry) {
     return { score: 0, matchedIndustries: [] };
   }

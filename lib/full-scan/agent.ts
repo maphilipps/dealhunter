@@ -22,39 +22,47 @@ import { AgentEventType } from '@/lib/streaming/event-types';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const componentAnalysisSchema = z.object({
-  patterns: z.array(z.object({
-    name: z.string().describe('Component name (e.g., "Hero Banner", "Card Grid")'),
-    frequency: z.number().describe('How often this pattern appears'),
-    variants: z.number().describe('Number of variations found'),
-    complexity: z.enum(['low', 'medium', 'high']).describe('Implementation complexity'),
-    examples: z.array(z.string()).describe('Example URLs where pattern appears'),
-  })),
+  patterns: z.array(
+    z.object({
+      name: z.string().describe('Component name (e.g., "Hero Banner", "Card Grid")'),
+      frequency: z.number().describe('How often this pattern appears'),
+      variants: z.number().describe('Number of variations found'),
+      complexity: z.enum(['low', 'medium', 'high']).describe('Implementation complexity'),
+      examples: z.array(z.string()).describe('Example URLs where pattern appears'),
+    })
+  ),
   totalComponents: z.number().describe('Total unique component types identified'),
   estimatedComplexity: z.enum(['simple', 'moderate', 'complex', 'very-complex']),
 });
 
 const integrationAnalysisSchema = z.object({
-  apis: z.array(z.object({
-    type: z.string().describe('API type (REST, GraphQL, SOAP, etc.)'),
-    purpose: z.string().describe('What this integration is used for'),
-    complexity: z.enum(['low', 'medium', 'high']),
-    migrationNotes: z.string().describe('Notes for migration'),
-  })),
-  thirdPartyServices: z.array(z.object({
-    name: z.string().describe('Service name (e.g., "Google Analytics", "Stripe")'),
-    category: z.string().describe('Category (Analytics, Payment, CRM, etc.)'),
-    critical: z.boolean().describe('Is this service critical?'),
-  })),
+  apis: z.array(
+    z.object({
+      type: z.string().describe('API type (REST, GraphQL, SOAP, etc.)'),
+      purpose: z.string().describe('What this integration is used for'),
+      complexity: z.enum(['low', 'medium', 'high']),
+      migrationNotes: z.string().describe('Notes for migration'),
+    })
+  ),
+  thirdPartyServices: z.array(
+    z.object({
+      name: z.string().describe('Service name (e.g., "Google Analytics", "Stripe")'),
+      category: z.string().describe('Category (Analytics, Payment, CRM, etc.)'),
+      critical: z.boolean().describe('Is this service critical?'),
+    })
+  ),
   totalIntegrations: z.number(),
 });
 
 const contentVolumeAnalysisSchema = z.object({
   totalPages: z.number().describe('Total number of pages found'),
-  pagesByType: z.array(z.object({
-    type: z.string().describe('Page type (e.g., "Product", "Article", "Landing Page")'),
-    count: z.number().describe('Number of pages of this type'),
-    sampleUrls: z.array(z.string()).describe('Example URLs'),
-  })),
+  pagesByType: z.array(
+    z.object({
+      type: z.string().describe('Page type (e.g., "Product", "Article", "Landing Page")'),
+      count: z.number().describe('Number of pages of this type'),
+      sampleUrls: z.array(z.string()).describe('Example URLs'),
+    })
+  ),
   contentTypes: z.number().describe('Number of distinct content types'),
   estimatedContentTypes: z.array(z.string()).describe('List of content type names'),
 });
@@ -62,11 +70,13 @@ const contentVolumeAnalysisSchema = z.object({
 const migrationComplexityScoreSchema = z.object({
   score: z.number().min(0).max(100).describe('Migration complexity score (0-100)'),
   level: z.enum(['low', 'medium', 'high', 'very-high']),
-  factors: z.array(z.object({
-    factor: z.string().describe('Factor name'),
-    impact: z.enum(['low', 'medium', 'high']),
-    explanation: z.string(),
-  })),
+  factors: z.array(
+    z.object({
+      factor: z.string().describe('Factor name'),
+      impact: z.enum(['low', 'medium', 'high']),
+      explanation: z.string(),
+    })
+  ),
   recommendations: z.array(z.string()).describe('Migration recommendations'),
 });
 
@@ -75,11 +85,15 @@ export const fullScanResultSchema = z.object({
   integrations: integrationAnalysisSchema,
   contentVolume: contentVolumeAnalysisSchema,
   migrationComplexity: migrationComplexityScoreSchema,
-  screenshots: z.array(z.object({
-    url: z.string(),
-    pageName: z.string(),
-    capturedAt: z.string(),
-  })).optional(),
+  screenshots: z
+    .array(
+      z.object({
+        url: z.string(),
+        pageName: z.string(),
+        capturedAt: z.string(),
+      })
+    )
+    .optional(),
   completedAt: z.string(),
   duration: z.number().describe('Scan duration in milliseconds'),
 });
@@ -155,13 +169,16 @@ export async function runFullScan(
     // Phase 4: Migration Complexity Scoring (1-2 min)
     logProgress('complexity-scoring', 'Calculating migration complexity score');
 
-    const migrationComplexity = await scoreMigrationComplexity({
-      components,
-      integrations,
-      contentVolume,
-      sourceCMS: input.quickScanData?.cms || 'Unknown',
-      targetCMS: input.targetCMS || 'Drupal',
-    }, logProgress);
+    const migrationComplexity = await scoreMigrationComplexity(
+      {
+        components,
+        integrations,
+        contentVolume,
+        sourceCMS: input.quickScanData?.cms || 'Unknown',
+        targetCMS: input.targetCMS || 'Drupal',
+      },
+      logProgress
+    );
 
     const duration = Date.now() - startTime;
 
@@ -218,7 +235,8 @@ async function analyzeComponents(
   const result = await generateStructuredOutput({
     model: 'default',
     schema: componentAnalysisSchema,
-    system: 'You are an expert website analyst specializing in UI component identification and complexity assessment.',
+    system:
+      'You are an expert website analyst specializing in UI component identification and complexity assessment.',
     prompt: `Analyze the website at ${websiteUrl} and identify common UI component patterns.
 
 Based on typical website structures, estimate:
@@ -246,7 +264,8 @@ async function analyzeIntegrations(
   const result = await generateStructuredOutput({
     model: 'default',
     schema: integrationAnalysisSchema,
-    system: 'You are an expert in website integration analysis and third-party service identification.',
+    system:
+      'You are an expert in website integration analysis and third-party service identification.',
     prompt: `Analyze potential external integrations and third-party services for ${websiteUrl}.
 
 Consider common integrations:

@@ -18,16 +18,20 @@ registry.register({
   async execute(input, _context: ToolContext) {
     let results;
     if (input.businessUnitId) {
-      results = await db.select().from(technologies)
+      results = await db
+        .select()
+        .from(technologies)
         .where(eq(technologies.businessUnitId, input.businessUnitId))
         .orderBy(desc(technologies.createdAt))
         .limit(input.limit);
     } else {
-      results = await db.select().from(technologies)
+      results = await db
+        .select()
+        .from(technologies)
         .orderBy(desc(technologies.createdAt))
         .limit(input.limit);
     }
-    
+
     return { success: true, data: results };
   },
 });
@@ -42,14 +46,16 @@ registry.register({
   category: 'technology',
   inputSchema: getTechnologyInputSchema,
   async execute(input, _context: ToolContext) {
-    const [technology] = await db.select().from(technologies)
+    const [technology] = await db
+      .select()
+      .from(technologies)
       .where(eq(technologies.id, input.id))
       .limit(1);
-    
+
     if (!technology) {
       return { success: false, error: 'Technology not found' };
     }
-    
+
     return { success: true, data: technology };
   },
 });
@@ -77,29 +83,34 @@ registry.register({
     if (context.userRole !== 'admin') {
       return { success: false, error: 'Nur Admin kann Technologien erstellen' };
     }
-    
-    const [bu] = await db.select().from(businessUnits)
+
+    const [bu] = await db
+      .select()
+      .from(businessUnits)
       .where(eq(businessUnits.id, input.businessUnitId))
       .limit(1);
-    
+
     if (!bu) {
       return { success: false, error: 'Business Unit not found' };
     }
-    
-    const [technology] = await db.insert(technologies).values({
-      name: input.name,
-      businessUnitId: input.businessUnitId,
-      category: input.category,
-      description: input.description,
-      websiteUrl: input.websiteUrl,
-      githubUrl: input.githubUrl,
-      license: input.license,
-      pros: input.pros ? JSON.stringify(input.pros) : null,
-      cons: input.cons ? JSON.stringify(input.cons) : null,
-      usps: input.usps ? JSON.stringify(input.usps) : null,
-      useCases: input.useCases ? JSON.stringify(input.useCases) : null,
-    }).returning();
-    
+
+    const [technology] = await db
+      .insert(technologies)
+      .values({
+        name: input.name,
+        businessUnitId: input.businessUnitId,
+        category: input.category,
+        description: input.description,
+        websiteUrl: input.websiteUrl,
+        githubUrl: input.githubUrl,
+        license: input.license,
+        pros: input.pros ? JSON.stringify(input.pros) : null,
+        cons: input.cons ? JSON.stringify(input.cons) : null,
+        usps: input.usps ? JSON.stringify(input.usps) : null,
+        useCases: input.useCases ? JSON.stringify(input.useCases) : null,
+      })
+      .returning();
+
     return { success: true, data: technology };
   },
 });
@@ -127,15 +138,17 @@ registry.register({
     if (context.userRole !== 'admin') {
       return { success: false, error: 'Nur Admin kann Technologien bearbeiten' };
     }
-    
-    const [existing] = await db.select().from(technologies)
+
+    const [existing] = await db
+      .select()
+      .from(technologies)
       .where(eq(technologies.id, input.id))
       .limit(1);
-    
+
     if (!existing) {
       return { success: false, error: 'Technology not found' };
     }
-    
+
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (input.name) updateData.name = input.name;
     if (input.category !== undefined) updateData.category = input.category;
@@ -147,12 +160,13 @@ registry.register({
     if (input.cons) updateData.cons = JSON.stringify(input.cons);
     if (input.usps) updateData.usps = JSON.stringify(input.usps);
     if (input.useCases) updateData.useCases = JSON.stringify(input.useCases);
-    
-    const [updated] = await db.update(technologies)
+
+    const [updated] = await db
+      .update(technologies)
       .set(updateData)
       .where(eq(technologies.id, input.id))
       .returning();
-    
+
     return { success: true, data: updated };
   },
 });
@@ -170,17 +184,19 @@ registry.register({
     if (context.userRole !== 'admin') {
       return { success: false, error: 'Nur Admin kann Technologien löschen' };
     }
-    
-    const [existing] = await db.select().from(technologies)
+
+    const [existing] = await db
+      .select()
+      .from(technologies)
       .where(eq(technologies.id, input.id))
       .limit(1);
-    
+
     if (!existing) {
       return { success: false, error: 'Technology not found' };
     }
-    
+
     await db.delete(technologies).where(eq(technologies.id, input.id));
-    
+
     return { success: true, data: { id: input.id, deleted: true } };
   },
 });

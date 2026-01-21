@@ -15,9 +15,11 @@ import type { ExtractedRequirements } from '@/lib/extraction/schema';
 export const DuplicateCheckAgentOutputSchema = z.object({
   hasDuplicates: z.boolean().describe('Whether duplicates were found'),
   confidence: z.number().min(0).max(100).describe('Confidence score (0-100)'),
-  recommendation: z.enum(['merge', 'manual_review', 'create_new']).describe(
-    'Recommended action: merge (>90% similarity), manual_review (70-90%), create_new (<70%)'
-  ),
+  recommendation: z
+    .enum(['merge', 'manual_review', 'create_new'])
+    .describe(
+      'Recommended action: merge (>90% similarity), manual_review (70-90%), create_new (<70%)'
+    ),
   reasoning: z.string().describe('Explanation of the decision'),
   exactMatches: z.array(
     z.object({
@@ -75,10 +77,7 @@ export async function runDuplicateCheckAgent(params: {
   }
 
   // Calculate highest similarity
-  const highestSimilarity = Math.max(
-    ...duplicateResult.similarMatches.map(m => m.similarity),
-    0
-  );
+  const highestSimilarity = Math.max(...duplicateResult.similarMatches.map(m => m.similarity), 0);
 
   // Use AI to analyze duplicate result and provide structured recommendation
   const result = await generateObject({

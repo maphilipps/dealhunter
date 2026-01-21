@@ -70,36 +70,39 @@ Der QuickScan analysiert Websites automatisch, um technische Details, Content-St
 **Zweck:** Schnelles Scheitern bei nicht erreichbaren URLs, bevor teure Operationen starten.
 
 **Ablauf:**
+
 1. URL-Format und Sicherheit validieren (SSRF-Schutz)
 2. HEAD-Request mit 10s Timeout
 3. Redirects folgen, finale URL erfassen
 4. Bei Fehler: Alternative URLs testen
 
 **Rückgabe:**
+
 ```typescript
 interface UrlCheckResult {
   reachable: boolean;
   finalUrl: string;
-  suggestedUrl?: string;      // Alternative wenn nicht erreichbar
-  reason?: string;            // Fehlerbeschreibung
+  suggestedUrl?: string; // Alternative wenn nicht erreichbar
+  reason?: string; // Fehlerbeschreibung
   statusCode?: number;
-  redirectChain?: string[];   // Redirect-Pfad
+  redirectChain?: string[]; // Redirect-Pfad
 }
 ```
 
 ### Fehlerbehandlung und Vorschläge
 
-| Fehler | Vorschlag |
-|--------|-----------|
-| DNS nicht gefunden (`ENOTFOUND`) | www.domain.com oder domain.com (Toggle) |
-| SSL/Zertifikatsfehler | http:// statt https:// |
-| 404 Not Found | Homepage (/) statt Unterseite |
-| Timeout | Keine Alternative, klare Fehlermeldung |
-| 403 Forbidden | Keine Alternative, Hinweis auf Bot-Schutz |
+| Fehler                           | Vorschlag                                 |
+| -------------------------------- | ----------------------------------------- |
+| DNS nicht gefunden (`ENOTFOUND`) | www.domain.com oder domain.com (Toggle)   |
+| SSL/Zertifikatsfehler            | http:// statt https://                    |
+| 404 Not Found                    | Homepage (/) statt Unterseite             |
+| Timeout                          | Keine Alternative, klare Fehlermeldung    |
+| 403 Forbidden                    | Keine Alternative, Hinweis auf Bot-Schutz |
 
 ### Funktion: `tryUrlAlternatives(url)`
 
 Testet systematisch alternative URL-Formate:
+
 1. Homepage statt Unterseite
 2. Mit/ohne www-Prefix
 
@@ -130,6 +133,7 @@ enum AgentEventType {
 ### URL Check Events
 
 **`url-check`** - Ergebnis der Erreichbarkeitsprüfung:
+
 ```typescript
 interface UrlCheckData {
   originalUrl: string;
@@ -141,6 +145,7 @@ interface UrlCheckData {
 ```
 
 **`url-suggestion`** - Vorgeschlagene Alternative bei Fehler:
+
 ```typescript
 interface UrlSuggestionData {
   originalUrl: string;
@@ -195,11 +200,13 @@ Folgende Daten werden **nicht** im QuickScan gespeichert, sondern vom Audit Skil
 ### ActivityStream Komponente
 
 Die `ActivityStream` Komponente zeigt:
+
 - Live-Agent-Aktivität während des Scans
 - Fehler mit URL-Vorschlägen
 - Button "Mit dieser URL scannen" bei Vorschlag
 
 **Props:**
+
 ```typescript
 interface ActivityStreamProps {
   streamUrl: string;
@@ -215,12 +222,14 @@ interface ActivityStreamProps {
 ### useAgentStream Hook
 
 Der Hook verwaltet:
+
 - Event-Batching (100ms Intervall)
 - Circular Buffer (max 150 Events)
 - Timestamp-Spreading für visuelle Progression
 - URL-Suggestion State
 
 **State:**
+
 ```typescript
 interface StreamState {
   events: AgentEvent[];
@@ -239,6 +248,7 @@ interface StreamState {
 ### SSRF-Schutz
 
 Die Funktion `validateUrlForFetch(url)` prüft:
+
 - Nur HTTP/HTTPS Protokolle
 - Keine lokalen/privaten IP-Bereiche
 - Keine localhost/127.0.0.1
@@ -247,6 +257,7 @@ Die Funktion `validateUrlForFetch(url)` prüft:
 ### Rate Limiting (TODO #047)
 
 Externe API-Aufrufe benötigen Rate Limiting:
+
 - Web Search API: max 2 concurrent, 500ms zwischen Aufrufen
 - HTTP Fetches: max 5 concurrent, 100ms zwischen Aufrufen
 
@@ -254,23 +265,23 @@ Externe API-Aufrufe benötigen Rate Limiting:
 
 ## Dateien
 
-| Datei | Beschreibung |
-|-------|--------------|
-| `lib/quick-scan/agent.ts` | Hauptlogik, Workflow, Streaming |
-| `lib/quick-scan/schema.ts` | Zod Schemas für alle Datentypen |
-| `lib/quick-scan/types.ts` | TypeScript Interfaces |
-| `lib/quick-scan/tools/*.ts` | Einzelne Analyse-Tools |
-| `lib/streaming/event-types.ts` | Event-Definitionen |
-| `hooks/use-agent-stream.ts` | React Hook für SSE |
-| `components/ai-elements/activity-stream.tsx` | UI-Komponente |
+| Datei                                        | Beschreibung                    |
+| -------------------------------------------- | ------------------------------- |
+| `lib/quick-scan/agent.ts`                    | Hauptlogik, Workflow, Streaming |
+| `lib/quick-scan/schema.ts`                   | Zod Schemas für alle Datentypen |
+| `lib/quick-scan/types.ts`                    | TypeScript Interfaces           |
+| `lib/quick-scan/tools/*.ts`                  | Einzelne Analyse-Tools          |
+| `lib/streaming/event-types.ts`               | Event-Definitionen              |
+| `hooks/use-agent-stream.ts`                  | React Hook für SSE              |
+| `components/ai-elements/activity-stream.tsx` | UI-Komponente                   |
 
 ---
 
 ## Offene TODOs
 
-| # | Beschreibung | Priorität |
-|---|--------------|-----------|
-| 043 | SSRF Validation in Playwright | P1 |
-| 044 | Memory Management für Parallel Operations | P2 |
-| 047 | Rate Limiting für externe APIs | P2 |
-| 048 | Agent-Native Trigger API Endpoint | P3 |
+| #   | Beschreibung                              | Priorität |
+| --- | ----------------------------------------- | --------- |
+| 043 | SSRF Validation in Playwright             | P1        |
+| 044 | Memory Management für Parallel Operations | P2        |
+| 047 | Rate Limiting für externe APIs            | P2        |
+| 048 | Agent-Native Trigger API Endpoint         | P3        |

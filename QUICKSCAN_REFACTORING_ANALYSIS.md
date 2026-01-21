@@ -11,6 +11,7 @@
 Das QuickScan-System ist eine AI-gesteuerte Multi-Agent-Architektur zur automatisierten Website-Analyse und Geschäftsbereich-Empfehlung. Die bestehende Implementierung zeigt eine **solide Streaming-Infrastruktur** (SSE-basiert), muss aber für ein 2-Phasen-Workflow-Muster (COLLECT + SYNTHESIZE) sowie Business-Units-Caching optimiert werden.
 
 **Refactoring-Ziele:**
+
 1. Parallele COLLECT-Phase mit Business Units Singleton-Cache
 2. Sequential SYNTHESIZE-Phase für Drupal-Mapping-Hints
 3. Phase Events für granulares UI-Streaming
@@ -75,12 +76,14 @@ Workflow:
 ### 1.2 Dateipfade & Zeilennummern
 
 #### Agent & Orchestration
+
 - **`/Users/marc.philipps/Sites/dealhunter/lib/quick-scan/agent.ts`**
   - Lines 1-100: Imports und Business Units Singleton Cache (KERN-ELEMENT!)
   - Lines 66-92: `getBusinessUnitsOnce()` & `clearBusinessUnitsCache()` - SINGLETON-PATTERN
   - Lines 100+: `runTechStackDetection()` - Wappalyzer + HTML-Pattern Matching
 
 #### Streaming Infrastructure
+
 - **`/Users/marc.philipps/Sites/dealhunter/lib/streaming/event-types.ts`**
   - Lines 3-14: `AgentEventType` Enum
   - Lines 16-24: `PhaseStartData` & `AnalysisCompleteData` - PHASE EVENTS!
@@ -91,6 +94,7 @@ Workflow:
   - Lines 61-70: `createSSEResponse()` - Proper SSE Headers
 
 #### API Route
+
 - **`/Users/marc.philipps/Sites/dealhunter/app/api/rfps/[id]/quick-scan/stream/route.ts`**
   - Lines 1-30: Authentication & Authorization
   - Lines 74-101: Replaying completed scans via activity log
@@ -98,6 +102,7 @@ Workflow:
   - Lines 132-162: DB Update mit ALLEN QuickScan 2.0 Feldern
 
 #### Server Actions
+
 - **`/Users/marc.philipps/Sites/dealhunter/lib/quick-scan/actions.ts`**
   - Lines 19-97: `startQuickScan()` - erstellt initialen QuickScan Record
   - Lines 104-188: `retriggerQuickScan()` - löscht alte, erstellt neue
@@ -106,6 +111,7 @@ Workflow:
 ### 1.3 Event-Type System
 
 **Existing Event Types** (event-types.ts, lines 3-14):
+
 ```typescript
 enum AgentEventType {
   START = 'start',
@@ -122,6 +128,7 @@ enum AgentEventType {
 ```
 
 **Phase Event Data** (lines 16-31):
+
 ```typescript
 type QuickScanPhase = 'bootstrap' | 'multi_page' | 'analysis' | 'synthesis';
 
@@ -132,7 +139,7 @@ interface PhaseStartData {
 }
 
 interface AnalysisCompleteData {
-  analysis: string;  // z.B. 'techStack', 'accessibility', 'seo', etc.
+  analysis: string; // z.B. 'techStack', 'accessibility', 'seo', etc.
   success: boolean;
   duration: number;
   details?: string;
@@ -147,20 +154,22 @@ interface AnalysisCompleteData {
 
 Die Streaming-Basis ist **vollständig** implementiert und robust:
 
-| Komponente | Datei | Status | Details |
-|-----------|-------|--------|---------|
-| **Event Types** | `lib/streaming/event-types.ts` | ✅ Complete | Enum + Data Structures für alle Event-Typen |
-| **Event Emitter** | `lib/streaming/event-emitter.ts` | ✅ Complete | Web Streams API, SSE-Encoding, Error Handling |
-| **SSE Response** | `lib/streaming/event-emitter.ts:61-70` | ✅ Complete | Proper Cache-Control, Keep-Alive Headers |
-| **API Route** | `app/api/rfps/[id]/quick-scan/stream/route.ts` | ✅ Complete | Auth, DB Persistence, Replay-Modus |
+| Komponente        | Datei                                          | Status      | Details                                       |
+| ----------------- | ---------------------------------------------- | ----------- | --------------------------------------------- |
+| **Event Types**   | `lib/streaming/event-types.ts`                 | ✅ Complete | Enum + Data Structures für alle Event-Typen   |
+| **Event Emitter** | `lib/streaming/event-emitter.ts`               | ✅ Complete | Web Streams API, SSE-Encoding, Error Handling |
+| **SSE Response**  | `lib/streaming/event-emitter.ts:61-70`         | ✅ Complete | Proper Cache-Control, Keep-Alive Headers      |
+| **API Route**     | `app/api/rfps/[id]/quick-scan/stream/route.ts` | ✅ Complete | Auth, DB Persistence, Replay-Modus            |
 
 ### 2.2 Phase Event Structure (READY FOR 2-PHASE WORKFLOW)
 
 **Bereits vorhanden** (event-types.ts, lines 11-31):
+
 - `PHASE_START` - marks beginning of new phase
 - `ANALYSIS_COMPLETE` - marks completion of specific analysis
 
 **Refactoring-Potenzial:**
+
 - Phase Events können direkt für COLLECT/SYNTHESIZE genutzt werden
 - Keine Breaking Changes nötig
 - Existing Agent Progress Events bleiben erhalten
@@ -174,6 +183,7 @@ Die Streaming-Basis ist **vollständig** implementiert und robust:
 **Datei:** `/Users/marc.philipps/Sites/dealhunter/components/ai-elements/agent-activity-view.tsx`
 
 **Hauptkomponenten** (lines 39-281):
+
 ```typescript
 export function AgentActivityView({ events, isStreaming }: AgentActivityViewProps) {
   // Line 43-106: Event grouping by agent name
@@ -187,6 +197,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
 ```
 
 **Agent Color Mapping** (lines 140-157):
+
 - Website Crawler (cyan)
 - Tech Stack Analyzer (violet)
 - Content Analyzer (emerald)
@@ -195,6 +206,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
 - PLUS Intelligent Agent Framework: Researcher, Evaluator, Optimizer
 
 **Rendering Strategy:**
+
 - Line 203-262: Collapsibles für expandable Agent-Details
 - Line 224: Message count display
 - Line 228-232: Duration formatting
@@ -205,6 +217,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
 **Datei:** `/Users/marc.philipps/Sites/dealhunter/components/ai-elements/agent-message.tsx`
 
 **Core Features** (lines 31-201):
+
 ```typescript
 export function AgentMessage({ event }: AgentMessageProps) {
   // Line 36-41: Only render progress/complete events
@@ -216,6 +229,7 @@ export function AgentMessage({ event }: AgentMessageProps) {
 ```
 
 **Message Elements:**
+
 - Line 108-110: Timestamp (formatted HH:MM:SS)
 - Line 113-118: Agent Badge mit dynamischer Farbe
 - Line 123-125: Message Content
@@ -235,21 +249,23 @@ export function AgentMessage({ event }: AgentMessageProps) {
 **Datei:** `/Users/marc.philipps/Sites/dealhunter/lib/quick-scan/schema.ts`
 
 #### Core Schemas (Lines 6-79):
-| Schema | Lines | Fields | Purpose |
-|--------|-------|--------|---------|
-| `techStackSchema` | 6-52 | CMS, Framework, Backend, Hosting, CDN, Server, Libraries, Analytics, Marketing | Tech Stack Detection |
-| `contentVolumeSchema` | 59-77 | pageCount, contentTypes, mediaAssets, languages, complexity | Content Analysis |
-| `accessibilityAuditSchema` | 84-119 | Score, WCAG Level, Issue Counts, Specific Checks, Top Issues | A11y Audit |
-| `seoAuditSchema` | 142-167 | Score, SEO Checks, Issues | SEO Analysis |
+
+| Schema                     | Lines   | Fields                                                                         | Purpose              |
+| -------------------------- | ------- | ------------------------------------------------------------------------------ | -------------------- |
+| `techStackSchema`          | 6-52    | CMS, Framework, Backend, Hosting, CDN, Server, Libraries, Analytics, Marketing | Tech Stack Detection |
+| `contentVolumeSchema`      | 59-77   | pageCount, contentTypes, mediaAssets, languages, complexity                    | Content Analysis     |
+| `accessibilityAuditSchema` | 84-119  | Score, WCAG Level, Issue Counts, Specific Checks, Top Issues                   | A11y Audit           |
+| `seoAuditSchema`           | 142-167 | Score, SEO Checks, Issues                                                      | SEO Analysis         |
 
 #### QuickScan 2.0 Schemas (Lines 388-717):
-| Schema | Lines | Purpose | For Drupal? |
-|--------|-------|---------|-----------|
-| `siteTreeSchema` | 408-442 | Full hierarchical sitemap | ✅ Navigation Structure |
-| `contentTypeDistributionSchema` | 449-465 | AI-classified page types | ✅ Content Types / Paragraph Types |
-| `migrationComplexitySchema` | 472-519 | Effort estimation | ✅ Migration Planning |
-| `decisionMakersResearchSchema` | 539-559 | Contact research | ✅ Stakeholder Analysis |
-| `extractedComponentsSchema` | 689-701 | UI Component Detection | ✅ Drupal Mapping! |
+
+| Schema                          | Lines   | Purpose                   | For Drupal?                        |
+| ------------------------------- | ------- | ------------------------- | ---------------------------------- |
+| `siteTreeSchema`                | 408-442 | Full hierarchical sitemap | ✅ Navigation Structure            |
+| `contentTypeDistributionSchema` | 449-465 | AI-classified page types  | ✅ Content Types / Paragraph Types |
+| `migrationComplexitySchema`     | 472-519 | Effort estimation         | ✅ Migration Planning              |
+| `decisionMakersResearchSchema`  | 539-559 | Contact research          | ✅ Stakeholder Analysis            |
+| `extractedComponentsSchema`     | 689-701 | UI Component Detection    | ✅ Drupal Mapping!                 |
 
 #### Drupal-Mapping Hints (types.ts, Lines 392-421):
 
@@ -258,11 +274,11 @@ export function AgentMessage({ event }: AgentMessageProps) {
 ```typescript
 // Lines 392-399: DrupalMappingData Interface
 export interface DrupalMappingData {
-  suggestedParagraphTypes: string[];      // z.B. ["hero", "cards_grid", "accordion"]
-  suggestedContentTypes: string[];        // z.B. ["article", "event", "product"]
-  suggestedTaxonomies: string[];          // z.B. ["category", "tag", "location"]
-  suggestedMediaTypes: string[];          // z.B. ["image", "video", "document"]
-  estimatedViews: number;                 // Geschätzte Views basierend auf Listen
+  suggestedParagraphTypes: string[]; // z.B. ["hero", "cards_grid", "accordion"]
+  suggestedContentTypes: string[]; // z.B. ["article", "event", "product"]
+  suggestedTaxonomies: string[]; // z.B. ["category", "tag", "location"]
+  suggestedMediaTypes: string[]; // z.B. ["image", "video", "document"]
+  estimatedViews: number; // Geschätzte Views basierend auf Listen
 }
 
 // Lines 401-422: ExtractedComponentsData (WITH Drupal Mapping!)
@@ -272,13 +288,14 @@ export interface ExtractedComponentsData {
   forms: FormComponentData[];
   mediaElements: MediaComponentData[];
   interactiveElements: string[];
-  drupalMapping?: DrupalMappingData;      // <-- DRUPAL MAPPING HINTS!
+  drupalMapping?: DrupalMappingData; // <-- DRUPAL MAPPING HINTS!
   summary: {
     totalComponents: number;
     complexity: 'simple' | 'moderate' | 'complex' | 'very_complex';
     uniquePatterns: number;
     estimatedComponentTypes: number;
-    estimatedDrupalEntities?: {           // <-- ENTITY ESTIMATION!
+    estimatedDrupalEntities?: {
+      // <-- ENTITY ESTIMATION!
       contentTypes: number;
       paragraphTypes: number;
       taxonomies: number;
@@ -295,62 +312,68 @@ export interface ExtractedComponentsData {
 #### quickScans Table (Lines 412-479):
 
 ```typescript
-export const quickScans = sqliteTable('quick_scans', {
-  // Identity & Relations
-  id: text('id').primaryKey(),
-  rfpId: text('rfp_id').notNull().references(() => rfps.id),
-  websiteUrl: text('website_url').notNull(),
+export const quickScans = sqliteTable(
+  'quick_scans',
+  {
+    // Identity & Relations
+    id: text('id').primaryKey(),
+    rfpId: text('rfp_id')
+      .notNull()
+      .references(() => rfps.id),
+    websiteUrl: text('website_url').notNull(),
 
-  // Status
-  status: text('status', { enum: ['pending', 'running', 'completed', 'failed'] }),
+    // Status
+    status: text('status', { enum: ['pending', 'running', 'completed', 'failed'] }),
 
-  // CORE RESULTS (Tech Stack, Content, Features)
-  techStack: text('tech_stack'),        // JSON
-  cms: text('cms'),
-  framework: text('framework'),
-  hosting: text('hosting'),
-  pageCount: integer('page_count'),
-  contentVolume: text('content_volume'),
-  features: text('features'),
-  integrations: text('integrations'),
+    // CORE RESULTS (Tech Stack, Content, Features)
+    techStack: text('tech_stack'), // JSON
+    cms: text('cms'),
+    framework: text('framework'),
+    hosting: text('hosting'),
+    pageCount: integer('page_count'),
+    contentVolume: text('content_volume'),
+    features: text('features'),
+    integrations: text('integrations'),
 
-  // ENHANCED AUDITS (Lines 440-447)
-  navigationStructure: text('navigation_structure'),
-  accessibilityAudit: text('accessibility_audit'),
-  seoAudit: text('seo_audit'),
-  legalCompliance: text('legal_compliance'),
-  performanceIndicators: text('performance_indicators'),
-  screenshots: text('screenshots'),
-  companyIntelligence: text('company_intelligence'),
+    // ENHANCED AUDITS (Lines 440-447)
+    navigationStructure: text('navigation_structure'),
+    accessibilityAudit: text('accessibility_audit'),
+    seoAudit: text('seo_audit'),
+    legalCompliance: text('legal_compliance'),
+    performanceIndicators: text('performance_indicators'),
+    screenshots: text('screenshots'),
+    companyIntelligence: text('company_intelligence'),
 
-  // QUICKSCAN 2.0 FIELDS (Lines 449-455)
-  siteTree: text('site_tree'),
-  contentTypes: text('content_types'),
-  migrationComplexity: text('migration_complexity'),
-  decisionMakers: text('decision_makers'),
-  tenQuestions: text('ten_questions'),
-  rawScanData: text('raw_scan_data'),
+    // QUICKSCAN 2.0 FIELDS (Lines 449-455)
+    siteTree: text('site_tree'),
+    contentTypes: text('content_types'),
+    migrationComplexity: text('migration_complexity'),
+    decisionMakers: text('decision_makers'),
+    tenQuestions: text('ten_questions'),
+    rawScanData: text('raw_scan_data'),
 
-  // BUSINESS UNIT RECOMMENDATION
-  recommendedBusinessUnit: text('recommended_business_unit'),
-  confidence: integer('confidence'),
-  reasoning: text('reasoning'),
+    // BUSINESS UNIT RECOMMENDATION
+    recommendedBusinessUnit: text('recommended_business_unit'),
+    confidence: integer('confidence'),
+    reasoning: text('reasoning'),
 
-  // ACTIVITY & VISUALIZATION
-  activityLog: text('activity_log'),      // JSON - Agent Activity Steps
-  visualizationTree: text('visualization_tree'),  // JSON - cached json-render tree
+    // ACTIVITY & VISUALIZATION
+    activityLog: text('activity_log'), // JSON - Agent Activity Steps
+    visualizationTree: text('visualization_tree'), // JSON - cached json-render tree
 
-  // CMS EVALUATION (from adessoCMS Baseline)
-  cmsEvaluation: text('cms_evaluation'),
-  cmsEvaluationCompletedAt: integer('cms_evaluation_completed_at', { mode: 'timestamp' }),
+    // CMS EVALUATION (from adessoCMS Baseline)
+    cmsEvaluation: text('cms_evaluation'),
+    cmsEvaluationCompletedAt: integer('cms_evaluation_completed_at', { mode: 'timestamp' }),
 
-  // TIMESTAMPS
-  startedAt: integer('started_at', { mode: 'timestamp' }),
-  completedAt: integer('completed_at', { mode: 'timestamp' }),
-  createdAt: integer('created_at', { mode: 'timestamp' }),
-}, (table) => ({
-  rfpIdx: index('quick_scans_rfp_idx').on(table.rfpId),
-}));
+    // TIMESTAMPS
+    startedAt: integer('started_at', { mode: 'timestamp' }),
+    completedAt: integer('completed_at', { mode: 'timestamp' }),
+    createdAt: integer('created_at', { mode: 'timestamp' }),
+  },
+  table => ({
+    rfpIdx: index('quick_scans_rfp_idx').on(table.rfpId),
+  })
+);
 ```
 
 ---
@@ -359,18 +382,18 @@ export const quickScans = sqliteTable('quick_scans', {
 
 ### 5.1 Tool-Übersicht
 
-| Tool | Datei | Status | Zweck | Für COLLECT? |
-|------|-------|--------|-------|--------------|
-| **Multi-Page Analyzer** | `multi-page-analyzer.ts` | ✅ | Parallel Tech Stack Detection (10 diverse pages) | ✅ COLLECT |
-| **Migration Analyzer** | `migration-analyzer.ts` | ✅ | Complexity scoring + CMS export capabilities | ✅ SYNTHESIZE |
-| **Component Extractor** | `component-extractor.ts` | ✅ | UI component pattern detection | ✅ COLLECT |
-| **Decision Maker Research** | `decision-maker-research.ts` | ✅ | Web search for key contacts | ✅ COLLECT |
-| **Playwright** | `playwright.ts` | ✅ | Browser automation, screenshot capture | ✅ COLLECT |
-| **Navigation Crawler** | `navigation-crawler.ts` | ✅ | Site structure mapping | ✅ COLLECT |
-| **Content Classifier** | `content-classifier.ts` | ✅ | Page type classification (AI) | ✅ COLLECT |
-| **Page Sampler** | `page-sampler.ts` | ✅ | Smart page sampling strategy | ✅ COLLECT |
-| **Page Counter** | `page-counter.ts` | ✅ | Accurate page counting from sitemap | ✅ COLLECT |
-| **Company Research** | `company-research.ts` | ✅ | Web search for company intelligence | ✅ COLLECT |
+| Tool                        | Datei                        | Status | Zweck                                            | Für COLLECT?  |
+| --------------------------- | ---------------------------- | ------ | ------------------------------------------------ | ------------- |
+| **Multi-Page Analyzer**     | `multi-page-analyzer.ts`     | ✅     | Parallel Tech Stack Detection (10 diverse pages) | ✅ COLLECT    |
+| **Migration Analyzer**      | `migration-analyzer.ts`      | ✅     | Complexity scoring + CMS export capabilities     | ✅ SYNTHESIZE |
+| **Component Extractor**     | `component-extractor.ts`     | ✅     | UI component pattern detection                   | ✅ COLLECT    |
+| **Decision Maker Research** | `decision-maker-research.ts` | ✅     | Web search for key contacts                      | ✅ COLLECT    |
+| **Playwright**              | `playwright.ts`              | ✅     | Browser automation, screenshot capture           | ✅ COLLECT    |
+| **Navigation Crawler**      | `navigation-crawler.ts`      | ✅     | Site structure mapping                           | ✅ COLLECT    |
+| **Content Classifier**      | `content-classifier.ts`      | ✅     | Page type classification (AI)                    | ✅ COLLECT    |
+| **Page Sampler**            | `page-sampler.ts`            | ✅     | Smart page sampling strategy                     | ✅ COLLECT    |
+| **Page Counter**            | `page-counter.ts`            | ✅     | Accurate page counting from sitemap              | ✅ COLLECT    |
+| **Company Research**        | `company-research.ts`        | ✅     | Web search for company intelligence              | ✅ COLLECT    |
 
 ### 5.2 Detailed Tool Analysis
 
@@ -379,6 +402,7 @@ export const quickScans = sqliteTable('quick_scans', {
 **Zweck:** Parallel Technology Detection über multiple Pages
 
 **Key Interfaces:**
+
 ```typescript
 export interface PageData {
   url: string;
@@ -405,6 +429,7 @@ export interface AggregatedTechResult {
 ```
 
 **CMS Detection Patterns** (Lines 85-150):
+
 - Drupal: Lines 87-100 (Regex patterns + version detection)
 - WordPress: Lines 102-112
 - TYPO3: Lines 114-124
@@ -420,15 +445,16 @@ export interface AggregatedTechResult {
 
 ```typescript
 const CMS_EXPORT_CAPABILITIES = {
-  'wordpress': { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 90 },
-  'drupal': { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 95 },
-  'typo3': { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 85 },
+  wordpress: { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 90 },
+  drupal: { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 95 },
+  typo3: { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 85 },
   // ... etc
-  'custom': { hasRestApi: false, hasXmlExport: false, hasCli: false, exportScore: 30 },
-}
+  custom: { hasRestApi: false, hasXmlExport: false, hasCli: false, exportScore: 30 },
+};
 ```
 
 **Complexity Estimation** (Lines 100-148):
+
 - Base Score: 30
 - Page Count Impact: +10-30
 - Content Type Complexity: +10-20
@@ -438,12 +464,15 @@ const CMS_EXPORT_CAPABILITIES = {
 #### Component Extractor (component-extractor.ts, Lines 1-50)
 
 **Navigation Detection** (Lines 54-92):
+
 - mega_menu, sticky_header, mobile_menu, sidebar, breadcrumbs, pagination, standard
 
 **Content Block Detection** (Lines 97-150+):
+
 - hero, cards, teaser, accordion, tabs, slider, testimonials, timeline, grid, list, cta, pricing, faq, team, stats, features
 
 **Drupal Mapping Potential:**
+
 - Hero Block → Paragraph Type "hero"
 - Cards Grid → Paragraph Type "cards_grid"
 - Testimonials → Paragraph Type "testimonials"
@@ -479,9 +508,8 @@ async function getBusinessUnitsOnce(): Promise<CachedBusinessUnit[]> {
       const units = await db.select().from(businessUnitsTable);
       cachedBusinessUnits = units.map(unit => ({
         name: unit.name,
-        keywords: typeof unit.keywords === 'string'
-          ? JSON.parse(unit.keywords)
-          : (unit.keywords || []),
+        keywords:
+          typeof unit.keywords === 'string' ? JSON.parse(unit.keywords) : unit.keywords || [],
       }));
       console.log(`[QuickScan] Business Units loaded from DB: ${cachedBusinessUnits.length}`);
     } catch (error) {
@@ -503,6 +531,7 @@ function clearBusinessUnitsCache(): void {
 ### 6.2 Usage Pattern
 
 Das Pattern wird in der BL-Recommendation-Phase verwendet:
+
 1. First call zu `getBusinessUnitsOnce()` → DB Load + Cache
 2. Subsequent calls → Cache Hit (kein DB Load)
 3. `clearBusinessUnitsCache()` in Tests/bei Reload
@@ -523,16 +552,14 @@ Das Pattern wird in der BL-Recommendation-Phase verwendet:
 // NEW: Phase Event Emission Pattern
 
 // PHASE 1: COLLECT (Parallel Data Gathering)
-const phase1Events: PhaseStartData[] = [
-  { phase: 'bootstrap', message: 'Initializing scan...' },
-];
+const phase1Events: PhaseStartData[] = [{ phase: 'bootstrap', message: 'Initializing scan...' }];
 
 const collectTasks = Promise.all([
-  runTechStackDetection(url),           // Multi-page analysis
-  analyzeNavigationStructure(url),      // Site crawler
-  extractComponentPatterns(pages),      // UI component detection
-  researchDecisionMakers(company),      // Web search for contacts
-  analyzeContentTypes(pages),           // Content classifier
+  runTechStackDetection(url), // Multi-page analysis
+  analyzeNavigationStructure(url), // Site crawler
+  extractComponentPatterns(pages), // UI component detection
+  researchDecisionMakers(company), // Web search for contacts
+  analyzeContentTypes(pages), // Content classifier
   detectMigrationComplexity(techStack), // Complexity estimation
 ]);
 
@@ -541,8 +568,8 @@ emit({
   data: {
     phase: 'multi_page',
     message: 'Collecting data from website...',
-    timestamp: Date.now()
-  }
+    timestamp: Date.now(),
+  },
 });
 
 const collectedData = await collectTasks;
@@ -553,8 +580,8 @@ emit({
     analysis: 'collection',
     success: true,
     duration: elapsed,
-    details: '6/6 collection tasks completed'
-  }
+    details: '6/6 collection tasks completed',
+  },
 });
 
 // PHASE 2: SYNTHESIZE (Sequential AI Processing)
@@ -563,13 +590,13 @@ emit({
   data: {
     phase: 'synthesis',
     message: 'Synthesizing analysis results...',
-    timestamp: Date.now()
-  }
+    timestamp: Date.now(),
+  },
 });
 
 const synthesisResult = await Promise.all([
-  generateBusinessUnitRecommendation(collectedData),  // Use cached BUs
-  generateDrupalMappingHints(collectedData),           // For Website Audit Skill
+  generateBusinessUnitRecommendation(collectedData), // Use cached BUs
+  generateDrupalMappingHints(collectedData), // For Website Audit Skill
   generateDecisionMakerSummary(collectedData),
   generateMigrationInsights(collectedData),
 ]);
@@ -580,8 +607,8 @@ emit({
     analysis: 'synthesis',
     success: true,
     duration: elapsed,
-    details: 'All synthesis tasks completed'
-  }
+    details: 'All synthesis tasks completed',
+  },
 });
 
 emit({
@@ -601,7 +628,6 @@ function generateDrupalMappingHints(
   components: ExtractedComponentsData,
   contentTypes: ContentTypeDistribution
 ): DrupalMappingData {
-
   // Map content blocks to paragraph types
   const paragraphTypes = new Set<string>();
   components.contentBlocks.forEach(block => {
@@ -688,15 +714,15 @@ Website Audit Skill (MCP)
 
 ### 8.2 Schema Mapping für Website Audit
 
-| QuickScan Output | Website Audit Use | Drupal Mapping |
-|------------------|------------------|----------------|
-| `techStack.cms` | CMS Selection | Drupal vs Alternatives |
-| `contentTypes` | Content Structure | Paragraph Types, Content Types |
-| `extractedComponents.contentBlocks` | Block Types | Paragraph Type Recommendations |
-| `siteTree` | Information Architecture | Views + Entity Reference Fields |
-| `migrationComplexity` | Effort Estimation | PT Estimation |
-| `navigationStructure` | Menu Structure | Navigation Block Configuration |
-| `decisionMakers` | Stakeholder Analysis | Key Contacts for Drupal Migration |
+| QuickScan Output                    | Website Audit Use        | Drupal Mapping                    |
+| ----------------------------------- | ------------------------ | --------------------------------- |
+| `techStack.cms`                     | CMS Selection            | Drupal vs Alternatives            |
+| `contentTypes`                      | Content Structure        | Paragraph Types, Content Types    |
+| `extractedComponents.contentBlocks` | Block Types              | Paragraph Type Recommendations    |
+| `siteTree`                          | Information Architecture | Views + Entity Reference Fields   |
+| `migrationComplexity`               | Effort Estimation        | PT Estimation                     |
+| `navigationStructure`               | Menu Structure           | Navigation Block Configuration    |
+| `decisionMakers`                    | Stakeholder Analysis     | Key Contacts for Drupal Migration |
 
 ---
 
@@ -973,8 +999,8 @@ describe('getBusinessUnitsOnce', () => {
 
 // Test Phase Events
 describe('Phase Events', () => {
-  it('should emit PHASE_START for COLLECT', (done) => {
-    stream.on('data', (event) => {
+  it('should emit PHASE_START for COLLECT', done => {
+    stream.on('data', event => {
       if (event.type === 'phase-start' && event.data.phase === 'multi_page') {
         expect(event.data.message).toContain('Collecting');
         done();
@@ -991,7 +1017,7 @@ describe('Phase Events', () => {
 describe('QuickScan 2-Phase Workflow', () => {
   it('should complete COLLECT phase before SYNTHESIZE', async () => {
     const events = [];
-    stream.on('data', (evt) => events.push(evt));
+    stream.on('data', evt => events.push(evt));
 
     await runQuickScanWithStreaming({ url }, emit);
 
@@ -1009,13 +1035,13 @@ describe('QuickScan 2-Phase Workflow', () => {
 
 ### 13.1 Current State
 
-| Metric | Value | Status |
-|--------|-------|--------|
-| Business Units DB Query | Once per session | ✅ Optimized |
-| Page Analysis Parallelization | Yes (10 pages) | ✅ Good |
-| Event Streaming Latency | Real-time SSE | ✅ Good |
-| Database Persistence | Single batch update | ✅ Efficient |
-| Cache Overhead | Minimal (8 BUs) | ✅ Negligible |
+| Metric                        | Value               | Status        |
+| ----------------------------- | ------------------- | ------------- |
+| Business Units DB Query       | Once per session    | ✅ Optimized  |
+| Page Analysis Parallelization | Yes (10 pages)      | ✅ Good       |
+| Event Streaming Latency       | Real-time SSE       | ✅ Good       |
+| Database Persistence          | Single batch update | ✅ Efficient  |
+| Cache Overhead                | Minimal (8 BUs)     | ✅ Negligible |
 
 ### 13.2 Potential Bottlenecks
 
@@ -1032,6 +1058,7 @@ describe('QuickScan 2-Phase Workflow', () => {
 Das QuickScan-System ist eine **robuste, produktionsreife Architektur** mit:
 
 ✅ **Stärken:**
+
 - Vollständiger SSE-Streaming mit Web Streams API
 - Business Units Singleton Cache (KERN-PATTERN!)
 - Phase Events bereits vorhanden (PHASE_START, ANALYSIS_COMPLETE)
@@ -1040,6 +1067,7 @@ Das QuickScan-System ist eine **robuste, produktionsreife Architektur** mit:
 - AI Elements UI Components für Live Agent Activity
 
 ⚠️ **Refactoring-Chancen:**
+
 - Explizite 2-Phasen-Struktur (COLLECT + SYNTHESIZE)
 - Drupal-Mapping-Hints Integration
 - Phase Progress UI
@@ -1048,17 +1076,20 @@ Das QuickScan-System ist eine **robuste, produktionsreife Architektur** mit:
 ### 14.2 Nächste Schritte
 
 **Priorität 1 (MUSS):**
+
 1. Implement 2-Phase Event Emitting Pattern (agent.ts)
 2. Generate DrupalMappingData in SYNTHESIZE phase
 3. Persist drupalMapping to DB (schema already ready)
 4. Create Phase Progress UI component
 
 **Priorität 2 (SOLLTE):**
+
 1. Test Parallelization in COLLECT phase
 2. Optimize Business Unit Matching performance
 3. Add Web Audit Skill integration tests
 
 **Priorität 3 (KANN):**
+
 1. Create Drupal-specific UI for mapping hints
 2. Add Drupal baseline comparison logic
 3. Generate "Ten Questions for BL" from Drupal hints
@@ -1097,6 +1128,7 @@ CREATE INDEX quick_scans_rfp_idx ON quick_scans(rfp_id);
 ### A.3 Environment Setup
 
 From CLAUDE.md:
+
 ```bash
 npm run d3k              # Dev Server (not npm run dev!)
 npm run db:push         # Apply schema

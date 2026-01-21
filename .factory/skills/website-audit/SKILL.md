@@ -10,6 +10,7 @@ description: Comprehensive website audit skill for Drupal relaunch projects. Use
 This skill provides a comprehensive, AI-first methodology for auditing existing websites in preparation for Drupal relaunches. Analyze websites systematically, map all features to Drupal architecture components (Content Types, Paragraphs, Taxonomies, Views), estimate project effort using baseline comparison, and generate professional VitePress documentation sites.
 
 **Use this skill when:**
+
 - Conducting website audits for Drupal relaunch projects
 - Creating project estimates for client proposals
 - Mapping existing website features to Drupal entities
@@ -18,6 +19,7 @@ This skill provides a comprehensive, AI-first methodology for auditing existing 
 - Planning migration strategies
 
 **Key capabilities:**
+
 - AI-powered website analysis using MCP tools
 - Drupal-native feature mapping (Content Types, Paragraphs, Taxonomies, etc.)
 - Baseline comparison against adessoCMS reference project
@@ -38,12 +40,14 @@ Follow this comprehensive workflow to conduct website audits. Each phase builds 
 Use Chrome DevTools MCP or Puppeteer to access and analyze the website.
 
 **Steps:**
+
 1. Navigate to the website URL provided by the user
 2. Take initial screenshots (homepage, key pages)
 3. Extract site structure from navigation menus and footer
 4. Identify main sections and page types
 
 **MCP Tools:**
+
 ```
 mcp__chrome-devtools__navigate_page (url: <website_url>)
 mcp__chrome-devtools__take_screenshot (fullPage: true)
@@ -55,6 +59,7 @@ mcp__chrome-devtools__take_snapshot
 #### 1.2 Analyze Technology Stack
 
 Inspect the page source and network requests to identify:
+
 - Current CMS (WordPress, Joomla, Typo3, Drupal, custom)
 - CMS version
 - Frontend frameworks (React, Vue, jQuery)
@@ -63,12 +68,14 @@ Inspect the page source and network requests to identify:
 - CDN usage
 
 **Detection patterns:**
+
 - WordPress: `/wp-content/`, `<meta name="generator" content="WordPress">`
 - Joomla: `/components/`, `/modules/`
 - Typo3: `typo3temp/`, `typo3conf/`
 - Drupal: `/sites/default/files/`, `Drupal.settings`
 
 **MCP Tools:**
+
 ```
 mcp__chrome-devtools__evaluate_script (function: "() => document.documentElement.outerHTML")
 mcp__chrome-devtools__list_network_requests
@@ -87,6 +94,7 @@ Find and analyze sitemap to understand content scale:
 5. Identify URL patterns for content types
 
 **MCP Tools:**
+
 ```
 mcp__chrome-devtools__navigate_page (url: 'https://example.com/sitemap.xml')
 mcp__chrome-devtools__take_snapshot
@@ -101,6 +109,7 @@ mcp__chrome-devtools__take_snapshot
 Sample diverse pages to identify distinct page types and their structures.
 
 **Process:**
+
 1. Select representative pages from each URL pattern category
 2. For each page, navigate and analyze structure
 3. Document fields and components present
@@ -108,6 +117,7 @@ Sample diverse pages to identify distinct page types and their structures.
 5. Identify patterns and variations
 
 **For each page type, document:**
+
 - Page type name (e.g., "Landing Page", "Article", "Event")
 - Title/heading structure
 - Body content (rich text, plain text, structured)
@@ -120,6 +130,7 @@ Sample diverse pages to identify distinct page types and their structures.
 
 **Map to Drupal:**
 Each page type becomes a Drupal **Content Type** with:
+
 - Appropriate field structure
 - Taxonomy references
 - Paragraph field for flexible content
@@ -134,12 +145,14 @@ Analyze page layouts to identify reusable content components that will map to Pa
 **Component categories to identify:**
 
 **Layout Components:**
+
 - Sections/containers with background colors
 - Multi-column layouts (2-col, 3-col, etc.)
 - Accordions and tabs
 - Sidebyside layouts
 
 **Content Components:**
+
 - Text blocks (WYSIWYG)
 - Images with captions
 - Galleries (grid, slider, lightbox)
@@ -149,12 +162,14 @@ Analyze page layouts to identify reusable content components that will map to Pa
 - Hero sections (banner + image + text + CTA)
 
 **Interactive Components:**
+
 - Carousels/sliders
 - Statistics/counters with animation
 - Maps (Google, OpenStreetMap)
 - Forms (contact, registration)
 
 **Advanced Components:**
+
 - Cards (image + title + text + link)
 - Card grids
 - Feature grids (icons + text)
@@ -164,6 +179,7 @@ Analyze page layouts to identify reusable content components that will map to Pa
 - Embedded views/blocks
 
 **For each component, document:**
+
 - Component name
 - Visual appearance (screenshot)
 - Content fields needed
@@ -181,6 +197,7 @@ Refer to `references/drupal_architecture_patterns.md` for Paragraph type pattern
 Identify all classification systems used on the website:
 
 **Taxonomy types:**
+
 - Categories (hierarchical or flat)
 - Tags (free-form keywords)
 - Locations (geographic classification)
@@ -189,6 +206,7 @@ Identify all classification systems used on the website:
 - Content formats
 
 **For each taxonomy:**
+
 - Vocabulary name
 - Hierarchical or flat structure
 - Approximate number of terms
@@ -200,6 +218,7 @@ Identify all classification systems used on the website:
 Sample media usage across pages to understand requirements:
 
 **Media types:**
+
 - Images (JPEG, PNG, SVG, WebP)
 - Documents (PDF, DOC, XLS)
 - Videos (MP4, YouTube, Vimeo)
@@ -207,6 +226,7 @@ Sample media usage across pages to understand requirements:
 - Icons (SVG, icon fonts)
 
 **Document:**
+
 - Media type name
 - Usage frequency
 - Typical file sizes
@@ -221,6 +241,7 @@ Sample media usage across pages to understand requirements:
 Systematically test and document interactive functionality:
 
 **Forms:**
+
 - Contact forms (fields, validation, submission handling)
 - Search functionality (full-text, filters, autocomplete)
 - Event registration
@@ -231,12 +252,14 @@ Systematically test and document interactive functionality:
 **Map to:** Webform module or Search API
 
 **User Features:**
+
 - Login/registration
 - User profiles
 - Comments/discussion
 - Ratings/reviews
 
 **Integrations:**
+
 - Social media (share buttons, feeds)
 - Maps (embedded, interactive)
 - Analytics (Google Analytics, Matomo)
@@ -245,6 +268,7 @@ Systematically test and document interactive functionality:
 - Third-party APIs
 
 **For each feature:**
+
 - Feature name and description
 - Complexity (simple/medium/complex)
 - Required Drupal modules
@@ -256,6 +280,7 @@ Systematically test and document interactive functionality:
 Map all navigation elements:
 
 **Navigation types:**
+
 - Main navigation (levels, mega menu)
 - Footer navigation
 - Utility navigation (language, login, etc.)
@@ -269,6 +294,7 @@ Map all navigation elements:
 Identify all content listing pages:
 
 **Listing types:**
+
 - News/blog listings (grid, list, featured)
 - Event calendars
 - Team directories
@@ -278,6 +304,7 @@ Identify all content listing pages:
 - Category/tag pages
 
 **For each listing:**
+
 - Content type displayed
 - Layout style (grid, list, table, carousel)
 - Pagination or infinite scroll
@@ -295,6 +322,7 @@ Refer to `references/drupal_architecture_patterns.md` for View patterns.
 Use Chrome DevTools Performance panel to capture metrics:
 
 **MCP Tools:**
+
 ```
 mcp__chrome-devtools__performance_start_trace (reload: true, autoStop: true)
 mcp__chrome-devtools__performance_stop_trace
@@ -302,6 +330,7 @@ mcp__chrome-devtools__performance_analyze_insight
 ```
 
 **Metrics to capture:**
+
 - Largest Contentful Paint (LCP) - target: < 2.5s
 - First Input Delay (FID) - target: < 100ms
 - Cumulative Layout Shift (CLS) - target: < 0.1
@@ -317,11 +346,13 @@ mcp__chrome-devtools__performance_analyze_insight
 Check network requests for optimization opportunities:
 
 **MCP Tools:**
+
 ```
 mcp__chrome-devtools__list_network_requests (resourceTypes: ['image', 'stylesheet', 'script'])
 ```
 
 **Analyze:**
+
 - Image formats and sizes (opportunities for WebP conversion)
 - CSS/JS bundles (minification, compression)
 - Font loading strategies
@@ -338,6 +369,7 @@ mcp__chrome-devtools__list_network_requests (resourceTypes: ['image', 'styleshee
 Use Accessibility MCP to test compliance:
 
 **MCP Tools:**
+
 ```
 mcp__a11y-accessibility__test_accessibility (url: <website_url>, tags: ['wcag2aa'])
 mcp__a11y-accessibility__check_color_contrast (foreground, background)
@@ -347,6 +379,7 @@ mcp__a11y-accessibility__check_aria_attributes (html)
 **Test homepage and representative pages from each page type.**
 
 **Issues to identify:**
+
 - Color contrast failures
 - Missing alt text on images
 - Invalid ARIA attributes
@@ -357,6 +390,7 @@ mcp__a11y-accessibility__check_aria_attributes (html)
 - Missing skip links
 
 **Categorize by severity:**
+
 - Critical (blocks access)
 - Serious (major barrier)
 - Moderate (significant barrier)
@@ -381,6 +415,7 @@ Refer to `references/drupal_architecture_patterns.md` for accessibility patterns
 Analyze all external integrations and third-party systems:
 
 **Common integration types:**
+
 - SSO/Authentication (SAML, OAuth2, LDAP, Keycloak)
 - Payment gateways (Stripe, PayPal, custom)
 - CRM systems (Salesforce, HubSpot)
@@ -393,6 +428,7 @@ Analyze all external integrations and third-party systems:
 - Mobile apps (iOS, Android)
 
 **Analysis steps:**
+
 1. Review network requests for API calls
 2. Check JavaScript for integration libraries
 3. Inspect backend code (if accessible)
@@ -447,29 +483,35 @@ graph TB
 For each critical integration, create detailed documentation:
 
 **Template:**
+
 ```markdown
 # [Integration Name]
 
 ## Overview
+
 [Purpose and business value]
 
 ## Current Implementation
+
 - **Technology:** [API/SDK/Embed/etc.]
 - **Authentication:** [OAuth2/API Key/None/etc.]
 - **Data Format:** [JSON/XML/etc.]
 - **Update Frequency:** [Real-time/Hourly/Daily/etc.]
 
 ## Drupal Migration Strategy
+
 - **Approach:** [Custom module/Contrib module/Service]
 - **Complexity:** [Low/Medium/High]
 - **Estimated Effort:** [X hours]
 - **Risks:** [List potential issues]
 
 ## Dependencies
+
 - [Required Drupal modules]
 - [External service requirements]
 
 ## Testing Strategy
+
 - [How to test integration]
 ```
 
@@ -482,12 +524,14 @@ For each critical integration, create detailed documentation:
 Determine migration approach based on source system:
 
 **Best → Worst:**
+
 1. Structured export (XML, JSON, CSV) - BEST
 2. Database access with SQL queries - GOOD
 3. API with pagination - MEDIUM
 4. Web scraping - CHALLENGING (last resort)
 
 **Check for:**
+
 - CMS export functionality
 - Database access availability
 - API endpoints
@@ -500,6 +544,7 @@ Determine migration approach based on source system:
 Identify cleanup needed during migration:
 
 **Common cleanup tasks:**
+
 - HTML tag cleanup (remove inline styles, deprecated tags)
 - Image path corrections
 - Broken link fixing
@@ -509,6 +554,7 @@ Identify cleanup needed during migration:
 - Shortcode → Paragraph conversion (WordPress)
 
 **Classify cleanup complexity:**
+
 - Simple: Direct field mapping, minimal cleanup
 - Medium: Some HTML cleanup, taxonomy restructuring
 - Complex: Extensive parsing, significant restructuring
@@ -520,6 +566,7 @@ Identify cleanup needed during migration:
 Use migration complexity to estimate hours:
 
 **Formula:**
+
 ```
 Base setup: 20-40 hours
 
@@ -540,6 +587,7 @@ Refer to `references/estimation_guidelines.md` for migration estimation details.
 Create migration analysis comparing current technology to Drupal:
 
 **Steps:**
+
 1. Document detected CMS/technology stack
 2. Map current features to Drupal equivalents
 3. Identify what can be preserved vs. rebuilt
@@ -555,11 +603,13 @@ Refer to `references/migration-patterns.md` for detailed migration paths by sour
 Generate comparison of Drupal CMS vs. alternatives:
 
 **Compare:**
+
 - Drupal 11 (vanilla)
 - Drupal CMS 2.0 (recommended)
 - Enterprise alternatives (Magnolia, Umbraco, Ibexa)
 
 **Criteria:**
+
 - Licensing & TCO
 - Time to market
 - AI capabilities
@@ -577,6 +627,7 @@ Refer to `references/cms-comparison.md` for detailed comparison data.
 Analyze website for AI enhancement potential:
 
 **Categories to assess:**
+
 - Content creation (drafting, SEO, meta)
 - Content enhancement (tone, grammar, translation)
 - Automation (tagging, alt text, summaries)
@@ -585,6 +636,7 @@ Analyze website for AI enhancement potential:
 - Moderation (quality, compliance)
 
 **For each opportunity:**
+
 1. Current state (manual/none)
 2. AI-enabled state
 3. Drupal AI module/feature
@@ -600,6 +652,7 @@ Refer to `references/drupal-ai-capabilities.md` for AI module features.
 Map required features to Drupal CMS recipes:
 
 **Check which recipes apply:**
+
 - Content types (blog, news, events, person, project, case study)
 - Functionality (forms, search, authentication, anti-spam)
 - SEO & analytics (basic SEO, SEO tools, Google Analytics)
@@ -607,6 +660,7 @@ Map required features to Drupal CMS recipes:
 - AI features
 
 **Calculate time savings:**
+
 - List applicable recipes
 - Sum PT savings per recipe (see drupal-cms-features.md)
 - Compare to custom development
@@ -624,6 +678,7 @@ Refer to `references/drupal-cms-features.md` for recipe details and PT savings.
 Map each page type to a Drupal Content Type:
 
 **For each content type:**
+
 1. Choose machine name (lowercase_with_underscores)
 2. Define fields:
    - Field type (text, entity reference, image, etc.)
@@ -643,6 +698,7 @@ Map each page type to a Drupal Content Type:
 Map each content component to a Paragraph type:
 
 **For each paragraph:**
+
 1. Choose machine name
 2. Define fields with types and cardinality
 3. Plan allowed parent types
@@ -658,6 +714,7 @@ Map each content component to a Paragraph type:
 Map each listing page to a Drupal View:
 
 **For each view:**
+
 1. Choose name and purpose
 2. Define content type queried
 3. Plan display types (page, block, feed, attachment)
@@ -673,6 +730,7 @@ Map each listing page to a Drupal View:
 Identify required contributed modules:
 
 **Core functionality:**
+
 - Paragraphs 1.17 (flexible layouts)
 - Webform 6.3+ (forms)
 - Pathauto (URL patterns)
@@ -680,24 +738,29 @@ Identify required contributed modules:
 - Media Library (media management)
 
 **Admin UX:**
+
 - Gin 5.x (admin theme)
 - Admin Toolbar (enhanced toolbar)
 
 **SEO:**
+
 - Yoast SEO for Drupal
 - Metatag
 - XML Sitemap
 
 **Search:**
+
 - Search API
 - Search API Solr (if needed)
 
 **Performance:**
+
 - BigPipe (core)
 - CSS/JS Aggregation (core)
 
 **Custom modules:**
 Document any custom modules needed for:
+
 - Business logic
 - Integrations (APIs, external services)
 - Custom calculations
@@ -711,36 +774,39 @@ Document any custom modules needed for:
 Calculate base hours using the estimation table:
 
 **Count entities:**
-- Content Types: ___
-- Paragraph Types: ___
-- Taxonomies: ___
-- Media Types: ___
-- Views: ___
-- Webforms: ___
-- Blocks: ___
-- Custom Modules: ___
-- Theme Components (SDC): ___
+
+- Content Types: \_\_\_
+- Paragraph Types: \_\_\_
+- Taxonomies: \_\_\_
+- Media Types: \_\_\_
+- Views: \_\_\_
+- Webforms: \_\_\_
+- Blocks: \_\_\_
+- Custom Modules: \_\_\_
+- Theme Components (SDC): \_\_\_
 
 **For each entity:**
+
 1. Classify complexity (simple/medium/complex)
 2. Apply hours from estimation table
 3. Sum totals by type
 
 **Estimation table:**
 
-| Entity | Simple | Medium | Complex |
-|--------|--------|--------|---------|
-| Content Type | 3h | 6h | 12h |
-| Paragraph | 1.5h | 3.5h | 6h |
-| Taxonomy | 1.5h | 3h | 6h |
-| Media Type | 1.5h | 3h | 3.5h |
-| View | 3h | 6h | 12h |
-| Webform | 3h | 6h | 12h |
-| Block | 1.5h | 3h | 6h |
-| Custom Module | 12h | 28h | 70h |
-| Theme Component | 3h | 6h | 12h |
+| Entity          | Simple | Medium | Complex |
+| --------------- | ------ | ------ | ------- |
+| Content Type    | 3h     | 6h     | 12h     |
+| Paragraph       | 1.5h   | 3.5h   | 6h      |
+| Taxonomy        | 1.5h   | 3h     | 6h      |
+| Media Type      | 1.5h   | 3h     | 3.5h    |
+| View            | 3h     | 6h     | 12h     |
+| Webform         | 3h     | 6h     | 12h     |
+| Block           | 1.5h   | 3h     | 6h      |
+| Custom Module   | 12h    | 28h    | 70h     |
+| Theme Component | 3h     | 6h     | 12h     |
 
 **Apply multipliers:**
+
 - Testing: +20-30%
 - Documentation: +10-15%
 - QA: +15-20%
@@ -755,11 +821,13 @@ Calculate base hours using the estimation table:
 From Phase 6.3 calculation
 
 **Add additional effort:**
+
 - Infrastructure setup: 60h
 - Project management (18% of subtotal)
 - Training & handover: 30h
 
 **Apply buffer:**
+
 - Low risk: +15%
 - Medium risk: +20%
 - High risk: +25%
@@ -773,6 +841,7 @@ Refer to `references/estimation_guidelines.md` for complete methodology.
 Validate estimate against adessoCMS baseline:
 
 **Baseline (adessoCMS):**
+
 - 6 Content Types
 - 32 Paragraph Types
 - 27 Views
@@ -780,11 +849,13 @@ Validate estimate against adessoCMS baseline:
 - **693 hours total effort**
 
 **Calculate scale factor:**
+
 ```
 Scale = (Project Entities / Baseline Entities)
 ```
 
 **Example:**
+
 ```
 If project has ~700 config files:
 Scale = 700 / 1,136 = 0.62 (62% of baseline)
@@ -809,6 +880,7 @@ Refer to `references/baseline_adessocms.md` for complete baseline analysis.
 Identify and document risks:
 
 **Risk factors:**
+
 - Unclear requirements
 - Complex migration
 - Significant custom code needed
@@ -820,11 +892,13 @@ Identify and document risks:
 **Classify overall risk:** Low / Medium / High
 
 **Apply appropriate buffer:**
+
 - Low: +15%
 - Medium: +20%
 - High: +25%
 
 **Document assumptions:**
+
 - List all assumptions made during estimation
 - Note any uncertainties
 - Identify dependencies
@@ -836,6 +910,7 @@ Identify and document risks:
 Create structured JSON with all audit findings:
 
 **Required fields:**
+
 - project_name
 - url
 - current_cms
@@ -859,6 +934,7 @@ Save as: `audit_data/audit_report.json`
 Create entities JSON for estimation:
 
 **Required fields:**
+
 - project_name
 - audit_date
 - content_types: [{name, complexity}]
@@ -886,6 +962,7 @@ python scripts/calculate_estimate.py audit_data/entities.json
 ```
 
 **Outputs:**
+
 - `audit_data/estimation_report.md` (detailed breakdown)
 - `audit_data/estimation_result.json` (structured data)
 
@@ -898,6 +975,7 @@ python scripts/generate_vitepress_site.py audit_data audit-docs --with-theme
 ```
 
 **This creates:**
+
 - Complete VitePress project structure with adesso branding
 - Custom theme with adesso colors and typography
 - Configuration files with Google Fonts integration
@@ -909,6 +987,7 @@ python scripts/generate_vitepress_site.py audit_data audit-docs --with-theme
 - CMS comparison matrices
 
 **adesso SE Corporate Theme includes:**
+
 - **Colors:**
   - Primary: `#006EC7` (adesso Blue)
   - Secondary: `#461EBE` (adesso Violet)
@@ -924,11 +1003,13 @@ python scripts/generate_vitepress_site.py audit_data audit-docs --with-theme
   - Accessible color contrast (WCAG AA compliant)
 
 **Theme customization files created:**
+
 - `docs/.vitepress/theme/index.js` - Theme entry point
 - `docs/.vitepress/theme/custom.css` - adesso brand colors and styles
 - `docs/.vitepress/theme/README.md` - Theme documentation
 
 **Next steps for user:**
+
 ```bash
 cd audit-docs
 npm install
@@ -937,6 +1018,7 @@ npm run docs:build  # Build for deployment
 ```
 
 **Deployment options:**
+
 - **Netlify (recommended):** Connect Git repo, auto-deploy on push
 - **GitHub Pages:** Set `base: '/repo-name/'` in config.js
 - **Custom server:** Deploy `docs/.vitepress/dist/` directory
@@ -944,6 +1026,7 @@ npm run docs:build  # Build for deployment
 #### 11.5 Review and Finalize
 
 **Before delivering:**
+
 - Review all estimates for accuracy
 - Validate complexity classifications
 - Check assumptions and risks
@@ -952,6 +1035,7 @@ npm run docs:build  # Build for deployment
 - Test VitePress site locally
 
 **Deliverables checklist:**
+
 - [ ] VitePress documentation site
 - [ ] Estimation report (Markdown + JSON)
 - [ ] Audit report JSON
@@ -963,6 +1047,7 @@ npm run docs:build  # Build for deployment
 ### 1. AI-First Analysis
 
 Leverage MCP tools extensively:
+
 - Chrome DevTools MCP for website interaction
 - Puppeteer MCP for automation
 - Accessibility MCP for WCAG testing
@@ -971,6 +1056,7 @@ Leverage MCP tools extensively:
 ### 2. Drupal-Native Thinking
 
 Always map features to Drupal entities:
+
 - Page types → Content Types
 - Components → Paragraph Types
 - Categories → Taxonomies
@@ -983,6 +1069,7 @@ Think in terms of configuration over custom code.
 ### 3. Baseline Comparison
 
 Always compare to adessoCMS baseline:
+
 - Use scale factor for validation
 - Apply complexity adjustments
 - Cross-check bottom-up vs. baseline estimates
@@ -991,6 +1078,7 @@ Always compare to adessoCMS baseline:
 ### 4. Risk-Adjusted Estimation
 
 Include appropriate buffers:
+
 - Document all assumptions
 - Identify risks explicitly
 - Apply 15-25% buffer based on risk level
@@ -999,6 +1087,7 @@ Include appropriate buffers:
 ### 5. Comprehensive Documentation
 
 Generate professional deliverables:
+
 - Structured JSON data
 - Markdown reports
 - VitePress documentation sites
@@ -1010,6 +1099,7 @@ Generate professional deliverables:
 ### Small Project (~300-450h)
 
 **Characteristics:**
+
 - 3-4 content types
 - 10-15 paragraph types
 - 2 taxonomies
@@ -1022,6 +1112,7 @@ Generate professional deliverables:
 ### Medium Project (~550-850h)
 
 **Characteristics:**
+
 - 4-6 content types
 - 15-25 paragraph types
 - 3-4 taxonomies
@@ -1036,6 +1127,7 @@ Generate professional deliverables:
 ### Large Project (~1,000-1,600h)
 
 **Characteristics:**
+
 - 8-12+ content types
 - 40-60+ paragraph types
 - 6-10+ taxonomies
@@ -1080,6 +1172,7 @@ python scripts/generate_vitepress_site.py audit_data audit-docs
 ```
 
 **Features:**
+
 - Generates VitePress config with Google Fonts integration
 - Copies adesso SE corporate theme from `assets/vitepress-theme/`
 - Creates all documentation pages with proper navigation
@@ -1090,11 +1183,13 @@ python scripts/generate_vitepress_site.py audit_data audit-docs
 **vitepress-template/** - Template files and structure for VitePress documentation sites. Includes README with setup instructions, example audit_report_template.json showing expected data format, and structure documentation.
 
 **vitepress-theme/** - adesso SE corporate theme for VitePress documentation:
+
 - `.vitepress/theme/index.js` - Theme entry point
 - `.vitepress/theme/custom.css` - Complete adesso branding (colors, typography, gradients)
 - `.vitepress/theme/README.md` - Theme documentation with customization guide
 
 **Theme Features:**
+
 - adesso Blue (#006EC7) and Violet (#461EBE) gradient navbar/sidebar
 - Fira Sans typography (body) and Fira Sans Condensed (headings)
 - WCAG AA accessible color contrast (21:1 for body text)

@@ -79,11 +79,12 @@ export function ReferenceMatchCard({ matches, className }: ReferenceMatchCardPro
               </Badge>
             </div>
 
-            <Progress value={match.matchScore} className={cn('h-2 mb-3', getMatchColor(match.matchScore))} />
+            <Progress
+              value={match.matchScore}
+              className={cn('h-2 mb-3', getMatchColor(match.matchScore))}
+            />
 
-            {match.summary && (
-              <p className="text-sm text-muted-foreground mb-3">{match.summary}</p>
-            )}
+            {match.summary && <p className="text-sm text-muted-foreground mb-3">{match.summary}</p>}
 
             <div className="space-y-2">
               {match.matchingCriteria.length > 0 && (
@@ -104,9 +105,7 @@ export function ReferenceMatchCard({ matches, className }: ReferenceMatchCardPro
 
               {match.technologies.length > 0 && (
                 <div>
-                  <span className="text-xs font-medium text-muted-foreground">
-                    Technologien:
-                  </span>
+                  <span className="text-xs font-medium text-muted-foreground">Technologien:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {match.technologies.map((tech, i) => (
                       <Badge key={i} variant="outline" className="text-xs">

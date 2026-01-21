@@ -1,27 +1,22 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
-import type { UIMessage } from "ai";
-import type { ComponentProps, HTMLAttributes } from "react";
-import { memo } from "react";
-import { Streamdown } from "streamdown";
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import type { UIMessage } from 'ai';
+import type { ComponentProps, HTMLAttributes } from 'react';
+import { memo } from 'react';
+import { Streamdown } from 'streamdown';
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
-  from: UIMessage["role"];
+  from: UIMessage['role'];
 };
 
 export const Message = ({ className, from, ...props }: MessageProps) => (
   <div
     className={cn(
-      "group flex w-full max-w-[95%] flex-col gap-2",
-      from === "user" ? "is-user ml-auto justify-end" : "is-assistant",
+      'group flex w-full max-w-[95%] flex-col gap-2',
+      from === 'user' ? 'is-user ml-auto justify-end' : 'is-assistant',
       className
     )}
     {...props}
@@ -30,16 +25,12 @@ export const Message = ({ className, from, ...props }: MessageProps) => (
 
 export type MessageContentProps = HTMLAttributes<HTMLDivElement>;
 
-export const MessageContent = ({
-  children,
-  className,
-  ...props
-}: MessageContentProps) => (
+export const MessageContent = ({ children, className, ...props }: MessageContentProps) => (
   <div
     className={cn(
-      "is-user:dark flex w-fit max-w-full min-w-0 flex-col gap-2 overflow-hidden text-sm",
-      "group-[.is-user]:ml-auto group-[.is-user]:rounded-lg group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground",
-      "group-[.is-assistant]:text-foreground",
+      'is-user:dark flex w-fit max-w-full min-w-0 flex-col gap-2 overflow-hidden text-sm',
+      'group-[.is-user]:ml-auto group-[.is-user]:rounded-lg group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground',
+      'group-[.is-assistant]:text-foreground',
       className
     )}
     {...props}
@@ -48,14 +39,10 @@ export const MessageContent = ({
   </div>
 );
 
-export type MessageActionsProps = ComponentProps<"div">;
+export type MessageActionsProps = ComponentProps<'div'>;
 
-export const MessageActions = ({
-  className,
-  children,
-  ...props
-}: MessageActionsProps) => (
-  <div className={cn("flex items-center gap-1", className)} {...props}>
+export const MessageActions = ({ className, children, ...props }: MessageActionsProps) => (
+  <div className={cn('flex items-center gap-1', className)} {...props}>
     {children}
   </div>
 );
@@ -69,8 +56,8 @@ export const MessageAction = ({
   tooltip,
   children,
   label,
-  variant = "ghost",
-  size = "sm",
+  variant = 'ghost',
+  size = 'sm',
   ...props
 }: MessageActionProps) => {
   const button = (
@@ -101,14 +88,11 @@ export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
     <Streamdown
-      className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        className
-      )}
+      className={cn('size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0', className)}
       {...props}
     />
   ),
   (prevProps, nextProps) => prevProps.children === nextProps.children
 );
 
-MessageResponse.displayName = "MessageResponse";
+MessageResponse.displayName = 'MessageResponse';

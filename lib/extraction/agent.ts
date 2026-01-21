@@ -26,9 +26,7 @@ export interface ExtractionOutput {
  * AI Agent for extracting structured requirements from bid documents
  * Uses Vercel AI SDK with generateObject for type-safe extraction
  */
-export async function extractRequirements(
-  input: ExtractionInput
-): Promise<ExtractionOutput> {
+export async function extractRequirements(input: ExtractionInput): Promise<ExtractionOutput> {
   try {
     const prompt = buildExtractionPrompt(input);
 
@@ -199,8 +197,10 @@ Provide accurate extractions and a confidence score (0-1) based on how complete 
     // Step 4: Extraction complete - report what was found
     const foundItems: string[] = [];
     if (parsedResult.customerName) foundItems.push('Kunde');
-    if (parsedResult.technologies.length > 0) foundItems.push(`${parsedResult.technologies.length} Technologien`);
-    if (parsedResult.keyRequirements.length > 0) foundItems.push(`${parsedResult.keyRequirements.length} Anforderungen`);
+    if (parsedResult.technologies.length > 0)
+      foundItems.push(`${parsedResult.technologies.length} Technologien`);
+    if (parsedResult.keyRequirements.length > 0)
+      foundItems.push(`${parsedResult.keyRequirements.length} Anforderungen`);
     if (parsedResult.submissionDeadline) foundItems.push('Abgabefrist');
     if (parsedResult.requiredDeliverables && parsedResult.requiredDeliverables.length > 0) {
       foundItems.push(`${parsedResult.requiredDeliverables.length} Unterlagen`);

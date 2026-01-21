@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p2
-issue_id: "032"
+issue_id: '032'
 tags: [code-review, typescript, type-safety]
 dependencies: []
 ---
@@ -19,6 +19,7 @@ Switch statements on union types in `lib/workflow/bl-review-status.ts` have `def
 **From kieran-typescript-reviewer agent:**
 
 **Dangerous default case (lines 72-73):**
+
 ```typescript
 default:
   return { allowed: true };  // Silently allows unknown phases!
@@ -30,6 +31,7 @@ The switch has no exhaustiveness check. If a new `BLReviewPhase` is added, `comp
 ## Proposed Solutions
 
 ### Solution A: Use never type for exhaustiveness (Recommended)
+
 **Pros:** Compile-time error if new phase is missed
 **Cons:** None
 **Effort:** Small (15 min)
@@ -43,6 +45,7 @@ default: {
 ```
 
 Or use a helper function:
+
 ```typescript
 function assertNever(x: never): never {
   throw new Error(`Unexpected value: ${x}`);
@@ -56,6 +59,7 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/workflow/bl-review-status.ts` (lines 72-73, 138-154)
 
 ## Acceptance Criteria
@@ -66,8 +70,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                   | Learnings                                               |
+| ---------- | ------------------------ | ------------------------------------------------------- |
 | 2026-01-18 | Created from code review | Use `never` type for discriminated union exhaustiveness |
 
 ## Resources

@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "027"
+issue_id: '027'
 tags: [code-review, security, validation, zod]
 dependencies: []
 ---
@@ -19,21 +19,24 @@ Server Actions in `lib/team/actions.ts` accept user input without Zod validation
 **From security-sentinel and nextjs-reviewer agents:**
 
 **No validation (team/actions.ts:25):**
+
 ```typescript
 export async function suggestTeamForBid(bidId: string): Promise<SuggestTeamResult> {
   // bidId used directly without validation
 ```
 
 **No validation (team/actions.ts:95-98):**
+
 ```typescript
 export async function assignTeam(
   bidId: string,
-  teamAssignment: TeamAssignment,  // No runtime validation
+  teamAssignment: TeamAssignment, // No runtime validation
   expectedVersion?: number
-)
+);
 ```
 
 **Good example (routing/actions.ts:11-17):**
+
 ```typescript
 const AssignBusinessUnitInputSchema = z.object({
   bidId: z.string().min(1, 'Bid ID ist erforderlich'),
@@ -45,6 +48,7 @@ const AssignBusinessUnitInputSchema = z.object({
 ## Proposed Solutions
 
 ### Solution A: Add Zod schemas for team inputs (Recommended)
+
 **Pros:** Consistent with routing/actions.ts, runtime validation
 **Cons:** None
 **Effort:** Small (30 min)
@@ -69,6 +73,7 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/team/actions.ts` (functions: suggestTeamForBid, assignTeam, getTeamAssignment, getAvailableEmployees)
 
 ## Acceptance Criteria
@@ -80,8 +85,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                   | Learnings                                    |
+| ---------- | ------------------------ | -------------------------------------------- |
 | 2026-01-18 | Created from code review | All Server Action inputs need Zod validation |
 
 ## Resources

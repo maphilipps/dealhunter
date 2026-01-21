@@ -7,6 +7,7 @@
 **Research agents used:** TypeScript Reviewer, Performance Oracle, Security Sentinel, Simplicity Reviewer, Pattern Recognition, Race Condition Reviewer, Framework Docs, Best Practices
 
 ### Key Improvements from Research
+
 1. **Event Batching** - Reduces re-renders by 90% (100ms batching interval)
 2. **Cancel Token Pattern** - Prevents stale closure bugs in SSE hooks
 3. **SSRF Mitigation** - Command injection vulnerability in httpx needs fix
@@ -14,11 +15,13 @@
 5. **Virtual Scrolling** - Required for 500+ URL navigation trees
 
 ### Critical Security Findings
+
 - **P0 Command Injection** in `lib/quick-scan/tools/playwright.ts:601-610`
 - **P1 No Rate Limiting** on Quick Scan retrigger
 - **P1 DNS Rebinding** risk in SSRF validation
 
 ### New Considerations Discovered
+
 - Phase 5 (Agent Activity) and Phase 6 (SSE Reconnection) are mostly implemented
 - `quick-scan-results.tsx` God Component needs split into 15+ smaller files
 - Race conditions in useEffect hooks require cancel token pattern
@@ -28,6 +31,7 @@
 ## Overview
 
 Umfassende Überarbeitung des Quick Scan Features mit Fokus auf:
+
 1. **Auto-Start Zuverlässigkeit** - Automatische Ausführung wenn URLs verfügbar
 2. **Navigation nach Audit** - Automatische Weiterleitung zur BIT-Entscheidung
 3. **Vollständige Sitemap/Navigation** - Tree-View mit allen URLs
@@ -38,26 +42,26 @@ Umfassende Überarbeitung des Quick Scan Features mit Fokus auf:
 
 ### Aktuelle Probleme (aus SpecFlow-Analyse)
 
-| Problem | Impact | Root Cause |
-|---------|--------|------------|
-| Auto-Start funktioniert nicht | User muss manuell scannen | Race Condition zwischen Status-Update und UI-Render |
-| Keine Weiterleitung nach Audit | User findet CTA nicht | Kein Auto-Scroll oder Toast mit CTA |
-| Sitemap zeigt "0 Items" | Navigation-Struktur fehlt | JS-heavy Sites, keine Playwright-Wartezeit |
-| Company zeigt "Startseite" | Falsche Firmennamen | Fehlende Blacklist für Title-Cleaning |
-| Entscheidungsträger leer | Keine Kontakte | DuckDuckGo Rate-Limiting, sequential statt parallel |
-| Agent Activity flach | Unübersichtlich | Keine Gruppierung, keine Charts |
+| Problem                        | Impact                    | Root Cause                                          |
+| ------------------------------ | ------------------------- | --------------------------------------------------- |
+| Auto-Start funktioniert nicht  | User muss manuell scannen | Race Condition zwischen Status-Update und UI-Render |
+| Keine Weiterleitung nach Audit | User findet CTA nicht     | Kein Auto-Scroll oder Toast mit CTA                 |
+| Sitemap zeigt "0 Items"        | Navigation-Struktur fehlt | JS-heavy Sites, keine Playwright-Wartezeit          |
+| Company zeigt "Startseite"     | Falsche Firmennamen       | Fehlende Blacklist für Title-Cleaning               |
+| Entscheidungsträger leer       | Keine Kontakte            | DuckDuckGo Rate-Limiting, sequential statt parallel |
+| Agent Activity flach           | Unübersichtlich           | Keine Gruppierung, keine Charts                     |
 
 ### Betroffene Dateien
 
-| Datei | Zeilen | Änderung |
-|-------|--------|----------|
-| `components/bids/quick-scan-results.tsx` | 1816 | Refactoring in kleinere Komponenten |
-| `lib/quick-scan/agent.ts` | ~400 | Agent-Namen standardisieren |
-| `lib/quick-scan/tools/company-research.ts` | ~200 | Blacklist + Fallback-Chain |
-| `lib/quick-scan/tools/decision-maker-research.ts` | ~300 | Parallel-Ausführung |
-| `lib/quick-scan/tools/navigation-crawler.ts` | ~150 | Playwright wait + Tree-Building |
-| `hooks/use-agent-stream.ts` | ~200 | SSE Reconnection |
-| `components/ai-elements/agent-activity-view.tsx` | ~300 | Charts + Timeline |
+| Datei                                             | Zeilen | Änderung                            |
+| ------------------------------------------------- | ------ | ----------------------------------- |
+| `components/bids/quick-scan-results.tsx`          | 1816   | Refactoring in kleinere Komponenten |
+| `lib/quick-scan/agent.ts`                         | ~400   | Agent-Namen standardisieren         |
+| `lib/quick-scan/tools/company-research.ts`        | ~200   | Blacklist + Fallback-Chain          |
+| `lib/quick-scan/tools/decision-maker-research.ts` | ~300   | Parallel-Ausführung                 |
+| `lib/quick-scan/tools/navigation-crawler.ts`      | ~150   | Playwright wait + Tree-Building     |
+| `hooks/use-agent-stream.ts`                       | ~200   | SSE Reconnection                    |
+| `components/ai-elements/agent-activity-view.tsx`  | ~300   | Charts + Timeline                   |
 
 ## Proposed Solution
 
@@ -72,7 +76,9 @@ Umfassende Überarbeitung des Quick Scan Features mit Fokus auf:
 // Fixed: Use ref to prevent double-start race condition
 
 const hasStartedRef = useRef(false);
-const [submissionState, setSubmissionState] = useState<'idle' | 'saving' | 'starting_scan' | 'polling'>('idle');
+const [submissionState, setSubmissionState] = useState<
+  'idle' | 'saving' | 'starting_scan' | 'polling'
+>('idle');
 
 useEffect(() => {
   if (rfp.status === 'reviewing' && !quickScan && !hasStartedRef.current) {
@@ -160,9 +166,21 @@ useEffect(() => {
 // lib/quick-scan/tools/company-research.ts
 
 const TITLE_BLACKLIST = [
-  'startseite', 'willkommen', 'home', 'homepage', 'index',
-  'hauptseite', 'welcome', 'aktuelles', 'news', 'start',
-  'übersicht', 'overview', 'portal', 'login', 'anmeldung'
+  'startseite',
+  'willkommen',
+  'home',
+  'homepage',
+  'index',
+  'hauptseite',
+  'welcome',
+  'aktuelles',
+  'news',
+  'start',
+  'übersicht',
+  'overview',
+  'portal',
+  'login',
+  'anmeldung',
 ];
 
 function extractCompanyName(data: WebsiteData): string {
@@ -255,8 +273,8 @@ async function findDecisionMakers(
     type: 'tool-result',
     data: {
       tool: 'Decision Maker Research',
-      result: `${unique.length} Entscheidungsträger gefunden`
-    }
+      result: `${unique.length} Entscheidungsträger gefunden`,
+    },
   });
 
   return unique;
@@ -293,13 +311,14 @@ async function buildNavigationTree(
       title: item.text,
       type: item.href.startsWith(websiteUrl) ? 'page' : 'external',
       depth: 0,
-      children: item.children?.map(child => ({
-        url: child.href,
-        title: child.text,
-        type: 'page',
-        depth: 1,
-        children: []
-      })) || []
+      children:
+        item.children?.map(child => ({
+          url: child.href,
+          title: child.text,
+          type: 'page',
+          depth: 1,
+          children: [],
+        })) || [],
     });
   }
 
@@ -641,6 +660,7 @@ export function ContentDistribution({ contentTypes }: ContentDistributionProps) 
 #### 6.1 Hook mit Reconnection + Cancel Token + Event Batching
 
 **Research Insights:**
+
 - **Performance Oracle:** Event batching reduces re-renders by 90% (100ms intervals)
 - **Race Condition Reviewer:** Cancel token prevents stale closure bugs
 - **Framework Docs:** Exponential backoff with jitter prevents thundering herd
@@ -721,84 +741,90 @@ export function useAgentStream(config: Partial<ReconnectConfig> = {}) {
     dispatch({ type: 'SET_STREAMING', isStreaming: false });
   }, [flushEvents]);
 
-  const connect = useCallback((url: string, attempt = 0) => {
-    const cancelToken = cancelTokenRef.current;
-    if (cancelToken.canceled) return;
-
-    // Close existing connection
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
-
-    urlRef.current = url;
-
-    // Append Last-Event-ID for resumption
-    const connectUrl = lastEventIdRef.current
-      ? `${url}${url.includes('?') ? '&' : '?'}lastEventId=${lastEventIdRef.current}`
-      : url;
-
-    const eventSource = new EventSource(connectUrl, { withCredentials: true });
-    eventSourceRef.current = eventSource;
-
-    eventSource.onopen = () => {
+  const connect = useCallback(
+    (url: string, attempt = 0) => {
+      const cancelToken = cancelTokenRef.current;
       if (cancelToken.canceled) return;
-      dispatch({ type: 'SET_RECONNECTING', attempts: 0 });
-      dispatch({ type: 'SET_STREAMING', isStreaming: true });
-    };
 
-    eventSource.onmessage = (event) => {
-      if (cancelToken.canceled) return; // Stale closure guard
-
-      try {
-        if (event.lastEventId) {
-          lastEventIdRef.current = event.lastEventId;
-        }
-
-        const agentEvent: AgentEvent = JSON.parse(event.data);
-
-        // Buffer events instead of immediate dispatch
-        eventBufferRef.current.push(agentEvent);
-
-        // Schedule flush if not already scheduled
-        if (!flushTimeoutRef.current) {
-          flushTimeoutRef.current = setTimeout(() => {
-            flushEvents();
-            flushTimeoutRef.current = null;
-          }, BATCH_INTERVAL_MS);
-        }
-      } catch (error) {
-        console.error('Failed to parse SSE event:', error);
+      // Close existing connection
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
       }
-    };
 
-    eventSource.onerror = () => {
-      if (cancelToken.canceled) return;
+      urlRef.current = url;
 
-      eventSource.close();
-      eventSourceRef.current = null;
+      // Append Last-Event-ID for resumption
+      const connectUrl = lastEventIdRef.current
+        ? `${url}${url.includes('?') ? '&' : '?'}lastEventId=${lastEventIdRef.current}`
+        : url;
 
-      if (attempt < mergedConfig.maxRetries) {
-        const delay = calculateRetryDelay(attempt, mergedConfig);
-        dispatch({ type: 'SET_RECONNECTING', attempts: attempt + 1 });
+      const eventSource = new EventSource(connectUrl, { withCredentials: true });
+      eventSourceRef.current = eventSource;
 
-        reconnectTimeoutRef.current = setTimeout(() => {
-          if (!cancelToken.canceled) {
-            connect(url, attempt + 1);
+      eventSource.onopen = () => {
+        if (cancelToken.canceled) return;
+        dispatch({ type: 'SET_RECONNECTING', attempts: 0 });
+        dispatch({ type: 'SET_STREAMING', isStreaming: true });
+      };
+
+      eventSource.onmessage = event => {
+        if (cancelToken.canceled) return; // Stale closure guard
+
+        try {
+          if (event.lastEventId) {
+            lastEventIdRef.current = event.lastEventId;
           }
-        }, delay);
-      } else {
-        dispatch({ type: 'SET_ERROR', error: 'Verbindung nach 3 Versuchen fehlgeschlagen' });
-      }
-    };
-  }, [mergedConfig, flushEvents]);
 
-  const start = useCallback((url: string) => {
-    abort();
-    dispatch({ type: 'RESET' });
-    lastEventIdRef.current = null;
-    cancelTokenRef.current = { canceled: false };
-    connect(url, 0);
-  }, [abort, connect]);
+          const agentEvent: AgentEvent = JSON.parse(event.data);
+
+          // Buffer events instead of immediate dispatch
+          eventBufferRef.current.push(agentEvent);
+
+          // Schedule flush if not already scheduled
+          if (!flushTimeoutRef.current) {
+            flushTimeoutRef.current = setTimeout(() => {
+              flushEvents();
+              flushTimeoutRef.current = null;
+            }, BATCH_INTERVAL_MS);
+          }
+        } catch (error) {
+          console.error('Failed to parse SSE event:', error);
+        }
+      };
+
+      eventSource.onerror = () => {
+        if (cancelToken.canceled) return;
+
+        eventSource.close();
+        eventSourceRef.current = null;
+
+        if (attempt < mergedConfig.maxRetries) {
+          const delay = calculateRetryDelay(attempt, mergedConfig);
+          dispatch({ type: 'SET_RECONNECTING', attempts: attempt + 1 });
+
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (!cancelToken.canceled) {
+              connect(url, attempt + 1);
+            }
+          }, delay);
+        } else {
+          dispatch({ type: 'SET_ERROR', error: 'Verbindung nach 3 Versuchen fehlgeschlagen' });
+        }
+      };
+    },
+    [mergedConfig, flushEvents]
+  );
+
+  const start = useCallback(
+    (url: string) => {
+      abort();
+      dispatch({ type: 'RESET' });
+      lastEventIdRef.current = null;
+      cancelTokenRef.current = { canceled: false };
+      connect(url, 0);
+    },
+    [abort, connect]
+  );
 
   // Cleanup on unmount
   useEffect(() => {
@@ -815,6 +841,7 @@ export function useAgentStream(config: Partial<ReconnectConfig> = {}) {
 ```
 
 **New Reducer Case for Batching:**
+
 ```typescript
 case 'ADD_EVENTS_BATCH': {
   const events = action.events;
@@ -871,17 +898,21 @@ case 'ADD_EVENTS_BATCH': {
 
 - **P1 HIGH - Rate Limiting**: Max 3 Quick Scans pro RFP pro Stunde
   - **Implementation:**
+
   ```typescript
   // lib/quick-scan/actions.ts
   const RATE_LIMIT = { maxScans: 3, windowMs: 60 * 60 * 1000 };
 
   async function checkRateLimit(rfpId: string): Promise<boolean> {
-    const recentScans = await db.select()
+    const recentScans = await db
+      .select()
       .from(quickScans)
-      .where(and(
-        eq(quickScans.rfpId, rfpId),
-        gt(quickScans.createdAt, new Date(Date.now() - RATE_LIMIT.windowMs))
-      ));
+      .where(
+        and(
+          eq(quickScans.rfpId, rfpId),
+          gt(quickScans.createdAt, new Date(Date.now() - RATE_LIMIT.windowMs))
+        )
+      );
     return recentScans.length < RATE_LIMIT.maxScans;
   }
   ```
@@ -895,6 +926,7 @@ case 'ADD_EVENTS_BATCH': {
 **Research Insights (Framework Docs):**
 
 - **Charts**: `accessibilityLayer` auf allen Recharts-Komponenten (v3.0+ default enabled)
+
   ```tsx
   <RadarChart accessibilityLayer={true} title="Tech Stack Analysis">
   ```
@@ -941,16 +973,17 @@ case 'ADD_EVENTS_BATCH': {
 
 **Updated based on Simplicity Review findings:**
 
-| Phase | Priority | Status | Notes |
-|-------|----------|--------|-------|
-| **Phase 1** | Kritisch | DONE | Auto-Start + Post-Scan Navigation |
-| **Phase 2** | Hoch | DONE | Company Intelligence Fix |
-| **Phase 3** | Hoch | DONE | Sequential statt Parallel (Early Return) |
-| **Phase 4** | Mittel | TODO | Navigation Tree-View mit Virtual Scrolling |
-| **Phase 5** | Mittel | **DONE** | `AgentActivityView` existiert bereits (270 Zeilen) |
-| **Phase 6** | Mittel | **DONE** | Event Batching implementiert (100ms Interval) |
+| Phase       | Priority | Status   | Notes                                              |
+| ----------- | -------- | -------- | -------------------------------------------------- |
+| **Phase 1** | Kritisch | DONE     | Auto-Start + Post-Scan Navigation                  |
+| **Phase 2** | Hoch     | DONE     | Company Intelligence Fix                           |
+| **Phase 3** | Hoch     | DONE     | Sequential statt Parallel (Early Return)           |
+| **Phase 4** | Mittel   | TODO     | Navigation Tree-View mit Virtual Scrolling         |
+| **Phase 5** | Mittel   | **DONE** | `AgentActivityView` existiert bereits (270 Zeilen) |
+| **Phase 6** | Mittel   | **DONE** | Event Batching implementiert (100ms Interval)      |
 
 **Simplification Insights:**
+
 - Phase 5 bereits in `components/ai-elements/agent-activity-view.tsx` implementiert
 - Phase 3: Sequential mit Early Return ist einfacher als Parallel (80% der deutschen Sites haben Impressum)
 - Virtual Scrolling nur bei >100 Items nötig (typisch: ~50 Items)
@@ -972,6 +1005,7 @@ npx shadcn add "https://mrlightful.com/registry/tree-view"
 ```
 
 **Dependency Analysis (Simplicity):**
+
 - `@tanstack/react-virtual`: Required für 500+ URLs
 - Tree-View: Optional - bestehende `Collapsible` Pattern funktioniert
 - Timeline: Optional - bestehende Progress-Bars ausreichend
@@ -979,12 +1013,14 @@ npx shadcn add "https://mrlightful.com/registry/tree-view"
 ## References
 
 ### Internal
+
 - Quick Scan Agent: `lib/quick-scan/agent.ts`
 - Current UI: `components/bids/quick-scan-results.tsx`
 - Event Types: `lib/streaming/event-types.ts`
 - Streaming Hook: `hooks/use-agent-stream.ts`
 
 ### External
+
 - [Vercel Lead Agent](https://github.com/vercel-labs/lead-agent)
 - [AI SDK Elements](https://vercel.com/changelog/introducing-ai-elements)
 - [ShadCN Charts](https://ui.shadcn.com/docs/components/chart)
@@ -1003,49 +1039,49 @@ npx shadcn add "https://mrlightful.com/registry/tree-view"
 
 ### TypeScript Reviewer Key Issues
 
-| Priority | Issue | Impact | Fix |
-|----------|-------|--------|-----|
-| **P0** | `any` types in `useAgentStream` reducer | Type safety lost | Use type guards |
-| **P0** | Unsafe type assertions `as { agent: string }` | Runtime errors | Discriminated union pattern |
-| **P1** | 14 useState calls in BidDetailClient | Complex state | Consolidate to useReducer |
-| **P2** | Missing error boundaries | Crashes on JSON.parse failure | Add ErrorBoundary wrapper |
+| Priority | Issue                                         | Impact                        | Fix                         |
+| -------- | --------------------------------------------- | ----------------------------- | --------------------------- |
+| **P0**   | `any` types in `useAgentStream` reducer       | Type safety lost              | Use type guards             |
+| **P0**   | Unsafe type assertions `as { agent: string }` | Runtime errors                | Discriminated union pattern |
+| **P1**   | 14 useState calls in BidDetailClient          | Complex state                 | Consolidate to useReducer   |
+| **P2**   | Missing error boundaries                      | Crashes on JSON.parse failure | Add ErrorBoundary wrapper   |
 
 ### Performance Oracle Metrics
 
-| Metric | Current | Optimized | Improvement |
-|--------|---------|-----------|-------------|
-| Re-renders/sec during stream | 10+ | 10 max (batched) | 90%+ reduction |
-| Reducer execution time | ~5ms | <5ms target | Maintain |
-| DOM nodes (500 URLs) | 500+ | ~20 | 96% reduction |
-| Memory (events) | 150KB | 150KB | Maintained via circular buffer |
+| Metric                       | Current | Optimized        | Improvement                    |
+| ---------------------------- | ------- | ---------------- | ------------------------------ |
+| Re-renders/sec during stream | 10+     | 10 max (batched) | 90%+ reduction                 |
+| Reducer execution time       | ~5ms    | <5ms target      | Maintain                       |
+| DOM nodes (500 URLs)         | 500+    | ~20              | 96% reduction                  |
+| Memory (events)              | 150KB   | 150KB            | Maintained via circular buffer |
 
 ### Pattern Recognition Summary
 
-| Pattern | Status | Quality |
-|---------|--------|---------|
-| Observer (SSE) | Present | 9/10 |
-| Reducer (State) | Present | 9/10 |
-| Composite (Tree) | Present | 7/10 |
-| Strategy | Missing | Needed for company name |
-| Factory | Missing | Would benefit charts |
+| Pattern               | Status  | Quality                    |
+| --------------------- | ------- | -------------------------- |
+| Observer (SSE)        | Present | 9/10                       |
+| Reducer (State)       | Present | 9/10                       |
+| Composite (Tree)      | Present | 7/10                       |
+| Strategy              | Missing | Needed for company name    |
+| Factory               | Missing | Would benefit charts       |
 | Retry/Circuit Breaker | Missing | Critical for external APIs |
 
 ### Security Audit Summary
 
-| Severity | Issue | Location | Status |
-|----------|-------|----------|--------|
-| **High** | Command Injection (httpx) | `playwright.ts:601-610` | Fix required |
-| **High** | No Rate Limiting | `actions.ts` | Implementation provided |
-| **High** | DNS Rebinding | `agent.ts:175-238` | Validation gap |
-| **Medium** | XSS from external content | Display components | Review required |
+| Severity   | Issue                     | Location                | Status                  |
+| ---------- | ------------------------- | ----------------------- | ----------------------- |
+| **High**   | Command Injection (httpx) | `playwright.ts:601-610` | Fix required            |
+| **High**   | No Rate Limiting          | `actions.ts`            | Implementation provided |
+| **High**   | DNS Rebinding             | `agent.ts:175-238`      | Validation gap          |
+| **Medium** | XSS from external content | Display components      | Review required         |
 
 ### Code Duplication Found (Pattern Recognition)
 
-| Pattern | Occurrences | Recommendation |
-|---------|-------------|----------------|
-| Badge rendering with score colors | 20+ | Extract `<ScoreBadge score={number} />` |
-| Icon + Title card header | 12+ | Extract `<AuditCardHeader />` |
-| Check item with status icon | 30+ | Extract `<CheckItem condition={boolean} />` |
+| Pattern                           | Occurrences | Recommendation                              |
+| --------------------------------- | ----------- | ------------------------------------------- |
+| Badge rendering with score colors | 20+         | Extract `<ScoreBadge score={number} />`     |
+| Icon + Title card header          | 12+         | Extract `<AuditCardHeader />`               |
+| Check item with status icon       | 30+         | Extract `<CheckItem condition={boolean} />` |
 
 ### God Component Split Recommendation
 

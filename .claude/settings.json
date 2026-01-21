@@ -6,5 +6,8 @@
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-v4.5",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-v4.5"
   },
-  "effort": "medium"
+  "effort": "medium",
+  "enabledPlugins": {
+    "compound-engineering@every-marketplace": false
+  }
 }

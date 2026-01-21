@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,25 +8,25 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Fragment } from 'react'
+} from '@/components/ui/breadcrumb';
+import { Fragment } from 'react';
 
 const routeLabels: Record<string, string> = {
   '': 'Dashboard',
-  'bids': 'RFPs',
-  'new': 'Neu',
-  'accounts': 'Accounts',
-  'analytics': 'Analytics',
-  'admin': 'Admin',
-  'users': 'Users',
-  'teams': 'Teams',
-  'settings': 'Einstellungen',
+  bids: 'RFPs',
+  new: 'Neu',
+  accounts: 'Accounts',
+  analytics: 'Analytics',
+  admin: 'Admin',
+  users: 'Users',
+  teams: 'Teams',
+  settings: 'Einstellungen',
   'bl-review': 'BL-Review',
-}
+};
 
 export function DynamicBreadcrumb() {
-  const pathname = usePathname()
-  const segments = pathname.split('/').filter(Boolean)
+  const pathname = usePathname();
+  const segments = pathname.split('/').filter(Boolean);
 
   if (segments.length === 0) {
     return (
@@ -37,21 +37,19 @@ export function DynamicBreadcrumb() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-    )
+    );
   }
 
   return (
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem className="hidden md:block">
-          <BreadcrumbLink href="/">
-            Dashboard
-          </BreadcrumbLink>
+          <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
         </BreadcrumbItem>
         {segments.map((segment, index) => {
-          const path = '/' + segments.slice(0, index + 1).join('/')
-          const isLast = index === segments.length - 1
-          const label = routeLabels[segment] || segment
+          const path = '/' + segments.slice(0, index + 1).join('/');
+          const isLast = index === segments.length - 1;
+          const label = routeLabels[segment] || segment;
 
           return (
             <Fragment key={path}>
@@ -66,9 +64,9 @@ export function DynamicBreadcrumb() {
                 )}
               </BreadcrumbItem>
             </Fragment>
-          )
+          );
         })}
       </BreadcrumbList>
     </Breadcrumb>
-  )
+  );
 }

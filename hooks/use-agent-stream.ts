@@ -29,7 +29,13 @@ type Action =
 function processEvent(
   event: AgentEvent,
   currentAgentStates: StreamState['agentStates']
-): { agentStates: StreamState['agentStates']; decision?: any; error?: string; urlSuggestion?: UrlSuggestionData; shouldStopStreaming?: boolean } {
+): {
+  agentStates: StreamState['agentStates'];
+  decision?: any;
+  error?: string;
+  urlSuggestion?: UrlSuggestionData;
+  shouldStopStreaming?: boolean;
+} {
   const newAgentStates = { ...currentAgentStates };
   let decision: any = undefined;
   let error: string | undefined = undefined;
@@ -289,7 +295,7 @@ export function useAgentStream() {
     const eventSource = new EventSource(url, { withCredentials: true });
     eventSourceRef.current = eventSource;
 
-    eventSource.onmessage = (event) => {
+    eventSource.onmessage = event => {
       try {
         const agentEvent: AgentEvent = JSON.parse(event.data);
 
@@ -320,7 +326,7 @@ export function useAgentStream() {
       }
     };
 
-    eventSource.onerror = (error) => {
+    eventSource.onerror = error => {
       // Flush any pending events before handling error/close
       if (flushTimeoutRef.current) {
         clearTimeout(flushTimeoutRef.current);
@@ -349,9 +355,10 @@ export function useAgentStream() {
 
       // Real error - log and set error state
       console.error('EventSource error:', error);
-      const errorMessage = eventSource.readyState === EventSource.CLOSED
-        ? 'Verbindung wurde unerwartet geschlossen - bitte Seite neu laden'
-        : 'Stream-Verbindung fehlgeschlagen - bitte prüfen Sie Ihre Anmeldung';
+      const errorMessage =
+        eventSource.readyState === EventSource.CLOSED
+          ? 'Verbindung wurde unerwartet geschlossen - bitte Seite neu laden'
+          : 'Stream-Verbindung fehlgeschlagen - bitte prüfen Sie Ihre Anmeldung';
       dispatch({ type: 'SET_ERROR', error: errorMessage });
       eventSource.close();
       eventSourceRef.current = null;

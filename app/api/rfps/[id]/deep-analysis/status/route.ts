@@ -25,10 +25,7 @@ export const dynamic = 'force-dynamic';
  * - 401 Unauthorized: User not authenticated
  * - 404 Not Found: Bid not found or user doesn't own it
  */
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   // 1. Verify authentication
   const session = await auth();
   if (!session?.user?.id) {
@@ -47,10 +44,7 @@ export async function GET(
     const [bid] = await db
       .select()
       .from(rfps)
-      .where(and(
-        eq(rfps.id, id),
-        eq(rfps.userId, session.user.id)
-      ))
+      .where(and(eq(rfps.id, id), eq(rfps.userId, session.user.id)))
       .limit(1);
 
     if (!bid) {

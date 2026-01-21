@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p3
-issue_id: "036"
+issue_id: '036'
 tags: [code-review, architecture, dead-code]
 dependencies: []
 ---
@@ -19,6 +19,7 @@ dependencies: []
 **From architecture-strategist agent:**
 
 **Unused function (lines 32-75):**
+
 ```typescript
 export function canTransitionTo(
   bid: Pick<BidOpportunity, ...>,
@@ -27,18 +28,21 @@ export function canTransitionTo(
 ```
 
 **Only these are imported (page.tsx:7):**
+
 ```typescript
 import { getEnabledTabs, getWorkflowProgress } from '@/lib/workflow/bl-review-status';
 // canTransitionTo NOT imported
 ```
 
 **Duplicated inline checks in actions:**
+
 - `lib/team/actions.ts:49` - `if (bid.status !== 'routed')`
 - `lib/team/actions.ts:128` - `if (bid.status !== 'routed')`
 
 ## Proposed Solutions
 
 ### Solution A: Integrate canTransitionTo into actions (Recommended)
+
 **Pros:** Single source of truth, better consistency
 **Cons:** Minor refactor
 **Effort:** Medium (30 min)
@@ -53,6 +57,7 @@ if (!transition.allowed) {
 ```
 
 ### Solution B: Remove if truly unnecessary
+
 **Pros:** Less code to maintain
 **Cons:** Lose workflow abstraction
 **Effort:** Tiny (5 min)
@@ -65,6 +70,7 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/workflow/bl-review-status.ts` (export canTransitionTo)
 - `lib/team/actions.ts` (use canTransitionTo instead of inline checks)
 - `lib/routing/actions.ts` (use canTransitionTo instead of inline checks)
@@ -77,8 +83,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                   | Learnings                        |
+| ---------- | ------------------------ | -------------------------------- |
 | 2026-01-18 | Created from code review | Keep workflow logic in one place |
 
 ## Resources

@@ -14,9 +14,9 @@ interface RedFlagAlertProps {
 export function RedFlagAlert({ flags, className }: RedFlagAlertProps) {
   if (!flags || flags.length === 0) return null;
 
-  const criticalFlags = flags.filter((f) => f.severity === 'critical');
-  const highFlags = flags.filter((f) => f.severity === 'high');
-  const mediumFlags = flags.filter((f) => f.severity === 'medium');
+  const criticalFlags = flags.filter(f => f.severity === 'critical');
+  const highFlags = flags.filter(f => f.severity === 'high');
+  const mediumFlags = flags.filter(f => f.severity === 'medium');
 
   const categoryLabels = {
     legal: 'Rechtlich',

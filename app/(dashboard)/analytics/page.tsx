@@ -1,49 +1,68 @@
-"use client"
+'use client';
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend, ResponsiveContainer } from "recharts"
-import { TrendingUp, Clock, Target, Activity } from "lucide-react"
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from '@/components/ui/chart';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  LineChart,
+  Line,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import { TrendingUp, Clock, Target, Activity } from 'lucide-react';
 
 interface AnalyticsData {
   summary: {
-    totalRfps: number
-    bidRate: number
-    avgTimeToDecision: number
-    activeBids: number
-  }
+    totalRfps: number;
+    bidRate: number;
+    avgTimeToDecision: number;
+    activeBids: number;
+  };
   bidDecision: {
-    bid: number
-    noBid: number
-    pending: number
-  }
+    bid: number;
+    noBid: number;
+    pending: number;
+  };
   source: {
-    reactive: number
-    proactive: number
-  }
+    reactive: number;
+    proactive: number;
+  };
   stage: {
-    cold: number
-    warm: number
-    rfp: number
-  }
+    cold: number;
+    warm: number;
+    rfp: number;
+  };
   funnel: {
-    draft: number
-    evaluating: number
-    decisionMade: number
-    routed: number
-    assigned: number
-    archived: number
-  }
+    draft: number;
+    evaluating: number;
+    decisionMade: number;
+    routed: number;
+    assigned: number;
+    archived: number;
+  };
   blDistribution: Array<{
-    name: string
-    count: number
-  }>
+    name: string;
+    count: number;
+  }>;
   timeline: Array<{
-    date: string
-    bids: number
-    noBids: number
-  }>
+    date: string;
+    bids: number;
+    noBids: number;
+  }>;
 }
 
 const COLORS = {
@@ -55,36 +74,36 @@ const COLORS = {
   cold: 'hsl(217, 91%, 60%)',
   warm: 'hsl(27, 96%, 61%)',
   rfp: 'hsl(142, 76%, 36%)',
-}
+};
 
 export default function AnalyticsPage() {
-  const [data, setData] = useState<AnalyticsData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchAnalytics() {
-      setIsLoading(true)
+      setIsLoading(true);
       try {
-        const response = await fetch('/api/analytics/overview')
-        if (!response.ok) throw new Error('Failed to fetch analytics')
-        const analyticsData = await response.json()
-        setData(analyticsData)
+        const response = await fetch('/api/analytics/overview');
+        if (!response.ok) throw new Error('Failed to fetch analytics');
+        const analyticsData = await response.json();
+        setData(analyticsData);
       } catch (error) {
-        console.error('Error fetching analytics:', error)
+        console.error('Error fetching analytics:', error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
 
-    fetchAnalytics()
-  }, [])
+    fetchAnalytics();
+  }, []);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <p className="text-muted-foreground">Loading analytics...</p>
       </div>
-    )
+    );
   }
 
   if (!data) {
@@ -92,25 +111,25 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-center py-12">
         <p className="text-muted-foreground">Failed to load analytics data</p>
       </div>
-    )
+    );
   }
 
   const bidDecisionData = [
     { name: 'Bid', value: data.bidDecision.bid, fill: COLORS.bid },
     { name: 'No Bid', value: data.bidDecision.noBid, fill: COLORS.noBid },
     { name: 'Pending', value: data.bidDecision.pending, fill: COLORS.pending },
-  ].filter(item => item.value > 0)
+  ].filter(item => item.value > 0);
 
   const sourceData = [
     { name: 'Reactive', value: data.source.reactive, fill: COLORS.reactive },
     { name: 'Proactive', value: data.source.proactive, fill: COLORS.proactive },
-  ].filter(item => item.value > 0)
+  ].filter(item => item.value > 0);
 
   const stageData = [
     { name: 'Cold', value: data.stage.cold, fill: COLORS.cold },
     { name: 'Warm', value: data.stage.warm, fill: COLORS.warm },
     { name: 'RFP', value: data.stage.rfp, fill: COLORS.rfp },
-  ].filter(item => item.value > 0)
+  ].filter(item => item.value > 0);
 
   const funnelData = [
     { stage: 'Draft', count: data.funnel.draft },
@@ -119,26 +138,24 @@ export default function AnalyticsPage() {
     { stage: 'Routed to BL', count: data.funnel.routed },
     { stage: 'Team Assigned', count: data.funnel.assigned },
     { stage: 'Archived', count: data.funnel.archived },
-  ].filter(item => item.count > 0)
+  ].filter(item => item.count > 0);
 
   const chartConfig = {
-    bid: { label: "Bid", color: COLORS.bid },
-    noBid: { label: "No Bid", color: COLORS.noBid },
-    pending: { label: "Pending", color: COLORS.pending },
-    reactive: { label: "Reactive", color: COLORS.reactive },
-    proactive: { label: "Proactive", color: COLORS.proactive },
-    cold: { label: "Cold", color: COLORS.cold },
-    warm: { label: "Warm", color: COLORS.warm },
-    rfp: { label: "RFP", color: COLORS.rfp },
-  }
+    bid: { label: 'Bid', color: COLORS.bid },
+    noBid: { label: 'No Bid', color: COLORS.noBid },
+    pending: { label: 'Pending', color: COLORS.pending },
+    reactive: { label: 'Reactive', color: COLORS.reactive },
+    proactive: { label: 'Proactive', color: COLORS.proactive },
+    cold: { label: 'Cold', color: COLORS.cold },
+    warm: { label: 'Warm', color: COLORS.warm },
+    rfp: { label: 'RFP', color: COLORS.rfp },
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-        <p className="text-muted-foreground">
-          Track your performance metrics and insights
-        </p>
+        <p className="text-muted-foreground">Track your performance metrics and insights</p>
       </div>
 
       {/* Quick Stats */}
@@ -150,9 +167,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.summary.totalRfps}</div>
-            <p className="text-xs text-muted-foreground">
-              {data.summary.activeBids} active
-            </p>
+            <p className="text-xs text-muted-foreground">{data.summary.activeBids} active</p>
           </CardContent>
         </Card>
 
@@ -176,9 +191,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.summary.avgTimeToDecision}h</div>
-            <p className="text-xs text-muted-foreground">
-              Average processing time
-            </p>
+            <p className="text-xs text-muted-foreground">Average processing time</p>
           </CardContent>
         </Card>
 
@@ -189,9 +202,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.summary.activeBids}</div>
-            <p className="text-xs text-muted-foreground">
-              In progress
-            </p>
+            <p className="text-xs text-muted-foreground">In progress</p>
           </CardContent>
         </Card>
       </div>
@@ -216,7 +227,7 @@ export default function AnalyticsPage() {
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
-                  label={(entry) => `${entry.name}: ${entry.value}`}
+                  label={entry => `${entry.name}: ${entry.value}`}
                 >
                   {bidDecisionData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -245,7 +256,7 @@ export default function AnalyticsPage() {
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
-                  label={(entry) => `${entry.name}: ${entry.value}`}
+                  label={entry => `${entry.name}: ${entry.value}`}
                 >
                   {sourceData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -274,7 +285,7 @@ export default function AnalyticsPage() {
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
-                  label={(entry) => `${entry.name}: ${entry.value}`}
+                  label={entry => `${entry.name}: ${entry.value}`}
                 >
                   {stageData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -339,20 +350,32 @@ export default function AnalyticsPage() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="date"
-                tickFormatter={(value) => {
-                  const date = new Date(value)
-                  return `${date.getMonth() + 1}/${date.getDate()}`
+                tickFormatter={value => {
+                  const date = new Date(value);
+                  return `${date.getMonth() + 1}/${date.getDate()}`;
                 }}
               />
               <YAxis />
               <ChartTooltip content={<ChartTooltipContent />} />
               <ChartLegend content={<ChartLegendContent />} />
-              <Line type="monotone" dataKey="bids" stroke={COLORS.bid} name="Bids" strokeWidth={2} />
-              <Line type="monotone" dataKey="noBids" stroke={COLORS.noBid} name="No Bids" strokeWidth={2} />
+              <Line
+                type="monotone"
+                dataKey="bids"
+                stroke={COLORS.bid}
+                name="Bids"
+                strokeWidth={2}
+              />
+              <Line
+                type="monotone"
+                dataKey="noBids"
+                stroke={COLORS.noBid}
+                name="No Bids"
+                strokeWidth={2}
+              />
             </LineChart>
           </ChartContainer>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

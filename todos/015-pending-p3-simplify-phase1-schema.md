@@ -18,6 +18,7 @@ Phase 1 creates a `deepMigrationAnalyses` table with 17 columns, but the Inngest
 ## Findings
 
 **Code Simplicity Reviewer Report:**
+
 - Phase 1 goal: "Foundation with database schema and Inngest placeholder"
 - Actual Inngest function: 7 lines, just logs and returns success
 - Database schema: 17 columns with complex JSON storage
@@ -25,6 +26,7 @@ Phase 1 creates a `deepMigrationAnalyses` table with 17 columns, but the Inngest
 - Risk: When Phase 2 agents are built, actual requirements may differ from schema
 
 **Evidence:**
+
 ```typescript
 // lib/inngest/functions/deep-analysis.ts (Phase 1)
 export const deepAnalysisFunction = inngest.createFunction(
@@ -39,21 +41,26 @@ export const deepAnalysisFunction = inngest.createFunction(
 
 // lib/db/schema.ts (Phase 1)
 export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
-  id: text('id').primaryKey().$defaultFn(() => createId()),
-  bidOpportunityId: text('bid_opportunity_id').notNull()
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  bidOpportunityId: text('bid_opportunity_id')
+    .notNull()
     .references(() => bidOpportunities.id),
   jobId: text('job_id').notNull(),
-  status: text('status', { enum: ['pending', 'running', 'completed', 'failed', 'cancelled'] }).notNull(),
+  status: text('status', {
+    enum: ['pending', 'running', 'completed', 'failed', 'cancelled'],
+  }).notNull(),
   startedAt: integer('started_at', { mode: 'timestamp' }),
   completedAt: integer('completed_at', { mode: 'timestamp' }),
   errorMessage: text('error_message'),
   sourceCMS: text('source_cms'),
   targetCMS: text('target_cms'),
   websiteUrl: text('website_url').notNull(),
-  contentArchitecture: text('content_architecture'),     // ❌ Not used yet
-  migrationComplexity: text('migration_complexity'),     // ❌ Not used yet
-  accessibilityAudit: text('accessibility_audit'),       // ❌ Not used yet
-  ptEstimation: text('pt_estimation'),                   // ❌ Not used yet
+  contentArchitecture: text('content_architecture'), // ❌ Not used yet
+  migrationComplexity: text('migration_complexity'), // ❌ Not used yet
+  accessibilityAudit: text('accessibility_audit'), // ❌ Not used yet
+  ptEstimation: text('pt_estimation'), // ❌ Not used yet
   version: integer('version').notNull().default(1),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
@@ -62,10 +69,14 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 ```
 
 **Simpler Phase 1 Schema (YAGNI):**
+
 ```typescript
 export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
-  id: text('id').primaryKey().$defaultFn(() => createId()),
-  bidOpportunityId: text('bid_opportunity_id').notNull()
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  bidOpportunityId: text('bid_opportunity_id')
+    .notNull()
     .references(() => bidOpportunities.id),
   jobId: text('job_id').notNull(),
   status: text('status', { enum: ['pending', 'running', 'completed', 'failed'] }).notNull(),
@@ -78,13 +89,16 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 ## Proposed Solutions
 
 ### Solution 1: Defer Schema Complexity to Phase 2 (Recommended for Future)
+
 **Pros:**
+
 - YAGNI compliance
 - Schema evolves with actual requirements
 - Easier to change if needs differ
 - Less cognitive overhead in Phase 1
 
 **Cons:**
+
 - Requires schema migration in Phase 2
 - Can't show "complete" schema upfront
 
@@ -92,6 +106,7 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 **Risk**: N/A
 
 **Recommended for NEXT Epic:**
+
 ```
 Phase 1: Minimal viable schema (6 columns)
 Phase 2: Add contentArchitecture column when agent implemented
@@ -100,12 +115,15 @@ Phase 3: Add migrationComplexity column when agent implemented
 ```
 
 ### Solution 2: Keep Full Schema (Current Approach)
+
 **Pros:**
+
 - All columns ready for future phases
 - No migration needed in Phase 2-5
 - Clear long-term structure
 
 **Cons:**
+
 - Violates YAGNI
 - May not match actual Phase 2 requirements
 - Over-engineering
@@ -114,11 +132,14 @@ Phase 3: Add migrationComplexity column when agent implemented
 **Risk**: Low (just tech debt, not a bug)
 
 ### Solution 3: Rollback to Minimal Schema Now
+
 **Pros:**
+
 - Adheres to YAGNI
 - Cleaner Phase 1 delivery
 
 **Cons:**
+
 - Wastes work already done
 - Need to drop/recreate table
 - Delay Phase 1 completion
@@ -139,15 +160,18 @@ The full schema is already implemented and working. Rollback would waste work an
 ## Technical Details
 
 **Philosophy:**
+
 - YAGNI: "You Aren't Gonna Need It" - don't build for future requirements
 - Incremental design: Add complexity when needed, not before
 - Evolutionary architecture: Let structure emerge from actual requirements
 
 **Trade-off:**
+
 - Upfront design: More migrations, but adheres to YAGNI
 - Full design: No migrations, but risks over-engineering
 
 **Next Epic Recommendation:**
+
 ```typescript
 // Phase 1: Minimal
 export const newFeatureTable = sqliteTable('new_feature', {
@@ -166,6 +190,7 @@ ALTER TABLE `new_feature` ADD `result_data` text;
 ## Acceptance Criteria
 
 (For future epics, not Epic 7)
+
 - [ ] Phase 1 schema includes only columns used by Phase 1 code
 - [ ] Each subsequent phase adds columns as features are implemented
 - [ ] Schema evolution tracked in migrations with clear phase labels

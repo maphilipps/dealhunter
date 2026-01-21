@@ -122,12 +122,12 @@ export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
         <select
           id="account-select"
           value={selectedAccountId}
-          onChange={(e) => setSelectedAccountId(e.target.value)}
+          onChange={e => setSelectedAccountId(e.target.value)}
           className="w-full rounded-md border border-input bg-background px-3 py-2"
           disabled={isUploading}
         >
           <option value="">-- Kein Account ausgewählt --</option>
-          {accounts.map((account) => (
+          {accounts.map(account => (
             <option key={account.id} value={account.id}>
               {account.name} ({account.industry})
             </option>
@@ -175,7 +175,7 @@ export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
                 </div>
                 <button
                   type="button"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.preventDefault();
                     setSelectedFile(null);
                   }}
@@ -188,9 +188,7 @@ export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
               <div className="space-y-3">
                 <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">
-                    PDF hierher ziehen oder klicken zum Auswählen
-                  </p>
+                  <p className="font-medium">PDF hierher ziehen oder klicken zum Auswählen</p>
                   <p className="text-sm text-muted-foreground mt-1">
                     Unterstützt werden PDF-Dateien bis 10 MB
                   </p>
@@ -207,7 +205,7 @@ export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
                 type="checkbox"
                 id="dsgvo-cleaning"
                 checked={enableDSGVO}
-                onChange={(e) => setEnableDSGVO(e.target.checked)}
+                onChange={e => setEnableDSGVO(e.target.checked)}
                 disabled={isUploading}
                 className="h-4 w-4"
               />
@@ -235,7 +233,7 @@ export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
             id="website-url"
             type="url"
             value={websiteUrl}
-            onChange={(e) => setWebsiteUrl(e.target.value)}
+            onChange={e => setWebsiteUrl(e.target.value)}
             placeholder="https://www.beispiel-kunde.de"
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             disabled={isUploading}
@@ -261,15 +259,13 @@ export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
           <textarea
             id="additional-text"
             value={additionalText}
-            onChange={(e) => setAdditionalText(e.target.value)}
+            onChange={e => setAdditionalText(e.target.value)}
             placeholder="Ergänzende Informationen, die nicht im PDF stehen oder zusätzlichen Kontext bieten..."
             rows={8}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
             disabled={isUploading}
           />
-          <p className="text-xs text-muted-foreground mt-2">
-            {additionalText.length} Zeichen
-          </p>
+          <p className="text-xs text-muted-foreground mt-2">{additionalText.length} Zeichen</p>
         </div>
       </div>
 

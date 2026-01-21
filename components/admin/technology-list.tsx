@@ -92,13 +92,8 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
   if (!technologies || technologies.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground mb-4">
-          Noch keine Technologien erfasst
-        </p>
-        <a
-          href="/admin/technologies/new"
-          className="text-primary hover:underline"
-        >
+        <p className="text-muted-foreground mb-4">Noch keine Technologien erfasst</p>
+        <a href="/admin/technologies/new" className="text-primary hover:underline">
           Erste Technologie erstellen →
         </a>
       </div>
@@ -107,7 +102,7 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {technologies.map((tech) => {
+      {technologies.map(tech => {
         const entityCounts = JSON.parse(tech.baselineEntityCounts || '{}');
         const hasBaseline = tech.baselineHours && tech.baselineHours > 0;
         const isResearching = researchingIds.has(tech.id);
@@ -121,7 +116,7 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
                     src={tech.logoUrl}
                     alt={`${tech.name} logo`}
                     className="h-8 w-8 object-contain"
-                    onError={(e) => {
+                    onError={e => {
                       (e.target as HTMLImageElement).style.display = 'none';
                     }}
                   />
@@ -168,9 +163,7 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {tech.description && (
-                <p className="text-muted-foreground text-xs line-clamp-2">
-                  {tech.description}
-                </p>
+                <p className="text-muted-foreground text-xs line-clamp-2">{tech.description}</p>
               )}
 
               <div className="flex flex-wrap gap-2">
@@ -221,11 +214,13 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
                 <div>
                   <span className="text-muted-foreground">Entities:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {Object.entries(entityCounts).slice(0, 4).map(([entity, count], i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
-                        {entity}: {count as number}
-                      </Badge>
-                    ))}
+                    {Object.entries(entityCounts)
+                      .slice(0, 4)
+                      .map(([entity, count], i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {entity}: {count as number}
+                        </Badge>
+                      ))}
                     {Object.keys(entityCounts).length > 4 && (
                       <Badge variant="secondary" className="text-xs">
                         +{Object.keys(entityCounts).length - 4}
@@ -237,32 +232,43 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
 
               <div className="flex flex-wrap gap-1">
                 {tech.isDefault && (
-                  <Badge variant="default" className="text-xs">Default</Badge>
+                  <Badge variant="default" className="text-xs">
+                    Default
+                  </Badge>
                 )}
                 {tech.license && (
-                  <Badge variant="outline" className="text-xs">{tech.license}</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {tech.license}
+                  </Badge>
                 )}
                 {tech.latestVersion && (
-                  <Badge variant="outline" className="text-xs">v{tech.latestVersion}</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    v{tech.latestVersion}
+                  </Badge>
                 )}
               </div>
 
               <div className="text-xs text-muted-foreground pt-2 border-t flex justify-between">
                 <span>
-                  Erstellt: {tech.createdAt ? new Date(tech.createdAt).toLocaleDateString('de-DE') : 'N/A'}
+                  Erstellt:{' '}
+                  {tech.createdAt ? new Date(tech.createdAt).toLocaleDateString('de-DE') : 'N/A'}
                 </span>
                 {tech.researchStatus && (
                   <Badge
                     variant={
-                      tech.researchStatus === 'completed' ? 'default' :
-                      tech.researchStatus === 'pending' ? 'secondary' :
-                      'destructive'
+                      tech.researchStatus === 'completed'
+                        ? 'default'
+                        : tech.researchStatus === 'pending'
+                          ? 'secondary'
+                          : 'destructive'
                     }
                     className="text-[10px]"
                   >
-                    {tech.researchStatus === 'completed' ? 'Recherchiert' :
-                     tech.researchStatus === 'pending' ? 'Läuft...' :
-                     'Fehlgeschlagen'}
+                    {tech.researchStatus === 'completed'
+                      ? 'Recherchiert'
+                      : tech.researchStatus === 'pending'
+                        ? 'Läuft...'
+                        : 'Fehlgeschlagen'}
                   </Badge>
                 )}
               </div>

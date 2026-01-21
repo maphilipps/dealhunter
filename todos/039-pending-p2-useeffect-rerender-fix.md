@@ -1,9 +1,9 @@
 ---
 status: pending
 priority: p2
-issue_id: "039"
+issue_id: '039'
 tags: [performance, react, gemini-analysis]
-dependencies: ["038"]
+dependencies: ['038']
 ---
 
 # useEffect Dependency Causing Unnecessary Re-renders
@@ -21,6 +21,7 @@ The `useEffect` in `BidDetailClient` has `extractedData` in its dependency array
 **File:** `components/bids/bid-detail-client.tsx`
 
 **Line 189 - useEffect with object dependency:**
+
 ```typescript
 useEffect(() => {
   // Fetches getQuickScanResult
@@ -29,6 +30,7 @@ useEffect(() => {
 ```
 
 **Root cause chain:**
+
 1. `extractedData` is set via `useState(JSON.parse(...))` without lazy init
 2. Every render re-evaluates `JSON.parse`, creating new object reference
 3. `useEffect` sees "changed" dependency and re-runs
@@ -38,6 +40,7 @@ useEffect(() => {
 ## Proposed Solutions
 
 ### Solution A: Fix upstream JSON parsing (Recommended)
+
 **Pros:** Fixes root cause, see issue #038
 **Cons:** Requires fixing #038 first
 **Effort:** Part of #038
@@ -46,6 +49,7 @@ useEffect(() => {
 Once #038 is fixed with `useMemo`, the object reference will be stable.
 
 ### Solution B: Use specific primitive dependencies
+
 **Pros:** Quick fix, doesn't require #038
 **Cons:** Workaround, not root cause fix
 **Effort:** Small (10 min)
@@ -59,6 +63,7 @@ useEffect(() => {
 ```
 
 ### Solution C: Use JSON string comparison
+
 **Pros:** Works with current structure
 **Cons:** Still parses JSON, just compares strings
 **Effort:** Small (10 min)
@@ -80,9 +85,11 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `components/bids/bid-detail-client.tsx` (line 189)
 
 **Dependencies:**
+
 - Should be fixed after #038 (JSON parsing lazy init)
 
 ## Acceptance Criteria
@@ -94,8 +101,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                           | Learnings                                           |
+| ---------- | -------------------------------- | --------------------------------------------------- |
 | 2026-01-18 | Created from Gemini CLI analysis | Never use parsed objects directly in useEffect deps |
 
 ## Resources

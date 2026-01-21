@@ -46,27 +46,30 @@ const result = streamText({
 ```
 
 **Key Points:**
+
 - Stream processing **pauses** until callback promise resolves
 - Supports both sync and async callbacks
 - Enables real-time processing before chunks reach client
 - Use for logging, metrics, or side effects
 
 **Anti-Pattern:**
+
 ```typescript
 // ❌ DON'T: Heavy blocking operations in onChunk
 onChunk: async ({ chunk }) => {
   await heavyDatabaseOperation(); // Blocks entire stream!
   await sendSlackNotification(); // Slows down streaming
-}
+};
 ```
 
 **Recommended:**
+
 ```typescript
 // ✅ DO: Offload heavy operations
 onChunk: async ({ chunk }) => {
   // Non-blocking fire-and-forget
   queueMetricsUpdate(chunk).catch(console.error);
-}
+};
 ```
 
 ### onFinish Handler
@@ -100,20 +103,23 @@ const result = streamText({
 ```
 
 **Key Points:**
+
 - Called **after** streaming completes
 - Has access to full response, usage metrics, and all steps
 - Ideal for database persistence, analytics, logging
 - Errors here don't affect client stream (already sent)
 
 **Anti-Pattern:**
+
 ```typescript
 // ❌ DON'T: Throw errors in onFinish
 onFinish: async ({ response }) => {
   await saveChat(response); // Uncaught error breaks app
-}
+};
 ```
 
 **Recommended:**
+
 ```typescript
 // ✅ DO: Handle errors gracefully
 onFinish: async ({ response }) => {
@@ -123,7 +129,7 @@ onFinish: async ({ response }) => {
     await logError('Failed to save chat', error);
     // Optionally: trigger retry mechanism
   }
-}
+};
 ```
 
 ### onAbort Handler
@@ -152,12 +158,14 @@ const result = streamText({
 ```
 
 **Key Points:**
+
 - Triggered when `AbortSignal` fires
 - Use for cleanup: close connections, save partial state
 - Different from `onFinish` (which runs on normal completion)
 - Always forward `req.signal` in Next.js routes for proper cancellation
 
 **Anti-Pattern:**
+
 ```typescript
 // ❌ DON'T: Ignore abort signals
 export async function POST(req: Request) {
@@ -236,7 +244,7 @@ try {
   const results = await Promise.all([
     fetchCompetitorData(rfpId), // Takes 5s
     analyzeCapabilities(rfpId), // Takes 3s
-    checkCompliance(rfpId),     // Fails at 1s → ALL rejected
+    checkCompliance(rfpId), // Fails at 1s → ALL rejected
     assessRisk(rfpId),
   ]);
 } catch (error) {
@@ -247,14 +255,16 @@ try {
 **Best Practice Pattern:**
 
 ```typescript
-type AgentResult<T> = {
-  success: true;
-  data: T;
-} | {
-  success: false;
-  error: string;
-  agent: string;
-};
+type AgentResult<T> =
+  | {
+      success: true;
+      data: T;
+    }
+  | {
+      success: false;
+      error: string;
+      agent: string;
+    };
 
 async function runParallelAgents(rfpId: string): Promise<AgentResult[]> {
   const agents = [
@@ -264,9 +274,7 @@ async function runParallelAgents(rfpId: string): Promise<AgentResult[]> {
     { name: 'risk', fn: () => assessRisk(rfpId) },
   ];
 
-  const results = await Promise.allSettled(
-    agents.map(agent => agent.fn())
-  );
+  const results = await Promise.allSettled(agents.map(agent => agent.fn()));
 
   return results.map((result, index) => {
     const agentName = agents[index].name;
@@ -362,37 +370,43 @@ export async function POST(request: Request) {
     transform(chunk, controller) {
       switch (chunk.type) {
         case 'text-delta':
-          controller.enqueue(formatEvent({
-            type: 'text',
-            text: chunk.text
-          }));
+          controller.enqueue(
+            formatEvent({
+              type: 'text',
+              text: chunk.text,
+            })
+          );
           break;
         case 'tool-call':
-          controller.enqueue(formatEvent({
-            type: 'tool-call',
-            toolName: chunk.toolName,
-            input: chunk.input,
-          }));
+          controller.enqueue(
+            formatEvent({
+              type: 'tool-call',
+              toolName: chunk.toolName,
+              input: chunk.input,
+            })
+          );
           break;
         case 'tool-result':
-          controller.enqueue(formatEvent({
-            type: 'tool-result',
-            toolName: chunk.toolName,
-            result: chunk.output,
-          }));
+          controller.enqueue(
+            formatEvent({
+              type: 'tool-result',
+              toolName: chunk.toolName,
+              result: chunk.output,
+            })
+          );
           break;
       }
     },
   });
 
-  return new Response(
-    result.fullStream.pipeThrough(transformStream),
-    { headers: { 'Content-Type': 'text/event-stream' } }
-  );
+  return new Response(result.fullStream.pipeThrough(transformStream), {
+    headers: { 'Content-Type': 'text/event-stream' },
+  });
 }
 ```
 
 **Use Cases:**
+
 - Custom mobile clients
 - Legacy systems expecting specific SSE format
 - Advanced filtering/transformation before client
@@ -415,7 +429,7 @@ export async function POST(req: Request) {
   });
 
   return result.toUIMessageStreamResponse({
-    onError: (error) => {
+    onError: error => {
       // Errors are sent as part of the stream
       if (NoSuchToolError.isInstance(error)) {
         return 'The model tried to call an unknown tool.';
@@ -478,9 +492,7 @@ const { steps } = await generateText({
 });
 
 // Check for tool errors in steps
-const toolErrors = steps.flatMap(step =>
-  step.content.filter(part => part.type === 'tool-error')
-);
+const toolErrors = steps.flatMap(step => step.content.filter(part => part.type === 'tool-error'));
 
 toolErrors.forEach(toolError => {
   console.log('Tool error:', toolError.error);
@@ -494,7 +506,9 @@ toolErrors.forEach(toolError => {
 ```typescript
 // ❌ DEPRECATED in v5
 try {
-  const result = await generateText({ /* ... */ });
+  const result = await generateText({
+    /* ... */
+  });
 } catch (error) {
   if (error instanceof ToolExecutionError) {
     // This no longer works in v5
@@ -503,6 +517,7 @@ try {
 ```
 
 **Why the change?**
+
 - Enables automatic LLM roundtrips (model can retry failed tools)
 - Better multi-step agent workflows
 - Tool errors don't abort entire generation
@@ -539,6 +554,7 @@ export default function ChatComponent() {
 ```
 
 **Performance Impact:**
+
 - Without throttling: 100+ renders/sec for fast streams
 - With 50ms throttle: ~20 renders/sec
 - User experience: No perceptible difference
@@ -578,6 +594,7 @@ const transformStream = new TransformStream({
 ```
 
 **Key Principle:**
+
 - Use **lazy iteration** (pull-based) not eager pushing
 - AI SDK's `fullStream` implements this correctly
 - Manual stream creation: use `pull` handler, not eager loops
@@ -595,9 +612,9 @@ const result = await streamText({
   model: openai('gpt-4o'),
   prompt: 'Complex task...',
   timeout: {
-    totalMs: 30000,   // Total timeout: 30s
-    stepMs: 10000,    // Per-step timeout: 10s (for multi-step)
-    chunkMs: 2000,    // Chunk timeout: 2s (streaming only)
+    totalMs: 30000, // Total timeout: 30s
+    stepMs: 10000, // Per-step timeout: 10s (for multi-step)
+    chunkMs: 2000, // Chunk timeout: 2s (streaming only)
   },
 });
 ```
@@ -606,7 +623,7 @@ const result = await streamText({
 
 ```typescript
 // ✅ Simple 5 second timeout
-timeout: 5000 // milliseconds
+timeout: 5000; // milliseconds
 ```
 
 **AbortSignal Pattern:**
@@ -650,19 +667,19 @@ const result = await generateText({
 
 ```typescript
 // Stop when specific tool is called
-stopWhen: hasToolCall('finalizeTask')
+stopWhen: hasToolCall('finalizeTask');
 
 // Multiple conditions (ANY triggers stop)
 stopWhen: [
-  stepCountIs(10),           // Max 10 steps
+  stepCountIs(10), // Max 10 steps
   hasToolCall('submitOrder'), // OR when order submitted
-]
+];
 
 // Custom logic
 stopWhen: ({ steps }) => {
   const lastStep = steps[steps.length - 1];
   return lastStep?.text?.includes('COMPLETE');
-}
+};
 ```
 
 **Important:** `stopWhen` only evaluates when last step has tool results
@@ -742,6 +759,7 @@ export async function POST(req: Request) {
 ```
 
 **Why?** Without forwarding:
+
 - Stream continues running after user disconnects
 - Wasted API calls and compute
 - Memory leaks in long-running servers
@@ -821,6 +839,7 @@ export async function POST(req: Request) {
 ```
 
 **Why?** Without consuming:
+
 - Hanging connections
 - Memory leaks
 - Resource exhaustion under load
@@ -837,14 +856,9 @@ import { z } from 'zod';
 const weatherTool = tool({
   description: 'Get current weather for a city',
   inputSchema: z.object({
-    city: z.string()
-      .min(1)
-      .describe('The city name'),
-    unit: z.enum(['C', 'F'])
-      .describe('Temperature unit'),
-    includeAirQuality: z.boolean()
-      .optional()
-      .describe('Include air quality index'),
+    city: z.string().min(1).describe('The city name'),
+    unit: z.enum(['C', 'F']).describe('Temperature unit'),
+    includeAirQuality: z.boolean().optional().describe('Include air quality index'),
   }),
   execute: async ({ city, unit, includeAirQuality }) => {
     // Input is fully typed and validated!
@@ -874,7 +888,7 @@ const weatherTool = tool({
 ```typescript
 // ❌ DON'T: Expose internal errors to client
 return result.toUIMessageStreamResponse({
-  onError: (error) => {
+  onError: error => {
     return error.message; // Could leak DB schema, API keys, etc.
   },
 });
@@ -885,7 +899,7 @@ return result.toUIMessageStreamResponse({
 ```typescript
 // ✅ DO: Sanitize error messages
 return result.toUIMessageStreamResponse({
-  onError: (error) => {
+  onError: error => {
     // Log full error server-side
     console.error('Stream error:', error);
 
@@ -908,7 +922,9 @@ return result.toUIMessageStreamResponse({
 ```typescript
 // ❌ WRONG: Route may be cached
 export async function POST(req: Request) {
-  return streamText({ /* ... */ }).toUIMessageStreamResponse();
+  return streamText({
+    /* ... */
+  }).toUIMessageStreamResponse();
 }
 
 // ✅ CORRECT: Force dynamic
@@ -916,11 +932,14 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
-  return streamText({ /* ... */ }).toUIMessageStreamResponse();
+  return streamText({
+    /* ... */
+  }).toUIMessageStreamResponse();
 }
 ```
 
 **Symptoms of missing config:**
+
 - Same response for different inputs
 - Stale data
 - Streams not updating
@@ -982,7 +1001,7 @@ export async function POST(req: Request) {
 
   // 6. Proper response with error handling
   return result.toUIMessageStreamResponse({
-    onError: (error) => {
+    onError: error => {
       console.error('Stream error:', error);
       return 'An error occurred'; // Sanitized message
     },
@@ -995,6 +1014,7 @@ export async function POST(req: Request) {
 ## References & Sources
 
 ### Official Documentation
+
 - [AI SDK 5 Announcement](https://vercel.com/blog/ai-sdk-5)
 - [streamText API Reference](https://ai-sdk.dev/docs/reference/ai-sdk-core/stream-text)
 - [Tool Calling Guide](https://ai-sdk.dev/docs/ai-sdk-core/tools-and-tool-calling)
@@ -1003,17 +1023,20 @@ export async function POST(req: Request) {
 - [Stream Protocols](https://ai-sdk.dev/docs/ai-sdk-ui/stream-protocol)
 
 ### Next.js 16 Resources
+
 - [Next.js 16 Release](https://nextjs.org/blog/next-16)
 - [Fixing Slow SSE in Next.js](https://medium.com/@oyetoketoby80/fixing-slow-sse-server-sent-events-streaming-in-next-js-and-vercel-99f42fbdb996)
 - [Using SSE in Next.js - Upstash](https://upstash.com/blog/sse-streaming-llm-responses)
 
 ### Best Practices & Patterns
+
 - [Real-time AI with Vercel AI SDK - LogRocket](https://blog.logrocket.com/nextjs-vercel-ai-sdk-streaming/)
 - [Vercel AI SDK Complete Guide](https://www.tenxdeveloper.com/blog/vercel-ai-sdk-complete-guide)
 - [AI SDK Workflow Patterns](https://ai-sdk.dev/docs/agents/workflows)
 - [Promise.all in 2025 - LogRocket](https://blog.logrocket.com/promise-all-modern-async-patterns/)
 
 ### Community Resources
+
 - [Vercel Community: Streaming Tool Output](https://community.vercel.com/t/streaming-text-tool-output/22025)
 - [GitHub Discussion: Message Persistence](https://github.com/vercel/ai/discussions/4845)
 - [Next.js SSE Discussion](https://github.com/vercel/next.js/discussions/48427)

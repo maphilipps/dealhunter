@@ -38,19 +38,22 @@ export const teamMemberSuggestionSchema = z.object({
   role: teamRoleSchema.describe('Assigned role in this project'),
 
   // Skill matching
-  skillMatchScore: z.number().min(0).max(100).describe('How well skills match requirements (0-100)'),
+  skillMatchScore: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe('How well skills match requirements (0-100)'),
   matchingSkills: z.array(z.string()).describe('Skills that match requirements'),
   missingSkills: z.array(z.string()).describe('Required skills this person lacks'),
 
   // Availability
-  availabilityStatus: z.enum(['available', 'on_project', 'unavailable']).describe('Current availability'),
+  availabilityStatus: z
+    .enum(['available', 'on_project', 'unavailable'])
+    .describe('Current availability'),
   availabilityNote: z.string().optional().describe('Additional availability context'),
 
   // Experience
-  similarProjectExperience: z
-    .string()
-    .optional()
-    .describe('Description of relevant past projects'),
+  similarProjectExperience: z.string().optional().describe('Description of relevant past projects'),
 
   // AI reasoning
   reasoning: z.string().describe('Why this person was suggested for this role'),

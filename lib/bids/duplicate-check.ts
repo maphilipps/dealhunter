@@ -69,7 +69,9 @@ function levenshteinDistance(str1: string, str2: string): number {
   if (m === 0) return n;
   if (n === 0) return m;
 
-  const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+  const dp: number[][] = Array(m + 1)
+    .fill(null)
+    .map(() => Array(n + 1).fill(0));
 
   for (let i = 0; i <= m; i++) dp[i][0] = i;
   for (let j = 0; j <= n; j++) dp[0][j] = j;
@@ -78,8 +80,8 @@ function levenshteinDistance(str1: string, str2: string): number {
     for (let j = 1; j <= n; j++) {
       const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
       dp[i][j] = Math.min(
-        dp[i - 1][j] + 1,      // deletion
-        dp[i][j - 1] + 1,      // insertion
+        dp[i - 1][j] + 1, // deletion
+        dp[i][j - 1] + 1, // insertion
         dp[i - 1][j - 1] + cost // substitution
       );
     }
@@ -221,9 +223,7 @@ export async function checkForDuplicates(
     const normalizedExistingUrls = existingUrls.map(normalizeUrl).filter(u => u.length > 0);
 
     // Check 1: Exact URL match (HIGH priority)
-    const matchingUrl = normalizedUrls.find(url =>
-      normalizedExistingUrls.includes(url)
-    );
+    const matchingUrl = normalizedUrls.find(url => normalizedExistingUrls.includes(url));
 
     if (matchingUrl) {
       exactMatches.push({
@@ -269,7 +269,9 @@ export async function checkForDuplicates(
 
       if (similarity >= 80) {
         // Check if deadline is also similar
-        const deadlineMatch = submissionDeadline && existingDeadline &&
+        const deadlineMatch =
+          submissionDeadline &&
+          existingDeadline &&
           isWithinDateRange(submissionDeadline, existingDeadline, 14);
 
         similarMatches.push({

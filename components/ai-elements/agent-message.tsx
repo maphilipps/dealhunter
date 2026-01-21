@@ -3,11 +3,7 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Copy, ChevronDown, Check } from 'lucide-react';
 import { ConfidenceIndicator } from './confidence-indicator';
 import { Sources } from './sources';
@@ -120,9 +116,7 @@ export function AgentMessage({ event }: AgentMessageProps) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Message */}
-          {data.message && (
-            <p className="text-sm text-foreground font-medium">{data.message}</p>
-          )}
+          {data.message && <p className="text-sm text-foreground font-medium">{data.message}</p>}
 
           {/* Details (Chain of Thought) */}
           {data.details && (
@@ -142,10 +136,7 @@ export function AgentMessage({ event }: AgentMessageProps) {
           {data.toolCalls && data.toolCalls.length > 0 && (
             <div className="mt-2 space-y-1">
               {data.toolCalls.map((tool, idx) => (
-                <div
-                  key={idx}
-                  className="text-xs p-2 bg-muted rounded border font-mono"
-                >
+                <div key={idx} className="text-xs p-2 bg-muted rounded border font-mono">
                   <span className="font-semibold">{tool.name}</span>
                   <span className="text-muted-foreground">
                     ({Object.keys(tool.args).join(', ')})
@@ -157,11 +148,7 @@ export function AgentMessage({ event }: AgentMessageProps) {
 
           {/* Reasoning (Collapsible) */}
           {data.reasoning && (
-            <Collapsible
-              open={reasoningOpen}
-              onOpenChange={setReasoningOpen}
-              className="mt-2"
-            >
+            <Collapsible open={reasoningOpen} onOpenChange={setReasoningOpen} className="mt-2">
               <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDown
                   className={`h-3 w-3 transition-transform ${reasoningOpen ? 'rotate-180' : ''}`}
@@ -170,9 +157,7 @@ export function AgentMessage({ event }: AgentMessageProps) {
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-1">
                 <div className="text-xs p-3 bg-muted rounded border">
-                  <p className="text-muted-foreground whitespace-pre-wrap">
-                    {data.reasoning}
-                  </p>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{data.reasoning}</p>
                 </div>
               </CollapsibleContent>
             </Collapsible>
@@ -189,11 +174,7 @@ export function AgentMessage({ event }: AgentMessageProps) {
           onClick={handleCopy}
           className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
         >
-          {copied ? (
-            <Check className="h-4 w-4 text-green-600" />
-          ) : (
-            <Copy className="h-4 w-4" />
-          )}
+          {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
         </Button>
       </div>
     </div>

@@ -104,11 +104,15 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
   return (
     <div className="space-y-6">
       {/* AI Recommendation Card */}
-      <Card className={isLowConfidence ? 'border-amber-200 bg-amber-50' : 'border-blue-200 bg-blue-50'}>
+      <Card
+        className={isLowConfidence ? 'border-amber-200 bg-amber-50' : 'border-blue-200 bg-blue-50'}
+      >
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Sparkles className={isLowConfidence ? 'h-6 w-6 text-amber-600' : 'h-6 w-6 text-blue-600'} />
+              <Sparkles
+                className={isLowConfidence ? 'h-6 w-6 text-amber-600' : 'h-6 w-6 text-blue-600'}
+              />
               <div>
                 <CardTitle className={isLowConfidence ? 'text-amber-900' : 'text-blue-900'}>
                   AI Empfehlung: Business Unit Routing
@@ -129,8 +133,12 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
         <CardContent className="space-y-4">
           {/* Primary Recommendation */}
           <div className="rounded-lg bg-white p-4">
-            <p className="text-sm font-medium text-muted-foreground mb-2">Empfohlene Business Unit</p>
-            <p className="text-2xl font-bold text-foreground">{recommendation.primaryBusinessLine}</p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">
+              Empfohlene Business Unit
+            </p>
+            <p className="text-2xl font-bold text-foreground">
+              {recommendation.primaryBusinessLine}
+            </p>
           </div>
 
           {/* Reasoning */}
@@ -188,11 +196,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-2">
-            <Button
-              onClick={handleAcceptRecommendation}
-              disabled={isSubmitting}
-              className="flex-1"
-            >
+            <Button onClick={handleAcceptRecommendation} disabled={isSubmitting} className="flex-1">
               {isSubmitting ? (
                 'Wird geroutet...'
               ) : (
@@ -231,7 +235,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
                   <SelectValue placeholder="Business Unit auswählen..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {businessUnits.map((bl) => (
+                  {businessUnits.map(bl => (
                     <SelectItem key={bl} value={bl}>
                       {bl}
                     </SelectItem>
@@ -247,7 +251,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
                 id="override-reason"
                 placeholder="Bitte erklären Sie, warum Sie von der AI-Empfehlung abweichen..."
                 value={overrideReason}
-                onChange={(e) => setOverrideReason(e.target.value)}
+                onChange={e => setOverrideReason(e.target.value)}
                 rows={4}
               />
             </div>

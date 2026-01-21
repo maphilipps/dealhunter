@@ -28,10 +28,12 @@ The adessoCMS baseline is a comprehensive Drupal 11 installation built on the ad
 All content types use **scheduler** for publish/unpublish scheduling and support **revisions**.
 
 ### 1.1 Landing Page (`landing_page`)
+
 **Purpose:** Dedicated landing pages with hero sections and transparent navigation  
 **Complexity:** HIGH
 
 **Fields:**
+
 - `field_buttons` - Link buttons (multi-value)
 - `field_description` - Text (long)
 - `field_heading` - Text (single line)
@@ -44,9 +46,11 @@ All content types use **scheduler** for publish/unpublish scheduling and support
 - `field_summary` - Text (formatted)
 
 **Allowed Paragraph Types (15):**
+
 - accordion, appointments, block_reference, card_group, carousel, download, embed, gallery, logo_collection, media, newsletter, sidebyside, slider, text, views
 
 **Special Features:**
+
 - Hero section with media and buttons
 - SEO optimization fields (Yoast SEO integration)
 - Menu integration disabled
@@ -54,10 +58,12 @@ All content types use **scheduler** for publish/unpublish scheduling and support
 ---
 
 ### 1.2 News/Blog (`news`)
+
 **Purpose:** Blog articles and news items  
 **Complexity:** MEDIUM
 
 **Fields:**
+
 - `field_authors` - Taxonomy term reference (Authors vocabulary)
 - `field_buttons` - Link buttons
 - `field_category` - Taxonomy term reference (Category vocabulary)
@@ -71,6 +77,7 @@ All content types use **scheduler** for publish/unpublish scheduling and support
 - `field_seo_*` - Full SEO field set
 
 **Special Features:**
+
 - Published timestamp override
 - Multiple taxonomy categorization
 - Display submitted metadata
@@ -80,10 +87,12 @@ All content types use **scheduler** for publish/unpublish scheduling and support
 ---
 
 ### 1.3 Event (`event`)
+
 **Purpose:** Time-based event content  
 **Complexity:** MEDIUM
 
 **Fields:**
+
 - `field_content` - Paragraph reference - **PRIMARY CONTENT FIELD**
 - `field_date` - Date range (start/end)
 - `field_description` - Text (formatted)
@@ -93,6 +102,7 @@ All content types use **scheduler** for publish/unpublish scheduling and support
 - `field_seo_*` - Full SEO field set
 
 **Special Features:**
+
 - Smart date integration
 - Address/geocoding support
 - Calendar integration capability
@@ -100,14 +110,17 @@ All content types use **scheduler** for publish/unpublish scheduling and support
 ---
 
 ### 1.4 Page (`page`)
+
 **Purpose:** Standard content pages  
 **Complexity:** MEDIUM
 
 **Fields:**
+
 - `field_paragraphs` - Paragraph reference - **PRIMARY CONTENT FIELD**
 - `field_seo_*` - Full SEO field set
 
 **Special Features:**
+
 - Simplest content type
 - Pure paragraph-based layout
 - Menu integration available
@@ -115,10 +128,12 @@ All content types use **scheduler** for publish/unpublish scheduling and support
 ---
 
 ### 1.5 Person (`person`)
+
 **Purpose:** Person profile/team member pages  
 **Complexity:** MEDIUM
 
 **Fields:**
+
 - `field_content` - Paragraph reference - **PRIMARY CONTENT FIELD**
 - `field_email` - Email address
 - `field_first_name` - Text
@@ -130,9 +145,11 @@ All content types use **scheduler** for publish/unpublish scheduling and support
 - `field_seo_*` - SEO fields
 
 **Base Field Override:**
+
 - Title field label changed to "Name"
 
 **Special Features:**
+
 - Structured person data
 - Social media integration
 - Search API exclude option
@@ -140,10 +157,12 @@ All content types use **scheduler** for publish/unpublish scheduling and support
 ---
 
 ### 1.6 Project (`project`)
+
 **Purpose:** Portfolio/project showcase  
 **Complexity:** MEDIUM
 
 **Fields:**
+
 - `field_category` - Taxonomy term reference
 - `field_content` - Paragraph reference - **PRIMARY CONTENT FIELD**
 - `field_date` - Date field (project date)
@@ -167,7 +186,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ### 2.1 Layout & Structure Paragraphs
 
 #### `accordion` - Expandable Content Sections
-**Fields:** 
+
+**Fields:**
+
 - `field_accordions` - Reference to accordion_item paragraphs
 - Section wrapper fields
 
@@ -176,14 +197,18 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `accordion_item` - Individual Accordion Panel
+
 **Fields:**
+
 - `field_content` - Text (formatted, long)
 - `field_title` - Text (title)
 
 ---
 
 #### `sidebyside` - Two-Column Layout
+
 **Fields:**
+
 - `field_column_1` - Paragraph reference (nested)
 - `field_column_2` - Paragraph reference (nested)
 - `field_layout` - Select (layout variant)
@@ -194,7 +219,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `image_sidebyside` - Image + Content Layout
+
 **Fields:**
+
 - `field_content` - Paragraph reference
 - `field_heading` - Text
 - `field_image_position` - Select (left/right)
@@ -206,8 +233,10 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ### 2.2 Content Display Paragraphs
 
 #### `hero` - Hero/Banner Section
+
 **Complexity:** HIGH  
 **Fields:**
+
 - `field_buttons` - Link (multi-value)
 - `field_heading` - Text (formatted) - **Custom CKEditor5 plugin for orange highlighting**
 - `field_media` - Media reference
@@ -215,6 +244,7 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 - Section wrapper fields
 
 **Special Features:**
+
 - Custom editor configuration (`hero_highlight` text format)
 - Custom CKEditor5 plugin (`hero_editor` module)
 - Prominent visual treatment
@@ -222,8 +252,10 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `text` - Rich Text Content
+
 **Complexity:** MEDIUM  
 **Fields:**
+
 - `field_text` - Text (formatted, long, full editor)
 - Section wrapper fields
 
@@ -232,21 +264,27 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `media` - Media Display
+
 **Fields:**
+
 - `field_media` - Media reference
 - Section wrapper fields
 
 ---
 
 #### `gallery` - Image Gallery
+
 **Fields:**
+
 - `field_gallery` - Media reference (multi-value, image only)
 - Section wrapper fields
 
 ---
 
 #### `embed` - Embedded Content
+
 **Fields:**
+
 - `field_url` - Link (for oEmbed/iframe)
 - Section wrapper fields
 
@@ -257,21 +295,27 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ### 2.3 Interactive & Form Paragraphs
 
 #### `newsletter` - Newsletter Signup
+
 **Fields:**
+
 - Section wrapper fields only
 - Form integration via custom logic
 
 ---
 
 #### `forms` - Webform Embed
+
 **Fields:**
+
 - `field_webform` - Entity reference (Webform)
 - Section wrapper fields
 
 ---
 
 #### `contact_teaser` - Contact CTA
+
 **Fields:**
+
 - `field_heading` - Text
 - `field_summary` - Text
 - `field_phone` - Telephone
@@ -280,7 +324,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `contact_card` - Contact Information Card
+
 **Fields:**
+
 - `field_email` - Email
 - `field_heading` - Text
 - `field_phone` - Telephone
@@ -291,7 +337,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ### 2.4 Card & List Paragraphs
 
 #### `card_group` - Card Collection Container
+
 **Fields:**
+
 - `field_cards` - Reference to card paragraphs (multi-value)
 - `field_columns` - Select (2, 3, 4 columns)
 - `field_layout` - Select (layout style)
@@ -300,7 +348,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `card` - Individual Card
+
 **Fields:**
+
 - `field_buttons` - Link
 - `field_categories` - Taxonomy reference
 - `field_icon` - Text (Lucide icon name)
@@ -310,6 +360,7 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 - Section wrapper fields
 
 **Special Features:**
+
 - Icon integration (Lucide icon library)
 - Flexible view modes
 - Category tagging
@@ -317,7 +368,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `badge` - Badge/Label Display
+
 **Fields:**
+
 - `field_badge_type` - Taxonomy reference (Badge Type vocabulary)
 - `field_icon` - Text (icon name)
 - Section wrapper fields
@@ -325,7 +378,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `bullet` - Bullet Point Item
+
 **Fields:**
+
 - `field_summary` - Text
 - `field_title` - Text
 - Section wrapper fields
@@ -333,7 +388,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `feature_item` - Feature Highlight
+
 **Fields:**
+
 - `field_icon` - Text (icon)
 - `field_summary` - Text
 - `field_title` - Text
@@ -342,7 +399,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `feature_list_item` - Detailed Feature Item
+
 **Fields:**
+
 - `field_icon` - Text
 - `field_summary` - Text (formatted)
 - `field_title` - Text
@@ -351,7 +410,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `features` - Feature Group Container
+
 **Fields:**
+
 - `field_features` - Reference to feature_item paragraphs
 - `field_heading` - Text
 - `field_layout` - Select
@@ -362,14 +423,18 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ### 2.5 Media & Visual Paragraphs
 
 #### `carousel` - Image/Content Carousel
+
 **Fields:**
+
 - `field_carousel_items` - Reference to carousel_item
 - Section wrapper fields
 
 ---
 
 #### `carousel_item` - Carousel Slide
+
 **Fields:**
+
 - `field_buttons` - Link
 - `field_heading` - Text
 - `field_media` - Media reference
@@ -379,14 +444,18 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `slider` - Content Slider
+
 **Fields:**
+
 - `field_slider_items` - Reference to slider_item
 - Section wrapper fields
 
 ---
 
 #### `slider_item` - Slider Panel
+
 **Fields:**
+
 - `field_buttons` - Link
 - `field_heading` - Text
 - `field_media` - Media reference
@@ -396,7 +465,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `logo_collection` - Logo Grid
+
 **Fields:**
+
 - `field_logos` - Media reference (multi-value, SVG)
 - `field_heading` - Text
 - Section wrapper fields
@@ -408,14 +479,18 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ### 2.6 Special Purpose Paragraphs
 
 #### `appointments` - Appointment/Event Listing
+
 **Fields:**
+
 - `field_view` - Viewfield reference (embedded View)
 - Section wrapper fields
 
 ---
 
 #### `download` - Download Section Container
+
 **Fields:**
+
 - `field_downloads` - Reference to download_item
 - `field_heading` - Text
 - Section wrapper fields
@@ -423,7 +498,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `download_item` - Individual Download
+
 **Fields:**
+
 - `field_description` - Text
 - `field_document` - Media reference (document type)
 - `field_title` - Text
@@ -432,7 +509,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `tip_box` - Highlighted Tip/Note
+
 **Fields:**
+
 - `field_content` - Text (formatted)
 - `field_heading` - Text
 - Section wrapper fields
@@ -440,14 +519,18 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `button` - Standalone Button/CTA
+
 **Fields:**
+
 - `field_buttons` - Link
 - Section wrapper fields
 
 ---
 
 #### `block_reference` - Drupal Block Embed
+
 **Fields:**
+
 - `field_block` - Plugin ID reference (block selector)
 - Section wrapper fields
 
@@ -456,7 +539,9 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 #### `views` - View Embed
+
 **Fields:**
+
 - `field_view` - Viewfield reference
 - Section wrapper fields
 
@@ -465,6 +550,7 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ### Paragraph Field Type Summary
 
 **Most Common Field Types:**
+
 1. **Text (formatted)** - 45 instances - Rich text editing
 2. **Entity Reference (Paragraph)** - 32 instances - Nested components
 3. **Link** - 18 instances - Buttons, CTAs
@@ -479,6 +565,7 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ## 3. Taxonomies (4)
 
 ### 3.1 `authors` - Content Authors/Contributors
+
 **Purpose:** Author attribution for blog posts  
 **Hierarchical:** No  
 **Used By:** News content type
@@ -486,6 +573,7 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 ### 3.2 `badge_type` - Badge Classifications
+
 **Purpose:** Categorize badge displays  
 **Hierarchical:** No  
 **Used By:** Badge paragraph type
@@ -493,6 +581,7 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 ### 3.3 `category` - Content Categories
+
 **Purpose:** Primary content classification  
 **Hierarchical:** Yes (supports parent/child relationships)  
 **Used By:** News, Project content types; Card paragraphs
@@ -500,6 +589,7 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ---
 
 ### 3.4 `tags` - Content Tags
+
 **Purpose:** Keyword tagging for search and filtering  
 **Hierarchical:** No  
 **Used By:** News, Event content types
@@ -509,18 +599,21 @@ Paragraphs provide modular, reusable content components. All paragraphs include 
 ## 4. Media Types (6)
 
 All media types support:
+
 - Caption field
 - Copyright/attribution field
 - Published date
 - Description field
 
 ### 4.1 `image` - Standard Images
+
 **Source Field:** `field_media_image` (Image)  
 **Features:** Focal Point integration, WebP support
 
 ---
 
 ### 4.2 `image_with_link` - Linked Images
+
 **Source Field:** `field_media_image` (Image)  
 **Additional Field:** `field_image_link` (Link)  
 **Purpose:** Clickable images, banner ads
@@ -528,24 +621,28 @@ All media types support:
 ---
 
 ### 4.3 `svg_image` - SVG Graphics
+
 **Source Field:** `field_media_svg_image` (File - SVG)  
 **Purpose:** Logos, icons, scalable graphics
 
 ---
 
 ### 4.4 `document` - Downloadable Files
+
 **Source Field:** `field_media_document` (File)  
 **Formats:** PDF, DOC, XLS, etc.
 
 ---
 
 ### 4.5 `video` - Video Files
+
 **Source Field:** `field_media_video` (File)  
 **Formats:** MP4, WebM
 
 ---
 
 ### 4.6 `remote_video` - External Videos
+
 **Source Field:** `field_media_oembed_video` (oEmbed URL)  
 **Services:** YouTube, Vimeo, etc.
 
@@ -556,6 +653,7 @@ All media types support:
 ### 5.1 Content Listing Views
 
 #### `news` - Blog/News Overview
+
 **Display:** Page, Block  
 **Filters:** Published, Content type  
 **Features:** Pager, exposed filters, infinite scroll support
@@ -563,6 +661,7 @@ All media types support:
 ---
 
 #### `events` - Event Calendar/Listing
+
 **Display:** Page, Block  
 **Filters:** Date range, Published  
 **Features:** Date-based sorting
@@ -570,41 +669,48 @@ All media types support:
 ---
 
 #### `person_profiles` - Team/Staff Listing
+
 **Display:** Page, Block  
 **Features:** Grid layout
 
 ---
 
 #### `projects` - Project Portfolio
+
 **Display:** Page, Block  
 **Features:** Filterable, category taxonomy integration
 
 ---
 
 #### `recent_cards` - Recent Content Cards
+
 **Display:** Block  
 **Purpose:** Homepage/sidebar teasers
 
 ---
 
 #### `recent_content` - Generic Recent Items
+
 **Display:** Block
 
 ---
 
 #### `appointments` - Upcoming Appointments/Events
+
 **Display:** Block, EVA (Entity View Attachment)  
 **Features:** Date filtering
 
 ---
 
 #### `blog_overview` - Blog Overview Page
+
 **Display:** Page  
 **Features:** Full blog listing with filters
 
 ---
 
 #### `blog_static_paragraphs` - Blog Content Blocks
+
 **Display:** Block  
 **Purpose:** Static blog content for blocks
 
@@ -613,6 +719,7 @@ All media types support:
 ### 5.2 Administrative Views
 
 #### `content` - Content Management
+
 **Display:** Page  
 **Access:** Edit any content permission  
 **Features:** Bulk operations, filters
@@ -620,29 +727,34 @@ All media types support:
 ---
 
 #### `media` - Media Library Management
+
 **Display:** Page  
 **Access:** Media permissions
 
 ---
 
 #### `media_library` - Media Browser Widget
+
 **Display:** Widget  
 **Purpose:** Media selection in entity reference fields
 
 ---
 
 #### `files` - File Management
+
 **Display:** Page
 
 ---
 
 #### `moderated_content` - Workflow Content
+
 **Display:** Page  
 **Features:** Content moderation states
 
 ---
 
 #### `user_admin_people` - User Management
+
 **Display:** Page
 
 ---
@@ -650,64 +762,75 @@ All media types support:
 ### 5.3 Technical/System Views
 
 #### `taxonomy_term` - Taxonomy Term Pages
+
 **Display:** Page  
 **Purpose:** Default taxonomy term listing
 
 ---
 
 #### `search` - Search Results
+
 **Display:** Page  
 **Features:** Search API integration
 
 ---
 
 #### `watchdog` - System Log
+
 **Display:** Page  
 **Access:** Admin access log permission
 
 ---
 
 #### `redirect` - Redirect Management
+
 **Display:** Page  
 **Module:** Redirect
 
 ---
 
 #### `redirect_404` - 404 Error Tracking
+
 **Display:** Page  
 **Module:** Redirect
 
 ---
 
 #### `webform_submissions` - Webform Responses
+
 **Display:** Page  
 **Module:** Webform
 
 ---
 
 #### `scheduler_scheduled_content` - Scheduled Nodes
+
 **Display:** Page  
 **Module:** Scheduler
 
 ---
 
 #### `scheduler_scheduled_media` - Scheduled Media
+
 **Display:** Page
 
 ---
 
 #### `scheduler_scheduled_taxonomy_term` - Scheduled Terms
+
 **Display:** Page
 
 ---
 
 #### `editoria11y_results` - Accessibility Scan Results
+
 **Display:** Page  
 **Module:** Editoria11y
 
 ---
 
 #### `editoria11y_dismissals` - Accessibility Issue Dismissals
+
 **Display:** Page
 
 ---
@@ -715,11 +838,13 @@ All media types support:
 ## 6. Custom Modules (6 + 1 large module)
 
 ### 6.1 `adesso_paragraph_section`
+
 **Purpose:** Adds section wrapper configuration fields to ALL paragraph types  
 **Complexity:** MEDIUM  
 **Dependencies:** paragraphs, field
 
 **Functionality:**
+
 - Programmatically adds 4 common fields to all paragraph types:
   - `field_content_element_theme` - Theme variant selector
   - `field_content_width` - Width constraint
@@ -733,11 +858,13 @@ All media types support:
 ---
 
 ### 6.2 `youtube_importer`
+
 **Purpose:** Imports videos from YouTube channel  
 **Complexity:** LOW  
 **Dependencies:** None (Drupal core only)
 
 **Functionality:**
+
 - Custom importer for YouTube channel content
 - Creates media entities from YouTube videos
 - Likely uses YouTube API
@@ -747,11 +874,13 @@ All media types support:
 ---
 
 ### 6.3 `adessocms_migration`
+
 **Purpose:** Migrates content from legacy sites
 **Complexity:** HIGH
 **Dependencies:** migrate, migrate_plus, migrate_tools, node, taxonomy, media
 
 **Functionality:**
+
 - Migration configuration for legacy site content
 - Maps old content structure to new Drupal 11 structure
 - Handles node, taxonomy, media migrations
@@ -761,11 +890,13 @@ All media types support:
 ---
 
 ### 6.4 `hero_editor`
+
 **Purpose:** Custom CKEditor5 plugin for orange text highlighting in Hero paragraphs  
 **Complexity:** MEDIUM  
 **Dependencies:** ckeditor5, text
 
 **Functionality:**
+
 - Adds custom text format: `hero_highlight`
 - Custom editor toolbar button for orange highlighting
 - Specific to Hero paragraph heading field
@@ -775,11 +906,13 @@ All media types support:
 ---
 
 ### 6.5 `adesso_cms_starter`
+
 **Purpose:** Default content import module for adesso CMS  
 **Complexity:** LOW  
 **Dependencies:** None
 
 **Functionality:**
+
 - Dummy module for recipe-based default content import
 - Provides initial demo content for new sites
 
@@ -788,11 +921,13 @@ All media types support:
 ---
 
 ### 6.6 `adessocms_security_tests`
+
 **Purpose:** Security testing module
 **Complexity:** LOW
 **PHP Files:** 1
 
 **Functionality:**
+
 - Contains security test implementations
 - Validates access controls and permissions
 
@@ -801,12 +936,14 @@ All media types support:
 ---
 
 ### 6.7 `adessocms_custom` (Main Custom Module)
+
 **Purpose:** Project-specific customizations and business logic
 **Complexity:** UNKNOWN (requires deeper inspection)
 **PHP Files:** 1
 **Has composer.json:** Yes (full project composer file)
 
 **Known Files/Directories:**
+
 - `ANALYSIS_COMPLETE.txt`
 - `ANALYSIS_INDEX.md`
 - `ATOMIC_BREAKDOWN_SUMMARY.md`
@@ -829,6 +966,7 @@ All media types support:
 **Type:** Custom Drupal 11 theme (Starterkit)  
 **Base:** None (standalone)  
 **Technology Stack:**
+
 - **Tailwind CSS** - Utility-first CSS framework
 - **Single Directory Components (SDC)** - Drupal 10+ component system
 - **Storybook** - Component development and documentation
@@ -842,6 +980,7 @@ All media types support:
 **Component Categories:**
 
 #### Layout Components (8)
+
 - `section` - Main content section wrapper
 - `site-header` - Global header
 - `site-header-logo` - Logo component
@@ -852,11 +991,13 @@ All media types support:
 - `footer` - Footer content area
 
 #### Navigation Components (3)
+
 - `main-menu` - Primary menu
 - `mobile-menu` - Mobile navigation drawer
 - `page-header` - Page title/breadcrumb area
 
 #### Content Components (12)
+
 - `text` - Text paragraph display
 - `text-centered` - Centered text variant
 - `hero` - Hero section
@@ -871,6 +1012,7 @@ All media types support:
 - `tip-box` - Highlighted tip/note box
 
 #### Card Components (8)
+
 - `card-content` - Basic content card
 - `card-feature` - Feature card
 - `stat-card` - Statistics card
@@ -882,6 +1024,7 @@ All media types support:
 - `card-group-vertical` - Vertical card layout
 
 #### Interactive Components (6)
+
 - `carousel` - Image/content carousel
 - `slider` - Content slider
 - `accordion` - Accordion/collapsible sections
@@ -891,6 +1034,7 @@ All media types support:
 - `button-tertiary` - Tertiary button variant
 
 #### List & Grid Components (6)
+
 - `recent-cards` - Recent content cards
 - `bento-grid` - Bento-box style grid
 - `features` - Feature list
@@ -899,16 +1043,19 @@ All media types support:
 - `pager` - Pagination component
 
 #### Badge Components (3)
+
 - `badge` - Generic badge
 - `badge-basics` - Basic badge variant
 - `badge-experts` - Expert badge variant
 
 #### Media Components (3)
+
 - `logo` - Logo display
 - `logo-collection` - Logo grid
 - `download-item` - Downloadable file link
 
 #### Special Components (8)
+
 - `contact-card` - Contact information card
 - `contact-teaser` - Contact CTA teaser
 - `newsletter-form` - Newsletter signup
@@ -920,22 +1067,26 @@ All media types support:
 ### 7.2 Theme Features
 
 **Development Workflow:**
+
 - `npm run watch` - Watch mode for development
 - `npm run build` - Production build
 - `npm run storybook` - Component development server
 - `npm run build-storybook` - Static Storybook build
 
 **Testing:**
+
 - Vitest for component unit tests
 - Cypress for E2E testing (CI/CD integration)
 - Percy.io for visual regression testing
 
 **Performance:**
+
 - CSS/JS aggregation
 - PostCSS optimization
 - Tailwind CSS purging
 
 **Standards:**
+
 - SCSS linting (`npm run lint:sass`)
 - JavaScript linting (`npm run lint:js`)
 - Auto-fix capabilities
@@ -949,6 +1100,7 @@ All media types support:
 The site uses **78 custom image styles** for responsive image handling:
 
 **Common Patterns:**
+
 - Multiple breakpoint variants (mobile, tablet, desktop)
 - Aspect ratio presets (16:9, 4:3, 1:1, etc.)
 - Crop styles (focal point-based)
@@ -956,6 +1108,7 @@ The site uses **78 custom image styles** for responsive image handling:
 - WebP format support
 
 **Key Styles:**
+
 - `hero_*` - Hero section image variants
 - `card_*` - Card image variants
 - `thumbnail_*` - Thumbnail sizes
@@ -963,6 +1116,7 @@ The site uses **78 custom image styles** for responsive image handling:
 - `banner_*` - Banner/header images
 
 **Advanced Features:**
+
 - Focal point integration (module: `focal_point`)
 - Image effects pipeline
 - Responsive image module integration
@@ -974,11 +1128,13 @@ The site uses **78 custom image styles** for responsive image handling:
 The site includes **3 webforms** for user interactions:
 
 **Typical Use Cases:**
+
 - Contact form
 - Newsletter subscription
 - Event registration / booking
 
 **Features:**
+
 - Email notifications (Symfony Mailer Lite)
 - Form validation (Field Validation module)
 - Submission management
@@ -994,6 +1150,7 @@ The site includes **3 webforms** for user interactions:
 **Installation Profile:** Standard (enhanced with recipes)
 
 **Enabled Core Modules:**
+
 - Content Moderation - Editorial workflows
 - Media Library - Media management
 - Workflow - Workflow engine
@@ -1004,6 +1161,7 @@ The site includes **3 webforms** for user interactions:
 ### 10.2 Contrib Module Stack (Key Modules)
 
 #### Content Management
+
 - `paragraphs` (1.17) - Paragraph field type
 - `paragraphs_features` - Enhanced paragraph UX
 - `paragraphs_ee` (10.0) - Experimental paragraph features
@@ -1014,6 +1172,7 @@ The site includes **3 webforms** for user interactions:
 - `default_content_deploy` - Content deployment
 
 #### Media & Assets
+
 - `focal_point` - Image focal point
 - `dropzonejs` - Drag-and-drop file upload
 - `media_library_bulk_upload` - Bulk media upload
@@ -1021,6 +1180,7 @@ The site includes **3 webforms** for user interactions:
 - `webp` - WebP image format
 
 #### SEO & Marketing
+
 - `metatag` - Meta tag management
 - `yoast_seo` - Yoast SEO integration
 - `simple_sitemap` - XML sitemap
@@ -1029,18 +1189,21 @@ The site includes **3 webforms** for user interactions:
 - `robotstxt` - robots.txt management
 
 #### Forms
+
 - `webform` (6.3-beta1) - Form builder
 - `captcha` - CAPTCHA base
 - `friendlycaptcha` / `friendly_captcha_challenge` - User-friendly CAPTCHA
 - `honeypot` - Spam prevention
 
 #### Search
+
 - `search_api` - Search framework
 - `search_api_autocomplete` - Search autocomplete
 - `search_api_exclude` - Exclude items from search
 - `simple_search_form` - Simple search block
 
 #### UX & Admin
+
 - `gin` (5.x) - Admin theme
 - `gin_login` - Styled login page
 - `coffee` - Command palette
@@ -1049,16 +1212,19 @@ The site includes **3 webforms** for user interactions:
 - `frontend_editing` - Frontend content editing (if enabled)
 
 #### Content Scheduling
+
 - `scheduler` - Publish/unpublish scheduling
 - `scheduler_content_moderation_integration` - Scheduler + moderation
 
 #### Development & AI
+
 - `devel` - Developer tools
 - `storybook` - Storybook integration module
 - `ai`, `ai_agents`, `ai_provider_openai` - AI integration
 - `paragraphs_ai` - AI-powered paragraph suggestions
 
 #### Utility
+
 - `token` - Token system
 - `token_or` - Token fallback logic
 - `components` - Component libraries
@@ -1073,23 +1239,28 @@ The site includes **3 webforms** for user interactions:
 ### 10.3 Notable Configuration
 
 **Text Formats (2+ custom):**
+
 - `full_html` - Full HTML editor
 - `hero_highlight` - Custom format with orange highlight plugin
 
 **Editor Configurations:**
+
 - CKEditor 5 with custom plugins
 - Media embed support
 - Link attributes
 
 **Performance:**
+
 - BigPipe enabled (implied)
 - Dynamic Page Cache
 - CSS/JS aggregation
 
 **Multilingual:**
+
 - Not enabled (single language site)
 
 **Content Moderation:**
+
 - Scheduler integration
 - Publish/unpublish workflows
 
@@ -1109,6 +1280,7 @@ All primary content types (Landing Page, News, Event, Page, Person, Project) use
 - **Reusable components** - 32 paragraph types cover all content needs
 
 **Content Type Variants:**
+
 - **Landing Page:** Hero section + paragraphs
 - **News/Blog:** Metadata fields + paragraphs
 - **Event:** Date/location + paragraphs
@@ -1128,6 +1300,7 @@ All primary content types (Landing Page, News, Event, Page, Person, Project) use
 - **Design system approach** - Consistent spacing, colors, typography
 
 **Component Testing:**
+
 - Vitest unit tests
 - Storybook stories for all components
 - Visual regression testing (Percy.io)
@@ -1149,6 +1322,7 @@ All primary content types (Landing Page, News, Event, Page, Person, Project) use
 ### 11.4 Taxonomy Usage
 
 **Minimal, focused taxonomies:**
+
 - `category` - Hierarchical, primary classification
 - `tags` - Flat, keyword tagging
 - `authors` - Content attribution
@@ -1176,6 +1350,7 @@ All primary content types (Landing Page, News, Event, Page, Person, Project) use
 **Total Config Files:** 1,136
 
 **Breakdown:**
+
 - **63 node fields** (content type fields)
 - **169 paragraph fields** (paragraph type fields)
 - **78 image styles**
@@ -1197,6 +1372,7 @@ The site is feature-rich but follows consistent patterns. The large number of pa
 **Custom Modules:** 6 distinct modules + 1 project module
 
 **Custom Code Indicators:**
+
 - **Minimal custom PHP** - Most functionality via config
 - **1 custom CKEditor5 plugin** (hero_editor)
 - **1 custom field module** (adesso_paragraph_section)
@@ -1234,6 +1410,7 @@ The theme follows modern best practices with a solid component architecture. Sto
 - **SEO data** - Meta tags, descriptions, images for all content types
 
 **Estimated Effort (per 100 nodes):**
+
 - Simple Page content: **8-12 hours**
 - News/Blog with images: **12-16 hours**
 - Complex Landing Pages: **20-30 hours**
@@ -1252,6 +1429,7 @@ The theme follows modern best practices with a solid component architecture. Sto
 - **Build pipeline** configuration
 
 **Estimated Effort:**
+
 - Base theme setup: **40 hours**
 - Component library (63 components): **180-250 hours**
 - Storybook + testing: **40-60 hours**
@@ -1269,6 +1447,7 @@ The theme follows modern best practices with a solid component architecture. Sto
 - **27 views** to rebuild or migrate
 
 **Estimated Effort:**
+
 - Config export/import: **4-8 hours**
 - Paragraph type setup: **20-30 hours**
 - View configuration: **15-20 hours**
@@ -1425,6 +1604,7 @@ A "large" website would exceed adessoCMS:
 ### 17.1 Content Type Development
 
 **Per Content Type:**
+
 - Simple (1-5 fields): **2-4 hours**
 - Medium (6-15 fields): **4-8 hours**
 - Complex (16+ fields, custom logic): **8-16 hours**
@@ -1436,6 +1616,7 @@ A "large" website would exceed adessoCMS:
 ### 17.2 Paragraph Type Development
 
 **Per Paragraph Type:**
+
 - Simple (1-3 fields): **1-2 hours**
 - Medium (4-8 fields): **2-4 hours**
 - Complex (9+ fields, nested): **4-8 hours**
@@ -1447,6 +1628,7 @@ A "large" website would exceed adessoCMS:
 ### 17.3 View Development
 
 **Per View:**
+
 - Simple (1 display, no filters): **1-2 hours**
 - Medium (2-3 displays, filters): **2-4 hours**
 - Complex (4+ displays, exposed filters, relationships): **4-8 hours**
@@ -1458,6 +1640,7 @@ A "large" website would exceed adessoCMS:
 ### 17.4 Theme Component Development
 
 **Per SDC Component:**
+
 - Simple (HTML + CSS): **2-3 hours**
 - Medium (+ JavaScript, variants): **3-6 hours**
 - Complex (+ complex logic, tests): **6-12 hours**
@@ -1470,20 +1653,20 @@ A "large" website would exceed adessoCMS:
 
 **adessoCMS Estimated Build Hours:**
 
-| Category | Hours |
-|----------|-------|
-| Content Types | 36 |
-| Paragraph Types | 96 |
-| Views | 81 |
-| Theme Components | 252 |
-| Media Types | 12 |
-| Taxonomies | 8 |
-| Image Styles | 16 |
-| Webforms | 12 |
-| Custom Modules | 40 |
-| Configuration | 80 |
-| Testing | 60 |
-| **TOTAL** | **693 hours** |
+| Category         | Hours         |
+| ---------------- | ------------- |
+| Content Types    | 36            |
+| Paragraph Types  | 96            |
+| Views            | 81            |
+| Theme Components | 252           |
+| Media Types      | 12            |
+| Taxonomies       | 8             |
+| Image Styles     | 16            |
+| Webforms         | 12            |
+| Custom Modules   | 40            |
+| Configuration    | 80            |
+| Testing          | 60            |
+| **TOTAL**        | **693 hours** |
 
 **Weeks @ 40h/week:** ~17.3 weeks (~4.3 months)
 
@@ -1501,7 +1684,7 @@ A "large" website would exceed adessoCMS:
 ✅ **SEO-optimized** - Yoast SEO, metatags, structured data  
 ✅ **Editor-friendly** - Intuitive paragraph-based editing  
 ✅ **Well-tested** - Storybook, Vitest, Cypress, Percy.io  
-✅ **Scalable architecture** - Component reuse across site  
+✅ **Scalable architecture** - Component reuse across site
 
 ### 18.2 Complexity Points
 
@@ -1509,7 +1692,7 @@ A "large" website would exceed adessoCMS:
 ⚠️ **Many image styles** - 78 styles need responsive strategy  
 ⚠️ **Complex migrations** - Mapping to 32 paragraph types  
 ⚠️ **Theme build time** - 63 SDC components take time  
-⚠️ **Configuration volume** - 1,136 files to manage  
+⚠️ **Configuration volume** - 1,136 files to manage
 
 ### 18.3 Ideal Use Cases
 
@@ -1518,14 +1701,14 @@ A "large" website would exceed adessoCMS:
 ✅ Multi-section landing pages  
 ✅ Blog/news sites with rich media  
 ✅ Event/appointment listing sites  
-✅ Portfolio/project showcase sites  
+✅ Portfolio/project showcase sites
 
 ### 18.4 Not Ideal For
 
 ❌ Simple brochure sites (over-engineered)  
 ❌ E-commerce (needs commerce modules)  
 ❌ Complex web applications (needs custom code)  
-❌ Multi-site networks (needs multisite setup)  
+❌ Multi-site networks (needs multisite setup)
 
 ---
 
@@ -1563,9 +1746,10 @@ A "large" website would exceed adessoCMS:
 **Date:** 2025-11-13  
 **Author:** AI Analysis System  
 **Source:** /Users/marc.philipps/Sites/adessocms/  
-**Analysis Method:** Configuration file inspection, module analysis, theme structure review  
+**Analysis Method:** Configuration file inspection, module analysis, theme structure review
 
 **Revision History:**
+
 - 1.0 (2025-11-13): Initial baseline documentation
 
 ---

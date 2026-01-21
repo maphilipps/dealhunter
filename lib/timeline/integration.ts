@@ -32,13 +32,8 @@ export async function generateTimelineFromQuickScan(params: {
     };
   };
 }): Promise<ProjectTimeline> {
-  const {
-    projectName,
-    projectDescription,
-    websiteUrl,
-    extractedRequirements,
-    quickScanResult,
-  } = params;
+  const { projectName, projectDescription, websiteUrl, extractedRequirements, quickScanResult } =
+    params;
 
   // Build Timeline Agent input
   const timelineInput: TimelineAgentInput = {

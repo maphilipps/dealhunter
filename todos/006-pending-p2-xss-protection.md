@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p2
-issue_id: "006"
+issue_id: '006'
 tags: [code-review, security, xss, sanitization]
 dependencies: []
 ---
@@ -13,6 +13,7 @@ dependencies: []
 Agent messages render dynamic content (reasoning text, tool call parameters, error messages) directly without sanitization. If an AI agent outputs malicious HTML/JavaScript (either through injection attack or model misbehavior), it will execute in the user's browser.
 
 **Why it matters:**
+
 - XSS vulnerability in agent-generated content
 - Session hijacking risk
 - Potential data exfiltration
@@ -25,6 +26,7 @@ Agent messages render dynamic content (reasoning text, tool call parameters, err
 **Location:** `components/ai-elements/reasoning.tsx` (similar issue)
 
 **Evidence:**
+
 ```typescript
 // agent-message.tsx
 <div className="text-sm text-gray-700">
@@ -36,6 +38,7 @@ Agent messages render dynamic content (reasoning text, tool call parameters, err
 ```
 
 **Attack Vectors:**
+
 1. Malicious bid content → AI agent includes in reasoning → XSS
 2. Crafted prompt injection → agent outputs malicious HTML
 3. Error messages containing user input → reflected XSS
@@ -50,12 +53,14 @@ Agent messages render dynamic content (reasoning text, tool call parameters, err
 Sanitize all agent-generated HTML before rendering.
 
 **Pros:**
+
 - Industry standard XSS protection
 - Allows safe HTML formatting (bold, links)
 - Battle-tested library
 - Configurable whitelist
 
 **Cons:**
+
 - Adds dependency
 - Small performance overhead
 - Need to sanitize all dynamic content
@@ -64,6 +69,7 @@ Sanitize all agent-generated HTML before rendering.
 **Risk:** Low
 
 **Implementation:**
+
 ```typescript
 import DOMPurify from 'isomorphic-dompurify';
 
@@ -89,11 +95,13 @@ import DOMPurify from 'isomorphic-dompurify';
 Add CSP headers to prevent inline script execution.
 
 **Pros:**
+
 - Defense-in-depth approach
 - Protects against all XSS vectors
 - No code changes in components
 
 **Cons:**
+
 - Doesn't fix root cause (still need sanitization)
 - Can break legitimate inline scripts
 - Requires careful configuration
@@ -104,19 +112,20 @@ Add CSP headers to prevent inline script execution.
 **Should be combined** with Solution 1, not used alone.
 
 **Implementation:**
+
 ```typescript
 // next.config.js
 const securityHeaders = [
   {
     key: 'Content-Security-Policy',
-    value: "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
-  }
+    value: "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline';",
+  },
 ];
 
 module.exports = {
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }];
-  }
+  },
 };
 ```
 
@@ -125,11 +134,13 @@ module.exports = {
 Force all agent output through markdown parser (strips HTML).
 
 **Pros:**
+
 - Simple solution
 - No HTML allowed at all
 - Safe by default
 
 **Cons:**
+
 - Loses formatting flexibility
 - Agents can't use HTML for rich output
 - May break existing agent outputs
@@ -141,17 +152,19 @@ Force all agent output through markdown parser (strips HTML).
 
 ## Recommended Action
 
-*(To be filled during triage)*
+_(To be filled during triage)_
 
 ## Technical Details
 
 **Affected Files:**
+
 - `components/ai-elements/agent-message.tsx`
 - `components/ai-elements/reasoning.tsx`
 - `components/ai-elements/sources.tsx`
 - Any component rendering agent-generated content
 
 **Dependencies:**
+
 ```json
 {
   "dependencies": {
@@ -161,6 +174,7 @@ Force all agent output through markdown parser (strips HTML).
 ```
 
 **Testing:**
+
 - Inject XSS payloads in agent outputs
 - Verify sanitization strips scripts
 - Test with legitimate HTML (should preserve safe tags)

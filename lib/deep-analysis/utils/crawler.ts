@@ -52,9 +52,7 @@ function extractUrlsFromSitemap(result: any): string[] {
 
   // Handle urlset format (regular sitemap)
   if (result.urlset && result.urlset.url) {
-    const urlEntries = Array.isArray(result.urlset.url)
-      ? result.urlset.url
-      : [result.urlset.url];
+    const urlEntries = Array.isArray(result.urlset.url) ? result.urlset.url : [result.urlset.url];
 
     for (const entry of urlEntries) {
       if (entry.loc) {
@@ -206,7 +204,7 @@ export function samplePages(urls: string[], count: number): string[] {
       acc[depth].push(url);
       return acc;
     },
-    {} as Record<number, string[]>,
+    {} as Record<number, string[]>
   );
 
   const depths = Object.keys(byDepth).map(Number).sort();

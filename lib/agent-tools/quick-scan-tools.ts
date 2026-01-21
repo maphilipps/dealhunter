@@ -5,9 +5,18 @@ import type { ToolContext } from './types';
 // Import primitive tools
 import { crawlNavigation, quickNavigationScan } from '@/lib/quick-scan/tools/navigation-crawler';
 import { countPages, quickPageCount } from '@/lib/quick-scan/tools/page-counter';
-import { classifyContentTypes, estimateContentTypesFromUrls } from '@/lib/quick-scan/tools/content-classifier';
-import { analyzeMigrationComplexity, analyzeWithAI as analyzeMigrationWithAI } from '@/lib/quick-scan/tools/migration-analyzer';
-import { searchDecisionMakers, quickContactSearch } from '@/lib/quick-scan/tools/decision-maker-research';
+import {
+  classifyContentTypes,
+  estimateContentTypesFromUrls,
+} from '@/lib/quick-scan/tools/content-classifier';
+import {
+  analyzeMigrationComplexity,
+  analyzeWithAI as analyzeMigrationWithAI,
+} from '@/lib/quick-scan/tools/migration-analyzer';
+import {
+  searchDecisionMakers,
+  quickContactSearch,
+} from '@/lib/quick-scan/tools/decision-maker-research';
 import { runPlaywrightAudit } from '@/lib/quick-scan/tools/playwright';
 
 /**
@@ -27,7 +36,8 @@ const auditNavigationSchema = z.object({
 
 registry.register({
   name: 'quickscan.navigation.full',
-  description: 'Crawlt die vollständige Navigationsstruktur einer Website und erstellt einen Sitemap-Baum',
+  description:
+    'Crawlt die vollständige Navigationsstruktur einer Website und erstellt einen Sitemap-Baum',
   category: 'quickscan',
   inputSchema: auditNavigationSchema,
   async execute(input, _context: ToolContext) {
@@ -178,23 +188,28 @@ registry.register({
 // ========================================
 
 const analyzeMigrationSchema = z.object({
-  techStack: z.object({
-    cms: z.string().optional(),
-    cmsVersion: z.string().optional(),
-    framework: z.string().optional(),
-    backend: z.array(z.string()).optional(),
-    analytics: z.array(z.string()).optional(),
-    marketing: z.array(z.string()).optional(),
-  }).describe('Tech Stack Informationen'),
+  techStack: z
+    .object({
+      cms: z.string().optional(),
+      cmsVersion: z.string().optional(),
+      framework: z.string().optional(),
+      backend: z.array(z.string()).optional(),
+      analytics: z.array(z.string()).optional(),
+      marketing: z.array(z.string()).optional(),
+    })
+    .describe('Tech Stack Informationen'),
   pageCount: z.number().describe('Anzahl der Seiten'),
-  features: z.object({
-    ecommerce: z.boolean().optional().default(false),
-    userAccounts: z.boolean().optional().default(false),
-    multiLanguage: z.boolean().optional().default(false),
-    search: z.boolean().optional().default(false),
-    forms: z.boolean().optional().default(false),
-    api: z.boolean().optional().default(false),
-  }).optional().describe('Erkannte Features'),
+  features: z
+    .object({
+      ecommerce: z.boolean().optional().default(false),
+      userAccounts: z.boolean().optional().default(false),
+      multiLanguage: z.boolean().optional().default(false),
+      search: z.boolean().optional().default(false),
+      forms: z.boolean().optional().default(false),
+      api: z.boolean().optional().default(false),
+    })
+    .optional()
+    .describe('Erkannte Features'),
 });
 
 registry.register({
@@ -227,23 +242,27 @@ registry.register({
 });
 
 const analyzeMigrationAISchema = z.object({
-  techStack: z.object({
-    cms: z.string().optional(),
-    cmsVersion: z.string().optional(),
-    framework: z.string().optional(),
-    backend: z.array(z.string()).optional(),
-    analytics: z.array(z.string()).optional(),
-    marketing: z.array(z.string()).optional(),
-  }).describe('Tech Stack Informationen'),
+  techStack: z
+    .object({
+      cms: z.string().optional(),
+      cmsVersion: z.string().optional(),
+      framework: z.string().optional(),
+      backend: z.array(z.string()).optional(),
+      analytics: z.array(z.string()).optional(),
+      marketing: z.array(z.string()).optional(),
+    })
+    .describe('Tech Stack Informationen'),
   pageCount: z.number().describe('Anzahl der Seiten'),
-  features: z.object({
-    ecommerce: z.boolean().optional().default(false),
-    userAccounts: z.boolean().optional().default(false),
-    multiLanguage: z.boolean().optional().default(false),
-    search: z.boolean().optional().default(false),
-    forms: z.boolean().optional().default(false),
-    api: z.boolean().optional().default(false),
-  }).optional(),
+  features: z
+    .object({
+      ecommerce: z.boolean().optional().default(false),
+      userAccounts: z.boolean().optional().default(false),
+      multiLanguage: z.boolean().optional().default(false),
+      search: z.boolean().optional().default(false),
+      forms: z.boolean().optional().default(false),
+      api: z.boolean().optional().default(false),
+    })
+    .optional(),
   html: z.string().optional().describe('HTML der Homepage für AI-Analyse'),
 });
 
@@ -358,13 +377,15 @@ registry.register({
           const baseUrl = new URL(input.url);
           urlsToAudit = [
             input.url,
-            ...navUrls.map(u => {
-              try {
-                return new URL(u, baseUrl.origin).toString();
-              } catch {
-                return null;
-              }
-            }).filter((u): u is string => u !== null),
+            ...navUrls
+              .map(u => {
+                try {
+                  return new URL(u, baseUrl.origin).toString();
+                } catch {
+                  return null;
+                }
+              })
+              .filter((u): u is string => u !== null),
           ].slice(0, input.pagesToAudit);
         } catch {
           // Use only homepage if navigation fails

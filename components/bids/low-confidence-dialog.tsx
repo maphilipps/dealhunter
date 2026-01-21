@@ -99,9 +99,7 @@ export function LowConfidenceDialog({
               <p className="text-sm font-medium text-amber-900 mb-1">Konfidenz-Level:</p>
               <div className="flex items-center gap-2">
                 <Badge variant="destructive">{confidence}%</Badge>
-                <span className="text-sm text-amber-700">
-                  (unter 70% Schwellenwert)
-                </span>
+                <span className="text-sm text-amber-700">(unter 70% Schwellenwert)</span>
               </div>
             </div>
 
@@ -112,8 +110,8 @@ export function LowConfidenceDialog({
 
             <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
               <p className="text-sm text-blue-900">
-                <strong>Wichtig:</strong> Eine niedrige Konfidenz bedeutet, dass die AI unsicher ist.
-                Dies kann folgende Gründe haben:
+                <strong>Wichtig:</strong> Eine niedrige Konfidenz bedeutet, dass die AI unsicher
+                ist. Dies kann folgende Gründe haben:
               </p>
               <ul className="mt-2 text-sm text-blue-800 list-disc list-inside space-y-1">
                 <li>Unvollständige oder vage Anforderungen</li>
@@ -124,8 +122,8 @@ export function LowConfidenceDialog({
             </div>
 
             <div className="text-sm text-muted-foreground">
-              Möchten Sie diese Entscheidung trotz niedriger Konfidenz akzeptieren,
-              oder die Anforderungen erneut überprüfen und korrigieren?
+              Möchten Sie diese Entscheidung trotz niedriger Konfidenz akzeptieren, oder die
+              Anforderungen erneut überprüfen und korrigieren?
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>

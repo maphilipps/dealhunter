@@ -165,7 +165,13 @@ export interface ScreenshotsData {
     desktop?: string;
     mobile?: string;
   };
-  keyPages?: Array<{ name?: string; title?: string; path?: string; url?: string; screenshot?: string }>;
+  keyPages?: Array<{
+    name?: string;
+    title?: string;
+    path?: string;
+    url?: string;
+    screenshot?: string;
+  }>;
   timestamp?: string;
 }
 
@@ -261,7 +267,7 @@ export interface MigrationComplexityData {
       hasRestApi?: boolean;
       hasXmlExport?: boolean;
       hasCli?: boolean;
-      knownExportMethods?: string[];  // z.B. ["WP-CLI", "REST API", "XML Export"]
+      knownExportMethods?: string[]; // z.B. ["WP-CLI", "REST API", "XML Export"]
       notes?: string;
     };
     dataQuality?: {
@@ -285,7 +291,7 @@ export interface MigrationComplexityData {
       externalApis?: number;
       ssoRequired?: boolean;
       thirdPartyPlugins?: number;
-      integrationList?: string[];  // Liste aller gefundenen Integrationen
+      integrationList?: string[]; // Liste aller gefundenen Integrationen
       notes?: string;
     };
   };
@@ -295,7 +301,7 @@ export interface MigrationComplexityData {
     minPT: number;
     maxPT: number;
     confidence: number;
-    assumptions?: string[];  // Annahmen für die Schätzung
+    assumptions?: string[]; // Annahmen für die Schätzung
   };
 }
 
@@ -361,14 +367,37 @@ export interface IntegrationsData {
 // ========================================
 
 export interface NavigationComponentData {
-  type: 'mega_menu' | 'sticky_header' | 'mobile_menu' | 'sidebar' | 'breadcrumbs' | 'pagination' | 'standard';
+  type:
+    | 'mega_menu'
+    | 'sticky_header'
+    | 'mobile_menu'
+    | 'sidebar'
+    | 'breadcrumbs'
+    | 'pagination'
+    | 'standard';
   features: string[];
   itemCount?: number;
   maxDepth?: number;
 }
 
 export interface ContentBlockComponentData {
-  type: 'hero' | 'cards' | 'teaser' | 'accordion' | 'tabs' | 'slider' | 'testimonials' | 'timeline' | 'grid' | 'list' | 'cta' | 'pricing' | 'faq' | 'team' | 'stats' | 'features';
+  type:
+    | 'hero'
+    | 'cards'
+    | 'teaser'
+    | 'accordion'
+    | 'tabs'
+    | 'slider'
+    | 'testimonials'
+    | 'timeline'
+    | 'grid'
+    | 'list'
+    | 'cta'
+    | 'pricing'
+    | 'faq'
+    | 'team'
+    | 'stats'
+    | 'features';
   count: number;
   examples: string[];
   hasImages?: boolean;
@@ -376,7 +405,15 @@ export interface ContentBlockComponentData {
 }
 
 export interface FormComponentData {
-  type: 'contact' | 'newsletter' | 'search' | 'login' | 'registration' | 'checkout' | 'filter' | 'generic';
+  type:
+    | 'contact'
+    | 'newsletter'
+    | 'search'
+    | 'login'
+    | 'registration'
+    | 'checkout'
+    | 'filter'
+    | 'generic';
   fields: number;
   hasValidation?: boolean;
   hasFileUpload?: boolean;
@@ -384,18 +421,25 @@ export interface FormComponentData {
 }
 
 export interface MediaComponentData {
-  type: 'image_gallery' | 'video_embed' | 'video_player' | 'audio_player' | 'carousel' | 'lightbox' | 'background_video';
+  type:
+    | 'image_gallery'
+    | 'video_embed'
+    | 'video_player'
+    | 'audio_player'
+    | 'carousel'
+    | 'lightbox'
+    | 'background_video';
   count: number;
   providers?: string[];
 }
 
 // Drupal Mapping Hints for Website Audit Skill
 export interface DrupalMappingData {
-  suggestedParagraphTypes: string[];      // z.B. ["hero", "cards_grid", "accordion"]
-  suggestedContentTypes: string[];        // z.B. ["article", "event", "product"]
-  suggestedTaxonomies: string[];          // z.B. ["category", "tag", "location"]
-  suggestedMediaTypes: string[];          // z.B. ["image", "video", "document"]
-  estimatedViews: number;                 // Geschätzte Views basierend auf Listen
+  suggestedParagraphTypes: string[]; // z.B. ["hero", "cards_grid", "accordion"]
+  suggestedContentTypes: string[]; // z.B. ["article", "event", "product"]
+  suggestedTaxonomies: string[]; // z.B. ["category", "tag", "location"]
+  suggestedMediaTypes: string[]; // z.B. ["image", "video", "document"]
+  estimatedViews: number; // Geschätzte Views basierend auf Listen
 }
 
 export interface ExtractedComponentsData {

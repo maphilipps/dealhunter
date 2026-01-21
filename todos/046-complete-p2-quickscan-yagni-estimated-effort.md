@@ -1,9 +1,9 @@
 ---
 status: pending
 priority: p2
-issue_id: "046"
+issue_id: '046'
 tags: [code-review, simplicity, quickscan, yagni]
-dependencies: ["045"]
+dependencies: ['045']
 ---
 
 # YAGNI: estimatedEffort als separate Funktion
@@ -17,21 +17,23 @@ Der Plan sieht `estimatedEffort` mit PT-Range (minPT/maxPT) im `MigrationComplex
 **Source:** code-simplicity-reviewer Agent (Plan Review)
 
 **Geplante Schema-Erweiterung:**
+
 ```typescript
 interface MigrationComplexityData {
   // ... existing ...
 
   // NEU (YAGNI!):
   estimatedEffort: {
-    minPT: number;        // Minimum Personentage
-    maxPT: number;        // Maximum Personentage
-    confidence: number;   // 0-100
+    minPT: number; // Minimum Personentage
+    maxPT: number; // Maximum Personentage
+    confidence: number; // 0-100
     assumptions: string[];
   };
 }
 ```
 
 **Probleme:**
+
 1. PT-Schätzung basiert auf Faktoren, die sich ändern (Team-Erfahrung, Tooling)
 2. Hardcoded im Schema = schwer anzupassen
 3. Unterschiedliche Kunden haben unterschiedliche Baseline-Aufwände
@@ -49,9 +51,9 @@ interface MigrationComplexityData {
 ```typescript
 // lib/estimation/effort-calculator.ts
 interface EstimationConfig {
-  baselinePTPerContentType: number;  // Default: 2
+  baselinePTPerContentType: number; // Default: 2
   baselinePTPerParagraphType: number; // Default: 1.5
-  complexityMultiplier: { simple: 1, moderate: 1.5, complex: 2 };
+  complexityMultiplier: { simple: 1; moderate: 1.5; complex: 2 };
   // ...
 }
 
@@ -77,10 +79,12 @@ Option A - PT-Schätzung als separate, konfigurierbare Funktion. MigrationComple
 ## Technical Details
 
 **Affected Files:**
+
 - Plan: `/Users/marc.philipps/.claude/plans/composed-percolating-falcon.md`
 - Neues File (später): `lib/estimation/effort-calculator.ts`
 
 **Plan-Änderung:**
+
 ```diff
 interface MigrationComplexityData {
   score: number;
@@ -105,8 +109,8 @@ interface MigrationComplexityData {
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                        | Learnings              |
+| ---------- | ----------------------------- | ---------------------- |
 | 2026-01-20 | Todo erstellt aus Plan Review | Separation of Concerns |
 
 ## Resources

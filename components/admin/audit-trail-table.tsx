@@ -106,9 +106,7 @@ export function AuditTrailTable() {
             <label className="text-sm font-medium mb-2 block">Action</label>
             <Select
               value={filters.action}
-              onValueChange={(value) =>
-                setFilters((prev) => ({ ...prev, action: value }))
-              }
+              onValueChange={value => setFilters(prev => ({ ...prev, action: value }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Alle Actions" />
@@ -130,9 +128,7 @@ export function AuditTrailTable() {
             <label className="text-sm font-medium mb-2 block">Entity Type</label>
             <Select
               value={filters.entityType}
-              onValueChange={(value) =>
-                setFilters((prev) => ({ ...prev, entityType: value }))
-              }
+              onValueChange={value => setFilters(prev => ({ ...prev, entityType: value }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Alle Entity Types" />
@@ -154,9 +150,7 @@ export function AuditTrailTable() {
             <Input
               placeholder="Entity ID filtern..."
               value={filters.entityId}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, entityId: e.target.value }))
-              }
+              onChange={e => setFilters(prev => ({ ...prev, entityId: e.target.value }))}
             />
           </div>
         </div>
@@ -199,7 +193,7 @@ export function AuditTrailTable() {
                 </TableCell>
               </TableRow>
             ) : (
-              logs.map((log) => (
+              logs.map(log => (
                 <TableRow key={log.id}>
                   <TableCell className="whitespace-nowrap">
                     {formatDistanceToNow(new Date(log.createdAt), {

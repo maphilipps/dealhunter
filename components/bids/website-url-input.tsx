@@ -104,9 +104,7 @@ export function WebsiteUrlInput({
   };
 
   const handleToggleUrl = (index: number) => {
-    setUrls(prev =>
-      prev.map((u, i) => (i === index ? { ...u, selected: !u.selected } : u))
-    );
+    setUrls(prev => prev.map((u, i) => (i === index ? { ...u, selected: !u.selected } : u)));
   };
 
   const handleRemoveUrl = (index: number) => {
@@ -132,7 +130,8 @@ export function WebsiteUrlInput({
           Website URL erforderlich
         </CardTitle>
         <CardDescription>
-          Für den Quick Scan wird eine Website-URL benötigt. Sie können AI-Vorschläge generieren lassen oder URLs manuell eingeben.
+          Für den Quick Scan wird eine Website-URL benötigt. Sie können AI-Vorschläge generieren
+          lassen oder URLs manuell eingeben.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -191,12 +190,18 @@ export function WebsiteUrlInput({
                       <ExternalLink className="h-3 w-3" />
                     </a>
                     {urlItem.description && (
-                      <p className="text-xs text-muted-foreground truncate">{urlItem.description}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {urlItem.description}
+                      </p>
                     )}
                   </div>
-                  <Badge variant="outline" className="shrink-0">{urlItem.type}</Badge>
+                  <Badge variant="outline" className="shrink-0">
+                    {urlItem.type}
+                  </Badge>
                   {urlItem.confidence && (
-                    <Badge variant="secondary" className="shrink-0">{urlItem.confidence}%</Badge>
+                    <Badge variant="secondary" className="shrink-0">
+                      {urlItem.confidence}%
+                    </Badge>
                   )}
                 </div>
                 <div className="flex items-center gap-2 ml-2">
@@ -226,8 +231,8 @@ export function WebsiteUrlInput({
         <div className="flex gap-2">
           <Input
             value={newUrl}
-            onChange={(e) => setNewUrl(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAddManualUrl()}
+            onChange={e => setNewUrl(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAddManualUrl()}
             placeholder="https://www.beispiel.de"
             type="url"
             className="bg-white"

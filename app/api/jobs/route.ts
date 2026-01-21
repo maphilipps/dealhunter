@@ -55,18 +55,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       jobs: jobs.map(({ job, rfp }) => ({
         ...job,
-        rfp: rfp ? {
-          id: rfp.id,
-          status: rfp.status,
-          websiteUrl: rfp.websiteUrl,
-        } : null,
+        rfp: rfp
+          ? {
+              id: rfp.id,
+              status: rfp.status,
+              websiteUrl: rfp.websiteUrl,
+            }
+          : null,
       })),
     });
   } catch (error) {
     console.error('Error fetching jobs:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch jobs' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch jobs' }, { status: 500 });
   }
 }

@@ -10,20 +10,31 @@ export const extractedRequirementsSchema = z.object({
   industry: z.string().optional().describe('Industry sector of the customer'),
 
   // Company Details (for Quick Scan and Company Intelligence)
-  companySize: z.enum(['startup', 'small', 'medium', 'large', 'enterprise']).optional().describe('Company size classification'),
+  companySize: z
+    .enum(['startup', 'small', 'medium', 'large', 'enterprise'])
+    .optional()
+    .describe('Company size classification'),
   employeeCountRange: z.string().optional().describe('Number of employees range (e.g., "100-500")'),
   revenueRange: z.string().optional().describe('Revenue range (e.g., "10-50 Mio EUR")'),
-  procurementType: z.enum(['public', 'private', 'semi-public']).optional().describe('Type of procurement/bidding process'),
+  procurementType: z
+    .enum(['public', 'private', 'semi-public'])
+    .optional()
+    .describe('Type of procurement/bidding process'),
   industryVertical: z.string().optional().describe('Specific industry vertical or sub-sector'),
   companyLocation: z.string().optional().describe('Company headquarters or main location'),
 
   // Website URLs for Quick Scan (multiple possible)
-  websiteUrls: z.array(z.object({
-    url: z.string().describe('Website URL'),
-    type: z.enum(['primary', 'product', 'regional', 'related']).describe('Type of website'),
-    description: z.string().optional().describe('Brief description of this website'),
-    extractedFromDocument: z.boolean().describe('Whether this URL was found in the document'),
-  })).optional().describe('Customer website URLs for quick scan analysis'),
+  websiteUrls: z
+    .array(
+      z.object({
+        url: z.string().describe('Website URL'),
+        type: z.enum(['primary', 'product', 'regional', 'related']).describe('Type of website'),
+        description: z.string().optional().describe('Brief description of this website'),
+        extractedFromDocument: z.boolean().describe('Whether this URL was found in the document'),
+      })
+    )
+    .optional()
+    .describe('Customer website URLs for quick scan analysis'),
 
   // Keep single websiteUrl for backwards compatibility (deprecated)
   websiteUrl: z.string().optional().describe('Customer website URL (deprecated, use websiteUrls)'),
@@ -33,7 +44,9 @@ export const extractedRequirementsSchema = z.object({
   projectName: z.string().optional().describe('Name or title of the project if mentioned'),
 
   // Technical Requirements
-  technologies: z.array(z.string()).describe('List of technologies, frameworks, or platforms mentioned'),
+  technologies: z
+    .array(z.string())
+    .describe('List of technologies, frameworks, or platforms mentioned'),
   scope: z.string().optional().describe('Project scope (e.g., development, migration, consulting)'),
 
   // Business Requirements
@@ -42,19 +55,33 @@ export const extractedRequirementsSchema = z.object({
   teamSize: z.number().optional().describe('Required team size if mentioned'),
 
   // Submission Details
-  submissionDeadline: z.string().optional().describe('Deadline for bid submission (ISO date format YYYY-MM-DD)'),
+  submissionDeadline: z
+    .string()
+    .optional()
+    .describe('Deadline for bid submission (ISO date format YYYY-MM-DD)'),
   submissionTime: z.string().optional().describe('Exact time for submission if specified (HH:MM)'),
-  projectStartDate: z.string().optional().describe('Expected project start date (ISO date format YYYY-MM-DD)'),
-  projectEndDate: z.string().optional().describe('Expected project end date (ISO date format YYYY-MM-DD)'),
+  projectStartDate: z
+    .string()
+    .optional()
+    .describe('Expected project start date (ISO date format YYYY-MM-DD)'),
+  projectEndDate: z
+    .string()
+    .optional()
+    .describe('Expected project end date (ISO date format YYYY-MM-DD)'),
 
   // Required Deliverables
-  requiredDeliverables: z.array(z.object({
-    name: z.string().describe('Name of the deliverable'),
-    description: z.string().optional().describe('Description of what is required'),
-    format: z.string().optional().describe('Required format (e.g., PDF, Word, hardcopy)'),
-    copies: z.number().optional().describe('Number of copies required'),
-    mandatory: z.boolean().default(true).describe('Whether this deliverable is mandatory'),
-  })).optional().describe('List of documents/deliverables to be submitted'),
+  requiredDeliverables: z
+    .array(
+      z.object({
+        name: z.string().describe('Name of the deliverable'),
+        description: z.string().optional().describe('Description of what is required'),
+        format: z.string().optional().describe('Required format (e.g., PDF, Word, hardcopy)'),
+        copies: z.number().optional().describe('Number of copies required'),
+        mandatory: z.boolean().default(true).describe('Whether this deliverable is mandatory'),
+      })
+    )
+    .optional()
+    .describe('List of documents/deliverables to be submitted'),
 
   // Contact Information
   contactPerson: z.string().optional().describe('Name of contact person at customer'),
@@ -62,7 +89,9 @@ export const extractedRequirementsSchema = z.object({
   contactPhone: z.string().optional().describe('Phone number of contact person'),
 
   // Additional Context
-  keyRequirements: z.array(z.string()).describe('List of key functional or non-functional requirements'),
+  keyRequirements: z
+    .array(z.string())
+    .describe('List of key functional or non-functional requirements'),
   constraints: z.array(z.string()).optional().describe('Any constraints or limitations mentioned'),
 
   // Metadata
@@ -77,11 +106,13 @@ export type ExtractedRequirements = z.infer<typeof extractedRequirementsSchema>;
  */
 export const extractionResultSchema = z.object({
   requirements: extractedRequirementsSchema,
-  activityLog: z.array(z.object({
-    timestamp: z.string(),
-    action: z.string(),
-    details: z.string().optional(),
-  })),
+  activityLog: z.array(
+    z.object({
+      timestamp: z.string(),
+      action: z.string(),
+      details: z.string().optional(),
+    })
+  ),
 });
 
 export type ExtractionResult = z.infer<typeof extractionResultSchema>;

@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "020"
+issue_id: '020'
 tags: [code-review, security, idor, server-actions]
 dependencies: []
 ---
@@ -19,6 +19,7 @@ All new server actions lack authorization checks. While authentication is verifi
 **Severity:** HIGH - Exploitability: Easy, Impact: High
 
 **Affected Functions:**
+
 - `triggerBaselineComparison` - `lib/baseline-comparison/actions.ts`
 - `getBaselineComparisonResult` - `lib/baseline-comparison/actions.ts`
 - `triggerProjectPlanning` - `lib/project-planning/actions.ts`
@@ -28,6 +29,7 @@ All new server actions lack authorization checks. While authentication is verifi
 - `getNotificationStatus` - `lib/notifications/actions.ts`
 
 **Evidence:**
+
 ```typescript
 // Current code - only checks authentication, not authorization
 const session = await auth();
@@ -40,6 +42,7 @@ const [bid] = await db.select()...where(eq(bidOpportunities.id, bidId));
 ```
 
 **Reference:** Existing code in `lib/bit-evaluation/actions.ts` (lines 33-35) DOES check ownership:
+
 ```typescript
 if (bid.userId !== session.user.id) {
   return { success: false, error: 'Keine Berechtigung' };
@@ -49,6 +52,7 @@ if (bid.userId !== session.user.id) {
 ## Proposed Solutions
 
 ### Solution 1: Add ownership check to each action (Recommended)
+
 - Add `bid.userId !== session.user.id` check after bid fetch
 - Matches existing pattern in bit-evaluation/actions.ts
 - **Effort:** Small
@@ -57,6 +61,7 @@ if (bid.userId !== session.user.id) {
 - **Cons:** Duplicated code in each action
 
 ### Solution 2: Create shared helper function
+
 - Create `requireAuthAndBid(bidId)` helper that combines auth + bid fetch + ownership check
 - **Effort:** Medium
 - **Risk:** Low
@@ -70,12 +75,14 @@ if (bid.userId !== session.user.id) {
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/baseline-comparison/actions.ts`
 - `lib/project-planning/actions.ts`
 - `lib/notifications/actions.ts`
 
 **Required Changes:**
 Add after bid fetch in each action:
+
 ```typescript
 if (bid.userId !== session.user.id) {
   return { success: false, error: 'Keine Berechtigung' };
@@ -91,8 +98,8 @@ if (bid.userId !== session.user.id) {
 
 ## Work Log
 
-| Date | Action | Learning |
-|------|--------|----------|
+| Date       | Action                           | Learning                        |
+| ---------- | -------------------------------- | ------------------------------- |
 | 2026-01-18 | Discovered via security-sentinel | Authentication != Authorization |
 
 ## Resources

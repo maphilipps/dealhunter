@@ -16,11 +16,7 @@ export async function startCMSEvaluation(
 ): Promise<{ success: boolean; result?: CMSMatchingResult; error?: string }> {
   try {
     // Quick Scan laden
-    const scans = await db
-      .select()
-      .from(quickScans)
-      .where(eq(quickScans.id, quickScanId))
-      .limit(1);
+    const scans = await db.select().from(quickScans).where(eq(quickScans.id, quickScanId)).limit(1);
 
     if (!scans.length) {
       return { success: false, error: 'Quick Scan nicht gefunden' };
@@ -36,7 +32,10 @@ export async function startCMSEvaluation(
     if (!options?.forceRefresh && scan.cmsEvaluation) {
       try {
         const existingResult = JSON.parse(scan.cmsEvaluation) as CMSMatchingResult;
-        console.log('[CMS Evaluation] Returning cached result from', existingResult.metadata?.matchedAt);
+        console.log(
+          '[CMS Evaluation] Returning cached result from',
+          existingResult.metadata?.matchedAt
+        );
         return { success: true, result: existingResult };
       } catch {
         // Parsing fehlgeschlagen, neu berechnen
@@ -51,7 +50,9 @@ export async function startCMSEvaluation(
       contentVolume: scan.contentVolume ? JSON.parse(scan.contentVolume) : undefined,
       accessibilityAudit: scan.accessibilityAudit ? JSON.parse(scan.accessibilityAudit) : undefined,
       legalCompliance: scan.legalCompliance ? JSON.parse(scan.legalCompliance) : undefined,
-      performanceIndicators: scan.performanceIndicators ? JSON.parse(scan.performanceIndicators) : undefined,
+      performanceIndicators: scan.performanceIndicators
+        ? JSON.parse(scan.performanceIndicators)
+        : undefined,
     };
 
     console.log('[CMS Evaluation] Running new evaluation with webSearch:', options?.useWebSearch);
@@ -212,7 +213,9 @@ export async function researchRequirement(
         primaryCms: primary.name,
         reasoning: `${primary.name} erreicht den höchsten Gesamt-Score (${primary.overallScore}%) basierend auf ${updatedRequirements.length} Anforderungen.`,
         alternativeCms: alternative?.name,
-        alternativeReasoning: alternative ? `${alternative.name} mit ${alternative.overallScore}% als Alternative.` : undefined,
+        alternativeReasoning: alternative
+          ? `${alternative.name} mit ${alternative.overallScore}% als Alternative.`
+          : undefined,
         confidence: primary.overallScore,
       },
       metadata: {
@@ -231,7 +234,9 @@ export async function researchRequirement(
       })
       .where(eq(quickScans.id, quickScanId));
 
-    console.log(`[CMS Research] Updated "${requirement}" for ${cms.name}: ${researchResult.score}%`);
+    console.log(
+      `[CMS Research] Updated "${requirement}" for ${cms.name}: ${researchResult.score}%`
+    );
 
     return { success: true, result: updatedEvaluation };
   } catch (error) {

@@ -79,7 +79,14 @@ interface FeatureData {
   confidence: number;
   notes: string;
   researchedAt?: string;
-  supportType?: 'native' | 'module' | 'extension' | 'contrib' | 'third-party' | 'custom' | 'unknown';
+  supportType?:
+    | 'native'
+    | 'module'
+    | 'extension'
+    | 'contrib'
+    | 'third-party'
+    | 'custom'
+    | 'unknown';
   moduleName?: string;
   sourceUrls?: string[];
   reasoning?: string;
@@ -100,12 +107,14 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
 
   // Orchestrator State
   const [isOrchestratorRunning, setIsOrchestratorRunning] = useState(false);
-  const [orchestratorEvents, setOrchestratorEvents] = useState<Array<{
-    agent: string;
-    message: string;
-    timestamp: number;
-    type: string;
-  }>>([]);
+  const [orchestratorEvents, setOrchestratorEvents] = useState<
+    Array<{
+      agent: string;
+      message: string;
+      timestamp: number;
+      type: string;
+    }>
+  >([]);
 
   const handleResearch = async () => {
     setIsResearching(true);
@@ -209,7 +218,9 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
 
     setIsOrchestratorRunning(true);
     setOrchestratorEvents([]);
-    toast.info(`Orchestrator startet: ${featureNames.length} Features recherchieren + ${reviewMode} Review`);
+    toast.info(
+      `Orchestrator startet: ${featureNames.length} Features recherchieren + ${reviewMode} Review`
+    );
 
     try {
       const response = await fetch(`/api/admin/technologies/${technology.id}/orchestrator`, {
@@ -246,18 +257,23 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
             try {
               const event = JSON.parse(line.slice(6));
               if (event.data?.agent && event.data?.message) {
-                setOrchestratorEvents(prev => [...prev, {
-                  agent: event.data.agent,
-                  message: event.data.message,
-                  timestamp: event.timestamp,
-                  type: event.type,
-                }]);
+                setOrchestratorEvents(prev => [
+                  ...prev,
+                  {
+                    agent: event.data.agent,
+                    message: event.data.message,
+                    timestamp: event.timestamp,
+                    type: event.type,
+                  },
+                ]);
               }
 
               // Bei AGENT_COMPLETE mit result: Features aktualisieren
               if (event.type === 'agent-complete' && event.data?.result?.tasks) {
                 const result = event.data.result;
-                toast.success(`Workflow abgeschlossen: ${result.metadata.successfulResearch} recherchiert, ${result.metadata.featuresImproved} verbessert`);
+                toast.success(
+                  `Workflow abgeschlossen: ${result.metadata.successfulResearch} recherchiert, ${result.metadata.featuresImproved} verbessert`
+                );
 
                 // Reload features
                 const techResponse = await fetch(`/api/admin/technologies/${technology.id}`);
@@ -365,7 +381,10 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
   const getSupportTypeBadge = (type?: string, moduleName?: string) => {
     if (!type || type === 'unknown') return null;
 
-    const config: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+    const config: Record<
+      string,
+      { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
+    > = {
       native: { label: 'Nativ', variant: 'default' },
       module: { label: moduleName ? `Modul: ${moduleName}` : 'Modul', variant: 'secondary' },
       contrib: { label: moduleName ? `Contrib: ${moduleName}` : 'Contrib', variant: 'secondary' },
@@ -377,7 +396,11 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
     const cfg = config[type];
     if (!cfg) return null;
 
-    return <Badge variant={cfg.variant} className="text-xs">{cfg.label}</Badge>;
+    return (
+      <Badge variant={cfg.variant} className="text-xs">
+        {cfg.label}
+      </Badge>
+    );
   };
 
   const pros = parseJsonArray(technology.pros);
@@ -407,7 +430,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
                 src={technology.logoUrl}
                 alt={`${technology.name} logo`}
                 className="h-12 w-12 object-contain"
-                onError={(e) => {
+                onError={e => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
               />
@@ -419,15 +442,11 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
             <div>
               <h1 className="text-2xl font-bold">{technology.name}</h1>
               <div className="flex items-center gap-2 mt-1">
-                {technology.category && (
-                  <Badge variant="outline">{technology.category}</Badge>
-                )}
+                {technology.category && <Badge variant="outline">{technology.category}</Badge>}
                 {technology.latestVersion && (
                   <Badge variant="secondary">v{technology.latestVersion}</Badge>
                 )}
-                {technology.license && (
-                  <Badge variant="secondary">{technology.license}</Badge>
-                )}
+                {technology.license && <Badge variant="secondary">{technology.license}</Badge>}
               </div>
             </div>
           </div>
@@ -506,9 +525,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
               <Clock className="h-4 w-4" />
               Letztes Release
             </div>
-            <p className="text-lg font-semibold mt-1">
-              {technology.lastRelease || '-'}
-            </p>
+            <p className="text-lg font-semibold mt-1">{technology.lastRelease || '-'}</p>
           </CardContent>
         </Card>
       </div>
@@ -659,7 +676,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
             <Textarea
               placeholder="Features eingeben (kommasepariert oder je Zeile):&#10;Mehrsprachigkeit&#10;E-Commerce&#10;GraphQL API&#10;Benutzerkonten"
               value={featurePrompt}
-              onChange={(e) => setFeaturePrompt(e.target.value)}
+              onChange={e => setFeaturePrompt(e.target.value)}
               disabled={isResearchingFeature}
               className="min-h-[80px] resize-y"
               rows={3}
@@ -715,7 +732,16 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
               <div className="space-y-1">
                 {orchestratorEvents.map((event, i) => (
                   <div key={i} className="text-xs flex gap-2">
-                    <Badge variant={event.type === 'error' ? 'destructive' : event.type === 'agent-complete' ? 'default' : 'secondary'} className="text-[10px] shrink-0">
+                    <Badge
+                      variant={
+                        event.type === 'error'
+                          ? 'destructive'
+                          : event.type === 'agent-complete'
+                            ? 'default'
+                            : 'secondary'
+                      }
+                      className="text-[10px] shrink-0"
+                    >
                       {event.agent}
                     </Badge>
                     <span className="text-muted-foreground">{event.message}</span>
@@ -732,8 +758,8 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
                 {lastReviewResult ? (
                   <span>
                     Letzter Review: {lastReviewResult.featuresImproved} verbessert,{' '}
-                    {lastReviewResult.featuresFlagged} markiert,{' '}
-                    Confidence: {lastReviewResult.overallConfidence}%
+                    {lastReviewResult.featuresFlagged} markiert, Confidence:{' '}
+                    {lastReviewResult.overallConfidence}%
                   </span>
                 ) : (
                   <span>Bestehende Features auf Plausibilität prüfen</span>
@@ -798,7 +824,8 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
                     .map(([featureName, data]) => {
                       const isNoData = data.score === 50 && data.confidence <= 40;
                       // Extrahiere Notizen ohne URLs für bessere Lesbarkeit
-                      const notesWithoutUrls = data.notes?.split(' | Quellen:')[0] || data.notes || '';
+                      const notesWithoutUrls =
+                        data.notes?.split(' | Quellen:')[0] || data.notes || '';
                       return (
                         <TableRow key={featureName}>
                           <TableCell className="font-medium">{featureName}</TableCell>
@@ -814,10 +841,15 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
                                 ) : (
                                   <XCircle className="h-4 w-4 text-red-500" />
                                 )}
-                                <span className={
-                                  data.score >= 70 ? 'text-green-600' :
-                                  data.score >= 40 ? 'text-yellow-600' : 'text-red-600'
-                                }>
+                                <span
+                                  className={
+                                    data.score >= 70
+                                      ? 'text-green-600'
+                                      : data.score >= 40
+                                        ? 'text-yellow-600'
+                                        : 'text-red-600'
+                                  }
+                                >
                                   {data.score}%
                                 </span>
                               </div>
@@ -867,7 +899,8 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
           ) : (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
               <AlertTriangle className="h-4 w-4" />
-              Keine Feature-Recherche-Daten vorhanden. Features werden automatisch bei CMS-Evaluationen recherchiert.
+              Keine Feature-Recherche-Daten vorhanden. Features werden automatisch bei
+              CMS-Evaluationen recherchiert.
             </div>
           )}
         </CardContent>
@@ -929,29 +962,45 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
           <div className="grid gap-4 md:grid-cols-3 text-sm">
             <div>
               <p className="text-muted-foreground">Erstellt am</p>
-              <p>{technology.createdAt ? new Date(technology.createdAt).toLocaleDateString('de-DE') : '-'}</p>
+              <p>
+                {technology.createdAt
+                  ? new Date(technology.createdAt).toLocaleDateString('de-DE')
+                  : '-'}
+              </p>
             </div>
             <div>
               <p className="text-muted-foreground">Aktualisiert am</p>
-              <p>{technology.updatedAt ? new Date(technology.updatedAt).toLocaleDateString('de-DE') : '-'}</p>
+              <p>
+                {technology.updatedAt
+                  ? new Date(technology.updatedAt).toLocaleDateString('de-DE')
+                  : '-'}
+              </p>
             </div>
             <div>
               <p className="text-muted-foreground">Letzte AI-Recherche</p>
-              <p>{technology.lastResearchedAt ? new Date(technology.lastResearchedAt).toLocaleDateString('de-DE') : '-'}</p>
+              <p>
+                {technology.lastResearchedAt
+                  ? new Date(technology.lastResearchedAt).toLocaleDateString('de-DE')
+                  : '-'}
+              </p>
             </div>
             <div>
               <p className="text-muted-foreground">Recherche-Status</p>
               {technology.researchStatus ? (
                 <Badge
                   variant={
-                    technology.researchStatus === 'completed' ? 'default' :
-                    technology.researchStatus === 'pending' ? 'secondary' :
-                    'destructive'
+                    technology.researchStatus === 'completed'
+                      ? 'default'
+                      : technology.researchStatus === 'pending'
+                        ? 'secondary'
+                        : 'destructive'
                   }
                 >
-                  {technology.researchStatus === 'completed' ? 'Abgeschlossen' :
-                   technology.researchStatus === 'pending' ? 'Läuft...' :
-                   'Fehlgeschlagen'}
+                  {technology.researchStatus === 'completed'
+                    ? 'Abgeschlossen'
+                    : technology.researchStatus === 'pending'
+                      ? 'Läuft...'
+                      : 'Fehlgeschlagen'}
                 </Badge>
               ) : (
                 <span>-</span>

@@ -62,9 +62,7 @@ export default function UsersPage() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Benutzerverwaltung</h1>
-          <p className="text-muted-foreground">
-            Verwalten Sie Benutzerkonten und Rollen
-          </p>
+          <p className="text-muted-foreground">Verwalten Sie Benutzerkonten und Rollen</p>
         </div>
 
         {!allUsers || allUsers.length === 0 ? (
@@ -73,12 +71,20 @@ export default function UsersPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {allUsers.map((user) => (
+            {allUsers.map(user => (
               <Card key={user.id}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-lg font-medium">{user.name}</CardTitle>
                   <div className="flex items-center gap-2">
-                    <Badge variant={user.role === 'admin' ? 'default' : user.role === 'bl' ? 'secondary' : 'outline'}>
+                    <Badge
+                      variant={
+                        user.role === 'admin'
+                          ? 'default'
+                          : user.role === 'bl'
+                            ? 'secondary'
+                            : 'outline'
+                      }
+                    >
                       {user.role.toUpperCase()}
                     </Badge>
                     {user.id !== currentUserId && (
@@ -100,7 +106,9 @@ export default function UsersPage() {
                   <div>
                     <span className="text-muted-foreground">Erstellt am:</span>
                     <p className="font-medium">
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString('de-DE') : 'N/A'}
+                      {user.createdAt
+                        ? new Date(user.createdAt).toLocaleDateString('de-DE')
+                        : 'N/A'}
                     </p>
                   </div>
                   {user.id !== currentUserId && (
@@ -108,7 +116,7 @@ export default function UsersPage() {
                       <span className="text-muted-foreground">Rolle ändern:</span>
                       <select
                         value={user.role}
-                        onChange={(e) => handleRoleChange(user.id, e.target.value as any)}
+                        onChange={e => handleRoleChange(user.id, e.target.value as any)}
                         className="rounded-md border border-input bg-background px-3 py-1 text-sm"
                       >
                         <option value="bd">BD</option>

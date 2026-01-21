@@ -42,13 +42,8 @@ export function BusinessUnitList({ businessUnits }: BusinessUnitListProps) {
   if (!businessUnits || businessUnits.length === 0) {
     return (
       <div className="text-center py-12 rounded-lg border bg-card">
-        <p className="text-muted-foreground mb-4">
-          Noch keine Business Units erfasst
-        </p>
-        <a
-          href="/admin/business-units/new"
-          className="text-primary hover:underline"
-        >
+        <p className="text-muted-foreground mb-4">Noch keine Business Units erfasst</p>
+        <a href="/admin/business-units/new" className="text-primary hover:underline">
           Erste Business Unit erstellen →
         </a>
       </div>
@@ -57,7 +52,7 @@ export function BusinessUnitList({ businessUnits }: BusinessUnitListProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {businessUnits.map((bu) => {
+      {businessUnits.map(bu => {
         const keywords = JSON.parse(bu.keywords || '[]');
 
         return (
@@ -95,7 +90,8 @@ export function BusinessUnitList({ businessUnits }: BusinessUnitListProps) {
               </div>
 
               <div className="text-xs text-muted-foreground pt-2 border-t">
-                Erstellt: {bu.createdAt ? new Date(bu.createdAt).toLocaleDateString('de-DE') : 'N/A'}
+                Erstellt:{' '}
+                {bu.createdAt ? new Date(bu.createdAt).toLocaleDateString('de-DE') : 'N/A'}
               </div>
             </div>
           </div>

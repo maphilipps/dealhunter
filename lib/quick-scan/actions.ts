@@ -25,11 +25,7 @@ export async function startQuickScan(bidId: string) {
 
   try {
     // Get the bid opportunity
-    const [bid] = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -40,15 +36,13 @@ export async function startQuickScan(bidId: string) {
     }
 
     // Parse extracted requirements
-    const extractedReqs = bid.extractedRequirements
-      ? JSON.parse(bid.extractedRequirements)
-      : null;
+    const extractedReqs = bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null;
 
     // Determine website URL from extracted requirements or ask user
     // Prioritize websiteUrls array (primary source), fallback to legacy single URL
     const websiteUrl =
-      extractedReqs?.websiteUrls?.[0]?.url ||  // Primary: Array with type info
-      extractedReqs?.websiteUrl ||              // Legacy: Single URL field
+      extractedReqs?.websiteUrls?.[0]?.url || // Primary: Array with type info
+      extractedReqs?.websiteUrl || // Legacy: Single URL field
       null;
 
     if (!websiteUrl) {
@@ -110,11 +104,7 @@ export async function retriggerQuickScan(bidId: string) {
 
   try {
     // Get the bid opportunity
-    const [bid] = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -130,15 +120,13 @@ export async function retriggerQuickScan(bidId: string) {
     }
 
     // Parse extracted requirements
-    const extractedReqs = bid.extractedRequirements
-      ? JSON.parse(bid.extractedRequirements)
-      : null;
+    const extractedReqs = bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null;
 
     // Determine website URL from extracted requirements
     // Prioritize websiteUrls array (primary source), fallback to legacy single URL
     const websiteUrl =
-      extractedReqs?.websiteUrls?.[0]?.url ||  // Primary: Array with type info
-      extractedReqs?.websiteUrl ||              // Legacy: Single URL field
+      extractedReqs?.websiteUrls?.[0]?.url || // Primary: Array with type info
+      extractedReqs?.websiteUrl || // Legacy: Single URL field
       null;
 
     if (!websiteUrl) {
@@ -198,11 +186,7 @@ export async function getQuickScanResult(bidId: string) {
   }
 
   try {
-    const [bid] = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -237,17 +221,27 @@ export async function getQuickScanResult(bidId: string) {
         features: quickScan.features ? JSON.parse(quickScan.features) : null,
         activityLog: quickScan.activityLog ? JSON.parse(quickScan.activityLog) : [],
         // Enhanced audit fields
-        navigationStructure: quickScan.navigationStructure ? JSON.parse(quickScan.navigationStructure) : null,
-        accessibilityAudit: quickScan.accessibilityAudit ? JSON.parse(quickScan.accessibilityAudit) : null,
+        navigationStructure: quickScan.navigationStructure
+          ? JSON.parse(quickScan.navigationStructure)
+          : null,
+        accessibilityAudit: quickScan.accessibilityAudit
+          ? JSON.parse(quickScan.accessibilityAudit)
+          : null,
         seoAudit: quickScan.seoAudit ? JSON.parse(quickScan.seoAudit) : null,
         legalCompliance: quickScan.legalCompliance ? JSON.parse(quickScan.legalCompliance) : null,
-        performanceIndicators: quickScan.performanceIndicators ? JSON.parse(quickScan.performanceIndicators) : null,
+        performanceIndicators: quickScan.performanceIndicators
+          ? JSON.parse(quickScan.performanceIndicators)
+          : null,
         screenshots: quickScan.screenshots ? JSON.parse(quickScan.screenshots) : null,
-        companyIntelligence: quickScan.companyIntelligence ? JSON.parse(quickScan.companyIntelligence) : null,
+        companyIntelligence: quickScan.companyIntelligence
+          ? JSON.parse(quickScan.companyIntelligence)
+          : null,
         // QuickScan 2.0 fields
         siteTree: quickScan.siteTree ? JSON.parse(quickScan.siteTree) : null,
         contentTypes: quickScan.contentTypes ? JSON.parse(quickScan.contentTypes) : null,
-        migrationComplexity: quickScan.migrationComplexity ? JSON.parse(quickScan.migrationComplexity) : null,
+        migrationComplexity: quickScan.migrationComplexity
+          ? JSON.parse(quickScan.migrationComplexity)
+          : null,
         decisionMakers: quickScan.decisionMakers ? JSON.parse(quickScan.decisionMakers) : null,
         // Raw data for debugging
         rawScanData: quickScan.rawScanData ? JSON.parse(quickScan.rawScanData) : null,

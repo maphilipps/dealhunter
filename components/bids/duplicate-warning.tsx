@@ -29,23 +29,29 @@ export function DuplicateWarning({ duplicateCheck, onDismiss }: DuplicateWarning
   };
 
   return (
-    <Alert variant={hasExactMatches ? 'destructive' : 'default'} className={hasExactMatches ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20'}>
-      <AlertTriangle className={`h-4 w-4 ${hasExactMatches ? 'text-red-600' : 'text-yellow-600'}`} />
+    <Alert
+      variant={hasExactMatches ? 'destructive' : 'default'}
+      className={
+        hasExactMatches
+          ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
+          : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20'
+      }
+    >
+      <AlertTriangle
+        className={`h-4 w-4 ${hasExactMatches ? 'text-red-600' : 'text-yellow-600'}`}
+      />
       <AlertTitle className="flex items-center justify-between">
         <span>{hasExactMatches ? 'Mögliche Duplikate gefunden!' : 'Ähnliche RFPs gefunden'}</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleDismiss}
-          className="h-6 w-6 p-0"
-        >
+        <Button variant="ghost" size="sm" onClick={handleDismiss} className="h-6 w-6 p-0">
           <X className="h-4 w-4" />
         </Button>
       </AlertTitle>
       <AlertDescription className="mt-2">
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <div className="flex items-center justify-between mb-2">
-            <p className={`text-sm ${hasExactMatches ? 'text-red-700 dark:text-red-300' : 'text-yellow-700 dark:text-yellow-300'}`}>
+            <p
+              className={`text-sm ${hasExactMatches ? 'text-red-700 dark:text-red-300' : 'text-yellow-700 dark:text-yellow-300'}`}
+            >
               {hasExactMatches
                 ? `${duplicateCheck.exactMatches.length} exakte Übereinstimmung${duplicateCheck.exactMatches.length > 1 ? 'en' : ''} gefunden`
                 : `${duplicateCheck.similarMatches.length} ähnliche RFP${duplicateCheck.similarMatches.length > 1 ? 's' : ''} gefunden`}
@@ -70,7 +76,7 @@ export function DuplicateWarning({ duplicateCheck, onDismiss }: DuplicateWarning
                     Exakte Übereinstimmungen
                   </h4>
                   <ul className="space-y-2">
-                    {duplicateCheck.exactMatches.map((match) => (
+                    {duplicateCheck.exactMatches.map(match => (
                       <li
                         key={match.rfpId}
                         className="flex items-start justify-between p-2 rounded-md bg-red-100 dark:bg-red-900/30 text-sm"
@@ -82,7 +88,8 @@ export function DuplicateWarning({ duplicateCheck, onDismiss }: DuplicateWarning
                           </p>
                           {match.submissionDeadline && (
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              Deadline: {new Date(match.submissionDeadline).toLocaleDateString('de-DE')}
+                              Deadline:{' '}
+                              {new Date(match.submissionDeadline).toLocaleDateString('de-DE')}
                             </p>
                           )}
                         </div>
@@ -107,7 +114,7 @@ export function DuplicateWarning({ duplicateCheck, onDismiss }: DuplicateWarning
                     Ähnliche RFPs
                   </h4>
                   <ul className="space-y-2">
-                    {duplicateCheck.similarMatches.map((match) => (
+                    {duplicateCheck.similarMatches.map(match => (
                       <li
                         key={match.rfpId}
                         className="flex items-start justify-between p-2 rounded-md bg-yellow-100 dark:bg-yellow-900/30 text-sm"
@@ -122,7 +129,8 @@ export function DuplicateWarning({ duplicateCheck, onDismiss }: DuplicateWarning
                           </p>
                           {match.submissionDeadline && (
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              Deadline: {new Date(match.submissionDeadline).toLocaleDateString('de-DE')}
+                              Deadline:{' '}
+                              {new Date(match.submissionDeadline).toLocaleDateString('de-DE')}
                             </p>
                           )}
                         </div>
@@ -141,7 +149,8 @@ export function DuplicateWarning({ duplicateCheck, onDismiss }: DuplicateWarning
               )}
 
               <p className="text-xs text-muted-foreground mt-3">
-                Bitte prüfen Sie, ob es sich um ein Duplikat handelt. Sie können trotzdem fortfahren.
+                Bitte prüfen Sie, ob es sich um ein Duplikat handelt. Sie können trotzdem
+                fortfahren.
               </p>
             </div>
           </CollapsibleContent>

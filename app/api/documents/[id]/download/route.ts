@@ -4,10 +4,7 @@ import { db } from '@/lib/db';
 import { documents, rfps } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -25,10 +22,12 @@ export async function GET(
       })
       .from(documents)
       .innerJoin(rfps, eq(documents.rfpId, rfps.id))
-      .where(and(
-        eq(documents.id, documentId),
-        eq(rfps.userId, session.user.id) // Ensure user owns this bid
-      ))
+      .where(
+        and(
+          eq(documents.id, documentId),
+          eq(rfps.userId, session.user.id) // Ensure user owns this bid
+        )
+      )
       .limit(1);
 
     if (!doc) {

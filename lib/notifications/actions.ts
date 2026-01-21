@@ -4,7 +4,11 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, businessUnits, employees } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { sendTeamNotificationEmails, type TeamMemberNotification, type TeamNotificationResult } from './email';
+import {
+  sendTeamNotificationEmails,
+  type TeamMemberNotification,
+  type TeamNotificationResult,
+} from './email';
 import type { ProjectPlan } from '@/lib/project-planning/schema';
 
 export interface SendTeamNotificationsResult {
@@ -36,11 +40,7 @@ export async function sendTeamNotifications(bidId: string): Promise<SendTeamNoti
   }
 
   // Get bid with all needed data
-  const [bid] = await db
-    .select()
-    .from(rfps)
-    .where(eq(rfps.id, bidId))
-    .limit(1);
+  const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
   if (!bid) {
     return { success: false, error: 'Bid nicht gefunden' };
@@ -122,7 +122,9 @@ export async function sendTeamNotifications(bidId: string): Promise<SendTeamNoti
   }
 
   // Get project plan summary if available
-  let projectPlanSummary: { totalWeeks: number; totalHours: number; startPhase: string } | undefined;
+  let projectPlanSummary:
+    | { totalWeeks: number; totalHours: number; startPhase: string }
+    | undefined;
   if (bid.projectPlanningResult) {
     try {
       const plan: ProjectPlan = JSON.parse(bid.projectPlanningResult);

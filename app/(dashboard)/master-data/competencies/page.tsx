@@ -1,5 +1,5 @@
-import { getUserCompetencies } from "@/lib/master-data/actions";
-import { Button } from "@/components/ui/button";
+import { getUserCompetencies } from '@/lib/master-data/actions';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -7,9 +7,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 export default async function CompetenciesPage() {
   const competencies = await getUserCompetencies();
@@ -46,7 +46,7 @@ export default async function CompetenciesPage() {
               </TableCell>
             </TableRow>
           ) : (
-            competencies.map((comp) => (
+            competencies.map(comp => (
               <TableRow key={comp.id}>
                 <TableCell className="font-medium">{comp.name}</TableCell>
                 <TableCell>
@@ -63,8 +63,8 @@ export default async function CompetenciesPage() {
                       comp.level === 'expert'
                         ? 'default'
                         : comp.level === 'advanced'
-                        ? 'secondary'
-                        : 'outline'
+                          ? 'secondary'
+                          : 'outline'
                     }
                   >
                     {comp.level === 'basic' && 'Basis'}
@@ -78,8 +78,8 @@ export default async function CompetenciesPage() {
                       comp.status === 'approved'
                         ? 'default'
                         : comp.status === 'rejected'
-                        ? 'destructive'
-                        : 'secondary'
+                          ? 'destructive'
+                          : 'secondary'
                     }
                   >
                     {comp.status === 'pending' && 'Ausstehend'}
@@ -89,9 +89,7 @@ export default async function CompetenciesPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {comp.createdAt
-                    ? new Date(comp.createdAt).toLocaleDateString('de-DE')
-                    : '-'}
+                  {comp.createdAt ? new Date(comp.createdAt).toLocaleDateString('de-DE') : '-'}
                 </TableCell>
               </TableRow>
             ))

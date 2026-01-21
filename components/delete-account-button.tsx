@@ -52,16 +52,21 @@ export function DeleteAccountButton({ accountId, accountName }: Props) {
         <AlertDialogHeader>
           <AlertDialogTitle>Account wirklich löschen?</AlertDialogTitle>
           <AlertDialogDescription>
-            Möchten Sie den Account &quot;{accountName}&quot; wirklich löschen? Diese Aktion kann nicht rückgängig
-            gemacht werden.
+            Möchten Sie den Account &quot;{accountName}&quot; wirklich löschen? Diese Aktion kann
+            nicht rückgängig gemacht werden.
             <br />
             <br />
-            <strong>Hinweis:</strong> Accounts mit verknüpften Opportunities können nicht gelöscht werden.
+            <strong>Hinweis:</strong> Accounts mit verknüpften Opportunities können nicht gelöscht
+            werden.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <AlertDialogAction
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
             {isDeleting ? 'Wird gelöscht...' : 'Jetzt löschen'}
           </AlertDialogAction>
         </AlertDialogFooter>

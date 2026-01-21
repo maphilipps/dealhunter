@@ -22,7 +22,7 @@ function KeywordInput({ keywords, setKeywords }: KeywordInputProps) {
   };
 
   const handleRemoveKeyword = (keyword: string) => {
-    setKeywords(keywords.filter((k) => k !== keyword));
+    setKeywords(keywords.filter(k => k !== keyword));
   };
 
   return (
@@ -31,8 +31,8 @@ function KeywordInput({ keywords, setKeywords }: KeywordInputProps) {
         <input
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleAddKeyword()}
+          onChange={e => setInput(e.target.value)}
+          onKeyPress={e => e.key === 'Enter' && handleAddKeyword()}
           placeholder="Keyword eingeben"
           className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
@@ -48,7 +48,7 @@ function KeywordInput({ keywords, setKeywords }: KeywordInputProps) {
 
       {keywords.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {keywords.map((keyword) => (
+          {keywords.map(keyword => (
             <span
               key={keyword}
               className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm"
@@ -120,7 +120,7 @@ export function BusinessUnitForm() {
           id="name"
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={e => setName(e.target.value)}
           placeholder="z.B. Public Sector"
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
@@ -135,7 +135,7 @@ export function BusinessUnitForm() {
             id="leaderName"
             type="text"
             value={leaderName}
-            onChange={(e) => setLeaderName(e.target.value)}
+            onChange={e => setLeaderName(e.target.value)}
             placeholder="Vor- und Nachname"
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
@@ -149,7 +149,7 @@ export function BusinessUnitForm() {
             id="leaderEmail"
             type="email"
             value={leaderEmail}
-            onChange={(e) => setLeaderEmail(e.target.value)}
+            onChange={e => setLeaderEmail(e.target.value)}
             placeholder="email@example.com"
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
@@ -157,9 +157,7 @@ export function BusinessUnitForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">
-          Keywords für NLP-Matching *
-        </label>
+        <label className="block text-sm font-medium mb-2">Keywords für NLP-Matching *</label>
         <p className="text-xs text-muted-foreground mb-2">
           Fügen Sie Keywords hinzu, die für die automatische Zuordnung von Bids verwendet werden
         </p>
@@ -185,9 +183,7 @@ export function BusinessUnitForm() {
               Wird gespeichert...
             </>
           ) : (
-            <>
-              Speichern
-            </>
+            <>Speichern</>
           )}
         </button>
       </div>

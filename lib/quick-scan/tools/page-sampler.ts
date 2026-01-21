@@ -102,7 +102,7 @@ function getPathSegments(url: string): string[] {
     const parsed = new URL(url);
     return parsed.pathname
       .split('/')
-      .filter((segment) => segment.length > 0 && !segment.match(/\.(html?|php|aspx?|jsp)$/i));
+      .filter(segment => segment.length > 0 && !segment.match(/\.(html?|php|aspx?|jsp)$/i));
   } catch {
     return [];
   }
@@ -279,7 +279,7 @@ export function selectDiversePages(
     const targetCount = category.targetCount;
 
     for (let i = 0; i < targetCount && selectedUrls.length < count; i++) {
-      const availableUrls = categoryUrls.filter((u) => !usedUrls.has(u));
+      const availableUrls = categoryUrls.filter(u => !usedUrls.has(u));
       const bestUrl = selectBestUrl(availableUrls, selectedUrls);
 
       if (bestUrl) {
@@ -292,7 +292,7 @@ export function selectDiversePages(
 
   // Fill remaining slots with diverse URLs from uncategorized pool
   const uncategorizedUrls = urlsByCategory['uncategorized'];
-  const prefixMap = getUniquePathPrefixes(uncategorizedUrls.filter((u) => !usedUrls.has(u)));
+  const prefixMap = getUniquePathPrefixes(uncategorizedUrls.filter(u => !usedUrls.has(u)));
 
   // Sort prefixes by number of pages (more pages = more important section)
   const sortedPrefixes = Array.from(prefixMap.entries()).sort((a, b) => b[1].length - a[1].length);
@@ -300,7 +300,7 @@ export function selectDiversePages(
   for (const [, prefixUrls] of sortedPrefixes) {
     if (selectedUrls.length >= count) break;
 
-    const availableUrls = prefixUrls.filter((u) => !usedUrls.has(u));
+    const availableUrls = prefixUrls.filter(u => !usedUrls.has(u));
     const bestUrl = selectBestUrl(availableUrls, selectedUrls);
 
     if (bestUrl) {
@@ -311,7 +311,7 @@ export function selectDiversePages(
   }
 
   // If still not enough, add any remaining URLs by diversity
-  const remainingUrls = urls.filter((u) => !usedUrls.has(u));
+  const remainingUrls = urls.filter(u => !usedUrls.has(u));
   remainingUrls.sort(
     (a, b) => calculateDiversityScore(b, selectedUrls) - calculateDiversityScore(a, selectedUrls)
   );

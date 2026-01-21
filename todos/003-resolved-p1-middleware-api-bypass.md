@@ -20,12 +20,14 @@ The Next.js middleware authentication may not cover the Inngest webhook endpoint
 ## Findings
 
 **Security Agent Report:**
+
 - Inngest webhook at `/api/inngest` may not be covered by auth middleware
 - Need to verify middleware matcher configuration
 - API routes can bypass middleware if not explicitly included
 - Combined with unauthenticated webhook = critical vulnerability
 
 **Attack Scenarios:**
+
 1. Attacker bypasses middleware to access `/api/inngest` directly
 2. Even with signing key, if middleware missing, session checks don't apply
 3. Could trigger jobs for any user's bids without authentication
@@ -33,12 +35,15 @@ The Next.js middleware authentication may not cover the Inngest webhook endpoint
 ## Proposed Solutions
 
 ### Solution 1: Update Middleware Matcher (Recommended)
+
 **Pros:**
+
 - Ensures all API routes protected
 - Centralized auth logic
 - Prevents future bypass issues
 
 **Cons:**
+
 - Need to verify existing middleware config
 - May need to exempt Inngest webhook if using signing key
 
@@ -46,6 +51,7 @@ The Next.js middleware authentication may not cover the Inngest webhook endpoint
 **Risk**: Low
 
 **Implementation:**
+
 ```typescript
 // middleware.ts
 export const config = {
@@ -58,12 +64,15 @@ export const config = {
 ```
 
 ### Solution 2: Add Explicit Auth Check in Route
+
 **Pros:**
+
 - Defense in depth
 - Explicit security boundary
 - Independent of middleware
 
 **Cons:**
+
 - Duplicate auth logic
 - Easy to forget in new routes
 - Maintenance burden
@@ -72,11 +81,14 @@ export const config = {
 **Risk**: Medium (can be forgotten)
 
 ### Solution 3: Use Inngest Signing Key Only
+
 **Pros:**
+
 - Inngest-specific auth
 - No middleware dependency
 
 **Cons:**
+
 - Doesn't verify user session
 - Could trigger jobs for any bidId
 - No user-level access control
@@ -93,10 +105,12 @@ Update middleware matcher to cover all API routes, AND add explicit auth check i
 ## Technical Details
 
 **Affected Files:**
+
 - `middleware.ts` - Update matcher config
 - `app/api/inngest/route.ts` - Add bidId ownership verification
 
 **Implementation:**
+
 ```typescript
 // app/api/inngest/route.ts
 export const { GET, POST, PUT } = serve({
@@ -111,9 +125,7 @@ export const { GET, POST, PUT } = serve({
       const { bidId } = event.data;
 
       // Verify bidId exists and user has access
-      const [bid] = await db.select()
-        .from(bidOpportunities)
-        .where(eq(bidOpportunities.id, bidId));
+      const [bid] = await db.select().from(bidOpportunities).where(eq(bidOpportunities.id, bidId));
 
       if (!bid) {
         return new Response('Bid not found', { status: 404 });
@@ -139,24 +151,28 @@ export const { GET, POST, PUT } = serve({
 
 **What was found:**
 The middleware configuration was already correct:
+
 1. Matcher includes `/api/:path*` to ensure all API routes pass through middleware
 2. Inngest webhook properly exempted (it's called by Inngest service, not users)
 3. Signing key verification already implemented (INNGEST_SIGNING_KEY)
 4. User access control happens at trigger endpoints before events are sent
 
 **What was improved:**
+
 1. Enhanced middleware documentation explaining security model
 2. Added comprehensive security architecture comments to Inngest webhook
 3. Documented API route exemptions (Inngest, Slack, Auth, Submit)
 4. Clarified "defense in depth" approach where auth happens at multiple layers
 
 **Security Architecture:**
+
 - User-facing API routes have explicit auth checks (e.g., `/api/bids/[id]/evaluate/stream`)
 - Trigger endpoints verify authentication and ownership before sending events
 - Webhook endpoints use signature verification for service-to-service auth
 - This separates concerns: user auth at UI layer, service auth at webhook layer
 
 **Files Modified:**
+
 - `middleware.ts` - Enhanced documentation of matcher config and exemptions
 - `app/api/inngest/route.ts` - Added comprehensive security architecture comments
 

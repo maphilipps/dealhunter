@@ -13,19 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Search,
-  Loader2,
-  CheckCircle2,
-  Send,
-  ArrowRight,
-  Building2,
-  Sparkles
-} from 'lucide-react';
+import { Search, Loader2, CheckCircle2, Send, ArrowRight, Building2, Sparkles } from 'lucide-react';
 import type { QuickScan } from '@/lib/db/schema';
 import { getBusinessUnits } from '@/lib/admin/business-units-actions';
 import { forwardToBusinessLeader } from '@/lib/bids/actions';
-import { startCMSEvaluation, getCMSEvaluation, refreshCMSEvaluation, researchRequirement } from '@/lib/cms-matching/actions';
+import {
+  startCMSEvaluation,
+  getCMSEvaluation,
+  refreshCMSEvaluation,
+  researchRequirement,
+} from '@/lib/cms-matching/actions';
 import { CMSEvaluationMatrix } from '@/components/bids/cms-evaluation-matrix';
 import type { CMSMatchingResult } from '@/lib/cms-matching/schema';
 
@@ -54,7 +51,10 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
   const [selectedBU, setSelectedBU] = useState<string>('');
   const [isForwarding, setIsForwarding] = useState(false);
   const [forwarded, setForwarded] = useState(false);
-  const [forwardResult, setForwardResult] = useState<{ businessUnit: string; leaderName: string } | null>(null);
+  const [forwardResult, setForwardResult] = useState<{
+    businessUnit: string;
+    leaderName: string;
+  } | null>(null);
 
   // Load saved CMS Evaluation on mount
   useEffect(() => {
@@ -170,7 +170,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
         setForwarded(true);
         setForwardResult({
           businessUnit: result.businessUnit!,
-          leaderName: result.leaderName!
+          leaderName: result.leaderName!,
         });
         // Redirect to BL review page after 2 seconds
         setTimeout(() => {
@@ -219,14 +219,18 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
             <div className="flex items-center gap-6">
               <div className="flex-1">
                 <p className="text-sm text-violet-700 mb-1">Empfohlene Business Unit</p>
-                <p className="text-xl font-bold text-violet-900">{quickScan.recommendedBusinessUnit}</p>
+                <p className="text-xl font-bold text-violet-900">
+                  {quickScan.recommendedBusinessUnit}
+                </p>
               </div>
               {quickScan.confidence && (
                 <div className="w-32">
                   <p className="text-xs text-violet-600 mb-1">Confidence</p>
                   <div className="flex items-center gap-2">
                     <Progress value={quickScan.confidence} className="h-2" />
-                    <span className="text-sm font-medium text-violet-900">{quickScan.confidence}%</span>
+                    <span className="text-sm font-medium text-violet-900">
+                      {quickScan.confidence}%
+                    </span>
                   </div>
                 </div>
               )}
@@ -263,10 +267,14 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl font-semibold text-muted-foreground">n/a</span>
-                  <span className="text-sm text-muted-foreground">Noch keine Evaluation durchgeführt</span>
+                  <span className="text-sm text-muted-foreground">
+                    Noch keine Evaluation durchgeführt
+                  </span>
                 </div>
                 <Button
-                  onClick={() => { handleStartEvaluation(false); }}
+                  onClick={() => {
+                    handleStartEvaluation(false);
+                  }}
                   variant="outline"
                   size="sm"
                 >
@@ -283,7 +291,9 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
             <CardContent className="py-8 text-center">
               <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600 mb-4" />
               <p className="text-blue-700 font-medium">CMS-Evaluation läuft...</p>
-              <p className="text-sm text-blue-600">Anforderungen werden gegen CMS-Systeme gematched (mit Web Search)</p>
+              <p className="text-sm text-blue-600">
+                Anforderungen werden gegen CMS-Systeme gematched (mit Web Search)
+              </p>
             </CardContent>
           </Card>
         )}
@@ -293,13 +303,16 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
             {/* Metadata Info */}
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                Zuletzt evaluiert: {new Date(cmsEvaluation.metadata.matchedAt).toLocaleString('de-DE')}
+                Zuletzt evaluiert:{' '}
+                {new Date(cmsEvaluation.metadata.matchedAt).toLocaleString('de-DE')}
                 {cmsEvaluation.metadata.webSearchUsed && ' (mit Web Search)'}
               </p>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => { handleStartEvaluation(true); }}
+                onClick={() => {
+                  handleStartEvaluation(true);
+                }}
                 disabled={isEvaluating}
               >
                 {isEvaluating ? (
@@ -339,11 +352,10 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
           <Card className="border-green-500 bg-green-50">
             <CardContent className="py-8 text-center">
               <CheckCircle2 className="h-12 w-12 mx-auto text-green-600 mb-4" />
-              <h3 className="text-xl font-bold text-green-800 mb-2">
-                Weiterleitung erfolgreich!
-              </h3>
+              <h3 className="text-xl font-bold text-green-800 mb-2">Weiterleitung erfolgreich!</h3>
               <p className="text-green-700">
-                Die Anfrage wurde an <strong>{forwardResult?.leaderName}</strong> ({forwardResult?.businessUnit}) weitergeleitet.
+                Die Anfrage wurde an <strong>{forwardResult?.leaderName}</strong> (
+                {forwardResult?.businessUnit}) weitergeleitet.
               </p>
               <p className="text-sm text-green-600 mt-2">
                 Sie werden in Kürze zur BL-Übersicht weitergeleitet...
@@ -355,10 +367,13 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Send className="h-5 w-5 text-orange-600" />
-                <CardTitle className="text-lg text-orange-900">An Bereichsleiter weiterleiten</CardTitle>
+                <CardTitle className="text-lg text-orange-900">
+                  An Bereichsleiter weiterleiten
+                </CardTitle>
               </div>
               <CardDescription className="text-orange-700">
-                Wählen Sie die Business Unit aus und leiten Sie die Anfrage an den zuständigen Bereichsleiter weiter.
+                Wählen Sie die Business Unit aus und leiten Sie die Anfrage an den zuständigen
+                Bereichsleiter weiter.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -369,12 +384,14 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
                       <SelectValue placeholder="Business Unit auswählen..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {businessUnits.map((bu) => (
+                      {businessUnits.map(bu => (
                         <SelectItem key={bu.id} value={bu.id}>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{bu.name}</span>
                             {bu.name === quickScan.recommendedBusinessUnit && (
-                              <Badge variant="secondary" className="text-xs">Empfohlen</Badge>
+                              <Badge variant="secondary" className="text-xs">
+                                Empfohlen
+                              </Badge>
                             )}
                             <span className="text-muted-foreground text-xs">({bu.leaderName})</span>
                           </div>
@@ -406,7 +423,8 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
                 <p className="text-xs text-orange-600 mt-3 flex items-center gap-1">
                   <Sparkles className="h-3 w-3" />
                   AI empfiehlt: {quickScan.recommendedBusinessUnit}
-                  {businessUnits.find(bu => bu.id === selectedBU)?.name === quickScan.recommendedBusinessUnit
+                  {businessUnits.find(bu => bu.id === selectedBU)?.name ===
+                  quickScan.recommendedBusinessUnit
                     ? ' (ausgewählt)'
                     : ''}
                 </p>

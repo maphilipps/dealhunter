@@ -31,11 +31,11 @@ export interface EvaluationIssue {
 }
 
 export interface EvaluationResult {
-  qualityScore: number;         // 0-100
-  confidencesMet: boolean;      // All required fields have confidence >= threshold
-  completeness: number;         // 0-100, percentage of required fields filled
+  qualityScore: number; // 0-100
+  confidencesMet: boolean; // All required fields have confidence >= threshold
+  completeness: number; // 0-100, percentage of required fields filled
   issues: EvaluationIssue[];
-  canImprove: boolean;          // Has actionable improvements
+  canImprove: boolean; // Has actionable improvements
   summary: string;
 }
 
@@ -67,13 +67,15 @@ const evaluationResultZodSchema = z.object({
   qualityScore: z.number().min(0).max(100),
   confidencesMet: z.boolean(),
   completeness: z.number().min(0).max(100),
-  issues: z.array(z.object({
-    area: z.string(),
-    severity: z.enum(['critical', 'major', 'minor']),
-    description: z.string(),
-    suggestion: z.string(),
-    canAutoFix: z.boolean(),
-  })),
+  issues: z.array(
+    z.object({
+      area: z.string(),
+      severity: z.enum(['critical', 'major', 'minor']),
+      description: z.string(),
+      suggestion: z.string(),
+      canAutoFix: z.boolean(),
+    })
+  ),
   canImprove: z.boolean(),
   summary: z.string(),
 });
@@ -92,7 +94,11 @@ export const QUICKSCAN_EVALUATION_SCHEMA: EvaluationSchema = {
     { path: 'techStack.cms', minConfidence: 70, description: 'CMS Detection' },
     { path: 'contentVolume.estimatedPageCount', description: 'Page Count' },
     { path: 'features', description: 'Feature Detection' },
-    { path: 'blRecommendation.primaryBusinessLine', minConfidence: 60, description: 'BL Recommendation' },
+    {
+      path: 'blRecommendation.primaryBusinessLine',
+      minConfidence: 60,
+      description: 'BL Recommendation',
+    },
   ],
   optionalFields: [
     { path: 'techStack.cmsVersion', bonusPoints: 5, description: 'CMS Version' },
@@ -167,7 +173,10 @@ function isValueFilled(value: any): boolean {
 /**
  * Calculate basic quality metrics from results
  */
-function calculateBasicMetrics(results: Record<string, any>, schema: EvaluationSchema): {
+function calculateBasicMetrics(
+  results: Record<string, any>,
+  schema: EvaluationSchema
+): {
   filledRequired: number;
   totalRequired: number;
   filledOptional: number;
@@ -185,9 +194,11 @@ function calculateBasicMetrics(results: Record<string, any>, schema: EvaluationS
 
       // Check confidence if applicable
       if (field.minConfidence) {
-        const confidencePath = field.path.replace(/\.([^.]+)$/, '.confidence') || field.path + 'Confidence';
-        const confidence = getNestedValue(results, confidencePath) ||
-                          getNestedValue(results, field.path + 'Confidence');
+        const confidencePath =
+          field.path.replace(/\.([^.]+)$/, '.confidence') || field.path + 'Confidence';
+        const confidence =
+          getNestedValue(results, confidencePath) ||
+          getNestedValue(results, field.path + 'Confidence');
 
         if (confidence !== undefined && confidence < field.minConfidence) {
           confidenceIssues.push(`${field.description}: ${confidence}% < ${field.minConfidence}%`);
@@ -240,10 +251,11 @@ export async function evaluateResults(
 
   // Add bonus points for optional fields
   if (metrics.totalOptional > 0) {
-    const optionalBonus = schema.optionalFields?.reduce((sum, field) => {
-      const value = getNestedValue(results, field.path);
-      return sum + (isValueFilled(value) ? field.bonusPoints : 0);
-    }, 0) || 0;
+    const optionalBonus =
+      schema.optionalFields?.reduce((sum, field) => {
+        const value = getNestedValue(results, field.path);
+        return sum + (isValueFilled(value) ? field.bonusPoints : 0);
+      }, 0) || 0;
     baseScore = Math.min(100, baseScore + optionalBonus);
   }
 

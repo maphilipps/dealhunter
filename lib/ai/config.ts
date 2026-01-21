@@ -30,18 +30,16 @@ export const defaultSettings = {
 
 export type ModelKey = keyof typeof modelNames;
 
-export async function generateStructuredOutput<T extends z.ZodType>(
-  options: {
-    model?: ModelKey;
-    schema: T;
-    system: string;
-    prompt: string;
-    temperature?: number;
-    maxTokens?: number;
-  }
-): Promise<z.infer<T>> {
+export async function generateStructuredOutput<T extends z.ZodType>(options: {
+  model?: ModelKey;
+  schema: T;
+  system: string;
+  prompt: string;
+  temperature?: number;
+  maxTokens?: number;
+}): Promise<z.infer<T>> {
   const modelName = modelNames[options.model ?? 'default'];
-  
+
   const completion = await openai.chat.completions.create({
     model: modelName,
     messages: [

@@ -26,7 +26,7 @@ export function createAgentEventStream(
       const encoder = new TextEncoder();
 
       // Async emit function that ensures minimum delay between events
-      const emit: EventEmitter = (event) => {
+      const emit: EventEmitter = event => {
         const now = Date.now();
         const timeSinceLastEmit = now - lastEmitTime;
 

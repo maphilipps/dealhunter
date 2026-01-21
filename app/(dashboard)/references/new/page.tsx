@@ -10,7 +10,8 @@ export default async function NewReferencePage() {
       <div>
         <h1 className="text-3xl font-bold mb-2">Neue Referenz erstellen</h1>
         <p className="text-muted-foreground">
-          Füllen Sie die Details der Projekt-Referenz aus. Diese wird nach Erstellung von einem Admin validiert.
+          Füllen Sie die Details der Projekt-Referenz aus. Diese wird nach Erstellung von einem
+          Admin validiert.
         </p>
       </div>
 

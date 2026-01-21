@@ -155,17 +155,17 @@ Add custom CSS by creating `docs/.vitepress/theme/custom.css` and importing it i
 Use markdown tables for data:
 
 ```markdown
-| Entity | Count | Complexity |
-|--------|-------|-----------|
-| Content Types | 6 | Medium |
-| Paragraphs | 25 | Medium-High |
+| Entity        | Count | Complexity  |
+| ------------- | ----- | ----------- |
+| Content Types | 6     | Medium      |
+| Paragraphs    | 25    | Medium-High |
 ```
 
 ### Code Blocks
 
 Use syntax highlighting:
 
-```markdown
+````markdown
 ```php
 // Example Drupal code
 function example_hook_entity_view() {
@@ -173,6 +173,7 @@ function example_hook_entity_view() {
 }
 ` ``
 ```
+````
 
 ### Callouts
 

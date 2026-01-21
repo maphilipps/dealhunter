@@ -1,56 +1,60 @@
-import Link from "next/link"
-import { formatDistanceToNow } from "date-fns"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { StatusBadge } from "./status-badge"
-import { Badge } from "@/components/ui/badge"
-import { Building2, ChevronRight } from "lucide-react"
+import Link from 'next/link';
+import { formatDistanceToNow } from 'date-fns';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatusBadge } from './status-badge';
+import { Badge } from '@/components/ui/badge';
+import { Building2, ChevronRight } from 'lucide-react';
 
 export interface BidOpportunity {
-  id: string
-  status: string
-  decision: string
-  source: string
-  accountId?: string
-  accountName?: string
-  projectName?: string
-  createdAt: Date
-  extractedRequirements?: any
+  id: string;
+  status: string;
+  decision: string;
+  source: string;
+  accountId?: string;
+  accountName?: string;
+  projectName?: string;
+  createdAt: Date;
+  extractedRequirements?: any;
 }
 
 interface AccountGroup {
-  accountId: string | null
-  accountName: string
-  opportunities: BidOpportunity[]
+  accountId: string | null;
+  accountName: string;
+  opportunities: BidOpportunity[];
 }
 
 interface AccountGroupedListProps {
-  opportunities: BidOpportunity[]
+  opportunities: BidOpportunity[];
 }
 
 export function AccountGroupedList({ opportunities }: AccountGroupedListProps) {
   // Group opportunities by account
-  const grouped = opportunities.reduce((acc, opp) => {
-    const customerName = opp.accountName ||
-      (opp.extractedRequirements && JSON.parse(opp.extractedRequirements).customerName) ||
-      'Unknown Customer'
-    const accountId = opp.accountId || null
-    const key = accountId || customerName
+  const grouped = opportunities.reduce(
+    (acc, opp) => {
+      const customerName =
+        opp.accountName ||
+        (opp.extractedRequirements && JSON.parse(opp.extractedRequirements).customerName) ||
+        'Unknown Customer';
+      const accountId = opp.accountId || null;
+      const key = accountId || customerName;
 
-    if (!acc[key]) {
-      acc[key] = {
-        accountId,
-        accountName: customerName,
-        opportunities: []
+      if (!acc[key]) {
+        acc[key] = {
+          accountId,
+          accountName: customerName,
+          opportunities: [],
+        };
       }
-    }
 
-    acc[key].opportunities.push(opp)
-    return acc
-  }, {} as Record<string, AccountGroup>)
+      acc[key].opportunities.push(opp);
+      return acc;
+    },
+    {} as Record<string, AccountGroup>
+  );
 
   const accountGroups = Object.values(grouped).sort((a, b) =>
     a.accountName.localeCompare(b.accountName)
-  )
+  );
 
   if (accountGroups.length === 0) {
     return (
@@ -67,7 +71,7 @@ export function AccountGroupedList({ opportunities }: AccountGroupedListProps) {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -75,18 +79,20 @@ export function AccountGroupedList({ opportunities }: AccountGroupedListProps) {
       <CardHeader>
         <CardTitle>Accounts</CardTitle>
         <CardDescription>
-          {accountGroups.length} {accountGroups.length === 1 ? 'customer' : 'customers'} with opportunities
+          {accountGroups.length} {accountGroups.length === 1 ? 'customer' : 'customers'} with
+          opportunities
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {accountGroups.map((group) => (
+        {accountGroups.map(group => (
           <div key={group.accountId || group.accountName} className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-muted-foreground" />
                 <h3 className="font-semibold">{group.accountName}</h3>
                 <Badge variant="outline" className="ml-2">
-                  {group.opportunities.length} {group.opportunities.length === 1 ? 'opportunity' : 'opportunities'}
+                  {group.opportunities.length}{' '}
+                  {group.opportunities.length === 1 ? 'opportunity' : 'opportunities'}
                 </Badge>
               </div>
               {group.accountId && (
@@ -100,10 +106,12 @@ export function AccountGroupedList({ opportunities }: AccountGroupedListProps) {
             </div>
 
             <div className="space-y-2 pl-6">
-              {group.opportunities.map((opp) => {
-                const projectName = opp.projectName ||
-                  (opp.extractedRequirements && JSON.parse(opp.extractedRequirements).projectDescription) ||
-                  'Untitled Project'
+              {group.opportunities.map(opp => {
+                const projectName =
+                  opp.projectName ||
+                  (opp.extractedRequirements &&
+                    JSON.parse(opp.extractedRequirements).projectDescription) ||
+                  'Untitled Project';
 
                 return (
                   <Link
@@ -121,11 +129,15 @@ export function AccountGroupedList({ opportunities }: AccountGroupedListProps) {
                           {opp.source}
                         </Badge>
                         <span>•</span>
-                        <span>{formatDistanceToNow(new Date(opp.createdAt), { addSuffix: true })}</span>
+                        <span>
+                          {formatDistanceToNow(new Date(opp.createdAt), { addSuffix: true })}
+                        </span>
                         {opp.decision !== 'pending' && (
                           <>
                             <span>•</span>
-                            <span className={opp.decision === 'bid' ? 'text-green-600' : 'text-red-600'}>
+                            <span
+                              className={opp.decision === 'bid' ? 'text-green-600' : 'text-red-600'}
+                            >
                               {opp.decision === 'bid' ? 'Bid' : 'No Bid'}
                             </span>
                           </>
@@ -134,12 +146,12 @@ export function AccountGroupedList({ opportunities }: AccountGroupedListProps) {
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </Link>
-                )
+                );
               })}
             </div>
           </div>
         ))}
       </CardContent>
     </Card>
-  )
+  );
 }

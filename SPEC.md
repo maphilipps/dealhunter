@@ -5,6 +5,7 @@
 Dealhunter ist eine KI-gestützte **End-to-End Business Development Plattform** für adesso. Sie automatisiert den gesamten Akquise-Prozess: von der Anforderungsaufnahme über die **Bid/No Bid Entscheidung** bis zur **Team-Zusammenstellung** - inklusive umfassender Unternehmensanalyse (Tech Stack, Digital Maturity, Leadership, Valuation).
 
 **Der Kern-Flow (Francesco's Vision):**
+
 ```
 Anforderung hochladen → AI-Extraktion → Bid/No Bid Entscheidung →
 Routing an Bereichsleiter → Erweiterte Auswertung → Team zusammenstellen →
@@ -14,12 +15,14 @@ Team per E-Mail benachrichtigen
 ## Tech Stack
 
 ### AI Foundation: Vercel AI SDK
+
 - **Core**: `ai` Package für LLM-Interaktion, Tool-Calling, Agents
 - **UI**: `@ai-sdk/react` für Streaming-UIs, useChat, useObject
 - **Provider**: `@ai-sdk/anthropic` für Claude Opus 4.5
 - **Structured Output**: Zod-Schemas für type-safe AI-Responses
 
 ### Frontend
+
 - **Framework**: Next.js 15+ (App Router)
 - **UI Library**: ShadCN UI (vollständig)
 - **Styling**: Tailwind CSS v4
@@ -27,6 +30,7 @@ Team per E-Mail benachrichtigen
 - **Data Viz**: Recharts
 
 ### Backend
+
 - **Runtime**: Node.js + TypeScript
 - **Database**: PostgreSQL (Drizzle ORM)
 - **Queue**: BullMQ für Background Jobs
@@ -35,6 +39,7 @@ Team per E-Mail benachrichtigen
 ## Background
 
 Das BD-Team bei adesso Digital Experience:
+
 1. **Erhält Kundenanfragen** (RFPs, E-Mails, CRM-Leads) in verschiedenen Formaten
 2. **Muss entscheiden**: Bieten wir an? ("Bid or No Bid")
 3. **Muss routen**: Welcher Bereichsleiter ist zuständig?
@@ -173,29 +178,31 @@ draft → extracting → quick_scanning → evaluating → bid_decided
 
 ### Agents (10 Total)
 
-| Phase | Agent | Funktion |
-|-------|-------|----------|
-| 1 | Duplicate-Check | Prüft auf existierende RFPs |
-| 1 | Extraction | PDF/Email/Text → Strukturierte Daten |
-| 1 | Quick-Scan | Website-Crawl (schnell) |
-| 1 | Timeline | Projekt-Phasen schätzen |
-| 1 | Routing | BU-Empfehlung |
-| 2 | Full-Scan | Umfassender Website-Audit |
-| 2 | Contract | Vertragstyp + Risiken |
-| 2 | Legal | Compliance-Review |
-| 2 | Decision | Coordinator: Bid/No-Bid + Tree |
-| 3 | Staffing | Skill-Match + Team-Vorschlag |
+| Phase | Agent           | Funktion                             |
+| ----- | --------------- | ------------------------------------ |
+| 1     | Duplicate-Check | Prüft auf existierende RFPs          |
+| 1     | Extraction      | PDF/Email/Text → Strukturierte Daten |
+| 1     | Quick-Scan      | Website-Crawl (schnell)              |
+| 1     | Timeline        | Projekt-Phasen schätzen              |
+| 1     | Routing         | BU-Empfehlung                        |
+| 2     | Full-Scan       | Umfassender Website-Audit            |
+| 2     | Contract        | Vertragstyp + Risiken                |
+| 2     | Legal           | Compliance-Review                    |
+| 2     | Decision        | Coordinator: Bid/No-Bid + Tree       |
+| 3     | Staffing        | Skill-Match + Team-Vorschlag         |
 
 ---
 
 ## User Stories
 
 ### BD Manager
+
 - Als **BD Manager** möchte ich Anforderungen hochladen (PDF, CRM, Freitext) und automatisch eine Bid/No Bid Empfehlung erhalten
 - Als **BD Manager** möchte ich den kompletten Pipeline-Status in Echtzeit sehen (volle Transparenz)
 - Als **BD Manager** möchte ich bei "No Bid" eine Alternative Empfehlung (anderer Bereich) erhalten
 
 ### Bereichsleiter (BL)
+
 - Als **Bereichsleiter** möchte ich automatisch über relevante Opportunities informiert werden
 - Als **Bereichsleiter** möchte ich eine erweiterte Auswertung mit Szenario-basierter Kalkulation sehen
 - Als **Bereichsleiter** möchte ich interaktiv in Details eintauchen können (Skills, Aufwand, Risiken)
@@ -203,6 +210,7 @@ draft → extracting → quick_scanning → evaluating → bid_decided
 - Als **Bereichsleiter** möchte ich das Team automatisch per E-Mail benachrichtigen lassen
 
 ### Administrator
+
 - Als **Administrator** möchte ich die BL-Struktur (Bereiche, Technologien, Zuständigkeiten) pflegen
 - Als **Administrator** möchte ich Mitarbeiter mit Skills anlegen und verwalten
 - Als **Administrator** möchte ich Analytics über Bid/No Bid Entscheidungen sehen
@@ -212,9 +220,11 @@ draft → extracting → quick_scanning → evaluating → bid_decided
 ## MVP Scope & Goals
 
 ### Vision Statement
+
 Dealhunter automatisiert den gesamten BD-Entscheidungsprozess bei adesso: Von der Anforderungsaufnahme zur Team-Benachrichtigung - AI-gestützt, transparent, und mit einer Bid/No Bid Genauigkeit als oberste Priorität.
 
 ### MVP Goals
+
 1. **Smart Upload**: Mixed-Format-Upload (PDF, CRM, Freitext) mit AI-Extraktion
 2. **Bid/No Bid Entscheidung**: Vollständige Bewertung (Capability, Deal Quality, Strategic Fit, Wettbewerb)
 3. **BL-Routing**: Automatische Weiterleitung an zuständigen Bereichsleiter
@@ -224,6 +234,7 @@ Dealhunter automatisiert den gesamten BD-Entscheidungsprozess bei adesso: Von de
 7. **Company Analysis**: Integrierte Unternehmensanalyse (Tech Stack, Leadership, etc.)
 
 ### Success Criteria
+
 - ✅ BD kann Anforderungen in beliebigem Format hochladen
 - ✅ Bid/No Bid Entscheidung in 10-30 Minuten
 - ✅ Automatisches Routing an korrekten Bereichsleiter
@@ -234,6 +245,7 @@ Dealhunter automatisiert den gesamten BD-Entscheidungsprozess bei adesso: Von de
 - ✅ Analytics Dashboard für Management
 
 ### Non-Goals (MVP)
+
 - ❌ Learning/Feedback-Loop (System lernt nicht aus Outcomes)
 - ❌ Mobile-Optimierung (Desktop Only)
 - ❌ Multi-BL Deals (Joint Bids)
@@ -248,6 +260,7 @@ Dealhunter automatisiert den gesamten BD-Entscheidungsprozess bei adesso: Von de
 ### 1. Smart Upload & AI-Extraktion
 
 **Input-Formate:**
+
 - PDF (Ausschreibungen, RFPs, RFIs)
 - CRM-Export (HubSpot, Salesforce)
 - Freie Textbeschreibung
@@ -256,6 +269,7 @@ Dealhunter automatisiert den gesamten BD-Entscheidungsprozess bei adesso: Von de
 #### Document Cleaning (DSGVO-Konformität)
 
 **Optionaler Schritt vor Verarbeitung:**
+
 - User kann "Dokument bereinigen" aktivieren
 - AI identifiziert und entfernt/anonymisiert:
   - Persönliche Daten (Namen, E-Mail, Telefon, Adressen)
@@ -263,25 +277,27 @@ Dealhunter automatisiert den gesamten BD-Entscheidungsprozess bei adesso: Von de
   - Vertrauliche Markierungen und Referenzen
 
 **Cleaning-Prozess:**
+
 ```typescript
 interface CleaningResult {
-  originalText: string
-  cleanedText: string
-  removedItems: RemovedItem[]
-  cleaningConfidence: number // 0-100
-  requiresManualReview: boolean
+  originalText: string;
+  cleanedText: string;
+  removedItems: RemovedItem[];
+  cleaningConfidence: number; // 0-100
+  requiresManualReview: boolean;
 }
 
 interface RemovedItem {
-  type: 'personal_name' | 'email' | 'phone' | 'address' | 'salary' | 'internal_code' | 'other'
-  original: string
-  replacement: string // z.B. "[NAME ENTFERNT]" oder "[ANONYMISIERT]"
-  position: { start: number, end: number }
-  confidence: number
+  type: 'personal_name' | 'email' | 'phone' | 'address' | 'salary' | 'internal_code' | 'other';
+  original: string;
+  replacement: string; // z.B. "[NAME ENTFERNT]" oder "[ANONYMISIERT]"
+  position: { start: number; end: number };
+  confidence: number;
 }
 ```
 
 **UX-Flow mit Cleaning:**
+
 1. User lädt Dokument hoch
 2. User aktiviert optional "DSGVO-Bereinigung"
 3. AI scannt und markiert sensible Daten
@@ -290,27 +306,30 @@ interface RemovedItem {
 6. Bereinigtes Dokument wird weiterverarbeitet
 
 **Audit-Trail:**
+
 - Ursprüngliches Dokument wird NICHT gespeichert (wenn Cleaning aktiv)
 - Nur bereinigtes Dokument + Cleaning-Log
 - Log zeigt WAS entfernt wurde (Typ, nicht Inhalt)
 
 **AI-Extraktion:**
+
 ```typescript
 interface ExtractedRequirements {
-  customerName: string
-  projectDescription: string
-  technologies: string[]
-  budget?: { min: number, max: number, currency: string }
-  timeline?: string
-  scope: string[]
-  keyRequirements: string[]
-  rawInput: string
-  confidence: number // 0-100
-  source: 'pdf' | 'crm' | 'freetext' | 'email'
+  customerName: string;
+  projectDescription: string;
+  technologies: string[];
+  budget?: { min: number; max: number; currency: string };
+  timeline?: string;
+  scope: string[];
+  keyRequirements: string[];
+  rawInput: string;
+  confidence: number; // 0-100
+  source: 'pdf' | 'crm' | 'freetext' | 'email';
 }
 ```
 
 **UX-Flow:**
+
 1. User lädt Dokument hoch oder gibt Text ein
 2. AI extrahiert strukturierte Daten
 3. User bestätigt/korrigiert extrahierte Daten
@@ -319,6 +338,7 @@ interface ExtractedRequirements {
 ### 2. Bid/No Bid Entscheidung & BD-Bewertung
 
 **Document Upload & AI-Extraktion:**
+
 - **PDF + Text Upload**: BD kann Ausschreibungsdokumente (PDF) direkt hochladen
 - **AI-Analyse**: System extrahiert strukturiert alle relevanten Informationen
 - **Nur extrahierte Daten**: Original-PDFs werden NICHT dauerhaft gespeichert
@@ -326,117 +346,124 @@ interface ExtractedRequirements {
 
 **Bewertungskategorien (Qualitativ, kein numerisches Scoring):**
 
-| Kategorie | Aspekte | Agent |
-|-----------|---------|-------|
-| **Technisch** | Tech-Anforderungen, Komplexität, adesso-Kompetenzen | Tech Agent |
-| **Rechtlich** | Vertragsrisiken, Haftung, Compliance | Legal Agent |
-| **Kommerziell** | Budget, Marge, Wirtschaftlichkeit | Commercial Agent |
-| **Organisatorisch** | Kapazität, Team, Timeline | Org Agent |
-| **Wettbewerb** | Bekannte Mitbieter, Win-Wahrscheinlichkeit | Competition Agent |
+| Kategorie           | Aspekte                                             | Agent             |
+| ------------------- | --------------------------------------------------- | ----------------- |
+| **Technisch**       | Tech-Anforderungen, Komplexität, adesso-Kompetenzen | Tech Agent        |
+| **Rechtlich**       | Vertragsrisiken, Haftung, Compliance                | Legal Agent       |
+| **Kommerziell**     | Budget, Marge, Wirtschaftlichkeit                   | Commercial Agent  |
+| **Organisatorisch** | Kapazität, Team, Timeline                           | Org Agent         |
+| **Wettbewerb**      | Bekannte Mitbieter, Win-Wahrscheinlichkeit          | Competition Agent |
 
 **Vertragstyp-Erkennung & Risikobewertung:**
+
 ```typescript
 interface ContractAnalysis {
-  contractType: 'evb_it' | 'werkvertrag' | 'dienstvertrag' | 'rahmenvertrag' | 'sla' | 'unknown'
-  riskLevel: 'low' | 'medium' | 'high'
-  riskFactors: string[]           // z.B. "Unbegrenzte Haftung", "Pönalen >10%"
-  recommendations: string[]       // Empfehlungen zur Risikominimierung
+  contractType: 'evb_it' | 'werkvertrag' | 'dienstvertrag' | 'rahmenvertrag' | 'sla' | 'unknown';
+  riskLevel: 'low' | 'medium' | 'high';
+  riskFactors: string[]; // z.B. "Unbegrenzte Haftung", "Pönalen >10%"
+  recommendations: string[]; // Empfehlungen zur Risikominimierung
 }
 ```
 
 **Zuschlagskriterien Deep Analysis:**
+
 ```typescript
 interface AwardCriteriaAnalysis {
-  priceWeight: number             // % Gewichtung Preis
-  qualityWeight: number           // % Gewichtung Qualität/Leistung
-  criteria: AwardCriterion[]
+  priceWeight: number; // % Gewichtung Preis
+  qualityWeight: number; // % Gewichtung Qualität/Leistung
+  criteria: AwardCriterion[];
   adessoStrengthMatch: {
-    criterion: string
-    matchScore: 'strong' | 'moderate' | 'weak'
-    reasoning: string
-  }[]
-  overallFit: 'excellent' | 'good' | 'moderate' | 'poor'
-  recommendation: string
+    criterion: string;
+    matchScore: 'strong' | 'moderate' | 'weak';
+    reasoning: string;
+  }[];
+  overallFit: 'excellent' | 'good' | 'moderate' | 'poor';
+  recommendation: string;
 }
 
 interface AwardCriterion {
-  name: string
-  weight: number
-  subCriteria?: string[]
+  name: string;
+  weight: number;
+  subCriteria?: string[];
 }
 ```
 
 **Red Flag Detection (Automatisch):**
+
 ```typescript
 interface RedFlagAnalysis {
-  budgetRedFlags: RedFlag[]       // z.B. "Budget 50% unter Marktdurchschnitt"
-  timelineRedFlags: RedFlag[]     // z.B. "Go-Live in 6 Wochen unrealistisch"
-  legalRedFlags: RedFlag[]        // z.B. "Unbegrenzte Haftungsklausel"
-  technicalRedFlags: RedFlag[]    // z.B. "Legacy-Integration ohne API"
+  budgetRedFlags: RedFlag[]; // z.B. "Budget 50% unter Marktdurchschnitt"
+  timelineRedFlags: RedFlag[]; // z.B. "Go-Live in 6 Wochen unrealistisch"
+  legalRedFlags: RedFlag[]; // z.B. "Unbegrenzte Haftungsklausel"
+  technicalRedFlags: RedFlag[]; // z.B. "Legacy-Integration ohne API"
 }
 
 interface RedFlag {
-  type: string
-  severity: 'critical' | 'warning' | 'info'
-  description: string
-  recommendation: string
+  type: string;
+  severity: 'critical' | 'warning' | 'info';
+  description: string;
+  recommendation: string;
 }
 ```
 
 **Multi-Dimensionales Risiko-Assessment:**
+
 ```typescript
 interface RiskAssessment {
-  technical: RiskDimension
-  legal: RiskDimension
-  commercial: RiskDimension
-  organizational: RiskDimension
-  timeline: RiskDimension
+  technical: RiskDimension;
+  legal: RiskDimension;
+  commercial: RiskDimension;
+  organizational: RiskDimension;
+  timeline: RiskDimension;
 }
 
 interface RiskDimension {
-  risks: Risk[]
-  overallSeverity: 'low' | 'medium' | 'high' | 'critical'
+  risks: Risk[];
+  overallSeverity: 'low' | 'medium' | 'high' | 'critical';
 }
 
 interface Risk {
-  name: string
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  description: string
-  mitigation?: string
+  name: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  mitigation?: string;
 }
 ```
 
 **Entscheidungsbaum-Visualisierung:**
+
 - Finale Empfehlung als interaktiver Entscheidungsbaum (ShadCN-basiert)
 - Zeigt alle Faktoren die zur Empfehlung führen
 - Klickbare Nodes mit Details
 - Pro- und Contra-Argumente visuell aufbereitet
 
 **Output:**
+
 ```typescript
 interface BidDecision {
-  decision: 'bid' | 'no_bid'
-  confidence: number // 0-100
-  reasoning: string
-  decisionTree: DecisionNode       // Visualisierung
-  riskAssessment: RiskAssessment
-  awardCriteriaFit: AwardCriteriaAnalysis
-  contractAnalysis: ContractAnalysis
-  redFlags: RedFlagAnalysis
-  alternativeRecommendation?: string
+  decision: 'bid' | 'no_bid';
+  confidence: number; // 0-100
+  reasoning: string;
+  decisionTree: DecisionNode; // Visualisierung
+  riskAssessment: RiskAssessment;
+  awardCriteriaFit: AwardCriteriaAnalysis;
+  contractAnalysis: ContractAnalysis;
+  redFlags: RedFlagAnalysis;
+  alternativeRecommendation?: string;
 }
 
 interface DecisionNode {
-  id: string
-  label: string
-  type: 'factor' | 'decision' | 'recommendation'
-  value?: 'positive' | 'negative' | 'neutral'
-  children?: DecisionNode[]
-  details?: string
+  id: string;
+  label: string;
+  type: 'factor' | 'decision' | 'recommendation';
+  value?: 'positive' | 'negative' | 'neutral';
+  children?: DecisionNode[];
+  details?: string;
 }
 ```
 
 **Bei "No Bid":**
+
 - System prüft ob ein anderer Bereich besser passt
 - Gibt Alternative Empfehlung (z.B. "Könnte zu WEM passen")
 - Zeigt Entscheidungsbaum warum No Bid
@@ -445,46 +472,51 @@ interface DecisionNode {
 
 **Legal Agent Scope (zwei Ebenen):**
 
-| Ebene | Scope | Details |
-|-------|-------|---------|
+| Ebene        | Scope        | Details                                                                               |
+| ------------ | ------------ | ------------------------------------------------------------------------------------- |
 | **BD-Level** | Fokus Risiko | Kritische Red Flags: Unbegrenzte Haftung, unfaire Pönalen, problematische IP-Klauseln |
-| **BL-Level** | Umfassend | Vollständige Vertragsprüfung nach BL-Zuweisung |
+| **BL-Level** | Umfassend    | Vollständige Vertragsprüfung nach BL-Zuweisung                                        |
 
 **Legal Red Flags (BD-Level):**
+
 ```typescript
 interface LegalQuickCheck {
-  criticalFlags: LegalRedFlag[]
-  complianceHints: string[]       // Hinweise auf relevante Compliance-Themen
-  requiresDetailedReview: boolean
+  criticalFlags: LegalRedFlag[];
+  complianceHints: string[]; // Hinweise auf relevante Compliance-Themen
+  requiresDetailedReview: boolean;
 }
 
 interface LegalRedFlag {
-  category: 'liability' | 'penalty' | 'ip' | 'warranty' | 'termination' | 'jurisdiction'
-  severity: 'critical' | 'warning'
-  description: string
-  clauseReference?: string        // Verweis auf Dokumentstelle
+  category: 'liability' | 'penalty' | 'ip' | 'warranty' | 'termination' | 'jurisdiction';
+  severity: 'critical' | 'warning';
+  description: string;
+  clauseReference?: string; // Verweis auf Dokumentstelle
 }
 ```
 
 **Compliance-Prüfung (Vollständig):**
+
 ```typescript
 interface ComplianceCheck {
-  procurementLaw: {              // Vergaberecht
-    applicable: boolean
-    type?: 'vob' | 'vgv' | 'uvgo' | 'eu_threshold'
-    requirements: string[]
-    deadlines: { name: string; date: Date }[]
-  }
-  frameworkAgreement: {          // Rahmenverträge
-    isFramework: boolean
-    existingFramework?: string   // z.B. "Rahmenvertrag NRW IT"
-    callOffRules?: string[]
-  }
-  subcontractor: {               // Subunternehmer
-    allowed: boolean
-    restrictions: string[]
-    reportingRequirements: string[]
-  }
+  procurementLaw: {
+    // Vergaberecht
+    applicable: boolean;
+    type?: 'vob' | 'vgv' | 'uvgo' | 'eu_threshold';
+    requirements: string[];
+    deadlines: { name: string; date: Date }[];
+  };
+  frameworkAgreement: {
+    // Rahmenverträge
+    isFramework: boolean;
+    existingFramework?: string; // z.B. "Rahmenvertrag NRW IT"
+    callOffRules?: string[];
+  };
+  subcontractor: {
+    // Subunternehmer
+    allowed: boolean;
+    restrictions: string[];
+    reportingRequirements: string[];
+  };
 }
 ```
 
@@ -492,132 +524,138 @@ interface ComplianceCheck {
 
 **Zentrale Datenbanken (Crowdsourced mit Admin-Validierung):**
 
-| Datenbank | Inhalt | Pflege |
-|-----------|--------|--------|
-| **Referenzen** | Vergangene Projekte mit Kriterien | Jeder BD kann hinzufügen, Admin validiert |
-| **Kompetenzen** | adesso-Skills und Experten | Jeder BD kann hinzufügen, Admin validiert |
+| Datenbank        | Inhalt                                   | Pflege                                    |
+| ---------------- | ---------------------------------------- | ----------------------------------------- |
+| **Referenzen**   | Vergangene Projekte mit Kriterien        | Jeder BD kann hinzufügen, Admin validiert |
+| **Kompetenzen**  | adesso-Skills und Experten               | Jeder BD kann hinzufügen, Admin validiert |
 | **Wettbewerber** | Bekannte Mitbieter mit Stärken/Schwächen | Jeder BD kann hinzufügen, Admin validiert |
 
 **Referenz-Datenbank:**
+
 ```typescript
 interface Reference {
-  id: string
-  projectName: string
-  customerName: string
-  industry: string
-  technologies: string[]
-  scope: string[]                 // z.B. ["CMS Migration", "E-Commerce"]
-  teamSize: number
-  duration: string                // z.B. "6 Monate"
-  budget: { min: number; max: number }
-  outcome: 'won' | 'delivered' | 'reference_available'
-  contactPerson?: string
-  highlights: string[]            // Besondere Erfolge
-  createdBy: string               // User ID
-  validatedBy?: string            // Admin ID
-  validatedAt?: Date
-  createdAt: Date
+  id: string;
+  projectName: string;
+  customerName: string;
+  industry: string;
+  technologies: string[];
+  scope: string[]; // z.B. ["CMS Migration", "E-Commerce"]
+  teamSize: number;
+  duration: string; // z.B. "6 Monate"
+  budget: { min: number; max: number };
+  outcome: 'won' | 'delivered' | 'reference_available';
+  contactPerson?: string;
+  highlights: string[]; // Besondere Erfolge
+  createdBy: string; // User ID
+  validatedBy?: string; // Admin ID
+  validatedAt?: Date;
+  createdAt: Date;
 }
 ```
 
 **Kompetenz-Datenbank:**
+
 ```typescript
 interface Competency {
-  id: string
-  name: string                    // z.B. "Drupal Commerce", "React Performance"
-  category: 'technology' | 'methodology' | 'industry' | 'soft_skill'
-  level: 'basic' | 'advanced' | 'expert'
-  experts: string[]               // Employee IDs
-  projectCount: number            // Anzahl Projekte mit dieser Kompetenz
-  certifications?: string[]
-  createdBy: string
-  validatedBy?: string
-  createdAt: Date
+  id: string;
+  name: string; // z.B. "Drupal Commerce", "React Performance"
+  category: 'technology' | 'methodology' | 'industry' | 'soft_skill';
+  level: 'basic' | 'advanced' | 'expert';
+  experts: string[]; // Employee IDs
+  projectCount: number; // Anzahl Projekte mit dieser Kompetenz
+  certifications?: string[];
+  createdBy: string;
+  validatedBy?: string;
+  createdAt: Date;
 }
 ```
 
 **Wettbewerber-Datenbank:**
+
 ```typescript
 interface Competitor {
-  id: string
-  name: string
-  strengths: string[]             // z.B. ["Günstige Preise", "Öffentlicher Sektor"]
-  weaknesses: string[]            // z.B. ["Keine Drupal-Expertise", "Kleine Teams"]
-  technologies: string[]          // Bekannte Tech-Schwerpunkte
-  industries: string[]            // Branchen-Fokus
-  priceLevel: 'low' | 'medium' | 'high'
+  id: string;
+  name: string;
+  strengths: string[]; // z.B. ["Günstige Preise", "Öffentlicher Sektor"]
+  weaknesses: string[]; // z.B. ["Keine Drupal-Expertise", "Kleine Teams"]
+  technologies: string[]; // Bekannte Tech-Schwerpunkte
+  industries: string[]; // Branchen-Fokus
+  priceLevel: 'low' | 'medium' | 'high';
   recentEncounters: {
-    opportunityId?: string
-    date: Date
-    outcome: 'won_against' | 'lost_to' | 'unknown'
-    notes?: string
-  }[]
-  createdBy: string
-  validatedBy?: string
-  createdAt: Date
+    opportunityId?: string;
+    date: Date;
+    outcome: 'won_against' | 'lost_to' | 'unknown';
+    notes?: string;
+  }[];
+  createdBy: string;
+  validatedBy?: string;
+  createdAt: Date;
 }
 ```
 
 **Auto-Matching:**
+
 ```typescript
 interface MatchingResult {
   references: {
-    reference: Reference
-    matchScore: number            // 0-100
-    matchedCriteria: string[]
-  }[]
+    reference: Reference;
+    matchScore: number; // 0-100
+    matchedCriteria: string[];
+  }[];
   competencies: {
-    required: string
-    available: boolean
-    experts: Employee[]
-    gap?: string                  // Falls Kompetenz fehlt
-  }[]
+    required: string;
+    available: boolean;
+    experts: Employee[];
+    gap?: string; // Falls Kompetenz fehlt
+  }[];
   competitors: {
-    competitor: Competitor
-    likelihood: 'high' | 'medium' | 'low'
-    reasoning: string
-    counterStrategy?: string
-  }[]
+    competitor: Competitor;
+    likelihood: 'high' | 'medium' | 'low';
+    reasoning: string;
+    counterStrategy?: string;
+  }[];
 }
 ```
 
 ### 3. BL-Struktur & Routing
 
 **Konfigurierbare Bereichsleiter-Struktur:**
+
 ```typescript
 interface BusinessLine {
-  id: string
-  name: string // "PHP", "WEM", "Data", etc.
-  leaderId: string
-  leaderName: string // "Francesco Raaphorst"
-  leaderEmail: string
-  technologies: string[] // ["Ibexa", "Drupal", "Sulu"]
-  keywords: string[] // Für NLP-Matching
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  name: string; // "PHP", "WEM", "Data", etc.
+  leaderId: string;
+  leaderName: string; // "Francesco Raaphorst"
+  leaderEmail: string;
+  technologies: string[]; // ["Ibexa", "Drupal", "Sulu"]
+  keywords: string[]; // Für NLP-Matching
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
 **Initiale Konfiguration (Seed Data):**
 
-| Bereich | Bereichsleiter | Technologien | Default |
-|---------|----------------|--------------|---------|
-| PHP | Francesco Raaphorst | Drupal, Ibexa, Sulu | Drupal |
-| WEM | Michael Rittinghaus | Magnolia, Firstspirit | Magnolia |
+| Bereich | Bereichsleiter      | Technologien          | Default  |
+| ------- | ------------------- | --------------------- | -------- |
+| PHP     | Francesco Raaphorst | Drupal, Ibexa, Sulu   | Drupal   |
+| WEM     | Michael Rittinghaus | Magnolia, Firstspirit | Magnolia |
 
 **Technologie-Baselines (Initial):**
 
-| Technologie | Baseline Name | Hours | Content Types | Paragraphs | Views |
-|-------------|---------------|-------|---------------|------------|-------|
-| Drupal | adessoCMS | 693 | 6 | 32 | 27 |
-| Ibexa | Ibexa Standard | TBD | TBD | TBD | TBD |
-| Sulu | Sulu Standard | TBD | TBD | TBD | TBD |
-| Magnolia | Magnolia Base | TBD | TBD | TBD | TBD |
-| Firstspirit | FS Standard | TBD | TBD | TBD | TBD |
+| Technologie | Baseline Name  | Hours | Content Types | Paragraphs | Views |
+| ----------- | -------------- | ----- | ------------- | ---------- | ----- |
+| Drupal      | adessoCMS      | 693   | 6             | 32         | 27    |
+| Ibexa       | Ibexa Standard | TBD   | TBD           | TBD        | TBD   |
+| Sulu        | Sulu Standard  | TBD   | TBD           | TBD        | TBD   |
+| Magnolia    | Magnolia Base  | TBD   | TBD           | TBD        | TBD   |
+| Firstspirit | FS Standard    | TBD   | TBD           | TBD        | TBD   |
 
 **Hinweis:** Nur Drupal-Baseline (adessoCMS) ist initial komplett. Andere Baselines werden im Betrieb ergänzt.
 
 **Routing-Logik:**
+
 1. AI analysiert Anforderungen
 2. NLP-Match zu Business Lines (Keywords, Technologies)
 3. Routing an bestpassenden BL
@@ -628,36 +666,38 @@ interface BusinessLine {
 **Trigger:** Automatisch nach Bid-Entscheidung
 
 **Szenario-basierte Kalkulation:**
+
 ```typescript
 interface ExtendedEvaluation {
   scenarioAnalysis: {
-    best: FinancialProjection
-    expected: FinancialProjection
-    worst: FinancialProjection
-  }
-  riskFactors: string[]
-  requiredSkills: string[] // NLP-basiert aus Anforderungen
-  skillMatchScore: number // 0-100
-  availableEmployees: EmployeeMatch[]
-  recommendedTeamSize: number
+    best: FinancialProjection;
+    expected: FinancialProjection;
+    worst: FinancialProjection;
+  };
+  riskFactors: string[];
+  requiredSkills: string[]; // NLP-basiert aus Anforderungen
+  skillMatchScore: number; // 0-100
+  availableEmployees: EmployeeMatch[];
+  recommendedTeamSize: number;
   estimatedEffort: {
-    days: { min: number, max: number }
-    fte: number
-  }
-  profitabilityRecommendation: 'high' | 'medium' | 'low'
-  profitabilityReasoning: string
+    days: { min: number; max: number };
+    fte: number;
+  };
+  profitabilityRecommendation: 'high' | 'medium' | 'low';
+  profitabilityReasoning: string;
 }
 
 interface FinancialProjection {
-  revenue: number
-  costs: number
-  margin: number
-  marginPercent: number
-  riskFactors: string[]
+  revenue: number;
+  costs: number;
+  margin: number;
+  marginPercent: number;
+  riskFactors: string[];
 }
 ```
 
 **UX:** Interaktive Exploration
+
 - BL kann Details aufklappen
 - Filter nach Skills, Verfügbarkeit
 - Drill-Down in einzelne Aspekte
@@ -671,231 +711,231 @@ interface FinancialProjection {
 ```typescript
 // Bid Opportunity (Haupt-Entity)
 interface BidOpportunity {
-  id: string
-  userId: string // BD Manager der eingereicht hat
+  id: string;
+  userId: string; // BD Manager der eingereicht hat
 
   // Input
-  source: 'reactive' | 'proactive'
-  stage: 'cold' | 'warm' | 'rfp'
-  inputType: 'pdf' | 'crm' | 'freetext' | 'email'
-  rawInput: string
-  extractedRequirements: ExtractedRequirements
+  source: 'reactive' | 'proactive';
+  stage: 'cold' | 'warm' | 'rfp';
+  inputType: 'pdf' | 'crm' | 'freetext' | 'email';
+  rawInput: string;
+  extractedRequirements: ExtractedRequirements;
 
   // Bid Decision
-  bidDecision: 'bid' | 'no_bid' | 'pending'
-  bidDecisionData?: BidDecision
-  alternativeRecommendation?: string
+  bidDecision: 'bid' | 'no_bid' | 'pending';
+  bidDecisionData?: BidDecision;
+  alternativeRecommendation?: string;
 
   // Routing
-  assignedBusinessLineId?: string
-  assignedBLNotifiedAt?: Date
+  assignedBusinessLineId?: string;
+  assignedBLNotifiedAt?: Date;
 
   // Extended Evaluation
-  extendedEvaluation?: ExtendedEvaluation
+  extendedEvaluation?: ExtendedEvaluation;
 
   // Team
-  assignedTeam?: TeamAssignment[]
-  teamNotifiedAt?: Date
+  assignedTeam?: TeamAssignment[];
+  teamNotifiedAt?: Date;
 
   // Company Analysis Links
-  quickScanId?: string                    // Phase 1 Quick Scan
-  deepMigrationAnalysisId?: string        // Phase 2 Deep Analysis
+  quickScanId?: string; // Phase 1 Quick Scan
+  deepMigrationAnalysisId?: string; // Phase 2 Deep Analysis
 
   // Status & Tracking
-  status: BidStatus
-  createdAt: Date
-  updatedAt: Date
+  status: BidStatus;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 type BidStatus =
-  | 'draft'              // BD erstellt
-  | 'extracting'         // AI extrahiert Anforderungen
-  | 'quick_scanning'     // Phase 1: Quick Scan läuft
-  | 'evaluating'         // Bid/No Bid läuft
-  | 'bid_decided'        // Bid-Entscheidung getroffen
-  | 'routing'            // BL-Zuweisung
-  | 'deep_analyzing'     // Phase 2: Deep Migration Analysis läuft (Background)
-  | 'bl_reviewing'       // BL prüft Ergebnisse
-  | 'team_assigned'      // Team zugewiesen
-  | 'notified'           // Team benachrichtigt
-  | 'handed_off'         // Abgeschlossen
+  | 'draft' // BD erstellt
+  | 'extracting' // AI extrahiert Anforderungen
+  | 'quick_scanning' // Phase 1: Quick Scan läuft
+  | 'evaluating' // Bid/No Bid läuft
+  | 'bid_decided' // Bid-Entscheidung getroffen
+  | 'routing' // BL-Zuweisung
+  | 'deep_analyzing' // Phase 2: Deep Migration Analysis läuft (Background)
+  | 'bl_reviewing' // BL prüft Ergebnisse
+  | 'team_assigned' // Team zugewiesen
+  | 'notified' // Team benachrichtigt
+  | 'handed_off'; // Abgeschlossen
 
 // Business Line
 interface BusinessLine {
-  id: string
-  name: string                    // "PHP", "WEM"
-  leaderId: string
-  leaderName: string
-  leaderEmail: string
-  technologies: Technology[]      // Zugeordnete CMS-Technologien
-  keywords: string[]              // Für NLP-Matching
-  isActive: boolean
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  name: string; // "PHP", "WEM"
+  leaderId: string;
+  leaderName: string;
+  leaderEmail: string;
+  technologies: Technology[]; // Zugeordnete CMS-Technologien
+  keywords: string[]; // Für NLP-Matching
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // CMS-Technologie mit Baseline
 interface Technology {
-  id: string
-  name: string                    // "Drupal", "Ibexa", "Magnolia", "Sulu", "Firstspirit"
-  businessLineId: string
-  baselineHours: number           // Reference-Stunden (z.B. 693 für adessoCMS)
-  baselineName: string            // "adessoCMS", "Ibexa Standard", etc.
+  id: string;
+  name: string; // "Drupal", "Ibexa", "Magnolia", "Sulu", "Firstspirit"
+  businessLineId: string;
+  baselineHours: number; // Reference-Stunden (z.B. 693 für adessoCMS)
+  baselineName: string; // "adessoCMS", "Ibexa Standard", etc.
   baselineEntities: {
-    contentTypes: number
-    paragraphs: number
-    views: number
-    configFiles: number
-  }
-  isDefault: boolean              // Standard-Ziel für diese BL
-  createdAt: Date
-  updatedAt: Date
+    contentTypes: number;
+    paragraphs: number;
+    views: number;
+    configFiles: number;
+  };
+  isDefault: boolean; // Standard-Ziel für diese BL
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Quick Scan Ergebnis (Phase 1)
 interface QuickScan {
-  id: string
-  bidOpportunityId: string
-  status: 'pending' | 'running' | 'completed' | 'failed'
-  result?: QuickScanResult
-  startedAt?: Date
-  completedAt?: Date
-  createdAt: Date
+  id: string;
+  bidOpportunityId: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  result?: QuickScanResult;
+  startedAt?: Date;
+  completedAt?: Date;
+  createdAt: Date;
 }
 
 // Deep Migration Analysis (Phase 2)
 interface DeepMigrationAnalysis {
-  id: string
-  bidOpportunityId: string
-  targetTechnologyId: string      // Gewählte Ziel-Technologie
-  status: 'pending' | 'running' | 'completed' | 'failed'
-  progress: number                // 0-100
-  currentPhase: string            // "content_architecture" | "migration" | "accessibility" | "estimation"
-  result?: DeepMigrationResult
-  startedAt?: Date
-  completedAt?: Date
-  createdAt: Date
+  id: string;
+  bidOpportunityId: string;
+  targetTechnologyId: string; // Gewählte Ziel-Technologie
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  progress: number; // 0-100
+  currentPhase: string; // "content_architecture" | "migration" | "accessibility" | "estimation"
+  result?: DeepMigrationResult;
+  startedAt?: Date;
+  completedAt?: Date;
+  createdAt: Date;
 }
 
 // Employee
 interface Employee {
-  id: string
-  name: string
-  email: string
-  businessLineId: string
-  skills: string[]
-  roles: TeamRole[]
-  isAvailable: boolean
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  name: string;
+  email: string;
+  businessLineId: string;
+  skills: string[];
+  roles: TeamRole[];
+  isAvailable: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Team Assignment
 interface TeamAssignment {
-  id: string
-  bidOpportunityId: string
-  employeeId: string
-  role: TeamRole
-  assignedAt: Date
-  notifiedAt?: Date
+  id: string;
+  bidOpportunityId: string;
+  employeeId: string;
+  role: TeamRole;
+  assignedAt: Date;
+  notifiedAt?: Date;
 }
 
 // Audit Trail Entry (für Override-Tracking)
 interface AuditTrailEntry {
-  id: string
-  bidOpportunityId: string
-  userId: string
-  action: 'bl_override' | 'bid_override' | 'team_change' | 'status_change'
-  previousValue: string
-  newValue: string
-  reason: string                  // Pflicht bei Override
-  createdAt: Date
+  id: string;
+  bidOpportunityId: string;
+  userId: string;
+  action: 'bl_override' | 'bid_override' | 'team_change' | 'status_change';
+  previousValue: string;
+  newValue: string;
+  reason: string; // Pflicht bei Override
+  createdAt: Date;
 }
 
 // Account (Kunden-Hierarchie)
 interface Account {
-  id: string
-  name: string                    // Kundenname
-  industry: string
-  website?: string
-  notes?: string
-  opportunities: string[]         // BidOpportunity IDs
-  createdBy: string
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  name: string; // Kundenname
+  industry: string;
+  website?: string;
+  notes?: string;
+  opportunities: string[]; // BidOpportunity IDs
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // BD Subjective Input (Slider-basiert)
 interface SubjectiveAssessment {
-  id: string
-  bidOpportunityId: string
-  userId: string                  // BD der bewertet
+  id: string;
+  bidOpportunityId: string;
+  userId: string; // BD der bewertet
   assessments: {
-    customerRelationship: number  // 1-5: Kundenbeziehung
-    strategicImportance: number   // 1-5: Strategische Bedeutung
-    winProbability: number        // 1-5: Gewinnwahrscheinlichkeit (subjektiv)
-    resourceAvailability: number  // 1-5: Ressourcenverfügbarkeit
-    technicalFit: number          // 1-5: Technischer Fit
-  }
-  notes?: string
-  createdAt: Date
-  updatedAt: Date
+    customerRelationship: number; // 1-5: Kundenbeziehung
+    strategicImportance: number; // 1-5: Strategische Bedeutung
+    winProbability: number; // 1-5: Gewinnwahrscheinlichkeit (subjektiv)
+    resourceAvailability: number; // 1-5: Ressourcenverfügbarkeit
+    technicalFit: number; // 1-5: Technischer Fit
+  };
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Reference (Zentrale Referenz-DB)
 interface Reference {
-  id: string
-  projectName: string
-  customerName: string
-  industry: string
-  technologies: string[]
-  scope: string[]
-  teamSize: number
-  duration: string
-  budget: { min: number; max: number }
-  outcome: 'won' | 'delivered' | 'reference_available'
-  contactPerson?: string
-  highlights: string[]
-  createdBy: string
-  validatedBy?: string
-  validatedAt?: Date
-  createdAt: Date
+  id: string;
+  projectName: string;
+  customerName: string;
+  industry: string;
+  technologies: string[];
+  scope: string[];
+  teamSize: number;
+  duration: string;
+  budget: { min: number; max: number };
+  outcome: 'won' | 'delivered' | 'reference_available';
+  contactPerson?: string;
+  highlights: string[];
+  createdBy: string;
+  validatedBy?: string;
+  validatedAt?: Date;
+  createdAt: Date;
 }
 
 // Competency (Zentrale Kompetenz-DB)
 interface Competency {
-  id: string
-  name: string
-  category: 'technology' | 'methodology' | 'industry' | 'soft_skill'
-  level: 'basic' | 'advanced' | 'expert'
-  experts: string[]
-  projectCount: number
-  certifications?: string[]
-  createdBy: string
-  validatedBy?: string
-  createdAt: Date
+  id: string;
+  name: string;
+  category: 'technology' | 'methodology' | 'industry' | 'soft_skill';
+  level: 'basic' | 'advanced' | 'expert';
+  experts: string[];
+  projectCount: number;
+  certifications?: string[];
+  createdBy: string;
+  validatedBy?: string;
+  createdAt: Date;
 }
 
 // Competitor (Zentrale Wettbewerber-DB)
 interface Competitor {
-  id: string
-  name: string
-  strengths: string[]
-  weaknesses: string[]
-  technologies: string[]
-  industries: string[]
-  priceLevel: 'low' | 'medium' | 'high'
-  recentEncounters: CompetitorEncounter[]
-  createdBy: string
-  validatedBy?: string
-  createdAt: Date
+  id: string;
+  name: string;
+  strengths: string[];
+  weaknesses: string[];
+  technologies: string[];
+  industries: string[];
+  priceLevel: 'low' | 'medium' | 'high';
+  recentEncounters: CompetitorEncounter[];
+  createdBy: string;
+  validatedBy?: string;
+  createdAt: Date;
 }
 
 interface CompetitorEncounter {
-  opportunityId?: string
-  date: Date
-  outcome: 'won_against' | 'lost_to' | 'unknown'
-  notes?: string
+  opportunityId?: string;
+  date: Date;
+  outcome: 'won_against' | 'lost_to' | 'unknown';
+  notes?: string;
 }
 ```
 
@@ -904,105 +944,116 @@ interface CompetitorEncounter {
 ## API Endpoints
 
 ### Bid Opportunities
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | /api/bids | Create new bid opportunity (upload) |
-| GET | /api/bids | List all bids (with filters) |
-| GET | /api/bids/:id | Get single bid with all data |
-| PATCH | /api/bids/:id | Update bid (confirm extraction, etc.) |
-| DELETE | /api/bids/:id | Delete bid |
-| POST | /api/bids/:id/evaluate | Trigger Bid/No Bid evaluation |
-| POST | /api/bids/:id/assign-team | Assign team to bid |
-| POST | /api/bids/:id/notify-team | Send notifications |
-| GET | /api/bids/:id/stream | SSE stream for live updates |
+
+| Method | Path                      | Description                           |
+| ------ | ------------------------- | ------------------------------------- |
+| POST   | /api/bids                 | Create new bid opportunity (upload)   |
+| GET    | /api/bids                 | List all bids (with filters)          |
+| GET    | /api/bids/:id             | Get single bid with all data          |
+| PATCH  | /api/bids/:id             | Update bid (confirm extraction, etc.) |
+| DELETE | /api/bids/:id             | Delete bid                            |
+| POST   | /api/bids/:id/evaluate    | Trigger Bid/No Bid evaluation         |
+| POST   | /api/bids/:id/assign-team | Assign team to bid                    |
+| POST   | /api/bids/:id/notify-team | Send notifications                    |
+| GET    | /api/bids/:id/stream      | SSE stream for live updates           |
 
 ### Business Lines (Admin)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/admin/business-lines | List all BLs |
-| POST | /api/admin/business-lines | Create BL |
-| PATCH | /api/admin/business-lines/:id | Update BL |
-| DELETE | /api/admin/business-lines/:id | Delete BL |
+
+| Method | Path                          | Description  |
+| ------ | ----------------------------- | ------------ |
+| GET    | /api/admin/business-lines     | List all BLs |
+| POST   | /api/admin/business-lines     | Create BL    |
+| PATCH  | /api/admin/business-lines/:id | Update BL    |
+| DELETE | /api/admin/business-lines/:id | Delete BL    |
 
 ### Employees (Admin)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/admin/employees | List all employees |
-| POST | /api/admin/employees | Create employee |
-| PATCH | /api/admin/employees/:id | Update employee |
-| DELETE | /api/admin/employees/:id | Delete employee |
-| POST | /api/admin/employees/import | Bulk import (CSV) |
+
+| Method | Path                        | Description        |
+| ------ | --------------------------- | ------------------ |
+| GET    | /api/admin/employees        | List all employees |
+| POST   | /api/admin/employees        | Create employee    |
+| PATCH  | /api/admin/employees/:id    | Update employee    |
+| DELETE | /api/admin/employees/:id    | Delete employee    |
+| POST   | /api/admin/employees/import | Bulk import (CSV)  |
 
 ### Company Analysis (Zwei-Phasen)
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | /api/bids/:id/quick-scan | Trigger Quick Scan (Phase 1) |
-| GET | /api/bids/:id/quick-scan | Get Quick Scan result |
-| POST | /api/bids/:id/deep-analysis | Trigger Deep Analysis (Phase 2) |
-| GET | /api/bids/:id/deep-analysis | Get Deep Analysis result |
-| GET | /api/bids/:id/deep-analysis/stream | SSE stream for progress |
+
+| Method | Path                               | Description                     |
+| ------ | ---------------------------------- | ------------------------------- |
+| POST   | /api/bids/:id/quick-scan           | Trigger Quick Scan (Phase 1)    |
+| GET    | /api/bids/:id/quick-scan           | Get Quick Scan result           |
+| POST   | /api/bids/:id/deep-analysis        | Trigger Deep Analysis (Phase 2) |
+| GET    | /api/bids/:id/deep-analysis        | Get Deep Analysis result        |
+| GET    | /api/bids/:id/deep-analysis/stream | SSE stream for progress         |
 
 ### Technologies (Admin)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/admin/technologies | List all technologies |
-| POST | /api/admin/technologies | Create technology with baseline |
-| PATCH | /api/admin/technologies/:id | Update technology |
-| DELETE | /api/admin/technologies/:id | Delete technology |
+
+| Method | Path                        | Description                     |
+| ------ | --------------------------- | ------------------------------- |
+| GET    | /api/admin/technologies     | List all technologies           |
+| POST   | /api/admin/technologies     | Create technology with baseline |
+| PATCH  | /api/admin/technologies/:id | Update technology               |
+| DELETE | /api/admin/technologies/:id | Delete technology               |
 
 ### Analytics
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/analytics/overview | Dashboard stats |
-| GET | /api/analytics/bid-rate | Bid/No Bid statistics |
-| GET | /api/analytics/by-bl | Stats per Business Line |
+
+| Method | Path                    | Description             |
+| ------ | ----------------------- | ----------------------- |
+| GET    | /api/analytics/overview | Dashboard stats         |
+| GET    | /api/analytics/bid-rate | Bid/No Bid statistics   |
+| GET    | /api/analytics/by-bl    | Stats per Business Line |
 
 ### Accounts (Kunden-Hierarchie)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/accounts | List all accounts |
-| POST | /api/accounts | Create account |
-| GET | /api/accounts/:id | Get account with opportunities |
-| PATCH | /api/accounts/:id | Update account |
-| DELETE | /api/accounts/:id | Delete account |
+
+| Method | Path              | Description                    |
+| ------ | ----------------- | ------------------------------ |
+| GET    | /api/accounts     | List all accounts              |
+| POST   | /api/accounts     | Create account                 |
+| GET    | /api/accounts/:id | Get account with opportunities |
+| PATCH  | /api/accounts/:id | Update account                 |
+| DELETE | /api/accounts/:id | Delete account                 |
 
 ### References (Master Data)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/references | List all references |
-| POST | /api/references | Create reference (BD) |
-| GET | /api/references/:id | Get reference details |
-| PATCH | /api/references/:id | Update reference |
-| DELETE | /api/references/:id | Delete reference |
-| POST | /api/references/:id/validate | Validate reference (Admin) |
-| GET | /api/references/search | Search/match references |
+
+| Method | Path                         | Description                |
+| ------ | ---------------------------- | -------------------------- |
+| GET    | /api/references              | List all references        |
+| POST   | /api/references              | Create reference (BD)      |
+| GET    | /api/references/:id          | Get reference details      |
+| PATCH  | /api/references/:id          | Update reference           |
+| DELETE | /api/references/:id          | Delete reference           |
+| POST   | /api/references/:id/validate | Validate reference (Admin) |
+| GET    | /api/references/search       | Search/match references    |
 
 ### Competencies (Master Data)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/competencies | List all competencies |
-| POST | /api/competencies | Create competency (BD) |
-| PATCH | /api/competencies/:id | Update competency |
-| DELETE | /api/competencies/:id | Delete competency |
-| POST | /api/competencies/:id/validate | Validate competency (Admin) |
-| GET | /api/competencies/search | Search competencies |
+
+| Method | Path                           | Description                 |
+| ------ | ------------------------------ | --------------------------- |
+| GET    | /api/competencies              | List all competencies       |
+| POST   | /api/competencies              | Create competency (BD)      |
+| PATCH  | /api/competencies/:id          | Update competency           |
+| DELETE | /api/competencies/:id          | Delete competency           |
+| POST   | /api/competencies/:id/validate | Validate competency (Admin) |
+| GET    | /api/competencies/search       | Search competencies         |
 
 ### Competitors (Master Data)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/competitors | List all competitors |
-| POST | /api/competitors | Create competitor (BD) |
-| GET | /api/competitors/:id | Get competitor details |
-| PATCH | /api/competitors/:id | Update competitor |
-| DELETE | /api/competitors/:id | Delete competitor |
-| POST | /api/competitors/:id/validate | Validate competitor (Admin) |
-| POST | /api/competitors/:id/encounter | Log encounter with competitor |
+
+| Method | Path                           | Description                   |
+| ------ | ------------------------------ | ----------------------------- |
+| GET    | /api/competitors               | List all competitors          |
+| POST   | /api/competitors               | Create competitor (BD)        |
+| GET    | /api/competitors/:id           | Get competitor details        |
+| PATCH  | /api/competitors/:id           | Update competitor             |
+| DELETE | /api/competitors/:id           | Delete competitor             |
+| POST   | /api/competitors/:id/validate  | Validate competitor (Admin)   |
+| POST   | /api/competitors/:id/encounter | Log encounter with competitor |
 
 ### Subjective Assessment
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/bids/:id/assessment | Get BD assessment |
-| POST | /api/bids/:id/assessment | Create/update assessment |
+
+| Method | Path                     | Description              |
+| ------ | ------------------------ | ------------------------ |
+| GET    | /api/bids/:id/assessment | Get BD assessment        |
+| POST   | /api/bids/:id/assessment | Create/update assessment |
 
 ---
 
@@ -1013,6 +1064,7 @@ interface CompetitorEncounter {
 ### Orchestrierung (Agentic Loop)
 
 **Ablauf (dynamisch vom Coordinator gesteuert):**
+
 1. **Coordinator entscheidet dynamisch** welche Agents wann laufen (Agentic Loop)
 2. **Parallel wo möglich:** Unabhängige Agents laufen gleichzeitig
 3. **Checkpoints:** Zwischenstände als JSON im Filesystem gespeichert
@@ -1022,19 +1074,14 @@ interface CompetitorEncounter {
 // Orchestration Flow
 async function evaluateBidOpportunity(bidId: string) {
   // Phase 1: Parallel Extraction
-  const [
-    techResult,
-    legalQuickResult,
-    commercialResult,
-    competitionResult,
-    referenceResult
-  ] = await Promise.all([
-    techAgent.analyze(bidId),
-    legalAgent.quickCheck(bidId),
-    commercialAgent.analyze(bidId),
-    competitionAgent.analyze(bidId),
-    referenceAgent.findMatches(bidId)
-  ])
+  const [techResult, legalQuickResult, commercialResult, competitionResult, referenceResult] =
+    await Promise.all([
+      techAgent.analyze(bidId),
+      legalAgent.quickCheck(bidId),
+      commercialAgent.analyze(bidId),
+      competitionAgent.analyze(bidId),
+      referenceAgent.findMatches(bidId),
+    ]);
 
   // Phase 2: Sequential Coordination
   const coordinatorResult = await coordinatorAgent.synthesize({
@@ -1042,10 +1089,10 @@ async function evaluateBidOpportunity(bidId: string) {
     legal: legalQuickResult,
     commercial: commercialResult,
     competition: competitionResult,
-    references: referenceResult
-  })
+    references: referenceResult,
+  });
 
-  return coordinatorResult
+  return coordinatorResult;
 }
 ```
 
@@ -1055,26 +1102,26 @@ async function evaluateBidOpportunity(bidId: string) {
 
 ```typescript
 interface CoordinatorOutput {
-  recommendation: 'bid' | 'no_bid'
-  confidence: number
-  decisionTree: DecisionNode
+  recommendation: 'bid' | 'no_bid';
+  confidence: number;
+  decisionTree: DecisionNode;
   synthesis: {
-    strengths: string[]           // Top 3-5 Pro-Argumente
-    weaknesses: string[]          // Top 3-5 Contra-Argumente
-    keyRisks: Risk[]
-    keyOpportunities: string[]
-  }
-  reasoning: string               // Ausführliche Begründung
-  nextSteps: string[]             // Empfohlene nächste Schritte
+    strengths: string[]; // Top 3-5 Pro-Argumente
+    weaknesses: string[]; // Top 3-5 Contra-Argumente
+    keyRisks: Risk[];
+    keyOpportunities: string[];
+  };
+  reasoning: string; // Ausführliche Begründung
+  nextSteps: string[]; // Empfohlene nächste Schritte
 }
 ```
 
 ### Agent-Loop Pattern mit AI SDK
 
 ```typescript
-import { generateText, tool } from 'ai'
-import { anthropic } from '@ai-sdk/anthropic'
-import { z } from 'zod'
+import { generateText, tool } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { z } from 'zod';
 
 // Coordinator Agent - Synthesizes all partial results
 const coordinatorAgent = async (partialResults: PartialResults) => {
@@ -1098,34 +1145,36 @@ const coordinatorAgent = async (partialResults: PartialResults) => {
         description: 'Erstelle einen Entscheidungsbaum',
         parameters: z.object({
           rootDecision: z.string(),
-          factors: z.array(z.object({
-            name: z.string(),
-            value: z.enum(['positive', 'negative', 'neutral']),
-            weight: z.number(),
-            children: z.array(z.any()).optional()
-          }))
+          factors: z.array(
+            z.object({
+              name: z.string(),
+              value: z.enum(['positive', 'negative', 'neutral']),
+              weight: z.number(),
+              children: z.array(z.any()).optional(),
+            })
+          ),
         }),
         execute: async ({ rootDecision, factors }) => {
           // Build tree structure
-        }
+        },
       }),
       calculateConfidence: tool({
         description: 'Berechne Confidence Score basierend auf Faktoren',
         parameters: z.object({
           positiveFactors: z.number(),
           negativeFactors: z.number(),
-          uncertainFactors: z.number()
+          uncertainFactors: z.number(),
         }),
         execute: async ({ positiveFactors, negativeFactors, uncertainFactors }) => {
           // Calculate weighted confidence
-        }
-      })
+        },
+      }),
     },
-    maxSteps: 5
-  })
+    maxSteps: 5,
+  });
 
-  return result
-}
+  return result;
+};
 
 // Tech Agent
 const techAgent = async (requirements: ExtractedRequirements) => {
@@ -1139,27 +1188,27 @@ const techAgent = async (requirements: ExtractedRequirements) => {
         description: 'Prüfe ob adesso die benötigten Capabilities hat',
         parameters: z.object({
           technologies: z.array(z.string()),
-          skills: z.array(z.string())
+          skills: z.array(z.string()),
         }),
         execute: async ({ technologies, skills }) => {
           // Check gegen Competency DB
-        }
+        },
       }),
       findExperts: tool({
         description: 'Finde Experten für bestimmte Technologien',
         parameters: z.object({
-          technologies: z.array(z.string())
+          technologies: z.array(z.string()),
         }),
         execute: async ({ technologies }) => {
           // Query Employee DB
-        }
-      })
+        },
+      }),
     },
-    maxSteps: 10
-  })
+    maxSteps: 10,
+  });
 
-  return result
-}
+  return result;
+};
 ```
 
 ### Streaming UI mit AI SDK UI
@@ -1189,8 +1238,8 @@ function BidEvaluationProgress({ bidId }) {
 ### Structured Output für Bid-Decision
 
 ```typescript
-import { generateObject } from 'ai'
-import { z } from 'zod'
+import { generateObject } from 'ai';
+import { z } from 'zod';
 
 const BidDecisionSchema = z.object({
   decision: z.enum(['bid', 'no_bid']),
@@ -1200,14 +1249,14 @@ const BidDecisionSchema = z.object({
   dealQualityScore: z.number().min(0).max(100),
   strategicFitScore: z.number().min(0).max(100),
   competitionRisk: z.enum(['low', 'medium', 'high']),
-  alternativeRecommendation: z.string().optional()
-})
+  alternativeRecommendation: z.string().optional(),
+});
 
 const result = await generateObject({
   model: anthropic('claude-sonnet-4-20250514'),
   schema: BidDecisionSchema,
-  prompt: `Triff eine Bid/No Bid Entscheidung für: ${JSON.stringify(requirements)}`
-})
+  prompt: `Triff eine Bid/No Bid Entscheidung für: ${JSON.stringify(requirements)}`,
+});
 ```
 
 ---
@@ -1227,28 +1276,29 @@ Basierend auf https://every.to/guides/agent-native - volle Sichtbarkeit aller AI
 
 ```typescript
 interface AgentActivityEvent {
-  id: string
-  timestamp: Date
-  type: 'thought' | 'tool_call' | 'tool_result' | 'decision' | 'error'
-  agent: string                   // "bid_evaluator", "quick_scan", "deep_analysis"
+  id: string;
+  timestamp: Date;
+  type: 'thought' | 'tool_call' | 'tool_result' | 'decision' | 'error';
+  agent: string; // "bid_evaluator", "quick_scan", "deep_analysis"
   content: {
-    thought?: string              // Chain-of-Thought
-    toolName?: string             // z.B. "checkCapabilities"
-    toolInput?: Record<string, any>
-    toolOutput?: Record<string, any>
+    thought?: string; // Chain-of-Thought
+    toolName?: string; // z.B. "checkCapabilities"
+    toolInput?: Record<string, any>;
+    toolOutput?: Record<string, any>;
     decision?: {
-      value: string
-      confidence: number
-      reasoning: string
-    }
-    error?: string
-  }
+      value: string;
+      confidence: number;
+      reasoning: string;
+    };
+    error?: string;
+  };
 }
 ```
 
 ### UI-Komponenten
 
 **AgentActivityLog**: Echtzeit-Stream aller Agent-Aktionen
+
 ```
 [12:34:01] 🤔 Analysiere Tech Stack der Kundenwebsite...
 [12:34:05] 🔧 Tool: detectCMS → WordPress 6.4 detected
@@ -1258,10 +1308,12 @@ interface AgentActivityEvent {
 ```
 
 **AgentThoughtBubble**: Expandierbare Thought-Details
+
 - Minimiert: Kurze Zusammenfassung
 - Expandiert: Vollständiger Chain-of-Thought
 
 **ConfidenceIndicator**: Visueller Confidence-Score
+
 - 🟢 80-100%: High Confidence
 - 🟡 60-79%: Medium Confidence (Warnung anzeigen)
 - 🔴 <60%: Low Confidence (Bestätigung erforderlich)
@@ -1269,12 +1321,14 @@ interface AgentActivityEvent {
 ### Abort-Mechanismus
 
 **User kann abbrechen:**
+
 - Button "Analyse abbrechen" während aller Agent-Operationen
 - Graceful Shutdown: Laufende Tool-Calls werden beendet
 - Partial Results: Bisherige Ergebnisse bleiben erhalten
 - Re-Start möglich: User kann später fortsetzen
 
 **Kein Live-Steering:**
+
 - User kann Agent nicht während der Ausführung umlenken
 - Stattdessen: Abbrechen → Anpassen → Neu starten
 
@@ -1285,6 +1339,7 @@ interface AgentActivityEvent {
 ### Screens
 
 #### 1. Dashboard (BD View)
+
 - **Account-basierte Ansicht**: Opportunities gruppiert nach Kunde/Account
 - **Pipeline Overview**: Alle Bids mit Status
 - **Quick Stats**: Bid-Rate, offene Evaluierungen, zugewiesene Teams
@@ -1293,6 +1348,7 @@ interface AgentActivityEvent {
 - **Filters**: Status, Datum, BL, Source, Account
 
 #### 2. Smart Upload
+
 - **Drop Zone**: Drag & Drop für PDFs (Ausschreibungsdokumente)
 - **Text Area**: Für Freitext/E-Mail
 - **Account-Zuweisung**: Bid einem Account zuordnen (neu oder bestehend)
@@ -1300,6 +1356,7 @@ interface AgentActivityEvent {
 - **DSGVO-Bereinigung**: Optional vor Verarbeitung
 
 #### 3. Subjektive Bewertung (BD Input)
+
 - **Slider-basierte Ratings** (1-5):
   - Kundenbeziehung
   - Strategische Bedeutung
@@ -1310,6 +1367,7 @@ interface AgentActivityEvent {
 - **Freitext-Notizen**: Zusätzliche Einschätzungen
 
 #### 4. Bid/No Bid Progress & Entscheidungsbaum
+
 - **Agent Transparency**: Live Agent-Aktionen sichtbar (Full Chain-of-Thought)
 - **Multi-Agent Progress**: Zeigt alle parallel laufenden Agents
   - Tech Agent Status
@@ -1328,6 +1386,7 @@ interface AgentActivityEvent {
 - **Wettbewerber-Warnung**: Bekannte Mitbieter anzeigen
 
 #### 5. BL Review (Bereichsleiter View)
+
 - **Inbox**: Neue Opportunities mit Status
   - 🔄 "Deep Analysis läuft..." (wenn Background Job aktiv)
   - ✅ "Bereit zur Prüfung" (wenn Analysis fertig)
@@ -1345,6 +1404,7 @@ interface AgentActivityEvent {
 - **Notify Button**: Team benachrichtigen
 
 #### 6. Master Data Management
+
 - **Referenzen pflegen**:
   - Neue Referenz hinzufügen
   - Bestehende bearbeiten
@@ -1359,11 +1419,13 @@ interface AgentActivityEvent {
   - Validierung (Admin-Workflow)
 
 #### 7. Account Management
+
 - **Account-Übersicht**: Alle Kunden/Accounts
 - **Account-Detail**: Alle Opportunities eines Kunden
 - **Account erstellen**: Bei neuem Kunden
 
 #### 8. Admin Panel
+
 - **Business Lines**: CRUD für Bereiche
 - **Technologies**: CMS-Technologien mit Baselines pflegen
   - Name, Baseline-Hours, Baseline-Entities
@@ -1378,6 +1440,7 @@ interface AgentActivityEvent {
 ## Analytics Dashboard
 
 ### Metrics
+
 - **Bid Rate**: % der RFPs die zu "Bid" werden
 - **Time to Decision**: Durchschnittliche Zeit bis Bid/No Bid
 - **Per BL**: Verteilung nach Bereichsleiter
@@ -1385,6 +1448,7 @@ interface AgentActivityEvent {
 - **Stage Distribution**: Cold/Warm/RFP
 
 ### Visualizations
+
 - Bid/No Bid Pie Chart
 - Timeline: Bids over time
 - BL Heatmap: Welcher Bereich bekommt wie viele?
@@ -1395,20 +1459,23 @@ interface AgentActivityEvent {
 ## Authentication & Permissions
 
 ### System-Benutzer (mit Login)
-| Role | Permissions |
-|------|-------------|
-| BD Manager | Create bids, view own bids, see pipeline status |
-| Bereichsleiter | Review assigned bids, assign teams, notify |
-| Admin | All + manage BLs + manage employees + analytics |
+
+| Role           | Permissions                                     |
+| -------------- | ----------------------------------------------- |
+| BD Manager     | Create bids, view own bids, see pipeline status |
+| Bereichsleiter | Review assigned bids, assign teams, notify      |
+| Admin          | All + manage BLs + manage employees + analytics |
 
 ### Keine System-User
-| Role | Beschreibung |
-|------|--------------|
+
+| Role          | Beschreibung                                      |
+| ------------- | ------------------------------------------------- |
 | Team-Mitglied | Empfängt nur E-Mail + PDF, **kein System-Zugang** |
 
 **Hinweis:** Team-Mitglieder werden in der Mitarbeiter-Datenbank gepflegt (Name, E-Mail, Skills), haben aber keinen Login. Sie erhalten nur Benachrichtigungen per E-Mail.
 
 ### Auth
+
 - NextAuth.js Credentials Provider
 - Email/Password (kein SSO)
 - JWT mit httpOnly Cookies
@@ -1419,6 +1486,7 @@ interface AgentActivityEvent {
 ## Testing Requirements
 
 ### Unit Tests
+
 - [ ] AI Extraction Logic
 - [ ] Bid/No Bid Scoring Algorithm
 - [ ] BL Routing Logic
@@ -1426,12 +1494,14 @@ interface AgentActivityEvent {
 - [ ] Szenario Calculation
 
 ### Integration Tests
+
 - [ ] Upload → Extraction → Evaluation Flow
 - [ ] BL Routing Accuracy
 - [ ] Team Assignment Flow
 - [ ] Email Notification Delivery
 
 ### E2E Tests (Playwright)
+
 - [ ] Happy Path: Upload → Bid → Team → Notify
 - [ ] No Bid with Alternative Recommendation
 - [ ] Admin: Create BL, Create Employee
@@ -1441,15 +1511,15 @@ interface AgentActivityEvent {
 
 ## Performance Targets
 
-| Metric | Target |
-|--------|--------|
-| Smart Upload Processing | <30 sec |
-| AI Extraction | <60 sec |
-| Quick Scan (Phase 1) | 2-5 min |
-| Bid/No Bid Decision | 5-15 min |
+| Metric                            | Target                 |
+| --------------------------------- | ---------------------- |
+| Smart Upload Processing           | <30 sec                |
+| AI Extraction                     | <60 sec                |
+| Quick Scan (Phase 1)              | 2-5 min                |
+| Bid/No Bid Decision               | 5-15 min               |
 | Deep Migration Analysis (Phase 2) | 10-30 min (Background) |
-| Extended Evaluation | <2 min |
-| Team Notification | <30 sec |
+| Extended Evaluation               | <2 min                 |
+| Team Notification                 | <30 sec                |
 
 ---
 
@@ -1576,6 +1646,7 @@ RFP Upload (BD)
 ```
 
 **Agent-Eigenschaften:**
+
 - Jeder Agent ist **idempotent** (kann mehrfach ausgeführt werden)
 - Jeder Agent liefert **strukturierte Outputs** (Zod-validiert)
 - Jeder Agent hat **Confidence Scores**
@@ -1616,14 +1687,15 @@ RFP Upload (BD)
 
 **Matching-Kriterien:**
 
-| Kriterium | Gewicht | Beschreibung |
-|-----------|---------|--------------|
-| Kundenname | 40% | Fuzzy-Match auf Account/Company Name |
-| URL/Domain | 30% | Gleiche Website = hohe Wahrscheinlichkeit |
-| Projektbeschreibung | 20% | Semantic Similarity (Embeddings) |
-| Zeitraum | 10% | RFPs < 6 Monate auseinander |
+| Kriterium           | Gewicht | Beschreibung                              |
+| ------------------- | ------- | ----------------------------------------- |
+| Kundenname          | 40%     | Fuzzy-Match auf Account/Company Name      |
+| URL/Domain          | 30%     | Gleiche Website = hohe Wahrscheinlichkeit |
+| Projektbeschreibung | 20%     | Semantic Similarity (Embeddings)          |
+| Zeitraum            | 10%     | RFPs < 6 Monate auseinander               |
 
 **Aktionen bei Duplikat:**
+
 - **Automatisch Zusammenführen** (Default): Neuer RFP wird mit existierendem gemerged
   - Neue Informationen werden zum existierenden RFP hinzugefügt
   - Kein manueller Eingriff nötig bei hoher Similarity (> 90%)
@@ -1631,6 +1703,7 @@ RFP Upload (BD)
 - **Trotzdem anlegen**: Explizit als neuer RFP behandeln (User Override)
 
 **API für Duplicate Check:**
+
 ```typescript
 // POST /api/rfps/duplicate-check
 {
@@ -1660,76 +1733,76 @@ Die folgenden Entscheidungen wurden im Detail-Interview mit dem Product Owner ge
 
 #### MCP & Datensammlung
 
-| Entscheidung | Wert | Begründung |
-|--------------|------|------------|
-| **MCP Scope** | Multi-Source über MCP | LinkedIn, Handelsregister, etc. alles via Browser-Automation |
-| **MCP Auth** | Nur öffentliche Daten | Kein Login für externe Dienste (erstmal), ToS-konform |
-| **Crawling Legalität** | Ignorieren | Internes Tool, robots.txt nicht relevant |
+| Entscheidung           | Wert                  | Begründung                                                   |
+| ---------------------- | --------------------- | ------------------------------------------------------------ |
+| **MCP Scope**          | Multi-Source über MCP | LinkedIn, Handelsregister, etc. alles via Browser-Automation |
+| **MCP Auth**           | Nur öffentliche Daten | Kein Login für externe Dienste (erstmal), ToS-konform        |
+| **Crawling Legalität** | Ignorieren            | Internes Tool, robots.txt nicht relevant                     |
 
 #### Embeddings & Vektor-Suche
 
-| Entscheidung | Wert | Begründung |
-|--------------|------|------------|
-| **Embedding Model** | `text-embedding-3-large` | Via adesso AI Hub, 3072 Dimensionen |
-| **Vektor-DB** | SQLite mit vec0 Extension | < 10.000 RFPs erwartet, reicht völlig |
-| **Embedding Lifecycle** | Speichern + Reindex | Bei RFP-Änderungen neu berechnen |
+| Entscheidung            | Wert                      | Begründung                            |
+| ----------------------- | ------------------------- | ------------------------------------- |
+| **Embedding Model**     | `text-embedding-3-large`  | Via adesso AI Hub, 3072 Dimensionen   |
+| **Vektor-DB**           | SQLite mit vec0 Extension | < 10.000 RFPs erwartet, reicht völlig |
+| **Embedding Lifecycle** | Speichern + Reindex       | Bei RFP-Änderungen neu berechnen      |
 
 #### Agent-Orchestrierung
 
-| Entscheidung | Wert | Begründung |
-|--------------|------|------------|
-| **Orchestrierung** | Coordinator entscheidet dynamisch | Agentic Loop, AI wählt welche Agents wann |
-| **Human-in-Loop** | Nein, vollautomatisch | Agent trifft alle Entscheidungen selbst |
-| **Agent-Konflikte** | Kontextabhängig | AI Coordinator löst je nach Severity |
-| **Timeline-Kalibrierung** | Agenten als Experten | AI mimen Experten für Validierung |
+| Entscheidung              | Wert                              | Begründung                                |
+| ------------------------- | --------------------------------- | ----------------------------------------- |
+| **Orchestrierung**        | Coordinator entscheidet dynamisch | Agentic Loop, AI wählt welche Agents wann |
+| **Human-in-Loop**         | Nein, vollautomatisch             | Agent trifft alle Entscheidungen selbst   |
+| **Agent-Konflikte**       | Kontextabhängig                   | AI Coordinator löst je nach Severity      |
+| **Timeline-Kalibrierung** | Agenten als Experten              | AI mimen Experten für Validierung         |
 
 #### Error Handling & Checkpoints
 
-| Entscheidung | Wert | Begründung |
-|--------------|------|------------|
-| **Rollback-Strategie** | Checkpoint-basiert | Zwischenstände speichern, bei Checkpoint fortsetzen |
-| **Checkpoint-Storage** | Filesystem (JSON-Files) | Pro Workflow ein File, einfach zu debuggen |
+| Entscheidung           | Wert                    | Begründung                                          |
+| ---------------------- | ----------------------- | --------------------------------------------------- |
+| **Rollback-Strategie** | Checkpoint-basiert      | Zwischenstände speichern, bei Checkpoint fortsetzen |
+| **Checkpoint-Storage** | Filesystem (JSON-Files) | Pro Workflow ein File, einfach zu debuggen          |
 
 #### UI & Notifications
 
-| Entscheidung | Wert | Begründung |
-|--------------|------|------------|
-| **Agent UI** | Alles live streamen | Volle Transparenz, jeder Agent-Schritt sichtbar |
-| **Notifications** | In-App only | Slack komplett raus, Dashboard-Benachrichtigungen |
-| **Confidence Threshold** | < 70% → User eskalieren | Bei niedriger Confidence manuelle Entscheidung |
+| Entscheidung             | Wert                    | Begründung                                        |
+| ------------------------ | ----------------------- | ------------------------------------------------- |
+| **Agent UI**             | Alles live streamen     | Volle Transparenz, jeder Agent-Schritt sichtbar   |
+| **Notifications**        | In-App only             | Slack komplett raus, Dashboard-Benachrichtigungen |
+| **Confidence Threshold** | < 70% → User eskalieren | Bei niedriger Confidence manuelle Entscheidung    |
 
 #### Governance & Audit
 
-| Entscheidung | Wert | Begründung |
-|--------------|------|------------|
-| **Override-Governance** | Nur Audit-Log | BD Manager wird vertraut, Log reicht |
-| **Log Retention** | Unbegrenzt (komprimiert) | Alles behalten, nach 90 Tagen archivieren |
-| **Original-Dokumente** | Extrahierte Daten reichen | Kein Audit ohne Original nötig |
+| Entscheidung            | Wert                      | Begründung                                |
+| ----------------------- | ------------------------- | ----------------------------------------- |
+| **Override-Governance** | Nur Audit-Log             | BD Manager wird vertraut, Log reicht      |
+| **Log Retention**       | Unbegrenzt (komprimiert)  | Alles behalten, nach 90 Tagen archivieren |
+| **Original-Dokumente**  | Extrahierte Daten reichen | Kein Audit ohne Original nötig            |
 
 #### Daten-Management
 
-| Entscheidung | Wert | Begründung |
-|--------------|------|------------|
-| **Daten-Freshness** | Warnung nach X Tagen | Alert wenn Scan-Daten veraltet |
-| **Full-Scan bei Website-Änderung** | Immer neu crawlen | Unabhängig vom Quick-Scan |
-| **HR-Daten Sync** | Manuelle Pflege | Admin pflegt Mitarbeiter-DB, kein HR-System |
+| Entscheidung                       | Wert                 | Begründung                                  |
+| ---------------------------------- | -------------------- | ------------------------------------------- |
+| **Daten-Freshness**                | Warnung nach X Tagen | Alert wenn Scan-Daten veraltet              |
+| **Full-Scan bei Website-Änderung** | Immer neu crawlen    | Unabhängig vom Quick-Scan                   |
+| **HR-Daten Sync**                  | Manuelle Pflege      | Admin pflegt Mitarbeiter-DB, kein HR-System |
 
 #### Duplicate Handling
 
-| Entscheidung | Wert | Begründung |
-|--------------|------|------------|
+| Entscheidung         | Wert               | Begründung                                  |
+| -------------------- | ------------------ | ------------------------------------------- |
 | **Duplicate Action** | Automatisch mergen | Neue Infos zum existierenden RFP hinzufügen |
 
 #### Feedback & Learning
 
-| Entscheidung | Wert | Begründung |
-|--------------|------|------------|
+| Entscheidung      | Wert                | Begründung                             |
+| ----------------- | ------------------- | -------------------------------------- |
 | **No-Bid Reason** | Optionales Freitext | BU Lead kann Grund angeben, muss nicht |
 
 #### Internationalisierung
 
-| Entscheidung | Wert | Begründung |
-|--------------|------|------------|
+| Entscheidung | Wert                       | Begründung                        |
+| ------------ | -------------------------- | --------------------------------- |
 | **Timezone** | Immer lokale Zeit (Berlin) | Alle Zeiten in deutscher Zeitzone |
 
 ---
@@ -1737,17 +1810,20 @@ Die folgenden Entscheidungen wurden im Detail-Interview mit dem Product Owner ge
 ### Technische Umsetzung (basierend auf Decisions)
 
 **Datenhaltung:**
+
 - [x] MCP-Layer für Multi-Source Datensammlung (nur öffentliche Daten)
 - [x] Alle Crawl-Daten in DB speichern (SQLite + JSON)
 - [x] Embeddings mit `text-embedding-3-large` via adesso AI Hub
 - [x] SQLite vec0 Extension für Vektor-Suche (< 10k RFPs)
 
 **Integration:**
+
 - [x] Playwright/Chrome DevTools MCP für Screenshots
 - [x] Wappalyzer für Tech-Detection
 - [x] Filesystem-Checkpoints (JSON) für Workflow-State
 
 **Agent-Orchestrierung:**
+
 - [x] Vercel AI SDK mit streamText/generateObject
 - [x] Agentic Loop: Coordinator entscheidet dynamisch
 - [x] Vollautomatisch (kein Human-in-Loop während Workflow)
@@ -1758,11 +1834,13 @@ Die folgenden Entscheidungen wurden im Detail-Interview mit dem Product Owner ge
 #### RFP-Extraktion (bestehend, zu verbessern)
 
 **Probleme mit aktuellem Stand:**
+
 - Extraktion liefert nicht immer brauchbare Ergebnisse
 - Fehlende Strukturierung der extrahierten Daten
 - Keine Validierung gegen bekannte Patterns
 
 **Verbesserungen:**
+
 - Structured Output mit strikten Zod-Schemas
 - Multi-Pass Extraktion (erst grob, dann Detail)
 - Confidence Scores für jeden extrahierten Wert
@@ -1771,6 +1849,7 @@ Die folgenden Entscheidungen wurden im Detail-Interview mit dem Product Owner ge
 #### Quick Scan (während Qualifikation)
 
 Der Quick Scan läuft bereits während der BD-Qualifikation und liefert:
+
 - Tech Stack der Kunden-Website
 - Content-Volumen Schätzung
 - Erste BU-Routing-Empfehlung
@@ -1801,6 +1880,7 @@ Die Timeline soll **dauerhaft** im RFP/Lead angezeigt werden:
 ```
 
 **Berechnung basiert auf:**
+
 - Content-Volumen (Seiten, Content-Typen)
 - Komponenten-Komplexität
 - Integrations-Anforderungen
@@ -1814,29 +1894,30 @@ Wenn ein RFP an eine Business Unit geroutet wird, wird er zum **Lead** und erhä
 
 Der bestehende **Website Audit Skill** liefert:
 
-| Daten | Beschreibung | Nutzen für BU Lead |
-|-------|--------------|-------------------|
-| **Komponenten** | UI-Patterns, Häufigkeit, Varianten | Aufwandsschätzung |
-| **Screenshots** | Visuelle Dokumentation aller Seiten | Schneller Überblick |
-| **Content-Typen** | Strukturierte vs. unstrukturierte Inhalte | Migrations-Planung |
-| **Tech Stack** | CMS, Frameworks, Libraries | Team-Staffing |
-| **Integrationen** | APIs, Third-Party Services | Risiko-Assessment |
-| **Performance** | Core Web Vitals, Page Speed | Benchmark |
-| **SEO** | Meta, Structure, Accessibility | Scope-Definition |
-| **Legal** | Cookie-Banner, Datenschutz, Impressum | Compliance |
+| Daten             | Beschreibung                              | Nutzen für BU Lead  |
+| ----------------- | ----------------------------------------- | ------------------- |
+| **Komponenten**   | UI-Patterns, Häufigkeit, Varianten        | Aufwandsschätzung   |
+| **Screenshots**   | Visuelle Dokumentation aller Seiten       | Schneller Überblick |
+| **Content-Typen** | Strukturierte vs. unstrukturierte Inhalte | Migrations-Planung  |
+| **Tech Stack**    | CMS, Frameworks, Libraries                | Team-Staffing       |
+| **Integrationen** | APIs, Third-Party Services                | Risiko-Assessment   |
+| **Performance**   | Core Web Vitals, Page Speed               | Benchmark           |
+| **SEO**           | Meta, Structure, Accessibility            | Scope-Definition    |
+| **Legal**         | Cookie-Banner, Datenschutz, Impressum     | Compliance          |
 
 #### Vertragsmodell-Analyse (NEU)
 
 **Automatische Erkennung aus RFP:**
 
-| Vertragstyp | Indikatoren | Risiko-Level |
-|-------------|-------------|--------------|
-| **Time & Material (T&M)** | "nach Aufwand", "Stundensätze", "agil" | Niedrig |
-| **Festpreis** | "Pauschal", "Budget: X€", "nicht zu überschreiten" | Hoch |
-| **Rahmenvertrag** | "Abruf", "Kontingent", "Laufzeit X Jahre" | Mittel |
-| **Hybrid** | "Festpreis für Phase 1, T&M für Phase 2" | Mittel |
+| Vertragstyp               | Indikatoren                                        | Risiko-Level |
+| ------------------------- | -------------------------------------------------- | ------------ |
+| **Time & Material (T&M)** | "nach Aufwand", "Stundensätze", "agil"             | Niedrig      |
+| **Festpreis**             | "Pauschal", "Budget: X€", "nicht zu überschreiten" | Hoch         |
+| **Rahmenvertrag**         | "Abruf", "Kontingent", "Laufzeit X Jahre"          | Mittel       |
+| **Hybrid**                | "Festpreis für Phase 1, T&M für Phase 2"           | Mittel       |
 
 **Risiko-Flags bei Festpreis:**
+
 - [ ] Unrealistische Timeline
 - [ ] Unklare Anforderungen ("und weitere Features")
 - [ ] Kein Change Request Prozess definiert
@@ -1846,13 +1927,13 @@ Der bestehende **Website Audit Skill** liefert:
 
 **Zu prüfende Aspekte:**
 
-| Kategorie | Prüfpunkte |
-|-----------|------------|
-| **Haftung** | Haftungsbegrenzung, Gewährleistung, SLA-Penalties |
-| **IP/Rechte** | Urheberrecht, Lizenzen, Open Source Compliance |
-| **Datenschutz** | DSGVO, Auftragsverarbeitung, Datenexport |
-| **Compliance** | Branchenspezifisch (Pharma, Finance, Public Sector) |
-| **Kündigungs-Klauseln** | Exit-Szenarien, Übergabe-Pflichten |
+| Kategorie               | Prüfpunkte                                          |
+| ----------------------- | --------------------------------------------------- |
+| **Haftung**             | Haftungsbegrenzung, Gewährleistung, SLA-Penalties   |
+| **IP/Rechte**           | Urheberrecht, Lizenzen, Open Source Compliance      |
+| **Datenschutz**         | DSGVO, Auftragsverarbeitung, Datenexport            |
+| **Compliance**          | Branchenspezifisch (Pharma, Finance, Public Sector) |
+| **Kündigungs-Klauseln** | Exit-Szenarien, Übergabe-Pflichten                  |
 
 **Output: Legal Risk Score (1-10) mit Begründung**
 
@@ -1926,13 +2007,13 @@ Der BU Lead sieht alle relevanten Daten auf einen Blick:
 
 Die gecrawlten Daten werden für intelligentes Staffing genutzt:
 
-| Website-Daten | Matching-Kriterium | Mitarbeiter-Skills |
-|---------------|-------------------|-------------------|
-| CMS: Drupal 10 | Exact Match | drupal, drupal-10 |
-| React Components | Framework | react, typescript |
-| GSAP Animations | Specialty | animation, gsap |
-| Elasticsearch | Integration | elasticsearch, search |
-| Multilingual (5 Sprachen) | Complexity | i18n, translation-mgmt |
+| Website-Daten             | Matching-Kriterium | Mitarbeiter-Skills     |
+| ------------------------- | ------------------ | ---------------------- |
+| CMS: Drupal 10            | Exact Match        | drupal, drupal-10      |
+| React Components          | Framework          | react, typescript      |
+| GSAP Animations           | Specialty          | animation, gsap        |
+| Elasticsearch             | Integration        | elasticsearch, search  |
+| Multilingual (5 Sprachen) | Complexity         | i18n, translation-mgmt |
 
 #### Staffing-Vorschlag
 
@@ -1965,23 +2046,23 @@ Die gecrawlten Daten werden für intelligentes Staffing genutzt:
 ```typescript
 // Status-Enum erweitern
 type OpportunityStatus =
-  | 'draft'           // RFP angelegt
-  | 'qualifying'      // Quick Scan läuft
-  | 'qualified'       // Quick Scan fertig, wartet auf Routing
-  | 'routed'          // An BU geroutet → wird zu "Lead"
-  | 'scanning'        // Vollumfänglicher Scan läuft
-  | 'pending_decision'// Wartet auf BU Lead Entscheidung
-  | 'bid'             // BIT entschieden
-  | 'no_bid'          // NO BIT entschieden
-  | 'staffing'        // Team wird zusammengestellt
-  | 'handed_off';     // An Team übergeben
+  | 'draft' // RFP angelegt
+  | 'qualifying' // Quick Scan läuft
+  | 'qualified' // Quick Scan fertig, wartet auf Routing
+  | 'routed' // An BU geroutet → wird zu "Lead"
+  | 'scanning' // Vollumfänglicher Scan läuft
+  | 'pending_decision' // Wartet auf BU Lead Entscheidung
+  | 'bid' // BIT entschieden
+  | 'no_bid' // NO BIT entschieden
+  | 'staffing' // Team wird zusammengestellt
+  | 'handed_off'; // An Team übergeben
 
 // Neues Feld für Lead-Transformation
 interface Opportunity {
   // ... existing fields ...
 
   // NEU: Lead-spezifische Felder (nach Routing)
-  becameLeadAt?: Date;           // Zeitpunkt der Transformation
+  becameLeadAt?: Date; // Zeitpunkt der Transformation
   fullScanResult?: FullScanResult;
   contractAnalysis?: ContractAnalysis;
   legalRiskAssessment?: LegalRiskAssessment;
@@ -2018,7 +2099,7 @@ interface ContractAnalysis {
   type: 'tm' | 'fixed_price' | 'framework' | 'hybrid';
   budget?: number;
   currency: string;
-  indicators: string[];      // Textstellen die zum Typ führten
+  indicators: string[]; // Textstellen die zum Typ führten
   riskFlags: RiskFlag[];
   changeRequestProcess: boolean;
   penaltyClauses: boolean;
@@ -2042,6 +2123,7 @@ interface RiskFlag {
 **Tech Stack**: Vercel AI SDK + Next.js 16 + ShadCN + Tailwind v4
 
 **Key Features (MVP)**:
+
 - **Multi-Agent System**: 10 spezialisierte Agents mit dynamischem Coordinator
 - **Agent-Native Architecture**: Agentic Loop, Coordinator entscheidet dynamisch
 - **Embeddings**: text-embedding-3-large via adesso AI Hub, SQLite vec0
@@ -2057,6 +2139,7 @@ interface RiskFlag {
 - **Duplicate Detection**: Automatisches Mergen bei hoher Similarity
 
 **Architecture Decisions (2026-01-20)**:
+
 - MCP: Multi-Source (öffentliche Daten), kein Login
 - Embeddings: text-embedding-3-large, SQLite vec0 (< 10k RFPs)
 - Orchestrierung: Agentic Loop (Coordinator entscheidet dynamisch)
@@ -2067,6 +2150,7 @@ interface RiskFlag {
 - Timezone: Berlin (lokal)
 
 **Hybrid-Orchestrierung**:
+
 1. Parallel: Extraction, Tech, Legal (Quick), Commercial, Competition, Reference Agents
 2. Dynamisch: Coordinator Agent wählt zur Laufzeit welche Agents wann
 3. Background: Deep Analysis Agent nach BL-Zuweisung

@@ -14,12 +14,15 @@ const openai = new OpenAI({
 
 interface JsonRenderTree {
   root: string | null;
-  elements: Record<string, {
-    key: string;
-    type: string;
-    props: Record<string, unknown>;
-    children?: string[];
-  }>;
+  elements: Record<
+    string,
+    {
+      key: string;
+      type: string;
+      props: Record<string, unknown>;
+      children?: string[];
+    }
+  >;
 }
 
 /**
@@ -31,7 +34,7 @@ function parseJsonlPatches(jsonl: string): JsonRenderTree {
     elements: {},
   };
 
-  const lines = jsonl.split('\n').filter((line) => line.trim());
+  const lines = jsonl.split('\n').filter(line => line.trim());
 
   for (const line of lines) {
     try {
@@ -424,7 +427,11 @@ interface SiteTreeData {
   totalPages: number;
   maxDepth: number;
   sources?: { sitemap?: number; linkDiscovery?: number };
-  sections?: Array<{ path: string; count: number; children?: Array<{ path: string; count: number }> }>;
+  sections?: Array<{
+    path: string;
+    count: number;
+    children?: Array<{ path: string; count: number }>;
+  }>;
 }
 
 interface ContentTypesData {
@@ -474,11 +481,15 @@ export async function generateFactsVisualizationWithAI(
   const performanceIndicators = parseJsonField<PerformanceData>(quickScan.performanceIndicators);
   const navigationStructure = parseJsonField<NavigationData>(quickScan.navigationStructure);
   const screenshots = parseJsonField<ScreenshotsData>(quickScan.screenshots);
-  const companyIntelligence = parseJsonField<CompanyIntelligenceData>(quickScan.companyIntelligence);
+  const companyIntelligence = parseJsonField<CompanyIntelligenceData>(
+    quickScan.companyIntelligence
+  );
   const siteTree = parseJsonField<SiteTreeData>(quickScan.siteTree);
   const contentTypes = parseJsonField<ContentTypesData>(quickScan.contentTypes);
   const decisionMakers = parseJsonField<DecisionMakersData>(quickScan.decisionMakers);
-  const migrationComplexity = parseJsonField<MigrationComplexityData>(quickScan.migrationComplexity);
+  const migrationComplexity = parseJsonField<MigrationComplexityData>(
+    quickScan.migrationComplexity
+  );
   const questionsData = buildQuestionsWithStatus(quickScan, extractedData);
 
   // Build complete data prompt - give AI EVERYTHING
@@ -499,7 +510,9 @@ Beantwortet: ${questionsData.summary.answered}/${questionsData.summary.total}
 ${questionsData.questions.map(q => `- [${q.answered ? '✓' : '○'}] ${q.question}${q.answer ? ` → ${q.answer}` : ''}`).join('\n')}
 
 === TECH STACK ===
-${techStack ? `
+${
+  techStack
+    ? `
 CMS: ${techStack.cms || 'Nicht erkannt'}${techStack.cmsVersion ? ` v${techStack.cmsVersion}` : ''} (${techStack.cmsConfidence || 0}% confidence)
 Framework: ${techStack.framework || 'Nicht erkannt'}
 CSS Frameworks: ${techStack.cssFrameworks?.map(f => `${f.name} (${f.confidence}%)`).join(', ') || 'Keine'}
@@ -508,19 +521,27 @@ Analytics: ${techStack.analytics?.join(', ') || 'Keine'}
 CDN: ${techStack.cdn || techStack.cdnProviders?.join(', ') || 'Nicht erkannt'}
 Server-Side Rendering: ${techStack.serverSideRendering !== undefined ? (techStack.serverSideRendering ? 'Ja' : 'Nein') : 'Unbekannt'}
 API Endpoints: ${techStack.apiEndpoints?.rest?.length ? `${techStack.apiEndpoints.rest.length} REST` : ''} ${techStack.apiEndpoints?.graphql ? 'GraphQL' : ''}
-` : 'Keine Tech-Stack Daten'}
+`
+    : 'Keine Tech-Stack Daten'
+}
 
 === CONTENT & VOLUMEN ===
-${contentVolume ? `
+${
+  contentVolume
+    ? `
 Geschätzte Seiten: ${contentVolume.estimatedPageCount || 'Unbekannt'}
 Komplexität: ${contentVolume.complexity || 'Unbekannt'}
 Sprachen: ${contentVolume.languages?.join(', ') || 'Nicht erkannt'}
 Sitemap gefunden: ${contentVolume.sitemapFound ? 'Ja' : 'Nein'}
 Media Assets: ${contentVolume.mediaAssets ? `${contentVolume.mediaAssets.images || 0} Bilder, ${contentVolume.mediaAssets.videos || 0} Videos, ${contentVolume.mediaAssets.documents || 0} Dokumente` : 'Unbekannt'}
-` : 'Keine Content-Daten'}
+`
+    : 'Keine Content-Daten'
+}
 
 === FEATURES ===
-${features ? `
+${
+  features
+    ? `
 E-Commerce: ${features.ecommerce ? '✓' : '✗'}
 User Accounts: ${features.userAccounts ? '✓' : '✗'}
 Suche: ${features.search ? '✓' : '✗'}
@@ -530,10 +551,14 @@ Formulare: ${features.forms ? '✓' : '✗'}
 API: ${features.api ? '✓' : '✗'}
 Mobile App: ${features.mobileApp ? '✓' : '✗'}
 Custom Features: ${features.customFeatures?.join(', ') || 'Keine'}
-` : 'Keine Feature-Daten'}
+`
+    : 'Keine Feature-Daten'
+}
 
 === ACCESSIBILITY AUDIT ===
-${accessibilityAudit ? `
+${
+  accessibilityAudit
+    ? `
 Score: ${accessibilityAudit.score}/100
 WCAG Level: ${accessibilityAudit.level || 'Nicht bestimmt'}
 Kritische Issues: ${accessibilityAudit.criticalIssues}
@@ -541,12 +566,18 @@ Schwerwiegende Issues: ${accessibilityAudit.seriousIssues}
 Moderate Issues: ${accessibilityAudit.moderateIssues}
 Geringe Issues: ${accessibilityAudit.minorIssues}
 ${accessibilityAudit.checks ? `Checks: Alt-Texte: ${accessibilityAudit.checks.hasAltTexts ? '✓' : '✗'}, ARIA: ${accessibilityAudit.checks.hasAriaLabels ? '✓' : '✗'}, Headings: ${accessibilityAudit.checks.hasProperHeadings ? '✓' : '✗'}, Skip Links: ${accessibilityAudit.checks.hasSkipLinks ? '✓' : '✗'}` : ''}
-` : 'Kein Accessibility Audit'}
+`
+    : 'Kein Accessibility Audit'
+}
 
 === SEO AUDIT ===
-${seoAudit ? `
+${
+  seoAudit
+    ? `
 Score: ${seoAudit.score !== undefined ? `${seoAudit.score}/100` : 'Nicht berechnet'}
-${seoAudit.checks ? `
+${
+  seoAudit.checks
+    ? `
 Title: ${seoAudit.checks.hasTitle ? '✓' : '✗'}
 Meta Description: ${seoAudit.checks.hasMetaDescription ? '✓' : '✗'}
 Canonical: ${seoAudit.checks.hasCanonical ? '✓' : '✗'}
@@ -555,24 +586,38 @@ Sitemap: ${seoAudit.checks.hasSitemap ? '✓' : '✗'}
 Schema.org: ${seoAudit.checks.hasStructuredData ? '✓' : '✗'}
 Open Graph: ${seoAudit.checks.hasOpenGraph ? '✓' : '✗'}
 Mobile Viewport: ${seoAudit.checks.mobileViewport ? '✓' : '✗'}
-` : ''}
-` : 'Kein SEO Audit'}
+`
+    : ''
+}
+`
+    : 'Kein SEO Audit'
+}
 
 === LEGAL / DSGVO ===
-${legalCompliance ? `
+${
+  legalCompliance
+    ? `
 Score: ${legalCompliance.score}/100
-${legalCompliance.checks ? `
+${
+  legalCompliance.checks
+    ? `
 Impressum: ${legalCompliance.checks.hasImprint ? '✓' : '✗'}
 Datenschutz: ${legalCompliance.checks.hasPrivacyPolicy ? '✓' : '✗'}
 Cookie Banner: ${legalCompliance.checks.hasCookieBanner ? '✓' : '✗'}
 AGB: ${legalCompliance.checks.hasTermsOfService ? '✓' : '✗'}
 Barrierefreiheit: ${legalCompliance.checks.hasAccessibilityStatement ? '✓' : '✗'}
-` : ''}
+`
+    : ''
+}
 Cookie Tool: ${legalCompliance.gdprIndicators?.cookieConsentTool || 'Nicht erkannt'}
-` : 'Keine Legal-Daten'}
+`
+    : 'Keine Legal-Daten'
+}
 
 === PERFORMANCE ===
-${performanceIndicators ? `
+${
+  performanceIndicators
+    ? `
 Ladezeit: ${performanceIndicators.estimatedLoadTime || 'Unbekannt'}
 Scripts: ${performanceIndicators.resourceCount?.scripts || 0}
 Stylesheets: ${performanceIndicators.resourceCount?.stylesheets || 0}
@@ -581,66 +626,100 @@ Fonts: ${performanceIndicators.resourceCount?.fonts || 0}
 Lazy Loading: ${performanceIndicators.hasLazyLoading !== undefined ? (performanceIndicators.hasLazyLoading ? '✓' : '✗') : '?'}
 Minification: ${performanceIndicators.hasMinification !== undefined ? (performanceIndicators.hasMinification ? '✓' : '✗') : '?'}
 Caching: ${performanceIndicators.hasCaching !== undefined ? (performanceIndicators.hasCaching ? '✓' : '✗') : '?'}
-` : 'Keine Performance-Daten'}
+`
+    : 'Keine Performance-Daten'
+}
 
 === NAVIGATION ===
-${navigationStructure ? `
+${
+  navigationStructure
+    ? `
 Total Items: ${navigationStructure.totalItems || 0}
 Max Tiefe: ${navigationStructure.maxDepth || 0}
 Haupt-Navigation: ${navigationStructure.mainNav?.map(n => n.label).join(', ') || 'Nicht erkannt'}
 Suche: ${navigationStructure.hasSearch ? '✓' : '✗'}
 Breadcrumbs: ${navigationStructure.hasBreadcrumbs ? '✓' : '✗'}
 Mega Menu: ${navigationStructure.hasMegaMenu ? '✓' : '✗'}
-` : 'Keine Navigation-Daten'}
+`
+    : 'Keine Navigation-Daten'
+}
 
 === SEITENSTRUKTUR (Site Tree) ===
-${siteTree ? `
+${
+  siteTree
+    ? `
 Gesamte Seiten: ${siteTree.totalPages}
 Max Tiefe: ${siteTree.maxDepth}
 Aus Sitemap: ${siteTree.sources?.sitemap || 0}
 Entdeckt: ${siteTree.sources?.linkDiscovery || 0}
 ${siteTree.sections?.length ? `Sections:\n${siteTree.sections.map(s => `  ${s.path}: ${s.count} Seiten${s.children?.length ? ` (${s.children.length} Unterverzeichnisse)` : ''}`).join('\n')}` : ''}
-` : 'Keine Seitenstruktur-Daten'}
+`
+    : 'Keine Seitenstruktur-Daten'
+}
 
 === CONTENT-TYP-VERTEILUNG ===
-${contentTypes ? `
+${
+  contentTypes
+    ? `
 Geschätzte Content Types: ${contentTypes.estimatedContentTypes || 0}
 ${contentTypes.distribution?.length ? `Verteilung:\n${contentTypes.distribution.map(d => `  ${d.type}: ${d.count} (${d.percentage}%)`).join('\n')}` : ''}
 ${contentTypes.recommendations?.length ? `Empfehlungen: ${contentTypes.recommendations.join(', ')}` : ''}
-` : 'Keine Content-Typ-Daten'}
+`
+    : 'Keine Content-Typ-Daten'
+}
 
 === ENTSCHEIDUNGSTRÄGER ===
-${decisionMakers?.decisionMakers?.length ? `
+${
+  decisionMakers?.decisionMakers?.length
+    ? `
 Gefunden: ${decisionMakers.decisionMakers.length} Personen
 ${decisionMakers.decisionMakers.map(dm => `  ${dm.name} - ${dm.role}${dm.email ? ` | ${dm.email} (${dm.emailConfidence || 'unbekannt'})` : ''}${dm.linkedInUrl ? ' | LinkedIn' : ''}`).join('\n')}
 Research Quality: ${decisionMakers.researchQuality?.linkedInFound || 0} LinkedIn, ${decisionMakers.researchQuality?.emailsConfirmed || 0} bestätigte Emails, ${decisionMakers.researchQuality?.emailsDerived || 0} abgeleitete
-` : 'Keine Entscheidungsträger gefunden'}
+`
+    : 'Keine Entscheidungsträger gefunden'
+}
 
 === UNTERNEHMEN ===
-${companyIntelligence?.basicInfo ? `
+${
+  companyIntelligence?.basicInfo
+    ? `
 Name: ${companyIntelligence.basicInfo.name || extractedData?.customerName || 'Unbekannt'}
 Branche: ${companyIntelligence.basicInfo.industry || extractedData?.industry || 'Unbekannt'}
-` : 'Keine Unternehmens-Daten'}
+`
+    : 'Keine Unternehmens-Daten'
+}
 
 === MIGRATIONS-KOMPLEXITÄT ===
-${migrationComplexity ? `
+${
+  migrationComplexity
+    ? `
 Score: ${migrationComplexity.score}/100
 Geschätzter Aufwand: ${migrationComplexity.estimatedEffort ? `${migrationComplexity.estimatedEffort.minPT}-${migrationComplexity.estimatedEffort.maxPT} PT (${migrationComplexity.estimatedEffort.confidence}% Confidence)` : 'Nicht geschätzt'}
-${migrationComplexity.factors ? `Faktoren:
+${
+  migrationComplexity.factors
+    ? `Faktoren:
   CMS Export: ${migrationComplexity.factors.cmsExportability?.score || '?'}/100 ${migrationComplexity.factors.cmsExportability?.notes || ''}
   Datenqualität: ${migrationComplexity.factors.dataQuality?.score || '?'}/100 ${migrationComplexity.factors.dataQuality?.notes || ''}
   Content-Komplexität: ${migrationComplexity.factors.contentComplexity?.score || '?'}/100 ${migrationComplexity.factors.contentComplexity?.notes || ''}
-  Integration-Komplexität: ${migrationComplexity.factors.integrationComplexity?.score || '?'}/100 ${migrationComplexity.factors.integrationComplexity?.notes || ''}` : ''}
-` : 'Keine Migrations-Daten'}
+  Integration-Komplexität: ${migrationComplexity.factors.integrationComplexity?.score || '?'}/100 ${migrationComplexity.factors.integrationComplexity?.notes || ''}`
+    : ''
+}
+`
+    : 'Keine Migrations-Daten'
+}
 
 === SCREENSHOTS ===
-${screenshots?.homepage ? `
+${
+  screenshots?.homepage
+    ? `
 Desktop: ${screenshots.homepage.desktop ? 'Vorhanden' : 'Nicht vorhanden'}
 Mobile: ${screenshots.homepage.mobile ? 'Vorhanden' : 'Nicht vorhanden'}
 Zeitstempel: ${screenshots.timestamp || 'Unbekannt'}
 Desktop URL: ${screenshots.homepage.desktop || ''}
 Mobile URL: ${screenshots.homepage.mobile || ''}
-` : 'Keine Screenshots'}
+`
+    : 'Keine Screenshots'
+}
 
 ANWEISUNGEN:
 1. Nutze ALLE Komponenten kreativ: Grid (columns: 2-4), ResultCard (mit variants!), Metric, ScoreCard, FeatureList, TechStack, etc.
@@ -719,11 +798,15 @@ export function generateFactsTabVisualization(
   const performanceIndicators = parseJsonField<PerformanceData>(quickScan.performanceIndicators);
   const navigationStructure = parseJsonField<NavigationData>(quickScan.navigationStructure);
   const screenshots = parseJsonField<ScreenshotsData>(quickScan.screenshots);
-  const companyIntelligence = parseJsonField<CompanyIntelligenceData>(quickScan.companyIntelligence);
+  const companyIntelligence = parseJsonField<CompanyIntelligenceData>(
+    quickScan.companyIntelligence
+  );
   const siteTree = parseJsonField<SiteTreeData>(quickScan.siteTree);
   const contentTypes = parseJsonField<ContentTypesData>(quickScan.contentTypes);
   const decisionMakers = parseJsonField<DecisionMakersData>(quickScan.decisionMakers);
-  const migrationComplexity = parseJsonField<MigrationComplexityData>(quickScan.migrationComplexity);
+  const migrationComplexity = parseJsonField<MigrationComplexityData>(
+    quickScan.migrationComplexity
+  );
 
   // Get 10 questions data
   const questionsData = buildQuestionsWithStatus(quickScan, extractedData);
@@ -760,7 +843,12 @@ export function generateFactsTabVisualization(
     children: ['overview-grid'],
   };
 
-  const overviewMetrics: string[] = ['metric-bl', 'metric-pages', 'metric-tech', 'metric-complexity'];
+  const overviewMetrics: string[] = [
+    'metric-bl',
+    'metric-pages',
+    'metric-tech',
+    'metric-complexity',
+  ];
   if (migrationComplexity?.estimatedEffort) {
     overviewMetrics.push('metric-effort');
   }
@@ -807,7 +895,9 @@ export function generateFactsTabVisualization(
     props: {
       label: 'Komplexität',
       value: contentVolume?.complexity?.toUpperCase() || '-',
-      subValue: contentVolume?.languages?.length ? `${contentVolume.languages.length} Sprachen` : undefined,
+      subValue: contentVolume?.languages?.length
+        ? `${contentVolume.languages.length} Sprachen`
+        : undefined,
     },
   };
   if (migrationComplexity?.estimatedEffort) {
@@ -829,7 +919,12 @@ export function generateFactsTabVisualization(
         label: 'Accessibility',
         value: `${accessibilityAudit.score}%`,
         subValue: accessibilityAudit.level ? `WCAG ${accessibilityAudit.level}` : undefined,
-        trend: accessibilityAudit.score >= 70 ? 'up' : accessibilityAudit.score >= 50 ? 'neutral' : 'down',
+        trend:
+          accessibilityAudit.score >= 70
+            ? 'up'
+            : accessibilityAudit.score >= 50
+              ? 'neutral'
+              : 'down',
       },
     };
   }
@@ -966,8 +1061,9 @@ export function generateFactsTabVisualization(
         type: 'TechStack',
         props: {
           title: 'CDN',
-          technologies: techStack.cdnProviders?.map(c => ({ name: c, category: 'cdn' })) ||
-            [{ name: techStack.cdn || 'Unknown', category: 'cdn' }],
+          technologies: techStack.cdnProviders?.map(c => ({ name: c, category: 'cdn' })) || [
+            { name: techStack.cdn || 'Unknown', category: 'cdn' },
+          ],
         },
       };
     }
@@ -1053,7 +1149,12 @@ export function generateFactsTabVisualization(
       props: {
         title: 'Accessibility',
         icon: 'accessibility',
-        variant: accessibilityAudit.score >= 70 ? 'success' : accessibilityAudit.score >= 50 ? 'warning' : 'default',
+        variant:
+          accessibilityAudit.score >= 70
+            ? 'success'
+            : accessibilityAudit.score >= 50
+              ? 'warning'
+              : 'default',
       },
       children: ['accessibility-score', 'accessibility-issues'],
     };
@@ -1064,7 +1165,12 @@ export function generateFactsTabVisualization(
         label: `WCAG ${accessibilityAudit.level || '2.1'}`,
         score: accessibilityAudit.score,
         maxScore: 100,
-        variant: accessibilityAudit.score >= 70 ? 'success' : accessibilityAudit.score >= 50 ? 'warning' : 'danger',
+        variant:
+          accessibilityAudit.score >= 70
+            ? 'success'
+            : accessibilityAudit.score >= 50
+              ? 'warning'
+              : 'danger',
         showProgress: true,
       },
     };
@@ -1073,10 +1179,22 @@ export function generateFactsTabVisualization(
       type: 'FeatureList',
       props: {
         features: [
-          { name: `${accessibilityAudit.criticalIssues} Kritisch`, detected: accessibilityAudit.criticalIssues === 0 },
-          { name: `${accessibilityAudit.seriousIssues} Schwerwiegend`, detected: accessibilityAudit.seriousIssues === 0 },
-          { name: `${accessibilityAudit.moderateIssues} Moderat`, detected: accessibilityAudit.moderateIssues === 0 },
-          { name: `${accessibilityAudit.minorIssues} Gering`, detected: accessibilityAudit.minorIssues === 0 },
+          {
+            name: `${accessibilityAudit.criticalIssues} Kritisch`,
+            detected: accessibilityAudit.criticalIssues === 0,
+          },
+          {
+            name: `${accessibilityAudit.seriousIssues} Schwerwiegend`,
+            detected: accessibilityAudit.seriousIssues === 0,
+          },
+          {
+            name: `${accessibilityAudit.moderateIssues} Moderat`,
+            detected: accessibilityAudit.moderateIssues === 0,
+          },
+          {
+            name: `${accessibilityAudit.minorIssues} Gering`,
+            detected: accessibilityAudit.minorIssues === 0,
+          },
         ],
       },
     };
@@ -1094,9 +1212,14 @@ export function generateFactsTabVisualization(
       seoChecks.push({ name: 'Schema.org', detected: !!seoAudit.checks.hasStructuredData });
       seoChecks.push({ name: 'Open Graph', detected: !!seoAudit.checks.hasOpenGraph });
     }
-    const seoVariant = seoAudit.score !== undefined
-      ? (seoAudit.score >= 70 ? 'success' : seoAudit.score >= 50 ? 'warning' : 'default')
-      : 'default';
+    const seoVariant =
+      seoAudit.score !== undefined
+        ? seoAudit.score >= 70
+          ? 'success'
+          : seoAudit.score >= 50
+            ? 'warning'
+            : 'default'
+        : 'default';
     elements['seo-card'] = {
       key: 'seo-card',
       type: 'ResultCard',
@@ -1132,12 +1255,22 @@ export function generateFactsTabVisualization(
     const legalChecks: Array<{ name: string; detected: boolean }> = [];
     if (legalCompliance.checks) {
       legalChecks.push({ name: 'Impressum', detected: !!legalCompliance.checks.hasImprint });
-      legalChecks.push({ name: 'Datenschutz', detected: !!legalCompliance.checks.hasPrivacyPolicy });
-      legalChecks.push({ name: 'Cookie Banner', detected: !!legalCompliance.checks.hasCookieBanner });
+      legalChecks.push({
+        name: 'Datenschutz',
+        detected: !!legalCompliance.checks.hasPrivacyPolicy,
+      });
+      legalChecks.push({
+        name: 'Cookie Banner',
+        detected: !!legalCompliance.checks.hasCookieBanner,
+      });
       legalChecks.push({ name: 'AGB', detected: !!legalCompliance.checks.hasTermsOfService });
-      legalChecks.push({ name: 'Barrierefreiheit', detected: !!legalCompliance.checks.hasAccessibilityStatement });
+      legalChecks.push({
+        name: 'Barrierefreiheit',
+        detected: !!legalCompliance.checks.hasAccessibilityStatement,
+      });
     }
-    const legalVariant = legalCompliance.score >= 70 ? 'success' : legalCompliance.score >= 50 ? 'warning' : 'default';
+    const legalVariant =
+      legalCompliance.score >= 70 ? 'success' : legalCompliance.score >= 50 ? 'warning' : 'default';
     elements['legal-card'] = {
       key: 'legal-card',
       type: 'ResultCard',
@@ -1155,14 +1288,19 @@ export function generateFactsTabVisualization(
         label: 'DSGVO Compliance',
         score: legalCompliance.score,
         maxScore: 100,
-        variant: legalCompliance.score >= 70 ? 'success' : legalCompliance.score >= 50 ? 'warning' : 'danger',
+        variant:
+          legalCompliance.score >= 70
+            ? 'success'
+            : legalCompliance.score >= 50
+              ? 'warning'
+              : 'danger',
         showProgress: true,
       },
     };
     if (legalCompliance.gdprIndicators?.cookieConsentTool) {
       legalChecks.push({
         name: `Tool: ${legalCompliance.gdprIndicators.cookieConsentTool}`,
-        detected: true
+        detected: true,
       });
     }
     elements['legal-checks'] = {
@@ -1214,7 +1352,10 @@ export function generateFactsTabVisualization(
     },
   };
 
-  if (navigationStructure && (navigationStructure.totalItems || navigationStructure.mainNav?.length)) {
+  if (
+    navigationStructure &&
+    (navigationStructure.totalItems || navigationStructure.mainNav?.length)
+  ) {
     row5Children.push('navigation-card');
     elements['navigation-card'] = {
       key: 'navigation-card',
@@ -1398,7 +1539,12 @@ export function generateFactsTabVisualization(
       props: {
         title: 'Migrations-Komplexität',
         icon: 'migration',
-        variant: migrationComplexity.score < 40 ? 'success' : migrationComplexity.score < 60 ? 'warning' : 'default',
+        variant:
+          migrationComplexity.score < 40
+            ? 'success'
+            : migrationComplexity.score < 60
+              ? 'warning'
+              : 'default',
       },
       children: migrationChildren,
     };
@@ -1409,7 +1555,12 @@ export function generateFactsTabVisualization(
         label: 'Komplexitäts-Score',
         score: migrationComplexity.score,
         maxScore: 100,
-        variant: migrationComplexity.score < 40 ? 'success' : migrationComplexity.score < 60 ? 'warning' : 'danger',
+        variant:
+          migrationComplexity.score < 40
+            ? 'success'
+            : migrationComplexity.score < 60
+              ? 'warning'
+              : 'danger',
         showProgress: true,
       },
     };

@@ -6,10 +6,7 @@ import { users } from '@/lib/db/schema';
 import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
 
-export async function login(
-  _prevState: { error: string } | null,
-  formData: FormData
-) {
+export async function login(_prevState: { error: string } | null, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
@@ -17,7 +14,7 @@ export async function login(
     await signIn('credentials', {
       email,
       password,
-      redirectTo: '/'
+      redirectTo: '/',
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -36,10 +33,7 @@ export async function login(
   return null;
 }
 
-export async function register(
-  _prevState: { error: string } | null,
-  formData: FormData
-) {
+export async function register(_prevState: { error: string } | null, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const name = formData.get('name') as string;
@@ -49,7 +43,7 @@ export async function register(
   }
 
   const existingUser = await db.query.users.findFirst({
-    where: (users, { eq }) => eq(users.email, email)
+    where: (users, { eq }) => eq(users.email, email),
   });
 
   if (existingUser) {
@@ -62,14 +56,14 @@ export async function register(
     email,
     password: hashedPassword,
     name,
-    role: 'bd'
+    role: 'bd',
   });
 
   try {
     await signIn('credentials', {
       email,
       password,
-      redirectTo: '/'
+      redirectTo: '/',
     });
   } catch (error) {
     if (error instanceof AuthError) {

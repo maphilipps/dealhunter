@@ -8,7 +8,7 @@ export async function extractTextFromPdf(buffer: Buffer): Promise<string> {
   return new Promise((resolve, reject) => {
     const pdfParser = new PDFParser(null, true); // null = no owner password, true = don't combine text
 
-    pdfParser.on('pdfParser_dataReady', (pdfData) => {
+    pdfParser.on('pdfParser_dataReady', pdfData => {
       try {
         // Extract text from all pages
         const pages = pdfData.Pages || [];
@@ -52,20 +52,27 @@ export async function extractTextFromPdf(buffer: Buffer): Promise<string> {
             resolve(rawText);
             return;
           }
-          reject(new Error('PDF enthält keinen extrahierbaren Text (möglicherweise gescanntes Dokument)'));
+          reject(
+            new Error('PDF enthält keinen extrahierbaren Text (möglicherweise gescanntes Dokument)')
+          );
           return;
         }
 
         resolve(fullText);
       } catch (error) {
-        reject(new Error(`Fehler beim Verarbeiten des PDF-Inhalts: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`));
+        reject(
+          new Error(
+            `Fehler beim Verarbeiten des PDF-Inhalts: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+          )
+        );
       }
     });
 
     pdfParser.on('pdfParser_dataError', (errData: { parserError?: Error } | Error) => {
-      const errorMessage = errData instanceof Error
-        ? errData.message
-        : (errData.parserError?.message || 'Unbekannter Fehler');
+      const errorMessage =
+        errData instanceof Error
+          ? errData.message
+          : errData.parserError?.message || 'Unbekannter Fehler';
       reject(new Error(`PDF konnte nicht gelesen werden: ${errorMessage}`));
     });
 

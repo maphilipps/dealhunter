@@ -27,7 +27,7 @@ export interface PhaseStartData {
 }
 
 export interface AnalysisCompleteData {
-  analysis: string;  // z.B. 'techStack', 'accessibility', 'seo', etc.
+  analysis: string; // z.B. 'techStack', 'accessibility', 'seo', etc.
   success: boolean;
   duration: number;
   details?: string;

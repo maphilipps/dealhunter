@@ -55,9 +55,7 @@ export function BUMatchingTab({ quickScan, bidId }: BUMatchingTabProps) {
         <CardContent className="py-12">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Berechne Business Unit Matching...
-            </p>
+            <p className="text-sm text-muted-foreground">Berechne Business Unit Matching...</p>
           </div>
         </CardContent>
       </Card>
@@ -78,9 +76,7 @@ export function BUMatchingTab({ quickScan, bidId }: BUMatchingTabProps) {
     return (
       <Card>
         <CardContent className="py-6">
-          <p className="text-sm text-muted-foreground">
-            Keine Business Units gefunden
-          </p>
+          <p className="text-sm text-muted-foreground">Keine Business Units gefunden</p>
         </CardContent>
       </Card>
     );
@@ -103,9 +99,7 @@ export function BUMatchingTab({ quickScan, bidId }: BUMatchingTabProps) {
               {Math.round(topMatch.totalScore)}% Match
             </Badge>
           </div>
-          <CardDescription className="text-green-700">
-            {topMatch.businessUnit.name}
-          </CardDescription>
+          <CardDescription className="text-green-700">{topMatch.businessUnit.name}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-green-800">{topMatch.reasoning}</p>
@@ -214,14 +208,10 @@ function CriteriaRow({
           {icon}
           <span>{label}</span>
         </div>
-        <span className={`font-medium ${colorClasses[color]}`}>
-          {Math.round(score)}%
-        </span>
+        <span className={`font-medium ${colorClasses[color]}`}>{Math.round(score)}%</span>
       </div>
       <Progress value={score} className={progressColorClasses[color]} />
-      {detail && (
-        <p className="text-xs text-muted-foreground">{detail}</p>
-      )}
+      {detail && <p className="text-xs text-muted-foreground">{detail}</p>}
     </div>
   );
 }

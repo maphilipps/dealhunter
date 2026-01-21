@@ -9,9 +9,24 @@ import type { ContentTypeDistribution } from '../schema';
  */
 
 const pageTypeEnum = z.enum([
-  'homepage', 'product', 'service', 'blog', 'news', 'event',
-  'job', 'person', 'contact', 'about', 'landing', 'category',
-  'search', 'legal', 'faq', 'download', 'form', 'custom'
+  'homepage',
+  'product',
+  'service',
+  'blog',
+  'news',
+  'event',
+  'job',
+  'person',
+  'contact',
+  'about',
+  'landing',
+  'category',
+  'search',
+  'legal',
+  'faq',
+  'download',
+  'form',
+  'custom',
 ]);
 
 const pageClassificationSchema = z.object({
@@ -86,10 +101,11 @@ async function fetchPageContent(
 
     const content = await page.evaluate(() => {
       // Get main content area if possible
-      const mainContent = document.querySelector('main') ||
-                          document.querySelector('[role="main"]') ||
-                          document.querySelector('article') ||
-                          document.body;
+      const mainContent =
+        document.querySelector('main') ||
+        document.querySelector('[role="main"]') ||
+        document.querySelector('article') ||
+        document.body;
 
       return {
         html: mainContent.innerHTML.slice(0, 10000), // Limit content size
@@ -110,9 +126,11 @@ async function fetchPageContent(
 /**
  * Classify a single page using AI
  */
-async function classifyPage(
-  content: { html: string; title: string; url: string }
-): Promise<PageClassification> {
+async function classifyPage(content: {
+  html: string;
+  title: string;
+  url: string;
+}): Promise<PageClassification> {
   const systemPrompt = `Du bist ein CMS-Experte, der Webseiten-Typen für CMS-Migrationen klassifiziert.
 
 Klassifiziere die Seite in eine der folgenden Kategorien:
@@ -217,19 +235,25 @@ export async function classifyContentTypes(
     }
 
     const totalClassified = classifications.length;
-    const distribution = Array.from(typeCounts.entries()).map(([type, data]) => ({
-      type: type as ContentTypeDistribution['distribution'][0]['type'],
-      count: data.count,
-      percentage: Math.round((data.count / totalClassified) * 100),
-      examples: data.examples,
-    })).sort((a, b) => b.count - a.count);
+    const distribution = Array.from(typeCounts.entries())
+      .map(([type, data]) => ({
+        type: type as ContentTypeDistribution['distribution'][0]['type'],
+        count: data.count,
+        percentage: Math.round((data.count / totalClassified) * 100),
+        examples: data.examples,
+      }))
+      .sort((a, b) => b.count - a.count);
 
     // Calculate complexity
     const uniqueTypes = distribution.length;
     const complexity: ContentTypeDistribution['complexity'] =
-      uniqueTypes <= 3 ? 'simple' :
-      uniqueTypes <= 6 ? 'moderate' :
-      uniqueTypes <= 10 ? 'complex' : 'very_complex';
+      uniqueTypes <= 3
+        ? 'simple'
+        : uniqueTypes <= 6
+          ? 'moderate'
+          : uniqueTypes <= 10
+            ? 'complex'
+            : 'very_complex';
 
     // Estimate custom fields needed
     const customFieldsNeeded = Math.round(uniqueTypes * 2.5);
@@ -302,9 +326,13 @@ export function estimateContentTypesFromUrls(urls: string[]): {
 
   const uniqueTypes = Object.keys(counts).length;
   const complexity: 'simple' | 'moderate' | 'complex' | 'very_complex' =
-    uniqueTypes <= 3 ? 'simple' :
-    uniqueTypes <= 6 ? 'moderate' :
-    uniqueTypes <= 10 ? 'complex' : 'very_complex';
+    uniqueTypes <= 3
+      ? 'simple'
+      : uniqueTypes <= 6
+        ? 'moderate'
+        : uniqueTypes <= 10
+          ? 'complex'
+          : 'very_complex';
 
   return { estimated: counts, complexity };
 }

@@ -1,5 +1,5 @@
-import { getUserCompetitors } from "@/lib/master-data/actions";
-import { Button } from "@/components/ui/button";
+import { getUserCompetitors } from '@/lib/master-data/actions';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -7,9 +7,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 export default async function CompetitorsPage() {
   const competitors = await getUserCompetitors();
@@ -46,7 +46,7 @@ export default async function CompetitorsPage() {
               </TableCell>
             </TableRow>
           ) : (
-            competitors.map((comp) => {
+            competitors.map(comp => {
               const industries = comp.industry ? JSON.parse(comp.industry) : [];
 
               return (
@@ -84,8 +84,8 @@ export default async function CompetitorsPage() {
                         comp.status === 'approved'
                           ? 'default'
                           : comp.status === 'rejected'
-                          ? 'destructive'
-                          : 'secondary'
+                            ? 'destructive'
+                            : 'secondary'
                       }
                     >
                       {comp.status === 'pending' && 'Ausstehend'}
@@ -95,9 +95,7 @@ export default async function CompetitorsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {comp.createdAt
-                      ? new Date(comp.createdAt).toLocaleDateString('de-DE')
-                      : '-'}
+                    {comp.createdAt ? new Date(comp.createdAt).toLocaleDateString('de-DE') : '-'}
                   </TableCell>
                 </TableRow>
               );

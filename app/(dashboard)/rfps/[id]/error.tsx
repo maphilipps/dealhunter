@@ -26,9 +26,7 @@ export default function BidDetailError({
             <AlertCircle className="h-5 w-5 text-red-600" />
             <CardTitle className="text-red-600">Ein Fehler ist aufgetreten</CardTitle>
           </div>
-          <CardDescription>
-            {error.message || 'Bid konnte nicht geladen werden'}
-          </CardDescription>
+          <CardDescription>{error.message || 'Bid konnte nicht geladen werden'}</CardDescription>
         </CardHeader>
         <CardContent>
           <Button onClick={reset}>Erneut versuchen</Button>

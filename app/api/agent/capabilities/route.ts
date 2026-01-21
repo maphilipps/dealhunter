@@ -9,10 +9,7 @@ export async function GET() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -51,13 +48,15 @@ export async function GET() {
       {
         id: 'quick-scan',
         name: 'Quick Scan Agent',
-        description: 'Führt eine schnelle Erstbewertung durch und empfiehlt passende Business Lines',
+        description:
+          'Führt eine schnelle Erstbewertung durch und empfiehlt passende Business Lines',
         status: 'active',
       },
       {
         id: 'bit-evaluation',
         name: 'Bit Evaluation Agent',
-        description: 'Bewertet RFPs mit BIT/NO BIT Entscheidung basierend auf strategischen Kriterien',
+        description:
+          'Bewertet RFPs mit BIT/NO BIT Entscheidung basierend auf strategischen Kriterien',
         status: 'active',
       },
       {
@@ -85,9 +84,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error fetching capabilities:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch capabilities' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch capabilities' }, { status: 500 });
   }
 }

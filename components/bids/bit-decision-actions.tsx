@@ -43,10 +43,10 @@ export function BitDecisionActions({
 
   const handleBitDecision = async () => {
     setIsSubmitting(true);
-    
+
     try {
       const result = await makeBitDecision(bidId, 'bid');
-      
+
       if (result.success) {
         toast.success('BIT-Entscheidung gespeichert! Weiterleitung an BL...');
         router.refresh();
@@ -67,10 +67,10 @@ export function BitDecisionActions({
     }
 
     setIsSubmitting(true);
-    
+
     try {
       const result = await makeBitDecision(bidId, 'no_bid', noBitReason);
-      
+
       if (result.success) {
         toast.success('NO BIT-Entscheidung gespeichert. Opportunity archiviert.');
         setShowNoBitDialog(false);
@@ -94,7 +94,9 @@ export function BitDecisionActions({
       case 'no_bid':
         return <Badge className="bg-red-100 text-red-800">NO BIT-Empfehlung</Badge>;
       case 'needs_review':
-        return <Badge className="bg-orange-100 text-orange-800">Manuelle Prüfung erforderlich</Badge>;
+        return (
+          <Badge className="bg-orange-100 text-orange-800">Manuelle Prüfung erforderlich</Badge>
+        );
       default:
         return null;
     }
@@ -102,7 +104,10 @@ export function BitDecisionActions({
 
   return (
     <>
-      <Card data-decision-actions className="border-indigo-200 bg-indigo-50/50 transition-all duration-300">
+      <Card
+        data-decision-actions
+        className="border-indigo-200 bg-indigo-50/50 transition-all duration-300"
+      >
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -142,8 +147,8 @@ export function BitDecisionActions({
             <div className="flex items-center gap-2 p-3 bg-amber-100 rounded-lg">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
               <p className="text-sm text-amber-800">
-                Weniger als 70% der Fragen konnten beantwortet werden. 
-                Eine manuelle Prüfung wird empfohlen.
+                Weniger als 70% der Fragen konnten beantwortet werden. Eine manuelle Prüfung wird
+                empfohlen.
               </p>
             </div>
           )}
@@ -184,8 +189,8 @@ export function BitDecisionActions({
               NO BIT Entscheidung
             </DialogTitle>
             <DialogDescription>
-              Bitte geben Sie eine Begründung für die NO BIT Entscheidung an.
-              Diese wird für zukünftige Referenz archiviert.
+              Bitte geben Sie eine Begründung für die NO BIT Entscheidung an. Diese wird für
+              zukünftige Referenz archiviert.
             </DialogDescription>
           </DialogHeader>
 
@@ -193,7 +198,7 @@ export function BitDecisionActions({
             <Textarea
               placeholder="Begründung für NO BIT (z.B. fehlendes Budget, keine passenden Referenzen, zu hohe Risiken...)"
               value={noBitReason}
-              onChange={(e) => setNoBitReason(e.target.value)}
+              onChange={e => setNoBitReason(e.target.value)}
               rows={4}
             />
           </div>

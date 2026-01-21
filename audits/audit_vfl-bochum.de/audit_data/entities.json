@@ -1,0 +1,119 @@
+{
+  "project_name": "VfL Bochum 1848 Website Relaunch",
+  "audit_date": "2025-11-26",
+  "content_types": [
+    {"name": "Landing Page", "complexity": "complex", "description": "Flexible Sektionen-Seiten mit Hero"},
+    {"name": "News/Article", "complexity": "medium", "description": "News-Artikel mit Tags und Kategorien"},
+    {"name": "Video", "complexity": "medium", "description": "Video-Content mit 1848TV Integration"},
+    {"name": "Person/Teammember", "complexity": "medium", "description": "Spieler- und Staff-Profile"},
+    {"name": "Partner", "complexity": "simple", "description": "Partner/Sponsoren"},
+    {"name": "Event/Termin", "complexity": "medium", "description": "Spiele und Events"},
+    {"name": "Page (Basic)", "complexity": "simple", "description": "Einfache Textseiten"},
+    {"name": "Job", "complexity": "medium", "description": "Stellenanzeigen"},
+    {"name": "Team", "complexity": "simple", "description": "Team-Gruppierung"}
+  ],
+  "paragraphs": [
+    {"name": "hero", "complexity": "complex", "description": "Hero-Teaser mit Bild/Video und CTA"},
+    {"name": "news_slider", "complexity": "complex", "description": "News-Karussell mit Filterung"},
+    {"name": "video_slider", "complexity": "complex", "description": "Video-Karussell"},
+    {"name": "teaser_slider", "complexity": "complex", "description": "Teaser-Karussell"},
+    {"name": "product_slider", "complexity": "complex", "description": "Produkt-Karussell (Shop)"},
+    {"name": "team_slider", "complexity": "complex", "description": "Team-Mitglieder Karussell"},
+    {"name": "text", "complexity": "simple", "description": "Rich-Text mit WYSIWYG"},
+    {"name": "free_html", "complexity": "medium", "description": "Custom HTML/Embed"},
+    {"name": "media", "complexity": "simple", "description": "Bild/Video einbetten"},
+    {"name": "cta", "complexity": "simple", "description": "Call-to-Action Button"},
+    {"name": "card", "complexity": "medium", "description": "Teaser-Card"},
+    {"name": "card_group", "complexity": "medium", "description": "Card-Grid"},
+    {"name": "accordion", "complexity": "medium", "description": "Akkordeon"},
+    {"name": "newsletter", "complexity": "medium", "description": "Newsletter-Anmeldung"},
+    {"name": "partner_grid", "complexity": "medium", "description": "Partner-Logo-Grid"},
+    {"name": "banderole", "complexity": "medium", "description": "News-Ticker/Banderole"},
+    {"name": "matchday_widget", "complexity": "complex", "description": "Spieltag-Widget"},
+    {"name": "table_standings", "complexity": "medium", "description": "Tabellen-Widget"}
+  ],
+  "taxonomies": [
+    {"name": "Partner Category", "complexity": "simple", "description": "Lead/Premium/Top/Network Partner"},
+    {"name": "Tags", "complexity": "simple", "description": "Content-Tags"},
+    {"name": "Team Category", "complexity": "simple", "description": "Profis/Frauen/Talentwerk"},
+    {"name": "Content Category", "complexity": "simple", "description": "News-Kategorien"}
+  ],
+  "media_types": [
+    {"name": "Image", "complexity": "simple", "description": "Standard-Bilder"},
+    {"name": "Video", "complexity": "medium", "description": "Videos (1848TV, YouTube)"},
+    {"name": "Document", "complexity": "simple", "description": "PDFs"},
+    {"name": "SVG/Icon", "complexity": "simple", "description": "Icons und Logos"}
+  ],
+  "views": [
+    {"name": "News Listing", "complexity": "medium", "description": "News-Übersicht mit Filtern"},
+    {"name": "News Slider Block", "complexity": "complex", "description": "News-Karussell Block"},
+    {"name": "Video Listing", "complexity": "medium", "description": "Video-Übersicht"},
+    {"name": "Video Slider Block", "complexity": "complex", "description": "Video-Karussell Block"},
+    {"name": "Team Listing", "complexity": "medium", "description": "Team-Übersicht"},
+    {"name": "Partner Listing", "complexity": "simple", "description": "Partner-Grid"},
+    {"name": "Event Listing", "complexity": "medium", "description": "Termine/Spielplan"},
+    {"name": "Job Listing", "complexity": "simple", "description": "Stellenanzeigen"},
+    {"name": "Search Results", "complexity": "medium", "description": "Suchergebnisse"}
+  ],
+  "webforms": [
+    {"name": "Contact Form", "complexity": "medium", "description": "Kontaktformular mit Salesforce Integration"},
+    {"name": "Newsletter Signup", "complexity": "simple", "description": "Newsletter-Anmeldung"},
+    {"name": "Membership Application", "complexity": "complex", "description": "Mitgliedsantrag"}
+  ],
+  "theme_components": [
+    {"name": "Header/Navigation", "complexity": "complex", "description": "Mega-Menu mit Burger"},
+    {"name": "Footer", "complexity": "medium", "description": "Footer mit Navigation und Social"},
+    {"name": "Hero Component", "complexity": "complex", "description": "Hero mit Video/Image"},
+    {"name": "Slider/Carousel", "complexity": "complex", "description": "Generischer Slider"},
+    {"name": "Card Component", "complexity": "medium", "description": "Teaser-Card"},
+    {"name": "Button Component", "complexity": "simple", "description": "CTA-Buttons"},
+    {"name": "Form Styling", "complexity": "medium", "description": "Formular-Styling"},
+    {"name": "Match Widget", "complexity": "complex", "description": "Spieltag-Widget"},
+    {"name": "Table Component", "complexity": "medium", "description": "Tabellen"},
+    {"name": "Partner Logo Grid", "complexity": "medium", "description": "Logo-Grid"},
+    {"name": "Video Player", "complexity": "medium", "description": "Video-Player Styling"},
+    {"name": "News Card", "complexity": "medium", "description": "News-Teaser"},
+    {"name": "Team Card", "complexity": "medium", "description": "Spieler-Card"},
+    {"name": "Event Card", "complexity": "medium", "description": "Termin-Card"},
+    {"name": "Accordion Component", "complexity": "medium", "description": "Akkordeon"},
+    {"name": "Newsletter Component", "complexity": "medium", "description": "Newsletter-Box"}
+  ],
+  "custom_modules": [
+    {"name": "Sportdaten-Integration", "complexity": "complex", "description": "API-Integration für Spielplan, Tabelle, Liveticker"},
+    {"name": "Salesforce Integration", "complexity": "medium", "description": "Web-to-Case für Kontaktformular"},
+    {"name": "1848TV Integration", "complexity": "medium", "description": "Video-Plattform Integration"},
+    {"name": "Partner Management", "complexity": "simple", "description": "Partner-Verwaltung mit Kategorien"}
+  ],
+  "multipliers": {
+    "testing": 0.25,
+    "documentation": 0.10,
+    "qa": 0.15,
+    "multilingual": 0,
+    "advanced_permissions": 0.10,
+    "custom_integrations": 0.50,
+    "security": 0.10,
+    "performance": 0.15,
+    "accessibility": 0.20
+  },
+  "migration": {
+    "nodes": 1000,
+    "complexity": "high",
+    "media_files": 2000,
+    "approach": "API Export + Custom Scripts"
+  },
+  "risk_level": "medium",
+  "assumptions": [
+    "BloomReach API erlaubt strukturierten Export",
+    "Sportdaten-API bleibt unverändert verfügbar",
+    "1848TV bleibt als externe Plattform bestehen",
+    "Keine grundlegende Redesign erforderlich",
+    "Bestehendes Design-System kann adaptiert werden",
+    "Salesforce-Integration wird beibehalten"
+  ],
+  "risks": [
+    "Komplexität der Migration unterschätzt",
+    "Sportdaten-API undokumentiert",
+    "Integration mit externen Shops",
+    "Content-Freeze während Migration schwierig bei Live-Betrieb"
+  ]
+}

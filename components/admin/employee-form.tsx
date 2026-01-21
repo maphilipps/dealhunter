@@ -15,7 +15,15 @@ interface Option {
   name: string;
 }
 
-function TagInput({ items, setItems, placeholder }: { items: string[], setItems: (items: string[]) => void, placeholder: string }) {
+function TagInput({
+  items,
+  setItems,
+  placeholder,
+}: {
+  items: string[];
+  setItems: (items: string[]) => void;
+  placeholder: string;
+}) {
   const [input, setInput] = useState('');
 
   const handleAdd = () => {
@@ -31,8 +39,8 @@ function TagInput({ items, setItems, placeholder }: { items: string[], setItems:
         <Input
           placeholder={placeholder}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleAdd()}
+          onChange={e => setInput(e.target.value)}
+          onKeyPress={e => e.key === 'Enter' && handleAdd()}
           className="flex-1"
         />
         <Button type="button" onClick={handleAdd} size="icon">
@@ -41,10 +49,14 @@ function TagInput({ items, setItems, placeholder }: { items: string[], setItems:
       </div>
       {items.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {items.map((item) => (
+          {items.map(item => (
             <Badge key={item} variant="secondary" className="text-sm">
               {item}
-              <button type="button" onClick={() => setItems(items.filter((i) => i !== item))} className="ml-1">
+              <button
+                type="button"
+                onClick={() => setItems(items.filter(i => i !== item))}
+                className="ml-1"
+              >
                 <X className="h-3 w-3" />
               </button>
             </Badge>
@@ -55,7 +67,13 @@ function TagInput({ items, setItems, placeholder }: { items: string[], setItems:
   );
 }
 
-export function EmployeeForm({ businessUnits, competencies }: { businessUnits: Option[] | undefined, competencies: Option[] | undefined }) {
+export function EmployeeForm({
+  businessUnits,
+  competencies,
+}: {
+  businessUnits: Option[] | undefined;
+  competencies: Option[] | undefined;
+}) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState('');
@@ -63,11 +81,19 @@ export function EmployeeForm({ businessUnits, competencies }: { businessUnits: O
   const [businessUnitId, setBusinessUnitId] = useState('');
   const [skills, setSkills] = useState<string[]>([]);
   const [roles, setRoles] = useState<string[]>(['developer']);
-  const [availability, setAvailability] = useState<'available' | 'on_project' | 'unavailable'>('available');
+  const [availability, setAvailability] = useState<'available' | 'on_project' | 'unavailable'>(
+    'available'
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !businessUnitId || skills.length === 0 || roles.length === 0) {
+    if (
+      !name.trim() ||
+      !email.trim() ||
+      !businessUnitId ||
+      skills.length === 0 ||
+      roles.length === 0
+    ) {
       toast.error('Bitte alle Pflichtfelder ausfüllen');
       return;
     }
@@ -101,12 +127,23 @@ export function EmployeeForm({ businessUnits, competencies }: { businessUnits: O
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="name">Name *</Label>
-          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Vor- und Nachname" />
+          <Input
+            id="name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Vor- und Nachname"
+          />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="email">E-Mail *</Label>
-          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="email@example.com"
+          />
         </div>
 
         <div className="space-y-2">
@@ -114,13 +151,15 @@ export function EmployeeForm({ businessUnits, competencies }: { businessUnits: O
           <select
             id="businessLine"
             value={businessUnitId}
-            onChange={(e) => setBusinessUnitId(e.target.value)}
+            onChange={e => setBusinessUnitId(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             required
           >
             <option value="">Business Unit auswählen</option>
-            {(businessUnits || []).map((bl) => (
-              <option key={bl.id} value={bl.id}>{bl.name}</option>
+            {(businessUnits || []).map(bl => (
+              <option key={bl.id} value={bl.id}>
+                {bl.name}
+              </option>
             ))}
           </select>
         </div>
@@ -133,7 +172,11 @@ export function EmployeeForm({ businessUnits, competencies }: { businessUnits: O
 
         <div className="space-y-2">
           <Label>Rollen *</Label>
-          <TagInput items={roles} setItems={setRoles} placeholder="Rolle eingeben (z.B. developer)" />
+          <TagInput
+            items={roles}
+            setItems={setRoles}
+            placeholder="Rolle eingeben (z.B. developer)"
+          />
         </div>
 
         <div className="space-y-2">
@@ -141,7 +184,7 @@ export function EmployeeForm({ businessUnits, competencies }: { businessUnits: O
           <select
             id="availability"
             value={availability}
-            onChange={(e) => setAvailability(e.target.value as any)}
+            onChange={e => setAvailability(e.target.value as any)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="available">Verfügbar</option>
@@ -152,9 +195,18 @@ export function EmployeeForm({ businessUnits, competencies }: { businessUnits: O
       </div>
 
       <div className="flex justify-end gap-3">
-        <Button type="button" variant="outline" onClick={() => router.back()}>Abbrechen</Button>
+        <Button type="button" variant="outline" onClick={() => router.back()}>
+          Abbrechen
+        </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Wird gespeichert...</> : 'Speichern'}
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Wird gespeichert...
+            </>
+          ) : (
+            'Speichern'
+          )}
         </Button>
       </div>
     </form>

@@ -12,7 +12,7 @@ import {
   Users,
   Gavel,
   ChevronRight,
-  Loader2
+  Loader2,
 } from 'lucide-react';
 import type { QuickScan, Rfp } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
@@ -42,22 +42,22 @@ const phases: PhaseConfig[] = [
     label: 'Quick Scan',
     description: 'Automatische Datenerfassung',
     icon: FileSearch,
-    route: '/workflow-1'
+    route: '/workflow-1',
   },
   {
     id: 'comparison',
     label: 'BU-Vergleich',
     description: 'Matching & Zuordnung',
     icon: Users,
-    route: '/workflow-2'
+    route: '/workflow-2',
   },
   {
     id: 'decision',
     label: 'Bid-Entscheidung',
     description: 'Bereichsleiter entscheidet',
     icon: Gavel,
-    route: '/workflow-3'
-  }
+    route: '/workflow-3',
+  },
 ];
 
 function getPhaseStatus(
@@ -130,10 +130,15 @@ export function WorkflowStepper({ rfp, quickScan, extractedData }: WorkflowStepp
                           : 'bg-slate-50 text-slate-400 cursor-not-allowed'
                     }`}
                   >
-                    <div className={`rounded-full p-2 ${
-                      isActive ? 'bg-white/20' :
-                      status === 'completed' ? 'bg-green-200' : 'bg-slate-200'
-                    }`}>
+                    <div
+                      className={`rounded-full p-2 ${
+                        isActive
+                          ? 'bg-white/20'
+                          : status === 'completed'
+                            ? 'bg-green-200'
+                            : 'bg-slate-200'
+                      }`}
+                    >
                       {status === 'completed' ? (
                         <CheckCircle2 className="h-5 w-5" />
                       ) : status === 'current' ? (
@@ -148,18 +153,21 @@ export function WorkflowStepper({ rfp, quickScan, extractedData }: WorkflowStepp
                         {phase.description}
                       </div>
                     </div>
-                    <Badge variant="outline" className={`ml-auto text-xs ${
-                      isActive ? 'bg-white/10 border-white/20' : ''
-                    }`}>
+                    <Badge
+                      variant="outline"
+                      className={`ml-auto text-xs ${isActive ? 'bg-white/10 border-white/20' : ''}`}
+                    >
                       {phase.route}
                     </Badge>
                   </button>
 
                   {/* Connector */}
                   {index < phases.length - 1 && (
-                    <ChevronRight className={`h-5 w-5 mx-2 flex-shrink-0 ${
-                      status === 'completed' ? 'text-green-500' : 'text-slate-300'
-                    }`} />
+                    <ChevronRight
+                      className={`h-5 w-5 mx-2 flex-shrink-0 ${
+                        status === 'completed' ? 'text-green-500' : 'text-slate-300'
+                      }`}
+                    />
                   )}
                 </div>
               );
@@ -184,7 +192,8 @@ export function WorkflowStepper({ rfp, quickScan, extractedData }: WorkflowStepp
                         Workflow 2: BU-Vergleich starten
                       </h3>
                       <p className="text-sm text-orange-700">
-                        Der BU-Vergleich wird nicht automatisch gestartet. Klicke hier um fortzufahren.
+                        Der BU-Vergleich wird nicht automatisch gestartet. Klicke hier um
+                        fortzufahren.
                       </p>
                     </div>
                     <Button

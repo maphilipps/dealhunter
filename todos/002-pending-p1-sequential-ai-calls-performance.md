@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "002"
+issue_id: '002'
 tags: [code-review, performance, quick-scan, ai-sdk]
 dependencies: []
 ---
@@ -21,6 +21,7 @@ The Quick Scan runs 4 AI calls **sequentially** when 3 of them could run in **pa
 **From performance-oracle agent:**
 
 Current implementation (SEQUENTIAL - O(n) time):
+
 ```typescript
 const techStack = await detectTechStack(htmlContent, input.websiteUrl);
 const contentVolume = await analyzeContentVolume(htmlContent);
@@ -34,6 +35,7 @@ const blRecommendation = await recommendBusinessLine({
 ```
 
 **Performance Analysis:**
+
 - `detectTechStack`: ~10-15s
 - `analyzeContentVolume`: ~10-15s
 - `detectFeatures`: ~8-12s
@@ -44,6 +46,7 @@ const blRecommendation = await recommendBusinessLine({
 **Performance gain:** 60-70% reduction
 
 **Why sequential is unnecessary:**
+
 - Tech stack, content, and features are independent analyses
 - All read from the same HTML input
 - No data dependencies between them
@@ -52,6 +55,7 @@ const blRecommendation = await recommendBusinessLine({
 ## Proposed Solutions
 
 ### Solution 1: Promise.all for Independent Calls (Recommended)
+
 **Effort:** Small (5-10 minutes)
 **Risk:** Low
 **Pros:** Simple, dramatic performance improvement, no architectural changes
@@ -75,6 +79,7 @@ const blRecommendation = await recommendBusinessLine({
 ```
 
 ### Solution 2: Batch into Single AI Call
+
 **Effort:** Medium (30-45 minutes)
 **Risk:** Medium (changes prompt structure)
 **Pros:** Single API call, even faster, lower cost
@@ -91,6 +96,7 @@ Combine all 4 analyses into one `generateObject` call with a union schema.
 ## Technical Details
 
 **Affected Files:**
+
 - `/Users/marc.philipps/Sites/dealhunter/lib/quick-scan/agent.ts:58-76` (change to Promise.all)
 
 **Database Changes:** None
@@ -98,6 +104,7 @@ Combine all 4 analyses into one `generateObject` call with a union schema.
 **Breaking Changes:** None - output remains identical
 
 **Testing Requirements:**
+
 - Verify all 4 analyses still return correct data
 - Measure actual performance improvement (expect 40-60s → 15-25s)
 - Ensure error handling works (if one parallel call fails, others should still complete or all should fail gracefully)

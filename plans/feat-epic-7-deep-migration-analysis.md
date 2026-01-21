@@ -7,6 +7,7 @@ Implement comprehensive CMS migration analysis with background job processing, S
 **Why This Matters:** Quick Scan (Epic 4) provides fast, surface-level analysis. Deep Migration Analysis delivers detailed, quantified estimates that sales and delivery teams need for accurate project scoping and pricing.
 
 **Business Value:**
+
 - **Sales:** Accurate PT estimates improve quote accuracy and win rates
 - **Delivery:** Detailed complexity assessment reduces project overruns
 - **Operations:** Background job processing prevents server blocking
@@ -17,6 +18,7 @@ Implement comprehensive CMS migration analysis with background job processing, S
 ### Current State
 
 After Epic 5a implementation, the platform successfully delivers:
+
 - ✅ Rapid PDF/email extraction (30-60 seconds)
 - ✅ Quick Scan tech stack detection (5-10 minutes)
 - ✅ BIT/NO BIT evaluation with multi-agent analysis (10-15 minutes)
@@ -26,6 +28,7 @@ After Epic 5a implementation, the platform successfully delivers:
 **Critical Gap:** No detailed migration analysis capability.
 
 **Impact:**
+
 - Sales teams provide rough estimates without technical backing
 - Delivery teams inherit under-scoped projects
 - No quantified assessment of migration complexity
@@ -36,16 +39,19 @@ After Epic 5a implementation, the platform successfully delivers:
 ### User Pain Points
 
 **Scenario 1: BD Team Quoting Drupal Migration**
+
 - **Current:** "This looks like a medium-sized Drupal project, maybe 500-700 hours?"
 - **Problem:** No data on Content Type counts, complexity factors, accessibility gaps
 - **Result:** Quote is either too high (lose deal) or too low (delivery pain)
 
 **Scenario 2: BL Team Starting Project**
+
 - **Current:** Receives bid with minimal technical details
 - **Problem:** Must conduct own discovery (wasted time, delays start)
 - **Result:** Project kickoff delayed 2-3 weeks for technical assessment
 
 **Scenario 3: Sales Pitch with WCAG Requirements**
+
 - **Current:** "We can make it accessible" (generic statement)
 - **Problem:** No baseline audit of current accessibility state
 - **Result:** Cannot quantify accessibility remediation effort, client skeptical
@@ -89,6 +95,7 @@ After Epic 5a implementation, the platform successfully delivers:
 ### User Experience
 
 **Auto-Trigger Flow:**
+
 ```
 User assigns team → status='team_assigned'
     ↓ (auto-trigger in 5 seconds)
@@ -115,6 +122,7 @@ User sees comprehensive report with:
 ```
 
 **Manual Trigger Flow:**
+
 ```
 User on Bid Detail (status: 'team_assigned')
     ↓
@@ -124,6 +132,7 @@ Clicks "Run Deep Analysis" button
 ```
 
 **Retry After Failure Flow:**
+
 ```
 User sees "Analysis Failed: Website unreachable"
     ↓
@@ -140,14 +149,14 @@ System creates new analysis record (fresh start, no resume)
 
 **Tech Stack Additions:**
 
-| Component | Technology | Why |
-|-----------|-----------|-----|
-| **Background Jobs** | Inngest | Serverless-friendly, built-in retries, Vercel-compatible, no Redis needed |
-| **SSE Streaming** | Existing infrastructure (Epic 5a) | Reuse createAgentEventStream, extend AgentEventType |
-| **Accessibility Audit** | axe-core + Playwright | Industry standard, detailed WCAG reports, headless browser |
-| **Content Crawling** | Native fetch + cheerio | Lightweight HTML parsing, no heavy dependencies |
-| **LLM Classification** | OpenAI gpt-4o-mini | Cost-effective for page type classification (50 pages = $0.05) |
-| **Database** | Drizzle ORM (SQLite) | Extend schema with deepMigrationAnalyses table |
+| Component               | Technology                        | Why                                                                       |
+| ----------------------- | --------------------------------- | ------------------------------------------------------------------------- |
+| **Background Jobs**     | Inngest                           | Serverless-friendly, built-in retries, Vercel-compatible, no Redis needed |
+| **SSE Streaming**       | Existing infrastructure (Epic 5a) | Reuse createAgentEventStream, extend AgentEventType                       |
+| **Accessibility Audit** | axe-core + Playwright             | Industry standard, detailed WCAG reports, headless browser                |
+| **Content Crawling**    | Native fetch + cheerio            | Lightweight HTML parsing, no heavy dependencies                           |
+| **LLM Classification**  | OpenAI gpt-4o-mini                | Cost-effective for page type classification (50 pages = $0.05)            |
+| **Database**            | Drizzle ORM (SQLite)              | Extend schema with deepMigrationAnalyses table                            |
 
 **System Architecture:**
 
@@ -266,7 +275,9 @@ Create `deepMigrationAnalyses` table:
 // lib/db/schema.ts
 export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
   // Primary Key
-  id: text('id').primaryKey().$defaultFn(() => createId()),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
 
   // Foreign Keys
   bidOpportunityId: text('bid_opportunity_id')
@@ -276,7 +287,7 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
   // Job Tracking
   jobId: text('job_id').notNull(), // Inngest run ID
   status: text('status', {
-    enum: ['pending', 'running', 'completed', 'failed', 'cancelled']
+    enum: ['pending', 'running', 'completed', 'failed', 'cancelled'],
   }).notNull(),
   startedAt: integer('started_at', { mode: 'timestamp' }),
   completedAt: integer('completed_at', { mode: 'timestamp' }),
@@ -295,10 +306,8 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 
   // Metadata
   version: integer('version').notNull().default(1), // For re-runs
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .$onUpdateFn(() => new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).$onUpdateFn(() => new Date()),
 });
 ```
 
@@ -309,17 +318,21 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 import { z } from 'zod';
 
 export const ContentArchitectureSchema = z.object({
-  pageTypes: z.array(z.object({
-    type: z.string(), // 'homepage', 'product', 'blog', etc.
-    count: z.number(),
-    sampleUrls: z.array(z.string()),
-  })),
-  contentTypeMapping: z.array(z.object({
-    pageType: z.string(),
-    drupalContentType: z.string(),
-    confidence: z.number(),
-    reasoning: z.string(),
-  })),
+  pageTypes: z.array(
+    z.object({
+      type: z.string(), // 'homepage', 'product', 'blog', etc.
+      count: z.number(),
+      sampleUrls: z.array(z.string()),
+    })
+  ),
+  contentTypeMapping: z.array(
+    z.object({
+      pageType: z.string(),
+      drupalContentType: z.string(),
+      confidence: z.number(),
+      reasoning: z.string(),
+    })
+  ),
   paragraphEstimate: z.number(), // Estimated Paragraph types needed
   totalPages: z.number(),
 });
@@ -350,13 +363,15 @@ export const MigrationComplexitySchema = z.object({
 export const AccessibilityAuditSchema = z.object({
   wcagLevel: z.enum(['A', 'AA', 'AAA']),
   overallScore: z.number().min(0).max(100), // 0 = many violations, 100 = perfect
-  violations: z.array(z.object({
-    id: z.string(), // e.g., 'color-contrast'
-    impact: z.enum(['minor', 'moderate', 'serious', 'critical']),
-    count: z.number(),
-    description: z.string(),
-    helpUrl: z.string(),
-  })),
+  violations: z.array(
+    z.object({
+      id: z.string(), // e.g., 'color-contrast'
+      impact: z.enum(['minor', 'moderate', 'serious', 'critical']),
+      count: z.number(),
+      description: z.string(),
+      helpUrl: z.string(),
+    })
+  ),
   pagesAudited: z.number(),
   timestamp: z.string(),
 });
@@ -419,6 +434,7 @@ export const { GET, POST, PUT } = serve({
 ```
 
 **Tasks:**
+
 - [ ] Create migration file: `lib/db/migrations/0008_add_deep_migration_analyses.sql`
 - [ ] Run `npm run db:push` to apply schema
 - [ ] Install Inngest: `npm install inngest`
@@ -427,6 +443,7 @@ export const { GET, POST, PUT } = serve({
 - [ ] Configure Inngest in dev: `npx inngest-cli@latest dev`
 
 **Success Criteria:**
+
 - ✅ Database migration applies without errors
 - ✅ TypeScript types are inferred correctly from schema
 - ✅ Inngest dev server runs and shows function registered
@@ -468,7 +485,16 @@ export async function analyzeContentArchitecture(
     const { object } = await generateObject({
       model: openai('gpt-4o-mini'),
       schema: z.object({
-        pageType: z.enum(['homepage', 'product', 'service', 'blog', 'landing', 'contact', 'about', 'custom']),
+        pageType: z.enum([
+          'homepage',
+          'product',
+          'service',
+          'blog',
+          'landing',
+          'contact',
+          'about',
+          'custom',
+        ]),
         confidence: z.number(),
         reasoning: z.string(),
       }),
@@ -480,14 +506,20 @@ export async function analyzeContentArchitecture(
 
   // 4. Group by page type
   const pageTypes = Object.entries(
-    pageClassifications.reduce((acc, p) => {
-      acc[p.pageType] = (acc[p.pageType] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>)
+    pageClassifications.reduce(
+      (acc, p) => {
+        acc[p.pageType] = (acc[p.pageType] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    )
   ).map(([type, count]) => ({
     type,
     count: Math.round((count / sampleUrls.length) * totalPages), // Extrapolate
-    sampleUrls: pageClassifications.filter(p => p.pageType === type).map(p => p.url).slice(0, 3),
+    sampleUrls: pageClassifications
+      .filter(p => p.pageType === type)
+      .map(p => p.url)
+      .slice(0, 3),
   }));
 
   // 5. Map page types to Drupal Content Types
@@ -496,12 +528,14 @@ export async function analyzeContentArchitecture(
   const { object: mapping } = await generateObject({
     model: openai('gpt-4o-mini'),
     schema: z.object({
-      contentTypeMapping: z.array(z.object({
-        pageType: z.string(),
-        drupalContentType: z.string(),
-        confidence: z.number(),
-        reasoning: z.string(),
-      })),
+      contentTypeMapping: z.array(
+        z.object({
+          pageType: z.string(),
+          drupalContentType: z.string(),
+          confidence: z.number(),
+          reasoning: z.string(),
+        })
+      ),
       paragraphEstimate: z.number(),
     }),
     prompt: `You are a Drupal migration expert. Map these page types to Drupal Content Types and estimate Paragraph types needed:\n\nPage Types:\n${JSON.stringify(pageTypes, null, 2)}\n\nProvide Drupal-native names (e.g., "Article", "Basic Page", "Product", "Landing Page") and estimate how many Paragraph types would be needed for flexible content layouts.`,
@@ -599,9 +633,7 @@ export async function auditAccessibility(
     const page = await context.newPage();
     await page.goto(url, { waitUntil: 'networkidle' });
 
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa'])
-      .analyze();
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
 
     allViolations.push(...results.violations);
     await page.close();
@@ -631,7 +663,10 @@ export async function auditAccessibility(
   const seriousCount = violationCounts.filter(v => v.impact === 'serious').length;
   const moderateCount = violationCounts.filter(v => v.impact === 'moderate').length;
 
-  const overallScore = Math.max(0, 100 - (criticalCount * 20 + seriousCount * 10 + moderateCount * 5));
+  const overallScore = Math.max(
+    0,
+    100 - (criticalCount * 20 + seriousCount * 10 + moderateCount * 5)
+  );
 
   return AccessibilityAuditSchema.parse({
     wcagLevel: 'AA',
@@ -691,9 +726,8 @@ export async function estimatePT(input: {
   const pageCountFactor = input.pageCount > 1000 ? 1.2 : 1.0;
 
   // 6. Calculate subtotal
-  const subtotal = (baselineHours + contentTypeHours + paragraphHours)
-    * complexityMultiplier
-    * pageCountFactor;
+  const subtotal =
+    (baselineHours + contentTypeHours + paragraphHours) * complexityMultiplier * pageCountFactor;
 
   // 7. Add 20% buffer
   const bufferHours = subtotal * 0.2;
@@ -725,6 +759,7 @@ export async function estimatePT(input: {
 ```
 
 **Tasks:**
+
 - [ ] Implement all 4 agents with onProgress callbacks
 - [ ] Create utility functions (crawler, CMS detector, data quality)
 - [ ] Install Playwright: `npm install playwright @axe-core/playwright`
@@ -733,6 +768,7 @@ export async function estimatePT(input: {
 - [ ] Test agents individually with sample data
 
 **Success Criteria:**
+
 - ✅ Content Architecture agent classifies 50 pages in ~8 minutes
 - ✅ Migration Complexity agent calculates score in ~5 minutes
 - ✅ Accessibility Audit agent audits 10 pages in ~12 minutes
@@ -802,13 +838,10 @@ export async function runDeepAnalysis(bidId: string) {
     // 4. Run analysis steps (this will be wrapped in SSE stream)
 
     // Step 1: Content Architecture (8 min)
-    const contentArchitecture = await analyzeContentArchitecture(
-      bid.websiteUrl,
-      (message) => {
-        // Progress callback will emit SSE event
-        console.log(`[Content Architecture] ${message}`);
-      }
-    );
+    const contentArchitecture = await analyzeContentArchitecture(bid.websiteUrl, message => {
+      // Progress callback will emit SSE event
+      console.log(`[Content Architecture] ${message}`);
+    });
 
     await db
       .update(deepMigrationAnalyses)
@@ -819,7 +852,7 @@ export async function runDeepAnalysis(bidId: string) {
     const migrationComplexity = await scoreMigrationComplexity(
       bid.websiteUrl,
       bid.quickScanResults?.detectedCMS || 'Unknown',
-      (message) => {
+      message => {
         console.log(`[Migration Complexity] ${message}`);
       }
     );
@@ -831,13 +864,9 @@ export async function runDeepAnalysis(bidId: string) {
 
     // Step 3: Accessibility Audit (12 min)
     const sampleUrls = contentArchitecture.pageTypes.flatMap(pt => pt.sampleUrls);
-    const accessibilityAudit = await auditAccessibility(
-      bid.websiteUrl,
-      sampleUrls,
-      (message) => {
-        console.log(`[Accessibility Audit] ${message}`);
-      }
-    );
+    const accessibilityAudit = await auditAccessibility(bid.websiteUrl, sampleUrls, message => {
+      console.log(`[Accessibility Audit] ${message}`);
+    });
 
     await db
       .update(deepMigrationAnalyses)
@@ -874,7 +903,6 @@ export async function runDeepAnalysis(bidId: string) {
       .where(eq(bidOpportunities.id, bidId));
 
     return analysis.id;
-
   } catch (error) {
     // Mark as failed
     await db
@@ -891,10 +919,7 @@ export async function runDeepAnalysis(bidId: string) {
 }
 
 // Streaming version (for SSE)
-export async function runDeepAnalysisWithStreaming(
-  bidId: string,
-  emit: EventEmitter
-) {
+export async function runDeepAnalysisWithStreaming(bidId: string, emit: EventEmitter) {
   // Wrap runDeepAnalysis with SSE event emission
   emit({ type: AgentEventType.START, data: { message: 'Starting Deep Migration Analysis...' } });
 
@@ -903,13 +928,12 @@ export async function runDeepAnalysisWithStreaming(
 
     emit({
       type: AgentEventType.COMPLETE,
-      data: { message: 'Deep Analysis complete!', analysisId }
+      data: { message: 'Deep Analysis complete!', analysisId },
     });
-
   } catch (error) {
     emit({
       type: AgentEventType.ERROR,
-      data: { message: error instanceof Error ? error.message : 'Unknown error' }
+      data: { message: error instanceof Error ? error.message : 'Unknown error' },
     });
     throw error;
   }
@@ -933,10 +957,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes (Vercel limit for Hobby, 300s for Pro)
 
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   // 1. Verify authentication
   const session = await auth();
   if (!session?.user?.id) {
@@ -970,7 +991,7 @@ export async function GET(
     }
 
     // Create SSE stream
-    const stream = createAgentEventStream(async (emit) => {
+    const stream = createAgentEventStream(async emit => {
       emit({ type: AgentEventType.START });
 
       // Run deep analysis with streaming callbacks
@@ -999,10 +1020,7 @@ export async function GET(
 
 ```typescript
 // app/api/bids/[id]/deep-analysis/stream/route.ts
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   // ... auth and validation ...
 
   // Get latest analysis record
@@ -1021,7 +1039,7 @@ export async function GET(
   }
 
   // Stream progress events by polling database
-  const stream = createAgentEventStream(async (emit) => {
+  const stream = createAgentEventStream(async emit => {
     emit({ type: AgentEventType.START });
 
     let pollCount = 0;
@@ -1047,7 +1065,7 @@ export async function GET(
       if (current.contentArchitecture && !emittedContentArch) {
         emit({
           type: 'content-architecture-complete',
-          data: JSON.parse(current.contentArchitecture)
+          data: JSON.parse(current.contentArchitecture),
         });
         emittedContentArch = true;
       }
@@ -1055,7 +1073,7 @@ export async function GET(
       if (current.migrationComplexity && !emittedComplexity) {
         emit({
           type: 'migration-complexity-complete',
-          data: JSON.parse(current.migrationComplexity)
+          data: JSON.parse(current.migrationComplexity),
         });
         emittedComplexity = true;
       }
@@ -1063,7 +1081,7 @@ export async function GET(
       if (current.accessibilityAudit && !emittedA11y) {
         emit({
           type: 'accessibility-audit-complete',
-          data: JSON.parse(current.accessibilityAudit)
+          data: JSON.parse(current.accessibilityAudit),
         });
         emittedA11y = true;
       }
@@ -1078,7 +1096,7 @@ export async function GET(
         clearInterval(pollInterval);
         emit({
           type: AgentEventType.ERROR,
-          data: { message: current.errorMessage || 'Analysis failed' }
+          data: { message: current.errorMessage || 'Analysis failed' },
         });
         return;
       }
@@ -1096,6 +1114,7 @@ export async function GET(
 ```
 
 **Tasks:**
+
 - [ ] Update event-types.ts with deep-analysis-specific events
 - [ ] Implement runDeepAnalysisWithStreaming orchestrator
 - [ ] Create SSE route with database polling (not direct execution)
@@ -1103,6 +1122,7 @@ export async function GET(
 - [ ] Test SSE stream with real 27-minute analysis
 
 **Success Criteria:**
+
 - ✅ SSE stream stays connected for 30+ minutes without timeout
 - ✅ Progress events emitted as each step completes
 - ✅ Database polling doesn't overload DB (max 1 query/second)
@@ -1121,10 +1141,7 @@ import { eq, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { inngest } from '@/lib/inngest/client';
 
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -1146,17 +1163,22 @@ export async function POST(
   const [existing] = await db
     .select()
     .from(deepMigrationAnalyses)
-    .where(and(
-      eq(deepMigrationAnalyses.bidOpportunityId, id),
-      eq(deepMigrationAnalyses.status, 'running')
-    ))
+    .where(
+      and(
+        eq(deepMigrationAnalyses.bidOpportunityId, id),
+        eq(deepMigrationAnalyses.status, 'running')
+      )
+    )
     .limit(1);
 
   if (existing) {
-    return NextResponse.json({
-      error: 'Analysis already running',
-      analysisId: existing.id,
-    }, { status: 409 });
+    return NextResponse.json(
+      {
+        error: 'Analysis already running',
+        analysisId: existing.id,
+      },
+      { status: 409 }
+    );
   }
 
   // Trigger Inngest job
@@ -1491,6 +1513,7 @@ export function BidDetailClient({ bid }: { bid: BidOpportunity }) {
 ```
 
 **Tasks:**
+
 - [ ] Create trigger API route
 - [ ] Add auto-trigger in assignTeam server action
 - [ ] Build DeepAnalysisResults UI component
@@ -1499,6 +1522,7 @@ export function BidDetailClient({ bid }: { bid: BidOpportunity }) {
 - [ ] Test full flow: assign team → auto-trigger → watch progress → see results
 
 **Success Criteria:**
+
 - ✅ Auto-trigger fires within 5 seconds of team assignment
 - ✅ Manual trigger button works for on-demand analysis
 - ✅ ActivityStream shows real-time progress for 27 minutes
@@ -1554,6 +1578,7 @@ export function BidDetailClient({ bid }: { bid: BidOpportunity }) {
 - [ ] Accessibility: Keyboard navigation, ARIA labels
 
 **Success Criteria:**
+
 - ✅ All tests pass
 - ✅ No console errors in browser
 - ✅ PT estimation accuracy ±20% of manual estimate (validated with historical data)
@@ -1568,10 +1593,12 @@ export function BidDetailClient({ bid }: { bid: BidOpportunity }) {
 **Approach:** Run 27-minute analysis synchronously in API route.
 
 **Pros:**
+
 - Simpler architecture (no Inngest)
 - Direct SSE streaming (no polling)
 
 **Cons:**
+
 - ❌ Vercel Hobby timeout (10 seconds) - BLOCKER
 - ❌ Vercel Pro timeout (300 seconds / 5 minutes) - STILL BLOCKER for 27-minute job
 - ❌ Server resources blocked for 27 minutes per request
@@ -1585,11 +1612,13 @@ export function BidDetailClient({ bid }: { bid: BidOpportunity }) {
 **Approach:** Use BullMQ + Redis for background jobs.
 
 **Pros:**
+
 - More mature ecosystem
 - Fine-grained job control
 - Better observability (Bull Board UI)
 
 **Cons:**
+
 - ❌ Requires Redis instance (cost, complexity)
 - ❌ Vercel Serverless has Redis connection limits (upstash only)
 - ❌ More setup and configuration
@@ -1602,10 +1631,12 @@ export function BidDetailClient({ bid }: { bid: BidOpportunity }) {
 **Approach:** UI polls API every 5 seconds for analysis status.
 
 **Pros:**
+
 - Simpler than SSE
 - Works with edge functions
 
 **Cons:**
+
 - ❌ Higher latency (5-second granularity)
 - ❌ More server load (540 requests over 27 minutes)
 - ❌ Worse UX (no real-time feel)
@@ -1618,10 +1649,12 @@ export function BidDetailClient({ bid }: { bid: BidOpportunity }) {
 **Approach:** Don't implement Epic 7, continue manual estimation.
 
 **Pros:**
+
 - No development cost
 - Human expertise applied
 
 **Cons:**
+
 - ❌ Inconsistent estimates (depends on estimator)
 - ❌ Time-consuming (2-4 hours per bid)
 - ❌ Not scalable (limits BD capacity)
@@ -1850,33 +1883,33 @@ export function BidDetailClient({ bid }: { bid: BidOpportunity }) {
 
 ### High-Impact Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| **PT estimation inaccurate** | MEDIUM | CRITICAL | Validate formula with 5 historical projects before launch. Add disclaimer: "Estimate, not guarantee". Provide confidence score. |
-| **27-minute job exceeds Inngest free tier** | LOW | HIGH | Monitor job duration. Optimize (parallel steps, reduce LLM calls). Upgrade to Inngest Pro if needed ($20/mo). |
-| **Website unreachable (common)** | HIGH | MEDIUM | Implement partial analysis mode (use cached Quick Scan data). Mark low confidence. Allow retry. |
-| **Accessibility audit timeout** | MEDIUM | MEDIUM | Reduce page count from 10 to 5. Add 15-minute timeout per page. Skip audit if 3+ pages fail. |
-| **LLM page classification fails** | LOW | MEDIUM | Fallback to pattern-based detection (URL regex). Flag as "Unknown" with low confidence. |
-| **SSE connection drops** | MEDIUM | LOW | Client auto-reconnect logic. Store progress in DB (resume from last step). |
-| **Concurrent analyses overload server** | LOW | MEDIUM | Limit Inngest concurrency to 5 jobs. Queue excess jobs. Show "Queue position" in UI. |
+| Risk                                        | Likelihood | Impact   | Mitigation                                                                                                                      |
+| ------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **PT estimation inaccurate**                | MEDIUM     | CRITICAL | Validate formula with 5 historical projects before launch. Add disclaimer: "Estimate, not guarantee". Provide confidence score. |
+| **27-minute job exceeds Inngest free tier** | LOW        | HIGH     | Monitor job duration. Optimize (parallel steps, reduce LLM calls). Upgrade to Inngest Pro if needed ($20/mo).                   |
+| **Website unreachable (common)**            | HIGH       | MEDIUM   | Implement partial analysis mode (use cached Quick Scan data). Mark low confidence. Allow retry.                                 |
+| **Accessibility audit timeout**             | MEDIUM     | MEDIUM   | Reduce page count from 10 to 5. Add 15-minute timeout per page. Skip audit if 3+ pages fail.                                    |
+| **LLM page classification fails**           | LOW        | MEDIUM   | Fallback to pattern-based detection (URL regex). Flag as "Unknown" with low confidence.                                         |
+| **SSE connection drops**                    | MEDIUM     | LOW      | Client auto-reconnect logic. Store progress in DB (resume from last step).                                                      |
+| **Concurrent analyses overload server**     | LOW        | MEDIUM   | Limit Inngest concurrency to 5 jobs. Queue excess jobs. Show "Queue position" in UI.                                            |
 
 ### Medium-Impact Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| **CMS detection wrong (Quick Scan error)** | MEDIUM | MEDIUM | Allow manual CMS override before Deep Analysis. Show detected CMS with confidence. |
-| **Sitemap missing/broken** | MEDIUM | LOW | Fallback to crawling homepage + linked pages. Limit to 50 pages max. |
-| **Complex custom CMS** | LOW | HIGH | Flag as "Requires manual review". Conservative PT estimate (high multiplier). |
-| **axe-core reports too many violations** | HIGH | LOW | Filter to serious/critical only. Group by WCAG criterion. Show top 10 with "View All" link. |
-| **Database race condition** | LOW | MEDIUM | Use database-level locking (SELECT FOR UPDATE). Add unique constraint on (bidId, status='running'). |
+| Risk                                       | Likelihood | Impact | Mitigation                                                                                          |
+| ------------------------------------------ | ---------- | ------ | --------------------------------------------------------------------------------------------------- |
+| **CMS detection wrong (Quick Scan error)** | MEDIUM     | MEDIUM | Allow manual CMS override before Deep Analysis. Show detected CMS with confidence.                  |
+| **Sitemap missing/broken**                 | MEDIUM     | LOW    | Fallback to crawling homepage + linked pages. Limit to 50 pages max.                                |
+| **Complex custom CMS**                     | LOW        | HIGH   | Flag as "Requires manual review". Conservative PT estimate (high multiplier).                       |
+| **axe-core reports too many violations**   | HIGH       | LOW    | Filter to serious/critical only. Group by WCAG criterion. Show top 10 with "View All" link.         |
+| **Database race condition**                | LOW        | MEDIUM | Use database-level locking (SELECT FOR UPDATE). Add unique constraint on (bidId, status='running'). |
 
 ### Low-Impact Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| **Broken links count inaccurate** | MEDIUM | LOW | Sample-based check (not exhaustive). Accept 80% accuracy. |
-| **Page type classification subjective** | HIGH | LOW | Provide reasoning field. Allow manual correction in future iteration. |
-| **Inngest dev server forgot to start** | MEDIUM | LOW | Add health check in dev environment. Show error if Inngest unavailable. |
+| Risk                                    | Likelihood | Impact | Mitigation                                                              |
+| --------------------------------------- | ---------- | ------ | ----------------------------------------------------------------------- |
+| **Broken links count inaccurate**       | MEDIUM     | LOW    | Sample-based check (not exhaustive). Accept 80% accuracy.               |
+| **Page type classification subjective** | HIGH       | LOW    | Provide reasoning field. Allow manual correction in future iteration.   |
+| **Inngest dev server forgot to start**  | MEDIUM     | LOW    | Add health check in dev environment. Show error if Inngest unavailable. |
 
 ---
 
@@ -1901,13 +1934,13 @@ export function BidDetailClient({ bid }: { bid: BidOpportunity }) {
 
 ### Timeline
 
-| Phase | Duration | Dependencies |
-|-------|----------|-------------|
-| Phase 1: Foundation | 2 days | Database schema, Inngest setup |
-| Phase 2: Agents | 3 days | Phase 1 complete |
-| Phase 3: Orchestrator | 2 days | Phase 2 complete |
-| Phase 4: UI | 2 days | Phase 3 complete, Epic 5a SSE infrastructure |
-| Phase 5: Testing | 1 day | Phase 4 complete |
+| Phase                 | Duration | Dependencies                                 |
+| --------------------- | -------- | -------------------------------------------- |
+| Phase 1: Foundation   | 2 days   | Database schema, Inngest setup               |
+| Phase 2: Agents       | 3 days   | Phase 1 complete                             |
+| Phase 3: Orchestrator | 2 days   | Phase 2 complete                             |
+| Phase 4: UI           | 2 days   | Phase 3 complete, Epic 5a SSE infrastructure |
+| Phase 5: Testing      | 1 day    | Phase 4 complete                             |
 
 **Total: 10 days (2 calendar weeks)**
 

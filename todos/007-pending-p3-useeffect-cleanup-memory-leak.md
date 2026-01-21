@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p3
-issue_id: "007"
+issue_id: '007'
 tags: [code-review, react, nextjs, memory-leak]
 dependencies: []
 ---
@@ -21,9 +21,12 @@ The `useEffect` hook in `bid-detail-client.tsx` loads Quick Scan results without
 **From nextjs-reviewer agent:**
 
 **Current Code (VULNERABLE):**
+
 ```typescript
 useEffect(() => {
-  if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'team_assigned'].includes(bid.status)) {
+  if (
+    ['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'team_assigned'].includes(bid.status)
+  ) {
     setIsLoadingQuickScan(true);
     getQuickScanResult(bid.id).then(result => {
       if (result.success && result.quickScan) {
@@ -36,12 +39,14 @@ useEffect(() => {
 ```
 
 **Problems:**
+
 1. No cleanup function - component could unmount before Promise resolves
 2. No error handling for rejected Promise
 3. Using `.then()` instead of async/await (anti-pattern in React hooks)
 4. State updates after unmount would trigger React warning
 
 **Failure Scenario:**
+
 1. User navigates to bid detail page
 2. Quick Scan starts loading (`getQuickScanResult` called)
 3. User navigates away before Promise resolves
@@ -52,6 +57,7 @@ useEffect(() => {
 ## Proposed Solutions
 
 ### Solution 1: Cleanup Flag (Recommended)
+
 **Effort:** Small (5-10 minutes)
 **Risk:** Low
 **Pros:** Standard React pattern, prevents warnings
@@ -62,7 +68,11 @@ useEffect(() => {
   let isMounted = true; // ✅ Cleanup flag
 
   async function loadQuickScan() {
-    if (!['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'team_assigned'].includes(bid.status)) {
+    if (
+      !['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'team_assigned'].includes(
+        bid.status
+      )
+    ) {
       return;
     }
 
@@ -97,6 +107,7 @@ useEffect(() => {
 ```
 
 ### Solution 2: AbortController (Advanced)
+
 **Effort:** Medium (15 minutes)
 **Risk:** Low
 **Pros:** Actually cancels the fetch request, not just state updates
@@ -113,10 +124,12 @@ Use `AbortController` to cancel the in-flight request when component unmounts.
 ## Technical Details
 
 **Affected Files:**
+
 - `/Users/marc.philipps/Sites/dealhunter/components/bids/bid-detail-client.tsx:82-92`
 
 **Additional Cleanup Needed:**
 Check for similar patterns in:
+
 - `bid-detail-client.tsx` (other useEffect instances)
 - `extraction-preview.tsx` (if any async operations)
 - Other client components with async state updates

@@ -18,7 +18,7 @@ import {
   ChevronLeft,
   CheckCircle2,
   Circle,
-  Loader2
+  Loader2,
 } from 'lucide-react';
 import type { BaselineComparisonResult } from '@/lib/baseline-comparison/schema';
 import type { ProjectPlan } from '@/lib/project-planning/schema';
@@ -74,30 +74,19 @@ export default async function BLReviewDetailPage({
   const { tab } = await searchParams;
   const session = await auth();
 
-  if (
-    !session?.user ||
-    (session.user.role !== 'bl' && session.user.role !== 'admin')
-  ) {
+  if (!session?.user || (session.user.role !== 'bl' && session.user.role !== 'admin')) {
     redirect('/');
   }
 
   // Get the bid
-  const [bid] = await db
-    .select()
-    .from(rfps)
-    .where(eq(rfps.id, id))
-    .limit(1);
+  const [bid] = await db.select().from(rfps).where(eq(rfps.id, id)).limit(1);
 
   if (!bid) {
     notFound();
   }
 
   // Get the user's business unit for authorization check
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
+  const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
 
   // Authorization: Admin can see all, BL can only see their assigned bids
   if (session.user.role !== 'admin') {
@@ -117,52 +106,48 @@ export default async function BLReviewDetailPage({
 
   // Get quick scan if available
   const [quickScan] = bid.quickScanId
-    ? await db
-        .select()
-        .from(quickScans)
-        .where(eq(quickScans.id, bid.quickScanId))
-        .limit(1)
+    ? await db.select().from(quickScans).where(eq(quickScans.id, bid.quickScanId)).limit(1)
     : [null];
 
   // Parse JSON data safely - using Record<string, unknown> for components that expect generic objects
-  const extractedData = safeJsonParseOrNull<Record<string, unknown>>(
-    bid.extractedRequirements
-  );
+  const extractedData = safeJsonParseOrNull<Record<string, unknown>>(bid.extractedRequirements);
   // Type-safe version for local rendering
   const extractedDataTyped = extractedData as ExtractedData | null;
-  const decisionData = safeJsonParseOrNull<BitEvaluationResult>(
-    bid.decisionData
-  );
+  const decisionData = safeJsonParseOrNull<BitEvaluationResult>(bid.decisionData);
   // Extract overview-level decision data for display
-  const decisionOverview: BitDecisionOverview | null = decisionData ? {
-    decision: {
-      overallConfidence: decisionData.decision?.overallConfidence,
-      reasoning: decisionData.decision?.reasoning,
-    }
-  } : null;
+  const decisionOverview: BitDecisionOverview | null = decisionData
+    ? {
+        decision: {
+          overallConfidence: decisionData.decision?.overallConfidence,
+          reasoning: decisionData.decision?.reasoning,
+        },
+      }
+    : null;
   const baselineResult = safeJsonParseOrNull<BaselineComparisonResult>(
     bid.baselineComparisonResult
   );
-  const projectPlan = safeJsonParseOrNull<ProjectPlan>(
-    bid.projectPlanningResult
-  );
-  const teamNotifications = safeJsonParseOrNull<TeamNotificationResult[]>(
-    bid.teamNotifications
-  );
-  const timelineData = safeJsonParseOrNull<ProjectTimeline>(
-    quickScan?.timeline
-  );
+  const projectPlan = safeJsonParseOrNull<ProjectPlan>(bid.projectPlanningResult);
+  const teamNotifications = safeJsonParseOrNull<TeamNotificationResult[]>(bid.teamNotifications);
+  const timelineData = safeJsonParseOrNull<ProjectTimeline>(quickScan?.timeline);
 
   // Parse QuickScan JSON data server-side for Overview section
-  const overviewData: OverviewData | null = quickScan ? {
-    companyIntelligence: safeJsonParseOrNull<CompanyIntelligence>(quickScan.companyIntelligence),
-    techStack: safeJsonParseOrNull<TechStack>(quickScan.techStack),
-    accessibilityAudit: safeJsonParseOrNull<AccessibilityAudit>(quickScan.accessibilityAudit),
-    seoAudit: safeJsonParseOrNull<SEOAudit>(quickScan.seoAudit),
-    performanceIndicators: safeJsonParseOrNull<PerformanceIndicators>(quickScan.performanceIndicators),
-    contentVolume: safeJsonParseOrNull<ContentVolume>(quickScan.contentVolume),
-    navigationStructure: safeJsonParseOrNull<NavigationStructure>(quickScan.navigationStructure),
-  } : null;
+  const overviewData: OverviewData | null = quickScan
+    ? {
+        companyIntelligence: safeJsonParseOrNull<CompanyIntelligence>(
+          quickScan.companyIntelligence
+        ),
+        techStack: safeJsonParseOrNull<TechStack>(quickScan.techStack),
+        accessibilityAudit: safeJsonParseOrNull<AccessibilityAudit>(quickScan.accessibilityAudit),
+        seoAudit: safeJsonParseOrNull<SEOAudit>(quickScan.seoAudit),
+        performanceIndicators: safeJsonParseOrNull<PerformanceIndicators>(
+          quickScan.performanceIndicators
+        ),
+        contentVolume: safeJsonParseOrNull<ContentVolume>(quickScan.contentVolume),
+        navigationStructure: safeJsonParseOrNull<NavigationStructure>(
+          quickScan.navigationStructure
+        ),
+      }
+    : null;
 
   const defaultTab = tab || 'overview';
 
@@ -202,9 +187,8 @@ export default async function BLReviewDetailPage({
             <StatusBadge status={bid.status} />
             <span>•</span>
             <span>
-              Erstellt: {bid.createdAt
-                ? new Date(bid.createdAt).toLocaleDateString('de-DE')
-                : 'Unbekannt'}
+              Erstellt:{' '}
+              {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('de-DE') : 'Unbekannt'}
             </span>
           </div>
         </div>
@@ -222,12 +206,16 @@ export default async function BLReviewDetailPage({
               ) : (
                 <Circle className="h-5 w-5 text-muted-foreground" />
               )}
-              <span className={`text-sm ${step.current ? 'font-medium' : step.completed ? 'text-muted-foreground' : 'text-muted-foreground/60'}`}>
+              <span
+                className={`text-sm ${step.current ? 'font-medium' : step.completed ? 'text-muted-foreground' : 'text-muted-foreground/60'}`}
+              >
                 {step.label}
               </span>
             </div>
             {index < workflowProgress.length - 1 && (
-              <div className={`mx-3 h-px w-8 ${step.completed ? 'bg-green-600' : 'bg-muted-foreground/30'}`} />
+              <div
+                className={`mx-3 h-px w-8 ${step.completed ? 'bg-green-600' : 'bg-muted-foreground/30'}`}
+              />
             )}
           </div>
         ))}
@@ -346,14 +334,42 @@ export default async function BLReviewDetailPage({
                 {decisionData?.decision?.scores && (
                   <div className="space-y-3 pt-4 border-t">
                     <p className="text-sm font-medium">Bewertungskriterien</p>
-                    <ScoringBar label="Capability Match" value={decisionData.decision.scores.capability} weight={25} />
-                    <ScoringBar label="Deal Quality" value={decisionData.decision.scores.dealQuality} weight={20} />
-                    <ScoringBar label="Strategic Fit" value={decisionData.decision.scores.strategicFit} weight={15} />
-                    <ScoringBar label="Win Probability" value={decisionData.decision.scores.winProbability} weight={15} />
-                    <ScoringBar label="Legal Assessment" value={decisionData.decision.scores.legal} weight={15} />
-                    <ScoringBar label="Reference Match" value={decisionData.decision.scores.reference} weight={10} />
+                    <ScoringBar
+                      label="Capability Match"
+                      value={decisionData.decision.scores.capability}
+                      weight={25}
+                    />
+                    <ScoringBar
+                      label="Deal Quality"
+                      value={decisionData.decision.scores.dealQuality}
+                      weight={20}
+                    />
+                    <ScoringBar
+                      label="Strategic Fit"
+                      value={decisionData.decision.scores.strategicFit}
+                      weight={15}
+                    />
+                    <ScoringBar
+                      label="Win Probability"
+                      value={decisionData.decision.scores.winProbability}
+                      weight={15}
+                    />
+                    <ScoringBar
+                      label="Legal Assessment"
+                      value={decisionData.decision.scores.legal}
+                      weight={15}
+                    />
+                    <ScoringBar
+                      label="Reference Match"
+                      value={decisionData.decision.scores.reference}
+                      weight={10}
+                    />
                     <div className="pt-2 border-t">
-                      <ScoringBar label="Gesamt-Score" value={decisionData.decision.scores.overall} isOverall />
+                      <ScoringBar
+                        label="Gesamt-Score"
+                        value={decisionData.decision.scores.overall}
+                        isOverall
+                      />
                     </div>
                   </div>
                 )}
@@ -371,31 +387,23 @@ export default async function BLReviewDetailPage({
           <Card>
             <CardHeader>
               <CardTitle>Nächste Schritte</CardTitle>
-              <CardDescription>
-                Workflow-Aktionen für diesen Bid
-              </CardDescription>
+              <CardDescription>Workflow-Aktionen für diesen Bid</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-3">
                 {!hasDeepAnalysis && (
                   <Button variant="outline" asChild>
-                    <Link href={`/bl-review/${id}?tab=baseline`}>
-                      Deep Analysis starten
-                    </Link>
+                    <Link href={`/bl-review/${id}?tab=baseline`}>Deep Analysis starten</Link>
                   </Button>
                 )}
                 {hasDeepAnalysis && !hasTeam && (
                   <Button asChild>
-                    <Link href={`/bl-review/${id}?tab=team`}>
-                      Team zuweisen
-                    </Link>
+                    <Link href={`/bl-review/${id}?tab=team`}>Team zuweisen</Link>
                   </Button>
                 )}
                 {hasTeam && !bid.teamNotifiedAt && (
                   <Button asChild>
-                    <Link href={`/bl-review/${id}?tab=team`}>
-                      Team benachrichtigen
-                    </Link>
+                    <Link href={`/bl-review/${id}?tab=team`}>Team benachrichtigen</Link>
                   </Button>
                 )}
               </div>
@@ -477,7 +485,10 @@ export default async function BLReviewDetailPage({
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+  const statusConfig: Record<
+    string,
+    { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
+  > = {
     routed: { label: 'Weitergeleitet', variant: 'default' },
     full_scanning: { label: 'Deep Analysis', variant: 'default' },
     bl_reviewing: { label: 'In Prüfung', variant: 'default' },
@@ -495,7 +506,7 @@ function ScoringBar({
   label,
   value,
   weight,
-  isOverall = false
+  isOverall = false,
 }: {
   label: string;
   value: number;
@@ -513,13 +524,9 @@ function ScoringBar({
     <div>
       <div className="flex justify-between items-center mb-1.5">
         <div className="flex items-center gap-2">
-          <span className={`text-sm ${isOverall ? 'font-bold' : 'font-medium'}`}>
-            {label}
-          </span>
+          <span className={`text-sm ${isOverall ? 'font-bold' : 'font-medium'}`}>{label}</span>
           {weight !== undefined && (
-            <span className="text-xs text-muted-foreground">
-              ({weight}% Gewichtung)
-            </span>
+            <span className="text-xs text-muted-foreground">({weight}% Gewichtung)</span>
           )}
         </div>
         <span className={`text-sm ${isOverall ? 'font-bold' : 'text-muted-foreground'}`}>

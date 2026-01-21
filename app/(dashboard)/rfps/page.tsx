@@ -55,7 +55,13 @@ export default async function BidsPage() {
           <CardHeader className="pb-2">
             <CardDescription>In Bearbeitung</CardDescription>
             <CardTitle className="text-3xl">
-              {bids.filter(b => ['draft', 'extracting', 'reviewing', 'quick_scanning', 'evaluating'].includes(b.status)).length}
+              {
+                bids.filter(b =>
+                  ['draft', 'extracting', 'reviewing', 'quick_scanning', 'evaluating'].includes(
+                    b.status
+                  )
+                ).length
+              }
             </CardTitle>
           </CardHeader>
         </Card>
@@ -81,9 +87,7 @@ export default async function BidsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Alle RFPs</CardTitle>
-          <CardDescription>
-            Klicken Sie auf einen Bid, um Details zu sehen
-          </CardDescription>
+          <CardDescription>Klicken Sie auf einen Bid, um Details zu sehen</CardDescription>
         </CardHeader>
         <CardContent>
           {bids.length === 0 ? (
@@ -114,7 +118,7 @@ export default async function BidsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {bids.map((bid) => {
+                {bids.map(bid => {
                   // Parse extracted requirements to get customer name
                   let customerName = 'Unbekannt';
                   try {
@@ -148,9 +152,7 @@ export default async function BidsPage() {
                         <DecisionBadge decision={bid.decision} />
                       </TableCell>
                       <TableCell>
-                        {bid.createdAt
-                          ? new Date(bid.createdAt).toLocaleDateString('de-DE')
-                          : '-'}
+                        {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('de-DE') : '-'}
                       </TableCell>
                       <TableCell className="text-right">
                         <Link href={`/rfps/${bid.id}`}>
@@ -172,7 +174,10 @@ export default async function BidsPage() {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+  const statusConfig: Record<
+    string,
+    { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
+  > = {
     // Initial & Extraction
     draft: { label: 'Entwurf', variant: 'secondary' },
     extracting: { label: 'Extraktion', variant: 'default' },

@@ -1,9 +1,9 @@
 ---
 status: pending
 priority: p2
-issue_id: "033"
+issue_id: '033'
 tags: [code-review, architecture, dry, authorization]
-dependencies: ["026"]
+dependencies: ['026']
 ---
 
 # Extract Authorization Check to Shared Helper
@@ -19,6 +19,7 @@ The same 5-7 line authorization check is duplicated across 49+ server action fun
 **From pattern-recognition-specialist and architecture-strategist agents:**
 
 **Duplicated pattern (appears 3 times in team/actions.ts alone):**
+
 ```typescript
 const isOwner = bid.userId === session.user.id;
 const isAdmin = session.user.role === 'admin';
@@ -29,12 +30,14 @@ if (!isOwner && !isAdmin && !isBL) {
 ```
 
 **Locations in analyzed files:**
+
 - `lib/team/actions.ts`: lines 40-46, 114-120, 200-205
 - `lib/routing/actions.ts`: lines 77-83
 
 ## Proposed Solutions
 
 ### Solution A: Extract to auth utility (Recommended)
+
 **Pros:** Single source of truth, easier to audit
 **Cons:** Adds one more import
 **Effort:** Medium (1 hour)
@@ -67,6 +70,7 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - New: `lib/auth/bid-authorization.ts`
 - Update: `lib/team/actions.ts`
 - Update: `lib/routing/actions.ts`
@@ -81,8 +85,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                   | Learnings                              |
+| ---------- | ------------------------ | -------------------------------------- |
 | 2026-01-18 | Created from code review | Extract repeated patterns to utilities |
 
 ## Resources

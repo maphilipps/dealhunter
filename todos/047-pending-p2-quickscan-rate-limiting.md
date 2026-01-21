@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p2
-issue_id: "047"
+issue_id: '047'
 tags: [code-review, performance, quickscan, rate-limiting]
 dependencies: []
 ---
@@ -17,12 +17,14 @@ Der QuickScan macht parallele Aufrufe an externe APIs (Web Search, Company Intel
 **Source:** performance-oracle Review Agent (Plan Review)
 
 **Betroffene externe API-Aufrufe:**
+
 1. `researchCompany(url)` - Web Search API
 2. `researchDecisionMakers(url)` - Web Search API
 3. `fetchSitemapWithFallback(url)` - HTTP Fetch
 4. `fetchPagesParallel(urls)` - Multiple HTTP Fetches (10 parallel)
 
 **Risiken:**
+
 - Exa API hat Rate Limits (~100 req/min)
 - Viele parallele QuickScans = API-Blockierung
 - Keine Retry-Logik bei 429 Errors
@@ -51,9 +53,7 @@ const httpLimiter = new Bottleneck({
 });
 
 // Usage
-const result = await webSearchLimiter.schedule(() =>
-  searchWeb(query)
-);
+const result = await webSearchLimiter.schedule(() => searchWeb(query));
 ```
 
 ### Option B: Custom Rate Limiter
@@ -77,11 +77,13 @@ Option A - Bottleneck für alle externen API-Aufrufe.
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/quick-scan/agent.ts`
 - `lib/search/web-search.ts`
 - `lib/quick-scan/tools/decision-maker-research.ts`
 
 **New Dependencies:**
+
 - `bottleneck` (~15KB)
 
 ## Acceptance Criteria
@@ -94,8 +96,8 @@ Option A - Bottleneck für alle externen API-Aufrufe.
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                        | Learnings                     |
+| ---------- | ----------------------------- | ----------------------------- |
 | 2026-01-20 | Todo erstellt aus Plan Review | Missing rate limiting erkannt |
 
 ## Resources

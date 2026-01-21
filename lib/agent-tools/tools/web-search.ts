@@ -40,9 +40,20 @@ Beispiel-Queries:
   inputSchema: z.object({
     query: z.string().describe('Die Suchanfrage (auf Englisch für bessere Ergebnisse)'),
     numResults: z.number().min(1).max(10).default(5).describe('Anzahl der Ergebnisse (1-10)'),
-    fetchContent: z.boolean().default(false).describe('Vollständigen Seiteninhalt abrufen (langsamer, aber detaillierter)'),
+    fetchContent: z
+      .boolean()
+      .default(false)
+      .describe('Vollständigen Seiteninhalt abrufen (langsamer, aber detaillierter)'),
   }),
-  execute: async ({ query, numResults, fetchContent }: { query: string; numResults: number; fetchContent: boolean }) => {
+  execute: async ({
+    query,
+    numResults,
+    fetchContent,
+  }: {
+    query: string;
+    numResults: number;
+    fetchContent: boolean;
+  }) => {
     try {
       const results = await searchAndContents(query, {
         numResults,
@@ -60,7 +71,7 @@ Beispiel-Queries:
       return {
         success: true,
         query,
-        results: results.results.map((r) => ({
+        results: results.results.map(r => ({
           title: r.title,
           url: r.url,
           snippet: r.text?.slice(0, 500) || '',
@@ -124,19 +135,29 @@ Nutze dieses Tool für:
 - Community und Support`,
   inputSchema: z.object({
     technology: z.string().describe('Name der Technologie/des CMS'),
-    aspect: z.enum([
-      'features',      // Feature-Liste
-      'pricing',       // Preise/Lizenzmodell
-      'enterprise',    // Enterprise-Funktionen
-      'integrations',  // Integrationsmöglichkeiten
-      'security',      // Sicherheitsfunktionen
-      'comparison',    // Vergleich mit Alternativen
-      'reviews',       // Bewertungen und Erfahrungen
-      'roadmap',       // Zukunftspläne/Roadmap
-    ]).describe('Aspekt der Recherche'),
+    aspect: z
+      .enum([
+        'features', // Feature-Liste
+        'pricing', // Preise/Lizenzmodell
+        'enterprise', // Enterprise-Funktionen
+        'integrations', // Integrationsmöglichkeiten
+        'security', // Sicherheitsfunktionen
+        'comparison', // Vergleich mit Alternativen
+        'reviews', // Bewertungen und Erfahrungen
+        'roadmap', // Zukunftspläne/Roadmap
+      ])
+      .describe('Aspekt der Recherche'),
     compareWith: z.string().optional().describe('Optional: Vergleich mit anderer Technologie'),
   }),
-  execute: async ({ technology, aspect, compareWith }: { technology: string; aspect: string; compareWith?: string }) => {
+  execute: async ({
+    technology,
+    aspect,
+    compareWith,
+  }: {
+    technology: string;
+    aspect: string;
+    compareWith?: string;
+  }) => {
     const queryParts = [technology];
 
     switch (aspect) {
@@ -180,7 +201,7 @@ Nutze dieses Tool für:
         aspect,
         compareWith,
         query,
-        results: results.results.map((r) => ({
+        results: results.results.map(r => ({
           title: r.title,
           url: r.url,
           excerpt: r.text?.slice(0, 800) || '',

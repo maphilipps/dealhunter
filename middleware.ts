@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
-export default auth((req) => {
+export default auth(req => {
   const { pathname } = req.nextUrl;
   const isAuth = !!req.auth;
   const userRole = req.auth?.user?.role;
@@ -23,12 +23,7 @@ export default auth((req) => {
    * - Webhook endpoints validate signatures to ensure requests come from trusted services
    * - This implements "defense in depth" where multiple layers validate security
    */
-  const apiExemptions = [
-    '/api/inngest',
-    '/api/slack',
-    '/api/submit',
-    '/api/auth',
-  ];
+  const apiExemptions = ['/api/inngest', '/api/slack', '/api/submit', '/api/auth'];
 
   if (apiExemptions.some(route => pathname.startsWith(route))) {
     return NextResponse.next();
@@ -50,14 +45,14 @@ export default auth((req) => {
 
   // Admin-only routes
   const adminRoutes = ['/admin'];
-  const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
+  const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
   if (isAdminRoute && userRole !== 'admin') {
     return NextResponse.redirect(new URL('/', req.url));
   }
 
   // BL-only routes (BL and Admin can access)
   const blRoutes = ['/bl-review'];
-  const isBLRoute = blRoutes.some((route) => pathname.startsWith(route));
+  const isBLRoute = blRoutes.some(route => pathname.startsWith(route));
   if (isBLRoute && userRole !== 'bl' && userRole !== 'admin') {
     return NextResponse.redirect(new URL('/', req.url));
   }
@@ -78,8 +73,8 @@ export const config = {
      *
      * Without this matcher, API routes would bypass middleware entirely.
      */
-    '/api/:path*'
-  ]
+    '/api/:path*',
+  ],
 };
 
 // Force Node.js runtime for middleware (required for better-sqlite3)

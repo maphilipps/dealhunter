@@ -4,12 +4,15 @@ import { DecisionNode } from '@/lib/bit-evaluation/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { ChevronDown, ChevronRight, CheckCircle2, XCircle, AlertTriangle, Info } from 'lucide-react';
+  ChevronDown,
+  ChevronRight,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Info,
+} from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -80,11 +83,7 @@ function TreeNode({ node, level }: TreeNodeProps) {
     // Leaf node - simple display
     return (
       <div
-        className={cn(
-          'flex items-start gap-3 p-3 rounded-lg border',
-          sentimentBg,
-          'mb-2'
-        )}
+        className={cn('flex items-start gap-3 p-3 rounded-lg border', sentimentBg, 'mb-2')}
         style={{ marginLeft: `${level * 24}px` }}
       >
         <div className={cn('mt-0.5', sentimentColor)}>{getIcon()}</div>
@@ -106,9 +105,7 @@ function TreeNode({ node, level }: TreeNodeProps) {
             <p className="text-sm text-muted-foreground mt-1">{node.value}</p>
           )}
           {node.reasoning && (
-            <p className="text-sm text-muted-foreground mt-1 italic">
-              {node.reasoning}
-            </p>
+            <p className="text-sm text-muted-foreground mt-1 italic">{node.reasoning}</p>
           )}
         </div>
       </div>
@@ -160,9 +157,7 @@ function TreeNode({ node, level }: TreeNodeProps) {
         <CollapsibleContent>
           <div className="pl-3 pt-2 pb-3 space-y-2">
             {node.reasoning && (
-              <p className="text-sm text-muted-foreground italic px-3">
-                {node.reasoning}
-              </p>
+              <p className="text-sm text-muted-foreground italic px-3">{node.reasoning}</p>
             )}
             {node.children?.map((child, index) => (
               <TreeNode key={child.id || index} node={child} level={0} />

@@ -81,18 +81,18 @@ function generateResearchQueries(cmsName: string, requirement: string): string[]
 
   // Feature-spezifische Queries
   const featureQueries: Record<string, string[]> = {
-    'mehrsprach': ['multilingual', 'internationalization', 'i18n', 'translation'],
+    mehrsprach: ['multilingual', 'internationalization', 'i18n', 'translation'],
     'e-commerce': ['ecommerce', 'commerce', 'shop', 'payment'],
-    'suche': ['search', 'elasticsearch', 'solr', 'algolia'],
-    'api': ['rest api', 'graphql', 'api integration'],
-    'ssr': ['server-side rendering', 'ssr', 'pre-rendering'],
-    'wcag': ['wcag', 'accessibility', 'a11y', 'aria'],
-    'dsgvo': ['gdpr', 'privacy', 'data protection', 'consent'],
-    'workflow': ['editorial workflow', 'content approval', 'moderation'],
-    'cache': ['caching', 'performance', 'varnish', 'redis'],
-    'login': ['user authentication', 'login', 'sso', 'oauth'],
-    'formulare': ['forms', 'webform', 'contact form'],
-    'blog': ['blog', 'news', 'articles', 'content management'],
+    suche: ['search', 'elasticsearch', 'solr', 'algolia'],
+    api: ['rest api', 'graphql', 'api integration'],
+    ssr: ['server-side rendering', 'ssr', 'pre-rendering'],
+    wcag: ['wcag', 'accessibility', 'a11y', 'aria'],
+    dsgvo: ['gdpr', 'privacy', 'data protection', 'consent'],
+    workflow: ['editorial workflow', 'content approval', 'moderation'],
+    cache: ['caching', 'performance', 'varnish', 'redis'],
+    login: ['user authentication', 'login', 'sso', 'oauth'],
+    formulare: ['forms', 'webform', 'contact form'],
+    blog: ['blog', 'news', 'articles', 'content management'],
   };
 
   // Finde passende Feature-Keywords
@@ -140,7 +140,10 @@ function analyzeResearchResults(
   evidence: string[];
   notes: string;
 } {
-  const allContent = contents.map(c => `${c.title} ${c.text}`).join(' ').toLowerCase();
+  const allContent = contents
+    .map(c => `${c.title} ${c.text}`)
+    .join(' ')
+    .toLowerCase();
 
   // Positive Signale
   const positivePatterns = [

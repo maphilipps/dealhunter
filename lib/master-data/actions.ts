@@ -1,11 +1,18 @@
-"use server";
+'use server';
 
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { references, competencies, competitors, type NewReference, type NewCompetency, type NewCompetitor } from "@/lib/db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
+import {
+  references,
+  competencies,
+  competitors,
+  type NewReference,
+  type NewCompetency,
+  type NewCompetitor,
+} from '@/lib/db/schema';
+import { eq, and, desc, sql } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
 // ============================================================================
 // Zod Schemas
@@ -86,9 +93,8 @@ export async function getUserReferences() {
   }
 
   // Admins see all, users see only their own
-  const condition = session.user.role === 'admin'
-    ? undefined
-    : eq(references.userId, session.user.id);
+  const condition =
+    session.user.role === 'admin' ? undefined : eq(references.userId, session.user.id);
 
   const items = await db
     .select()
@@ -106,10 +112,7 @@ export async function deleteReference(id: string) {
   }
 
   try {
-    const [existing] = await db
-      .select()
-      .from(references)
-      .where(eq(references.id, id));
+    const [existing] = await db.select().from(references).where(eq(references.id, id));
 
     if (!existing) {
       return { success: false, error: 'Not found' };
@@ -147,7 +150,9 @@ export async function createCompetency(data: z.infer<typeof createCompetencySche
   try {
     const newCompetency: NewCompetency = {
       ...parsed.data,
-      certifications: parsed.data.certifications ? JSON.stringify(parsed.data.certifications) : null,
+      certifications: parsed.data.certifications
+        ? JSON.stringify(parsed.data.certifications)
+        : null,
       userId: session.user.id,
       status: 'pending',
       isValidated: false,
@@ -171,9 +176,8 @@ export async function getUserCompetencies() {
     throw new Error('Unauthorized');
   }
 
-  const condition = session.user.role === 'admin'
-    ? undefined
-    : eq(competencies.userId, session.user.id);
+  const condition =
+    session.user.role === 'admin' ? undefined : eq(competencies.userId, session.user.id);
 
   const items = await db
     .select()
@@ -191,10 +195,7 @@ export async function deleteCompetency(id: string) {
   }
 
   try {
-    const [existing] = await db
-      .select()
-      .from(competencies)
-      .where(eq(competencies.id, id));
+    const [existing] = await db.select().from(competencies).where(eq(competencies.id, id));
 
     if (!existing) {
       return { success: false, error: 'Not found' };
@@ -235,7 +236,9 @@ export async function createCompetitor(data: z.infer<typeof createCompetitorSche
       industry: parsed.data.industry ? JSON.stringify(parsed.data.industry) : null,
       strengths: parsed.data.strengths ? JSON.stringify(parsed.data.strengths) : null,
       weaknesses: parsed.data.weaknesses ? JSON.stringify(parsed.data.weaknesses) : null,
-      typicalMarkets: parsed.data.typicalMarkets ? JSON.stringify(parsed.data.typicalMarkets) : null,
+      typicalMarkets: parsed.data.typicalMarkets
+        ? JSON.stringify(parsed.data.typicalMarkets)
+        : null,
       userId: session.user.id,
       status: 'pending',
       isValidated: false,
@@ -259,9 +262,8 @@ export async function getUserCompetitors() {
     throw new Error('Unauthorized');
   }
 
-  const condition = session.user.role === 'admin'
-    ? undefined
-    : eq(competitors.userId, session.user.id);
+  const condition =
+    session.user.role === 'admin' ? undefined : eq(competitors.userId, session.user.id);
 
   const items = await db
     .select()
@@ -279,10 +281,7 @@ export async function deleteCompetitor(id: string) {
   }
 
   try {
-    const [existing] = await db
-      .select()
-      .from(competitors)
-      .where(eq(competitors.id, id));
+    const [existing] = await db.select().from(competitors).where(eq(competitors.id, id));
 
     if (!existing) {
       return { success: false, error: 'Not found' };

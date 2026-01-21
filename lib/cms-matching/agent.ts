@@ -12,16 +12,9 @@ import { technologies } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { searchAndContents } from '@/lib/search/web-search';
-import {
-  type CMSMatchingResult,
-  type RequirementMatch,
-  cmsMatchingResultSchema,
-} from './schema';
+import { type CMSMatchingResult, type RequirementMatch, cmsMatchingResultSchema } from './schema';
 // Intelligent Agent Framework - NEW
-import {
-  createIntelligentTools,
-  KNOWN_GITHUB_REPOS,
-} from '@/lib/agent-tools/intelligent-tools';
+import { createIntelligentTools, KNOWN_GITHUB_REPOS } from '@/lib/agent-tools/intelligent-tools';
 import { quickEvaluate, CMS_MATCHING_EVALUATION_SCHEMA } from '@/lib/agent-tools/evaluator';
 import { optimizeCMSMatchingResults } from '@/lib/agent-tools/optimizer';
 
@@ -156,7 +149,7 @@ function extractRequirementsFromQuickScan(data: QuickScanData): Array<{
       });
     }
     if (data.features.customFeatures?.length) {
-      data.features.customFeatures.forEach((feature) => {
+      data.features.customFeatures.forEach(feature => {
         requirements.push({
           requirement: feature,
           category: 'functional',
@@ -277,7 +270,7 @@ async function loadBaselineTechnologies(businessUnitId?: string) {
 
   const techs = await query;
 
-  return techs.filter((t) => t.category === 'CMS' || t.category === 'Framework');
+  return techs.filter(t => t.category === 'CMS' || t.category === 'Framework');
 }
 
 export interface FeatureResearchResult {
@@ -287,7 +280,14 @@ export interface FeatureResearchResult {
   supported: boolean;
   researchedAt: string;
   /** Art der Unterstützung: nativ, über Modul, Extension, etc. */
-  supportType?: 'native' | 'module' | 'extension' | 'contrib' | 'third-party' | 'custom' | 'unknown';
+  supportType?:
+    | 'native'
+    | 'module'
+    | 'extension'
+    | 'contrib'
+    | 'third-party'
+    | 'custom'
+    | 'unknown';
   /** Name des Moduls/Plugins falls zutreffend */
   moduleName?: string;
   /** Quell-URLs der Recherche */
@@ -304,18 +304,23 @@ function generateSearchQueries(cmsName: string, requirement: string): string[] {
   const queries: string[] = [];
 
   // Basis-Query mit Site-Einschränkung auf offizielle Docs
-  const officialSites = cmsName.toLowerCase() === 'drupal'
-    ? 'site:drupal.org OR site:drupal.com'
-    : cmsName.toLowerCase() === 'wordpress'
-    ? 'site:wordpress.org OR site:developer.wordpress.com'
-    : cmsName.toLowerCase() === 'contentful'
-    ? 'site:contentful.com'
-    : cmsName.toLowerCase() === 'strapi'
-    ? 'site:strapi.io OR site:docs.strapi.io'
-    : '';
+  const officialSites =
+    cmsName.toLowerCase() === 'drupal'
+      ? 'site:drupal.org OR site:drupal.com'
+      : cmsName.toLowerCase() === 'wordpress'
+        ? 'site:wordpress.org OR site:developer.wordpress.com'
+        : cmsName.toLowerCase() === 'contentful'
+          ? 'site:contentful.com'
+          : cmsName.toLowerCase() === 'strapi'
+            ? 'site:strapi.io OR site:docs.strapi.io'
+            : '';
 
   // Spezifische Queries je nach Feature-Typ
-  if (normalizedReq.includes('mehrsprach') || normalizedReq.includes('multi-lang') || normalizedReq.includes('i18n')) {
+  if (
+    normalizedReq.includes('mehrsprach') ||
+    normalizedReq.includes('multi-lang') ||
+    normalizedReq.includes('i18n')
+  ) {
     queries.push(`${cmsName} multilingual internationalization i18n support`);
     queries.push(`${cmsName} translation module documentation`);
   } else if (normalizedReq.includes('e-commerce') || normalizedReq.includes('shop')) {
@@ -328,10 +333,18 @@ function generateSearchQueries(cmsName: string, requirement: string): string[] {
     queries.push(`${cmsName} GraphQL API support module`);
   } else if (normalizedReq.includes('rest') || normalizedReq.includes('api')) {
     queries.push(`${cmsName} REST API documentation endpoints`);
-  } else if (normalizedReq.includes('wcag') || normalizedReq.includes('barrierefrei') || normalizedReq.includes('a11y')) {
+  } else if (
+    normalizedReq.includes('wcag') ||
+    normalizedReq.includes('barrierefrei') ||
+    normalizedReq.includes('a11y')
+  ) {
     queries.push(`${cmsName} WCAG accessibility compliance 2.1`);
     queries.push(`${cmsName} accessible themes aria`);
-  } else if (normalizedReq.includes('dsgvo') || normalizedReq.includes('gdpr') || normalizedReq.includes('datenschutz')) {
+  } else if (
+    normalizedReq.includes('dsgvo') ||
+    normalizedReq.includes('gdpr') ||
+    normalizedReq.includes('datenschutz')
+  ) {
     queries.push(`${cmsName} GDPR DSGVO privacy compliance module`);
   } else if (normalizedReq.includes('enterprise') || normalizedReq.includes('skalier')) {
     queries.push(`${cmsName} enterprise scalability high traffic performance`);
@@ -339,7 +352,11 @@ function generateSearchQueries(cmsName: string, requirement: string): string[] {
     queries.push(`${cmsName} search functionality elasticsearch solr`);
   } else if (normalizedReq.includes('workflow') || normalizedReq.includes('redaktion')) {
     queries.push(`${cmsName} editorial workflow content moderation approval`);
-  } else if (normalizedReq.includes('benutzer') || normalizedReq.includes('login') || normalizedReq.includes('account')) {
+  } else if (
+    normalizedReq.includes('benutzer') ||
+    normalizedReq.includes('login') ||
+    normalizedReq.includes('account')
+  ) {
     queries.push(`${cmsName} user authentication login registration`);
   } else {
     // Generische Query
@@ -358,83 +375,86 @@ function generateSearchQueries(cmsName: string, requirement: string): string[] {
  * Bekannte Feature-zu-Modul Mappings für gängige CMS
  * Diese werden bevorzugt verwendet wenn das Feature erkannt wird
  */
-const KNOWN_FEATURE_MODULES: Record<string, Record<string, { module: string; type: 'native' | 'contrib' | 'extension' }>> = {
+const KNOWN_FEATURE_MODULES: Record<
+  string,
+  Record<string, { module: string; type: 'native' | 'contrib' | 'extension' }>
+> = {
   drupal: {
     // Formulare
-    'formular': { module: 'webform', type: 'contrib' },
-    'formulare': { module: 'webform', type: 'contrib' },
-    'forms': { module: 'webform', type: 'contrib' },
-    'form': { module: 'webform', type: 'contrib' },
+    formular: { module: 'webform', type: 'contrib' },
+    formulare: { module: 'webform', type: 'contrib' },
+    forms: { module: 'webform', type: 'contrib' },
+    form: { module: 'webform', type: 'contrib' },
     'contact form': { module: 'webform', type: 'contrib' },
-    'kontaktformular': { module: 'webform', type: 'contrib' },
+    kontaktformular: { module: 'webform', type: 'contrib' },
     // Mehrsprachigkeit
-    'mehrsprachigkeit': { module: 'content_translation', type: 'native' },
-    'multilingual': { module: 'content_translation', type: 'native' },
-    'i18n': { module: 'content_translation', type: 'native' },
-    'übersetzung': { module: 'content_translation', type: 'native' },
+    mehrsprachigkeit: { module: 'content_translation', type: 'native' },
+    multilingual: { module: 'content_translation', type: 'native' },
+    i18n: { module: 'content_translation', type: 'native' },
+    übersetzung: { module: 'content_translation', type: 'native' },
     // E-Commerce
     'e-commerce': { module: 'commerce', type: 'contrib' },
-    'ecommerce': { module: 'commerce', type: 'contrib' },
-    'shop': { module: 'commerce', type: 'contrib' },
-    'webshop': { module: 'commerce', type: 'contrib' },
+    ecommerce: { module: 'commerce', type: 'contrib' },
+    shop: { module: 'commerce', type: 'contrib' },
+    webshop: { module: 'commerce', type: 'contrib' },
     // Suche
-    'suche': { module: 'search_api', type: 'contrib' },
-    'search': { module: 'search_api', type: 'contrib' },
-    'volltextsuche': { module: 'search_api_solr', type: 'contrib' },
+    suche: { module: 'search_api', type: 'contrib' },
+    search: { module: 'search_api', type: 'contrib' },
+    volltextsuche: { module: 'search_api_solr', type: 'contrib' },
     // Media
-    'media': { module: 'media', type: 'native' },
-    'medienverwaltung': { module: 'media', type: 'native' },
-    'bilder': { module: 'media', type: 'native' },
+    media: { module: 'media', type: 'native' },
+    medienverwaltung: { module: 'media', type: 'native' },
+    bilder: { module: 'media', type: 'native' },
     // Workflow
-    'workflow': { module: 'workflows', type: 'native' },
-    'redaktionsworkflow': { module: 'content_moderation', type: 'native' },
+    workflow: { module: 'workflows', type: 'native' },
+    redaktionsworkflow: { module: 'content_moderation', type: 'native' },
     // Views
-    'listen': { module: 'views', type: 'native' },
-    'ansichten': { module: 'views', type: 'native' },
+    listen: { module: 'views', type: 'native' },
+    ansichten: { module: 'views', type: 'native' },
     // Layout
-    'layout': { module: 'layout_builder', type: 'native' },
+    layout: { module: 'layout_builder', type: 'native' },
     'page builder': { module: 'layout_builder', type: 'native' },
     // API
     'rest api': { module: 'rest', type: 'native' },
     'json api': { module: 'jsonapi', type: 'native' },
-    'graphql': { module: 'graphql', type: 'contrib' },
+    graphql: { module: 'graphql', type: 'contrib' },
     // SEO
-    'seo': { module: 'metatag', type: 'contrib' },
+    seo: { module: 'metatag', type: 'contrib' },
     'meta tags': { module: 'metatag', type: 'contrib' },
     // Paragraphs
-    'paragraphs': { module: 'paragraphs', type: 'contrib' },
+    paragraphs: { module: 'paragraphs', type: 'contrib' },
     'content components': { module: 'paragraphs', type: 'contrib' },
     // Video/Media
-    'video': { module: 'media', type: 'native' },
+    video: { module: 'media', type: 'native' },
     'video content': { module: 'media', type: 'native' },
     'video einbettung': { module: 'video_embed_field', type: 'contrib' },
     'video embed': { module: 'video_embed_field', type: 'contrib' },
-    'youtube': { module: 'video_embed_field', type: 'contrib' },
-    'vimeo': { module: 'video_embed_field', type: 'contrib' },
+    youtube: { module: 'video_embed_field', type: 'contrib' },
+    vimeo: { module: 'video_embed_field', type: 'contrib' },
     // Barrierefreiheit
-    'barrierefreiheit': { module: 'editoria11y', type: 'contrib' },
-    'wcag': { module: 'editoria11y', type: 'contrib' },
-    'accessibility': { module: 'editoria11y', type: 'contrib' },
-    'a11y': { module: 'editoria11y', type: 'contrib' },
+    barrierefreiheit: { module: 'editoria11y', type: 'contrib' },
+    wcag: { module: 'editoria11y', type: 'contrib' },
+    accessibility: { module: 'editoria11y', type: 'contrib' },
+    a11y: { module: 'editoria11y', type: 'contrib' },
   },
   wordpress: {
     // Formulare
-    'formular': { module: 'contact-form-7', type: 'extension' },
-    'formulare': { module: 'contact-form-7', type: 'extension' },
-    'forms': { module: 'contact-form-7', type: 'extension' },
+    formular: { module: 'contact-form-7', type: 'extension' },
+    formulare: { module: 'contact-form-7', type: 'extension' },
+    forms: { module: 'contact-form-7', type: 'extension' },
     'contact form': { module: 'contact-form-7', type: 'extension' },
     // E-Commerce
     'e-commerce': { module: 'woocommerce', type: 'extension' },
-    'ecommerce': { module: 'woocommerce', type: 'extension' },
-    'shop': { module: 'woocommerce', type: 'extension' },
+    ecommerce: { module: 'woocommerce', type: 'extension' },
+    shop: { module: 'woocommerce', type: 'extension' },
     // Mehrsprachigkeit
-    'mehrsprachigkeit': { module: 'wpml', type: 'extension' },
-    'multilingual': { module: 'wpml', type: 'extension' },
+    mehrsprachigkeit: { module: 'wpml', type: 'extension' },
+    multilingual: { module: 'wpml', type: 'extension' },
     // SEO
-    'seo': { module: 'yoast-seo', type: 'extension' },
+    seo: { module: 'yoast-seo', type: 'extension' },
     // Page Builder
     'page builder': { module: 'elementor', type: 'extension' },
-    'layout': { module: 'elementor', type: 'extension' },
+    layout: { module: 'elementor', type: 'extension' },
   },
 };
 
@@ -443,18 +463,62 @@ const KNOWN_FEATURE_MODULES: Record<string, Record<string, { module: string; typ
  * Wird verwendet um falsche Matches zu filtern
  */
 const KNOWN_DRUPAL_MODULES = new Set([
-  'webform', 'commerce', 'search_api', 'search_api_solr', 'metatag', 'pathauto',
-  'paragraphs', 'entity_reference_revisions', 'admin_toolbar', 'token', 'ctools',
-  'views', 'devel', 'redirect', 'simple_sitemap', 'google_analytics', 'captcha',
-  'recaptcha', 'honeypot', 'antibot', 'field_group', 'inline_entity_form',
-  'entity_browser', 'media_entity', 'video_embed_field', 'colorbox', 'slick',
-  'blazy', 'responsive_image', 'focal_point', 'crop', 'file_entity',
-  'twig_tweak', 'libraries', 'components', 'ui_patterns', 'layout_paragraphs',
-  'graphql', 'jsonapi_extras', 'consumers', 'simple_oauth', 'decoupled_router',
-  'next', 'subrequests', 'jsonapi_menu_items', 'jsonapi_views', 'jsonapi_search_api',
+  'webform',
+  'commerce',
+  'search_api',
+  'search_api_solr',
+  'metatag',
+  'pathauto',
+  'paragraphs',
+  'entity_reference_revisions',
+  'admin_toolbar',
+  'token',
+  'ctools',
+  'views',
+  'devel',
+  'redirect',
+  'simple_sitemap',
+  'google_analytics',
+  'captcha',
+  'recaptcha',
+  'honeypot',
+  'antibot',
+  'field_group',
+  'inline_entity_form',
+  'entity_browser',
+  'media_entity',
+  'video_embed_field',
+  'colorbox',
+  'slick',
+  'blazy',
+  'responsive_image',
+  'focal_point',
+  'crop',
+  'file_entity',
+  'twig_tweak',
+  'libraries',
+  'components',
+  'ui_patterns',
+  'layout_paragraphs',
+  'graphql',
+  'jsonapi_extras',
+  'consumers',
+  'simple_oauth',
+  'decoupled_router',
+  'next',
+  'subrequests',
+  'jsonapi_menu_items',
+  'jsonapi_views',
+  'jsonapi_search_api',
   // Video/Media Module
-  'video', 'video_embed_field', 'media', 'media_library', 'file_entity',
-  'remote_video', 'video_embed_media', 'oembed_providers',
+  'video',
+  'video_embed_field',
+  'media',
+  'media_library',
+  'file_entity',
+  'remote_video',
+  'video_embed_media',
+  'oembed_providers',
 ]);
 
 /**
@@ -463,25 +527,110 @@ const KNOWN_DRUPAL_MODULES = new Set([
  */
 const DRUPAL_PROJECT_BLACKLIST = new Set([
   // Sprachen (ISO 639-1 Codes)
-  'de', 'en', 'fr', 'es', 'it', 'nl', 'pt', 'ru', 'zh', 'ja', 'ko', 'ar',
-  'no', 'sv', 'da', 'fi', 'pl', 'cs', 'sk', 'hu', 'ro', 'bg', 'el', 'tr',
-  'he', 'uk', 'vi', 'th', 'id', 'ms', 'hi', 'bn', 'ta', 'te', 'mr', 'gu',
+  'de',
+  'en',
+  'fr',
+  'es',
+  'it',
+  'nl',
+  'pt',
+  'ru',
+  'zh',
+  'ja',
+  'ko',
+  'ar',
+  'no',
+  'sv',
+  'da',
+  'fi',
+  'pl',
+  'cs',
+  'sk',
+  'hu',
+  'ro',
+  'bg',
+  'el',
+  'tr',
+  'he',
+  'uk',
+  'vi',
+  'th',
+  'id',
+  'ms',
+  'hi',
+  'bn',
+  'ta',
+  'te',
+  'mr',
+  'gu',
   // Generische/kurze Namen die oft falsch gematcht werden
-  'the', 'and', 'for', 'with', 'this', 'that', 'from', 'your', 'you',
-  'are', 'was', 'were', 'been', 'have', 'has', 'had', 'will', 'would',
-  'can', 'could', 'may', 'might', 'must', 'shall', 'should', 'need',
-  'use', 'used', 'using', 'make', 'made', 'get', 'got', 'set', 'add',
-  'all', 'any', 'some', 'one', 'two', 'new', 'old', 'big', 'small',
+  'the',
+  'and',
+  'for',
+  'with',
+  'this',
+  'that',
+  'from',
+  'your',
+  'you',
+  'are',
+  'was',
+  'were',
+  'been',
+  'have',
+  'has',
+  'had',
+  'will',
+  'would',
+  'can',
+  'could',
+  'may',
+  'might',
+  'must',
+  'shall',
+  'should',
+  'need',
+  'use',
+  'used',
+  'using',
+  'make',
+  'made',
+  'get',
+  'got',
+  'set',
+  'add',
+  'all',
+  'any',
+  'some',
+  'one',
+  'two',
+  'new',
+  'old',
+  'big',
+  'small',
   // Drupal-spezifische Nicht-Module
-  'drupal', 'core', 'docs', 'documentation', 'issues', 'download',
-  'authors', 'maintainers', 'releases', 'usage', 'security',
+  'drupal',
+  'core',
+  'docs',
+  'documentation',
+  'issues',
+  'download',
+  'authors',
+  'maintainers',
+  'releases',
+  'usage',
+  'security',
 ]);
 
 /**
  * Erkennt die Art der Unterstützung (nativ, Modul, Extension, etc.)
  * Nutzt bekannte Feature-Mappings und analysiert den Content kontextbezogen
  */
-function detectSupportType(content: string, cmsName: string, requirement?: string): {
+function detectSupportType(
+  content: string,
+  cmsName: string,
+  requirement?: string
+): {
   type: 'native' | 'module' | 'extension' | 'contrib' | 'third-party' | 'custom' | 'unknown';
   moduleName?: string;
 } {
@@ -506,8 +655,7 @@ function detectSupportType(content: string, cmsName: string, requirement?: strin
     for (const match of projectMatches) {
       const moduleName = match[1].toLowerCase();
       // Filter: Mindestlänge 3, nicht auf Blacklist, idealerweise bekannt
-      if (moduleName.length >= 3 &&
-          !DRUPAL_PROJECT_BLACKLIST.has(moduleName)) {
+      if (moduleName.length >= 3 && !DRUPAL_PROJECT_BLACKLIST.has(moduleName)) {
         // Bekannte Module bevorzugen, aber auch unbekannte akzeptieren wenn plausibel
         if (KNOWN_DRUPAL_MODULES.has(moduleName)) {
           return { type: 'contrib', moduleName };
@@ -525,12 +673,16 @@ function detectSupportType(content: string, cmsName: string, requirement?: strin
     }
 
     // Contrib-Modul mit expliziter Nennung
-    const explicitModule = lowerContent.match(/(?:using|install|enable)\s+(?:the\s+)?([a-z][a-z0-9_]+)\s+module/i);
+    const explicitModule = lowerContent.match(
+      /(?:using|install|enable)\s+(?:the\s+)?([a-z][a-z0-9_]+)\s+module/i
+    );
     if (explicitModule) {
       const modName = explicitModule[1].toLowerCase();
-      if (modName.length >= 3 &&
-          !DRUPAL_PROJECT_BLACKLIST.has(modName) &&
-          (KNOWN_DRUPAL_MODULES.has(modName) || modName.includes('_') || modName.length > 5)) {
+      if (
+        modName.length >= 3 &&
+        !DRUPAL_PROJECT_BLACKLIST.has(modName) &&
+        (KNOWN_DRUPAL_MODULES.has(modName) || modName.includes('_') || modName.length > 5)
+      ) {
         return { type: 'contrib', moduleName: modName };
       }
     }
@@ -549,7 +701,14 @@ function detectSupportType(content: string, cmsName: string, requirement?: strin
     }
 
     // Bekannte Plugin-Namen
-    const knownPlugins = ['woocommerce', 'yoast', 'elementor', 'wpml', 'contact-form-7', 'gravity-forms'];
+    const knownPlugins = [
+      'woocommerce',
+      'yoast',
+      'elementor',
+      'wpml',
+      'contact-form-7',
+      'gravity-forms',
+    ];
     for (const plugin of knownPlugins) {
       if (lowerContent.includes(plugin)) {
         return { type: 'extension', moduleName: plugin };
@@ -568,7 +727,9 @@ function detectSupportType(content: string, cmsName: string, requirement?: strin
   if (/third.?party|external|separate service/i.test(lowerContent)) {
     return { type: 'third-party' };
   }
-  if (/custom development|custom code|selbst entwickeln|custom implementation/i.test(lowerContent)) {
+  if (
+    /custom development|custom code|selbst entwickeln|custom implementation/i.test(lowerContent)
+  ) {
     return { type: 'custom' };
   }
 
@@ -586,7 +747,11 @@ function detectSupportType(content: string, cmsName: string, requirement?: strin
 /**
  * Analysiert Suchergebnisse auf Feature-Unterstützung
  */
-function analyzeSearchResults(content: string, cmsName: string, requirement: string): {
+function analyzeSearchResults(
+  content: string,
+  cmsName: string,
+  requirement: string
+): {
   score: number;
   confidence: number;
   supported: boolean;
@@ -714,11 +879,7 @@ export async function researchSingleRequirement(
 /**
  * Formatiert den Support-Typ als lesbare deutsche Beschreibung
  */
-function formatSupportType(
-  supportType: string,
-  moduleName?: string,
-  cmsName?: string
-): string {
+function formatSupportType(supportType: string, moduleName?: string, cmsName?: string): string {
   const cmsLower = (cmsName || '').toLowerCase();
 
   switch (supportType) {
@@ -736,9 +897,10 @@ function formatSupportType(
     case 'extension':
       // WordPress-spezifisch oder generisch
       if (moduleName) {
-        const pluginUrl = cmsLower === 'wordpress'
-          ? `https://wordpress.org/plugins/${moduleName.toLowerCase().replace(/\s+/g, '-')}/`
-          : null;
+        const pluginUrl =
+          cmsLower === 'wordpress'
+            ? `https://wordpress.org/plugins/${moduleName.toLowerCase().replace(/\s+/g, '-')}/`
+            : null;
         return pluginUrl
           ? `Über Plugin "${moduleName}" (${pluginUrl})`
           : `Über Extension "${moduleName}"`;
@@ -769,7 +931,8 @@ async function researchCMSFeatures(
     const collectedUrls: string[] = [];
 
     // Mehrere Queries ausprobieren
-    for (const query of queries.slice(0, 2)) { // Max 2 Queries um API-Limits zu schonen
+    for (const query of queries.slice(0, 2)) {
+      // Max 2 Queries um API-Limits zu schonen
       try {
         console.log(`[CMS Research] Searching: "${query}"`);
         const results = await searchAndContents(query, { numResults: 3, summary: true });
@@ -800,7 +963,8 @@ async function researchCMSFeatures(
         researchedAt: now,
         supportType: 'unknown',
         sourceUrls: [],
-        reasoning: 'Keine relevanten Suchergebnisse gefunden - Feature-Support konnte nicht verifiziert werden',
+        reasoning:
+          'Keine relevanten Suchergebnisse gefunden - Feature-Support konnte nicht verifiziert werden',
       };
     }
 
@@ -808,16 +972,19 @@ async function researchCMSFeatures(
     const analysis = analyzeSearchResults(allContent, cmsName, requirement);
 
     // Notes mit Support-Typ formatieren
-    const supportDescription = formatSupportType(analysis.supportType, analysis.moduleName, cmsName);
+    const supportDescription = formatSupportType(
+      analysis.supportType,
+      analysis.moduleName,
+      cmsName
+    );
 
-    const notes = analysis.supported
-      ? `✓ ${supportDescription}`
-      : `✗ ${supportDescription}`;
+    const notes = analysis.supported ? `✓ ${supportDescription}` : `✗ ${supportDescription}`;
 
     // Reasoning separat speichern (die Evidence aus der Analyse)
-    const reasoning = analysis.evidence && analysis.evidence !== 'Keine klaren Indikatoren'
-      ? analysis.evidence
-      : `Score basiert auf ${analysis.supported ? 'positiven' : 'gemischten/negativen'} Signalen in den Suchergebnissen`;
+    const reasoning =
+      analysis.evidence && analysis.evidence !== 'Keine klaren Indikatoren'
+        ? analysis.evidence
+        : `Score basiert auf ${analysis.supported ? 'positiven' : 'gemischten/negativen'} Signalen in den Suchergebnissen`;
 
     const result: FeatureResearchResult = {
       score: analysis.score,
@@ -831,7 +998,9 @@ async function researchCMSFeatures(
       reasoning,
     };
 
-    console.log(`[CMS Research] ${cmsName} + "${requirement}" => Score: ${result.score}, Confidence: ${result.confidence}, Type: ${analysis.supportType}`);
+    console.log(
+      `[CMS Research] ${cmsName} + "${requirement}" => Score: ${result.score}, Confidence: ${result.confidence}, Type: ${analysis.supportType}`
+    );
 
     return result;
   } catch (error) {
@@ -921,7 +1090,7 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
 
   // 2. Anforderungen aus Extracted Requirements hinzufügen
   if (input.extractedRequirements?.requirements) {
-    input.extractedRequirements.requirements.forEach((req) => {
+    input.extractedRequirements.requirements.forEach(req => {
       detectedRequirements.push({
         requirement: req,
         category: 'functional',
@@ -935,19 +1104,20 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
   const baselineTechs = await loadBaselineTechnologies(input.businessUnitId);
 
   // Fallback wenn keine Technologien in der DB
-  const cmsOptions = baselineTechs.length > 0
-    ? baselineTechs.map((t) => ({ id: t.id, name: t.name, isBaseline: t.isDefault }))
-    : [
-        { id: 'drupal', name: 'Drupal', isBaseline: true },
-        { id: 'wordpress', name: 'WordPress', isBaseline: false },
-        { id: 'contentful', name: 'Contentful', isBaseline: false },
-        { id: 'strapi', name: 'Strapi', isBaseline: false },
-      ];
+  const cmsOptions =
+    baselineTechs.length > 0
+      ? baselineTechs.map(t => ({ id: t.id, name: t.name, isBaseline: t.isDefault }))
+      : [
+          { id: 'drupal', name: 'Drupal', isBaseline: true },
+          { id: 'wordpress', name: 'WordPress', isBaseline: false },
+          { id: 'contentful', name: 'Contentful', isBaseline: false },
+          { id: 'strapi', name: 'Strapi', isBaseline: false },
+        ];
 
   // 4. Für jede Anforderung: Scores pro CMS berechnen
   // AUTO-RESEARCH: Wenn useWebSearch=true oder Confidence niedrig, automatisch recherchieren
   const requirementsWithScores: RequirementMatch[] = await Promise.all(
-    detectedRequirements.map(async (req) => {
+    detectedRequirements.map(async req => {
       const cmsScores: RequirementMatch['cmsScores'] = {};
 
       for (const cms of cmsOptions) {
@@ -989,8 +1159,8 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
   );
 
   // 5. Gesamtscores pro CMS berechnen
-  const comparedTechnologies = cmsOptions.map((cms) => {
-    const scores = requirementsWithScores.map((r) => {
+  const comparedTechnologies = cmsOptions.map(cms => {
+    const scores = requirementsWithScores.map(r => {
       const cmsScore = r.cmsScores[cms.id];
       const weight = r.priority === 'must-have' ? 2 : r.priority === 'should-have' ? 1.5 : 1;
       return (cmsScore?.score || 50) * weight;
@@ -1033,7 +1203,9 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
             tech.strengths.push(`Aktuelle Version: ${repoInfo.latestVersion}`);
           }
           if (repoInfo.githubStars && repoInfo.githubStars > 10000) {
-            tech.strengths.push(`Große Community (${repoInfo.githubStars.toLocaleString()} GitHub Stars)`);
+            tech.strengths.push(
+              `Große Community (${repoInfo.githubStars.toLocaleString()} GitHub Stars)`
+            );
           }
         }
       } catch {
@@ -1046,7 +1218,7 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
   const primary = comparedTechnologies[0];
   const alternative = comparedTechnologies[1];
 
-  const mustHaveCount = requirementsWithScores.filter((r) => r.priority === 'must-have').length;
+  const mustHaveCount = requirementsWithScores.filter(r => r.priority === 'must-have').length;
   const avgScore = Math.round(
     comparedTechnologies.reduce((sum, t) => sum + t.overallScore, 0) / comparedTechnologies.length
   );
@@ -1074,7 +1246,10 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
   };
 
   // 6.5: Evaluator-Optimizer Loop
-  const quickEval = quickEvaluate(result as Record<string, unknown>, CMS_MATCHING_EVALUATION_SCHEMA);
+  const quickEval = quickEvaluate(
+    result as Record<string, unknown>,
+    CMS_MATCHING_EVALUATION_SCHEMA
+  );
 
   if (quickEval.score < 75 && quickEval.canImprove) {
     console.log(`[CMS Matching] Score ${quickEval.score}/100, starte Optimierung...`);

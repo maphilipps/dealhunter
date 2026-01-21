@@ -5,7 +5,10 @@ export const technologyResearchResultSchema = z.object({
   logoUrl: z.string().url().optional().describe('URL zum offiziellen Logo der Technologie'),
   websiteUrl: z.string().url().optional().describe('Offizielle Website der Technologie'),
   description: z.string().optional().describe('Kurze Beschreibung der Technologie (2-3 Sätze)'),
-  category: z.enum(['CMS', 'Framework', 'Library', 'Language', 'Database', 'Tool', 'Platform', 'Other']).optional().describe('Kategorie der Technologie'),
+  category: z
+    .enum(['CMS', 'Framework', 'Library', 'Language', 'Database', 'Tool', 'Platform', 'Other'])
+    .optional()
+    .describe('Kategorie der Technologie'),
 
   // Technische Details
   license: z.string().optional().describe('Lizenztyp (z.B. MIT, GPL, Proprietary, Apache 2.0)'),
@@ -20,12 +23,18 @@ export const technologyResearchResultSchema = z.object({
   cons: z.array(z.string()).optional().describe('Nachteile der Technologie (3-5 Punkte)'),
 
   // Marketing
-  usps: z.array(z.string()).optional().describe('Unique Selling Points für Verkaufsgespräche (3-5 Punkte)'),
+  usps: z
+    .array(z.string())
+    .optional()
+    .describe('Unique Selling Points für Verkaufsgespräche (3-5 Punkte)'),
   targetAudiences: z.array(z.string()).optional().describe('Zielgruppen für diese Technologie'),
   useCases: z.array(z.string()).optional().describe('Typische Anwendungsfälle'),
 
   // adesso-spezifisch
-  adessoExpertise: z.string().optional().describe('Beschreibung der adesso-Expertise mit dieser Technologie'),
+  adessoExpertise: z
+    .string()
+    .optional()
+    .describe('Beschreibung der adesso-Expertise mit dieser Technologie'),
 });
 
 export type TechnologyResearchResult = z.infer<typeof technologyResearchResultSchema>;
@@ -36,25 +45,27 @@ export const technologyInfoSchema = z.object({
   category: z.string().optional(),
   websiteUrl: z.string().optional(),
   // Existing data for incremental update
-  existingData: z.object({
-    logoUrl: z.string().nullable().optional(),
-    websiteUrl: z.string().nullable().optional(),
-    description: z.string().nullable().optional(),
-    category: z.string().nullable().optional(),
-    license: z.string().nullable().optional(),
-    latestVersion: z.string().nullable().optional(),
-    githubUrl: z.string().nullable().optional(),
-    githubStars: z.number().nullable().optional(),
-    lastRelease: z.string().nullable().optional(),
-    communitySize: z.string().nullable().optional(),
-    pros: z.string().nullable().optional(),
-    cons: z.string().nullable().optional(),
-    usps: z.string().nullable().optional(),
-    targetAudiences: z.string().nullable().optional(),
-    useCases: z.string().nullable().optional(),
-    adessoExpertise: z.string().nullable().optional(),
-    lastResearchedAt: z.date().nullable().optional(),
-  }).optional(),
+  existingData: z
+    .object({
+      logoUrl: z.string().nullable().optional(),
+      websiteUrl: z.string().nullable().optional(),
+      description: z.string().nullable().optional(),
+      category: z.string().nullable().optional(),
+      license: z.string().nullable().optional(),
+      latestVersion: z.string().nullable().optional(),
+      githubUrl: z.string().nullable().optional(),
+      githubStars: z.number().nullable().optional(),
+      lastRelease: z.string().nullable().optional(),
+      communitySize: z.string().nullable().optional(),
+      pros: z.string().nullable().optional(),
+      cons: z.string().nullable().optional(),
+      usps: z.string().nullable().optional(),
+      targetAudiences: z.string().nullable().optional(),
+      useCases: z.string().nullable().optional(),
+      adessoExpertise: z.string().nullable().optional(),
+      lastResearchedAt: z.date().nullable().optional(),
+    })
+    .optional(),
 });
 
 export type TechnologyInfo = z.infer<typeof technologyInfoSchema>;

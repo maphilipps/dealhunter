@@ -64,7 +64,13 @@ export async function createEmployee(data: {
 
   const { name, email, businessUnitId, skills, roles, availabilityStatus } = data;
 
-  if (!name.trim() || !email.trim() || !businessUnitId || skills.length === 0 || roles.length === 0) {
+  if (
+    !name.trim() ||
+    !email.trim() ||
+    !businessUnitId ||
+    skills.length === 0 ||
+    roles.length === 0
+  ) {
     return { success: false, error: 'Bitte alle Pflichtfelder ausfüllen' };
   }
 
@@ -91,11 +97,7 @@ export async function createEmployee(data: {
 
 export async function getEmployee(id: string) {
   try {
-    const [employee] = await db
-      .select()
-      .from(employees)
-      .where(eq(employees.id, id))
-      .limit(1);
+    const [employee] = await db.select().from(employees).where(eq(employees.id, id)).limit(1);
 
     if (!employee) {
       return { success: false, error: 'Mitarbeiter nicht gefunden' };
@@ -108,14 +110,17 @@ export async function getEmployee(id: string) {
   }
 }
 
-export async function updateEmployee(id: string, data: {
-  name: string;
-  email: string;
-  businessUnitId: string;
-  skills: string[];
-  roles: string[];
-  availabilityStatus: 'available' | 'on_project' | 'unavailable';
-}) {
+export async function updateEmployee(
+  id: string,
+  data: {
+    name: string;
+    email: string;
+    businessUnitId: string;
+    skills: string[];
+    roles: string[];
+    availabilityStatus: 'available' | 'on_project' | 'unavailable';
+  }
+) {
   const session = await auth();
 
   if (!session?.user?.id || session.user.role !== 'admin') {
@@ -124,7 +129,13 @@ export async function updateEmployee(id: string, data: {
 
   const { name, email, businessUnitId, skills, roles, availabilityStatus } = data;
 
-  if (!name.trim() || !email.trim() || !businessUnitId || skills.length === 0 || roles.length === 0) {
+  if (
+    !name.trim() ||
+    !email.trim() ||
+    !businessUnitId ||
+    skills.length === 0 ||
+    roles.length === 0
+  ) {
     return { success: false, error: 'Bitte alle Pflichtfelder ausfüllen' };
   }
 
@@ -182,7 +193,11 @@ export async function importEmployeesFromCSV(csvData: string) {
     const headers = lines[0].split(',').map(h => h.trim());
 
     if (headers.length < 6) {
-      return { success: false, error: 'CSV muss mindestens 6 Spalten haben (name,email,businessUnitId,skills,roles,availabilityStatus)' };
+      return {
+        success: false,
+        error:
+          'CSV muss mindestens 6 Spalten haben (name,email,businessUnitId,skills,roles,availabilityStatus)',
+      };
     }
 
     const imported: any[] = [];
@@ -199,8 +214,14 @@ export async function importEmployeesFromCSV(csvData: string) {
       const [name, email, businessUnitId, skillsStr, rolesStr, availabilityStatus] = values;
 
       try {
-        const skills = skillsStr.split(';').map(s => s.trim()).filter(Boolean);
-        const roles = rolesStr.split(';').map(r => r.trim()).filter(Boolean);
+        const skills = skillsStr
+          .split(';')
+          .map(s => s.trim())
+          .filter(Boolean);
+        const roles = rolesStr
+          .split(';')
+          .map(r => r.trim())
+          .filter(Boolean);
 
         const [employee] = await db
           .insert(employees)
@@ -216,7 +237,9 @@ export async function importEmployeesFromCSV(csvData: string) {
 
         imported.push(employee);
       } catch (error) {
-        errors.push(`Zeile ${i + 1}: ${error instanceof Error ? error.message : 'Fehler beim Importieren'}`);
+        errors.push(
+          `Zeile ${i + 1}: ${error instanceof Error ? error.message : 'Fehler beim Importieren'}`
+        );
       }
     }
 

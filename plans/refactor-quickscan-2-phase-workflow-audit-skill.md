@@ -8,21 +8,21 @@ Umfassendes Refactoring des QuickScan-Workflows auf eine klare 2-Phasen-Architek
 
 ### Identifizierte Probleme (13 kritische Issues)
 
-| # | Problem | Schwere | Fix |
-|---|---------|---------|-----|
-| 1 | Tech Stack Detection 3x ausgeführt | HOCH | Einmal ausführen, Ergebnis wiederverwenden |
-| 2 | Data Flow Widerspruch (Ergebnisse nach Nutzung überschrieben) | HOCH | Reihenfolge korrigieren |
-| 3 | 4 CMS-Quellen ohne Priorität | MITTEL | Klare Hierarchie definieren |
-| 4 | BL Recommendation VOR Phase 4 (incomplete data) | HOCH | Nach allen Analysen verschieben |
-| 5 | Playwright Audit hat keinen Tech-Kontext | MITTEL | Tech-Ergebnisse übergeben |
-| 6 | Null-Returns in kritischen Pfaden | MITTEL | Defensive Coding |
-| 7 | contentTypes übersprungen bei < 10 URLs | NIEDRIG | Threshold entfernen |
-| 8 | Feature Detection Fallback ohne Tracking | NIEDRIG | Confidence-Tracking |
-| 9 | Wappalyzer 2x geparsed | MITTEL | Einmal cachen |
-| 10 | Tech Stack 3x gemerged | HOCH | Single Merge Point |
-| 11 | Business Units 2x geladen | NIEDRIG | Einmal laden, cachen |
-| 12 | Content Analysis VOR Page Sampling | HOCH | Reihenfolge fixieren |
-| 13 | Non-Streaming/Streaming keine Parität | MITTEL | Unified Flow |
+| #   | Problem                                                       | Schwere | Fix                                        |
+| --- | ------------------------------------------------------------- | ------- | ------------------------------------------ |
+| 1   | Tech Stack Detection 3x ausgeführt                            | HOCH    | Einmal ausführen, Ergebnis wiederverwenden |
+| 2   | Data Flow Widerspruch (Ergebnisse nach Nutzung überschrieben) | HOCH    | Reihenfolge korrigieren                    |
+| 3   | 4 CMS-Quellen ohne Priorität                                  | MITTEL  | Klare Hierarchie definieren                |
+| 4   | BL Recommendation VOR Phase 4 (incomplete data)               | HOCH    | Nach allen Analysen verschieben            |
+| 5   | Playwright Audit hat keinen Tech-Kontext                      | MITTEL  | Tech-Ergebnisse übergeben                  |
+| 6   | Null-Returns in kritischen Pfaden                             | MITTEL  | Defensive Coding                           |
+| 7   | contentTypes übersprungen bei < 10 URLs                       | NIEDRIG | Threshold entfernen                        |
+| 8   | Feature Detection Fallback ohne Tracking                      | NIEDRIG | Confidence-Tracking                        |
+| 9   | Wappalyzer 2x geparsed                                        | MITTEL  | Einmal cachen                              |
+| 10  | Tech Stack 3x gemerged                                        | HOCH    | Single Merge Point                         |
+| 11  | Business Units 2x geladen                                     | NIEDRIG | Einmal laden, cachen                       |
+| 12  | Content Analysis VOR Page Sampling                            | HOCH    | Reihenfolge fixieren                       |
+| 13  | Non-Streaming/Streaming keine Parität                         | MITTEL  | Unified Flow                               |
 
 ### Warum dieses Refactoring kritisch ist
 
@@ -103,11 +103,11 @@ Umfassendes Refactoring des QuickScan-Workflows auf eine klare 2-Phasen-Architek
 ```typescript
 // lib/streaming/event-types.ts
 export type QuickScanPhase =
-  | 'bootstrap'      // URL discovery + BU cache load
-  | 'multi_page'     // Diverse pages fetching
-  | 'analysis'       // Parallel tool execution
-  | 'synthesis'      // Sequential derivation + BL recommendation
-  | 'complete';      // Final result ready
+  | 'bootstrap' // URL discovery + BU cache load
+  | 'multi_page' // Diverse pages fetching
+  | 'analysis' // Parallel tool execution
+  | 'synthesis' // Sequential derivation + BL recommendation
+  | 'complete'; // Final result ready
 
 export interface PhaseStartEvent {
   type: AgentEventType.PHASE_START;
@@ -121,7 +121,7 @@ export interface PhaseStartEvent {
 export interface AnalysisCompleteEvent {
   type: AgentEventType.ANALYSIS_COMPLETE;
   data: {
-    analysis: string;  // z.B. 'techStack', 'accessibility'
+    analysis: string; // z.B. 'techStack', 'accessibility'
     success: boolean;
     duration: number;
     details?: string;
@@ -141,9 +141,7 @@ async function getBusinessUnitsOnce(): Promise<CachedBusinessUnit[]> {
     const units = await db.select().from(businessUnitsTable);
     cachedBusinessUnits = units.map(unit => ({
       name: unit.name,
-      keywords: typeof unit.keywords === 'string'
-        ? JSON.parse(unit.keywords)
-        : (unit.keywords || []),
+      keywords: typeof unit.keywords === 'string' ? JSON.parse(unit.keywords) : unit.keywords || [],
     }));
     console.log(`[QuickScan] Business Units loaded: ${cachedBusinessUnits.length}`);
   }
@@ -160,11 +158,11 @@ function clearBusinessUnitsCache(): void {
 ```typescript
 // lib/quick-scan/types.ts
 export interface DrupalMappingData {
-  suggestedParagraphTypes: string[];   // ["hero", "cards_grid", "accordion"]
-  suggestedContentTypes: string[];     // ["article", "event", "product"]
-  suggestedTaxonomies: string[];       // ["category", "tag", "location"]
-  suggestedMediaTypes: string[];       // ["image", "video", "document"]
-  estimatedViews: number;              // Geschätzte Views basierend auf Listen
+  suggestedParagraphTypes: string[]; // ["hero", "cards_grid", "accordion"]
+  suggestedContentTypes: string[]; // ["article", "event", "product"]
+  suggestedTaxonomies: string[]; // ["category", "tag", "location"]
+  suggestedMediaTypes: string[]; // ["image", "video", "document"]
+  estimatedViews: number; // Geschätzte Views basierend auf Listen
 }
 
 export interface ExtractedComponentsData {
@@ -208,7 +206,7 @@ export interface MigrationComplexityData {
       hasRestApi: boolean;
       hasXmlExport: boolean;
       hasCli: boolean;
-      knownExportMethods: string[];  // NEU
+      knownExportMethods: string[]; // NEU
       notes: string;
     };
     dataQuality: {
@@ -216,7 +214,7 @@ export interface MigrationComplexityData {
       brokenLinks: number;
       duplicateContent: boolean;
       inconsistentStructure: boolean;
-      cleanupRequired: 'minimal' | 'moderate' | 'significant';  // NEU
+      cleanupRequired: 'minimal' | 'moderate' | 'significant'; // NEU
       notes: string;
     };
     contentComplexity: {
@@ -224,7 +222,7 @@ export interface MigrationComplexityData {
       embeddedMedia: boolean;
       customFields: number;
       complexLayouts: boolean;
-      richTextComplexity: 'simple' | 'moderate' | 'complex';  // NEU
+      richTextComplexity: 'simple' | 'moderate' | 'complex'; // NEU
       notes: string;
     };
     integrationComplexity: {
@@ -232,7 +230,7 @@ export interface MigrationComplexityData {
       externalApis: number;
       ssoRequired: boolean;
       thirdPartyPlugins: number;
-      integrationList: string[];  // NEU
+      integrationList: string[]; // NEU
       notes: string;
     };
   };
@@ -241,7 +239,7 @@ export interface MigrationComplexityData {
   estimatedEffort: {
     minPT: number;
     maxPT: number;
-    confidence: number;  // 0-100
+    confidence: number; // 0-100
     assumptions: string[];
   };
 
@@ -257,6 +255,7 @@ export interface MigrationComplexityData {
 **Ziel:** 2-Phasen-Struktur mit korrekter Event-Emission
 
 **Tasks:**
+
 - [ ] Bootstrap-Phase mit parallelem BU-Cache-Load implementieren
 - [ ] Multi-Page-Phase mit Diversity-Sampling
 - [ ] Analysis-Phase mit Promise.allSettled für Fehlertoleranz
@@ -271,7 +270,6 @@ export async function runQuickScanWithStreaming(
   input: QuickScanInput,
   emit: AgentEventEmitter
 ): Promise<QuickScanResultsData> {
-
   // Phase Event Helpers
   const emitPhase = (phase: QuickScanPhase, message: string) => {
     emit({
@@ -306,8 +304,12 @@ export async function runQuickScanWithStreaming(
     getBusinessUnitsOnce(),
   ]);
 
-  emitAnalysisComplete('bootstrap', true, Date.now() - bootstrapStart,
-    `Website + ${cachedBusinessUnits.length} Business Units geladen`);
+  emitAnalysisComplete(
+    'bootstrap',
+    true,
+    Date.now() - bootstrapStart,
+    `Website + ${cachedBusinessUnits.length} Business Units geladen`
+  );
 
   // 1.2 Multi-Page Fetch
   emitPhase('multi_page', 'Lade diverse Seiten für Analyse...');
@@ -317,8 +319,12 @@ export async function runQuickScanWithStreaming(
   const selectedUrls = selectDiversePages(urlDiscovery.urls, 10);
   const pages = await fetchPagesParallel(selectedUrls);
 
-  emitAnalysisComplete('multi_page', true, Date.now() - multiPageStart,
-    `${pages.length} Seiten geladen`);
+  emitAnalysisComplete(
+    'multi_page',
+    true,
+    Date.now() - multiPageStart,
+    `${pages.length} Seiten geladen`
+  );
 
   // 1.3 Alle Analysen parallel
   emitPhase('analysis', 'Führe alle Analysen parallel aus...');
@@ -333,16 +339,28 @@ export async function runQuickScanWithStreaming(
     runWithTiming('seo', () => runSeoAudit(input.websiteUrl)),
     runWithTiming('legal', () => runLegalCheck(input.websiteUrl, websiteData)),
     runWithTiming('performance', () => runPerformanceCheck(pages)),
-    runWithTiming('screenshots', () => captureScreenshots(input.websiteUrl, selectedUrls.slice(0, 5))),
+    runWithTiming('screenshots', () =>
+      captureScreenshots(input.websiteUrl, selectedUrls.slice(0, 5))
+    ),
     runWithTiming('companyIntel', () => researchCompany(input.websiteUrl)),
     runWithTiming('decisionMakers', () => researchDecisionMakers(input.websiteUrl)),
   ]);
 
   // Emit individual analysis results
   analysisResults.forEach((result, index) => {
-    const names = ['techStack', 'components', 'contentTypes', 'navigation',
-                   'accessibility', 'seo', 'legal', 'performance',
-                   'screenshots', 'companyIntel', 'decisionMakers'];
+    const names = [
+      'techStack',
+      'components',
+      'contentTypes',
+      'navigation',
+      'accessibility',
+      'seo',
+      'legal',
+      'performance',
+      'screenshots',
+      'companyIntel',
+      'decisionMakers',
+    ];
     if (result.status === 'fulfilled') {
       emitAnalysisComplete(names[index], true, result.value.duration);
     } else {
@@ -352,9 +370,17 @@ export async function runQuickScanWithStreaming(
 
   // Extract successful results with defaults for failures
   const [
-    techStack, components, contentTypes, navigation,
-    accessibility, seo, legal, performance,
-    screenshots, companyIntel, decisionMakers
+    techStack,
+    components,
+    contentTypes,
+    navigation,
+    accessibility,
+    seo,
+    legal,
+    performance,
+    screenshots,
+    companyIntel,
+    decisionMakers,
   ] = extractResultsWithDefaults(analysisResults);
 
   // ═══════════════════════════════════════════════════════════
@@ -389,8 +415,12 @@ export async function runQuickScanWithStreaming(
     cachedBusinessUnits,
   });
 
-  emitAnalysisComplete('synthesis', true, Date.now() - synthesisStart,
-    `BL: ${blRecommendation.recommended}`);
+  emitAnalysisComplete(
+    'synthesis',
+    true,
+    Date.now() - synthesisStart,
+    `BL: ${blRecommendation.recommended}`
+  );
 
   // 2.3 Final Result Assembly
   emitPhase('complete', 'QuickScan abgeschlossen');
@@ -429,12 +459,14 @@ export async function runQuickScanWithStreaming(
 **Ziel:** Drupal-Mapping und erweiterte Migration-Daten
 
 **Tasks:**
+
 - [ ] `DrupalMappingData` Interface in types.ts hinzufügen
 - [ ] `estimatedDrupalEntities` in ExtractedComponentsData.summary
 - [ ] `estimatedEffort` mit minPT/maxPT in MigrationComplexityData
 - [ ] `generateDrupalMappingHints()` Funktion implementieren
 
 **Dateien:**
+
 - `lib/quick-scan/types.ts`
 - `lib/quick-scan/tools/migration-analyzer.ts`
 - `lib/quick-scan/schema.ts` (Zod Schemas aktualisieren)
@@ -444,12 +476,14 @@ export async function runQuickScanWithStreaming(
 **Ziel:** Phase Events korrekt im UI anzeigen
 
 **Tasks:**
+
 - [ ] `AgentActivityView` für Phase Events erweitern
 - [ ] Progress-Indikator für COLLECT vs SYNTHESIZE Phase
 - [ ] Tool-Status-Badges (success/error) anzeigen
 - [ ] Reasoning-Chain für Synthese-Phase sichtbar machen
 
 **Dateien:**
+
 - `components/ai-elements/agent-activity-view.tsx`
 - `components/ai-elements/agent-message.tsx`
 - `hooks/use-agent-stream.ts`
@@ -459,6 +493,7 @@ export async function runQuickScanWithStreaming(
 **Ziel:** Robuste Fehlerbehandlung ohne Datenverlust
 
 **Tasks:**
+
 - [ ] Promise.allSettled statt Promise.all für Fehlertoleranz
 - [ ] Minimum Tool Success Threshold (7/11) für SYNTHESIZE
 - [ ] Timeout pro Tool (30s) und pro Phase (5min COLLECT, 2min SYNTHESIZE)
@@ -466,11 +501,12 @@ export async function runQuickScanWithStreaming(
 - [ ] Graceful Degradation bei teilweisem Scheitern
 
 **Konfiguration:**
+
 ```typescript
 const QUICKSCAN_CONFIG = {
   TOOL_TIMEOUT_MS: 30_000,
-  COLLECT_PHASE_TIMEOUT_MS: 300_000,  // 5 min
-  SYNTHESIZE_PHASE_TIMEOUT_MS: 120_000,  // 2 min
+  COLLECT_PHASE_TIMEOUT_MS: 300_000, // 5 min
+  SYNTHESIZE_PHASE_TIMEOUT_MS: 120_000, // 2 min
   MIN_SUCCESSFUL_TOOLS: 7,
   MAX_RETRIES: 3,
   RETRY_BACKOFF_MS: [1000, 2000, 4000],
@@ -540,29 +576,29 @@ const QUICKSCAN_CONFIG = {
 
 ## Risk Analysis & Mitigation
 
-| Risiko | Wahrscheinlichkeit | Impact | Mitigation |
-|--------|-------------------|--------|------------|
-| agent.ts zu groß für einen Commit | MITTEL | MITTEL | In 2-3 PRs aufteilen |
-| Parallele Analysen schlagen fehl | HOCH | MITTEL | Promise.allSettled + Defaults |
-| Streaming-Events fehlen im UI | MITTEL | HOCH | Event-Typ Definitionen vorher erstellen |
-| BL Recommendation crasht | NIEDRIG | HOCH | Defensive Null-Checks |
-| Timeout bei langsamen Sites | MITTEL | MITTEL | Configurable Timeouts |
-| Drupal-Mapping-Hints ungenau | MITTEL | NIEDRIG | Heuristiken verfeinern |
+| Risiko                            | Wahrscheinlichkeit | Impact  | Mitigation                              |
+| --------------------------------- | ------------------ | ------- | --------------------------------------- |
+| agent.ts zu groß für einen Commit | MITTEL             | MITTEL  | In 2-3 PRs aufteilen                    |
+| Parallele Analysen schlagen fehl  | HOCH               | MITTEL  | Promise.allSettled + Defaults           |
+| Streaming-Events fehlen im UI     | MITTEL             | HOCH    | Event-Typ Definitionen vorher erstellen |
+| BL Recommendation crasht          | NIEDRIG            | HOCH    | Defensive Null-Checks                   |
+| Timeout bei langsamen Sites       | MITTEL             | MITTEL  | Configurable Timeouts                   |
+| Drupal-Mapping-Hints ungenau      | MITTEL             | NIEDRIG | Heuristiken verfeinern                  |
 
 ---
 
 ## Files to Modify
 
-| Datei | Änderung | Priorität |
-|-------|----------|-----------|
-| `lib/quick-scan/agent.ts` | **HAUPTARBEIT:** 2-Phasen-Workflow + Phase Events | KRITISCH |
-| `lib/quick-scan/types.ts` | `DrupalMappingData` + `estimatedDrupalEntities` | HOCH |
-| `lib/quick-scan/tools/migration-analyzer.ts` | `estimatedEffort` (PT Range) | HOCH |
-| `lib/quick-scan/schema.ts` | Zod Schemas aktualisieren | HOCH |
-| `lib/streaming/event-types.ts` | PHASE_START, ANALYSIS_COMPLETE Events | MITTEL |
-| `hooks/use-agent-stream.ts` | Phase Event Handling | MITTEL |
-| `components/ai-elements/agent-activity-view.tsx` | Phase-Visualisierung | MITTEL |
-| `components/bids/quick-scan-results.tsx` | Neue Felder anzeigen | NIEDRIG |
+| Datei                                            | Änderung                                          | Priorität |
+| ------------------------------------------------ | ------------------------------------------------- | --------- |
+| `lib/quick-scan/agent.ts`                        | **HAUPTARBEIT:** 2-Phasen-Workflow + Phase Events | KRITISCH  |
+| `lib/quick-scan/types.ts`                        | `DrupalMappingData` + `estimatedDrupalEntities`   | HOCH      |
+| `lib/quick-scan/tools/migration-analyzer.ts`     | `estimatedEffort` (PT Range)                      | HOCH      |
+| `lib/quick-scan/schema.ts`                       | Zod Schemas aktualisieren                         | HOCH      |
+| `lib/streaming/event-types.ts`                   | PHASE_START, ANALYSIS_COMPLETE Events             | MITTEL    |
+| `hooks/use-agent-stream.ts`                      | Phase Event Handling                              | MITTEL    |
+| `components/ai-elements/agent-activity-view.tsx` | Phase-Visualisierung                              | MITTEL    |
+| `components/bids/quick-scan-results.tsx`         | Neue Felder anzeigen                              | NIEDRIG   |
 
 ---
 
@@ -596,6 +632,7 @@ const QUICKSCAN_CONFIG = {
 ## Verification Checklist
 
 ### Workflow-Test
+
 - [ ] QuickScan starten auf bekannter Drupal-Site
 - [ ] Prüfen: Tech Stack = "Drupal" mit > 80% Confidence
 - [ ] Prüfen: Keine doppelten API-Aufrufe in Logs
@@ -603,6 +640,7 @@ const QUICKSCAN_CONFIG = {
 - [ ] Prüfen: 4 Phase Events im UI sichtbar
 
 ### Daten-Vollständigkeit
+
 - [ ] Facts Tab öffnen
 - [ ] Prüfen: Alle Felder für Audit gefüllt:
   - [ ] contentTypes.distribution vorhanden
@@ -611,6 +649,7 @@ const QUICKSCAN_CONFIG = {
   - [ ] techStack.apiEndpoints vorhanden
 
 ### Audit Skill Kompatibilität
+
 - [ ] Website Audit Skill starten
 - [ ] Prüfen: Kann QuickScan-Daten als Input verwenden
 - [ ] Prüfen: Keine "undefined" Werte in Audit-Report
@@ -620,6 +659,7 @@ const QUICKSCAN_CONFIG = {
 ## References & Research
 
 ### Internal References
+
 - Bestehender Plan: `/Users/marc.philipps/.claude/plans/composed-percolating-falcon.md`
 - QuickScan Agent: `lib/quick-scan/agent.ts`
 - Event Types: `lib/streaming/event-types.ts`
@@ -627,11 +667,13 @@ const QUICKSCAN_CONFIG = {
 - Types: `lib/quick-scan/types.ts`
 
 ### External References
+
 - [Vercel AI SDK - streamText](https://ai-sdk.dev/docs/reference/ai-sdk-core/stream-text)
 - [Vercel AI SDK - Workflows and Agents](https://ai-sdk.dev/docs/agents/workflows)
 - [Next.js 16 - Streaming SSR](https://nextjs.org/docs/app/building-your-application/routing/loading-ui-and-streaming)
 
 ### Research Summaries
+
 - **Repo Analysis:** Business Units Singleton bereits implementiert (agent.ts:66-92), Phase Events definiert (event-types.ts:11-31)
 - **Best Practices:** Promise.allSettled für Fehlertoleranz, Event Batching (100ms) für UI Performance
 - **SpecFlow Analysis:** 20 kritische Fragen identifiziert, Minimum Tool Threshold (7/11) empfohlen

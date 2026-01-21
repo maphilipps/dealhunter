@@ -14,10 +14,7 @@ import { reviewFeatureResearch, deepReviewFeature } from '@/lib/cms-matching/rev
  * - deep: AI-gestützter Deep Review (langsamer, gründlicher)
  * - featureNames: Optional - nur bestimmte Features reviewen
  */
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -31,20 +28,14 @@ export async function POST(
     const featureNames: string[] | undefined = body.featureNames;
 
     // Technologie laden
-    const [tech] = await db
-      .select()
-      .from(technologies)
-      .where(eq(technologies.id, id));
+    const [tech] = await db.select().from(technologies).where(eq(technologies.id, id));
 
     if (!tech) {
       return NextResponse.json({ error: 'Technologie nicht gefunden' }, { status: 404 });
     }
 
     if (!tech.features) {
-      return NextResponse.json(
-        { error: 'Keine Features zum Reviewen vorhanden' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Keine Features zum Reviewen vorhanden' }, { status: 400 });
     }
 
     const features = JSON.parse(tech.features);
@@ -59,10 +50,7 @@ export async function POST(
       : features;
 
     if (Object.keys(featuresToReview).length === 0) {
-      return NextResponse.json(
-        { error: 'Keine passenden Features gefunden' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Keine passenden Features gefunden' }, { status: 400 });
     }
 
     let reviewResult;

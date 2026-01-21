@@ -2,7 +2,7 @@ import { z } from 'zod';
 import DOMPurify from 'isomorphic-dompurify';
 
 // Sanitized string schema (XSS prevention)
-const sanitizedString = z.string().transform((val) => {
+const sanitizedString = z.string().transform(val => {
   return DOMPurify.sanitize(val, {
     ALLOWED_TAGS: [],
     ALLOWED_ATTR: [],
@@ -14,16 +14,18 @@ const sanitizedString = z.string().transform((val) => {
  * Baseline Item Categories
  * Maps to adessoCMS baseline entity types
  */
-export const baselineCategorySchema = z.enum([
-  'content_types',
-  'paragraphs',
-  'navigation',
-  'features',
-  'integrations',
-  'media',
-  'taxonomies',
-  'forms',
-]).describe('Kategorie des Baseline-Items');
+export const baselineCategorySchema = z
+  .enum([
+    'content_types',
+    'paragraphs',
+    'navigation',
+    'features',
+    'integrations',
+    'media',
+    'taxonomies',
+    'forms',
+  ])
+  .describe('Kategorie des Baseline-Items');
 
 /**
  * Single Baseline Item
@@ -33,8 +35,14 @@ export const baselineItemSchema = z.object({
   name: sanitizedString.describe('Name des Features/Entities'),
   category: baselineCategorySchema,
   inBaseline: z.boolean().describe('Ist dieses Item in der adesso-Baseline enthalten?'),
-  baselineMatch: sanitizedString.optional().describe('Name des entsprechenden Baseline-Items (wenn vorhanden)'),
-  estimatedHours: z.number().nonnegative().optional().describe('Geschätzte Stunden für Neuentwicklung (wenn nicht in Baseline)'),
+  baselineMatch: sanitizedString
+    .optional()
+    .describe('Name des entsprechenden Baseline-Items (wenn vorhanden)'),
+  estimatedHours: z
+    .number()
+    .nonnegative()
+    .optional()
+    .describe('Geschätzte Stunden für Neuentwicklung (wenn nicht in Baseline)'),
   confidence: z.number().min(0).max(100).describe('Konfidenz der Zuordnung (0-100)'),
   reasoning: sanitizedString.optional().describe('Begründung für die Zuordnung'),
 });
@@ -53,17 +61,24 @@ export const baselineComparisonResultSchema = z.object({
   newDevelopment: z.array(baselineItemSchema).describe('Items die neu entwickelt werden müssen'),
 
   // Category Breakdown
-  categoryBreakdown: z.array(z.object({
-    category: baselineCategorySchema,
-    totalCount: z.number().int().nonnegative(),
-    fromBaseline: z.number().int().nonnegative(),
-    newDevelopment: z.number().int().nonnegative(),
-    coveragePercent: z.number().min(0).max(100),
-  })).describe('Aufschlüsselung nach Kategorien'),
+  categoryBreakdown: z
+    .array(
+      z.object({
+        category: baselineCategorySchema,
+        totalCount: z.number().int().nonnegative(),
+        fromBaseline: z.number().int().nonnegative(),
+        newDevelopment: z.number().int().nonnegative(),
+        coveragePercent: z.number().min(0).max(100),
+      })
+    )
+    .describe('Aufschlüsselung nach Kategorien'),
 
   // Effort Estimation
   estimatedSavings: z.object({
-    hoursFromBaseline: z.number().nonnegative().describe('Stunden die durch Baseline gespart werden'),
+    hoursFromBaseline: z
+      .number()
+      .nonnegative()
+      .describe('Stunden die durch Baseline gespart werden'),
     hoursNewDevelopment: z.number().nonnegative().describe('Stunden für Neuentwicklung'),
     savingsPercent: z.number().min(0).max(100).describe('Prozentuale Ersparnis durch Baseline'),
   }),

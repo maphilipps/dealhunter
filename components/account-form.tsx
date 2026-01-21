@@ -52,12 +52,22 @@ export function AccountForm() {
 
           <div className="space-y-2">
             <Label htmlFor="industry">Branche *</Label>
-            <Input id="industry" name="industry" required placeholder="z.B. Automotive, Finance, Healthcare" />
+            <Input
+              id="industry"
+              name="industry"
+              required
+              placeholder="z.B. Automotive, Finance, Healthcare"
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="website">Website (optional)</Label>
-            <Input id="website" name="website" type="url" placeholder="z.B. https://www.example.com" />
+            <Input
+              id="website"
+              name="website"
+              type="url"
+              placeholder="z.B. https://www.example.com"
+            />
           </div>
 
           <div className="space-y-2">

@@ -108,7 +108,9 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
   const accessibilityAudit = parseJsonField<AccessibilityAuditData>(quickScan.accessibilityAudit);
   const legalCompliance = parseJsonField<LegalComplianceData>(quickScan.legalCompliance);
   const performanceIndicators = parseJsonField<PerformanceData>(quickScan.performanceIndicators);
-  const companyIntelligence = parseJsonField<CompanyIntelligenceData>(quickScan.companyIntelligence);
+  const companyIntelligence = parseJsonField<CompanyIntelligenceData>(
+    quickScan.companyIntelligence
+  );
 
   const results: ResultsData = {
     techStack: techStack || {},
@@ -154,11 +156,17 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
         ? `Budget: ${extractedData.budgetRange}`
         : companyIntelligence?.financials?.revenueClass
           ? `Umsatzklasse: ${companyIntelligence.financials.revenueClass}${companyIntelligence.financials.publiclyTraded ? ' (börsennotiert)' : ''}`
-          : contentVolume && 'estimatedPageCount' in contentVolume && contentVolume.estimatedPageCount
+          : contentVolume &&
+              'estimatedPageCount' in contentVolume &&
+              contentVolume.estimatedPageCount
             ? `Geschätzte Projektgröße basierend auf ${contentVolume.estimatedPageCount} Seiten`
             : null,
       source: extractedData?.budgetRange ? 'RFP-Dokument' : 'Company Intelligence / Content Volume',
-      ...getAnswerStatus(!!extractedData?.budgetRange || !!companyIntelligence?.financials || !!(contentVolume && 'estimatedPageCount' in contentVolume)),
+      ...getAnswerStatus(
+        !!extractedData?.budgetRange ||
+          !!companyIntelligence?.financials ||
+          !!(contentVolume && 'estimatedPageCount' in contentVolume)
+      ),
     },
     {
       id: 3,
@@ -167,21 +175,36 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
         const parts: string[] = [];
         if (extractedData?.submissionDeadline) {
           const deadline = new Date(extractedData.submissionDeadline);
-          parts.push(`Abgabefrist: ${deadline.toLocaleDateString('de-DE')}${extractedData.submissionTime ? ` ${extractedData.submissionTime} Uhr` : ''}`);
+          parts.push(
+            `Abgabefrist: ${deadline.toLocaleDateString('de-DE')}${extractedData.submissionTime ? ` ${extractedData.submissionTime} Uhr` : ''}`
+          );
         }
         if (extractedData?.projectStartDate) {
-          parts.push(`Projektstart: ${new Date(extractedData.projectStartDate).toLocaleDateString('de-DE')}`);
+          parts.push(
+            `Projektstart: ${new Date(extractedData.projectStartDate).toLocaleDateString('de-DE')}`
+          );
         }
         if (extractedData?.timeline) {
           parts.push(`Laufzeit: ${extractedData.timeline}`);
         }
         if (contentVolume && 'complexity' in contentVolume && contentVolume.complexity) {
-          parts.push(`Komplexität: ${contentVolume.complexity === 'high' ? 'Hoch' : contentVolume.complexity === 'medium' ? 'Mittel' : 'Gering'}`);
+          parts.push(
+            `Komplexität: ${contentVolume.complexity === 'high' ? 'Hoch' : contentVolume.complexity === 'medium' ? 'Mittel' : 'Gering'}`
+          );
         }
         return parts.length > 0 ? parts.join(' | ') : null;
       })(),
-      source: extractedData?.submissionDeadline || extractedData?.timeline ? 'RFP-Dokument / Content Volume' : 'Content Volume',
-      ...getAnswerStatus(!!(extractedData?.submissionDeadline || extractedData?.timeline || (contentVolume && 'complexity' in contentVolume))),
+      source:
+        extractedData?.submissionDeadline || extractedData?.timeline
+          ? 'RFP-Dokument / Content Volume'
+          : 'Content Volume',
+      ...getAnswerStatus(
+        !!(
+          extractedData?.submissionDeadline ||
+          extractedData?.timeline ||
+          (contentVolume && 'complexity' in contentVolume)
+        )
+      ),
     },
     {
       id: 4,
@@ -200,11 +223,16 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
         // From RFP extraction
         if (extractedData?.scope) services.push(extractedData.scope);
         // From Quick Scan
-        if (techStack && 'cms' in techStack && techStack.cms) services.push(`CMS Migration von ${techStack.cms}`);
-        if (features && 'ecommerce' in features && features.ecommerce) services.push('E-Commerce Integration');
-        if (features && 'multiLanguage' in features && features.multiLanguage) services.push('Mehrsprachigkeit');
-        if (features && 'userAccounts' in features && features.userAccounts) services.push('User Management');
-        if (accessibilityAudit && accessibilityAudit.score < 50) services.push('Accessibility Überarbeitung');
+        if (techStack && 'cms' in techStack && techStack.cms)
+          services.push(`CMS Migration von ${techStack.cms}`);
+        if (features && 'ecommerce' in features && features.ecommerce)
+          services.push('E-Commerce Integration');
+        if (features && 'multiLanguage' in features && features.multiLanguage)
+          services.push('Mehrsprachigkeit');
+        if (features && 'userAccounts' in features && features.userAccounts)
+          services.push('User Management');
+        if (accessibilityAudit && accessibilityAudit.score < 50)
+          services.push('Accessibility Überarbeitung');
         // From key requirements (first 3)
         if (extractedData?.keyRequirements?.length) {
           services.push(...extractedData.keyRequirements.slice(0, 3));
@@ -212,20 +240,28 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
         return services.length > 0 ? services.join(', ') : null;
       })(),
       source: 'RFP-Dokument / Tech Stack / Features',
-      ...getAnswerStatus(!!(extractedData?.scope || extractedData?.keyRequirements?.length || techStack || features)),
+      ...getAnswerStatus(
+        !!(extractedData?.scope || extractedData?.keyRequirements?.length || techStack || features)
+      ),
     },
     {
       id: 6,
       question: 'Haben wir passende Referenzen?',
       answer: (() => {
         const refs: string[] = [];
-        if (techStack && 'cms' in techStack && techStack.cms) refs.push(`${techStack.cms} Migrationen`);
+        if (techStack && 'cms' in techStack && techStack.cms)
+          refs.push(`${techStack.cms} Migrationen`);
         if (extractedData?.industry) refs.push(`${extractedData.industry}-Projekte`);
-        if (extractedData?.technologies?.length) refs.push(`Technologien: ${extractedData.technologies.slice(0, 3).join(', ')}`);
+        if (extractedData?.technologies?.length)
+          refs.push(`Technologien: ${extractedData.technologies.slice(0, 3).join(', ')}`);
         return refs.length > 0 ? `Prüfe Referenzen für: ${refs.join(', ')}` : null;
       })(),
       source: 'Tech Stack / RFP → Referenz-Datenbank',
-      ...getAnswerStatus(!!(techStack && 'cms' in techStack) || !!extractedData?.industry || !!extractedData?.technologies?.length),
+      ...getAnswerStatus(
+        !!(techStack && 'cms' in techStack) ||
+          !!extractedData?.industry ||
+          !!extractedData?.technologies?.length
+      ),
     },
     {
       id: 7,
@@ -246,8 +282,12 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
         }
         return criteria.length > 0 ? criteria.join(' | ') : null;
       })(),
-      source: extractedData?.requiredDeliverables?.length ? 'RFP-Dokument (Unterlagen)' : 'Ausschreibungsunterlagen',
-      ...getAnswerStatus(!!extractedData?.requiredDeliverables?.length || !!extractedData?.constraints?.length),
+      source: extractedData?.requiredDeliverables?.length
+        ? 'RFP-Dokument (Unterlagen)'
+        : 'Ausschreibungsunterlagen',
+      ...getAnswerStatus(
+        !!extractedData?.requiredDeliverables?.length || !!extractedData?.constraints?.length
+      ),
     },
     {
       id: 8,
@@ -268,19 +308,35 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
         return teamReqs.length > 0 ? teamReqs.join(' | ') : null;
       })(),
       source: 'RFP-Dokument / BL Recommendation / Tech Stack',
-      ...getAnswerStatus(!!(results.blRecommendation?.requiredSkills || extractedData?.teamSize || extractedData?.technologies?.length || (techStack && 'cms' in techStack))),
+      ...getAnswerStatus(
+        !!(
+          results.blRecommendation?.requiredSkills ||
+          extractedData?.teamSize ||
+          extractedData?.technologies?.length ||
+          (techStack && 'cms' in techStack)
+        )
+      ),
     },
     {
       id: 9,
       question: 'Welche besonderen Herausforderungen gibt es?',
-      answer: [
-        performanceIndicators?.estimatedLoadTime === 'slow' ? 'Performance-Optimierung nötig' : null,
-        accessibilityAudit && accessibilityAudit.criticalIssues > 0 ? `${accessibilityAudit.criticalIssues} kritische A11y-Issues` : null,
-        legalCompliance && legalCompliance.score < 50 ? 'DSGVO-Compliance verbessern' : null,
-        contentVolume && 'complexity' in contentVolume && contentVolume.complexity === 'high' ? 'Hohe Inhaltskomplexität' : null,
-        features && 'api' in features && features.api ? 'API-Integrationen' : null,
-        extractedData?.constraints?.length ? extractedData.constraints[0] : null,
-      ].filter(Boolean).join(', ') || 'Keine besonderen Herausforderungen erkannt',
+      answer:
+        [
+          performanceIndicators?.estimatedLoadTime === 'slow'
+            ? 'Performance-Optimierung nötig'
+            : null,
+          accessibilityAudit && accessibilityAudit.criticalIssues > 0
+            ? `${accessibilityAudit.criticalIssues} kritische A11y-Issues`
+            : null,
+          legalCompliance && legalCompliance.score < 50 ? 'DSGVO-Compliance verbessern' : null,
+          contentVolume && 'complexity' in contentVolume && contentVolume.complexity === 'high'
+            ? 'Hohe Inhaltskomplexität'
+            : null,
+          features && 'api' in features && features.api ? 'API-Integrationen' : null,
+          extractedData?.constraints?.length ? extractedData.constraints[0] : null,
+        ]
+          .filter(Boolean)
+          .join(', ') || 'Keine besonderen Herausforderungen erkannt',
       source: 'Performance / A11y / Legal / Content / RFP',
       ...getAnswerStatus(true),
     },
@@ -315,15 +371,10 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {questions.map((q) => (
-            <div
-              key={q.id}
-              className={`p-3 rounded-lg ${q.color} transition-colors`}
-            >
+          {questions.map(q => (
+            <div key={q.id} className={`p-3 rounded-lg ${q.color} transition-colors`}>
               <div className="flex items-start gap-2">
-                <span className="font-mono text-xs bg-white/50 px-1.5 py-0.5 rounded">
-                  {q.id}.
-                </span>
+                <span className="font-mono text-xs bg-white/50 px-1.5 py-0.5 rounded">{q.id}.</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{q.question}</p>
                   {q.answer ? (

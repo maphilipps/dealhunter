@@ -14,10 +14,7 @@ interface BidTabsProps {
  * - URL-State für aktiven Tab (via searchParams ?tab=fakten|matrix)
  * - 2 Tabs: Fakten (alle Audit-Daten), Entscheidungsmatrix (CMS-Eval + BL-Forwarding)
  */
-export function BidTabs({
-  factsContent,
-  matrixContent,
-}: BidTabsProps) {
+export function BidTabs({ factsContent, matrixContent }: BidTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

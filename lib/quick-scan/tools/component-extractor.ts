@@ -6,14 +6,37 @@
 import type { PageData } from './multi-page-analyzer';
 
 export interface NavigationComponent {
-  type: 'mega_menu' | 'sticky_header' | 'mobile_menu' | 'sidebar' | 'breadcrumbs' | 'pagination' | 'standard';
+  type:
+    | 'mega_menu'
+    | 'sticky_header'
+    | 'mobile_menu'
+    | 'sidebar'
+    | 'breadcrumbs'
+    | 'pagination'
+    | 'standard';
   features: string[];
   itemCount?: number;
   maxDepth?: number;
 }
 
 export interface ContentBlockComponent {
-  type: 'hero' | 'cards' | 'teaser' | 'accordion' | 'tabs' | 'slider' | 'testimonials' | 'timeline' | 'grid' | 'list' | 'cta' | 'pricing' | 'faq' | 'team' | 'stats' | 'features';
+  type:
+    | 'hero'
+    | 'cards'
+    | 'teaser'
+    | 'accordion'
+    | 'tabs'
+    | 'slider'
+    | 'testimonials'
+    | 'timeline'
+    | 'grid'
+    | 'list'
+    | 'cta'
+    | 'pricing'
+    | 'faq'
+    | 'team'
+    | 'stats'
+    | 'features';
   count: number;
   examples: string[];
   hasImages?: boolean;
@@ -21,7 +44,15 @@ export interface ContentBlockComponent {
 }
 
 export interface FormComponent {
-  type: 'contact' | 'newsletter' | 'search' | 'login' | 'registration' | 'checkout' | 'filter' | 'generic';
+  type:
+    | 'contact'
+    | 'newsletter'
+    | 'search'
+    | 'login'
+    | 'registration'
+    | 'checkout'
+    | 'filter'
+    | 'generic';
   fields: number;
   hasValidation?: boolean;
   hasFileUpload?: boolean;
@@ -29,7 +60,14 @@ export interface FormComponent {
 }
 
 export interface MediaComponent {
-  type: 'image_gallery' | 'video_embed' | 'video_player' | 'audio_player' | 'carousel' | 'lightbox' | 'background_video';
+  type:
+    | 'image_gallery'
+    | 'video_embed'
+    | 'video_player'
+    | 'audio_player'
+    | 'carousel'
+    | 'lightbox'
+    | 'background_video';
   count: number;
   providers?: string[];
 }
@@ -74,55 +112,19 @@ const NAVIGATION_PATTERNS = {
     /offcanvas/i,
     /drawer/i,
   ],
-  sidebar: [
-    /sidebar/i,
-    /side-?nav/i,
-    /aside.*nav/i,
-  ],
-  breadcrumbs: [
-    /breadcrumb/i,
-    /aria-label="breadcrumb"/i,
-    /itemtype=".*BreadcrumbList"/i,
-  ],
-  pagination: [
-    /pagination/i,
-    /page-?numbers/i,
-    /nav.*prev.*next/i,
-  ],
+  sidebar: [/sidebar/i, /side-?nav/i, /aside.*nav/i],
+  breadcrumbs: [/breadcrumb/i, /aria-label="breadcrumb"/i, /itemtype=".*BreadcrumbList"/i],
+  pagination: [/pagination/i, /page-?numbers/i, /nav.*prev.*next/i],
 };
 
 /**
  * Content block detection patterns
  */
 const CONTENT_BLOCK_PATTERNS = {
-  hero: [
-    /hero/i,
-    /banner/i,
-    /jumbotron/i,
-    /stage/i,
-    /masthead/i,
-    /intro-?section/i,
-  ],
-  cards: [
-    /card/i,
-    /tile/i,
-    /box/i,
-    /panel/i,
-    /<article[^>]*class/i,
-  ],
-  teaser: [
-    /teaser/i,
-    /preview/i,
-    /excerpt/i,
-    /snippet/i,
-  ],
-  accordion: [
-    /accordion/i,
-    /collaps/i,
-    /expand/i,
-    /data-toggle="collapse"/i,
-    /aria-expanded/i,
-  ],
+  hero: [/hero/i, /banner/i, /jumbotron/i, /stage/i, /masthead/i, /intro-?section/i],
+  cards: [/card/i, /tile/i, /box/i, /panel/i, /<article[^>]*class/i],
+  teaser: [/teaser/i, /preview/i, /excerpt/i, /snippet/i],
+  accordion: [/accordion/i, /collaps/i, /expand/i, /data-toggle="collapse"/i, /aria-expanded/i],
   tabs: [
     /tab-?content/i,
     /tab-?pane/i,
@@ -130,163 +132,41 @@ const CONTENT_BLOCK_PATTERNS = {
     /role="tabpanel"/i,
     /data-toggle="tab"/i,
   ],
-  slider: [
-    /slider/i,
-    /carousel/i,
-    /swiper/i,
-    /slick/i,
-    /owl-?carousel/i,
-    /splide/i,
-    /glide/i,
-  ],
-  testimonials: [
-    /testimonial/i,
-    /review/i,
-    /quote/i,
-    /feedback/i,
-    /kundenstimme/i,
-  ],
-  timeline: [
-    /timeline/i,
-    /history/i,
-    /milestones/i,
-    /chronolog/i,
-  ],
-  grid: [
-    /grid/i,
-    /masonry/i,
-    /columns/i,
-  ],
-  cta: [
-    /cta/i,
-    /call-?to-?action/i,
-    /action-?button/i,
-  ],
-  pricing: [
-    /pricing/i,
-    /price-?table/i,
-    /tariff/i,
-    /plans?-?table/i,
-  ],
-  faq: [
-    /faq/i,
-    /questions/i,
-    /help-?center/i,
-    /support/i,
-  ],
-  team: [
-    /team/i,
-    /staff/i,
-    /members?/i,
-    /mitarbeiter/i,
-    /employees/i,
-  ],
-  stats: [
-    /stats?/i,
-    /counter/i,
-    /numbers?/i,
-    /facts?/i,
-    /figures?/i,
-    /kennzahlen/i,
-  ],
-  features: [
-    /features?/i,
-    /benefits?/i,
-    /services?/i,
-    /leistungen/i,
-    /vorteile/i,
-  ],
+  slider: [/slider/i, /carousel/i, /swiper/i, /slick/i, /owl-?carousel/i, /splide/i, /glide/i],
+  testimonials: [/testimonial/i, /review/i, /quote/i, /feedback/i, /kundenstimme/i],
+  timeline: [/timeline/i, /history/i, /milestones/i, /chronolog/i],
+  grid: [/grid/i, /masonry/i, /columns/i],
+  cta: [/cta/i, /call-?to-?action/i, /action-?button/i],
+  pricing: [/pricing/i, /price-?table/i, /tariff/i, /plans?-?table/i],
+  faq: [/faq/i, /questions/i, /help-?center/i, /support/i],
+  team: [/team/i, /staff/i, /members?/i, /mitarbeiter/i, /employees/i],
+  stats: [/stats?/i, /counter/i, /numbers?/i, /facts?/i, /figures?/i, /kennzahlen/i],
+  features: [/features?/i, /benefits?/i, /services?/i, /leistungen/i, /vorteile/i],
 };
 
 /**
  * Form detection patterns
  */
 const FORM_PATTERNS = {
-  contact: [
-    /contact/i,
-    /kontakt/i,
-    /anfrage/i,
-    /inquiry/i,
-    /message/i,
-    /nachricht/i,
-  ],
-  newsletter: [
-    /newsletter/i,
-    /subscribe/i,
-    /mailing/i,
-    /email.*signup/i,
-  ],
-  search: [
-    /search/i,
-    /suche/i,
-    /type="search"/i,
-    /role="search"/i,
-  ],
-  login: [
-    /login/i,
-    /signin/i,
-    /anmeld/i,
-    /password.*username/i,
-  ],
-  registration: [
-    /regist/i,
-    /signup/i,
-    /create.*account/i,
-  ],
-  checkout: [
-    /checkout/i,
-    /payment/i,
-    /billing/i,
-    /shipping/i,
-    /order/i,
-  ],
-  filter: [
-    /filter/i,
-    /sort/i,
-    /refine/i,
-    /facet/i,
-  ],
+  contact: [/contact/i, /kontakt/i, /anfrage/i, /inquiry/i, /message/i, /nachricht/i],
+  newsletter: [/newsletter/i, /subscribe/i, /mailing/i, /email.*signup/i],
+  search: [/search/i, /suche/i, /type="search"/i, /role="search"/i],
+  login: [/login/i, /signin/i, /anmeld/i, /password.*username/i],
+  registration: [/regist/i, /signup/i, /create.*account/i],
+  checkout: [/checkout/i, /payment/i, /billing/i, /shipping/i, /order/i],
+  filter: [/filter/i, /sort/i, /refine/i, /facet/i],
 };
 
 /**
  * Media detection patterns
  */
 const MEDIA_PATTERNS = {
-  image_gallery: [
-    /gallery/i,
-    /lightbox/i,
-    /fancybox/i,
-    /photoswipe/i,
-    /magnific/i,
-  ],
-  video_embed: [
-    /youtube/i,
-    /vimeo/i,
-    /wistia/i,
-    /iframe.*video/i,
-    /embed.*video/i,
-  ],
-  video_player: [
-    /<video/i,
-    /video-?player/i,
-    /plyr/i,
-    /video\.js/i,
-  ],
-  audio_player: [
-    /<audio/i,
-    /audio-?player/i,
-    /podcast/i,
-  ],
-  carousel: [
-    /carousel/i,
-    /slider.*image/i,
-    /image.*slider/i,
-  ],
-  background_video: [
-    /background.*video/i,
-    /video.*background/i,
-    /hero.*video/i,
-  ],
+  image_gallery: [/gallery/i, /lightbox/i, /fancybox/i, /photoswipe/i, /magnific/i],
+  video_embed: [/youtube/i, /vimeo/i, /wistia/i, /iframe.*video/i, /embed.*video/i],
+  video_player: [/<video/i, /video-?player/i, /plyr/i, /video\.js/i],
+  audio_player: [/<audio/i, /audio-?player/i, /podcast/i],
+  carousel: [/carousel/i, /slider.*image/i, /image.*slider/i],
+  background_video: [/background.*video/i, /video.*background/i, /hero.*video/i],
 };
 
 /**
@@ -328,7 +208,7 @@ function countMatches(html: string, patterns: RegExp[]): number {
  * Check if pattern exists in HTML
  */
 function hasPattern(html: string, patterns: RegExp[]): boolean {
-  return patterns.some((pattern) => pattern.test(html));
+  return patterns.some(pattern => pattern.test(html));
 }
 
 /**
@@ -338,7 +218,10 @@ function extractExamples(html: string, patterns: RegExp[], maxExamples: number =
   const examples: string[] = [];
 
   for (const pattern of patterns) {
-    const contextPattern = new RegExp(`class="[^"]*${pattern.source}[^"]*"|id="[^"]*${pattern.source}[^"]*"`, 'gi');
+    const contextPattern = new RegExp(
+      `class="[^"]*${pattern.source}[^"]*"|id="[^"]*${pattern.source}[^"]*"`,
+      'gi'
+    );
     const matches = html.match(contextPattern);
 
     if (matches) {
@@ -481,13 +364,17 @@ export function extractComponentsFromPage(page: PageData): ExtractedComponents {
 
   // Calculate summary
   const totalComponents =
-    navigation.length + contentBlocks.length + forms.length + mediaElements.length + interactiveElements.length;
+    navigation.length +
+    contentBlocks.length +
+    forms.length +
+    mediaElements.length +
+    interactiveElements.length;
 
   const uniquePatterns = new Set([
-    ...navigation.map((n) => n.type),
-    ...contentBlocks.map((c) => c.type),
-    ...forms.map((f) => f.type),
-    ...mediaElements.map((m) => m.type),
+    ...navigation.map(n => n.type),
+    ...contentBlocks.map(c => c.type),
+    ...forms.map(f => f.type),
+    ...mediaElements.map(m => m.type),
     ...interactiveElements,
   ]).size;
 
@@ -586,13 +473,17 @@ export function mergeComponentResults(results: ExtractedComponents[]): Extracted
   const interactiveElements = Array.from(interactiveSet);
 
   const totalComponents =
-    navigation.length + contentBlocks.length + forms.length + mediaElements.length + interactiveElements.length;
+    navigation.length +
+    contentBlocks.length +
+    forms.length +
+    mediaElements.length +
+    interactiveElements.length;
 
   const uniquePatterns = new Set([
-    ...navigation.map((n) => n.type),
-    ...contentBlocks.map((c) => c.type),
-    ...forms.map((f) => f.type),
-    ...mediaElements.map((m) => m.type),
+    ...navigation.map(n => n.type),
+    ...contentBlocks.map(c => c.type),
+    ...forms.map(f => f.type),
+    ...mediaElements.map(m => m.type),
     ...interactiveElements,
   ]).size;
 
@@ -624,7 +515,7 @@ export function mergeComponentResults(results: ExtractedComponents[]): Extracted
  * Extract components from multiple pages
  */
 export function extractComponents(pages: PageData[]): ExtractedComponents {
-  const validPages = pages.filter((p) => p.html && !p.error);
+  const validPages = pages.filter(p => p.html && !p.error);
 
   if (validPages.length === 0) {
     return {
@@ -642,6 +533,6 @@ export function extractComponents(pages: PageData[]): ExtractedComponents {
     };
   }
 
-  const pageResults = validPages.map((page) => extractComponentsFromPage(page));
+  const pageResults = validPages.map(page => extractComponentsFromPage(page));
   return mergeComponentResults(pageResults);
 }

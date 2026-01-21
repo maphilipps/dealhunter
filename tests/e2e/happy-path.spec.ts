@@ -19,7 +19,10 @@ test.describe('Happy Path: Complete Bid Flow', () => {
     await expect(page).toHaveURL(/\/bids\/new/);
 
     // Step 2: Upload RFP (using text input for test)
-    await page.fill('textarea[name="rawInput"]', 'Test RFP from Acme Corporation for website relaunch');
+    await page.fill(
+      'textarea[name="rawInput"]',
+      'Test RFP from Acme Corporation for website relaunch'
+    );
     await page.selectOption('select[name="source"]', 'reactive');
     await page.selectOption('select[name="stage"]', 'rfp');
     await page.selectOption('select[name="inputType"]', 'freetext');

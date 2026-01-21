@@ -36,7 +36,9 @@ describe('SSRF Protection - URL Validation', () => {
     it('should block AWS metadata service', () => {
       expect(isAllowedUrl('http://169.254.169.254')).toBe(false);
       expect(isAllowedUrl('http://169.254.169.254/latest/meta-data/')).toBe(false);
-      expect(isAllowedUrl('http://169.254.169.254/latest/meta-data/iam/security-credentials/')).toBe(false);
+      expect(
+        isAllowedUrl('http://169.254.169.254/latest/meta-data/iam/security-credentials/')
+      ).toBe(false);
     });
 
     it('should block entire link-local range', () => {
@@ -202,7 +204,9 @@ describe('SSRF Protection - URL Validation', () => {
   describe('Attack scenario prevention', () => {
     it('should prevent AWS metadata access', () => {
       // Common AWS metadata attack
-      expect(isAllowedUrl('http://169.254.169.254/latest/meta-data/iam/security-credentials/admin')).toBe(false);
+      expect(
+        isAllowedUrl('http://169.254.169.254/latest/meta-data/iam/security-credentials/admin')
+      ).toBe(false);
     });
 
     it('should prevent internal network scanning', () => {

@@ -21,6 +21,7 @@ The security audit of Epic 7 Phase 2 (Deep Migration Analysis) has identified **
 ## Critical Findings (P0)
 
 ### 1. SSRF - Unrestricted URL Fetching
+
 - **Files:** `/lib/deep-analysis/utils/crawler.ts`, `/lib/deep-analysis/utils/cms-detector.ts`
 - **Risk:** Attackers can access internal AWS metadata, scan internal network, read local files
 - **Fix:** Implement URL allowlist/blocklist, DNS resolution validation
@@ -28,6 +29,7 @@ The security audit of Epic 7 Phase 2 (Deep Migration Analysis) has identified **
 - **Effort:** 4-6 hours
 
 ### 2. XXE - XML External Entity Injection
+
 - **Files:** `/lib/deep-analysis/utils/crawler.ts`
 - **Risk:** File disclosure, SSRF via XXE, denial of service (Billion Laughs)
 - **Fix:** Replace cheerio with safe XML parser (fast-xml-parser), disable entity processing
@@ -35,6 +37,7 @@ The security audit of Epic 7 Phase 2 (Deep Migration Analysis) has identified **
 - **Effort:** 3-4 hours
 
 ### 3. XSS - Incomplete Input Sanitization
+
 - **Files:** `/lib/deep-analysis/schemas.ts`
 - **Risk:** Stored XSS via AI-generated content, session hijacking, cookie theft
 - **Fix:** Use DOMPurify to strip ALL HTML tags, implement output encoding
@@ -48,16 +51,19 @@ The security audit of Epic 7 Phase 2 (Deep Migration Analysis) has identified **
 ## High Priority Findings (P1)
 
 ### 4. No Rate Limiting (DoS Risk)
+
 - **File:** `/app/api/bids/[id]/deep-analysis/trigger/route.ts`
 - **Impact:** Resource exhaustion, API cost escalation
 - **Effort:** 3-4 hours
 
 ### 5. Robots.txt Not Respected
+
 - **File:** `/lib/deep-analysis/utils/crawler.ts`
 - **Impact:** Legal liability, IP blacklisting
 - **Effort:** 2-3 hours
 
 ### 6. Inadequate URL Validation
+
 - **File:** `/lib/deep-analysis/schemas.ts`
 - **Impact:** SSRF bypass, internal network access
 - **Effort:** 2 hours (covered by P0 #1)
@@ -78,6 +84,7 @@ The following security issues were identified in previous audits and are still p
 ## Attack Vectors Demonstrated
 
 ### SSRF Attack Example
+
 ```bash
 # Create bid with AWS metadata URL
 POST /api/bids
@@ -90,6 +97,7 @@ POST /api/bids/[id]/deep-analysis/trigger
 ```
 
 ### XXE Attack Example
+
 ```xml
 <!-- Malicious sitemap.xml -->
 <?xml version="1.0"?>
@@ -104,6 +112,7 @@ POST /api/bids/[id]/deep-analysis/trigger
 ```
 
 ### XSS Attack Example
+
 ```html
 <!-- Attacker's website page title -->
 <title>Product &#60;img src=x onerror=alert(document.cookie)&#62;</title>
@@ -117,17 +126,20 @@ POST /api/bids/[id]/deep-analysis/trigger
 ## Remediation Roadmap
 
 ### Week 1: P0 CRITICAL Fixes (BLOCKING RELEASE)
+
 - Day 1-2: SSRF protection (URL validator + DNS checks)
 - Day 2-3: XXE protection (safe XML parser)
 - Day 3-5: XSS protection (DOMPurify + output encoding)
 - Day 5: Security testing (penetration testing, payload fuzzing)
 
 ### Week 2: P1 HIGH Fixes
+
 - Day 1-2: Rate limiting (per-user + global limits)
 - Day 3-4: Robots.txt respect + crawl delay
 - Day 5: Inngest webhook security (signing key verification)
 
 ### Week 3: P2 MEDIUM Fixes
+
 - Content-Type validation
 - LLM output re-validation
 - Playwright resource limits
@@ -140,12 +152,14 @@ POST /api/bids/[id]/deep-analysis/trigger
 Before production deployment, the following tests MUST pass:
 
 ### Automated Tests
+
 - [ ] SSRF protection tests (internal IPs, localhost, AWS metadata)
 - [ ] XXE protection tests (file disclosure, SSRF, Billion Laughs)
 - [ ] XSS protection tests (HTML entities, unicode, mixed encoding)
 - [ ] Rate limiting tests (per-user, global, cost limits)
 
 ### Manual Penetration Testing
+
 - [ ] SSRF with Burp Collaborator
 - [ ] XXE payload fuzzing
 - [ ] XSS payload testing with OWASP top 100
@@ -153,6 +167,7 @@ Before production deployment, the following tests MUST pass:
 - [ ] Privilege escalation testing
 
 ### Code Review
+
 - [ ] Security-focused code review by senior developer
 - [ ] Third-party security audit (recommended)
 
@@ -161,12 +176,14 @@ Before production deployment, the following tests MUST pass:
 ## Compliance Status
 
 ### OWASP Top 10 2021
+
 - ❌ A03 - Injection (SSRF, XXE, XSS)
 - ❌ A04 - Insecure Design (no rate limiting)
 - ❌ A08 - Software & Data Integrity (LLM output not validated)
 - ❌ A10 - SSRF
 
 ### Required Changes for Compliance
+
 1. Implement comprehensive input validation (SSRF, XXE, XSS)
 2. Add rate limiting and resource controls
 3. Re-validate all external data sources (including LLM outputs)
@@ -179,6 +196,7 @@ Before production deployment, the following tests MUST pass:
 DO NOT deploy to production until ALL items are checked:
 
 ### Critical Security (P0)
+
 - [ ] SSRF protection implemented and tested
 - [ ] XXE protection implemented and tested
 - [ ] XSS protection implemented and tested
@@ -187,18 +205,21 @@ DO NOT deploy to production until ALL items are checked:
 - [ ] Security audit sign-off obtained
 
 ### High Priority Security (P1)
+
 - [ ] Rate limiting implemented
 - [ ] Robots.txt respect implemented
 - [ ] Inngest webhook secured with signing key
 - [ ] Access control verified on all endpoints
 
 ### Infrastructure
+
 - [ ] Security headers configured
 - [ ] Error messages sanitized (no stack traces)
 - [ ] Logging configured (security events tracked)
 - [ ] Monitoring alerts configured (failed auth, rate limit hits)
 
 ### Documentation
+
 - [ ] Security runbook created
 - [ ] Incident response plan documented
 - [ ] Security contact information added to User-Agent
@@ -207,13 +228,13 @@ DO NOT deploy to production until ALL items are checked:
 
 ## Estimated Total Remediation Effort
 
-| Priority | Tasks | Hours | Days (1 dev) |
-|----------|-------|-------|--------------|
-| P0 CRITICAL | 3 | 11-15 | 1.5-2 |
-| P1 HIGH | 3 | 7-10 | 1-1.5 |
-| P2 MEDIUM | 4 | 8-12 | 1-1.5 |
-| Testing | - | 16-24 | 2-3 |
-| **TOTAL** | **10** | **42-61** | **5.5-8 days** |
+| Priority    | Tasks  | Hours     | Days (1 dev)   |
+| ----------- | ------ | --------- | -------------- |
+| P0 CRITICAL | 3      | 11-15     | 1.5-2          |
+| P1 HIGH     | 3      | 7-10      | 1-1.5          |
+| P2 MEDIUM   | 4      | 8-12      | 1-1.5          |
+| Testing     | -      | 16-24     | 2-3            |
+| **TOTAL**   | **10** | **42-61** | **5.5-8 days** |
 
 **Timeline:** 1.5-2 weeks for full remediation including testing
 
@@ -222,15 +243,18 @@ DO NOT deploy to production until ALL items are checked:
 ## Contact & Resources
 
 ### Security Documentation
+
 - Full Audit Report: `/SECURITY-AUDIT-EPIC7-PHASE2.md`
 - Todo Items: `/todos/016-*.md`, `/todos/017-*.md`, `/todos/018-*.md`
 
 ### References
+
 - OWASP SSRF Prevention: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
 - OWASP XXE Prevention: https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
 - OWASP XSS Prevention: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
 
 ### Next Steps
+
 1. Review full audit report in `/SECURITY-AUDIT-EPIC7-PHASE2.md`
 2. Assign P0 todo items to developers
 3. Schedule daily security standup during remediation

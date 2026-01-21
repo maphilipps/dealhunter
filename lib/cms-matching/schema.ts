@@ -9,27 +9,43 @@ import { z } from 'zod';
 
 // Einzelne Anforderung mit Matching-Score pro CMS
 export const requirementMatchSchema = z.object({
-  requirement: z.string().describe('Die erkannte Anforderung (z.B. "E-Commerce", "Mehrsprachigkeit")'),
-  category: z.enum([
-    'functional',    // Funktionale Anforderungen
-    'technical',     // Technische Anforderungen
-    'integration',   // Integrationsanforderungen
-    'compliance',    // Compliance/Legal
-    'performance',   // Performance
-    'scalability',   // Skalierbarkeit
-    'security',      // Sicherheit
-    'ux',            // User Experience
-    'maintenance',   // Wartbarkeit
-    'other'
-  ]).describe('Kategorie der Anforderung'),
-  priority: z.enum(['must-have', 'should-have', 'nice-to-have']).describe('Priorität der Anforderung'),
-  source: z.enum(['extracted', 'detected', 'inferred', 'researched']).describe('Woher stammt die Anforderung'),
-  cmsScores: z.record(z.string(), z.object({
-    score: z.number().min(0).max(100).describe('Match-Score 0-100'),
-    confidence: z.number().min(0).max(100).describe('Confidence des Scores'),
-    notes: z.string().optional().describe('Erläuterung zum Score'),
-    webSearchUsed: z.boolean().optional().describe('Wurde Web Search für diese Bewertung genutzt'),
-  })).describe('Scores pro CMS/Technologie'),
+  requirement: z
+    .string()
+    .describe('Die erkannte Anforderung (z.B. "E-Commerce", "Mehrsprachigkeit")'),
+  category: z
+    .enum([
+      'functional', // Funktionale Anforderungen
+      'technical', // Technische Anforderungen
+      'integration', // Integrationsanforderungen
+      'compliance', // Compliance/Legal
+      'performance', // Performance
+      'scalability', // Skalierbarkeit
+      'security', // Sicherheit
+      'ux', // User Experience
+      'maintenance', // Wartbarkeit
+      'other',
+    ])
+    .describe('Kategorie der Anforderung'),
+  priority: z
+    .enum(['must-have', 'should-have', 'nice-to-have'])
+    .describe('Priorität der Anforderung'),
+  source: z
+    .enum(['extracted', 'detected', 'inferred', 'researched'])
+    .describe('Woher stammt die Anforderung'),
+  cmsScores: z
+    .record(
+      z.string(),
+      z.object({
+        score: z.number().min(0).max(100).describe('Match-Score 0-100'),
+        confidence: z.number().min(0).max(100).describe('Confidence des Scores'),
+        notes: z.string().optional().describe('Erläuterung zum Score'),
+        webSearchUsed: z
+          .boolean()
+          .optional()
+          .describe('Wurde Web Search für diese Bewertung genutzt'),
+      })
+    )
+    .describe('Scores pro CMS/Technologie'),
 });
 
 // Gesamte Matching-Matrix
@@ -38,15 +54,17 @@ export const cmsMatchingResultSchema = z.object({
   requirements: z.array(requirementMatchSchema),
 
   // Verglichene CMS/Technologien
-  comparedTechnologies: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-    category: z.string().optional(),
-    isBaseline: z.boolean().describe('Ist dies eine adesso Baseline-Technologie'),
-    overallScore: z.number().min(0).max(100),
-    strengths: z.array(z.string()),
-    weaknesses: z.array(z.string()),
-  })),
+  comparedTechnologies: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      category: z.string().optional(),
+      isBaseline: z.boolean().describe('Ist dies eine adesso Baseline-Technologie'),
+      overallScore: z.number().min(0).max(100),
+      strengths: z.array(z.string()),
+      weaknesses: z.array(z.string()),
+    })
+  ),
 
   // Empfehlung
   recommendation: z.object({

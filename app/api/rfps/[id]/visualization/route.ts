@@ -11,10 +11,7 @@ export const runtime = 'nodejs';
  * GET /api/rfps/[id]/visualization
  * Get cached visualization or return null
  */
-export async function GET(
-  _request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.id) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -69,10 +66,7 @@ export async function GET(
  * POST /api/rfps/[id]/visualization
  * Generate and cache a json-render visualization tree from Quick Scan results
  */
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   // Verify authentication
   const session = await auth();
   if (!session?.user?.id) {

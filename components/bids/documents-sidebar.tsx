@@ -99,7 +99,7 @@ export function DocumentsSidebar({ bidId }: DocumentsSidebarProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {documents.map((doc) => (
+        {documents.map(doc => (
           <div
             key={doc.id}
             className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer group"
@@ -109,9 +109,7 @@ export function DocumentsSidebar({ bidId }: DocumentsSidebarProps) {
               <FileText className="h-5 w-5 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0 space-y-1">
-              <p className="text-sm font-medium leading-none truncate">
-                {doc.fileName}
-              </p>
+              <p className="text-sm font-medium leading-none truncate">{doc.fileName}</p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>{formatFileSize(doc.fileSize)}</span>
                 <span>•</span>
@@ -125,7 +123,7 @@ export function DocumentsSidebar({ bidId }: DocumentsSidebarProps) {
             </div>
             <button
               className="opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 handleDownload(doc.id, doc.fileName);
               }}

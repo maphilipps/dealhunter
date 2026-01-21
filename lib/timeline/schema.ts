@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import DOMPurify from 'isomorphic-dompurify';
 
-const sanitizedString = z.string().transform((val) => {
+const sanitizedString = z.string().transform(val => {
   return DOMPurify.sanitize(val, {
     ALLOWED_TAGS: [],
     ALLOWED_ATTR: [],
@@ -19,7 +19,11 @@ const sanitizedString = z.string().transform((val) => {
 export const projectPhaseSchema = z.object({
   name: sanitizedString.describe('Phase name (e.g., "Setup & Discovery", "Development")'),
   durationDays: z.number().int().positive().describe('Duration in working days'),
-  startDay: z.number().int().nonnegative().describe('Start day relative to project start (0-based)'),
+  startDay: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe('Start day relative to project start (0-based)'),
   endDay: z.number().int().nonnegative().describe('End day relative to project start'),
   dependencies: z.array(sanitizedString).optional().describe('Phase dependencies'),
   keyActivities: z.array(sanitizedString).describe('Main activities in this phase'),
@@ -42,41 +46,62 @@ export const projectTimelineSchema = z.object({
   totalMonths: z.number().positive().describe('Total duration in months'),
 
   // Timeline
-  estimatedStart: z.string().nullable().describe('Estimated start date (ISO format) or null if not specified'),
-  estimatedGoLive: z.string().nullable().describe('Estimated go-live date (ISO format) or null if not specified'),
+  estimatedStart: z
+    .string()
+    .nullable()
+    .describe('Estimated start date (ISO format) or null if not specified'),
+  estimatedGoLive: z
+    .string()
+    .nullable()
+    .describe('Estimated go-live date (ISO format) or null if not specified'),
 
   // Phases
   phases: z.array(projectPhaseSchema).describe('Project phases with durations'),
 
   // Team Assumptions
-  assumedTeamSize: z.object({
-    min: z.number().int().positive(),
-    optimal: z.number().int().positive(),
-    max: z.number().int().positive(),
-  }).describe('Assumed team size for this estimate'),
+  assumedTeamSize: z
+    .object({
+      min: z.number().int().positive(),
+      optimal: z.number().int().positive(),
+      max: z.number().int().positive(),
+    })
+    .describe('Assumed team size for this estimate'),
 
   // Confidence & Assumptions
   confidence: z.number().min(0).max(100).describe('Confidence level of estimate (0-100)'),
   assumptions: z.array(sanitizedString).describe('Key assumptions made for this timeline'),
 
   // Risk Factors
-  risks: z.array(z.object({
-    factor: sanitizedString.describe('Risk factor'),
-    impact: z.enum(['low', 'medium', 'high']).describe('Potential impact on timeline'),
-    likelihood: z.enum(['low', 'medium', 'high']).describe('Likelihood of occurrence'),
-  })).optional().describe('Identified timeline risks'),
+  risks: z
+    .array(
+      z.object({
+        factor: sanitizedString.describe('Risk factor'),
+        impact: z.enum(['low', 'medium', 'high']).describe('Potential impact on timeline'),
+        likelihood: z.enum(['low', 'medium', 'high']).describe('Likelihood of occurrence'),
+      })
+    )
+    .optional()
+    .describe('Identified timeline risks'),
 
   // Calculation Basis
-  calculationBasis: z.object({
-    contentVolume: sanitizedString.describe('Content volume factor (e.g., "~100 pages, 10 content types")'),
-    complexity: z.enum(['low', 'medium', 'high', 'very_high']).describe('Overall complexity assessment'),
-    integrations: z.number().int().nonnegative().describe('Number of integrations detected'),
-    hasCriticalDeadline: z.boolean().describe('Whether there is a hard deadline from RFP'),
-  }).describe('Basis for timeline calculation'),
+  calculationBasis: z
+    .object({
+      contentVolume: sanitizedString.describe(
+        'Content volume factor (e.g., "~100 pages, 10 content types")'
+      ),
+      complexity: z
+        .enum(['low', 'medium', 'high', 'very_high'])
+        .describe('Overall complexity assessment'),
+      integrations: z.number().int().nonnegative().describe('Number of integrations detected'),
+      hasCriticalDeadline: z.boolean().describe('Whether there is a hard deadline from RFP'),
+    })
+    .describe('Basis for timeline calculation'),
 
   // Metadata
   generatedAt: z.string().datetime().describe('Generation timestamp'),
-  phase: z.literal('quick_scan').describe('Timeline phase (always "quick_scan" for early estimates)'),
+  phase: z
+    .literal('quick_scan')
+    .describe('Timeline phase (always "quick_scan" for early estimates)'),
 });
 
 export type ProjectTimeline = z.infer<typeof projectTimelineSchema>;
@@ -99,12 +124,12 @@ export const STANDARD_PHASES = [
  * Based on adesso's project history
  */
 export const PHASE_DISTRIBUTION = {
-  'Setup & Discovery': 0.10,        // 10%
-  'Design & Prototyping': 0.15,     // 15%
-  'Frontend Development': 0.25,     // 25%
+  'Setup & Discovery': 0.1, // 10%
+  'Design & Prototyping': 0.15, // 15%
+  'Frontend Development': 0.25, // 25%
   'Backend & CMS Integration': 0.25, // 25%
-  'QA & Testing': 0.15,             // 15%
-  'Go-Live & Deployment': 0.10,     // 10%
+  'QA & Testing': 0.15, // 15%
+  'Go-Live & Deployment': 0.1, // 10%
 } as const;
 
 /**
@@ -123,8 +148,8 @@ export const COMPLEXITY_MULTIPLIERS = {
  * Adjustment factor based on team size
  */
 export const TEAM_SIZE_FACTORS = {
-  small: { size: 2, factor: 1.3 },      // 2 people - slower but possible
-  standard: { size: 4, factor: 1.0 },   // 3-4 people - optimal
-  large: { size: 6, factor: 0.85 },     // 5-6 people - faster but coordination overhead
+  small: { size: 2, factor: 1.3 }, // 2 people - slower but possible
+  standard: { size: 4, factor: 1.0 }, // 3-4 people - optimal
+  large: { size: 6, factor: 0.85 }, // 5-6 people - faster but coordination overhead
   very_large: { size: 10, factor: 0.75 }, // 10+ people - fastest but high overhead
 } as const;

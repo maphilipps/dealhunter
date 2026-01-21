@@ -102,7 +102,12 @@ export async function createAuditLog(data: {
   }
 
   // Validate: Override actions MUST have a reason
-  const overrideActions: AuditAction[] = ['bl_override', 'bid_override', 'team_change', 'status_change'];
+  const overrideActions: AuditAction[] = [
+    'bl_override',
+    'bid_override',
+    'team_change',
+    'status_change',
+  ];
   if (overrideActions.includes(data.action) && !data.reason) {
     return { success: false, error: 'Reason ist erforderlich für manuelle Overrides' };
   }

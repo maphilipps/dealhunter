@@ -8,17 +8,17 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 
 ## Quick Comparison Matrix
 
-| Criteria | Drupal 11 | Drupal CMS 2.0 | Magnolia | Umbraco | Ibexa |
-|----------|-----------|----------------|----------|---------|-------|
-| **Licensing** | OSS (GPL) | OSS (GPL) | Commercial | Freemium | Commercial |
-| **Annual Cost** | €0 | €0 | €50k-200k+ | €10k-100k | €30k-150k+ |
-| **Setup Time** | 2-4 weeks | 1-3 days | 2-4 weeks | 1-2 weeks | 2-4 weeks |
-| **AI Native** | Via Module | Built-in | Limited | Limited | Limited |
-| **Visual Builder** | Layout Builder | Canvas | Yes | Yes | Yes |
-| **Multilingual** | Native | Native | Native | Native | Native |
-| **Scalability** | Excellent | Excellent | Excellent | Good | Excellent |
-| **Community** | Massive | Growing | Small | Medium | Small |
-| **Enterprise Support** | Acquia/Pantheon | Acquia/Pantheon | Vendor | Vendor | Vendor |
+| Criteria               | Drupal 11       | Drupal CMS 2.0  | Magnolia   | Umbraco   | Ibexa      |
+| ---------------------- | --------------- | --------------- | ---------- | --------- | ---------- |
+| **Licensing**          | OSS (GPL)       | OSS (GPL)       | Commercial | Freemium  | Commercial |
+| **Annual Cost**        | €0              | €0              | €50k-200k+ | €10k-100k | €30k-150k+ |
+| **Setup Time**         | 2-4 weeks       | 1-3 days        | 2-4 weeks  | 1-2 weeks | 2-4 weeks  |
+| **AI Native**          | Via Module      | Built-in        | Limited    | Limited   | Limited    |
+| **Visual Builder**     | Layout Builder  | Canvas          | Yes        | Yes       | Yes        |
+| **Multilingual**       | Native          | Native          | Native     | Native    | Native     |
+| **Scalability**        | Excellent       | Excellent       | Excellent  | Good      | Excellent  |
+| **Community**          | Massive         | Growing         | Small      | Medium    | Small      |
+| **Enterprise Support** | Acquia/Pantheon | Acquia/Pantheon | Vendor     | Vendor    | Vendor     |
 
 ---
 
@@ -27,24 +27,28 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 ### 1. Licensing & Total Cost of Ownership
 
 #### Drupal / Drupal CMS
+
 - **License:** GNU GPL 2.0 (Free forever)
 - **Support:** Optional from Acquia, Pantheon, or agencies
 - **Annual TCO (Medium Project):** €5k-15k (hosting + support)
 - **Vendor Lock-in:** None
 
 #### Magnolia
+
 - **License:** Commercial (Community edition limited)
 - **Support:** Required vendor subscription
 - **Annual TCO (Medium Project):** €80k-250k
 - **Vendor Lock-in:** High
 
 #### Umbraco
+
 - **License:** Freemium (MIT core, commercial cloud)
 - **Support:** Vendor or partner
 - **Annual TCO (Medium Project):** €20k-80k
 - **Vendor Lock-in:** Medium
 
 #### Ibexa
+
 - **License:** Commercial (GPL core, proprietary features)
 - **Support:** Required vendor subscription
 - **Annual TCO (Medium Project):** €60k-180k
@@ -57,30 +61,35 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 ### 2. Time to Market
 
 #### Drupal 11
+
 - Initial setup: 2-4 weeks
 - Content modeling: 2-4 weeks
 - Theme development: 4-8 weeks
 - **Total MVP:** 8-16 weeks
 
 #### Drupal CMS 2.0
+
 - Initial setup: 1-3 days
 - Content modeling: 1-2 weeks (recipes pre-configured)
 - Theme development: 2-4 weeks (Mercury base)
 - **Total MVP:** 3-7 weeks
 
 #### Magnolia
+
 - Initial setup: 2-3 weeks
 - Content modeling: 2-4 weeks
 - Template development: 4-8 weeks
 - **Total MVP:** 8-15 weeks
 
 #### Umbraco
+
 - Initial setup: 1-2 weeks
 - Content modeling: 2-3 weeks
 - Template development: 3-6 weeks
 - **Total MVP:** 6-11 weeks
 
 #### Ibexa
+
 - Initial setup: 2-4 weeks
 - Content modeling: 3-5 weeks
 - Template development: 4-8 weeks
@@ -93,6 +102,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 ### 3. AI Capabilities
 
 #### Drupal / Drupal CMS
+
 - **Native AI:** Yes (AI module with 21+ providers)
 - **Content Creation:** Full (CKEditor, automators)
 - **Semantic Search:** Yes (RAG support)
@@ -100,6 +110,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - **Customization:** Unlimited
 
 #### Magnolia
+
 - **Native AI:** Limited (add-on)
 - **Content Creation:** Basic
 - **Semantic Search:** Via integration
@@ -107,6 +118,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - **Customization:** Limited
 
 #### Umbraco
+
 - **Native AI:** Limited (Contentment AI add-on)
 - **Content Creation:** Basic
 - **Semantic Search:** Via integration
@@ -114,6 +126,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - **Customization:** Limited
 
 #### Ibexa
+
 - **Native AI:** Limited (roadmap)
 - **Content Creation:** Basic
 - **Semantic Search:** Via integration
@@ -127,6 +140,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 ### 4. Content Editing Experience
 
 #### Drupal 11
+
 - Admin theme: Gin (modern)
 - Inline editing: Layout Builder
 - Media handling: Media Library
@@ -134,6 +148,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★☆
 
 #### Drupal CMS 2.0
+
 - Admin theme: Gin (optimized)
 - Inline editing: Canvas (new!)
 - Media handling: Enhanced Media
@@ -141,6 +156,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★★
 
 #### Magnolia
+
 - Admin theme: Custom
 - Inline editing: Yes (strong)
 - Media handling: Digital Asset Management
@@ -148,6 +164,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★★
 
 #### Umbraco
+
 - Admin theme: Custom (Bellissima)
 - Inline editing: Block Editor
 - Media handling: Media Picker
@@ -155,6 +172,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★☆
 
 #### Ibexa
+
 - Admin theme: Custom
 - Inline editing: Page Builder
 - Media handling: DAM
@@ -168,6 +186,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 ### 5. Developer Experience
 
 #### Drupal 11
+
 - Language: PHP
 - Templating: Twig
 - API: REST/JSON:API/GraphQL
@@ -176,12 +195,14 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★☆
 
 #### Drupal CMS 2.0
+
 - Same as Drupal 11
 - Recipes reduce boilerplate
 - Better defaults
 - Rating: ★★★★☆
 
 #### Magnolia
+
 - Language: Java
 - Templating: FreeMarker
 - API: REST/GraphQL
@@ -190,6 +211,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★☆☆
 
 #### Umbraco
+
 - Language: C#/.NET
 - Templating: Razor
 - API: REST
@@ -198,6 +220,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★☆
 
 #### Ibexa
+
 - Language: PHP (Symfony)
 - Templating: Twig
 - API: REST/GraphQL
@@ -212,6 +235,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 ### 6. Scalability & Performance
 
 #### Drupal 11 / Drupal CMS
+
 - Caching: BigPipe, Varnish, CDN
 - Scaling: Horizontal (excellent)
 - Performance: Optimized core
@@ -219,6 +243,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★★
 
 #### Magnolia
+
 - Caching: Built-in, CDN
 - Scaling: Horizontal
 - Performance: Good
@@ -226,6 +251,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★☆
 
 #### Umbraco
+
 - Caching: Output caching, CDN
 - Scaling: Azure optimization
 - Performance: Good
@@ -233,6 +259,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★☆☆
 
 #### Ibexa
+
 - Caching: HTTP cache, Varnish
 - Scaling: Horizontal
 - Performance: Excellent
@@ -246,6 +273,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 ### 7. Security
 
 #### Drupal 11 / Drupal CMS
+
 - Security team: Dedicated (40+ members)
 - Updates: Regular SAs
 - Track record: Excellent
@@ -253,6 +281,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★★
 
 #### Magnolia
+
 - Security team: Vendor
 - Updates: Regular
 - Track record: Good
@@ -260,6 +289,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★☆
 
 #### Umbraco
+
 - Security team: Vendor
 - Updates: Regular
 - Track record: Good
@@ -267,6 +297,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★☆☆
 
 #### Ibexa
+
 - Security team: Vendor
 - Updates: Regular
 - Track record: Good
@@ -280,6 +311,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 ### 8. Ecosystem & Community
 
 #### Drupal 11 / Drupal CMS
+
 - Modules: 50,000+
 - Themes: 3,000+
 - Community: 1M+ developers
@@ -288,6 +320,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★★
 
 #### Magnolia
+
 - Modules: Limited marketplace
 - Themes: Vendor/custom
 - Community: Small
@@ -296,6 +329,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★☆☆☆
 
 #### Umbraco
+
 - Packages: 1,000+
 - Themes: Limited
 - Community: Medium
@@ -304,6 +338,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★☆☆
 
 #### Ibexa
+
 - Bundles: Limited
 - Themes: Custom
 - Community: Small
@@ -318,6 +353,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 ### 9. Multilingual Capabilities
 
 #### Drupal 11 / Drupal CMS
+
 - Languages: Unlimited
 - Translation: Content + Config + Interface
 - RTL: Yes
@@ -325,6 +361,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★★
 
 #### Magnolia
+
 - Languages: Unlimited
 - Translation: Content + some config
 - RTL: Yes
@@ -332,6 +369,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★★☆
 
 #### Umbraco
+
 - Languages: Unlimited
 - Translation: Content
 - RTL: Limited
@@ -339,6 +377,7 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 - Rating: ★★★☆☆
 
 #### Ibexa
+
 - Languages: Unlimited
 - Translation: Content + some config
 - RTL: Yes
@@ -352,24 +391,28 @@ This reference provides comparison criteria for evaluating Drupal, Drupal CMS 2.
 ### 10. E-commerce Capabilities
 
 #### Drupal 11 / Drupal CMS
+
 - Solution: Drupal Commerce
 - Features: Full e-commerce suite
 - Payment: 100+ gateways
 - Rating: ★★★★☆
 
 #### Magnolia
+
 - Solution: Integrations (Commercetools, etc.)
 - Features: Headless commerce
 - Payment: Via integration
 - Rating: ★★★☆☆
 
 #### Umbraco
+
 - Solution: Umbraco Commerce
 - Features: Good
 - Payment: Standard gateways
 - Rating: ★★★☆☆
 
 #### Ibexa
+
 - Solution: Ibexa Commerce
 - Features: B2B focused
 - Payment: Standard gateways
@@ -386,15 +429,15 @@ Use this template in proposals to compare options:
 ```markdown
 ## CMS Recommendation
 
-| Requirement | Weight | Drupal CMS | Alternative | Winner |
-|-------------|--------|------------|-------------|--------|
-| Budget | 25% | ★★★★★ | ★★☆☆☆ | Drupal |
-| Time to market | 20% | ★★★★★ | ★★★☆☆ | Drupal |
-| AI capabilities | 15% | ★★★★★ | ★★☆☆☆ | Drupal |
-| Editor UX | 15% | ★★★★☆ | ★★★★☆ | Tie |
-| Scalability | 10% | ★★★★★ | ★★★★☆ | Drupal |
-| Ecosystem | 10% | ★★★★★ | ★★☆☆☆ | Drupal |
-| Vendor support | 5% | ★★★★☆ | ★★★★★ | Alt |
+| Requirement     | Weight | Drupal CMS | Alternative | Winner |
+| --------------- | ------ | ---------- | ----------- | ------ |
+| Budget          | 25%    | ★★★★★      | ★★☆☆☆       | Drupal |
+| Time to market  | 20%    | ★★★★★      | ★★★☆☆       | Drupal |
+| AI capabilities | 15%    | ★★★★★      | ★★☆☆☆       | Drupal |
+| Editor UX       | 15%    | ★★★★☆      | ★★★★☆       | Tie    |
+| Scalability     | 10%    | ★★★★★      | ★★★★☆       | Drupal |
+| Ecosystem       | 10%    | ★★★★★      | ★★☆☆☆       | Drupal |
+| Vendor support  | 5%     | ★★★★☆      | ★★★★★       | Alt    |
 
 **Recommendation:** Drupal CMS 2.0
 ```
@@ -404,30 +447,35 @@ Use this template in proposals to compare options:
 ## Migration Paths
 
 ### WordPress → Drupal CMS
+
 - **Complexity:** Medium
 - **Content:** WP REST API or database
 - **Themes:** Rebuild required
 - **Plugins → Modules:** Good coverage
 
 ### Typo3 → Drupal CMS
+
 - **Complexity:** Medium-High
 - **Content:** Database or export
 - **Themes:** Rebuild required
 - **Extensions → Modules:** Some gaps
 
 ### Magnolia → Drupal CMS
+
 - **Complexity:** High
 - **Content:** REST API or export
 - **Templates:** Rebuild in Twig
 - **Components:** Rebuild as Paragraphs
 
 ### Umbraco → Drupal CMS
+
 - **Complexity:** Medium-High
 - **Content:** API or database
 - **Templates:** Rebuild in Twig
 - **Document Types → Content Types**
 
 ### Ibexa → Drupal CMS
+
 - **Complexity:** Medium
 - **Content:** Similar architecture (Symfony)
 - **Templates:** Twig compatible concepts
@@ -438,24 +486,28 @@ Use this template in proposals to compare options:
 ## Proposal Arguments
 
 ### Against Magnolia
+
 - "€50-200k annual licensing vs. €0 for Drupal"
 - "Small community limits module availability"
 - "Vendor lock-in creates long-term risk"
 - "Java developers more expensive than PHP"
 
 ### Against Umbraco
+
 - ".NET ecosystem limits hosting options"
 - "Weaker multilingual compared to Drupal"
 - "Cloud pricing can escalate quickly"
 - "Smaller ecosystem than Drupal"
 
 ### Against Ibexa
+
 - "High licensing costs for enterprise features"
 - "Smaller community and ecosystem"
 - "Similar tech stack (PHP/Symfony) but higher cost"
 - "Less AI-ready than Drupal"
 
 ### For Drupal CMS
+
 - "Zero licensing costs, forever"
 - "AI-native with 21+ providers"
 - "Largest CMS ecosystem"

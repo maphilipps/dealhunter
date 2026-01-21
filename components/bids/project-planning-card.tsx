@@ -4,7 +4,14 @@ import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Loader2, Play, Calendar, Users, Clock } from 'lucide-react';
 import { triggerProjectPlanning } from '@/lib/project-planning/actions';
 import type { ProjectPlan, Discipline, InvolvementLevel } from '@/lib/project-planning/schema';
@@ -33,7 +40,11 @@ const involvementColors: Record<InvolvementLevel, string> = {
   none: 'bg-transparent',
 };
 
-export function ProjectPlanningCard({ bidId, initialPlan, hasDeepAnalysis }: ProjectPlanningCardProps) {
+export function ProjectPlanningCard({
+  bidId,
+  initialPlan,
+  hasDeepAnalysis,
+}: ProjectPlanningCardProps) {
   const [plan, setPlan] = useState<ProjectPlan | null>(initialPlan || null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -59,9 +70,7 @@ export function ProjectPlanningCard({ bidId, initialPlan, hasDeepAnalysis }: Pro
             <Calendar className="h-5 w-5" />
             Projekt-Planung
           </CardTitle>
-          <CardDescription>
-            Deep Analysis muss zuerst abgeschlossen sein
-          </CardDescription>
+          <CardDescription>Deep Analysis muss zuerst abgeschlossen sein</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
@@ -81,20 +90,16 @@ export function ProjectPlanningCard({ bidId, initialPlan, hasDeepAnalysis }: Pro
             <Calendar className="h-5 w-5" />
             Projekt-Planung
           </CardTitle>
-          <CardDescription>
-            Timeline und Disziplinen-Matrix generieren
-          </CardDescription>
+          <CardDescription>Timeline und Disziplinen-Matrix generieren</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Erstellt einen Projekt-Plan mit Phasen, Timeline und Team-Zusammensetzung
-            basierend auf der PT-Schätzung.
+            Erstellt einen Projekt-Plan mit Phasen, Timeline und Team-Zusammensetzung basierend auf
+            der PT-Schätzung.
           </p>
 
           {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
+            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
           )}
 
           <Button onClick={handleGenerate} disabled={isPending}>
@@ -129,9 +134,7 @@ export function ProjectPlanningCard({ bidId, initialPlan, hasDeepAnalysis }: Pro
               {plan.projectName} • {plan.confidence}% Konfidenz
             </CardDescription>
           </div>
-          <Badge variant="outline">
-            {plan.totalWeeks} Wochen
-          </Badge>
+          <Badge variant="outline">{plan.totalWeeks} Wochen</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -211,7 +214,7 @@ export function ProjectPlanningCard({ bidId, initialPlan, hasDeepAnalysis }: Pro
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {plan.disciplineMatrix.map((disc) => (
+                {plan.disciplineMatrix.map(disc => (
                   <TableRow key={disc.discipline}>
                     <TableCell className="font-medium">
                       <span className="font-mono text-xs">{disc.discipline}</span>
@@ -229,9 +232,7 @@ export function ProjectPlanningCard({ bidId, initialPlan, hasDeepAnalysis }: Pro
                         )}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right font-medium">
-                      {disc.totalHours}
-                    </TableCell>
+                    <TableCell className="text-right font-medium">{disc.totalHours}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

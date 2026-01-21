@@ -13,7 +13,12 @@ import { db } from '@/lib/db';
 import { technologies } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { researchSingleRequirement, type FeatureResearchResult } from './agent';
-import { reviewFeatureResearch, deepReviewFeature, type FeatureReview, type ReviewResult } from './review-agent';
+import {
+  reviewFeatureResearch,
+  deepReviewFeature,
+  type FeatureReview,
+  type ReviewResult,
+} from './review-agent';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
 
 /**
@@ -86,7 +91,7 @@ async function runWithConcurrency<T, R>(
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    const promise = fn(item, i).then((result) => {
+    const promise = fn(item, i).then(result => {
       results[i] = result;
       completed++;
       onProgress?.(completed, items.length);
@@ -135,7 +140,11 @@ export async function runTechnologyResearchOrchestrator(
   };
 
   // Emit helper
-  const emit = (agent: string, message: string, type: AgentEventType = AgentEventType.AGENT_PROGRESS) => {
+  const emit = (
+    agent: string,
+    message: string,
+    type: AgentEventType = AgentEventType.AGENT_PROGRESS
+  ) => {
     opts.emit({
       id: `orchestrator-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       type,
@@ -147,10 +156,7 @@ export async function runTechnologyResearchOrchestrator(
   // 1. Load Technology
   emit('Orchestrator', `Lade Technologie ${technologyId}...`);
 
-  const [tech] = await db
-    .select()
-    .from(technologies)
-    .where(eq(technologies.id, technologyId));
+  const [tech] = await db.select().from(technologies).where(eq(technologies.id, technologyId));
 
   if (!tech) {
     throw new Error(`Technologie ${technologyId} nicht gefunden`);
@@ -159,7 +165,7 @@ export async function runTechnologyResearchOrchestrator(
   emit('Orchestrator', `Starte Research für ${tech.name}: ${featureNames.length} Features`);
 
   // Initialize tasks
-  const tasks: ResearchTask[] = featureNames.map((name) => ({
+  const tasks: ResearchTask[] = featureNames.map(name => ({
     featureName: name,
     status: 'pending',
   }));
@@ -176,19 +182,16 @@ export async function runTechnologyResearchOrchestrator(
       emit(`Research Agent ${index + 1}`, `Recherchiere "${task.featureName}"...`);
 
       try {
-        const result = await researchSingleRequirement(
-          tech.name,
-          task.featureName,
-          technologyId
-        );
+        const result = await researchSingleRequirement(tech.name, task.featureName, technologyId);
 
         task.researchResult = result;
         task.status = 'complete';
         task.completedAt = new Date().toISOString();
 
-        const supportInfo = result.supportType && result.supportType !== 'unknown'
-          ? ` (${result.supportType}${result.moduleName ? ': ' + result.moduleName : ''})`
-          : '';
+        const supportInfo =
+          result.supportType && result.supportType !== 'unknown'
+            ? ` (${result.supportType}${result.moduleName ? ': ' + result.moduleName : ''})`
+            : '';
         emit(
           `Research Agent ${index + 1}`,
           `"${task.featureName}" abgeschlossen: ${result.score}%${supportInfo}`,
@@ -213,8 +216,8 @@ export async function runTechnologyResearchOrchestrator(
   );
 
   // Count results
-  const successfulTasks = tasks.filter((t) => t.status === 'complete');
-  const failedTasks = tasks.filter((t) => t.status === 'error');
+  const successfulTasks = tasks.filter(t => t.status === 'complete');
+  const failedTasks = tasks.filter(t => t.status === 'error');
 
   emit(
     'Orchestrator',
@@ -255,7 +258,7 @@ export async function runTechnologyResearchOrchestrator(
             const review = await deepReviewFeature(tech.name, name, data);
 
             // Update task with review result
-            const task = tasks.find((t) => t.featureName === name);
+            const task = tasks.find(t => t.featureName === name);
             if (task) {
               task.reviewResult = review;
             }
@@ -270,8 +273,8 @@ export async function runTechnologyResearchOrchestrator(
           reviewedAt: new Date().toISOString(),
           totalFeatures: Object.keys(currentFeatures).length,
           featuresReviewed: deepReviews.length,
-          featuresImproved: deepReviews.filter((r) => r.corrections.length > 0).length,
-          featuresFlagged: deepReviews.filter((r) => r.needsManualReview).length,
+          featuresImproved: deepReviews.filter(r => r.corrections.length > 0).length,
+          featuresFlagged: deepReviews.filter(r => r.needsManualReview).length,
           overallConfidence: Math.round(
             deepReviews.reduce((sum, r) => sum + r.confidence, 0) / deepReviews.length
           ),
@@ -288,7 +291,7 @@ export async function runTechnologyResearchOrchestrator(
 
         // Update tasks with review results
         for (const review of reviewResult.features) {
-          const task = tasks.find((t) => t.featureName === review.featureName);
+          const task = tasks.find(t => t.featureName === review.featureName);
           if (task) {
             task.reviewResult = review;
           }

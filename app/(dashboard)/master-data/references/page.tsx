@@ -1,5 +1,5 @@
-import { getUserReferences } from "@/lib/master-data/actions";
-import { Button } from "@/components/ui/button";
+import { getUserReferences } from '@/lib/master-data/actions';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -7,9 +7,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 export default async function ReferencesPage() {
   const references = await getUserReferences();
@@ -42,10 +42,8 @@ export default async function ReferencesPage() {
               </TableCell>
             </TableRow>
           ) : (
-            references.map((ref) => {
-              const technologies = ref.technologies
-                ? JSON.parse(ref.technologies)
-                : [];
+            references.map(ref => {
+              const technologies = ref.technologies ? JSON.parse(ref.technologies) : [];
 
               return (
                 <TableRow key={ref.id}>
@@ -70,8 +68,8 @@ export default async function ReferencesPage() {
                         ref.status === 'approved'
                           ? 'default'
                           : ref.status === 'rejected'
-                          ? 'destructive'
-                          : 'secondary'
+                            ? 'destructive'
+                            : 'secondary'
                       }
                     >
                       {ref.status === 'pending' && 'Ausstehend'}
@@ -81,9 +79,7 @@ export default async function ReferencesPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {ref.createdAt
-                      ? new Date(ref.createdAt).toLocaleDateString('de-DE')
-                      : '-'}
+                    {ref.createdAt ? new Date(ref.createdAt).toLocaleDateString('de-DE') : '-'}
                   </TableCell>
                 </TableRow>
               );

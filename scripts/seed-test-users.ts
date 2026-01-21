@@ -10,31 +10,34 @@ async function seedTestUsers() {
       email: 'bd@test.com',
       name: 'BD Manager Test',
       role: 'bd' as const,
-      password: 'Test1234'
+      password: 'Test1234',
     },
     {
       email: 'bl@test.com',
       name: 'Bereichsleiter Test',
       role: 'bl' as const,
-      password: 'Test1234'
+      password: 'Test1234',
     },
     {
       email: 'admin@test.com',
       name: 'Admin Test',
       role: 'admin' as const,
-      password: 'Test1234'
-    }
+      password: 'Test1234',
+    },
   ];
 
   for (const user of testUsers) {
     const hashedPassword = await bcrypt.hash(user.password, 10);
 
-    await db.insert(users).values({
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      password: hashedPassword
-    }).onConflictDoNothing();
+    await db
+      .insert(users)
+      .values({
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        password: hashedPassword,
+      })
+      .onConflictDoNothing();
 
     console.log(`✓ Created ${user.role}: ${user.email}`);
   }
@@ -48,7 +51,7 @@ async function seedTestUsers() {
 
 seedTestUsers()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('Error seeding users:', error);
     process.exit(1);
   });

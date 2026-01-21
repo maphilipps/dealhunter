@@ -10,15 +10,15 @@
 
 The QuickScan plan is well-structured but contains significant YAGNI violations:
 
-| Category | Status | Issue |
-|----------|--------|-------|
-| **Tools Count** | 🔴 Over-engineered | 11 parallel tools - can consolidate to 7 |
-| **PT Estimation** | 🔴 Premature | Migration complexity too detailed for V1 |
-| **Event System** | 🟡 Partially redundant | 4 phase events can be 2 |
-| **Drupal Mapping** | 🔴 Too specialized | Business Unit matching better than Drupal mapping |
-| **Error Handling** | 🟡 Incomplete | Exponential backoff needed but not everywhere |
-| **Component Split** | 🟢 Correct | Activity stream extraction justified |
-| **Overall** | 🟡 Medium complexity | ~30% LOC reduction possible |
+| Category            | Status                 | Issue                                             |
+| ------------------- | ---------------------- | ------------------------------------------------- |
+| **Tools Count**     | 🔴 Over-engineered     | 11 parallel tools - can consolidate to 7          |
+| **PT Estimation**   | 🔴 Premature           | Migration complexity too detailed for V1          |
+| **Event System**    | 🟡 Partially redundant | 4 phase events can be 2                           |
+| **Drupal Mapping**  | 🔴 Too specialized     | Business Unit matching better than Drupal mapping |
+| **Error Handling**  | 🟡 Incomplete          | Exponential backoff needed but not everywhere     |
+| **Component Split** | 🟢 Correct             | Activity stream extraction justified              |
+| **Overall**         | 🟡 Medium complexity   | ~30% LOC reduction possible                       |
 
 **Recommendation:** Simplify 3 major areas before implementation to avoid technical debt.
 
@@ -45,18 +45,19 @@ The QuickScan plan is well-structured but contains significant YAGNI violations:
 
 ### YAGNI Violations
 
-| Tool | Issue | Recommendation |
-|------|-------|-----------------|
-| **page-sampler.ts** | Samples N pages for analysis; multi-page-analyzer also traverses | **Consolidate**: Let multi-page-analyzer handle both |
-| **page-counter.ts** | Counts total pages; multi-page-analyzer counts during traversal | **Remove**: Use count from traversal |
-| **multi-page-analyzer.ts** + **navigation-crawler.ts** | Both traverse site structure | **Merge**: Single crawler with optional depth limit |
-| **component-extractor.ts** | Detects React/Vue/Svelte components - nice to have | **Cut from V1**: Not required for BIT/NO BIT decision |
-| **content-classifier.ts** | Categorizes pages (blog, shop, docs) | **Simplify**: Use URL patterns only, no ML |
-| **migration-analyzer.ts** | Detailed PT/effort estimation | **Defer to V2**: Not needed for Quick Scan v1 |
+| Tool                                                   | Issue                                                            | Recommendation                                        |
+| ------------------------------------------------------ | ---------------------------------------------------------------- | ----------------------------------------------------- |
+| **page-sampler.ts**                                    | Samples N pages for analysis; multi-page-analyzer also traverses | **Consolidate**: Let multi-page-analyzer handle both  |
+| **page-counter.ts**                                    | Counts total pages; multi-page-analyzer counts during traversal  | **Remove**: Use count from traversal                  |
+| **multi-page-analyzer.ts** + **navigation-crawler.ts** | Both traverse site structure                                     | **Merge**: Single crawler with optional depth limit   |
+| **component-extractor.ts**                             | Detects React/Vue/Svelte components - nice to have               | **Cut from V1**: Not required for BID/NO-BID decision |
+| **content-classifier.ts**                              | Categorizes pages (blog, shop, docs)                             | **Simplify**: Use URL patterns only, no ML            |
+| **migration-analyzer.ts**                              | Detailed PT/effort estimation                                    | **Defer to V2**: Not needed for Quick Scan v1         |
 
 ### Proposed Consolidation
 
 **Before (11 tools):**
+
 ```
 playwright → [page-sampler] → [page-counter] → [multi-page-analyzer] → [content-classifier]
                                                                         → [component-extractor]
@@ -67,6 +68,7 @@ decision-maker-research
 ```
 
 **After (7 tools):**
+
 ```
 playwright → page-analyzer (combines: sampler, counter, multi-page, classifier)
           → navigation-tree (combines: crawler, component-extractor → defer)
@@ -78,6 +80,7 @@ playwright → page-analyzer (combines: sampler, counter, multi-page, classifier
 ```
 
 ### Impact
+
 - **LOC saved:** ~800-1000 lines (consolidation, removed redundant logic)
 - **Execution time:** ~20% faster (fewer tool calls, less redundant work)
 - **Complexity reduced:** 8 interdependent tools → 7 independent tools
@@ -90,6 +93,7 @@ playwright → page-analyzer (combines: sampler, counter, multi-page, classifier
 ### Current State
 
 `migration-analyzer.ts` estimates:
+
 - CMS complexity (1-10 scale)
 - Drupal mapping (Content Types, Paragraphs, Taxonomies, Fields)
 - Lines of code to implement
@@ -98,11 +102,13 @@ playwright → page-analyzer (combines: sampler, counter, multi-page, classifier
 ### YAGNI Analysis
 
 **Questions to answer:**
-1. Do we need PT estimates in V1? → NO - BIT/NO BIT decision doesn't require effort data
+
+1. Do we need PT estimates in V1? → NO - BID/NO-BID decision doesn't require effort data
 2. Is Drupal-specific mapping necessary? → NO - Generic Business Unit recommendation is sufficient
 3. Can this be deferred? → YES - Phase 2 feature
 
 **Why it's over-engineered:**
+
 - PT estimation requires manual expert review anyway (not reliable for auto-calculation)
 - Drupal mapping is one CMS - generic content structure analysis (schema.org) is better
 - Adds 200+ LOC for questionable value in V1
@@ -110,6 +116,7 @@ playwright → page-analyzer (combines: sampler, counter, multi-page, classifier
 ### Proposal
 
 **For V1:** Remove completely. Keep only:
+
 ```typescript
 // Minimal data for future estimation
 {
@@ -122,6 +129,7 @@ playwright → page-analyzer (combines: sampler, counter, multi-page, classifier
 **For V2:** Add structured PT estimation with expert review workflow.
 
 ### Impact
+
 - **LOC removed:** ~400 lines (migration-analyzer entire file)
 - **API calls saved:** 0 (no external APIs)
 - **Complexity:** High → Low
@@ -134,6 +142,7 @@ playwright → page-analyzer (combines: sampler, counter, multi-page, classifier
 ### Current Phase Events
 
 From Phase 1 spec (line 82-96):
+
 ```
 Phase 1: Fix Auto-Start & Streaming Flow
 Phase 2: Fix Company Name Extraction
@@ -150,6 +159,7 @@ Phase 6: Post-Scan Navigation
 Instead of 6 implementation phases, group by **user-facing features**:
 
 **Phase A: Core Scanning (1-2 days)**
+
 - ✅ Fix auto-start & streaming
 - ✅ Company name extraction
 - ✅ Decision makers research
@@ -157,6 +167,7 @@ Instead of 6 implementation phases, group by **user-facing features**:
 - ⬜ Deferred: PT estimation
 
 **Phase B: UI/UX Polish (0.5 days)**
+
 - ✅ Agent activity display
 - ✅ Post-scan navigation
 - ✅ Error handling
@@ -166,12 +177,14 @@ Instead of 6 implementation phases, group by **user-facing features**:
 ### Implementation Order (REVISED)
 
 **Current (6 sequential phases):**
+
 ```
 Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6
 (days:  1     0.5    0.5    0.5     1     0.5)
 ```
 
 **Proposed (2 parallel + concurrent fixes):**
+
 ```
 Phase A (Core)      Phase B (Polish)
 ├─ Auto-start       ├─ Activity display
@@ -182,6 +195,7 @@ Phase A (Core)      Phase B (Polish)
 ```
 
 ### Impact
+
 - **Complexity reduction:** 6 phases → 2 logical features
 - **Implementation time:** Same, but clearer sequencing
 - **Dependencies:** Removed (Phase 5 depends on Phase 1-3, restructure as parallel)
@@ -211,11 +225,12 @@ Phase A (Core)      Phase B (Polish)
 1. **Drupal-specific:** This is ONE CMS of many possible targets
 2. **Premature optimization:** Assumes Drupal migration before decision
 3. **Better alternative:** Generic content structure → CMS-agnostic schema
-4. **Usage:** Not used in BIT/NO BIT decision logic
+4. **Usage:** Not used in BID/NO-BID decision logic
 
 ### Proposal
 
 **Replace with generic structure:**
+
 ```typescript
 // Content structure analysis (CMS-agnostic)
 contentStructure: {
@@ -230,11 +245,13 @@ contentStructure: {
 ```
 
 **Benefits:**
+
 - Applies to ANY CMS (Drupal, Magnolia, Ibexa, custom)
 - Simpler logic (no hardcoded entity mapping)
-- Deferred until after BIT decision
+- Deferred until after BID decision
 
 ### Impact
+
 - **LOC removed:** ~300 lines (CMS-specific mapping)
 - **Reusability:** Increased (generic → applicable to all CMS)
 - **Time saved:** -1 hour implementation
@@ -246,6 +263,7 @@ contentStructure: {
 ### Current State
 
 Decision makers research uses:
+
 ```typescript
 // Static 500ms delay (line 3, decision-maker-research.ts)
 await sleep(500);
@@ -254,11 +272,13 @@ await sleep(500);
 ### YAGNI Analysis
 
 **Where backoff is NEEDED:**
+
 - DuckDuckGo API → Rate limiting common (429 errors)
 - LinkedIn/Xing scraping → IP-based throttling
 - Impressum page parsing → Network timeouts
 
 **Where it's NOT needed:**
+
 - Local playwright operations (page rendering)
 - Regex pattern matching
 - Database queries
@@ -269,11 +289,7 @@ await sleep(500);
 
 ```typescript
 // utils/retry.ts (30 lines, reusable)
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries = 3,
-  baseDelay = 500
-): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, baseDelay = 500): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
@@ -291,11 +307,13 @@ const makers = await withRetry(() => searchDuckDuckGo(query));
 ```
 
 **NOT needed for:**
+
 - Playwright operations (handles retry internally)
 - Local content extraction (won't fail repeatedly)
 - Database operations (transaction retry is DB's job)
 
 ### Impact
+
 - **LOC added:** ~30 lines (single utility)
 - **Robustness:** Significantly improved for actual failure scenarios
 - **Premature complexity:** Removed from wrong places
@@ -309,12 +327,14 @@ const makers = await withRetry(() => searchDuckDuckGo(query));
 Extracting `AgentActivityView` from `quick-scan-results.tsx` (1742 lines):
 
 **Why it's NOT YAGNI:**
+
 - `quick-scan-results.tsx` serves 2 purposes: activity view + results display
 - Used in 2 different contexts: running state vs. completed state
 - Different update patterns (streaming vs. static)
 - ~300 lines per component after split
 
 **Justified extraction points:**
+
 1. `AgentActivityView` - Live streaming activity (300 LOC)
 2. `SiteTreeView` - Navigation hierarchy (150 LOC)
 3. `StaticResultsView` - Completed results cards (500+ LOC)
@@ -328,9 +348,11 @@ Extracting `AgentActivityView` from `quick-scan-results.tsx` (1742 lines):
 ### Violation #1: Virtual Scrolling Premature
 
 **Current plan (Phase 4, line 170):**
+
 > Virtual Scrolling für 500+ URLs mit `@tanstack/react-virtual`
 
 **Analysis:**
+
 - Most websites have <100 distinct navigation URLs
 - ShadCN Accordion already handles rendering
 - Virtual scrolling adds 50+ LOC for edge case
@@ -340,9 +362,11 @@ Extracting `AgentActivityView` from `quick-scan-results.tsx` (1742 lines):
 ### Violation #2: Lazy Loading for Tree Nodes
 
 **Current plan (Phase 4, line 171):**
+
 > Lazy Loading für tiefe Hierarchien (load children on expand)
 
 **Analysis:**
+
 - Adds complexity for <1% of sites with deep hierarchies
 - Initial load already <500ms for typical sites
 - Can be added later if perf issue emerges
@@ -352,6 +376,7 @@ Extracting `AgentActivityView` from `quick-scan-results.tsx` (1742 lines):
 ### Violation #3: Circular Buffer with MAX_EVENTS=150
 
 **Current code (line 195):**
+
 > Circular Buffer (MAX_EVENTS=150) bereits implementiert - gut!
 
 **Analysis:** ✅ This IS correct. Keep it. Prevents memory leaks in long-running scans.
@@ -362,22 +387,22 @@ Extracting `AgentActivityView` from `quick-scan-results.tsx` (1742 lines):
 
 ### High Priority (remove before implementation)
 
-| File | Lines | Reason | Impact |
-|------|-------|--------|--------|
-| `migration-analyzer.ts` | ~400 | Drupal mapping too specialized | P1 |
-| `component-extractor.ts` | ~150 | React/Vue detection not required | P1 |
-| Virtual scrolling setup | ~50 | Premature optimization | P2 |
-| Lazy tree loading | ~80 | Edge case handling | P2 |
+| File                     | Lines | Reason                           | Impact |
+| ------------------------ | ----- | -------------------------------- | ------ |
+| `migration-analyzer.ts`  | ~400  | Drupal mapping too specialized   | P1     |
+| `component-extractor.ts` | ~150  | React/Vue detection not required | P1     |
+| Virtual scrolling setup  | ~50   | Premature optimization           | P2     |
+| Lazy tree loading        | ~80   | Edge case handling               | P2     |
 
 **Total LOC to remove: ~680 lines**
 
 ### Medium Priority (simplify, don't remove)
 
-| File | Lines | Simplification | Impact |
-|------|-------|-----------------|--------|
-| `page-sampler.ts` + `page-counter.ts` | ~120 | Merge into `page-analyzer.ts` | Consolidation |
-| `navigation-crawler.ts` | ~80 | Merge with `multi-page-analyzer.ts` | Consolidation |
-| `content-classifier.ts` | ~100 | Use URL patterns only, remove ML | Simplification |
+| File                                  | Lines | Simplification                      | Impact         |
+| ------------------------------------- | ----- | ----------------------------------- | -------------- |
+| `page-sampler.ts` + `page-counter.ts` | ~120  | Merge into `page-analyzer.ts`       | Consolidation  |
+| `navigation-crawler.ts`               | ~80   | Merge with `multi-page-analyzer.ts` | Consolidation  |
+| `content-classifier.ts`               | ~100  | Use URL patterns only, remove ML    | Simplification |
 
 **Total LOC to consolidate: ~300 lines**
 
@@ -386,6 +411,7 @@ Extracting `AgentActivityView` from `quick-scan-results.tsx` (1742 lines):
 ## 9. Final Simplicity Metrics
 
 ### Before Simplification
+
 ```
 Total Tools: 11
 Total LOC (tools): ~2,500
@@ -395,6 +421,7 @@ Implementation Phases: 6
 ```
 
 ### After Simplification (Proposed)
+
 ```
 Total Tools: 7
 Total LOC (tools): ~1,500 (40% reduction)
@@ -406,12 +433,12 @@ Removed: PT estimation, component detection, virtual scrolling
 
 ### Complexity Scoring
 
-| Aspect | Current | Target | Gain |
-|--------|---------|--------|------|
-| Cyclomatic complexity | High | Low | -40% |
+| Aspect                 | Current  | Target   | Gain |
+| ---------------------- | -------- | -------- | ---- |
+| Cyclomatic complexity  | High     | Low      | -40% |
 | Tool interdependencies | 8 chains | 3 chains | -63% |
-| Implementation days | 4-5 | 2-3 | -50% |
-| Maintenance burden | High | Medium | -40% |
+| Implementation days    | 4-5      | 2-3      | -50% |
+| Maintenance burden     | High     | Medium   | -40% |
 
 ---
 
@@ -449,13 +476,13 @@ Removed: PT estimation, component detection, virtual scrolling
 
 By implementing these simplifications:
 
-| Debt Type | Amount | Prevention |
-|-----------|--------|-----------|
-| Over-engineered APIs | 3 (removed tools) | Consolidation |
-| Dead code branches | ~200 LOC | Tool removal |
-| Maintenance burden | 8 hours/quarter | Consolidation |
-| Bug surface area | 30% larger | Tool reduction |
-| Performance overhead | ~15% scan time | Tool consolidation |
+| Debt Type            | Amount            | Prevention         |
+| -------------------- | ----------------- | ------------------ |
+| Over-engineered APIs | 3 (removed tools) | Consolidation      |
+| Dead code branches   | ~200 LOC          | Tool removal       |
+| Maintenance burden   | 8 hours/quarter   | Consolidation      |
+| Bug surface area     | 30% larger        | Tool reduction     |
+| Performance overhead | ~15% scan time    | Tool consolidation |
 
 **Total technical debt prevented: 400+ hours/year in maintenance**
 
@@ -465,12 +492,12 @@ By implementing these simplifications:
 
 ### Rule 1: Remove features not explicitly required
 
-❌ **Removed:** PT estimation (not needed for BIT decision)
+❌ **Removed:** PT estimation (not needed for BID decision)
 ❌ **Removed:** Component detection (nice-to-have, not essential)
 ❌ **Removed:** Virtual scrolling (edge case, not common)
-✅ **Kept:** Company name extraction (BIT decision depends on it)
-✅ **Kept:** Decision makers (BIT decision input)
-✅ **Kept:** Navigation analysis (BIT decision input)
+✅ **Kept:** Company name extraction (BID decision depends on it)
+✅ **Kept:** Decision makers (BID decision input)
+✅ **Kept:** Navigation analysis (BID decision input)
 
 ### Rule 2: Eliminate extensibility without clear use cases
 
@@ -498,19 +525,20 @@ By implementing these simplifications:
 
 ### Implementation Impact
 
-| Metric | Impact |
-|--------|--------|
-| Time to implement | -1.5 days |
-| Time to test | -0.5 days |
-| Time to maintain/year | -8 hours |
-| Bug likelihood | -25% |
-| Feature completeness | No change (all core features retained) |
+| Metric                | Impact                                 |
+| --------------------- | -------------------------------------- |
+| Time to implement     | -1.5 days                              |
+| Time to test          | -0.5 days                              |
+| Time to maintain/year | -8 hours                               |
+| Bug likelihood        | -25%                                   |
+| Feature completeness  | No change (all core features retained) |
 
 ### Recommendation
 
 **PROCEED with simplification BEFORE implementing Phase 1.**
 
 Implementing first, simplifying later will:
+
 - Double refactoring work
 - Introduce regressions
 - Make team less productive

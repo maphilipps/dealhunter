@@ -88,7 +88,10 @@ Return a valid JSON object that matches this schema.`,
     });
 
     const responseText = completion.choices[0]?.message?.content || '{}';
-    const cleanedResponse = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const cleanedResponse = responseText
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
     const parsed = JSON.parse(cleanedResponse) as unknown;
     const validated = extractedRequirementsSchema.parse(parsed);
 
@@ -260,7 +263,10 @@ Return a valid JSON object that matches this schema.`,
     });
 
     const responseText = completion.choices[0]?.message?.content || '{}';
-    const cleanedResponse = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const cleanedResponse = responseText
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
     const parsed = JSON.parse(cleanedResponse) as unknown;
     const result = { object: extractedRequirementsSchema.parse(parsed) };
 

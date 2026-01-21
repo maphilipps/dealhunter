@@ -220,8 +220,7 @@ export default function DecisionForm({ lead }: DecisionFormProps) {
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">
-                Wie sicher sind Sie mit Ihrer Entscheidung? (0% = sehr unsicher, 100% = sehr
-                sicher)
+                Wie sicher sind Sie mit Ihrer Entscheidung? (0% = sehr unsicher, 100% = sehr sicher)
               </p>
             </div>
 

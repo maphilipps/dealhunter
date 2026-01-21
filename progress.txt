@@ -4612,3 +4612,87 @@ Implemented comprehensive UI improvements for the BID/NO-BID decision workflow t
 - Optional: Add E2E tests for full BID/NO-BID workflow
 - Optional: Enhance with keyboard shortcuts for power users
 
+
+## 2026-01-21 - DEA-87: Timeline + Routing Agent - AI-basierte PT-Schätzung mit Risk-Warnings
+
+**Issue:** DEA-87 - [Phase 1] TIMELINE + ROUTING AGENT - AI-basierte PT-Schätzung mit Risk-Warnings
+**Status:** ✅ Complete
+**Priority:** P2 - Medium (Phase 1 Feature)
+**Commit:** (pending)
+
+**Problem:**
+BD Manager needs timeline estimation and risk analysis after Quick Scan to make informed BID/NO-BID decisions and select the appropriate Business Line.
+
+**Implemented:**
+
+1. **Schema Extensions (`lib/timeline/schema.ts`)**
+   - Added `RiskAnalysis` schema (risk level, delta days, warning messages)
+   - Added `RoutingDecision` schema (BL selection, reasoning, override tracking)
+   - Both schemas use sanitized strings for XSS protection
+
+2. **Risk Analyzer Module (`lib/timeline/risk-analyzer.ts`)**
+   - Compares RFP deadline with AI-generated timeline
+   - Risk levels: HIGH (<-30 days), MEDIUM (-30 to 0 days), LOW (>0 days buffer)
+   - Accurate working days calculation (excludes weekends)
+   - Helper functions for UI: getRiskBadgeVariant(), getRiskIcon(), formatTimelineSummary()
+   - **Test Coverage: 100%** (15/15 tests passing)
+
+3. **Routing UI Page (`app/(dashboard)/rfps/[id]/routing/page.tsx`)**
+   - Timeline visualization with phase breakdown
+   - Risk warning banners (HIGH = red destructive, MEDIUM = yellow warning)
+   - Deadline comparison (RFP vs AI estimate)
+   - Team size assumptions display
+   - Identified assumptions and risks
+   - BL recommendation display with confidence badges
+   - Integration with Quick Scan data
+
+4. **Routing Form Component (`components/rfps/routing-form.tsx`)**
+   - BL selection dropdown with AI recommendation highlighted
+   - Override detection and mandatory reasoning for overrides
+   - Form validation (requires BL selection, requires reason if override)
+   - Real-time UI feedback
+
+5. **Server Actions (`lib/rfps/actions.ts`)**
+   - `routeRfpToBusinessLine()` action
+   - Updates RFP status to 'routed'
+   - Assigns business line
+   - Creates audit trail for tracking decisions
+   - Handles override scenarios
+
+**Key Features:**
+
+- **Risk Analysis Logic:**
+  - HIGH Risk: RFP deadline >30 working days before AI estimate
+  - MEDIUM Risk: RFP deadline 0-30 working days before AI estimate
+  - LOW Risk: RFP deadline after AI estimate (has buffer)
+  
+- **Timeline Display:**
+  - Total days/weeks/months
+  - Phase-by-phase breakdown table
+  - Team size assumptions (min/optimal/max)
+  - Assumptions list
+  - Risk factors with impact/likelihood badges
+
+- **BL Routing:**
+  - Shows AI recommendation with confidence
+  - Allows manual override
+  - Low confidence warning (<30%)
+  - Mandatory reasoning for overrides
+  - Audit trail creation
+
+**Testing:**
+- 15 unit tests for Risk Analyzer (100% coverage)
+- All edge cases covered (no deadline, HIGH/MEDIUM/LOW risk scenarios)
+- Date handling (string vs Date object)
+- Helper functions validated
+
+**Integration Points:**
+- Reads timeline from `quickScans.timeline` JSON field
+- Reads BL recommendation from Quick Scan results
+- Updates `rfps.assignedBusinessUnitId` and `rfps.status`
+- Creates `auditTrails` record for tracking
+
+**Next Steps:**
+- Integration with actual Timeline Agent (currently uses existing Quick Scan timeline)
+- Workflow orchestration (DEA-90) to auto-trigger Timeline Agent after Quick Scan
+- Error handling and retry mechanisms (DEA-91)

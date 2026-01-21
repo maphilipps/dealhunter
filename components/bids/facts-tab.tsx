@@ -134,7 +134,9 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* CMS */}
               <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Content Management System</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Content Management System
+                </p>
                 <Badge variant="default" className="text-base">
                   {techStack.cms || 'Custom'}
                 </Badge>
@@ -150,7 +152,9 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
                   {techStack.framework || 'Vanilla JS'}
                 </Badge>
                 {techStack.frameworkVersion && (
-                  <p className="text-xs text-muted-foreground">Version: {techStack.frameworkVersion}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Version: {techStack.frameworkVersion}
+                  </p>
                 )}
               </div>
 
@@ -253,7 +257,9 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Stylesheets</p>
-                <p className="text-lg font-bold">{performanceIndicators.resourceCount.stylesheets}</p>
+                <p className="text-lg font-bold">
+                  {performanceIndicators.resourceCount.stylesheets}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Images</p>
@@ -418,7 +424,10 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
                       {decisionMakers.researchQuality.confidence}%
                     </span>
                   </div>
-                  <Progress value={decisionMakers.researchQuality.confidence} className="h-1 mt-1" />
+                  <Progress
+                    value={decisionMakers.researchQuality.confidence}
+                    className="h-1 mt-1"
+                  />
                 </div>
               )}
             </CardContent>
@@ -493,76 +502,85 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
       )}
 
       {/* Accessibility Card (conditional - only if issues exist) */}
-      {accessibilityAudit && accessibilityAudit.criticalIssues + accessibilityAudit.seriousIssues > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-600" />
-              <CardTitle>Accessibility-Issues</CardTitle>
-            </div>
-            <CardDescription>WCAG-Compliance: {accessibilityAudit.level}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Issue Counts */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-red-600">{accessibilityAudit.criticalIssues}</p>
-                <p className="text-xs text-muted-foreground">Kritisch</p>
+      {accessibilityAudit &&
+        accessibilityAudit.criticalIssues + accessibilityAudit.seriousIssues > 0 && (
+          <Card className="border-amber-200 bg-amber-50/50">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+                <CardTitle>Accessibility-Issues</CardTitle>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-orange-600">{accessibilityAudit.seriousIssues}</p>
-                <p className="text-xs text-muted-foreground">Schwerwiegend</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-yellow-600">{accessibilityAudit.moderateIssues}</p>
-                <p className="text-xs text-muted-foreground">Moderat</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-slate-600">{accessibilityAudit.minorIssues}</p>
-                <p className="text-xs text-muted-foreground">Gering</p>
-              </div>
-            </div>
-
-            {/* Top Issues */}
-            {accessibilityAudit.topIssues && accessibilityAudit.topIssues.length > 0 && (
-              <div className="pt-3 border-t">
-                <p className="text-sm font-medium mb-2">Häufigste Probleme</p>
-                <div className="space-y-2">
-                  {accessibilityAudit.topIssues.slice(0, 5).map((issue, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-sm">
-                      <Badge
-                        variant={
-                          issue.severity === 'critical'
-                            ? 'destructive'
-                            : issue.severity === 'serious'
-                              ? 'secondary'
-                              : 'outline'
-                        }
-                        className="text-xs"
-                      >
-                        {issue.severity}
-                      </Badge>
-                      <div className="flex-1">
-                        <p className="text-sm">{issue.description}</p>
-                        <p className="text-xs text-muted-foreground">{issue.count}× gefunden</p>
-                      </div>
-                    </div>
-                  ))}
+              <CardDescription>WCAG-Compliance: {accessibilityAudit.level}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Issue Counts */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-red-600">
+                    {accessibilityAudit.criticalIssues}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Kritisch</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-orange-600">
+                    {accessibilityAudit.seriousIssues}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Schwerwiegend</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {accessibilityAudit.moderateIssues}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Moderat</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-slate-600">
+                    {accessibilityAudit.minorIssues}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Gering</p>
                 </div>
               </div>
-            )}
 
-            {/* Score */}
-            <div className="pt-3 border-t">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Accessibility Score</span>
-                <span className="text-sm font-bold">{accessibilityAudit.score}%</span>
+              {/* Top Issues */}
+              {accessibilityAudit.topIssues && accessibilityAudit.topIssues.length > 0 && (
+                <div className="pt-3 border-t">
+                  <p className="text-sm font-medium mb-2">Häufigste Probleme</p>
+                  <div className="space-y-2">
+                    {accessibilityAudit.topIssues.slice(0, 5).map((issue, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-sm">
+                        <Badge
+                          variant={
+                            issue.severity === 'critical'
+                              ? 'destructive'
+                              : issue.severity === 'serious'
+                                ? 'secondary'
+                                : 'outline'
+                          }
+                          className="text-xs"
+                        >
+                          {issue.severity}
+                        </Badge>
+                        <div className="flex-1">
+                          <p className="text-sm">{issue.description}</p>
+                          <p className="text-xs text-muted-foreground">{issue.count}× gefunden</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Score */}
+              <div className="pt-3 border-t">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Accessibility Score</span>
+                  <span className="text-sm font-bold">{accessibilityAudit.score}%</span>
+                </div>
+                <Progress value={accessibilityAudit.score} className="h-2" />
               </div>
-              <Progress value={accessibilityAudit.score} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
     </div>
   );
 }

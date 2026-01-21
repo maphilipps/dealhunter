@@ -53,7 +53,10 @@ export const extractedRequirementsSchema = z.object({
   cmsConstraints: z
     .object({
       required: z.array(z.string()).optional().describe('Required CMS systems (e.g., ["Drupal"])'),
-      preferred: z.array(z.string()).optional().describe('Preferred CMS systems (e.g., ["WordPress"])'),
+      preferred: z
+        .array(z.string())
+        .optional()
+        .describe('Preferred CMS systems (e.g., ["WordPress"])'),
       excluded: z.array(z.string()).optional().describe('Excluded CMS systems (e.g., ["Joomla"])'),
       flexibility: z
         .enum(['rigid', 'preferred', 'flexible', 'unknown'])

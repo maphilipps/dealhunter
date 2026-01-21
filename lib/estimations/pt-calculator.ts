@@ -114,11 +114,31 @@ const PT_MULTIPLIERS = {
  * Phase Distribution (% of total PT)
  */
 const PHASE_DISTRIBUTION = {
-  foundation: { percentage: 30, name: 'Foundation Setup', description: 'Base installation, theme, baseline entities' },
-  customDev: { percentage: 35, name: 'Custom Development', description: 'Additional content types, components, features' },
-  integrations: { percentage: 10, name: 'Integrations', description: 'Third-party integrations, APIs' },
-  migration: { percentage: 15, name: 'Content Migration', description: 'Data migration, content transfer' },
-  testing: { percentage: 10, name: 'Testing & QA', description: 'Testing, bug fixes, performance optimization' },
+  foundation: {
+    percentage: 30,
+    name: 'Foundation Setup',
+    description: 'Base installation, theme, baseline entities',
+  },
+  customDev: {
+    percentage: 35,
+    name: 'Custom Development',
+    description: 'Additional content types, components, features',
+  },
+  integrations: {
+    percentage: 10,
+    name: 'Integrations',
+    description: 'Third-party integrations, APIs',
+  },
+  migration: {
+    percentage: 15,
+    name: 'Content Migration',
+    description: 'Data migration, content transfer',
+  },
+  testing: {
+    percentage: 10,
+    name: 'Testing & QA',
+    description: 'Testing, bug fixes, performance optimization',
+  },
 };
 
 /**
@@ -198,7 +218,9 @@ export async function calculatePTEstimation(
     console.error('[PT Calculator] Additional PT calculated', { additionalPT });
 
     // 5. Calculate Risk Buffer & Confidence
-    const { riskBuffer, confidenceLevel } = calculateRiskBuffer(migrationComplexity.complexityScore);
+    const { riskBuffer, confidenceLevel } = calculateRiskBuffer(
+      migrationComplexity.complexityScore
+    );
 
     console.error('[PT Calculator] Risk buffer calculated', { riskBuffer, confidenceLevel });
 
@@ -307,7 +329,10 @@ function extractCustomerEntityCounts(contentArchitecture: ContentArchitectureRes
 /**
  * Calculate delta between customer and baseline entities
  */
-function calculateDelta(customer: EntityCounts, baseline: EntityCounts): {
+function calculateDelta(
+  customer: EntityCounts,
+  baseline: EntityCounts
+): {
   contentTypes: number;
   paragraphs: number;
   taxonomies: number;

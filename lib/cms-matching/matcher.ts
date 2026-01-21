@@ -156,7 +156,11 @@ const INDUSTRY_AFFINITY = {
  * Size-based CMS affinity (based on page count)
  */
 const SIZE_AFFINITY = {
-  small: { min: 0, max: 100, cms: { Sulu: 90, Drupal: 75, Ibexa: 70, Magnolia: 60, FirstSpirit: 50 } },
+  small: {
+    min: 0,
+    max: 100,
+    cms: { Sulu: 90, Drupal: 75, Ibexa: 70, Magnolia: 60, FirstSpirit: 50 },
+  },
   medium: {
     min: 100,
     max: 1000,
@@ -201,7 +205,9 @@ export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult
 
     // 1. Fetch all available CMS technologies
     const allTechnologies = await db.query.technologies.findMany({
-      where: requiredBusinessUnitId ? eq(technologies.businessUnitId, requiredBusinessUnitId) : undefined,
+      where: requiredBusinessUnitId
+        ? eq(technologies.businessUnitId, requiredBusinessUnitId)
+        : undefined,
     });
 
     if (allTechnologies.length === 0) {
@@ -278,7 +284,8 @@ interface ScoreCMSInput {
  * Calculate total score for a CMS technology
  */
 async function scoreCMS(input: ScoreCMSInput): Promise<CMSMatchScore> {
-  const { technology, industry, budget, pageCount, featureRequirements, migrationComplexity } = input;
+  const { technology, industry, budget, pageCount, featureRequirements, migrationComplexity } =
+    input;
 
   // 1. Feature Score (40%)
   const { featureScore, matchedFeatures } = calculateFeatureScore(technology, featureRequirements);
@@ -341,7 +348,10 @@ async function scoreCMS(input: ScoreCMSInput): Promise<CMSMatchScore> {
 function calculateFeatureScore(
   technology: Technology,
   featureRequirements: FeatureRequirement[]
-): { featureScore: number; matchedFeatures: { feature: string; supported: boolean; score: number }[] } {
+): {
+  featureScore: number;
+  matchedFeatures: { feature: string; supported: boolean; score: number }[];
+} {
   if (featureRequirements.length === 0) {
     // No specific requirements → neutral score
     return { featureScore: 70, matchedFeatures: [] };

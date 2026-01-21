@@ -102,7 +102,11 @@ export async function analyzeContentArchitecture(
 
   try {
     // Validate input
-    if (!input.crawlData || !input.crawlData.samplePages || input.crawlData.samplePages.length === 0) {
+    if (
+      !input.crawlData ||
+      !input.crawlData.samplePages ||
+      input.crawlData.samplePages.length === 0
+    ) {
       return {
         success: false,
         pageCount: 0,

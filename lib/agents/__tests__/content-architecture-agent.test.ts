@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { analyzeContentArchitecture, type AnalyzeContentArchitectureInput } from '@/lib/agents/content-architecture-agent';
+import {
+  analyzeContentArchitecture,
+  type AnalyzeContentArchitectureInput,
+} from '@/lib/agents/content-architecture-agent';
 
 // Mock generateObject
 vi.mock('ai', () => ({
@@ -106,7 +109,12 @@ describe('Content Architecture Agent', () => {
       expect(result.contentTypes[0].name).toBe('News Article');
       expect(result.navigationStructure.depth).toBe(3);
       expect(result.navigationStructure.breadth).toBe(5);
-      expect(result.navigationStructure.mainNavItems).toEqual(['Home', 'Products', 'About', 'Contact']);
+      expect(result.navigationStructure.mainNavItems).toEqual([
+        'Home',
+        'Products',
+        'About',
+        'Contact',
+      ]);
       expect(result.contentVolume.images).toBe(500);
       expect(result.contentVolume.videos).toBe(10);
       expect(result.contentVolume.documents).toBe(20);
@@ -140,10 +148,7 @@ describe('Content Architecture Agent', () => {
             title: 'Home Page',
             description: 'Homepage',
           },
-          samplePages: [
-            'https://example.com/about',
-            'https://example.com/contact',
-          ],
+          samplePages: ['https://example.com/about', 'https://example.com/contact'],
           crawledAt: new Date().toISOString(),
         },
       };

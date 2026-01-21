@@ -1,6 +1,5 @@
 import { eq } from 'drizzle-orm';
 import {
-  Activity,
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
@@ -15,12 +14,12 @@ import {
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { WebsiteAuditClient } from '@/components/leads/website-audit-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -164,24 +163,7 @@ export default async function WebsiteAuditDetailPage({
       </div>
 
       {audit.status === 'running' && (
-        <Card className="border-blue-200 bg-blue-50/50">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Activity className="h-5 w-5 animate-pulse text-blue-600" />
-              <CardTitle>Audit läuft...</CardTitle>
-            </div>
-            <CardDescription>
-              Der Website Audit wird derzeit durchgeführt. Dies kann einige Minuten dauern.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-2/3" />
-            </div>
-          </CardContent>
-        </Card>
+        <WebsiteAuditClient leadId={id} auditStatus={audit.status} />
       )}
 
       {audit.status === 'failed' && (

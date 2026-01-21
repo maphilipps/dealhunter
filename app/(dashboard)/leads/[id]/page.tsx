@@ -1,6 +1,5 @@
 import { eq, desc } from 'drizzle-orm';
 import {
-  ExternalLink,
   Globe,
   TrendingUp,
   Package,
@@ -11,6 +10,7 @@ import {
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { LeadOverviewClient } from '@/components/leads/lead-overview-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -138,6 +138,9 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
         </CardContent>
       </Card>
 
+      {/* Background Job Progress (Client Component with Polling) */}
+      <LeadOverviewClient leadId={id} leadStatus={lead.status} />
+
       {/* Summary Cards Grid */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Website Audit Summary */}
@@ -243,7 +246,9 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
                   <div>
                     <p className="text-xs text-muted-foreground">Dauer</p>
                     <p className="font-medium">
-                      {ptEstimation.durationMonths ? `${ptEstimation.durationMonths} Monate` : 'N/A'}
+                      {ptEstimation.durationMonths
+                        ? `${ptEstimation.durationMonths} Monate`
+                        : 'N/A'}
                     </p>
                   </div>
                   <div>
@@ -317,7 +322,9 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
             ) : (
               <div className="text-center py-4">
                 <p className="text-sm text-muted-foreground">Noch nicht verfügbar</p>
-                <p className="text-xs text-muted-foreground mt-1">Wird nach Website Audit berechnet</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Wird nach Website Audit berechnet
+                </p>
               </div>
             )}
           </CardContent>

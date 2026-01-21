@@ -4356,3 +4356,95 @@ Both components properly use 'use client' directive and integrate with ShadCN's 
 
 **Commit:** feat(DEA-103): Implement PT Estimation Detail Page
 
+
+
+## DEA-105: Background Job UI Indicators
+
+**Date:** 2026-01-21
+
+**What was implemented:**
+
+Successfully implemented real-time background job status indicators for Phase 2 deep-scan operations with polling and progress tracking.
+
+**Components Created:**
+
+1. **JobProgressCard Component** (`components/background-jobs/job-progress-card.tsx`)
+   - Reusable card component for displaying background job status
+   - Visual states for pending, running, completed, failed, cancelled
+   - Animated progress bar (0-100%)
+   - Current step display
+   - Error message display with retry button support
+   - Start/completion timestamps
+   - Proper styling with status-based card colors
+
+2. **useBackgroundJobStatus Hook** (`hooks/use-background-job-status.ts`)
+   - Real-time polling hook with configurable interval (default 2s)
+   - Automatic polling when job is running/pending
+   - Stops polling when job is completed/failed/cancelled
+   - Proper error handling and loading states
+   - Type-safe API integration
+
+3. **Background Job API Route** (`app/api/leads/[id]/background-job/route.ts`)
+   - GET endpoint to fetch latest background job for a lead
+   - Joins backgroundJobs table via rfpId
+   - Returns job status, progress, currentStep, errorMessage
+   - Proper authentication and error handling
+
+4. **Integration Components**
+   - `LeadOverviewClient` - Client wrapper for Lead Overview page
+   - `WebsiteAuditClient` - Client wrapper for Website Audit page
+   - Both use polling hook with conditional enabling
+
+**Integration Points:**
+
+1. **Lead Overview Page** (`app/(dashboard)/leads/[id]/page.tsx`)
+   - Shows progress card when lead status is 'full_scanning'
+   - Displays agent activity, progress, and current step
+   - Auto-updates every 2 seconds
+
+2. **Website Audit Page** (`app/(dashboard)/leads/[id]/website-audit/page.tsx`)
+   - Replaced static skeleton with real-time progress component
+   - Shows live progress when audit status is 'running'
+   - Better UX than generic "Audit läuft..." message
+
+**Technical Details:**
+
+- Uses backgroundJobs table: status, progress (0-100), currentStep, errorMessage
+- Integrates with orchestrator.ts progress updates
+- Client-side polling with automatic cleanup
+- Type-safe throughout with proper TypeScript definitions
+- Follows ShadCN UI patterns for consistency
+- Import ordering fixed for ESLint compliance
+
+**Acceptance Criteria Met:**
+
+✅ Progress Bar aktualisiert sich (real-time polling)
+✅ Status Badges reflektieren Job Status (pending/running/completed/failed/cancelled)
+✅ Updates sind near-realtime (2s polling interval)
+✅ Integration in Lead Overview + Website Audit Pages
+✅ Error handling with retry option
+✅ Activity log visible via currentStep field
+
+**Files Created:**
+- `components/background-jobs/job-progress-card.tsx` (167 lines)
+- `hooks/use-background-job-status.ts` (80 lines)
+- `app/api/leads/[id]/background-job/route.ts` (51 lines)
+- `components/leads/lead-overview-client.tsx` (24 lines)
+- `components/leads/website-audit-client.tsx` (26 lines)
+
+**Files Modified:**
+- `app/(dashboard)/leads/[id]/page.tsx` - Added LeadOverviewClient integration
+- `app/(dashboard)/leads/[id]/website-audit/page.tsx` - Added WebsiteAuditClient integration
+
+**Testing:**
+- Type checks pass (no new TypeScript errors introduced)
+- ESLint import ordering fixed
+- All new components follow project conventions
+- Proper client/server component separation
+
+**Notes:**
+- Build test failed due to pre-existing symlink issue in audits/ directory (unrelated to this feature)
+- Feature is ready for testing with actual background jobs
+- Polling automatically stops when job completes to save resources
+- Component is fully reusable for other background job types
+

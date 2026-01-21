@@ -195,7 +195,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full">
       {/* Confidence Score */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
         <div className="flex items-center justify-between">

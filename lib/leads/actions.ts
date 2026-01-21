@@ -96,6 +96,25 @@ export async function convertRfpToLead(
       ? (JSON.parse(rfp.extractedRequirements) as Record<string, unknown>)
       : {};
 
+    // Parse Quick Scan data for decision makers (DEA-92)
+    let quickScanData: Record<string, unknown> | null = null;
+    let decisionMakers: unknown[] | null = null;
+
+    if (rfp.quickScanId) {
+      // Load Quick Scan data if quickScanId is set
+      const { quickScans } = await import('@/lib/db/schema');
+      const [quickScan] = await db
+        .select()
+        .from(quickScans)
+        .where(eq(quickScans.id, rfp.quickScanId))
+        .limit(1);
+
+      if (quickScan?.decisionMakers) {
+        quickScanData = quickScan as unknown as Record<string, unknown>;
+        decisionMakers = JSON.parse(quickScan.decisionMakers as string) as unknown[];
+      }
+    }
+
     // Check if lead already exists for this RFP
     const existingLead = await db.select().from(leads).where(eq(leads.rfpId, rfpId)).limit(1);
 
@@ -121,6 +140,8 @@ export async function convertRfpToLead(
           ? JSON.stringify(extractedReqs.requirements)
           : null,
         businessUnitId: rfp.assignedBusinessUnitId,
+        quickScanId: rfp.quickScanId || null,
+        decisionMakers: decisionMakers ? JSON.stringify(decisionMakers) : null,
         routedAt: new Date(),
       })
       .returning();

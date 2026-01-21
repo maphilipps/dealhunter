@@ -309,8 +309,8 @@ AUFGABE: ${field.extractPrompt}`,
         // Parse comma-separated list
         extractedValue = responseText
           .split(',')
-          .map(s => s.trim())
-          .filter(s => s && s !== 'nicht gefunden' && s !== 'nicht genannt');
+          .map((s: string) => s.trim())
+          .filter((s: string) => s && s !== 'nicht gefunden' && s !== 'nicht genannt');
       }
     } catch {
       extractedValue = [];

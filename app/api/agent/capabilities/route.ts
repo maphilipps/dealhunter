@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+
 import { getToolsByCategory, listToolsForAgent, TOOL_CATEGORIES } from '@/lib/agent-tools';
 import { buildAgentContext } from '@/lib/agent-tools/context-builder';
+import { auth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 

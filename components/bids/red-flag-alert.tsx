@@ -1,10 +1,12 @@
 'use client';
 
+import { AlertTriangle, XCircle } from 'lucide-react';
+
+import type { RedFlag } from './types';
+
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { RedFlag } from './types';
 
 interface RedFlagAlertProps {
   flags: RedFlag[];

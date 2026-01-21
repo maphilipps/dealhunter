@@ -162,9 +162,7 @@ export default async function WebsiteAuditDetailPage({
         <AuditStatusBadge status={audit.status} />
       </div>
 
-      {audit.status === 'running' && (
-        <WebsiteAuditClient leadId={id} auditStatus={audit.status} />
-      )}
+      {audit.status === 'running' && <WebsiteAuditClient leadId={id} auditStatus={audit.status} />}
 
       {audit.status === 'failed' && (
         <Card className="border-destructive">
@@ -485,32 +483,31 @@ export default async function WebsiteAuditDetailPage({
                     <h4 className="font-semibold mb-3">Complexity Factors</h4>
                     <div className="space-y-2">
                       {complexityFactors.map((factor, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-start gap-3 p-3 rounded-lg border bg-card"
-                          >
-                            <div className="flex-shrink-0 mt-0.5">
-                              {factor.impact === 'negative' ? (
-                                <AlertTriangle className="h-4 w-4 text-red-600" />
-                              ) : (
-                                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-1">
-                                <p className="font-medium text-sm">{factor.factor}</p>
-                                <Badge
-                                  variant={factor.impact === 'negative' ? 'destructive' : 'default'}
-                                >
-                                  {factor.score > 0 ? '+' : ''}
-                                  {factor.score}
-                                </Badge>
-                              </div>
-                              <p className="text-xs text-muted-foreground">{factor.description}</p>
-                            </div>
+                        <div
+                          key={idx}
+                          className="flex items-start gap-3 p-3 rounded-lg border bg-card"
+                        >
+                          <div className="flex-shrink-0 mt-0.5">
+                            {factor.impact === 'negative' ? (
+                              <AlertTriangle className="h-4 w-4 text-red-600" />
+                            ) : (
+                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            )}
                           </div>
-                        )
-                      )}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="font-medium text-sm">{factor.factor}</p>
+                              <Badge
+                                variant={factor.impact === 'negative' ? 'destructive' : 'default'}
+                              >
+                                {factor.score > 0 ? '+' : ''}
+                                {factor.score}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{factor.description}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </>
@@ -524,28 +521,27 @@ export default async function WebsiteAuditDetailPage({
                     <h4 className="font-semibold mb-3">Migration Risks</h4>
                     <div className="space-y-3">
                       {migrationRisks.map((risk, idx) => (
-                          <div key={idx} className="rounded-lg border p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <p className="font-semibold">{risk.title}</p>
-                                  <ImpactBadge impact={risk.impact} />
-                                </div>
-                                <Badge variant="outline" className="mb-2">
-                                  {risk.category}
-                                </Badge>
+                        <div key={idx} className="rounded-lg border p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-semibold">{risk.title}</p>
+                                <ImpactBadge impact={risk.impact} />
                               </div>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-3">{risk.description}</p>
-                            <div className="rounded-lg bg-muted p-3">
-                              <p className="text-xs font-medium text-muted-foreground mb-1">
-                                Mitigation
-                              </p>
-                              <p className="text-sm">{risk.mitigation}</p>
+                              <Badge variant="outline" className="mb-2">
+                                {risk.category}
+                              </Badge>
                             </div>
                           </div>
-                        )
-                      )}
+                          <p className="text-sm text-muted-foreground mb-3">{risk.description}</p>
+                          <div className="rounded-lg bg-muted p-3">
+                            <p className="text-xs font-medium text-muted-foreground mb-1">
+                              Mitigation
+                            </p>
+                            <p className="text-sm">{risk.mitigation}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </>
@@ -611,37 +607,35 @@ export default async function WebsiteAuditDetailPage({
                     <h4 className="font-semibold mb-3">WCAG Violations</h4>
                     <div className="space-y-2">
                       {a11yViolations.slice(0, 10).map((violation, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-start gap-3 p-3 rounded-lg border bg-card"
-                          >
-                            <div className="flex-shrink-0 mt-0.5">
-                              <ImpactIcon impact={violation.impact} />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-1">
-                                <p className="font-medium text-sm font-mono">{violation.id}</p>
-                                <Badge variant="outline">
-                                  {violation.count}{' '}
-                                  {violation.count === 1 ? 'Instanz' : 'Instanzen'}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {violation.description}
-                              </p>
-                              <a
-                                href={violation.helpUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-                              >
-                                <FileText className="h-3 w-3" />
-                                Mehr erfahren
-                              </a>
-                            </div>
+                        <div
+                          key={idx}
+                          className="flex items-start gap-3 p-3 rounded-lg border bg-card"
+                        >
+                          <div className="flex-shrink-0 mt-0.5">
+                            <ImpactIcon impact={violation.impact} />
                           </div>
-                        )
-                      )}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="font-medium text-sm font-mono">{violation.id}</p>
+                              <Badge variant="outline">
+                                {violation.count} {violation.count === 1 ? 'Instanz' : 'Instanzen'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {violation.description}
+                            </p>
+                            <a
+                              href={violation.helpUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                            >
+                              <FileText className="h-3 w-3" />
+                              Mehr erfahren
+                            </a>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                     {a11yViolations.length > 10 && (
                       <p className="text-sm text-muted-foreground mt-3">

@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { ActivityStream } from '@/components/ai-elements/activity-stream';
+
 import { BidTabs } from './bid-tabs';
-import { FactsTab } from './facts-tab';
 import { DecisionMatrixTab } from './decision-matrix-tab';
-import { getQuickScanResult } from '@/lib/quick-scan/actions';
+import { FactsTab } from './facts-tab';
+
+import { ActivityStream } from '@/components/ai-elements/activity-stream';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { QuickScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
+import { getQuickScanResult } from '@/lib/quick-scan/actions';
 
 interface QuickScanResultsProps {
   quickScan: QuickScan;

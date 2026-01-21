@@ -1,9 +1,10 @@
 'use server';
 
+import { eq } from 'drizzle-orm';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, quickScans } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 
 /**
  * Start Quick Scan for a bid opportunity

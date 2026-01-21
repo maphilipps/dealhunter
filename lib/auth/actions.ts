@@ -1,10 +1,11 @@
 'use server';
 
+import bcrypt from 'bcryptjs';
+import { AuthError } from 'next-auth';
+
 import { signIn, signOut } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import bcrypt from 'bcryptjs';
-import { AuthError } from 'next-auth';
 
 export async function login(_prevState: { error: string } | null, formData: FormData) {
   const email = formData.get('email') as string;

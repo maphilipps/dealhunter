@@ -1,5 +1,5 @@
-import { logout } from '@/lib/auth/actions';
 import { Button } from '@/components/ui/button';
+import { logout } from '@/lib/auth/actions';
 
 interface UserMenuProps {
   user: {

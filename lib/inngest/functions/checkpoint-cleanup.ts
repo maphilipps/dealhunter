@@ -6,6 +6,7 @@
  */
 
 import { inngest } from '../client';
+
 import { cleanupOldCheckpoints } from '@/lib/workflow/checkpoints';
 
 export const checkpointCleanupFunction = inngest.createFunction(

@@ -12,11 +12,12 @@
  * 6. Generate Discipline Matrix (roles × hours)
  */
 
-import { db } from '../db';
-import { technologies, type Technology } from '../db/schema';
 import { eq } from 'drizzle-orm';
+
 import type { ContentArchitectureResult } from '../agents/content-architecture-agent';
 import type { MigrationComplexityResult } from '../agents/migration-complexity-agent';
+import { db } from '../db';
+import { technologies, type Technology } from '../db/schema';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES

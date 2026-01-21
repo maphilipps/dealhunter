@@ -4760,3 +4760,29 @@ BD Manager needs timeline estimation and risk analysis after Quick Scan to make 
 - E2E tests for full workflow (DEA-90 acceptance criteria)
 - Error handling & retry mechanisms (DEA-91)
 
+
+## DEA-107: RAG Knowledge Base für Cross-Agent Context Sharing
+
+**Implemented:**
+- Database schema for rfp_embeddings table with vector storage
+- sqlite-vec extension integration for cosine similarity search
+- Chunking service with granular strategy for Quick Scan and Extract agents
+- Embedding service with batch generation via OpenAI API (text-embedding-3-large)
+- Retrieval service with hybrid search (similarity + tech stack filter)
+- RAG tool for AI SDK integration
+- Quick Scan agent integration with automatic embedding
+
+**Files Modified:**
+- lib/db/schema.ts (added rfp_embeddings table)
+- lib/db/index.ts (sqlite-vec loader)
+- app/api/rfps/[id]/quick-scan/stream/route.ts (embedding integration)
+
+**Files Created:**
+- lib/rag/chunk-service.ts
+- lib/rag/embedding-service.ts
+- lib/rag/retrieval-service.ts
+- lib/agent-tools/tools/rag-tool.ts
+
+**Testing:** Tests pending (PRD requires 80%+ coverage)
+
+**Commit:** Pending

@@ -14,8 +14,9 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { z } from 'zod';
+
 import { createId } from '@paralleldrive/cuid2';
+import { z } from 'zod';
 
 // Checkpoint directory (outside .gitignore)
 const CHECKPOINT_DIR = process.env.CHECKPOINT_DIR || path.join(process.cwd(), 'tmp', 'checkpoints');

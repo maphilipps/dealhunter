@@ -1,12 +1,12 @@
+import { CompetencyValidationTable } from '@/components/admin/competency-validation-table';
+import { CompetitorValidationTable } from '@/components/admin/competitor-validation-table';
+import { ReferenceValidationTable } from '@/components/admin/reference-validation-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   getPendingReferences,
   getPendingCompetencies,
   getPendingCompetitors,
 } from '@/lib/admin/validation-actions';
-import { ReferenceValidationTable } from '@/components/admin/reference-validation-table';
-import { CompetencyValidationTable } from '@/components/admin/competency-validation-table';
-import { CompetitorValidationTable } from '@/components/admin/competitor-validation-table';
 
 export default async function AdminValidationsPage() {
   const [references, competencies, competitors] = await Promise.all([

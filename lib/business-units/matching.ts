@@ -5,10 +5,11 @@
  * für die Zuordnung von Bids zu Business Units
  */
 
-import type { BusinessUnit, QuickScan, Reference } from '@/lib/db/schema';
-import { db } from '@/lib/db';
-import { businessUnits, references, technologies } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+
+import { db } from '@/lib/db';
+import type { BusinessUnit, QuickScan, Reference } from '@/lib/db/schema';
+import { businessUnits, references, technologies } from '@/lib/db/schema';
 
 /**
  * Match-Kriterien (je 20%)

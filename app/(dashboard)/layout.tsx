@@ -1,9 +1,10 @@
-import { AppSidebar } from '@/components/app-sidebar';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
-import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
-import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+
+import { AppSidebar } from '@/components/app-sidebar';
+import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
+import { Separator } from '@/components/ui/separator';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { auth } from '@/lib/auth';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -15,7 +16,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const user = {
     name: session.user.name || 'Unknown',
     email: session.user.email || '',
-    role: session.user.role as 'bd' | 'bl' | 'admin',
+    role: session.user.role,
     avatar: '', // Empty avatar triggers AvatarFallback with initials
   };
 

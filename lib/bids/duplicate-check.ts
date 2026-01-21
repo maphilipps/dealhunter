@@ -1,13 +1,15 @@
-import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
 import { ne, and, isNotNull } from 'drizzle-orm';
-import type { ExtractedRequirements } from '@/lib/extraction/schema';
+
 import {
   generateRfpEmbedding,
   cosineSimilarity,
   similarityToPercentage,
   parseEmbedding,
 } from './embedding-service';
+
+import { db } from '@/lib/db';
+import { rfps } from '@/lib/db/schema';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 // Re-export embedding generation for use in other modules
 export { generateRfpEmbedding } from './embedding-service';
@@ -71,7 +73,7 @@ function levenshteinDistance(str1: string, str2: string): number {
 
   const dp: number[][] = Array(m + 1)
     .fill(null)
-    .map(() => Array(n + 1).fill(0) as number[]) as number[][];
+    .map(() => Array(n + 1).fill(0) as number[]);
 
   for (let i = 0; i <= m; i++) dp[i][0] = i;
   for (let j = 0; j <= n; j++) dp[0][j] = j;

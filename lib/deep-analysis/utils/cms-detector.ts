@@ -3,6 +3,7 @@
  */
 
 import * as cheerio from 'cheerio';
+
 import { isAllowedUrl, validateUrlResolution } from './url-validator';
 
 export interface ExportCapabilities {

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
-import { getAccountById } from '@/lib/accounts-actions';
+
 import { EditAccountForm } from '@/components/edit-account-form';
+import { getAccountById } from '@/lib/accounts-actions';
 
 type Props = {
   params: Promise<{ id: string }>;

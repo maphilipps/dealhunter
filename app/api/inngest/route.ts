@@ -1,9 +1,10 @@
 import { serve } from 'inngest/next';
+
 import { inngest } from '@/lib/inngest/client';
+import { checkpointCleanupFunction } from '@/lib/inngest/functions/checkpoint-cleanup';
+import { cleanupFunction } from '@/lib/inngest/functions/cleanup';
 import { deepAnalysisFunction } from '@/lib/inngest/functions/deep-analysis';
 import { teamNotificationFunction } from '@/lib/inngest/functions/team-notification';
-import { cleanupFunction } from '@/lib/inngest/functions/cleanup';
-import { checkpointCleanupFunction } from '@/lib/inngest/functions/checkpoint-cleanup';
 
 /**
  * Inngest webhook endpoint with signature verification

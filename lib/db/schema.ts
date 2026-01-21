@@ -1,6 +1,6 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-import { relations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
+import { relations } from 'drizzle-orm';
+import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id')
@@ -1395,6 +1395,43 @@ export const cmsMatchResultsRelations = relations(cmsMatchResults, ({ one }) => 
     references: [technologies.id],
   }),
 }));
+
+// RAG Knowledge Base - Embeddings for Cross-Agent Context Sharing (DEA-107)
+export const rfpEmbeddings = sqliteTable(
+  'rfp_embeddings',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    rfpId: text('rfp_id')
+      .notNull()
+      .references(() => rfps.id, { onDelete: 'cascade' }),
+
+    // Chunk Metadata
+    agentName: text('agent_name').notNull(), // 'extract', 'quick_scan', 'tech_agent', etc.
+    chunkType: text('chunk_type').notNull(), // 'tech_stack', 'performance', 'content_volume', etc.
+    chunkIndex: integer('chunk_index').notNull(), // 0, 1, 2... for ordering
+
+    // Content
+    content: text('content').notNull(), // The text chunk
+    metadata: text('metadata'), // JSON - additional chunk metadata
+
+    // Vector
+    embedding: text('embedding').notNull(), // JSON array - 3072 dimensions (text-embedding-3-large)
+
+    // Timestamps
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    // Composite index for fast rfpId + chunkType queries
+    rfpChunkIdx: index('rfp_chunk_idx').on(table.rfpId, table.chunkType),
+    // Index for agent-based queries
+    rfpAgentIdx: index('rfp_agent_idx').on(table.rfpId, table.agentName),
+  })
+);
+
+export type RfpEmbedding = typeof rfpEmbeddings.$inferSelect;
+export type NewRfpEmbedding = typeof rfpEmbeddings.$inferInsert;
 
 export const baselineComparisonsRelations = relations(baselineComparisons, ({ one }) => ({
   lead: one(leads, {

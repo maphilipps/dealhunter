@@ -4,13 +4,14 @@
  * Tests complexity score calculation and categorization logic.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { generateObject } from 'ai';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+import type { ContentArchitectureResult } from '../content-architecture-agent';
 import {
   analyzeMigrationComplexity,
   type AnalyzeMigrationComplexityInput,
 } from '../migration-complexity-agent';
-import type { ContentArchitectureResult } from '../content-architecture-agent';
 
 // Mock AI SDK
 vi.mock('ai', () => ({

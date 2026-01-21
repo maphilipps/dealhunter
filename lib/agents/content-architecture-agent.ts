@@ -11,6 +11,7 @@
 
 import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
+
 import { openai } from '../ai/providers';
 
 // ═══════════════════════════════════════════════════════════════════════════════

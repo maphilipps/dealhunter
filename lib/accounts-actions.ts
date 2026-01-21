@@ -1,10 +1,11 @@
 'use server';
 
+import { eq, desc } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { accounts, rfps } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
 
 export async function getAccounts() {
   const session = await auth();

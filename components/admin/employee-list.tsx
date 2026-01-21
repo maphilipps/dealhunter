@@ -1,12 +1,13 @@
 'use client';
 
 import { Trash2, Pencil } from 'lucide-react';
-import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { deleteEmployee } from '@/lib/admin/employees-actions';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { deleteEmployee } from '@/lib/admin/employees-actions';
 
 interface Employee {
   id: string;

@@ -1,9 +1,10 @@
 'use server';
 
-import { db } from '@/lib/db';
-import { rfps, auditTrails } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+
+import { db } from '@/lib/db';
+import { rfps, auditTrails } from '@/lib/db/schema';
 
 interface RouteRfpParams {
   rfpId: string;
@@ -24,9 +25,7 @@ interface RouteRfpResult {
  * Updates RFP status to 'routed' and assigns business line.
  * Creates audit trail for tracking.
  */
-export async function routeRfpToBusinessLine(
-  params: RouteRfpParams
-): Promise<RouteRfpResult> {
+export async function routeRfpToBusinessLine(params: RouteRfpParams): Promise<RouteRfpResult> {
   try {
     const { rfpId, businessLineId, reason, userId, overrideRecommendation } = params;
 
@@ -69,7 +68,11 @@ export async function routeRfpToBusinessLine(
       entityId: rfpId,
       previousValue: rfp.assignedBusinessUnitId || null,
       newValue: businessLineId,
-      reason: reason || (overrideRecommendation ? 'Manual override of AI recommendation' : 'Accepted AI recommendation'),
+      reason:
+        reason ||
+        (overrideRecommendation
+          ? 'Manual override of AI recommendation'
+          : 'Accepted AI recommendation'),
     });
 
     // Revalidate paths

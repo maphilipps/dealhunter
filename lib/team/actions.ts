@@ -1,14 +1,16 @@
 'use server';
 
+import { eq } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+
+import { suggestTeam } from './agent';
+import type { TeamSuggestion, TeamAssignment } from './schema';
+
+import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, employees, users } from '@/lib/db/schema';
-import { revalidatePath } from 'next/cache';
-import { eq } from 'drizzle-orm';
-import { suggestTeam } from './agent';
-import { auth } from '@/lib/auth';
 import { canTransitionTo } from '@/lib/workflow/bl-review-status';
-import type { TeamSuggestion, TeamAssignment } from './schema';
 
 // Validation schemas
 const BidIdSchema = z.object({
@@ -84,7 +86,7 @@ export async function suggestTeamForBid(bidId: string): Promise<SuggestTeamResul
     const availableEmployees = await db.select().from(employees).limit(20);
 
     // Get Quick Scan results if available
-    let quickScanResults = null;
+    const quickScanResults = null;
     if (bid.quickScanId) {
       // In a real system, we'd fetch from quickScans table
       // For now, we'll pass null

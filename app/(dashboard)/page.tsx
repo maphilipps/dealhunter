@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import Link from 'next/link';
-import { QuickStats } from '@/components/bids/quick-stats';
-import { FilterBar } from '@/components/bids/filter-bar';
+import { useState, useEffect } from 'react';
+
 import { AccountGroupedList } from '@/components/bids/account-grouped-list';
+import { FilterBar } from '@/components/bids/filter-bar';
 import { PipelineOverview } from '@/components/bids/pipeline-overview';
+import { QuickStats } from '@/components/bids/quick-stats';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface BidOpportunity {

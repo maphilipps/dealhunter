@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { generateStructuredOutput } from '@/lib/ai/config';
+
 import {
   coordinatorOutputSchema,
   decisionNodeSchema,
@@ -13,6 +13,8 @@ import {
   type ContractAnalysis,
   type ReferenceMatch,
 } from './schema';
+
+import { generateStructuredOutput } from '@/lib/ai/config';
 
 /**
  * Decision Tree Builder

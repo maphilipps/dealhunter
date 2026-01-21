@@ -1,15 +1,17 @@
 'use server';
 
+import { eq, and, desc } from 'drizzle-orm';
+
+import { extractTextFromPdf } from './pdf-extractor';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, documents } from '@/lib/db/schema';
-import { extractTextFromPdf } from './pdf-extractor';
-import { detectPII, cleanText } from '@/lib/pii/pii-cleaner';
 import { extractRequirements } from '@/lib/extraction/agent';
 import { suggestWebsiteUrls } from '@/lib/extraction/url-suggestion-agent';
+import { detectPII, cleanText } from '@/lib/pii/pii-cleaner';
 import { startQuickScan } from '@/lib/quick-scan/actions';
 import { triggerNextAgent } from '@/lib/workflow/orchestrator';
-import { eq, and, desc } from 'drizzle-orm';
 
 /**
  * Get all bids for the current user

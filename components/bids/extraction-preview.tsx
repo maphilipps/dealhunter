@@ -1,12 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   X,
   Plus,
@@ -20,9 +13,17 @@ import {
   FileText,
   AlertTriangle,
 } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import type { ExtractedRequirements } from '@/lib/extraction/schema';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { suggestWebsiteUrlsAction } from '@/lib/bids/actions';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 interface ExtractionPreviewProps {
   initialData: ExtractedRequirements;
@@ -726,7 +727,7 @@ function SubmissionDeadlineCard({
                 <p
                   className={`text-3xl font-bold ${isExpired ? 'text-red-700' : isUrgent ? 'text-orange-700' : 'text-blue-700'}`}
                 >
-                  {isExpired ? Math.abs(daysUntilDeadline!) : daysUntilDeadline}
+                  {isExpired ? Math.abs(daysUntilDeadline) : daysUntilDeadline}
                 </p>
                 <p
                   className={`text-xs font-medium ${isExpired ? 'text-red-600' : isUrgent ? 'text-orange-600' : 'text-blue-600'}`}

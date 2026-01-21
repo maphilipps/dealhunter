@@ -1,5 +1,7 @@
 import { generateObject } from 'ai';
+
 import { baselineComparisonResultSchema, type BaselineComparisonResult } from './schema';
+
 import type { ContentArchitecture } from '@/lib/deep-analysis/schemas';
 
 /**

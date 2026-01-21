@@ -1,11 +1,11 @@
-import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { rfps, quickScans, businessUnits } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { AlertCircle, AlertTriangle, Calendar, Clock } from 'lucide-react';
 import { redirect } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+import { RoutingForm } from '@/components/rfps/routing-form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -14,10 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { AlertCircle, AlertTriangle, Calendar, Clock } from 'lucide-react';
-import { RoutingForm } from '@/components/rfps/routing-form';
-import type { ProjectTimeline, RiskAnalysis } from '@/lib/timeline/schema';
+import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { rfps, quickScans, businessUnits } from '@/lib/db/schema';
 import { analyzeTimelineRisk, getRiskIcon } from '@/lib/timeline/risk-analyzer';
+import type { ProjectTimeline, RiskAnalysis } from '@/lib/timeline/schema';
 
 export default async function RoutingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -64,7 +65,8 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Quick Scan erforderlich</AlertTitle>
           <AlertDescription>
-            Der Quick Scan muss zuerst durchgeführt werden, bevor die Timeline-Analyse verfügbar ist.
+            Der Quick Scan muss zuerst durchgeführt werden, bevor die Timeline-Analyse verfügbar
+            ist.
           </AlertDescription>
         </Alert>
       </div>
@@ -98,9 +100,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Timeline & BL-Routing</h1>
-        <p className="text-muted-foreground">
-          AI-generierte Timeline-Schätzung und BL-Empfehlung
-        </p>
+        <p className="text-muted-foreground">AI-generierte Timeline-Schätzung und BL-Empfehlung</p>
       </div>
 
       {/* Risk Warning Banner */}
@@ -129,9 +129,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Projekt-Timeline</CardTitle>
-            <Badge variant="outline">
-              Konfidenz: {timeline.confidence}%
-            </Badge>
+            <Badge variant="outline">Konfidenz: {timeline.confidence}%</Badge>
           </div>
           <CardDescription>
             AI-basierte Schätzung basierend auf Quick Scan Ergebnissen
@@ -185,7 +183,9 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
               </div>
               <div className="mt-2">
                 <p className="text-sm text-muted-foreground">Delta</p>
-                <p className={`font-medium ${riskAnalysis.deltaDays < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                <p
+                  className={`font-medium ${riskAnalysis.deltaDays < 0 ? 'text-destructive' : 'text-green-600'}`}
+                >
                   {riskAnalysis.deltaDays} Arbeitstage
                   {riskAnalysis.deltaDays < 0 ? ' zu knapp' : ' Buffer'}
                 </p>
@@ -258,10 +258,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
               <h4 className="font-semibold mb-2">Identifizierte Risiken</h4>
               <div className="space-y-2">
                 {timeline.risks.map((risk, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-start gap-2 rounded-lg border p-3"
-                  >
+                  <div key={idx} className="flex items-start gap-2 rounded-lg border p-3">
                     <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
                     <div className="flex-1">
                       <p className="font-medium text-sm">{risk.factor}</p>
@@ -286,9 +283,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
       <Card>
         <CardHeader>
           <CardTitle>Business Line Routing</CardTitle>
-          <CardDescription>
-            Wählen Sie die zuständige Business Line für diesen RFP
-          </CardDescription>
+          <CardDescription>Wählen Sie die zuständige Business Line für diesen RFP</CardDescription>
         </CardHeader>
         <CardContent>
           <RoutingForm

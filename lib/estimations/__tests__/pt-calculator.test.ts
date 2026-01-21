@@ -5,10 +5,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { calculatePTEstimation, type CalculatePTEstimationInput } from '../pt-calculator';
+
 import type { ContentArchitectureResult } from '../../agents/content-architecture-agent';
 import type { MigrationComplexityResult } from '../../agents/migration-complexity-agent';
 import { db } from '../../db';
+import { calculatePTEstimation, type CalculatePTEstimationInput } from '../pt-calculator';
 
 // Mock database with vi.hoisted to ensure mockFindFirst is available during hoisting
 const { mockFindFirst } = vi.hoisted(() => ({

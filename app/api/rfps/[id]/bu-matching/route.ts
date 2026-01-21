@@ -1,8 +1,9 @@
+import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+
+import { getAllBUMatches } from '@/lib/business-units/matching';
 import { db } from '@/lib/db';
 import { quickScans } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { getAllBUMatches } from '@/lib/business-units/matching';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

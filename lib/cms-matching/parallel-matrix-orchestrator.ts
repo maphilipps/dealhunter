@@ -7,9 +7,8 @@
  * Beispiel: 10 Requirements × 4 CMS = 40 parallele Agents
  */
 
-import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+
 import {
   runRequirementResearchAgent,
   getCachedRequirementResearch,
@@ -17,6 +16,9 @@ import {
   type ResearchEventEmitter,
 } from './requirement-research-agent';
 import type { RequirementMatch, CMSMatchingResult } from './schema';
+
+import { db } from '@/lib/db';
+import { rfps } from '@/lib/db/schema';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
 
 /**

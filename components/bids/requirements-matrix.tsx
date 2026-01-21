@@ -1,9 +1,11 @@
 'use client';
 
+import { Loader2, Play, RefreshCw, CheckCircle2, AlertCircle, Info, Zap } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import {
   Table,
@@ -14,7 +16,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Loader2, Play, RefreshCw, CheckCircle2, AlertCircle, Info, Zap } from 'lucide-react';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
 
 interface MatrixCell {

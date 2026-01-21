@@ -76,13 +76,19 @@ export default async function QuickScanResultsPage({
 
   // Parse JSON fields
   const requirements = lead.requirements ? tryParseJSON(lead.requirements) : null;
-  const contentTypes = audit?.contentTypes ? tryParseJSON(audit.contentTypes) : null;
+  const contentTypes = audit?.contentTypes
+    ? (tryParseJSON(audit.contentTypes) as ContentType[] | string[] | null)
+    : null;
   const navigationStructure = audit?.navigationStructure
-    ? tryParseJSON(audit.navigationStructure)
+    ? (tryParseJSON(audit.navigationStructure) as
+        | NavigationItem[]
+        | NavigationStructure
+        | string[]
+        | null)
     : null;
   const decisionMakers =
     rfp && 'decisionMakers' in rfp && typeof rfp.decisionMakers === 'string'
-      ? tryParseJSON(rfp.decisionMakers)
+      ? (tryParseJSON(rfp.decisionMakers) as DecisionMaker[] | null)
       : null;
 
   // Check if CMS is Ibexa
@@ -220,16 +226,16 @@ export default async function QuickScanResultsPage({
             </div>
           )}
 
-          {contentTypes && Array.isArray(contentTypes) && contentTypes.length > 0 && (
+          {contentTypes && Array.isArray(contentTypes) && contentTypes.length > 0 ? (
             <div>
               <p className="text-sm text-muted-foreground mb-2">Content Types</p>
               <div className="flex flex-wrap gap-2">
-                {(contentTypes as (string | ContentType)[]).map((type, idx: number) => {
+                {contentTypes.map((type, idx: number) => {
                   const isString = typeof type === 'string';
-                  const typeObj = isString ? null : (type as ContentType);
+                  const typeObj = isString ? null : type;
                   return (
                     <Badge key={idx} variant="outline">
-                      {isString ? (type as string) : (typeObj?.type ?? 'Unknown')}
+                      {isString ? type : (typeObj?.type ?? 'Unknown')}
                       {!isString && typeObj?.count && (
                         <span className="ml-1 text-xs">({typeObj.count})</span>
                       )}
@@ -238,27 +244,25 @@ export default async function QuickScanResultsPage({
                 })}
               </div>
             </div>
-          )}
+          ) : null}
 
-          {navigationStructure && (
+          {navigationStructure ? (
             <div>
               <p className="text-sm text-muted-foreground">Navigation Struktur</p>
               <div className="text-sm mt-1">
                 {Array.isArray(navigationStructure) ? (
                   <ul className="list-disc list-inside space-y-1">
-                    {(navigationStructure as (string | NavigationItem)[])
-                      .slice(0, 10)
-                      .map((item, idx: number) => {
-                        const isString = typeof item === 'string';
-                        const navObj = isString ? null : (item as NavigationItem);
-                        return (
-                          <li key={idx}>
-                            {isString
-                              ? (item as string)
-                              : (navObj?.label ?? navObj?.name ?? JSON.stringify(item))}
-                          </li>
-                        );
-                      })}
+                    {navigationStructure.slice(0, 10).map((item, idx: number) => {
+                      const isString = typeof item === 'string';
+                      const navObj = isString ? null : item;
+                      return (
+                        <li key={idx}>
+                          {isString
+                            ? item
+                            : (navObj?.label ?? navObj?.name ?? JSON.stringify(item))}
+                        </li>
+                      );
+                    })}
                     {navigationStructure.length > 10 && (
                       <li className="text-muted-foreground">
                         ... und {navigationStructure.length - 10} weitere
@@ -279,7 +283,7 @@ export default async function QuickScanResultsPage({
                 )}
               </div>
             </div>
-          )}
+          ) : null}
         </CardContent>
       </Card>
 
@@ -294,7 +298,7 @@ export default async function QuickScanResultsPage({
             <CardDescription>Spezielle Anforderungen und Budget</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {requirements && (
+            {requirements ? (
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Spezielle Anforderungen</p>
                 {Array.isArray(requirements) ? (
@@ -314,7 +318,7 @@ export default async function QuickScanResultsPage({
                   </pre>
                 )}
               </div>
-            )}
+            ) : null}
           </CardContent>
         </Card>
       )}

@@ -1,8 +1,9 @@
 'use client';
 
+import { Loader2, ArrowRight, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowRight, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import type { Rfp } from '@/lib/db/schema';
 
 interface WorkflowStatusProps {
@@ -22,7 +23,11 @@ export function WorkflowStatus({ rfp }: WorkflowStatusProps) {
   const steps = [
     { name: 'Extract', statuses: ['draft', 'extracting'], icon: 'document' },
     { name: 'Review', statuses: ['reviewing'], icon: 'user' },
-    { name: 'Duplicate Check', statuses: ['duplicate_checking', 'duplicate_warning'], icon: 'search' },
+    {
+      name: 'Duplicate Check',
+      statuses: ['duplicate_checking', 'duplicate_warning'],
+      icon: 'search',
+    },
     { name: 'Quick Scan', statuses: ['quick_scanning'], icon: 'scan' },
     { name: 'BID/NO-BID', statuses: ['bit_pending'], icon: 'decision' },
     { name: 'Timeline', statuses: ['timeline_estimating'], icon: 'calendar' },
@@ -121,8 +126,8 @@ export function WorkflowStatus({ rfp }: WorkflowStatusProps) {
           <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-900">
             <p className="font-medium">Duplikat gefunden</p>
             <p className="mt-1 text-amber-700">
-              Ein ähnliches RFP existiert bereits. Bitte prüfen Sie die Duplikate und entscheiden Sie, ob Sie
-              fortfahren möchten.
+              Ein ähnliches RFP existiert bereits. Bitte prüfen Sie die Duplikate und entscheiden
+              Sie, ob Sie fortfahren möchten.
             </p>
           </div>
         )}

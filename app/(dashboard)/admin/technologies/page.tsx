@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getTechnologies } from '@/lib/admin/technologies-actions';
+import { useState, useEffect } from 'react';
+
 import { TechnologyList } from '@/components/admin/technology-list';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { getTechnologies } from '@/lib/admin/technologies-actions';
 
 export default function TechnologiesPage() {
   const router = useRouter();

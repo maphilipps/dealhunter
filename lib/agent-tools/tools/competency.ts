@@ -1,9 +1,11 @@
-import { z } from 'zod';
-import { db } from '@/lib/db';
-import { competencies } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { z } from 'zod';
+
 import { registry } from '../registry';
 import type { ToolContext } from '../types';
+
+import { db } from '@/lib/db';
+import { competencies } from '@/lib/db/schema';
 
 const listCompetenciesInputSchema = z.object({
   status: z.enum(['pending', 'approved', 'rejected', 'needs_revision']).optional(),
@@ -17,7 +19,7 @@ registry.register({
   category: 'competency',
   inputSchema: listCompetenciesInputSchema,
   async execute(input, _context: ToolContext) {
-    let query = db.select().from(competencies);
+    const query = db.select().from(competencies);
 
     if (input.status && input.category) {
       const results = await db

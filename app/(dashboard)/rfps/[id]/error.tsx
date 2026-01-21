@@ -1,9 +1,10 @@
 'use client';
 
+import { AlertCircle } from 'lucide-react';
 import { useEffect } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
 
 export default function BidDetailError({
   error,

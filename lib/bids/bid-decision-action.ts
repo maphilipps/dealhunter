@@ -1,11 +1,12 @@
 'use server';
 
+import { eq, and } from 'drizzle-orm';
+
+import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
 import { handleBidDecision } from '@/lib/workflow/orchestrator';
-import { createAuditLog } from '@/lib/admin/audit-actions';
 
 /**
  * Manual BID/NO-BID Decision Action (DEA-90)
@@ -47,7 +48,9 @@ export async function makeBidDecision(
       };
     }
 
-    console.error(`[BID Decision Action] User ${session.user.id} decided "${decision}" for RFP ${rfpId}`);
+    console.error(
+      `[BID Decision Action] User ${session.user.id} decided "${decision}" for RFP ${rfpId}`
+    );
 
     // 3. Use orchestrator to handle the decision
     // This will either trigger Timeline Agent (BID) or archive (NO-BID)

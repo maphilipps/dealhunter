@@ -1,7 +1,8 @@
-import { chromium, type Browser, type Page } from 'playwright';
-import AxeBuilder from '@axe-core/playwright';
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
+
+import AxeBuilder from '@axe-core/playwright';
+import { chromium, type Browser, type Page } from 'playwright';
 
 /**
  * Common cookie consent selectors for auto-dismissal

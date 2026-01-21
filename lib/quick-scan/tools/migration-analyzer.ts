@@ -1,6 +1,8 @@
-import { generateStructuredOutput } from '@/lib/ai/config';
 import { z } from 'zod';
+
 import type { MigrationComplexity, TechStack, ContentTypeDistribution } from '../schema';
+
+import { generateStructuredOutput } from '@/lib/ai/config';
 
 /**
  * Migration Analyzer Tool

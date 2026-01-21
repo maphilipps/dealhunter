@@ -1,9 +1,11 @@
 'use client';
 
+import { Loader2, Play, Calendar, Users, Clock } from 'lucide-react';
 import { useState, useTransition } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -12,7 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Loader2, Play, Calendar, Users, Clock } from 'lucide-react';
 import { triggerProjectPlanning } from '@/lib/project-planning/actions';
 import type { ProjectPlan, Discipline, InvolvementLevel } from '@/lib/project-planning/schema';
 

@@ -1,10 +1,10 @@
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import { getBids } from '@/lib/bids/actions';
+import { Plus, FileText, Eye } from 'lucide-react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -13,7 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, FileText, Eye } from 'lucide-react';
+import { auth } from '@/lib/auth';
+import { getBids } from '@/lib/bids/actions';
 
 export default async function BidsPage() {
   const session = await auth();

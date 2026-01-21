@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
+
 import { competitionCheckSchema, type CompetitionCheck } from '../schema';
+
 // Intelligent Agent Framework - NEW
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 

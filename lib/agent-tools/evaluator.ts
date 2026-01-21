@@ -14,6 +14,7 @@
  */
 
 import { z } from 'zod';
+
 import { generateStructuredOutput } from '@/lib/ai/config';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
@@ -184,7 +185,7 @@ function calculateBasicMetrics(
   confidenceIssues: string[];
 } {
   let filledRequired = 0;
-  let totalRequired = schema.requiredFields.length;
+  const totalRequired = schema.requiredFields.length;
   const confidenceIssues: string[] = [];
 
   for (const field of schema.requiredFields) {

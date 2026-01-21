@@ -423,17 +423,22 @@ export default async function WebsiteAuditDetailPage({
                       <div>
                         <p className="text-sm text-muted-foreground">Hauptnavigation</p>
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {navigationStructure.mainNavItems
-                            .slice(0, 5)
-                            .map((item: string, idx: number) => (
-                              <Badge key={idx} variant="outline">
-                                {item}
+                          {navigationStructure.mainNavItems &&
+                            navigationStructure.mainNavItems
+                              .slice(0, 5)
+                              .map((item: string, idx: number) => (
+                                <Badge key={idx} variant="outline">
+                                  {item}
+                                </Badge>
+                              ))}
+                          {navigationStructure.mainNavItems &&
+                            navigationStructure.mainNavItems.length > 5 && (
+                              <Badge variant="outline">
+                                +{navigationStructure.mainNavItems.length - 5}
                               </Badge>
-                            ))}
-                          {navigationStructure.mainNavItems.length > 5 && (
-                            <Badge variant="outline">
-                              +{navigationStructure.mainNavItems.length - 5}
-                            </Badge>
+                            )}
+                          {!navigationStructure.mainNavItems && (
+                            <p className="text-sm text-muted-foreground">Keine Daten verfügbar</p>
                           )}
                         </div>
                       </div>

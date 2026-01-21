@@ -37,16 +37,19 @@ export const rfps = sqliteTable(
     metadata: text('metadata'), // JSON - für Email headers (from, subject, date)
     extractedRequirements: text('extracted_requirements'), // JSON
 
-    // Status (WORKFLOW.md compliant)
+    // Status (WORKFLOW.md compliant + DEA-90 Auto-Trigger States)
     status: text('status', {
       enum: [
         'draft', // Initial state after upload
+        'duplicate_checking', // Duplicate Check Agent running (DEA-90)
+        'duplicate_warning', // Duplicate found, waiting for user override (DEA-90)
         'extracting', // AI is extracting requirements
         'reviewing', // User is reviewing extracted data
         'quick_scanning', // AI is doing quick scan
+        'timeline_estimating', // Timeline Agent running after BID (DEA-90)
         'bit_pending', // Quick Scan done, waiting for manual BIT/NO BIT decision
         'evaluating', // AI is doing full decision evaluation (after manual trigger)
-        'decision_made', // Decision made (Bid/No-Bid)
+        'decision_made', // Decision made + Timeline complete, ready for BL routing
         'archived', // NO BID - Archiviert
         'routed', // Routed to BL
         'full_scanning', // Deep Analysis läuft

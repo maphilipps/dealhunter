@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
+
 import { db } from '../lib/db';
 import {
   users,
@@ -95,11 +96,11 @@ async function seedDAXData() {
 
   // 1. Sicherstellen, dass Business Units existieren
   console.log('\n📋 Checking Business Units...');
-  let phpBU = await db.query.businessUnits.findFirst({
+  const phpBU = await db.query.businessUnits.findFirst({
     where: eq(businessUnits.name, 'PHP'),
   });
 
-  let wemBU = await db.query.businessUnits.findFirst({
+  const wemBU = await db.query.businessUnits.findFirst({
     where: eq(businessUnits.name, 'WEM'),
   });
 

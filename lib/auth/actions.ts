@@ -79,3 +79,11 @@ export async function register(_prevState: { error: string } | null, formData: F
 export async function logout() {
   await signOut({ redirectTo: '/login' });
 }
+
+/**
+ * Clear invalid session (e.g., when user no longer exists in DB)
+ * Called from login page when error=user_not_found
+ */
+export async function clearInvalidSession() {
+  await signOut({ redirect: false });
+}

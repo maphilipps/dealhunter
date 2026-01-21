@@ -7,11 +7,20 @@ import { extractTextFromPdf } from './pdf-extractor';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, documents } from '@/lib/db/schema';
+import type { Rfp } from '@/lib/db/schema';
 import { extractRequirements } from '@/lib/extraction/agent';
 import { suggestWebsiteUrls } from '@/lib/extraction/url-suggestion-agent';
 import { detectPII, cleanText } from '@/lib/pii/pii-cleaner';
 import { startQuickScan } from '@/lib/quick-scan/actions';
 import { triggerNextAgent } from '@/lib/workflow/orchestrator';
+
+/**
+ * Helper function to check if user has access to a bid
+ * Admin can access all bids, other users only their own
+ */
+function canAccessBid(bid: Rfp, userId: string, userRole: string): boolean {
+  return userRole === 'admin' || bid.userId === userId;
+}
 
 /**
  * Get all bids for the current user
@@ -39,6 +48,7 @@ export async function getBids() {
 
 /**
  * Get all documents for a bid
+ * Admins can access all bids, other users only their own
  */
 export async function getBidDocuments(bidId: string) {
   const session = await auth();
@@ -49,11 +59,18 @@ export async function getBidDocuments(bidId: string) {
 
   try {
     // Get bid first to ensure user has access
-    const bid = await db
-      .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, bidId), eq(rfps.userId, session.user.id)))
-      .limit(1);
+    let bid;
+    if (session.user.role === 'admin') {
+      // Admin can access any bid
+      bid = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    } else {
+      // Other users only their own bids
+      bid = await db
+        .select()
+        .from(rfps)
+        .where(and(eq(rfps.id, bidId), eq(rfps.userId, session.user.id)))
+        .limit(1);
+    }
 
     if (!bid.length) {
       return { success: false, error: 'Bid nicht gefunden', documents: [] };
@@ -311,7 +328,7 @@ export async function startExtraction(bidId: string) {
       return { success: false, error: 'Bid nicht gefunden' };
     }
 
-    if (bid.userId !== session.user.id) {
+    if (!canAccessBid(bid, session.user.id, session.user.role)) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 
@@ -333,9 +350,10 @@ export async function startExtraction(bidId: string) {
       };
     }
 
-    // Run extraction
+    // Run extraction (rfpId enables RAG-based extraction)
     const metadata = bid.metadata ? JSON.parse(bid.metadata) : {};
     const extractionResult = await extractRequirements({
+      rfpId: bidId,
       rawText: bid.rawInput,
       inputType: bid.inputType as 'pdf' | 'email' | 'freetext',
       metadata,
@@ -383,7 +401,7 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
       return { success: false, error: 'Bid nicht gefunden' };
     }
 
-    if (bid.userId !== session.user.id) {
+    if (!canAccessBid(bid, session.user.id, session.user.role)) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 
@@ -634,7 +652,7 @@ export async function forwardToBusinessLeader(bidId: string, businessUnitId: str
       return { success: false, error: 'Bid nicht gefunden' };
     }
 
-    if (bid.userId !== session.user.id) {
+    if (!canAccessBid(bid, session.user.id, session.user.role)) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 
@@ -689,7 +707,7 @@ export async function makeBitDecision(bidId: string, decision: 'bid' | 'no_bid',
       return { success: false, error: 'Bid nicht gefunden' };
     }
 
-    if (bid.userId !== session.user.id) {
+    if (!canAccessBid(bid, session.user.id, session.user.role)) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 

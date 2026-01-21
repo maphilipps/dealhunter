@@ -1,9 +1,16 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 
+// AI Hub Client (für Claude-Modelle via adesso AI Hub)
 export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+});
+
+// Direct OpenAI Client (für GPT-Modelle direkt bei OpenAI)
+export const openaiDirect = new OpenAI({
+  apiKey: process.env.OPENAI_EMBEDDING_API_KEY,
+  baseURL: 'https://api.openai.com/v1', // Explizit OpenAI, nicht AI Hub
 });
 
 export const modelNames = {

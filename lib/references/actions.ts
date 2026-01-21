@@ -95,11 +95,19 @@ export async function getReferences() {
   }
 
   try {
-    const userReferences = await db
-      .select()
-      .from(references)
-      .where(eq(references.userId, session.user.id))
-      .orderBy(desc(references.createdAt));
+    let userReferences;
+
+    if (session.user.role === 'admin') {
+      // Admin sees all references
+      userReferences = await db.select().from(references).orderBy(desc(references.createdAt));
+    } else {
+      // Other users see only their own references
+      userReferences = await db
+        .select()
+        .from(references)
+        .where(eq(references.userId, session.user.id))
+        .orderBy(desc(references.createdAt));
+    }
 
     return {
       success: true,

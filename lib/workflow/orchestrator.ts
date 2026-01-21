@@ -119,22 +119,18 @@ const TRIGGER_RULES: Partial<Record<RFPStatus, TriggerRule>> = {
     skipReason: 'Duplicate found or Website URL required',
   },
 
-  // 5. Quick Scan → Questions Ready (NO AGENT, just status update)
+  // 5. Quick Scan → BL Routing Pending (NO AGENT, just status update)
+  // BD Manager routes to BL, then BL makes BID/NO-BID decision
   quick_scanning: {
     nextAgent: null,
-    nextStatus: 'bit_pending',
+    nextStatus: 'bit_pending', // Waiting for BL routing (not BID decision by BD!)
     trigger: 'status_update_only',
     condition: () => true,
   },
 
-  // 6. BID Decision → Timeline Agent (ONLY for BID, NOT for NO-BID)
-  bit_pending: {
-    nextAgent: 'Timeline',
-    nextStatus: 'timeline_estimating',
-    trigger: 'auto_after_user_confirm',
-    condition: rfp => rfp.decision === 'bid',
-    skipReason: 'Timeline only runs for BID decisions',
-  },
+  // 6. BID/NO-BID Decision by BL is handled in Leads workflow, not RFP workflow
+  // Timeline Agent runs AFTER BL approves (in Phase 2)
+  // NOTE: bit_pending now means "waiting for BL routing", not "waiting for BID decision"
 
   // 7. Timeline → Decision Made (NO AGENT, show BL routing modal)
   timeline_estimating: {
@@ -408,7 +404,7 @@ function getStatusLabel(status: RFPStatus): string {
     quick_scan_failed: 'Quick Scan fehlgeschlagen',
     timeline_estimating: 'Timeline-Schätzung läuft',
     timeline_failed: 'Timeline-Schätzung fehlgeschlagen',
-    bit_pending: 'BID/NO-BID Entscheidung erforderlich',
+    bit_pending: 'BL-Routing erforderlich', // BID/NO-BID by BL after routing
     questions_ready: 'Fragen bereit',
     decision_made: 'Entscheidung getroffen',
     evaluating: 'Evaluierung läuft',

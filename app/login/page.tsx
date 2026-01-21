@@ -1,10 +1,11 @@
 'use client';
 
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Info } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useActionState } from 'react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,11 @@ import { login } from '@/lib/auth/actions';
 
 export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(login, null);
+  const searchParams = useSearchParams();
+  const errorParam = searchParams.get('error');
+
+  // Show session expired message if user was redirected due to missing DB user
+  const sessionExpired = errorParam === 'user_not_found';
 
   return (
     <div className="flex min-h-screen items-center justify-center">
@@ -20,6 +26,17 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold">Login</h1>
           <p className="mt-2 text-sm text-muted-foreground">Sign in to your account</p>
         </div>
+
+        {sessionExpired && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Sitzung abgelaufen</AlertTitle>
+            <AlertDescription>
+              Ihre Sitzung ist abgelaufen oder Ihr Benutzerkonto wurde zurückgesetzt. Bitte melden
+              Sie sich erneut an.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {state?.error && (
           <Alert variant="destructive">

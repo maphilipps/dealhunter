@@ -6,6 +6,15 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { accounts, rfps } from '@/lib/db/schema';
+import type { Account } from '@/lib/db/schema';
+
+/**
+ * Helper function to check if user has access to an account
+ * Admin can access all accounts, other users only their own
+ */
+function canAccessAccount(account: Account, userId: string, userRole: string): boolean {
+  return userRole === 'admin' || account.userId === userId;
+}
 
 export async function getAccounts() {
   const session = await auth();
@@ -15,11 +24,19 @@ export async function getAccounts() {
   }
 
   try {
-    const userAccounts = await db
-      .select()
-      .from(accounts)
-      .where(eq(accounts.userId, session.user.id))
-      .orderBy(desc(accounts.createdAt));
+    let userAccounts;
+
+    if (session.user.role === 'admin') {
+      // Admin sees all accounts
+      userAccounts = await db.select().from(accounts).orderBy(desc(accounts.createdAt));
+    } else {
+      // Other users see only their own accounts
+      userAccounts = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.userId, session.user.id))
+        .orderBy(desc(accounts.createdAt));
+    }
 
     return { success: true, accounts: userAccounts };
   } catch (error) {
@@ -75,7 +92,7 @@ export async function getAccountById(accountId: string) {
     }
 
     // Check ownership
-    if (account.userId !== session.user.id) {
+    if (!canAccessAccount(account, session.user.id, session.user.role)) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 
@@ -101,7 +118,7 @@ export async function getAccountWithOpportunities(accountId: string) {
     }
 
     // Check ownership
-    if (account.userId !== session.user.id) {
+    if (!canAccessAccount(account, session.user.id, session.user.role)) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 
@@ -157,7 +174,7 @@ export async function updateAccount(
       return { success: false, error: 'Account nicht gefunden' };
     }
 
-    if (existingAccount.userId !== session.user.id) {
+    if (!canAccessAccount(existingAccount, session.user.id, session.user.role)) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 
@@ -202,7 +219,7 @@ export async function deleteAccount(accountId: string) {
       return { success: false, error: 'Account nicht gefunden' };
     }
 
-    if (existingAccount.userId !== session.user.id) {
+    if (!canAccessAccount(existingAccount, session.user.id, session.user.role)) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 

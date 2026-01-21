@@ -31,6 +31,58 @@ export interface ConvertRfpToLeadResult {
  * @param input - RFP ID to convert
  * @returns Lead ID if successful
  */
+/**
+ * DEA-100: Get all leads filtered by current user's business unit
+ *
+ * This function:
+ * 1. Checks user authentication and business unit assignment
+ * 2. Filters leads to only show those assigned to user's BU
+ * 3. Returns leads sorted by created date (newest first)
+ *
+ * @returns Array of leads for the user's business unit
+ */
+export async function getLeads() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert', leads: [] };
+  }
+
+  try {
+    // Get user's business unit
+    const { users } = await import('@/lib/db/schema');
+    const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+
+    if (!user) {
+      return { success: false, error: 'Benutzer nicht gefunden', leads: [] };
+    }
+
+    // Admin can see all leads, BL sees only their BU leads, BD sees none (they work with RFPs)
+    const { desc } = await import('drizzle-orm');
+    let userLeads;
+
+    if (session.user.role === 'admin') {
+      // Admin sees all leads
+      userLeads = await db.select().from(leads).orderBy(desc(leads.createdAt));
+    } else if (session.user.role === 'bl' && user.businessUnitId) {
+      // BL sees only their BU leads
+      userLeads = await db
+        .select()
+        .from(leads)
+        .where(eq(leads.businessUnitId, user.businessUnitId))
+        .orderBy(desc(leads.createdAt));
+    } else {
+      // BD role should work with RFPs, not leads
+      return { success: true, leads: [] };
+    }
+
+    return { success: true, leads: userLeads };
+  } catch (error) {
+    console.error('Get leads error:', error);
+    return { success: false, error: 'Fehler beim Laden der Leads', leads: [] };
+  }
+}
+
 export async function convertRfpToLead(
   input: ConvertRfpToLeadInput
 ): Promise<ConvertRfpToLeadResult> {

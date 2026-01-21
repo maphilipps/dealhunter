@@ -1,4 +1,3 @@
-import { cache } from 'react';
 import { eq, and, inArray, desc } from 'drizzle-orm';
 import {
   ArrowRight,
@@ -11,6 +10,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

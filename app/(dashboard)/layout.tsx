@@ -1,6 +1,6 @@
-import { cache } from 'react';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 
 import { AppSidebar } from '@/components/app-sidebar';
 import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
@@ -31,7 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   // Verify user exists in database (handles stale sessions after DB reseed)
-  const dbUser = await getUserById(session.user.id!);
+  const dbUser = await getUserById(session.user.id);
 
   if (!dbUser) {
     // User in JWT but not in DB - clear session via API route and redirect to login

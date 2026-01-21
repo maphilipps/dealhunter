@@ -1,6 +1,7 @@
 import 'dotenv/config'; // Load .env first
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
+
 import { db } from '../lib/db';
 import {
   users,
@@ -177,7 +178,7 @@ async function seedMassiveData() {
     const [account] = await db
       .insert(accounts)
       .values({
-        userId: testUser!.id,
+        userId: testUser.id,
         name: company.name,
         industry: company.industry,
         website: company.website,
@@ -255,7 +256,7 @@ async function seedMassiveData() {
       const [rfp] = await db
         .insert(rfps)
         .values({
-          userId: testUser!.id,
+          userId: testUser.id,
           source: source as any,
           stage: stage as any,
           inputType: inputType as any,

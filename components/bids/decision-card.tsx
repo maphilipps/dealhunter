@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import {
   CheckCircle2,
   XCircle,
@@ -9,6 +8,7 @@ import {
   ThumbsDown,
   GitBranch,
 } from 'lucide-react';
+import { useMemo } from 'react';
 
 import { CompetitorWarning } from './competitor-warning';
 import { ConfidenceIndicator, ConfidenceBreakdown } from './confidence-indicator';

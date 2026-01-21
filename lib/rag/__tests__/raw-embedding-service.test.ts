@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { RawChunk } from '../raw-chunk-service';
 import {
   deleteRawChunks,
   embedRawText,
@@ -7,7 +8,6 @@ import {
   getRawChunkCount,
   hasRawChunks,
 } from '../raw-embedding-service';
-import type { RawChunk } from '../raw-chunk-service';
 
 // Mock embedding config
 vi.mock('@/lib/ai/embedding-config', () => ({
@@ -203,7 +203,7 @@ describe('raw-embedding-service', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       vi.mocked(db.delete).mockImplementation((() => {
         throw new Error('Database error');
       }) as any);

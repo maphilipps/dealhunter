@@ -5370,3 +5370,54 @@ Acceptance criteria:
 Links:
 - Linear Issue: https://linear.app/adessocms/issue/DEA-128
 
+
+## 2026-01-22 - DEA-126: SERVER Missing after() for Workflow Start
+
+### Issue
+Blocking workflow start in submit API causing 200-500ms delay
+
+### Implementation
+- File: `app/api/submit/route.ts`
+- Added `after()` import from 'next/server'
+- Wrapped workflow start in `after()` callback
+- Added try-catch error handling
+- Response returns immediately
+
+### Performance Impact
+- Before: ~200-500ms blocked until workflow starts
+- After: Immediate response
+- Result: Better perceived UX
+
+### Testing
+- ✅ Type checks pass
+- ✅ ESLint passes
+- ✅ Production build succeeds
+
+### Commit
+- Hash: a93b076
+- Message: feat(DEA-126): implement non-blocking workflow start with after()
+
+### Status
+✅ DONE - All acceptance criteria met
+
+
+## DEA-122: Bundle Slack SDK Dynamic Import
+**Date:** 2026-01-22 00:48:24
+
+### Changes Made
+- Refactored `lib/slack.ts` to use dynamic imports for Slack SDK
+- Removed top-level imports of `@slack/bolt` and `@vercel/slack-bolt`
+- Added lazy initialization via `getSlackApp()` and `getReceiver()` async functions
+- Updated `app/api/slack/route.ts` to use async getter pattern
+- Exported `hasSlackCredentials` for synchronous credential checking
+
+### Impact
+- **Before:** ~150KB Slack SDK loaded in main bundle even when not configured
+- **After:** Slack SDK only loaded when credentials are present
+- Build verified: warnings show Slack SDK not loaded without credentials
+
+### Testing
+- ✅ TypeScript type checking passed
+- ✅ Production build successful
+- ✅ No errors when Slack credentials not configured
+

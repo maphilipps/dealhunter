@@ -141,7 +141,7 @@ describe('Error Classification', () => {
           received: 'undefined',
           path: ['customerName'],
           message: 'Expected string, received undefined',
-        },
+        } as any,
       ]);
 
       const error = classifyError(zodError);

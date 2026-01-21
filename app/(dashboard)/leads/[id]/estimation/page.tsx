@@ -13,8 +13,9 @@ import {
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { DisciplinesChart, DISCIPLINE_COLORS } from '@/components/estimation/disciplines-chart';
-import { PhasesChart } from '@/components/estimation/phases-chart';
+import { DISCIPLINE_COLORS } from '@/components/estimation/disciplines-chart';
+import { DisciplinesChartWrapper } from '@/components/estimation/disciplines-chart-wrapper';
+import { PhasesChartWrapper } from '@/components/estimation/phases-chart-wrapper';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -224,7 +225,7 @@ export default async function PTEstimationDetailPage({
           <CardContent>
             <div className="space-y-6">
               {/* Chart */}
-              <PhasesChart phases={phases} />
+              <PhasesChartWrapper phases={phases} />
 
               {/* Table */}
               <Table>
@@ -277,7 +278,7 @@ export default async function PTEstimationDetailPage({
           <CardContent>
             <div className="grid gap-6 lg:grid-cols-2">
               {/* Pie Chart */}
-              <DisciplinesChart disciplines={disciplines} />
+              <DisciplinesChartWrapper disciplines={disciplines} />
 
               {/* Table */}
               <div>

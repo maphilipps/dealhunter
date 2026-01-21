@@ -1,8 +1,9 @@
 'use server';
 
-import { openai } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
+
+import { openai } from '@/lib/ai/providers';
 import { db } from '@/lib/db';
 import { businessUnits, technologies } from '@/lib/db/schema';
 
@@ -133,7 +134,7 @@ Technologies: ${bu.technologies.join(', ') || 'Keine'}
 
     // Call AI to match business line
     const result = await generateObject({
-      model: openai('gpt-4o') as any,
+      model: openai('gpt-4o'),
       schema: BusinessLineRoutingSchema,
       system: `Du bist ein Business Line Routing Agent für adesso SE.
 

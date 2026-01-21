@@ -6,8 +6,8 @@ import { mockAIResponses } from './ai-responses';
  */
 
 export const handlers = [
-  // Mock OpenAI API
-  http.post('https://api.openai.com/v1/chat/completions', async () => {
+  // Mock adesso AI Hub API (OpenAI-compatible)
+  http.post('https://adesso-ai-hub.3asabc.de/v1/chat/completions', async () => {
     return HttpResponse.json({
       id: 'chatcmpl-test',
       object: 'chat.completion',

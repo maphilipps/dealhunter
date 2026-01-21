@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p3
-issue_id: "009"
+issue_id: '009'
 tags: [code-review, refactoring, code-quality, duplication]
 dependencies: []
 ---
@@ -13,6 +13,7 @@ dependencies: []
 Color determination logic (confidence thresholds → colors) is duplicated 3-4 times across ConfidenceIndicator component. The same mapping (80%+ = green, 60-79% = yellow, <60% = red) is implemented in separate functions for different purposes.
 
 **Why it matters:**
+
 - DRY violation (Don't Repeat Yourself)
 - Maintenance burden (change color scheme = update 4 places)
 - Inconsistency risk (mappings drift apart)
@@ -24,6 +25,7 @@ Color determination logic (confidence thresholds → colors) is duplicated 3-4 t
 **Location:** `components/ai-elements/confidence-indicator.tsx:24-69`
 
 **Evidence:**
+
 ```typescript
 // DUPLICATION 1: Determine base color
 const getConfidenceColor = () => {
@@ -35,27 +37,36 @@ const getConfidenceColor = () => {
 // DUPLICATION 2: CSS background classes
 const getColorClasses = () => {
   switch (color) {
-    case 'green': return 'bg-green-500';
-    case 'yellow': return 'bg-yellow-500';
-    case 'red': return 'bg-red-500';
+    case 'green':
+      return 'bg-green-500';
+    case 'yellow':
+      return 'bg-yellow-500';
+    case 'red':
+      return 'bg-red-500';
   }
 };
 
 // DUPLICATION 3: Text color classes
 const getTextColor = () => {
   switch (color) {
-    case 'green': return 'text-green-700';
-    case 'yellow': return 'text-yellow-700';
-    case 'red': return 'text-red-700';
+    case 'green':
+      return 'text-green-700';
+    case 'yellow':
+      return 'text-yellow-700';
+    case 'red':
+      return 'text-red-700';
   }
 };
 
 // DUPLICATION 4: Badge variants
 const getBadgeVariant = () => {
   switch (color) {
-    case 'green': return 'default';
-    case 'yellow': return 'secondary';
-    case 'red': return 'destructive';
+    case 'green':
+      return 'default';
+    case 'yellow':
+      return 'secondary';
+    case 'red':
+      return 'destructive';
   }
 };
 ```
@@ -69,18 +80,21 @@ const getBadgeVariant = () => {
 Extract all color mappings to single config object.
 
 **Pros:**
+
 - Single source of truth
 - Easy to change color scheme
 - Type-safe with TypeScript
 - Clear and maintainable
 
 **Cons:**
+
 - None
 
 **Effort:** Small (30 minutes)
 **Risk:** Low
 
 **Implementation:**
+
 ```typescript
 const CONFIDENCE_COLORS = {
   high: {
@@ -147,10 +161,12 @@ export function ConfidenceIndicator({ confidence, showLabel, size }) {
 Extract to shared utility module.
 
 **Pros:**
+
 - Reusable across components
 - Can be tested independently
 
 **Cons:**
+
 - Overkill if only used in one component
 - More files to manage
 
@@ -164,10 +180,12 @@ Extract to shared utility module.
 Use CSS custom properties for theming.
 
 **Pros:**
+
 - Dynamic theming support
 - No JS needed for colors
 
 **Cons:**
+
 - Doesn't eliminate logic duplication
 - More complex for this use case
 
@@ -178,19 +196,22 @@ Use CSS custom properties for theming.
 
 ## Recommended Action
 
-*(To be filled during triage)*
+_(To be filled during triage)_
 
 ## Technical Details
 
 **Affected Files:**
+
 - `components/ai-elements/confidence-indicator.tsx`
 
 **Changes:**
+
 - Remove 4 separate functions
 - Add single CONFIDENCE_COLORS config
 - Simplify component logic
 
 **Benefits:**
+
 - Reduced code from ~70 lines to ~40 lines
 - Easier to change color scheme (1 object vs 4 functions)
 - Type-safe color mappings

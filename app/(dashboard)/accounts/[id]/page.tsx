@@ -19,7 +19,10 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+const statusMap: Record<
+  string,
+  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
+> = {
   draft: { label: 'Entwurf', variant: 'secondary' },
   extracting: { label: 'Extrahiere', variant: 'default' },
   reviewing: { label: 'Wird geprüft', variant: 'default' },
@@ -115,7 +118,9 @@ export default async function AccountDetailPage({ params }: Props) {
             <div>
               <span className="text-sm text-muted-foreground">Erstellt am</span>
               <p className="font-medium">
-                {account.createdAt ? new Date(account.createdAt).toLocaleDateString('de-DE') : 'N/A'}
+                {account.createdAt
+                  ? new Date(account.createdAt).toLocaleDateString('de-DE')
+                  : 'N/A'}
               </p>
             </div>
 
@@ -179,15 +184,19 @@ export default async function AccountDetailPage({ params }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {opportunities.map((opp) => (
+                {opportunities.map(opp => (
                   <TableRow key={opp.id}>
                     <TableCell>
                       <Badge variant={statusMap[opp.status]?.variant || 'default'}>
                         {statusMap[opp.status]?.label || opp.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{sourceMap[opp.source as keyof typeof sourceMap] || opp.source}</TableCell>
-                    <TableCell>{stageMap[opp.stage as keyof typeof stageMap] || opp.stage}</TableCell>
+                    <TableCell>
+                      {sourceMap[opp.source as keyof typeof sourceMap] || opp.source}
+                    </TableCell>
+                    <TableCell>
+                      {stageMap[opp.stage as keyof typeof stageMap] || opp.stage}
+                    </TableCell>
                     <TableCell className="uppercase">{opp.inputType}</TableCell>
                     <TableCell>
                       {opp.createdAt ? new Date(opp.createdAt).toLocaleDateString('de-DE') : 'N/A'}

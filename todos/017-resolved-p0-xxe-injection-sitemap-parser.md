@@ -19,9 +19,11 @@ resolved: 2026-01-17
 The sitemap parser uses cheerio to parse XML without disabling external entity processing, allowing XML External Entity (XXE) attacks.
 
 **Affected Files:**
+
 - `/lib/deep-analysis/utils/crawler.ts` (lines 45-46, 65-66)
 
 **Vulnerable Code:**
+
 ```typescript
 // VULNERABLE: External entities not disabled
 const xmlText = await response.text();
@@ -31,7 +33,9 @@ const $ = cheerio.load(xmlText, { xmlMode: true });
 ## Attack Scenarios
 
 ### 1. File Disclosure
+
 Malicious sitemap.xml:
+
 ```xml
 <?xml version="1.0"?>
 <!DOCTYPE sitemap [
@@ -45,6 +49,7 @@ Malicious sitemap.xml:
 ```
 
 ### 2. SSRF via XXE
+
 ```xml
 <!DOCTYPE sitemap [
   <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/">
@@ -52,6 +57,7 @@ Malicious sitemap.xml:
 ```
 
 ### 3. Billion Laughs Attack (DoS)
+
 ```xml
 <!DOCTYPE sitemap [
   <!ENTITY lol "lol">
@@ -84,7 +90,7 @@ export async function fetchSitemap(websiteUrl: string): Promise<Sitemap> {
   // SAFE: External entities disabled
   const parser = new XMLParser({
     ignoreAttributes: false,
-    processEntities: false,  // CRITICAL: Disable entity processing
+    processEntities: false, // CRITICAL: Disable entity processing
     allowBooleanAttributes: true,
   });
 
@@ -180,12 +186,7 @@ Create `/lib/deep-analysis/utils/xml-validator.ts`:
 
 ```typescript
 export function validateXml(xmlText: string): void {
-  const dangerousPatterns = [
-    /<!DOCTYPE/i,
-    /<!ENTITY/i,
-    /SYSTEM/i,
-    /PUBLIC/i,
-  ];
+  const dangerousPatterns = [/<!DOCTYPE/i, /<!ENTITY/i, /SYSTEM/i, /PUBLIC/i];
 
   for (const pattern of dangerousPatterns) {
     if (pattern.test(xmlText)) {
@@ -227,9 +228,9 @@ describe('XXE Protection', () => {
       } as Response)
     );
 
-    await expect(
-      fetchSitemap('https://evil.com')
-    ).rejects.toThrow('Entity declarations not allowed');
+    await expect(fetchSitemap('https://evil.com')).rejects.toThrow(
+      'Entity declarations not allowed'
+    );
   });
 
   it('should reject XXE SSRF payloads', async () => {
@@ -247,9 +248,7 @@ describe('XXE Protection', () => {
       } as Response)
     );
 
-    await expect(
-      fetchSitemap('https://evil.com')
-    ).rejects.toThrow();
+    await expect(fetchSitemap('https://evil.com')).rejects.toThrow();
   });
 
   it('should accept valid sitemap XML', async () => {
@@ -306,6 +305,7 @@ Successfully mitigated XXE injection vulnerability in sitemap parser by implemen
    - Edge case tests (empty sitemaps, malformed XML, whitespace handling)
 
 **Security Improvements:**
+
 - XMLParser configured with `processEntities: false` - prevents entity expansion
 - Pre-parsing validation rejects any XML with dangerous constructs
 - Defense in depth: both validation and safe parser used together

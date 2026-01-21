@@ -1,9 +1,4 @@
-import {
-  humanFeedback,
-  qualify,
-  researchAgent,
-  writeEmail
-} from '@/lib/services';
+import { humanFeedback, qualify, researchAgent, writeEmail } from '@/lib/services';
 import { FormSchema, QualificationSchema } from '@/lib/types';
 
 /**
@@ -23,7 +18,7 @@ export const stepResearch = async (data: FormSchema) => {
   'use step';
 
   const { text: research } = await researchAgent.generate({
-    prompt: `Research the lead: ${JSON.stringify(data)}`
+    prompt: `Research the lead: ${JSON.stringify(data)}`,
   });
 
   return research;
@@ -32,10 +27,7 @@ export const stepResearch = async (data: FormSchema) => {
 /**
  * step to write an email for the lead
  */
-export const stepWriteEmail = async (
-  research: string,
-  qualification: QualificationSchema
-) => {
+export const stepWriteEmail = async (research: string, qualification: QualificationSchema) => {
   'use step';
 
   const email = await writeEmail(research, qualification);

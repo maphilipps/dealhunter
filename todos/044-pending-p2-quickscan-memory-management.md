@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p2
-issue_id: "044"
+issue_id: '044'
 tags: [code-review, performance, quickscan, memory]
 dependencies: []
 ---
@@ -17,6 +17,7 @@ Der geplante 2-Phasen-Workflow führt in Phase 1.3 bis zu 11 Operationen paralle
 **Source:** performance-oracle Review Agent (Plan Review)
 
 **Kritische Parallel-Operationen in Phase 1.3:**
+
 ```typescript
 const [
   techStack,        // ~20MB (DOM parsing)
@@ -36,6 +37,7 @@ const [
 **Geschätzte Memory-Peak:** 450-750MB pro QuickScan
 
 **Probleme:**
+
 1. Kein Chunking für Screenshot-Capture
 2. Alle Ergebnisse gleichzeitig im Memory
 3. Keine Garbage Collection Hints
@@ -96,10 +98,12 @@ Option A + B kombinieren: Semaphore für Concurrency + Browser Pooling.
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/quick-scan/agent.ts` - Hauptlogik
 - `lib/quick-scan/tools/playwright.ts` - Browser Management
 
 **Dependencies:**
+
 - `p-limit` Package (bereits in vielen Node-Projekten genutzt)
 
 ## Acceptance Criteria
@@ -113,8 +117,8 @@ Option A + B kombinieren: Semaphore für Concurrency + Browser Pooling.
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                        | Learnings                                       |
+| ---------- | ----------------------------- | ----------------------------------------------- |
 | 2026-01-20 | Todo erstellt aus Plan Review | performance-oracle identifizierte Memory-Risiko |
 
 ## Resources

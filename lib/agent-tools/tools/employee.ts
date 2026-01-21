@@ -20,23 +20,27 @@ registry.register({
     if (context.userRole !== 'admin' && context.userRole !== 'bl') {
       return { success: false, error: 'Nur Admin oder BL kann Mitarbeiter sehen' };
     }
-    
+
     let results;
     if (input.businessUnitId) {
-      results = await db.select().from(employees)
+      results = await db
+        .select()
+        .from(employees)
         .where(eq(employees.businessUnitId, input.businessUnitId))
         .orderBy(desc(employees.createdAt))
         .limit(input.limit);
     } else {
-      results = await db.select().from(employees)
+      results = await db
+        .select()
+        .from(employees)
         .orderBy(desc(employees.createdAt))
         .limit(input.limit);
     }
-    
+
     if (input.availabilityStatus) {
       results = results.filter(e => e.availabilityStatus === input.availabilityStatus);
     }
-    
+
     return { success: true, data: results };
   },
 });
@@ -54,15 +58,13 @@ registry.register({
     if (context.userRole !== 'admin' && context.userRole !== 'bl') {
       return { success: false, error: 'Nur Admin oder BL kann Mitarbeiter sehen' };
     }
-    
-    const [employee] = await db.select().from(employees)
-      .where(eq(employees.id, input.id))
-      .limit(1);
-    
+
+    const [employee] = await db.select().from(employees).where(eq(employees.id, input.id)).limit(1);
+
     if (!employee) {
       return { success: false, error: 'Employee not found' };
     }
-    
+
     return { success: true, data: employee };
   },
 });
@@ -85,24 +87,29 @@ registry.register({
     if (context.userRole !== 'admin') {
       return { success: false, error: 'Nur Admin kann Mitarbeiter erstellen' };
     }
-    
-    const [bu] = await db.select().from(businessUnits)
+
+    const [bu] = await db
+      .select()
+      .from(businessUnits)
       .where(eq(businessUnits.id, input.businessUnitId))
       .limit(1);
-    
+
     if (!bu) {
       return { success: false, error: 'Business Unit not found' };
     }
-    
-    const [employee] = await db.insert(employees).values({
-      name: input.name,
-      email: input.email,
-      businessUnitId: input.businessUnitId,
-      skills: JSON.stringify(input.skills),
-      roles: JSON.stringify(input.roles),
-      availabilityStatus: input.availabilityStatus,
-    }).returning();
-    
+
+    const [employee] = await db
+      .insert(employees)
+      .values({
+        name: input.name,
+        email: input.email,
+        businessUnitId: input.businessUnitId,
+        skills: JSON.stringify(input.skills),
+        roles: JSON.stringify(input.roles),
+        availabilityStatus: input.availabilityStatus,
+      })
+      .returning();
+
     return { success: true, data: employee };
   },
 });
@@ -126,15 +133,13 @@ registry.register({
     if (context.userRole !== 'admin') {
       return { success: false, error: 'Nur Admin kann Mitarbeiter bearbeiten' };
     }
-    
-    const [existing] = await db.select().from(employees)
-      .where(eq(employees.id, input.id))
-      .limit(1);
-    
+
+    const [existing] = await db.select().from(employees).where(eq(employees.id, input.id)).limit(1);
+
     if (!existing) {
       return { success: false, error: 'Employee not found' };
     }
-    
+
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (input.name) updateData.name = input.name;
     if (input.email) updateData.email = input.email;
@@ -142,12 +147,13 @@ registry.register({
     if (input.skills) updateData.skills = JSON.stringify(input.skills);
     if (input.roles) updateData.roles = JSON.stringify(input.roles);
     if (input.availabilityStatus) updateData.availabilityStatus = input.availabilityStatus;
-    
-    const [updated] = await db.update(employees)
+
+    const [updated] = await db
+      .update(employees)
       .set(updateData)
       .where(eq(employees.id, input.id))
       .returning();
-    
+
     return { success: true, data: updated };
   },
 });
@@ -165,17 +171,15 @@ registry.register({
     if (context.userRole !== 'admin') {
       return { success: false, error: 'Nur Admin kann Mitarbeiter löschen' };
     }
-    
-    const [existing] = await db.select().from(employees)
-      .where(eq(employees.id, input.id))
-      .limit(1);
-    
+
+    const [existing] = await db.select().from(employees).where(eq(employees.id, input.id)).limit(1);
+
     if (!existing) {
       return { success: false, error: 'Employee not found' };
     }
-    
+
     await db.delete(employees).where(eq(employees.id, input.id));
-    
+
     return { success: true, data: { id: input.id, deleted: true } };
   },
 });

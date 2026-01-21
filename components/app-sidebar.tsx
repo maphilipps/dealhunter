@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import * as React from "react"
+import * as React from 'react';
 import {
   BarChart3,
   Building2,
@@ -11,175 +11,175 @@ import {
   Settings,
   Target,
   Users,
-} from "lucide-react"
+} from 'lucide-react';
 
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
+import { NavMain } from '@/components/nav-main';
+import { NavProjects } from '@/components/nav-projects';
+import { NavUser } from '@/components/nav-user';
+import { TeamSwitcher } from '@/components/team-switcher';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-} from "@/components/ui/sidebar"
+} from '@/components/ui/sidebar';
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: {
-    name: string
-    email: string
-    role: 'bd' | 'bl' | 'admin'
-    avatar: string
-  }
+    name: string;
+    email: string;
+    role: 'bd' | 'bl' | 'admin';
+    avatar: string;
+  };
 }
 
 // Dealhunter navigation data
 const teams = [
   {
-    name: "adesso SE",
+    name: 'adesso SE',
     logo: Building2,
-    plan: "Enterprise",
+    plan: 'Enterprise',
   },
-]
+];
 
-type UserRole = 'bd' | 'bl' | 'admin'
+type UserRole = 'bd' | 'bl' | 'admin';
 
 const allNavItems: Array<{
-  title: string
-  url: string
-  icon: typeof Home
-  isActive?: boolean
-  roles: UserRole[]
-  items?: Array<{ title: string; url: string }>
+  title: string;
+  url: string;
+  icon: typeof Home;
+  isActive?: boolean;
+  roles: UserRole[];
+  items?: Array<{ title: string; url: string }>;
 }> = [
   {
-    title: "Dashboard",
-    url: "/",
+    title: 'Dashboard',
+    url: '/',
     icon: Home,
     isActive: true,
     roles: ['bd', 'bl', 'admin'],
   },
   {
-    title: "RFPs",
-    url: "/rfps",
+    title: 'RFPs',
+    url: '/rfps',
     icon: FileText,
     roles: ['bd', 'bl', 'admin'],
     items: [
       {
-        title: "Alle RFPs",
-        url: "/rfps",
+        title: 'Alle RFPs',
+        url: '/rfps',
       },
       {
-        title: "Neuer RFP",
-        url: "/rfps/new",
+        title: 'Neuer RFP',
+        url: '/rfps/new',
       },
       {
-        title: "In Prüfung",
-        url: "/rfps?status=pending",
+        title: 'In Prüfung',
+        url: '/rfps?status=pending',
       },
       {
-        title: "Genehmigt",
-        url: "/rfps?status=approved",
+        title: 'Genehmigt',
+        url: '/rfps?status=approved',
       },
     ],
   },
   {
-    title: "Accounts",
-    url: "/accounts",
+    title: 'Accounts',
+    url: '/accounts',
     icon: Target,
     roles: ['bd', 'bl', 'admin'],
     items: [
       {
-        title: "All Accounts",
-        url: "/accounts",
+        title: 'All Accounts',
+        url: '/accounts',
       },
       {
-        title: "Active",
-        url: "/accounts?status=active",
+        title: 'Active',
+        url: '/accounts?status=active',
       },
       {
-        title: "Pipeline",
-        url: "/accounts?status=pipeline",
+        title: 'Pipeline',
+        url: '/accounts?status=pipeline',
       },
     ],
   },
   {
-    title: "Analytics",
-    url: "/analytics",
+    title: 'Analytics',
+    url: '/analytics',
     icon: BarChart3,
     roles: ['bd', 'bl', 'admin'],
   },
   {
-    title: "Master Data",
-    url: "/master-data",
+    title: 'Master Data',
+    url: '/master-data',
     icon: Database,
     roles: ['bd', 'bl', 'admin'],
     items: [
       {
-        title: "Referenzen",
-        url: "/master-data/references",
+        title: 'Referenzen',
+        url: '/master-data/references',
       },
       {
-        title: "Kompetenzen",
-        url: "/master-data/competencies",
+        title: 'Kompetenzen',
+        url: '/master-data/competencies',
       },
       {
-        title: "Wettbewerber",
-        url: "/master-data/competitors",
+        title: 'Wettbewerber',
+        url: '/master-data/competitors',
       },
     ],
   },
   {
-    title: "Admin",
-    url: "/admin",
+    title: 'Admin',
+    url: '/admin',
     icon: Settings,
     roles: ['admin'],
     items: [
       {
-        title: "Validierung",
-        url: "/admin/validations",
+        title: 'Validierung',
+        url: '/admin/validations',
       },
       {
-        title: "Business Units",
-        url: "/admin/business-units",
+        title: 'Business Units',
+        url: '/admin/business-units',
       },
       {
-        title: "Technologies",
-        url: "/admin/technologies",
+        title: 'Technologies',
+        url: '/admin/technologies',
       },
       {
-        title: "Employees",
-        url: "/admin/employees",
+        title: 'Employees',
+        url: '/admin/employees',
       },
     ],
   },
-]
+];
 
 const allProjects: Array<{
-  name: string
-  url: string
-  icon: typeof PlusCircle
-  roles: UserRole[]
+  name: string;
+  url: string;
+  icon: typeof PlusCircle;
+  roles: UserRole[];
 }> = [
   {
-    name: "Quick Actions",
-    url: "/rfps/new",
+    name: 'Quick Actions',
+    url: '/rfps/new',
     icon: PlusCircle,
     roles: ['bd', 'bl', 'admin'],
   },
   {
-    name: "Employees",
-    url: "/admin/employees",
+    name: 'Employees',
+    url: '/admin/employees',
     icon: Users,
     roles: ['admin'],
   },
-]
+];
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   // Filter navigation items based on user role
-  const navMain = allNavItems.filter(item => item.roles.includes(user.role))
-  const projects = allProjects.filter(project => project.roles.includes(user.role))
+  const navMain = allNavItems.filter(item => item.roles.includes(user.role));
+  const projects = allProjects.filter(project => project.roles.includes(user.role));
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -195,5 +195,5 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

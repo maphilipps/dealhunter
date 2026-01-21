@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "019"
+issue_id: '019'
 tags: [code-review, critical, react, workflow-phases]
 dependencies: []
 ---
@@ -19,18 +19,36 @@ The new Phase 6, 7, 9 cards (BaselineComparisonCard, ProjectPlanningCard, Notifi
 **Location:** `/Users/marc.philipps/Sites/dealhunter/components/bids/bid-detail-client.tsx`
 
 **Issue:**
+
 - Line 346 checks: `['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)` and returns JSX
 - Line 512 checks: `['routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)` - this is UNREACHABLE because the first block already caught all these statuses
 
 **Evidence:**
+
 ```typescript
 // Line 346 - catches routed, full_scanning, bl_reviewing, team_assigned, notified, handed_off
-if (['quick_scanning', 'evaluating', 'bit_decided', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
+if (
+  [
+    'quick_scanning',
+    'evaluating',
+    'bit_decided',
+    'routed',
+    'full_scanning',
+    'bl_reviewing',
+    'team_assigned',
+    'notified',
+    'handed_off',
+  ].includes(bid.status)
+) {
   // ... returns early
 }
 
 // Line 512 - NEVER REACHED - all these statuses already handled above
-if (['routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
+if (
+  ['routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(
+    bid.status
+  )
+) {
   // BaselineComparisonCard, ProjectPlanningCard, NotificationCard here - NEVER RENDERS
 }
 ```
@@ -38,6 +56,7 @@ if (['routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'ha
 ## Proposed Solutions
 
 ### Solution 1: Move cards into existing status block (Recommended)
+
 - Move the Phase 6/7/9 cards into the first status check block (around line 346-508)
 - Add them after the existing TeamBuilder component
 - **Effort:** Small
@@ -46,6 +65,7 @@ if (['routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'ha
 - **Cons:** None
 
 ### Solution 2: Restructure render logic with status-specific sections
+
 - Create separate render functions for each status group
 - Better organization but more refactoring
 - **Effort:** Medium
@@ -60,9 +80,11 @@ if (['routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'ha
 ## Technical Details
 
 **Affected Files:**
+
 - `components/bids/bid-detail-client.tsx`
 
 **Required Changes:**
+
 1. Move the Phase 6/7/9 cards (lines 518-555) into the first status block (inside lines 346-508)
 2. Remove the duplicate unreachable status check at line 512
 
@@ -76,8 +98,8 @@ if (['routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'ha
 
 ## Work Log
 
-| Date | Action | Learning |
-|------|--------|----------|
+| Date       | Action                                    | Learning                                       |
+| ---------- | ----------------------------------------- | ---------------------------------------------- |
 | 2026-01-18 | Discovered via kieran-typescript-reviewer | Duplicate status checks cause unreachable code |
 
 ## Resources

@@ -21,11 +21,7 @@ export async function startBitEvaluation(bidId: string) {
 
   try {
     // Get the bid opportunity
-    const [bid] = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -41,25 +37,23 @@ export async function startBitEvaluation(bidId: string) {
     }
 
     // Update status to evaluating
-    await db
-      .update(rfps)
-      .set({ status: 'evaluating' })
-      .where(eq(rfps.id, bidId));
+    await db.update(rfps).set({ status: 'evaluating' }).where(eq(rfps.id, bidId));
 
     // Get quick scan results if available
     const quickScanResult = await getQuickScanResult(bidId);
-    const quickScanData = quickScanResult.success && quickScanResult.quickScan?.status === 'completed'
-      ? {
-          techStack: quickScanResult.quickScan.techStack,
-          contentVolume: quickScanResult.quickScan.contentVolume,
-          features: quickScanResult.quickScan.features,
-          blRecommendation: {
-            primaryBusinessLine: quickScanResult.quickScan.recommendedBusinessUnit,
-            confidence: quickScanResult.quickScan.confidence,
-            reasoning: quickScanResult.quickScan.reasoning,
-          },
-        }
-      : undefined;
+    const quickScanData =
+      quickScanResult.success && quickScanResult.quickScan?.status === 'completed'
+        ? {
+            techStack: quickScanResult.quickScan.techStack,
+            contentVolume: quickScanResult.quickScan.contentVolume,
+            features: quickScanResult.quickScan.features,
+            blRecommendation: {
+              primaryBusinessLine: quickScanResult.quickScan.recommendedBusinessUnit,
+              confidence: quickScanResult.quickScan.confidence,
+              reasoning: quickScanResult.quickScan.reasoning,
+            },
+          }
+        : undefined;
 
     // Run BIT evaluation
     const evaluationResult = await runBitEvaluation({
@@ -70,9 +64,12 @@ export async function startBitEvaluation(bidId: string) {
 
     // Save evaluation result and update status
     // Map internal 'bit'/'no_bit' to DB enum 'bid'/'no_bid'
-    const decisionValue = evaluationResult.decision.decision === 'bit' ? 'bid' as const
-      : evaluationResult.decision.decision === 'no_bit' ? 'no_bid' as const
-      : 'pending' as const;
+    const decisionValue =
+      evaluationResult.decision.decision === 'bit'
+        ? ('bid' as const)
+        : evaluationResult.decision.decision === 'no_bit'
+          ? ('no_bid' as const)
+          : ('pending' as const);
 
     await db
       .update(rfps)
@@ -117,11 +114,7 @@ export async function retriggerBitEvaluation(bidId: string) {
 
   try {
     // Get the bid opportunity
-    const [bid] = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -170,11 +163,7 @@ export async function getBitEvaluationResult(bidId: string) {
   }
 
   try {
-    const [bid] = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -211,10 +200,7 @@ export async function getBitEvaluationResult(bidId: string) {
  * BIT-008: Confirm low confidence decision
  * User must explicitly confirm if overall confidence < 70%
  */
-export async function confirmLowConfidenceDecision(
-  bidId: string,
-  confirm: boolean
-) {
+export async function confirmLowConfidenceDecision(bidId: string, confirm: boolean) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -222,11 +208,7 @@ export async function confirmLowConfidenceDecision(
   }
 
   try {
-    const [bid] = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -281,11 +263,7 @@ export async function overrideBidDecision(
   }
 
   try {
-    const [bid] = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };

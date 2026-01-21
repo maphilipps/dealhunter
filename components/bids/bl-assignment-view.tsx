@@ -19,7 +19,7 @@ import {
   AlertCircle,
   Loader2,
   TrendingUp,
-  BarChart3
+  BarChart3,
 } from 'lucide-react';
 import type { QuickScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
@@ -153,7 +153,7 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
         multiLanguage: 'Mehrsprachig',
         blog: 'Blog',
         forms: 'Formulare',
-        api: 'API'
+        api: 'API',
       };
       return labels[k] || k;
     });
@@ -182,7 +182,11 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
               {techStack?.cms ? (
                 <div className="space-y-1">
                   <Badge variant="secondary">{techStack.cms}</Badge>
-                  {techStack.framework && <Badge variant="outline" className="ml-1">{techStack.framework}</Badge>}
+                  {techStack.framework && (
+                    <Badge variant="outline" className="ml-1">
+                      {techStack.framework}
+                    </Badge>
+                  )}
                   {techStack.cmsConfidence && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Confidence: {techStack.cmsConfidence}%
@@ -203,12 +207,20 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
               {contentVolume?.estimatedPageCount ? (
                 <div className="space-y-1">
                   <p className="text-lg font-semibold">{contentVolume.estimatedPageCount} Seiten</p>
-                  <Badge variant={
-                    contentVolume.complexity === 'high' ? 'destructive' :
-                    contentVolume.complexity === 'medium' ? 'secondary' : 'outline'
-                  }>
-                    {contentVolume.complexity === 'high' ? 'Hoch' :
-                     contentVolume.complexity === 'medium' ? 'Mittel' : 'Gering'}
+                  <Badge
+                    variant={
+                      contentVolume.complexity === 'high'
+                        ? 'destructive'
+                        : contentVolume.complexity === 'medium'
+                          ? 'secondary'
+                          : 'outline'
+                    }
+                  >
+                    {contentVolume.complexity === 'high'
+                      ? 'Hoch'
+                      : contentVolume.complexity === 'medium'
+                        ? 'Mittel'
+                        : 'Gering'}
                   </Badge>
                   {contentVolume.languages?.length && (
                     <p className="text-xs text-muted-foreground">
@@ -229,8 +241,10 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
               </div>
               {activeFeatures.length > 0 ? (
                 <div className="flex flex-wrap gap-1">
-                  {activeFeatures.map((f) => (
-                    <Badge key={f} variant="outline" className="text-xs">{f}</Badge>
+                  {activeFeatures.map(f => (
+                    <Badge key={f} variant="outline" className="text-xs">
+                      {f}
+                    </Badge>
                   ))}
                 </div>
               ) : (
@@ -294,7 +308,9 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
               <div className="space-y-1">
                 <p className="font-medium">{extractedData?.customerName || 'Unbekannt'}</p>
                 {extractedData?.industry && (
-                  <Badge variant="outline" className="text-xs">{extractedData.industry}</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {extractedData.industry}
+                  </Badge>
                 )}
               </div>
             </div>
@@ -309,9 +325,7 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
             <BarChart3 className="h-5 w-5 text-purple-600" />
             <CardTitle>Business Unit Vergleich</CardTitle>
           </div>
-          <CardDescription>
-            Warum passt welche BU am besten zu dieser Anfrage?
-          </CardDescription>
+          <CardDescription>Warum passt welche BU am besten zu dieser Anfrage?</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -320,25 +334,19 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
               <span className="ml-2 text-muted-foreground">Berechne Matches...</span>
             </div>
           ) : buMatches.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              Keine Business Units gefunden
-            </p>
+            <p className="text-muted-foreground text-center py-8">Keine Business Units gefunden</p>
           ) : (
             <div className="space-y-4">
               {buMatches.map((match, index) => (
                 <div
                   key={match.businessUnit.id}
                   className={`p-4 rounded-lg border-2 ${
-                    index === 0
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-slate-200 bg-white'
+                    index === 0 ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-white'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      {index === 0 && (
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                      )}
+                      {index === 0 && <CheckCircle2 className="h-5 w-5 text-green-600" />}
                       <div>
                         <h3 className="font-semibold flex items-center gap-2">
                           {match.businessUnit.name}
@@ -357,9 +365,7 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold">
-                        {Math.round(match.totalScore)}%
-                      </div>
+                      <div className="text-2xl font-bold">{Math.round(match.totalScore)}%</div>
                       <p className="text-xs text-muted-foreground">Match Score</p>
                     </div>
                   </div>
@@ -369,27 +375,37 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-1">Tech</div>
                       <Progress value={match.criteria.techStackScore} className="h-1.5" />
-                      <div className="text-xs font-medium mt-1">{Math.round(match.criteria.techStackScore)}%</div>
+                      <div className="text-xs font-medium mt-1">
+                        {Math.round(match.criteria.techStackScore)}%
+                      </div>
                     </div>
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-1">Features</div>
                       <Progress value={match.criteria.featuresScore} className="h-1.5" />
-                      <div className="text-xs font-medium mt-1">{Math.round(match.criteria.featuresScore)}%</div>
+                      <div className="text-xs font-medium mt-1">
+                        {Math.round(match.criteria.featuresScore)}%
+                      </div>
                     </div>
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-1">Referenzen</div>
                       <Progress value={match.criteria.referencesScore} className="h-1.5" />
-                      <div className="text-xs font-medium mt-1">{Math.round(match.criteria.referencesScore)}%</div>
+                      <div className="text-xs font-medium mt-1">
+                        {Math.round(match.criteria.referencesScore)}%
+                      </div>
                     </div>
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-1">Branche</div>
                       <Progress value={match.criteria.industryScore} className="h-1.5" />
-                      <div className="text-xs font-medium mt-1">{Math.round(match.criteria.industryScore)}%</div>
+                      <div className="text-xs font-medium mt-1">
+                        {Math.round(match.criteria.industryScore)}%
+                      </div>
                     </div>
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-1">Keywords</div>
                       <Progress value={match.criteria.keywordsScore} className="h-1.5" />
-                      <div className="text-xs font-medium mt-1">{Math.round(match.criteria.keywordsScore)}%</div>
+                      <div className="text-xs font-medium mt-1">
+                        {Math.round(match.criteria.keywordsScore)}%
+                      </div>
                     </div>
                   </div>
 
@@ -398,7 +414,8 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
                     <strong>Begründung:</strong> {match.reasoning}
                     {match.matchedTechnologies.length > 0 && (
                       <span className="block mt-1">
-                        <strong>Gematchte Technologien:</strong> {match.matchedTechnologies.join(', ')}
+                        <strong>Gematchte Technologien:</strong>{' '}
+                        {match.matchedTechnologies.join(', ')}
                       </span>
                     )}
                   </div>
@@ -454,7 +471,8 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <AlertCircle className="h-4 w-4" />
             <span>
-              Der Bereichsleiter erhält eine Benachrichtigung und trifft die finale Bid/No-Bid Entscheidung.
+              Der Bereichsleiter erhält eine Benachrichtigung und trifft die finale Bid/No-Bid
+              Entscheidung.
             </span>
           </div>
         </CardContent>

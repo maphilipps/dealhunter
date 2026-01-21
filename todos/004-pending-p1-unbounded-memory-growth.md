@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "004"
+issue_id: '004'
 tags: [code-review, performance, memory, sse]
 dependencies: []
 ---
@@ -13,6 +13,7 @@ dependencies: []
 The `useAgentStream` hook stores all SSE events in an unbounded array (`events: AgentEvent[]`). For long-running evaluations (multi-agent BIT evaluation can emit 100+ events), this causes memory to grow indefinitely. On mobile devices or during long sessions, this leads to performance degradation and potential browser crashes.
 
 **Why it matters:**
+
 - Memory leaks on long-running streams
 - Browser tab crashes on mobile devices
 - Performance degradation as array grows
@@ -24,6 +25,7 @@ The `useAgentStream` hook stores all SSE events in an unbounded array (`events: 
 **Location:** `hooks/use-agent-stream.ts:44-49`
 
 **Evidence:**
+
 ```typescript
 const streamReducer = (state: StreamState, action: StreamAction): StreamState => {
   switch (action.type) {
@@ -35,12 +37,14 @@ const streamReducer = (state: StreamState, action: StreamAction): StreamState =>
 ```
 
 **Memory Profile:**
+
 - Each AgentEvent: ~500 bytes (with reasoning text, tool calls)
 - 100 events = 50KB
 - 1000 events = 500KB
 - Long session with multiple evaluations = megabytes
 
 **Scroll Performance:**
+
 - ScrollArea renders ALL events on every update
 - Causes layout thrashing as array grows
 - Auto-scroll triggers on EVERY event addition
@@ -54,12 +58,14 @@ const streamReducer = (state: StreamState, action: StreamAction): StreamState =>
 Replace unbounded array with circular buffer (max 100-200 events).
 
 **Pros:**
+
 - Constant memory usage
 - Simple implementation
 - Preserves recent events (most important)
 - Fixes memory leak completely
 
 **Cons:**
+
 - Loses old events (acceptable for streaming UI)
 - Need to handle event ID indexing
 
@@ -67,6 +73,7 @@ Replace unbounded array with circular buffer (max 100-200 events).
 **Risk:** Low
 
 **Implementation:**
+
 ```typescript
 const MAX_EVENTS = 150; // Keep last 150 events
 
@@ -91,11 +98,13 @@ const streamReducer = (state: StreamState, action: StreamAction): StreamState =>
 Only render visible events, keep all in memory.
 
 **Pros:**
+
 - All events preserved
 - Efficient rendering
 - Handles thousands of events
 
 **Cons:**
+
 - Doesn't fix memory issue (still stores all)
 - Adds dependency
 - More complex implementation
@@ -111,10 +120,12 @@ Only render visible events, keep all in memory.
 Store events server-side, fetch pages on demand.
 
 **Pros:**
+
 - Unlimited event storage
 - True solution for very long streams
 
 **Cons:**
+
 - Significant backend work
 - Not needed for typical 30-second evaluations
 - Over-engineered
@@ -127,19 +138,22 @@ Store events server-side, fetch pages on demand.
 
 ## Recommended Action
 
-*(To be filled during triage)*
+_(To be filled during triage)_
 
 ## Technical Details
 
 **Affected Files:**
+
 - `hooks/use-agent-stream.ts` (primary fix)
 - `components/ai-elements/activity-stream.tsx` (may need UI update for "showing last N events" message)
 
 **Memory Impact:**
+
 - Before: O(n) growth where n = total events
 - After: O(1) constant memory (max 150 events)
 
 **User Experience:**
+
 - Users see last 150 events (more than enough for typical evaluation)
 - Older events scroll out of view and are garbage collected
 - Critical events (START, COMPLETE, DECISION) always visible if within last 150

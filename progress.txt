@@ -2082,3 +2082,74 @@ User Trigger → Inngest Event → Worker Function → Progress Updates → SSE 
 
 **Commit:** feat(DEA-6): implement Full-Scan Agent with comprehensive website audit
 
+# Epic: DEA-23 - Admin Panel - Employee Management
+
+**Date:** 2026-01-21
+**Status:** ✅ COMPLETE
+**Linear:** https://linear.app/adessocms/issue/DEA-23
+
+**Implemented:**
+- Employee CRUD operations (Create, Read, Update, Delete)
+- Employee Edit page with dynamic route `/admin/employees/[id]`
+- CSV Bulk Import with validation and error reporting
+- Skills and Roles management with TagInput component
+- Availability status management (available, on_project, unavailable)
+
+**Architecture:**
+1. **Routes**:
+   - `/admin/employees` - Employee list with cards layout
+   - `/admin/employees/new` - Create new employee
+   - `/admin/employees/[id]` - Edit existing employee
+
+2. **Server Actions** - `/lib/admin/employees-actions.ts`:
+   - `getEmployees()` - Fetch all employees with Business Unit join
+   - `getEmployee(id)` - Fetch single employee
+   - `createEmployee(data)` - Create new employee with validation
+   - `updateEmployee(id, data)` - Update existing employee
+   - `deleteEmployee(id)` - Delete employee
+   - `importEmployeesFromCSV(csvData)` - Bulk import from CSV with error handling
+
+3. **UI Components**:
+   - EmployeeList: Card-based layout with edit/delete buttons
+   - EmployeeForm: Reusable form with TagInput for skills/roles
+   - CSV Import Dialog: File upload with format instructions
+
+4. **CSV Format**:
+   - Headers: name, email, businessUnitId, skills, roles, availabilityStatus
+   - Skills/Roles: Semicolon-separated (e.g., "React;TypeScript")
+   - Error reporting per row with line numbers
+
+**Technical Fixes (Bonus):**
+- Fixed AI SDK v3 type compatibility in routing-agent.ts
+- Fixed Zod schema in workflow/checkpoints.ts (z.record now requires 2 args)
+- Excluded playwright.config.ts from TypeScript build
+
+**Database:**
+- Schema already existed: `employees` table with all required fields
+- Indexes: businessUnitIdx for performance
+
+**Navigation:**
+- Already linked in app-sidebar.tsx under Admin section
+- Quick Actions sidebar link for admins
+
+**All Acceptance Criteria Met:**
+✅ Employee List Route (/admin/employees)
+✅ Employee Create/Edit Form
+✅ Skills Multi-Select (custom TagInput)
+✅ Roles Multi-Select (custom TagInput)
+✅ Availability Toggle (select dropdown)
+✅ CSV Import UI + Parser
+✅ API: GET, POST, PATCH, DELETE employees
+✅ CSV Import with error handling
+
+**Files Modified:**
+- `app/(dashboard)/admin/employees/[id]/page.tsx` (new)
+- `app/(dashboard)/admin/employees/page.tsx`
+- `components/admin/employee-list.tsx`
+- `lib/admin/employees-actions.ts`
+- `lib/routing/routing-agent.ts` (type fix)
+- `lib/workflow/checkpoints.ts` (type fix)
+- `tsconfig.json` (exclude playwright)
+
+**Commit:** feat(DEA-23): complete Employee Management - Edit, CSV Import & Build Fixes
+

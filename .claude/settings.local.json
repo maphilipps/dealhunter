@@ -1,12 +1,8 @@
 {
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "shadcn"
-  ],
+  "enabledMcpjsonServers": ["shadcn"],
   "permissions": {
-    "allow": [
-      "WebFetch(domain:www.anthropic.com)"
-    ]
+    "allow": ["WebFetch(domain:www.anthropic.com)"]
   },
   "enabledPlugins": {
     "fullstack-ai": true,

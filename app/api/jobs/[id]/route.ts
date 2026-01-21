@@ -7,10 +7,7 @@ import { auth } from '@/lib/auth';
 /**
  * GET /api/jobs/:id - Get job status and progress
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -19,11 +16,7 @@ export async function GET(
 
     const { id } = await params;
 
-    const [job] = await db
-      .select()
-      .from(backgroundJobs)
-      .where(eq(backgroundJobs.id, id))
-      .limit(1);
+    const [job] = await db.select().from(backgroundJobs).where(eq(backgroundJobs.id, id)).limit(1);
 
     if (!job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
@@ -37,10 +30,7 @@ export async function GET(
     return NextResponse.json({ job });
   } catch (error) {
     console.error('Error fetching job:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch job' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch job' }, { status: 500 });
   }
 }
 
@@ -59,11 +49,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const [job] = await db
-      .select()
-      .from(backgroundJobs)
-      .where(eq(backgroundJobs.id, id))
-      .limit(1);
+    const [job] = await db.select().from(backgroundJobs).where(eq(backgroundJobs.id, id)).limit(1);
 
     if (!job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
@@ -99,9 +85,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Job cancelled successfully' });
   } catch (error) {
     console.error('Error cancelling job:', error);
-    return NextResponse.json(
-      { error: 'Failed to cancel job' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to cancel job' }, { status: 500 });
   }
 }

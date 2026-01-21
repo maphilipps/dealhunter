@@ -1,23 +1,9 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import {
-  Building2,
-  Users,
-  MapPin,
-  Calendar,
-  TrendingUp,
-  Globe,
-  ExternalLink,
-} from 'lucide-react';
+import { Building2, Users, MapPin, Calendar, TrendingUp, Globe, ExternalLink } from 'lucide-react';
 import type { OverviewData } from './types';
 import { TechStackChartWrapper } from './tech-stack-chart-wrapper';
 
@@ -26,10 +12,7 @@ interface OverviewSectionProps {
   onRunQuickScan?: () => void;
 }
 
-export function OverviewSection({
-  data,
-  onRunQuickScan,
-}: OverviewSectionProps) {
+export function OverviewSection({ data, onRunQuickScan }: OverviewSectionProps) {
   if (!data || !data.companyIntelligence) {
     return <EmptyOverview onRunQuickScan={onRunQuickScan} />;
   }
@@ -111,28 +94,18 @@ export function OverviewSection({
 
           {/* Leadership */}
           {company.leadership &&
-            (company.leadership.ceo ||
-              company.leadership.cto ||
-              company.leadership.cmo) && (
+            (company.leadership.ceo || company.leadership.cto || company.leadership.cmo) && (
               <div className="border-t pt-4">
-                <p className="text-sm font-medium text-muted-foreground mb-2">
-                  Leadership
-                </p>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Leadership</p>
                 <div className="flex flex-wrap gap-2">
                   {company.leadership.ceo && (
-                    <Badge variant="secondary">
-                      CEO: {company.leadership.ceo}
-                    </Badge>
+                    <Badge variant="secondary">CEO: {company.leadership.ceo}</Badge>
                   )}
                   {company.leadership.cto && (
-                    <Badge variant="secondary">
-                      CTO: {company.leadership.cto}
-                    </Badge>
+                    <Badge variant="secondary">CTO: {company.leadership.cto}</Badge>
                   )}
                   {company.leadership.cmo && (
-                    <Badge variant="secondary">
-                      CMO: {company.leadership.cmo}
-                    </Badge>
+                    <Badge variant="secondary">CMO: {company.leadership.cmo}</Badge>
                   )}
                 </div>
               </div>
@@ -141,9 +114,7 @@ export function OverviewSection({
           {/* Corporate Structure */}
           {company.corporateStructure?.parentCompany && (
             <div className="border-t pt-4 mt-4">
-              <p className="text-sm font-medium text-muted-foreground mb-2">
-                Unternehmensstruktur
-              </p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">Unternehmensstruktur</p>
               <div className="flex items-center gap-2 text-sm">
                 <Globe className="h-4 w-4 text-muted-foreground" />
                 Teil von: {company.corporateStructure.parentCompany}
@@ -160,14 +131,10 @@ export function OverviewSection({
           {company.dataQuality && (
             <div className="border-t pt-4 mt-4">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  Datenquellen: {company.dataQuality.sources.join(', ')}
-                </span>
+                <span>Datenquellen: {company.dataQuality.sources.join(', ')}</span>
                 <span>
                   Konfidenz: {company.dataQuality.confidence}% | Stand:{' '}
-                  {new Date(company.dataQuality.lastUpdated).toLocaleDateString(
-                    'de-DE'
-                  )}
+                  {new Date(company.dataQuality.lastUpdated).toLocaleDateString('de-DE')}
                 </span>
               </div>
             </div>
@@ -180,9 +147,7 @@ export function OverviewSection({
         <Card>
           <CardHeader>
             <CardTitle>Tech Stack</CardTitle>
-            <CardDescription>
-              Erkannte Technologien und Infrastruktur
-            </CardDescription>
+            <CardDescription>Erkannte Technologien und Infrastruktur</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-6">
@@ -191,10 +156,7 @@ export function OverviewSection({
                 {tech.cms && (
                   <TechCategory
                     label="CMS"
-                    items={[
-                      tech.cms +
-                        (tech.cmsVersion ? ` ${tech.cmsVersion}` : ''),
-                    ]}
+                    items={[tech.cms + (tech.cmsVersion ? ` ${tech.cmsVersion}` : '')]}
                     variant="default"
                   />
                 )}
@@ -202,41 +164,22 @@ export function OverviewSection({
                   <TechCategory
                     label="Framework"
                     items={[
-                      tech.framework +
-                        (tech.frameworkVersion
-                          ? ` ${tech.frameworkVersion}`
-                          : ''),
+                      tech.framework + (tech.frameworkVersion ? ` ${tech.frameworkVersion}` : ''),
                     ]}
                     variant="secondary"
                   />
                 )}
                 {tech.backend && tech.backend.length > 0 && (
-                  <TechCategory
-                    label="Backend"
-                    items={tech.backend}
-                    variant="outline"
-                  />
+                  <TechCategory label="Backend" items={tech.backend} variant="outline" />
                 )}
                 {tech.libraries && tech.libraries.length > 0 && (
-                  <TechCategory
-                    label="Libraries"
-                    items={tech.libraries}
-                    variant="outline"
-                  />
+                  <TechCategory label="Libraries" items={tech.libraries} variant="outline" />
                 )}
                 {tech.hosting && (
-                  <TechCategory
-                    label="Hosting"
-                    items={[tech.hosting]}
-                    variant="outline"
-                  />
+                  <TechCategory label="Hosting" items={[tech.hosting]} variant="outline" />
                 )}
                 {tech.analytics && tech.analytics.length > 0 && (
-                  <TechCategory
-                    label="Analytics"
-                    items={tech.analytics}
-                    variant="outline"
-                  />
+                  <TechCategory label="Analytics" items={tech.analytics} variant="outline" />
                 )}
               </div>
 
@@ -252,10 +195,7 @@ export function OverviewSection({
             {tech.overallConfidence !== undefined && (
               <div className="border-t pt-4 mt-4 flex items-center gap-2 text-xs text-muted-foreground">
                 <span>Erkennungs-Konfidenz:</span>
-                <Progress
-                  value={tech.overallConfidence}
-                  className="h-1.5 w-24"
-                />
+                <Progress value={tech.overallConfidence} className="h-1.5 w-24" />
                 <span>{tech.overallConfidence}%</span>
               </div>
             )}
@@ -268,9 +208,7 @@ export function OverviewSection({
         <Card>
           <CardHeader>
             <CardTitle>Content Umfang</CardTitle>
-            <CardDescription>
-              Geschätzter Content-Umfang der Website
-            </CardDescription>
+            <CardDescription>Geschätzter Content-Umfang der Website</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -282,14 +220,8 @@ export function OverviewSection({
                 }
                 sublabel={content.sitemapFound ? 'via Sitemap' : 'geschätzt'}
               />
-              <Stat
-                label="Bilder"
-                value={content.mediaAssets?.images?.toLocaleString('de-DE')}
-              />
-              <Stat
-                label="Videos"
-                value={content.mediaAssets?.videos?.toLocaleString('de-DE')}
-              />
+              <Stat label="Bilder" value={content.mediaAssets?.images?.toLocaleString('de-DE')} />
+              <Stat label="Videos" value={content.mediaAssets?.videos?.toLocaleString('de-DE')} />
               <Stat
                 label="Dokumente"
                 value={content.mediaAssets?.documents?.toLocaleString('de-DE')}
@@ -299,7 +231,7 @@ export function OverviewSection({
               <div className="border-t pt-4 mt-4">
                 <p className="text-xs text-muted-foreground mb-2">Sprachen</p>
                 <div className="flex flex-wrap gap-1">
-                  {content.languages.map((lang) => (
+                  {content.languages.map(lang => (
                     <Badge key={lang} variant="outline" className="text-xs">
                       {lang}
                     </Badge>
@@ -321,9 +253,7 @@ export function OverviewSection({
         <Card>
           <CardHeader>
             <CardTitle>Quality Scores</CardTitle>
-            <CardDescription>
-              Technische Qualitätsbewertungen der Website
-            </CardDescription>
+            <CardDescription>Technische Qualitätsbewertungen der Website</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {accessibility && (
@@ -331,9 +261,7 @@ export function OverviewSection({
                 label="Accessibility"
                 value={accessibility.score}
                 badge={accessibility.level !== 'fail' ? accessibility.level : undefined}
-                issues={
-                  accessibility.criticalIssues + accessibility.seriousIssues
-                }
+                issues={accessibility.criticalIssues + accessibility.seriousIssues}
                 issueLabel="kritische Issues"
               />
             )}
@@ -341,7 +269,7 @@ export function OverviewSection({
               <ScoreBar
                 label="SEO"
                 value={seo.score}
-                issues={seo.issues?.filter((i) => i.severity === 'error').length}
+                issues={seo.issues?.filter(i => i.severity === 'error').length}
                 issueLabel="Errors"
               />
             )}
@@ -360,11 +288,7 @@ export function OverviewSection({
 }
 
 // Helper Components
-function EmptyOverview({
-  onRunQuickScan,
-}: {
-  onRunQuickScan?: () => void;
-}) {
+function EmptyOverview({ onRunQuickScan }: { onRunQuickScan?: () => void }) {
   return (
     <Card>
       <CardHeader>
@@ -374,9 +298,7 @@ function EmptyOverview({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {onRunQuickScan && (
-          <Button onClick={onRunQuickScan}>QuickScan starten</Button>
-        )}
+        {onRunQuickScan && <Button onClick={onRunQuickScan}>QuickScan starten</Button>}
       </CardContent>
     </Card>
   );
@@ -400,9 +322,7 @@ function Stat({
         {label}
       </div>
       <p className="font-medium">{value ?? '-'}</p>
-      {sublabel && (
-        <p className="text-xs text-muted-foreground">{sublabel}</p>
-      )}
+      {sublabel && <p className="text-xs text-muted-foreground">{sublabel}</p>}
     </div>
   );
 }
@@ -420,7 +340,7 @@ function TechCategory({
     <div>
       <p className="text-xs text-muted-foreground mb-1.5">{label}</p>
       <div className="flex flex-wrap gap-1.5">
-        {items.map((item) => (
+        {items.map(item => (
           <Badge key={item} variant={variant}>
             {item}
           </Badge>
@@ -475,19 +395,13 @@ function ScoreBar({
             {issues} {issueLabel}
           </span>
         )}
-        {metrics && (
-          <span className="text-xs text-muted-foreground">{metrics}</span>
-        )}
+        {metrics && <span className="text-xs text-muted-foreground">{metrics}</span>}
       </div>
     </div>
   );
 }
 
-function ComplexityBadge({
-  complexity,
-}: {
-  complexity: 'low' | 'medium' | 'high';
-}) {
+function ComplexityBadge({ complexity }: { complexity: 'low' | 'medium' | 'high' }) {
   const config = {
     low: { label: 'Niedrige Komplexität', variant: 'secondary' as const },
     medium: { label: 'Mittlere Komplexität', variant: 'default' as const },
@@ -512,9 +426,7 @@ function formatRevenueClass(
   return labels[revenueClass] || null;
 }
 
-function getPerformanceScore(
-  loadTime?: 'fast' | 'medium' | 'slow'
-): number {
+function getPerformanceScore(loadTime?: 'fast' | 'medium' | 'slow'): number {
   const scores = { fast: 90, medium: 60, slow: 30 };
   return loadTime ? scores[loadTime] : 50;
 }

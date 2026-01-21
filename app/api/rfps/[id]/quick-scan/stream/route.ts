@@ -16,10 +16,7 @@ export const dynamic = 'force-dynamic';
  * Best practice: Use native Web Streams for real-time updates
  * Security: Requires authentication and bid ownership verification
  */
-export async function GET(
-  _request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   // 1. Verify authentication
   const session = await auth();
   if (!session?.user?.id) {
@@ -75,7 +72,7 @@ export async function GET(
     // If scan is already completed, return the activity log as events
     if (quickScan.status === 'completed' && quickScan.activityLog) {
       const activityLog = JSON.parse(quickScan.activityLog);
-      const stream = createAgentEventStream(async (emit) => {
+      const stream = createAgentEventStream(async emit => {
         emit({ type: AgentEventType.START });
 
         // Replay the activity log
@@ -103,7 +100,7 @@ export async function GET(
 
     // If scan is still running, stream the live activity
     // Create SSE stream for live updates
-    const stream = createAgentEventStream(async (emit) => {
+    const stream = createAgentEventStream(async emit => {
       emit({ type: AgentEventType.START });
 
       // Parse extracted requirements if available
@@ -141,21 +138,26 @@ export async function GET(
 
       try {
         timeline = await generateTimelineFromQuickScan({
-          projectName: extractedReqs?.projectTitle || extractedReqs?.projectDescription || 'Projekt',
+          projectName:
+            extractedReqs?.projectTitle || extractedReqs?.projectDescription || 'Projekt',
           projectDescription: extractedReqs?.projectDescription,
           websiteUrl: quickScan.websiteUrl,
           extractedRequirements: extractedReqs,
           quickScanResult: {
             techStack: result.techStack,
-            contentVolume: result.contentVolume ? {
-              estimatedPages: result.contentVolume.estimatedPageCount,
-              estimatedContentTypes: result.contentVolume.contentTypes?.length,
-            } : undefined,
+            contentVolume: result.contentVolume
+              ? {
+                  estimatedPages: result.contentVolume.estimatedPageCount,
+                  estimatedContentTypes: result.contentVolume.contentTypes?.length,
+                }
+              : undefined,
             features: {
-              detectedFeatures: result.features ? Object.entries(result.features)
-                .filter(([key, value]) => value === true && key !== 'customFeatures')
-                .map(([key]) => key)
-                .concat(result.features.customFeatures || []) : [],
+              detectedFeatures: result.features
+                ? Object.entries(result.features)
+                    .filter(([key, value]) => value === true && key !== 'customFeatures')
+                    .map(([key]) => key)
+                    .concat(result.features.customFeatures || [])
+                : [],
             },
           },
         });
@@ -198,16 +200,26 @@ export async function GET(
           confidence: result.blRecommendation.confidence,
           reasoning: result.blRecommendation.reasoning,
           // Enhanced audit fields
-          navigationStructure: result.navigationStructure ? JSON.stringify(result.navigationStructure) : null,
-          accessibilityAudit: result.accessibilityAudit ? JSON.stringify(result.accessibilityAudit) : null,
+          navigationStructure: result.navigationStructure
+            ? JSON.stringify(result.navigationStructure)
+            : null,
+          accessibilityAudit: result.accessibilityAudit
+            ? JSON.stringify(result.accessibilityAudit)
+            : null,
           seoAudit: result.seoAudit ? JSON.stringify(result.seoAudit) : null,
           legalCompliance: result.legalCompliance ? JSON.stringify(result.legalCompliance) : null,
-          performanceIndicators: result.performanceIndicators ? JSON.stringify(result.performanceIndicators) : null,
+          performanceIndicators: result.performanceIndicators
+            ? JSON.stringify(result.performanceIndicators)
+            : null,
           screenshots: result.screenshots ? JSON.stringify(result.screenshots) : null,
-          companyIntelligence: result.companyIntelligence ? JSON.stringify(result.companyIntelligence) : null,
+          companyIntelligence: result.companyIntelligence
+            ? JSON.stringify(result.companyIntelligence)
+            : null,
           // QuickScan 2.0 fields
           contentTypes: result.contentTypes ? JSON.stringify(result.contentTypes) : null,
-          migrationComplexity: result.migrationComplexity ? JSON.stringify(result.migrationComplexity) : null,
+          migrationComplexity: result.migrationComplexity
+            ? JSON.stringify(result.migrationComplexity)
+            : null,
           decisionMakers: result.decisionMakers ? JSON.stringify(result.decisionMakers) : null,
           rawScanData: result.rawScanData ? JSON.stringify(result.rawScanData) : null,
           activityLog: JSON.stringify(result.activityLog),

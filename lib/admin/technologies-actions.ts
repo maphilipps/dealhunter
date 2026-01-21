@@ -78,7 +78,8 @@ export async function createTechnology(data: {
     return { success: false, error: 'Keine Berechtigung' };
   }
 
-  const { name, businessUnitId, baselineHours, baselineName, baselineEntityCounts, isDefault } = data;
+  const { name, businessUnitId, baselineHours, baselineName, baselineEntityCounts, isDefault } =
+    data;
 
   // Validate inputs
   if (!name || name.trim().length === 0) {
@@ -103,9 +104,10 @@ export async function createTechnology(data: {
         // Baseline fields - use defaults for DB NOT NULL constraints
         baselineHours: baselineHours ?? 0,
         baselineName: baselineName?.trim() ?? '',
-        baselineEntityCounts: baselineEntityCounts && Object.keys(baselineEntityCounts).length > 0
-          ? JSON.stringify(baselineEntityCounts)
-          : '{}',
+        baselineEntityCounts:
+          baselineEntityCounts && Object.keys(baselineEntityCounts).length > 0
+            ? JSON.stringify(baselineEntityCounts)
+            : '{}',
         isDefault,
       })
       .returning();
@@ -121,10 +123,7 @@ export async function createTechnology(data: {
 
 export async function getTechnology(id: string) {
   try {
-    const [tech] = await db
-      .select()
-      .from(technologies)
-      .where(eq(technologies.id, id));
+    const [tech] = await db.select().from(technologies).where(eq(technologies.id, id));
 
     if (!tech) {
       return { success: false, error: 'Technologie nicht gefunden' };

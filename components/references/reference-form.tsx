@@ -36,7 +36,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
   };
 
   const handleRemoveTech = (tech: string) => {
-    setTechnologies(technologies.filter((t) => t !== tech));
+    setTechnologies(technologies.filter(t => t !== tech));
   };
 
   const handleAddHighlight = () => {
@@ -97,7 +97,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
               id="projectName"
               type="text"
               value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
+              onChange={e => setProjectName(e.target.value)}
               placeholder="z.B. CRM-System Modernisierung"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSubmitting}
@@ -113,7 +113,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
               id="customerName"
               type="text"
               value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
+              onChange={e => setCustomerName(e.target.value)}
               placeholder="z.B. ABC Manufacturing GmbH"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSubmitting}
@@ -130,7 +130,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
             id="industry"
             type="text"
             value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
+            onChange={e => setIndustry(e.target.value)}
             placeholder="z.B. Automotive, Finance, Healthcare"
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
@@ -147,8 +147,8 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
           <input
             type="text"
             value={techInput}
-            onChange={(e) => setTechInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTech())}
+            onChange={e => setTechInput(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), handleAddTech())}
             placeholder="z.B. React, Node.js, PostgreSQL"
             className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
@@ -166,7 +166,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
 
         {technologies.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {technologies.map((tech) => (
+            {technologies.map(tech => (
               <span
                 key={tech}
                 className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm"
@@ -197,7 +197,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
           <textarea
             id="scope"
             value={scope}
-            onChange={(e) => setScope(e.target.value)}
+            onChange={e => setScope(e.target.value)}
             placeholder="Beschreiben Sie den Projektumfang und die deliverables..."
             rows={4}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
@@ -216,7 +216,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
               type="number"
               min="1"
               value={teamSize}
-              onChange={(e) => setTeamSize(e.target.value)}
+              onChange={e => setTeamSize(e.target.value)}
               placeholder="z.B. 5"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSubmitting}
@@ -233,7 +233,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
               type="number"
               min="1"
               value={durationMonths}
-              onChange={(e) => setDurationMonths(e.target.value)}
+              onChange={e => setDurationMonths(e.target.value)}
               placeholder="z.B. 12"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSubmitting}
@@ -255,7 +255,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
             <select
               id="budgetRange"
               value={budgetRange}
-              onChange={(e) => setBudgetRange(e.target.value)}
+              onChange={e => setBudgetRange(e.target.value)}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSubmitting}
               required
@@ -277,7 +277,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
             <select
               id="outcome"
               value={outcome}
-              onChange={(e) => setOutcome(e.target.value)}
+              onChange={e => setOutcome(e.target.value)}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSubmitting}
               required
@@ -300,8 +300,8 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
           <input
             type="text"
             value={highlightInput}
-            onChange={(e) => setHighlightInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddHighlight())}
+            onChange={e => setHighlightInput(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), handleAddHighlight())}
             placeholder="z.B. 40% Kosteneinsparung durch Optimierung"
             className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
@@ -320,10 +320,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
         {highlights.length > 0 && (
           <ul className="space-y-2">
             {highlights.map((highlight, index) => (
-              <li
-                key={index}
-                className="flex items-start gap-2 rounded-lg bg-muted p-3"
-              >
+              <li key={index} className="flex items-start gap-2 rounded-lg bg-muted p-3">
                 <span className="flex-1 text-sm">{highlight}</span>
                 <button
                   type="button"

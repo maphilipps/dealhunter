@@ -1,11 +1,11 @@
-"use server";
+'use server';
 
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { references, competencies, competitors } from "@/lib/db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { references, competencies, competitors } from '@/lib/db/schema';
+import { eq, and, desc, sql } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
 // ============================================================================
 // Authorization Middleware
@@ -23,10 +23,7 @@ async function requireAdmin() {
 // Get Pending Items (for Admin Queue)
 // ============================================================================
 
-export async function getPendingReferences(
-  page = 1,
-  limit = 50
-) {
+export async function getPendingReferences(page = 1, limit = 50) {
   await requireAdmin();
 
   const offset = (page - 1) * limit;
@@ -43,7 +40,7 @@ export async function getPendingReferences(
     db
       .select({ count: sql<number>`COUNT(*)` })
       .from(references)
-      .where(eq(references.status, 'pending'))
+      .where(eq(references.status, 'pending')),
   ]);
 
   return {
@@ -54,10 +51,7 @@ export async function getPendingReferences(
   };
 }
 
-export async function getPendingCompetencies(
-  page = 1,
-  limit = 50
-) {
+export async function getPendingCompetencies(page = 1, limit = 50) {
   await requireAdmin();
 
   const offset = (page - 1) * limit;
@@ -74,7 +68,7 @@ export async function getPendingCompetencies(
     db
       .select({ count: sql<number>`COUNT(*)` })
       .from(competencies)
-      .where(eq(competencies.status, 'pending'))
+      .where(eq(competencies.status, 'pending')),
   ]);
 
   return {
@@ -85,10 +79,7 @@ export async function getPendingCompetencies(
   };
 }
 
-export async function getPendingCompetitors(
-  page = 1,
-  limit = 50
-) {
+export async function getPendingCompetitors(page = 1, limit = 50) {
   await requireAdmin();
 
   const offset = (page - 1) * limit;
@@ -105,7 +96,7 @@ export async function getPendingCompetitors(
     db
       .select({ count: sql<number>`COUNT(*)` })
       .from(competitors)
-      .where(eq(competitors.status, 'pending'))
+      .where(eq(competitors.status, 'pending')),
   ]);
 
   return {
@@ -142,10 +133,7 @@ export async function approveReference(id: string) {
 
   try {
     // VULN-002 FIX: Optimistic Locking
-    const [reference] = await db
-      .select()
-      .from(references)
-      .where(eq(references.id, parsed.data.id));
+    const [reference] = await db.select().from(references).where(eq(references.id, parsed.data.id));
 
     if (!reference) {
       return { success: false, error: 'Nicht gefunden' };
@@ -161,10 +149,12 @@ export async function approveReference(id: string) {
         version: reference.version + 1, // Increment version
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(references.id, parsed.data.id),
-        eq(references.version, reference.version) // Optimistic lock check
-      ))
+      .where(
+        and(
+          eq(references.id, parsed.data.id),
+          eq(references.version, reference.version) // Optimistic lock check
+        )
+      )
       .returning();
 
     if (!updated) {
@@ -190,10 +180,7 @@ export async function rejectReference(id: string, feedback: string) {
   }
 
   try {
-    const [reference] = await db
-      .select()
-      .from(references)
-      .where(eq(references.id, parsed.data.id));
+    const [reference] = await db.select().from(references).where(eq(references.id, parsed.data.id));
 
     if (!reference) {
       return { success: false, error: 'Nicht gefunden' };
@@ -209,10 +196,7 @@ export async function rejectReference(id: string, feedback: string) {
         version: reference.version + 1,
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(references.id, parsed.data.id),
-        eq(references.version, reference.version)
-      ))
+      .where(and(eq(references.id, parsed.data.id), eq(references.version, reference.version)))
       .returning();
 
     if (!updated) {
@@ -257,10 +241,7 @@ export async function approveCompetency(id: string) {
         version: competency.version + 1,
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(competencies.id, parsed.data.id),
-        eq(competencies.version, competency.version)
-      ))
+      .where(and(eq(competencies.id, parsed.data.id), eq(competencies.version, competency.version)))
       .returning();
 
     if (!updated) {
@@ -304,10 +285,7 @@ export async function rejectCompetency(id: string, feedback: string) {
         version: competency.version + 1,
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(competencies.id, parsed.data.id),
-        eq(competencies.version, competency.version)
-      ))
+      .where(and(eq(competencies.id, parsed.data.id), eq(competencies.version, competency.version)))
       .returning();
 
     if (!updated) {
@@ -352,10 +330,7 @@ export async function approveCompetitor(id: string) {
         version: competitor.version + 1,
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(competitors.id, parsed.data.id),
-        eq(competitors.version, competitor.version)
-      ))
+      .where(and(eq(competitors.id, parsed.data.id), eq(competitors.version, competitor.version)))
       .returning();
 
     if (!updated) {
@@ -398,10 +373,7 @@ export async function rejectCompetitor(id: string, feedback: string) {
         version: competitor.version + 1,
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(competitors.id, parsed.data.id),
-        eq(competitors.version, competitor.version)
-      ))
+      .where(and(eq(competitors.id, parsed.data.id), eq(competitors.version, competitor.version)))
       .returning();
 
     if (!updated) {

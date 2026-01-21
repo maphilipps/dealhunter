@@ -22,10 +22,7 @@ export async function Header() {
           </Link>
 
           <nav className="flex items-center gap-4">
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium hover:underline"
-            >
+            <Link href="/dashboard" className="text-sm font-medium hover:underline">
               Dashboard
             </Link>
             <Link href="/rfps/new" className="text-sm font-medium hover:underline">
@@ -40,27 +37,16 @@ export async function Header() {
 
             {/* Master Data Dropdown - könnte später als echtes Dropdown implementiert werden */}
             <div className="relative group">
-              <button className="text-sm font-medium hover:underline">
-                Stammdaten
-              </button>
+              <button className="text-sm font-medium hover:underline">Stammdaten</button>
               <div className="absolute left-0 mt-2 hidden w-48 rounded-md bg-white shadow-lg group-hover:block">
                 <div className="py-1">
-                  <Link
-                    href="/references"
-                    className="block px-4 py-2 text-sm hover:bg-gray-100"
-                  >
+                  <Link href="/references" className="block px-4 py-2 text-sm hover:bg-gray-100">
                     Referenzen
                   </Link>
-                  <Link
-                    href="/competencies"
-                    className="block px-4 py-2 text-sm hover:bg-gray-100"
-                  >
+                  <Link href="/competencies" className="block px-4 py-2 text-sm hover:bg-gray-100">
                     Kompetenzen
                   </Link>
-                  <Link
-                    href="/competitors"
-                    className="block px-4 py-2 text-sm hover:bg-gray-100"
-                  >
+                  <Link href="/competitors" className="block px-4 py-2 text-sm hover:bg-gray-100">
                     Wettbewerber
                   </Link>
                 </div>
@@ -69,10 +55,7 @@ export async function Header() {
 
             {/* BL only */}
             {(role === 'bl' || role === 'admin') && (
-              <Link
-                href="/bl-review"
-                className="text-sm font-medium hover:underline"
-              >
+              <Link href="/bl-review" className="text-sm font-medium hover:underline">
                 BL Review
               </Link>
             )}

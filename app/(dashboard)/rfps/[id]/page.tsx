@@ -7,11 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { BidDetailClient } from '@/components/bids/bid-detail-client';
 
-export default async function BidDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function BidDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
 
@@ -20,19 +16,13 @@ export default async function BidDetailPage({
   }
 
   // Get bid opportunity
-  const [bid] = await db
-    .select()
-    .from(rfps)
-    .where(eq(rfps.id, id))
-    .limit(1);
+  const [bid] = await db.select().from(rfps).where(eq(rfps.id, id)).limit(1);
 
   if (!bid) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">RFP nicht gefunden</h1>
-        <p className="text-muted-foreground">
-          Der angeforderte RFP konnte nicht gefunden werden.
-        </p>
+        <p className="text-muted-foreground">Der angeforderte RFP konnte nicht gefunden werden.</p>
       </div>
     );
   }
@@ -54,9 +44,7 @@ export default async function BidDetailPage({
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">RFP Details</h1>
-        <p className="text-muted-foreground">
-          ID: {bid.id}
-        </p>
+        <p className="text-muted-foreground">ID: {bid.id}</p>
       </div>
 
       {/* Status Overview */}
@@ -67,7 +55,8 @@ export default async function BidDetailPage({
             <StatusBadge status={bid.status} />
           </div>
           <CardDescription>
-            Erstellt am {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('de-DE') : 'Unbekannt'}
+            Erstellt am{' '}
+            {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('de-DE') : 'Unbekannt'}
           </CardDescription>
         </CardHeader>
         <CardContent>

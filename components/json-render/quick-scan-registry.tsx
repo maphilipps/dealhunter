@@ -5,23 +5,14 @@ import type { ComponentType, ReactNode } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   CheckCircle2,
   XCircle,
@@ -106,7 +97,12 @@ const variantStyles = {
  */
 export const quickScanRegistry: Record<string, ComponentType<RegistryComponentProps>> = {
   ResultCard: ({ element, children }) => {
-    const { title, description, variant = 'default', icon } = element.props as {
+    const {
+      title,
+      description,
+      variant = 'default',
+      icon,
+    } = element.props as {
       title: string;
       description?: string;
       variant?: keyof typeof variantStyles;
@@ -173,10 +169,12 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     };
 
     return (
-      <div className={cn(
-        'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border',
-        category ? categoryColors[category] : 'bg-muted border-border'
-      )}>
+      <div
+        className={cn(
+          'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border',
+          category ? categoryColors[category] : 'bg-muted border-border'
+        )}
+      >
         <span className="font-medium">{name}</span>
         {version && <span className="text-xs opacity-70">v{version}</span>}
         {confidence !== undefined && (
@@ -258,7 +256,9 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-medium">{alt.name}</span>
-                <Badge variant="outline" className="text-xs">{alt.confidence}%</Badge>
+                <Badge variant="outline" className="text-xs">
+                  {alt.confidence}%
+                </Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-1">{alt.reason}</p>
             </div>
@@ -314,9 +314,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
           {complexity && (
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Komplexität</span>
-              <Badge className={cn('w-fit', complexityColors[complexity])}>
-                {complexity}
-              </Badge>
+              <Badge className={cn('w-fit', complexityColors[complexity])}>{complexity}</Badge>
             </div>
           )}
         </div>
@@ -481,9 +479,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         <div className="flex items-start justify-between gap-2">
           <h4 className="font-medium text-sm flex-1">{title}</h4>
           {sentiment && (
-            <Badge className={cn('text-xs', sentimentColors[sentiment])}>
-              {sentiment}
-            </Badge>
+            <Badge className={cn('text-xs', sentimentColors[sentiment])}>{sentiment}</Badge>
           )}
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -598,7 +594,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         </div>
 
         <div className="space-y-2">
-          {questions.map((q) => (
+          {questions.map(q => (
             <div key={q.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50">
               {q.answered ? (
                 <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
@@ -610,9 +606,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
                   {q.id}. {q.question}
                 </p>
                 {q.answered && q.answer && (
-                  <p className="text-xs text-green-700 mt-1 line-clamp-2">
-                    → {q.answer}
-                  </p>
+                  <p className="text-xs text-green-700 mt-1 line-clamp-2">→ {q.answer}</p>
                 )}
               </div>
             </div>
@@ -623,7 +617,13 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
   },
 
   ScoreCard: ({ element }) => {
-    const { label, score, maxScore = 100, variant = 'default', showProgress = true } = element.props as {
+    const {
+      label,
+      score,
+      maxScore = 100,
+      variant = 'default',
+      showProgress = true,
+    } = element.props as {
       label: string;
       score: number;
       maxScore?: number;
@@ -652,7 +652,8 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">{label}</span>
           <span className={cn('text-xl font-bold', variantColors[variant])}>
-            {score}{maxScore !== 100 && `/${maxScore}`}
+            {score}
+            {maxScore !== 100 && `/${maxScore}`}
           </span>
         </div>
         {showProgress && (
@@ -713,11 +714,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         </div>
         <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 overflow-hidden">
           <DialogTitle className="sr-only">{alt}</DialogTitle>
-          <img
-            src={src}
-            alt={alt}
-            className="w-full h-full object-contain"
-          />
+          <img src={src} alt={alt} className="w-full h-full object-contain" />
         </DialogContent>
       </Dialog>
     );
@@ -738,7 +735,8 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
               <Image className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium text-sm">Screenshots</span>
               <Badge variant="secondary" className="text-xs">
-                {[desktop, mobile].filter(Boolean).length} Bild{[desktop, mobile].filter(Boolean).length > 1 ? 'er' : ''}
+                {[desktop, mobile].filter(Boolean).length} Bild
+                {[desktop, mobile].filter(Boolean).length > 1 ? 'er' : ''}
               </Badge>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -747,10 +745,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
                   {new Date(timestamp).toLocaleDateString('de-DE')}
                 </span>
               )}
-              <ChevronDown className={cn(
-                'h-4 w-4 transition-transform',
-                isOpen && 'rotate-180'
-              )} />
+              <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
             </div>
           </button>
         </CollapsibleTrigger>
@@ -876,7 +871,12 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
                       {dm.email}
                     </a>
                     {dm.emailConfidence && (
-                      <Badge className={cn('text-[10px] px-1.5 py-0', confidenceColors[dm.emailConfidence])}>
+                      <Badge
+                        className={cn(
+                          'text-[10px] px-1.5 py-0',
+                          confidenceColors[dm.emailConfidence]
+                        )}
+                      >
                         {dm.emailConfidence}
                       </Badge>
                     )}
@@ -891,9 +891,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
                   </div>
                 )}
               </div>
-              {dm.source && (
-                <p className="text-xs text-muted-foreground">Quelle: {dm.source}</p>
-              )}
+              {dm.source && <p className="text-xs text-muted-foreground">Quelle: {dm.source}</p>}
             </div>
           ))}
         </div>
@@ -987,7 +985,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     const TreeNode = ({
       node,
       depth = 0,
-      pathKey
+      pathKey,
     }: {
       node: SiteTreeNode;
       depth?: number;
@@ -995,7 +993,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     }) => {
       const hasChildren = node.children && node.children.length > 0;
       const isExpanded = expanded[pathKey] || false;
-      const paddingLeft = 12 + (depth * 16);
+      const paddingLeft = 12 + depth * 16;
 
       return (
         <div className="border-l border-muted ml-2">
@@ -1017,10 +1015,9 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
               ) : (
                 <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               )}
-              <span className={cn(
-                'truncate',
-                hasChildren ? 'font-medium' : 'text-muted-foreground'
-              )}>
+              <span
+                className={cn('truncate', hasChildren ? 'font-medium' : 'text-muted-foreground')}
+              >
                 {node.path || '/'}
               </span>
               {node.url && (
@@ -1028,14 +1025,16 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
                   href={node.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={e => e.stopPropagation()}
                   className="text-blue-600 hover:text-blue-800"
                 >
                   <ExternalLink className="h-3 w-3" />
                 </a>
               )}
             </div>
-            <Badge variant="outline" className="text-xs ml-2 shrink-0">{node.count}</Badge>
+            <Badge variant="outline" className="text-xs ml-2 shrink-0">
+              {node.count}
+            </Badge>
           </button>
           {isExpanded && hasChildren && (
             <div className="bg-muted/20">
@@ -1056,7 +1055,9 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     // Navigation Menu Komponente
     const NavMenu = ({ items, title }: { items: NavItem[]; title: string }) => (
       <div className="space-y-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          {title}
+        </p>
         <div className="space-y-0.5">
           {items.map((item, idx) => (
             <div key={idx} className="text-sm">
@@ -1077,7 +1078,10 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
               {item.children && item.children.length > 0 && (
                 <div className="ml-5 border-l border-muted pl-2 space-y-0.5">
                   {item.children.map((child, cidx) => (
-                    <div key={cidx} className="flex items-center gap-2 py-0.5 text-muted-foreground">
+                    <div
+                      key={cidx}
+                      className="flex items-center gap-2 py-0.5 text-muted-foreground"
+                    >
                       <span>{child.label}</span>
                       {child.url && (
                         <a
@@ -1135,16 +1139,24 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         {navigation && (
           <div className="flex flex-wrap gap-2">
             {navigation.breadcrumbs && (
-              <Badge variant="secondary" className="text-xs">Breadcrumbs</Badge>
+              <Badge variant="secondary" className="text-xs">
+                Breadcrumbs
+              </Badge>
             )}
             {navigation.megaMenu && (
-              <Badge variant="secondary" className="text-xs">Mega-Menü</Badge>
+              <Badge variant="secondary" className="text-xs">
+                Mega-Menü
+              </Badge>
             )}
             {navigation.stickyHeader && (
-              <Badge variant="secondary" className="text-xs">Sticky Header</Badge>
+              <Badge variant="secondary" className="text-xs">
+                Sticky Header
+              </Badge>
             )}
             {navigation.mobileMenu && (
-              <Badge variant="secondary" className="text-xs">Mobile Menü</Badge>
+              <Badge variant="secondary" className="text-xs">
+                Mobile Menü
+              </Badge>
             )}
           </div>
         )}
@@ -1167,7 +1179,9 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         {sections && sections.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-muted-foreground">Vollständige Seitenstruktur</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Vollständige Seitenstruktur
+              </p>
               <button
                 onClick={toggleExpandAll}
                 className="text-xs text-blue-600 hover:text-blue-800"
@@ -1209,7 +1223,9 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
                       </div>
                       <div className="flex items-center gap-2">
                         {section.depth !== undefined && (
-                          <span className="text-xs text-muted-foreground">Tiefe: {section.depth}</span>
+                          <span className="text-xs text-muted-foreground">
+                            Tiefe: {section.depth}
+                          </span>
                         )}
                         <Badge variant="secondary">{section.count}</Badge>
                       </div>
@@ -1260,13 +1276,15 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
       };
     };
 
-    const navFeatures = features ? [
-      { name: 'Suche', detected: !!features.hasSearch },
-      { name: 'Breadcrumbs', detected: !!features.hasBreadcrumbs },
-      { name: 'Mega Menu', detected: !!features.hasMegaMenu },
-      { name: 'Sticky Header', detected: !!features.hasStickyHeader },
-      { name: 'Footer Navigation', detected: !!features.hasFooterNav },
-    ] : [];
+    const navFeatures = features
+      ? [
+          { name: 'Suche', detected: !!features.hasSearch },
+          { name: 'Breadcrumbs', detected: !!features.hasBreadcrumbs },
+          { name: 'Mega Menu', detected: !!features.hasMegaMenu },
+          { name: 'Sticky Header', detected: !!features.hasStickyHeader },
+          { name: 'Footer Navigation', detected: !!features.hasFooterNav },
+        ]
+      : [];
 
     return (
       <div className="space-y-4">
@@ -1339,14 +1357,14 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
     // Default colors for content types
     const typeColors: Record<string, string> = {
-      'Seiten': 'bg-blue-500',
+      Seiten: 'bg-blue-500',
       'Blog-Artikel': 'bg-green-500',
-      'Produkte': 'bg-purple-500',
-      'News': 'bg-orange-500',
-      'Events': 'bg-pink-500',
-      'Downloads': 'bg-cyan-500',
-      'FAQ': 'bg-yellow-500',
-      'Jobs': 'bg-red-500',
+      Produkte: 'bg-purple-500',
+      News: 'bg-orange-500',
+      Events: 'bg-pink-500',
+      Downloads: 'bg-cyan-500',
+      FAQ: 'bg-yellow-500',
+      Jobs: 'bg-red-500',
     };
 
     const maxCount = Math.max(...distribution.map(d => d.count), 1);
@@ -1453,7 +1471,14 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
   // ========================================
   ExtractedComponents: ({ element }) => {
     interface NavigationComponent {
-      type: 'mega_menu' | 'sticky_header' | 'mobile_menu' | 'sidebar' | 'breadcrumbs' | 'pagination' | 'standard';
+      type:
+        | 'mega_menu'
+        | 'sticky_header'
+        | 'mobile_menu'
+        | 'sidebar'
+        | 'breadcrumbs'
+        | 'pagination'
+        | 'standard';
       features: string[];
       itemCount?: number;
       maxDepth?: number;
@@ -1468,7 +1493,15 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     }
 
     interface FormComponent {
-      type: 'contact' | 'newsletter' | 'search' | 'login' | 'registration' | 'checkout' | 'filter' | 'generic';
+      type:
+        | 'contact'
+        | 'newsletter'
+        | 'search'
+        | 'login'
+        | 'registration'
+        | 'checkout'
+        | 'filter'
+        | 'generic';
       fields: number;
       hasValidation?: boolean;
       hasFileUpload?: boolean;
@@ -1476,7 +1509,14 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     }
 
     interface MediaComponent {
-      type: 'image_gallery' | 'video_embed' | 'video_player' | 'audio_player' | 'carousel' | 'lightbox' | 'background_video';
+      type:
+        | 'image_gallery'
+        | 'video_embed'
+        | 'video_player'
+        | 'audio_player'
+        | 'carousel'
+        | 'lightbox'
+        | 'background_video';
       count: number;
       providers?: string[];
     }
@@ -1547,7 +1587,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     const SectionHeader = ({
       title,
       count,
-      sectionKey
+      sectionKey,
     }: {
       title: string;
       count: number;
@@ -1600,18 +1640,27 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
             {expandedSections.navigation && (
               <div className="space-y-2 pl-4">
                 {navigation.map((nav, idx) => (
-                  <div key={idx} className="flex items-start gap-3 p-2 bg-blue-50/50 rounded-lg border border-blue-100">
+                  <div
+                    key={idx}
+                    className="flex items-start gap-3 p-2 bg-blue-50/50 rounded-lg border border-blue-100"
+                  >
                     <div className="mt-0.5 text-blue-600">
                       {typeIcons[nav.type] || <Navigation className="h-4 w-4" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm capitalize">{nav.type.replace('_', ' ')}</span>
+                        <span className="font-medium text-sm capitalize">
+                          {nav.type.replace('_', ' ')}
+                        </span>
                         {nav.itemCount && (
-                          <Badge variant="outline" className="text-xs">{nav.itemCount} Items</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {nav.itemCount} Items
+                          </Badge>
                         )}
                         {nav.maxDepth && (
-                          <Badge variant="outline" className="text-xs">Tiefe: {nav.maxDepth}</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Tiefe: {nav.maxDepth}
+                          </Badge>
                         )}
                       </div>
                       {nav.features.length > 0 && (
@@ -1634,20 +1683,39 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         {/* Content Blocks */}
         {contentBlocks.length > 0 && (
           <div className="space-y-2">
-            <SectionHeader title="Content Blocks" count={contentBlocks.length} sectionKey="contentBlocks" />
+            <SectionHeader
+              title="Content Blocks"
+              count={contentBlocks.length}
+              sectionKey="contentBlocks"
+            />
             {expandedSections.contentBlocks && (
               <div className="space-y-2 pl-4">
                 {contentBlocks.map((block, idx) => (
-                  <div key={idx} className="flex items-start gap-3 p-2 bg-purple-50/50 rounded-lg border border-purple-100">
+                  <div
+                    key={idx}
+                    className="flex items-start gap-3 p-2 bg-purple-50/50 rounded-lg border border-purple-100"
+                  >
                     <div className="mt-0.5 text-purple-600">
                       {typeIcons[block.type] || <Layers className="h-4 w-4" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm capitalize">{block.type.replace('_', ' ')}</span>
-                        <Badge variant="outline" className="text-xs">{block.count}x gefunden</Badge>
-                        {block.hasImages && <Badge variant="secondary" className="text-xs">Bilder</Badge>}
-                        {block.hasLinks && <Badge variant="secondary" className="text-xs">Links</Badge>}
+                        <span className="font-medium text-sm capitalize">
+                          {block.type.replace('_', ' ')}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {block.count}x gefunden
+                        </Badge>
+                        {block.hasImages && (
+                          <Badge variant="secondary" className="text-xs">
+                            Bilder
+                          </Badge>
+                        )}
+                        {block.hasLinks && (
+                          <Badge variant="secondary" className="text-xs">
+                            Links
+                          </Badge>
+                        )}
                       </div>
                       {block.examples.length > 0 && (
                         <div className="text-xs text-muted-foreground mt-1 truncate">
@@ -1670,17 +1738,36 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
             {expandedSections.forms && (
               <div className="space-y-2 pl-4">
                 {forms.map((form, idx) => (
-                  <div key={idx} className="flex items-start gap-3 p-2 bg-green-50/50 rounded-lg border border-green-100">
+                  <div
+                    key={idx}
+                    className="flex items-start gap-3 p-2 bg-green-50/50 rounded-lg border border-green-100"
+                  >
                     <div className="mt-0.5 text-green-600">
                       {typeIcons[form.type] || <FormInput className="h-4 w-4" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm capitalize">{form.type.replace('_', ' ')}</span>
-                        <Badge variant="outline" className="text-xs">{form.fields} Felder</Badge>
-                        {form.hasValidation && <Badge variant="secondary" className="text-xs">Validierung</Badge>}
-                        {form.hasFileUpload && <Badge variant="secondary" className="text-xs">Upload</Badge>}
-                        {form.hasCaptcha && <Badge variant="secondary" className="text-xs">Captcha</Badge>}
+                        <span className="font-medium text-sm capitalize">
+                          {form.type.replace('_', ' ')}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {form.fields} Felder
+                        </Badge>
+                        {form.hasValidation && (
+                          <Badge variant="secondary" className="text-xs">
+                            Validierung
+                          </Badge>
+                        )}
+                        {form.hasFileUpload && (
+                          <Badge variant="secondary" className="text-xs">
+                            Upload
+                          </Badge>
+                        )}
+                        {form.hasCaptcha && (
+                          <Badge variant="secondary" className="text-xs">
+                            Captcha
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1697,14 +1784,21 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
             {expandedSections.media && (
               <div className="space-y-2 pl-4">
                 {mediaElements.map((media, idx) => (
-                  <div key={idx} className="flex items-start gap-3 p-2 bg-orange-50/50 rounded-lg border border-orange-100">
+                  <div
+                    key={idx}
+                    className="flex items-start gap-3 p-2 bg-orange-50/50 rounded-lg border border-orange-100"
+                  >
                     <div className="mt-0.5 text-orange-600">
                       {typeIcons[media.type] || <Image className="h-4 w-4" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm capitalize">{media.type.replace('_', ' ')}</span>
-                        <Badge variant="outline" className="text-xs">{media.count}x</Badge>
+                        <span className="font-medium text-sm capitalize">
+                          {media.type.replace('_', ' ')}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {media.count}x
+                        </Badge>
                         {media.providers && media.providers.length > 0 && (
                           <span className="text-xs text-muted-foreground">
                             via {media.providers.join(', ')}
@@ -1722,7 +1816,11 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         {/* Interactive Elements */}
         {interactiveElements.length > 0 && (
           <div className="space-y-2">
-            <SectionHeader title="Interaktive Elemente" count={interactiveElements.length} sectionKey="interactive" />
+            <SectionHeader
+              title="Interaktive Elemente"
+              count={interactiveElements.length}
+              sectionKey="interactive"
+            />
             {expandedSections.interactive && (
               <div className="flex flex-wrap gap-2 pl-4 pt-2">
                 {interactiveElements.map((el, idx) => (
@@ -1767,10 +1865,12 @@ export function QuickScanRenderer({ tree }: RenderTreeProps): React.ReactElement
       return null;
     }
 
-    const childElements = element.children?.map((childKey) => {
-      const child = renderElement(childKey);
-      return child ? <div key={childKey}>{child}</div> : null;
-    }).filter(Boolean) as React.ReactElement[];
+    const childElements = element.children
+      ?.map(childKey => {
+        const child = renderElement(childKey);
+        return child ? <div key={childKey}>{child}</div> : null;
+      })
+      .filter(Boolean) as React.ReactElement[];
 
     return <Component element={element}>{childElements}</Component>;
   };

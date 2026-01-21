@@ -46,95 +46,94 @@ export const deepAnalysisFunction = inngest.createFunction(
     const existingCheckpoint = await resumeFromCheckpoint(workflowId);
 
     // Step 2: Fetch bid data and create analysis record + job tracking
-    const { bid, analysis, quickScan, jobRecord, workflowState } = await step.run('init-analysis', async () => {
-      console.log('[Inngest] Starting deep analysis for bid:', bidId);
+    const { bid, analysis, quickScan, jobRecord, workflowState } = await step.run(
+      'init-analysis',
+      async () => {
+        console.log('[Inngest] Starting deep analysis for bid:', bidId);
 
-      const [bidData] = await db
-        .select()
-        .from(rfps)
-        .where(eq(rfps.id, bidId))
-        .limit(1);
+        const [bidData] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
-      if (!bidData) {
-        throw new Error(`Bid ${bidId} not found`);
-      }
+        if (!bidData) {
+          throw new Error(`Bid ${bidId} not found`);
+        }
 
-      if (!bidData.websiteUrl) {
-        throw new Error('No website URL - cannot run Deep Analysis');
-      }
+        if (!bidData.websiteUrl) {
+          throw new Error('No website URL - cannot run Deep Analysis');
+        }
 
-      // Fetch quick scan results to get detected CMS
-      const [quickScanData] = await db
-        .select()
-        .from(quickScans)
-        .where(eq(quickScans.rfpId, bidId))
-        .orderBy(desc(quickScans.createdAt))
-        .limit(1);
+        // Fetch quick scan results to get detected CMS
+        const [quickScanData] = await db
+          .select()
+          .from(quickScans)
+          .where(eq(quickScans.rfpId, bidId))
+          .orderBy(desc(quickScans.createdAt))
+          .limit(1);
 
-      // Create analysis record
-      const [analysisRecord] = await db
-        .insert(deepMigrationAnalyses)
-        .values({
-          rfpId: bidId,
-          userId: userId, // User ownership for access control
-          jobId: event.id || 'manual-trigger',
-          status: 'running' as const,
-          startedAt: new Date(),
-          websiteUrl: bidData.websiteUrl!,
-          sourceCMS: quickScanData?.cms || 'Unknown',
-          targetCMS: 'Drupal',
-          version: 1,
-        })
-        .returning();
+        // Create analysis record
+        const [analysisRecord] = await db
+          .insert(deepMigrationAnalyses)
+          .values({
+            rfpId: bidId,
+            userId: userId, // User ownership for access control
+            jobId: event.id || 'manual-trigger',
+            status: 'running' as const,
+            startedAt: new Date(),
+            websiteUrl: bidData.websiteUrl!,
+            sourceCMS: quickScanData?.cms || 'Unknown',
+            targetCMS: 'Drupal',
+            version: 1,
+          })
+          .returning();
 
-      // Create job tracking record
-      const [job] = await db
-        .insert(backgroundJobs)
-        .values({
-          id: jobId || createId(),
-          jobType: 'deep-analysis',
-          inngestRunId: event.id || 'manual-trigger',
+        // Create job tracking record
+        const [job] = await db
+          .insert(backgroundJobs)
+          .values({
+            id: jobId || createId(),
+            jobType: 'deep-analysis',
+            inngestRunId: event.id || 'manual-trigger',
+            rfpId: bidId,
+            userId,
+            status: 'running',
+            progress: 0,
+            currentStep: 'Initializing deep analysis',
+            startedAt: new Date(),
+            attemptNumber: 1,
+            maxAttempts: 2,
+          })
+          .returning();
+
+        // Initialize workflow state checkpoint
+        const state = createWorkflowState<DeepAnalysisState>({
+          workflowId,
+          workflowType: 'deep-analysis',
           rfpId: bidId,
           userId,
           status: 'running',
+          currentStep: 'init-analysis',
+          stepIndex: 0,
+          totalSteps: 6, // full-scan, content-arch, complexity, accessibility, pt-estimation, finalize
           progress: 0,
-          currentStep: 'Initializing deep analysis',
-          startedAt: new Date(),
-          attemptNumber: 1,
-          maxAttempts: 2,
-        })
-        .returning();
+          data: {
+            analysisId: analysisRecord.id,
+            websiteUrl: bidData.websiteUrl!,
+            sourceCMS: quickScanData?.cms || 'Unknown',
+            targetCMS: 'Drupal',
+          },
+        });
 
-      // Initialize workflow state checkpoint
-      const state = createWorkflowState<DeepAnalysisState>({
-        workflowId,
-        workflowType: 'deep-analysis',
-        rfpId: bidId,
-        userId,
-        status: 'running',
-        currentStep: 'init-analysis',
-        stepIndex: 0,
-        totalSteps: 6, // full-scan, content-arch, complexity, accessibility, pt-estimation, finalize
-        progress: 0,
-        data: {
-          analysisId: analysisRecord.id,
-          websiteUrl: bidData.websiteUrl!,
-          sourceCMS: quickScanData?.cms || 'Unknown',
-          targetCMS: 'Drupal',
-        },
-      });
+        // Save initial checkpoint
+        await saveCheckpoint(state);
 
-      // Save initial checkpoint
-      await saveCheckpoint(state);
-
-      return {
-        bid: bidData,
-        quickScan: quickScanData,
-        analysis: analysisRecord,
-        jobRecord: job,
-        workflowState: state,
-      };
-    });
+        return {
+          bid: bidData,
+          quickScan: quickScanData,
+          analysis: analysisRecord,
+          jobRecord: job,
+          workflowState: state,
+        };
+      }
+    );
 
     try {
       // Step 2: Full-Scan (Website Audit) (10-30 minutes)
@@ -164,8 +163,16 @@ export const deepAnalysisFunction = inngest.createFunction(
           websiteUrl: bid.websiteUrl!,
           quickScanData: {
             cms: quickScan?.cms ?? undefined,
-            techStack: quickScan?.techStack ? (typeof quickScan.techStack === 'string' ? JSON.parse(quickScan.techStack) : quickScan.techStack) : undefined,
-            features: quickScan?.features ? (typeof quickScan.features === 'string' ? JSON.parse(quickScan.features) : quickScan.features) : undefined,
+            techStack: quickScan?.techStack
+              ? typeof quickScan.techStack === 'string'
+                ? JSON.parse(quickScan.techStack)
+                : quickScan.techStack
+              : undefined,
+            features: quickScan?.features
+              ? typeof quickScan.features === 'string'
+                ? JSON.parse(quickScan.features)
+                : quickScan.features
+              : undefined,
           },
           targetCMS: 'Drupal',
         });
@@ -226,9 +233,8 @@ export const deepAnalysisFunction = inngest.createFunction(
           })
           .where(eq(backgroundJobs.id, jobRecord.id));
 
-        const result = await analyzeContentArchitecture(
-          bid.websiteUrl!,
-          (message) => console.log(`[Content Architecture] ${message}`)
+        const result = await analyzeContentArchitecture(bid.websiteUrl!, message =>
+          console.log(`[Content Architecture] ${message}`)
         );
 
         // SECURITY: Validate AI output against schema (XSS prevention)
@@ -275,7 +281,7 @@ export const deepAnalysisFunction = inngest.createFunction(
           quickScan?.cms || 'Unknown',
           contentArchitecture.pageTypes.flatMap(pt => pt.sampleUrls),
           contentArchitecture.contentTypeMapping.length,
-          (message) => console.log(`[Migration Complexity] ${message}`)
+          message => console.log(`[Migration Complexity] ${message}`)
         );
 
         // SECURITY: Validate AI output against schema
@@ -318,10 +324,8 @@ export const deepAnalysisFunction = inngest.createFunction(
 
         const sampleUrls = contentArchitecture.pageTypes.flatMap(pt => pt.sampleUrls);
 
-        const result = await auditAccessibility(
-          bid.websiteUrl!,
-          sampleUrls,
-          (message) => console.log(`[Accessibility] ${message}`)
+        const result = await auditAccessibility(bid.websiteUrl!, sampleUrls, message =>
+          console.log(`[Accessibility] ${message}`)
         );
 
         // SECURITY: Validate audit output against schema

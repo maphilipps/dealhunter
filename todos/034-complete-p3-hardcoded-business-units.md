@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p3
-issue_id: "034"
+issue_id: '034'
 tags: [code-review, data, maintenance]
 dependencies: []
 ---
@@ -19,6 +19,7 @@ dependencies: []
 **From architecture-strategist agent:**
 
 **Hardcoded values (lines 199-212):**
+
 ```typescript
 export async function getAvailableBusinessUnits(): Promise<string[]> {
   // These are the business lines known to the Quick Scan agent
@@ -35,6 +36,7 @@ export async function getAvailableBusinessUnits(): Promise<string[]> {
 ## Proposed Solutions
 
 ### Solution A: Query database (Recommended)
+
 **Pros:** Always up-to-date
 **Cons:** One more DB query
 **Effort:** Small (15 min)
@@ -42,7 +44,8 @@ export async function getAvailableBusinessUnits(): Promise<string[]> {
 
 ```typescript
 export async function getAvailableBusinessUnits(): Promise<string[]> {
-  const units = await db.select({ name: businessUnits.name })
+  const units = await db
+    .select({ name: businessUnits.name })
     .from(businessUnits)
     .orderBy(businessUnits.name);
 
@@ -57,6 +60,7 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/routing/actions.ts` (lines 199-212)
 
 ## Acceptance Criteria
@@ -67,8 +71,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                   | Learnings                             |
+| ---------- | ------------------------ | ------------------------------------- |
 | 2026-01-18 | Created from code review | Don't hardcode data that exists in DB |
 
 ## Resources

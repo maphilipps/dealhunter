@@ -15,7 +15,12 @@ interface NotificationCardProps {
   notifiedAt?: Date | null;
 }
 
-export function NotificationCard({ bidId, hasTeam, initialResults, notifiedAt }: NotificationCardProps) {
+export function NotificationCard({
+  bidId,
+  hasTeam,
+  initialResults,
+  notifiedAt,
+}: NotificationCardProps) {
   const [results, setResults] = useState<TeamNotificationResult[] | null>(initialResults || null);
   const [sentAt, setSentAt] = useState<Date | null>(notifiedAt || null);
   const [isPending, startTransition] = useTransition();
@@ -43,9 +48,7 @@ export function NotificationCard({ bidId, hasTeam, initialResults, notifiedAt }:
             <Mail className="h-5 w-5" />
             Team-Benachrichtigung
           </CardTitle>
-          <CardDescription>
-            Team muss zuerst zugewiesen sein
-          </CardDescription>
+          <CardDescription>Team muss zuerst zugewiesen sein</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
@@ -71,7 +74,9 @@ export function NotificationCard({ bidId, hasTeam, initialResults, notifiedAt }:
                 Team-Benachrichtigung
               </CardTitle>
               <CardDescription>
-                {sentAt ? `Versendet am ${new Date(sentAt).toLocaleDateString('de-DE')} um ${new Date(sentAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}` : 'Versand-Status'}
+                {sentAt
+                  ? `Versendet am ${new Date(sentAt).toLocaleDateString('de-DE')} um ${new Date(sentAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
+                  : 'Versand-Status'}
               </CardDescription>
             </div>
             {failedCount === 0 ? (
@@ -104,7 +109,7 @@ export function NotificationCard({ bidId, hasTeam, initialResults, notifiedAt }:
 
           {/* Results List */}
           <div className="space-y-2">
-            {results.map((result) => (
+            {results.map(result => (
               <div
                 key={result.employeeId}
                 className="flex items-center justify-between rounded-md border px-3 py-2"
@@ -122,7 +127,10 @@ export function NotificationCard({ bidId, hasTeam, initialResults, notifiedAt }:
                 <div className="flex items-center gap-2">
                   {result.status === 'sent' && result.sentAt && (
                     <span className="text-xs text-muted-foreground">
-                      {new Date(result.sentAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(result.sentAt).toLocaleTimeString('de-DE', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
                   )}
                   {result.status === 'failed' && result.error && (
@@ -134,7 +142,11 @@ export function NotificationCard({ bidId, hasTeam, initialResults, notifiedAt }:
                     variant={result.status === 'sent' ? 'outline' : 'destructive'}
                     className="text-xs"
                   >
-                    {result.status === 'sent' ? 'Versendet' : result.status === 'failed' ? 'Fehler' : 'Ausstehend'}
+                    {result.status === 'sent'
+                      ? 'Versendet'
+                      : result.status === 'failed'
+                        ? 'Fehler'
+                        : 'Ausstehend'}
                   </Badge>
                 </div>
               </div>
@@ -170,20 +182,16 @@ export function NotificationCard({ bidId, hasTeam, initialResults, notifiedAt }:
           <Mail className="h-5 w-5" />
           Team-Benachrichtigung
         </CardTitle>
-        <CardDescription>
-          Benachrichtige alle Team-Mitglieder über ihre Zuweisung
-        </CardDescription>
+        <CardDescription>Benachrichtige alle Team-Mitglieder über ihre Zuweisung</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Sendet eine personalisierte E-Mail an jedes Team-Mitglied mit Projekt-Details,
-          ihrer Rolle und den nächsten Schritten.
+          Sendet eine personalisierte E-Mail an jedes Team-Mitglied mit Projekt-Details, ihrer Rolle
+          und den nächsten Schritten.
         </p>
 
         {error && (
-          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </div>
+          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
         )}
 
         <Button onClick={handleSend} disabled={isPending}>

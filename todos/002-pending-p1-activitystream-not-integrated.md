@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "002"
+issue_id: '002'
 tags: [code-review, architecture, ui-integration, epic-5a]
 dependencies: []
 ---
@@ -13,6 +13,7 @@ dependencies: []
 The ActivityStream component was built as the centerpiece of Epic 5a (Agent Transparency UI) but is not integrated into the bid detail page. Users still see the old evaluation UI instead of the real-time streaming agent activity. The entire point of Epic 5a - making agent execution transparent - is not delivered.
 
 **Why it matters:**
+
 - Core feature requirement (TRANS-001) not implemented
 - User experience remains opaque and blocking
 - All the streaming infrastructure is built but unused
@@ -25,9 +26,11 @@ The ActivityStream component was built as the centerpiece of Epic 5a (Agent Tran
 
 **Evidence:**
 From Architecture Strategist review:
+
 > "CRITICAL GAP: ActivityStream component built but NEVER INTEGRATED into bid-detail-client.tsx. Users still see old EvaluationProgress component instead of real-time streaming."
 
 **Current State:**
+
 - ✅ ActivityStream component exists and is functional
 - ✅ SSE endpoints work
 - ✅ useAgentStream hook works
@@ -44,12 +47,14 @@ From Architecture Strategist review:
 Directly swap the components in bid-detail-client.tsx.
 
 **Pros:**
+
 - Simplest solution
 - Delivers Epic 5a as designed
 - Uses all built infrastructure
 - Immediate visual feedback
 
 **Cons:**
+
 - Removes old progress UI (but that's the goal)
 - May need to handle backwards compatibility for old bids
 
@@ -57,6 +62,7 @@ Directly swap the components in bid-detail-client.tsx.
 **Risk:** Low
 
 **Implementation:**
+
 ```typescript
 // components/bids/bid-detail-client.tsx
 
@@ -86,11 +92,13 @@ Directly swap the components in bid-detail-client.tsx.
 Show ActivityStream for new evaluations, EvaluationProgress for completed ones.
 
 **Pros:**
+
 - Preserves old UI for historical data
 - Smoother migration path
 - Can A/B test
 
 **Cons:**
+
 - More complex
 - Maintains two codepaths
 - Against YAGNI principle
@@ -103,10 +111,12 @@ Show ActivityStream for new evaluations, EvaluationProgress for completed ones.
 Tabs for "Live Stream" vs "Results Summary"
 
 **Pros:**
+
 - Users can choose view mode
 - Best of both worlds
 
 **Cons:**
+
 - Over-engineered for current need
 - Adds UI complexity
 - Not in original spec
@@ -118,16 +128,18 @@ Tabs for "Live Stream" vs "Results Summary"
 
 ## Recommended Action
 
-*(To be filled during triage)*
+_(To be filled during triage)_
 
 ## Technical Details
 
 **Affected Files:**
+
 - `components/bids/bid-detail-client.tsx` (primary integration point)
 - `components/bids/evaluation-progress.tsx` (may be replaced/deprecated)
 - `app/(dashboard)/bids/[id]/page.tsx` (parent page, may need updates)
 
 **Affected Components:**
+
 - BidDetailClient (main integration)
 - ActivityStream (already built, needs wiring)
 - EvaluationProgress (to be replaced or conditionally rendered)

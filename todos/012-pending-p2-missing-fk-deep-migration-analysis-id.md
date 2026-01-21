@@ -18,6 +18,7 @@ The `bidOpportunities` schema includes a `deepMigrationAnalysisId` column (line 
 ## Findings
 
 **Data Integrity Guardian Report:**
+
 - Column exists: `deepMigrationAnalysisId: text('deep_migration_analysis_id')`
 - No foreign key constraint defined
 - No validation that referenced analysis exists
@@ -25,6 +26,7 @@ The `bidOpportunities` schema includes a `deepMigrationAnalysisId` column (line 
 - No CASCADE behavior on delete
 
 **Evidence:**
+
 ```typescript
 // lib/db/schema.ts (lines 82-83)
 export const bidOpportunities = sqliteTable('bid_opportunities', {
@@ -35,6 +37,7 @@ export const bidOpportunities = sqliteTable('bid_opportunities', {
 ```
 
 **Expected Schema:**
+
 ```typescript
 deepMigrationAnalysisId: text('deep_migration_analysis_id')
   .references(() => deepMigrationAnalyses.id, {
@@ -43,6 +46,7 @@ deepMigrationAnalysisId: text('deep_migration_analysis_id')
 ```
 
 **Risk Scenarios:**
+
 1. Analysis deleted → bid still has deepMigrationAnalysisId → UI breaks trying to load
 2. Manual DB edit sets invalid ID → UI shows "Analysis not found" error
 3. Race condition: bid references analysis before it's created → constraint would prevent
@@ -50,13 +54,16 @@ deepMigrationAnalysisId: text('deep_migration_analysis_id')
 ## Proposed Solutions
 
 ### Solution 1: Add Foreign Key with ON DELETE SET NULL (Recommended)
+
 **Pros:**
+
 - Enforces referential integrity
 - Auto-clears reference when analysis deleted
 - Prevents invalid IDs from being stored
 - Standard pattern for optional references
 
 **Cons:**
+
 - Need schema migration
 - Existing invalid references must be cleaned up first
 
@@ -64,22 +71,25 @@ deepMigrationAnalysisId: text('deep_migration_analysis_id')
 **Risk**: Low
 
 **Implementation:**
+
 ```typescript
 // lib/db/schema.ts
 export const bidOpportunities = sqliteTable('bid_opportunities', {
   // ... other columns
-  deepMigrationAnalysisId: text('deep_migration_analysis_id')
-    .references(() => deepMigrationAnalyses.id, {
+  deepMigrationAnalysisId: text('deep_migration_analysis_id').references(
+    () => deepMigrationAnalyses.id,
+    {
       onDelete: 'set null', // ✅ Clear reference when analysis deleted
-    }),
-  quickScanId: text('quick_scan_id')
-    .references(() => quickScans.id, {
-      onDelete: 'set null', // ✅ Also fix this while we're at it
-    }),
+    }
+  ),
+  quickScanId: text('quick_scan_id').references(() => quickScans.id, {
+    onDelete: 'set null', // ✅ Also fix this while we're at it
+  }),
 });
 ```
 
 **Migration:**
+
 ```sql
 -- SQLite doesn't support ALTER COLUMN, need to recreate table:
 
@@ -122,11 +132,14 @@ ALTER TABLE `bid_opportunities_new`
 ```
 
 ### Solution 2: Application-Level Validation
+
 **Pros:**
+
 - No schema migration
 - More flexible validation logic
 
 **Cons:**
+
 - Not enforced by database
 - Easy to bypass/forget
 - Doesn't auto-clear on delete
@@ -135,11 +148,14 @@ ALTER TABLE `bid_opportunities_new`
 **Risk**: High (fragile, can be forgotten)
 
 ### Solution 3: Remove Column Entirely
+
 **Pros:**
+
 - Simplifies schema
 - Use quickScans.deepMigrationAnalysisId instead
 
 **Cons:**
+
 - Requires refactoring existing code
 - Loses direct link from bid to analysis
 
@@ -155,6 +171,7 @@ This is the standard pattern for optional references and prevents data integrity
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/db/schema.ts` - Add FK constraints to both columns
 - `drizzle/migrations/XXXX_add_analysis_fks.sql` - NEW migration
 
@@ -163,6 +180,7 @@ This is the standard pattern for optional references and prevents data integrity
 **Breaking Changes:** Invalid references will be cleared (correct behavior)
 
 **Verification:**
+
 ```typescript
 // After migration, verify FK constraints active:
 const [fks] = await db.all("PRAGMA foreign_key_list('bid_opportunities')");

@@ -47,24 +47,15 @@ export function TechStackChart({ data }: { data: TechStack | null }) {
       count: data.marketing?.length ?? 0,
       fill: 'var(--color-marketing)',
     },
-  ].filter((d) => d.count > 0);
+  ].filter(d => d.count > 0);
 
   if (chartData.length === 0) return null;
 
   return (
     <ChartContainer config={chartConfig} className="aspect-square">
       <PieChart>
-        <ChartTooltip
-          cursor={false}
-          content={<ChartTooltipContent hideLabel />}
-        />
-        <Pie
-          data={chartData}
-          dataKey="count"
-          nameKey="category"
-          innerRadius={40}
-          strokeWidth={4}
-        />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+        <Pie data={chartData} dataKey="count" nameKey="category" innerRadius={40} strokeWidth={4} />
       </PieChart>
     </ChartContainer>
   );

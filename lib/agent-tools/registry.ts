@@ -34,7 +34,11 @@ export const registry: ToolRegistry = {
   },
 };
 
-export function listToolsForAgent(): Array<{ name: string; description: string; category: string }> {
+export function listToolsForAgent(): Array<{
+  name: string;
+  description: string;
+  category: string;
+}> {
   return Array.from(toolsMap.values()).map(t => ({
     name: t.name,
     description: t.description,
@@ -44,7 +48,7 @@ export function listToolsForAgent(): Array<{ name: string; description: string; 
 
 export function getToolsByCategory(): Record<string, Array<{ name: string; description: string }>> {
   const result: Record<string, Array<{ name: string; description: string }>> = {};
-  
+
   for (const tool of toolsMap.values()) {
     if (!result[tool.category]) {
       result[tool.category] = [];
@@ -54,6 +58,6 @@ export function getToolsByCategory(): Record<string, Array<{ name: string; descr
       description: tool.description,
     });
   }
-  
+
   return result;
 }

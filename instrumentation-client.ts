@@ -4,7 +4,7 @@ initBotId({
   protect: [
     {
       path: '/api/submit',
-      method: 'POST'
-    }
-  ]
+      method: 'POST',
+    },
+  ],
 });

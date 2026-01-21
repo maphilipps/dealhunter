@@ -13,7 +13,11 @@ interface CompetitorWarningProps {
   className?: string;
 }
 
-export function CompetitorWarning({ competitors, winProbability, className }: CompetitorWarningProps) {
+export function CompetitorWarning({
+  competitors,
+  winProbability,
+  className,
+}: CompetitorWarningProps) {
   if (!competitors || competitors.length === 0) {
     return (
       <Alert className={className}>
@@ -26,9 +30,9 @@ export function CompetitorWarning({ competitors, winProbability, className }: Co
     );
   }
 
-  const strongCompetitors = competitors.filter((c) => c.strength === 'strong');
-  const mediumCompetitors = competitors.filter((c) => c.strength === 'medium');
-  const weakCompetitors = competitors.filter((c) => c.strength === 'weak');
+  const strongCompetitors = competitors.filter(c => c.strength === 'strong');
+  const mediumCompetitors = competitors.filter(c => c.strength === 'medium');
+  const weakCompetitors = competitors.filter(c => c.strength === 'weak');
 
   const getAlertVariant = () => {
     if (strongCompetitors.length > 0) return 'destructive';
@@ -57,7 +61,10 @@ export function CompetitorWarning({ competitors, winProbability, className }: Co
     },
   };
 
-  const renderCompetitors = (competitorList: Competitor[], strength: 'strong' | 'medium' | 'weak') => {
+  const renderCompetitors = (
+    competitorList: Competitor[],
+    strength: 'strong' | 'medium' | 'weak'
+  ) => {
     if (competitorList.length === 0) return null;
 
     const config = strengthConfig[strength];
@@ -90,7 +97,9 @@ export function CompetitorWarning({ competitors, winProbability, className }: Co
                     <span className="font-medium text-muted-foreground">Vorteile:</span>
                     <ul className="list-disc list-inside ml-2 mt-1 space-y-1">
                       {competitor.advantages.map((adv, i) => (
-                        <li key={i} className="text-muted-foreground">{adv}</li>
+                        <li key={i} className="text-muted-foreground">
+                          {adv}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -101,7 +110,9 @@ export function CompetitorWarning({ competitors, winProbability, className }: Co
                     <span className="font-medium text-muted-foreground">Nachteile:</span>
                     <ul className="list-disc list-inside ml-2 mt-1 space-y-1">
                       {competitor.disadvantages.map((dis, i) => (
-                        <li key={i} className="text-muted-foreground">{dis}</li>
+                        <li key={i} className="text-muted-foreground">
+                          {dis}
+                        </li>
                       ))}
                     </ul>
                   </div>

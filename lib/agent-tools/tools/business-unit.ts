@@ -15,10 +15,12 @@ registry.register({
   category: 'business-unit',
   inputSchema: listBusinessUnitsInputSchema,
   async execute(input, _context: ToolContext) {
-    const results = await db.select().from(businessUnits)
+    const results = await db
+      .select()
+      .from(businessUnits)
       .orderBy(desc(businessUnits.createdAt))
       .limit(input.limit);
-    
+
     return { success: true, data: results };
   },
 });
@@ -33,14 +35,16 @@ registry.register({
   category: 'business-unit',
   inputSchema: getBusinessUnitInputSchema,
   async execute(input, _context: ToolContext) {
-    const [bu] = await db.select().from(businessUnits)
+    const [bu] = await db
+      .select()
+      .from(businessUnits)
       .where(eq(businessUnits.id, input.id))
       .limit(1);
-    
+
     if (!bu) {
       return { success: false, error: 'Business Unit not found' };
     }
-    
+
     return { success: true, data: bu };
   },
 });
@@ -61,14 +65,17 @@ registry.register({
     if (context.userRole !== 'admin') {
       return { success: false, error: 'Nur Admin kann Business Units erstellen' };
     }
-    
-    const [bu] = await db.insert(businessUnits).values({
-      name: input.name,
-      leaderName: input.leaderName,
-      leaderEmail: input.leaderEmail,
-      keywords: JSON.stringify(input.keywords),
-    }).returning();
-    
+
+    const [bu] = await db
+      .insert(businessUnits)
+      .values({
+        name: input.name,
+        leaderName: input.leaderName,
+        leaderEmail: input.leaderEmail,
+        keywords: JSON.stringify(input.keywords),
+      })
+      .returning();
+
     return { success: true, data: bu };
   },
 });
@@ -90,26 +97,29 @@ registry.register({
     if (context.userRole !== 'admin') {
       return { success: false, error: 'Nur Admin kann Business Units bearbeiten' };
     }
-    
-    const [existing] = await db.select().from(businessUnits)
+
+    const [existing] = await db
+      .select()
+      .from(businessUnits)
       .where(eq(businessUnits.id, input.id))
       .limit(1);
-    
+
     if (!existing) {
       return { success: false, error: 'Business Unit not found' };
     }
-    
+
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (input.name) updateData.name = input.name;
     if (input.leaderName) updateData.leaderName = input.leaderName;
     if (input.leaderEmail) updateData.leaderEmail = input.leaderEmail;
     if (input.keywords) updateData.keywords = JSON.stringify(input.keywords);
-    
-    const [updated] = await db.update(businessUnits)
+
+    const [updated] = await db
+      .update(businessUnits)
       .set(updateData)
       .where(eq(businessUnits.id, input.id))
       .returning();
-    
+
     return { success: true, data: updated };
   },
 });
@@ -127,17 +137,19 @@ registry.register({
     if (context.userRole !== 'admin') {
       return { success: false, error: 'Nur Admin kann Business Units löschen' };
     }
-    
-    const [existing] = await db.select().from(businessUnits)
+
+    const [existing] = await db
+      .select()
+      .from(businessUnits)
       .where(eq(businessUnits.id, input.id))
       .limit(1);
-    
+
     if (!existing) {
       return { success: false, error: 'Business Unit not found' };
     }
-    
+
     await db.delete(businessUnits).where(eq(businessUnits.id, input.id));
-    
+
     return { success: true, data: { id: input.id, deleted: true } };
   },
 });

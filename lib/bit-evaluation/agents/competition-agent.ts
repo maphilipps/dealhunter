@@ -30,8 +30,10 @@ export async function runCompetitionAgent(input: CompetitionAgentInput): Promise
 
     try {
       // Extrahiere Industrie und Kunde für gezielte Recherche
-      const industry = input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
-                       input.extractedRequirements?.industry || '';
+      const industry =
+        input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
+        input.extractedRequirements?.industry ||
+        '';
       const customerName = input.extractedRequirements?.customerName || '';
 
       // Web Search für aktuelle Wettbewerber-Aktivitäten im Markt
@@ -89,10 +91,14 @@ WICHTIG: Gib immer eine fundierte Einschätzung ab. Alle Begründungen und Texte
 Extracted Requirements:
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
-${input.quickScanResults ? `
+${
+  input.quickScanResults
+    ? `
 Quick Scan Results:
 ${JSON.stringify(input.quickScanResults, null, 2)}
-` : ''}
+`
+    : ''
+}
 ${marketInsights}
 ${competitorNews}
 

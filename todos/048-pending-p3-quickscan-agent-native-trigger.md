@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p3
-issue_id: "048"
+issue_id: '048'
 tags: [code-review, agent-native, quickscan, api]
 dependencies: []
 ---
@@ -19,11 +19,13 @@ QuickScan kann aktuell nur über die UI gestartet werden (Button-Klick). Für vo
 **Agent-Native Score:** 78% (gut, aber verbesserungswürdig)
 
 **Fehlende Capabilities:**
+
 1. `POST /api/rfps/{id}/quick-scan/trigger` - QuickScan starten
 2. `GET /api/rfps/{id}/quick-scan/status` - Status abfragen
 3. `GET /api/rfps/{id}/quick-scan/result` - Ergebnis abrufen
 
 **Use Cases für Agent-Trigger:**
+
 - Automatischer QuickScan bei neuem RFP (via Inngest)
 - Bulk-Rescan aller RFPs mit veralteten Scans
 - Integration mit externen Systemen (Slack Bot, API)
@@ -74,6 +76,7 @@ Option A + C kombinieren: REST für Trigger/Status, SSE für Real-Time wenn gew�
 ## Technical Details
 
 **New Files:**
+
 - `app/api/rfps/[id]/quick-scan/trigger/route.ts`
 - `app/api/rfps/[id]/quick-scan/status/route.ts`
 - `app/api/rfps/[id]/quick-scan/result/route.ts`
@@ -89,8 +92,8 @@ Option A + C kombinieren: REST für Trigger/Status, SSE für Real-Time wenn gew�
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                        | Learnings                      |
+| ---------- | ----------------------------- | ------------------------------ |
 | 2026-01-20 | Todo erstellt aus Plan Review | Agent-Native Gap identifiziert |
 
 ## Resources

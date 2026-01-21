@@ -18,6 +18,7 @@ All API endpoints (except `/auth/*`) require authentication via NextAuth.js sess
 Login with email and password.
 
 **Request:**
+
 ```json
 {
   "email": "user@adesso.de",
@@ -26,6 +27,7 @@ Login with email and password.
 ```
 
 **Response:**
+
 ```json
 {
   "user": {
@@ -54,15 +56,18 @@ Logout current user.
 Upload RFP document (PDF, DOCX, TXT) or paste text.
 
 **Headers:**
+
 ```
 Content-Type: multipart/form-data
 ```
 
 **Form Data:**
+
 - `file`: File upload (optional)
 - `text`: Raw text (optional)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -87,15 +92,16 @@ Stream AI extraction process using Server-Sent Events (SSE).
 ```typescript
 // Event types
 type ExtractionEvent =
-  | { type: 'agent-start', data: { agentName: string } }
-  | { type: 'agent-thinking', data: { thought: string } }
-  | { type: 'tool-call', data: { toolName: string, args: any } }
-  | { type: 'tool-result', data: { toolName: string, result: any } }
-  | { type: 'agent-complete', data: { result: any } }
-  | { type: 'error', data: { message: string } }
+  | { type: 'agent-start'; data: { agentName: string } }
+  | { type: 'agent-thinking'; data: { thought: string } }
+  | { type: 'tool-call'; data: { toolName: string; args: any } }
+  | { type: 'tool-result'; data: { toolName: string; result: any } }
+  | { type: 'agent-complete'; data: { result: any } }
+  | { type: 'error'; data: { message: string } };
 ```
 
 **Example Event:**
+
 ```
 event: agent-thinking
 data: {"thought":"Extracting company name..."}
@@ -116,6 +122,7 @@ Stream Quick Scan analysis (tech stack detection, BU matching).
 **Response:** SSE stream (same format as extraction)
 
 **Final Event Data:**
+
 ```json
 {
   "result": {
@@ -127,15 +134,16 @@ Stream Quick Scan analysis (tech stack detection, BU matching).
 }
 ```
 
-### BIT Evaluation
+### BID Evaluation
 
 #### GET `/api/rfps/[id]/evaluate/stream`
 
-Stream BIT/NO BIT evaluation with multi-agent analysis.
+Stream BID/NO-BID evaluation with multi-agent analysis.
 
 **Response:** SSE stream with sub-agent events
 
 **Agents:**
+
 - Capability Agent (tech fit)
 - Competition Agent (market analysis)
 - Deal Quality Agent (commercial viability)
@@ -144,6 +152,7 @@ Stream BIT/NO BIT evaluation with multi-agent analysis.
 - Strategic Fit Agent (alignment)
 
 **Final Event Data:**
+
 ```json
 {
   "result": {
@@ -170,6 +179,7 @@ Stream BIT/NO BIT evaluation with multi-agent analysis.
 Trigger background deep analysis job (Inngest).
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -182,6 +192,7 @@ Trigger background deep analysis job (Inngest).
 Check deep analysis job status.
 
 **Response:**
+
 ```json
 {
   "status": "running" | "completed" | "failed",
@@ -195,6 +206,7 @@ Check deep analysis job status.
 Get deep analysis results.
 
 **Response:**
+
 ```json
 {
   "techStack": {
@@ -220,6 +232,7 @@ Get deep analysis results.
 Match RFP to Business Unit.
 
 **Request:**
+
 ```json
 {
   "technologies": ["Drupal", "React"],
@@ -229,6 +242,7 @@ Match RFP to Business Unit.
 ```
 
 **Response:**
+
 ```json
 {
   "businessUnit": {
@@ -236,9 +250,7 @@ Match RFP to Business Unit.
     "name": "Banking & Insurance",
     "confidence": 0.88
   },
-  "alternatives": [
-    { "id": "bu-id-2", "name": "Technology & Innovation", "confidence": 0.65 }
-  ]
+  "alternatives": [{ "id": "bu-id-2", "name": "Technology & Innovation", "confidence": 0.65 }]
 }
 ```
 
@@ -249,10 +261,12 @@ Match RFP to Business Unit.
 Generate AI-powered visualization using json-render.
 
 **Query Parameters:**
+
 - `type`: Visualization type (optional)
 - `data`: Data key to visualize (optional)
 
 **Response:**
+
 ```json
 {
   "jsonRender": {
@@ -279,6 +293,7 @@ Stream CMS comparison matrix generation.
 **Response:** SSE stream
 
 **Final Event Data:**
+
 ```json
 {
   "matrix": [
@@ -300,6 +315,7 @@ Stream CMS comparison matrix generation.
 Generate facts visualization from Quick Scan data.
 
 **Response:**
+
 ```json
 {
   "facts": [
@@ -320,6 +336,7 @@ Generate facts visualization from Quick Scan data.
 Get technology details.
 
 **Response:**
+
 ```json
 {
   "id": "tech-id",
@@ -334,6 +351,7 @@ Get technology details.
 Trigger technology research (web scraping, docs analysis).
 
 **Request:**
+
 ```json
 {
   "url": "https://drupal.org/docs",
@@ -342,6 +360,7 @@ Trigger technology research (web scraping, docs analysis).
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -354,6 +373,7 @@ Trigger technology research (web scraping, docs analysis).
 Research specific technology feature.
 
 **Request:**
+
 ```json
 {
   "feature": "Multi-site Management"
@@ -361,6 +381,7 @@ Research specific technology feature.
 ```
 
 **Response:**
+
 ```json
 {
   "found": true,
@@ -374,6 +395,7 @@ Research specific technology feature.
 Review technology features with AI.
 
 **Request:**
+
 ```json
 {
   "features": ["Feature 1", "Feature 2"]
@@ -381,11 +403,10 @@ Review technology features with AI.
 ```
 
 **Response:**
+
 ```json
 {
-  "reviews": [
-    { "feature": "Feature 1", "score": 0.9, "notes": "..." }
-  ]
+  "reviews": [{ "feature": "Feature 1", "score": 0.9, "notes": "..." }]
 }
 ```
 
@@ -394,6 +415,7 @@ Review technology features with AI.
 Orchestrate technology research workflow.
 
 **Request:**
+
 ```json
 {
   "workflow": "full-research",
@@ -402,6 +424,7 @@ Orchestrate technology research workflow.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -420,6 +443,7 @@ Orchestrate technology research workflow.
 Get all available agent capabilities.
 
 **Response:**
+
 ```json
 {
   "agents": [
@@ -457,10 +481,12 @@ Slack event webhook endpoint.
 **Security:** Requires `SLACK_SIGNING_SECRET` verification
 
 **Supported Events:**
+
 - `app_mention` - Bot mentioned in channel
 - `message` - Direct message to bot
 
 **Response:**
+
 ```json
 {
   "ok": true
@@ -480,6 +506,7 @@ Inngest webhook endpoint for background job execution.
 **Security:** Requires `INNGEST_SIGNING_KEY` verification
 
 **Jobs:**
+
 - Deep Analysis
 - Technology Research
 - Email Notifications
@@ -537,6 +564,7 @@ All endpoints use consistent error format:
 Subscribe to RFP lifecycle events (future feature):
 
 **Events:**
+
 - `rfp.created`
 - `rfp.extracted`
 - `rfp.quick_scan_complete`
@@ -544,6 +572,7 @@ Subscribe to RFP lifecycle events (future feature):
 - `rfp.assigned`
 
 **Payload:**
+
 ```json
 {
   "event": "rfp.evaluation_complete",
@@ -565,23 +594,23 @@ All streaming endpoints use SSE protocol:
 ### Connection
 
 ```javascript
-const eventSource = new EventSource('/api/rfps/123/quick-scan/stream')
+const eventSource = new EventSource('/api/rfps/123/quick-scan/stream');
 
-eventSource.addEventListener('agent-thinking', (event) => {
-  const data = JSON.parse(event.data)
-  console.log('Agent thinking:', data.thought)
-})
+eventSource.addEventListener('agent-thinking', event => {
+  const data = JSON.parse(event.data);
+  console.log('Agent thinking:', data.thought);
+});
 
-eventSource.addEventListener('agent-complete', (event) => {
-  const data = JSON.parse(event.data)
-  console.log('Complete:', data.result)
-  eventSource.close()
-})
+eventSource.addEventListener('agent-complete', event => {
+  const data = JSON.parse(event.data);
+  console.log('Complete:', data.result);
+  eventSource.close();
+});
 
-eventSource.addEventListener('error', (event) => {
-  console.error('Error:', event)
-  eventSource.close()
-})
+eventSource.addEventListener('error', event => {
+  console.error('Error:', event);
+  eventSource.close();
+});
 ```
 
 ### Event Types
@@ -603,26 +632,26 @@ All streaming endpoints emit these standard events:
 Future versions will provide a TypeScript SDK:
 
 ```typescript
-import { DealhunterClient } from '@dealhunter/sdk'
+import { DealhunterClient } from '@dealhunter/sdk';
 
 const client = new DealhunterClient({
   baseUrl: 'https://api.dealhunter.adesso.de',
   apiKey: process.env.DEALHUNTER_API_KEY,
-})
+});
 
 // Create RFP
 const rfp = await client.rfps.create({
   file: uploadFile,
-})
+});
 
 // Stream Quick Scan
-const stream = await client.rfps.quickScan(rfp.id)
+const stream = await client.rfps.quickScan(rfp.id);
 for await (const event of stream) {
-  console.log(event)
+  console.log(event);
 }
 
 // Get evaluation
-const evaluation = await client.rfps.getEvaluation(rfp.id)
+const evaluation = await client.rfps.getEvaluation(rfp.id);
 ```
 
 ---
@@ -633,57 +662,57 @@ const evaluation = await client.rfps.getEvaluation(rfp.id)
 
 ```typescript
 // Upload file
-const formData = new FormData()
-formData.append('file', file)
+const formData = new FormData();
+formData.append('file', file);
 
 const response = await fetch('/api/submit', {
   method: 'POST',
   body: formData,
-})
+});
 
-const { data } = await response.json()
-const rfpId = data.id
+const { data } = await response.json();
+const rfpId = data.id;
 
 // Stream extraction
-const eventSource = new EventSource(`/api/rfps/${rfpId}/extraction/stream`)
+const eventSource = new EventSource(`/api/rfps/${rfpId}/extraction/stream`);
 
-eventSource.addEventListener('agent-complete', (event) => {
-  const { result } = JSON.parse(event.data)
-  console.log('Extracted:', result)
-  eventSource.close()
-})
+eventSource.addEventListener('agent-complete', event => {
+  const { result } = JSON.parse(event.data);
+  console.log('Extracted:', result);
+  eventSource.close();
+});
 ```
 
 ### Quick Scan
 
 ```typescript
-const eventSource = new EventSource(`/api/rfps/${rfpId}/quick-scan/stream`)
+const eventSource = new EventSource(`/api/rfps/${rfpId}/quick-scan/stream`);
 
-eventSource.addEventListener('agent-complete', (event) => {
-  const { result } = JSON.parse(event.data)
-  console.log('Technologies:', result.technologies)
-  console.log('Business Line:', result.businessLine)
-  eventSource.close()
-})
+eventSource.addEventListener('agent-complete', event => {
+  const { result } = JSON.parse(event.data);
+  console.log('Technologies:', result.technologies);
+  console.log('Business Line:', result.businessLine);
+  eventSource.close();
+});
 ```
 
-### BIT Evaluation
+### BID Evaluation
 
 ```typescript
-const eventSource = new EventSource(`/api/rfps/${rfpId}/evaluate/stream`)
+const eventSource = new EventSource(`/api/rfps/${rfpId}/evaluate/stream`);
 
 // Track sub-agents
-eventSource.addEventListener('agent-start', (event) => {
-  const { agentName } = JSON.parse(event.data)
-  console.log(`Starting: ${agentName}`)
-})
+eventSource.addEventListener('agent-start', event => {
+  const { agentName } = JSON.parse(event.data);
+  console.log(`Starting: ${agentName}`);
+});
 
-eventSource.addEventListener('agent-complete', (event) => {
-  const { result } = JSON.parse(event.data)
-  console.log('Recommendation:', result.recommendation)
-  console.log('Confidence:', result.confidence)
-  eventSource.close()
-})
+eventSource.addEventListener('agent-complete', event => {
+  const { result } = JSON.parse(event.data);
+  console.log('Recommendation:', result.recommendation);
+  console.log('Confidence:', result.confidence);
+  eventSource.close();
+});
 ```
 
 ---
@@ -693,6 +722,7 @@ eventSource.addEventListener('agent-complete', (event) => {
 ### Authentication
 
 All endpoints require NextAuth.js session except:
+
 - `/api/auth/*` - Authentication endpoints
 - `/api/inngest` - Verified via signing key
 - `/api/slack` - Verified via signing secret
@@ -720,12 +750,12 @@ async headers() {
 Implement rate limiting for production (recommended):
 
 ```typescript
-import rateLimit from 'express-rate-limit'
+import rateLimit from 'express-rate-limit';
 
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 100, // 100 requests per minute
-})
+});
 ```
 
 ---
@@ -733,6 +763,7 @@ const limiter = rateLimit({
 ## Support
 
 For API questions or issues:
+
 - Check [CONTRIBUTING.md](CONTRIBUTING.md) for development setup
 - Review [ARCHITECTURE.md](ARCHITECTURE.md) for system design
 - Contact adesso DevOps team

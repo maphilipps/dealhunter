@@ -16,7 +16,15 @@ const featureReviewSchema = z.object({
   originalScore: z.number(),
   reviewedScore: z.number(),
   originalSupportType: z.string().optional(),
-  reviewedSupportType: z.enum(['native', 'module', 'contrib', 'extension', 'third-party', 'custom', 'unknown']),
+  reviewedSupportType: z.enum([
+    'native',
+    'module',
+    'contrib',
+    'extension',
+    'third-party',
+    'custom',
+    'unknown',
+  ]),
   reviewedModuleName: z.string().optional(),
   confidence: z.number().min(0).max(100),
   issues: z.array(z.string()).describe('Gefundene Probleme mit dem Original-Ergebnis'),
@@ -65,29 +73,29 @@ interface ReviewInput {
  */
 const CORRECT_MODULES: Record<string, Record<string, string>> = {
   drupal: {
-    'formulare': 'webform',
-    'forms': 'webform',
-    'formular': 'webform',
-    'mehrsprachigkeit': 'content_translation',
-    'multilingual': 'content_translation',
+    formulare: 'webform',
+    forms: 'webform',
+    formular: 'webform',
+    mehrsprachigkeit: 'content_translation',
+    multilingual: 'content_translation',
     'e-commerce': 'commerce',
-    'shop': 'commerce',
-    'suche': 'search_api',
-    'search': 'search_api',
-    'video': 'media',
-    'media': 'media',
-    'workflow': 'workflows',
-    'seo': 'metatag',
-    'graphql': 'graphql',
-    'paragraphs': 'paragraphs',
+    shop: 'commerce',
+    suche: 'search_api',
+    search: 'search_api',
+    video: 'media',
+    media: 'media',
+    workflow: 'workflows',
+    seo: 'metatag',
+    graphql: 'graphql',
+    paragraphs: 'paragraphs',
   },
   wordpress: {
-    'formulare': 'contact-form-7',
-    'forms': 'contact-form-7',
+    formulare: 'contact-form-7',
+    forms: 'contact-form-7',
     'e-commerce': 'woocommerce',
-    'shop': 'woocommerce',
-    'seo': 'yoast-seo',
-    'mehrsprachigkeit': 'wpml',
+    shop: 'woocommerce',
+    seo: 'yoast-seo',
+    mehrsprachigkeit: 'wpml',
   },
 };
 
@@ -143,7 +151,8 @@ export async function reviewFeatureResearch(input: ReviewInput): Promise<ReviewR
     const sources: string[] = [...(data.sourceUrls || [])];
 
     let reviewedScore = data.score;
-    let reviewedSupportType = (data.supportType || 'unknown') as FeatureReview['reviewedSupportType'];
+    let reviewedSupportType = (data.supportType ||
+      'unknown') as FeatureReview['reviewedSupportType'];
     let reviewedModuleName = data.moduleName;
     let needsManualReview = false;
 
@@ -157,7 +166,10 @@ export async function reviewFeatureResearch(input: ReviewInput): Promise<ReviewR
     }
 
     // 2. Prüfe auf verdächtig kurze oder generische Modul-Namen
-    if (data.moduleName && (data.moduleName.length <= 2 || ['no', 'de', 'en', 'the', 'and'].includes(data.moduleName))) {
+    if (
+      data.moduleName &&
+      (data.moduleName.length <= 2 || ['no', 'de', 'en', 'the', 'and'].includes(data.moduleName))
+    ) {
       issues.push(`Verdächtiger Modul-Name: "${data.moduleName}" (zu kurz/generisch)`);
 
       // Nachrecherche durchführen
@@ -218,18 +230,22 @@ export async function reviewFeatureResearch(input: ReviewInput): Promise<ReviewR
       confidence: reviewedConfidence,
       issues,
       corrections,
-      reasoning: issues.length > 0
-        ? `${issues.length} Problem(e) gefunden, ${corrections.length} Korrektur(en) durchgeführt`
-        : 'Keine Probleme gefunden',
+      reasoning:
+        issues.length > 0
+          ? `${issues.length} Problem(e) gefunden, ${corrections.length} Korrektur(en) durchgeführt`
+          : 'Keine Probleme gefunden',
       needsManualReview,
       sources,
     });
   }
 
   // Gesamt-Confidence berechnen
-  const overallConfidence = reviewedFeatures.length > 0
-    ? Math.round(reviewedFeatures.reduce((sum, f) => sum + f.confidence, 0) / reviewedFeatures.length)
-    : 0;
+  const overallConfidence =
+    reviewedFeatures.length > 0
+      ? Math.round(
+          reviewedFeatures.reduce((sum, f) => sum + f.confidence, 0) / reviewedFeatures.length
+        )
+      : 0;
 
   return {
     technologyName,
@@ -300,7 +316,8 @@ Wichtig für ${technologyName}:
       originalScore: currentData.score,
       reviewedScore: currentData.score,
       originalSupportType: currentData.supportType,
-      reviewedSupportType: (currentData.supportType || 'unknown') as FeatureReview['reviewedSupportType'],
+      reviewedSupportType: (currentData.supportType ||
+        'unknown') as FeatureReview['reviewedSupportType'],
       reviewedModuleName: currentData.moduleName,
       confidence: currentData.confidence,
       issues: ['AI-Review fehlgeschlagen'],

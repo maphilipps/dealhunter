@@ -28,7 +28,16 @@ export function ReferenceForm() {
     const budgetRange = formData.get('budgetRange') as string;
     const outcome = formData.get('outcome') as string;
 
-    if (!projectName || !customerName || !industry || !scope || !teamSize || !durationMonths || !budgetRange || !outcome) {
+    if (
+      !projectName ||
+      !customerName ||
+      !industry ||
+      !scope ||
+      !teamSize ||
+      !durationMonths ||
+      !budgetRange ||
+      !outcome
+    ) {
       toast.error('Bitte alle Pflichtfelder ausfüllen');
       return;
     }
@@ -62,7 +71,7 @@ export function ReferenceForm() {
   };
 
   const removeTechnology = (tech: string) => {
-    setTechnologies(technologies.filter((t) => t !== tech));
+    setTechnologies(technologies.filter(t => t !== tech));
   };
 
   const addHighlight = () => {
@@ -73,7 +82,7 @@ export function ReferenceForm() {
   };
 
   const removeHighlight = (highlight: string) => {
-    setHighlights(highlights.filter((h) => h !== highlight));
+    setHighlights(highlights.filter(h => h !== highlight));
   };
 
   return (
@@ -86,7 +95,12 @@ export function ReferenceForm() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="projectName">Projektname *</Label>
-              <Input id="projectName" name="projectName" required placeholder="z.B. Relaunch Unternehmenswebsite" />
+              <Input
+                id="projectName"
+                name="projectName"
+                required
+                placeholder="z.B. Relaunch Unternehmenswebsite"
+              />
             </div>
 
             <div className="space-y-2">
@@ -106,17 +120,36 @@ export function ReferenceForm() {
 
             <div className="space-y-2">
               <Label htmlFor="teamSize">Teamgröße *</Label>
-              <Input id="teamSize" name="teamSize" type="number" required placeholder="z.B. 5" min="1" />
+              <Input
+                id="teamSize"
+                name="teamSize"
+                type="number"
+                required
+                placeholder="z.B. 5"
+                min="1"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="durationMonths">Dauer (Monate) *</Label>
-              <Input id="durationMonths" name="durationMonths" type="number" required placeholder="z.B. 6" min="1" />
+              <Input
+                id="durationMonths"
+                name="durationMonths"
+                type="number"
+                required
+                placeholder="z.B. 6"
+                min="1"
+              />
             </div>
 
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="outcome">Ergebnis *</Label>
-              <Input id="outcome" name="outcome" required placeholder="z.B. Erfolgreich abgeschlossen" />
+              <Input
+                id="outcome"
+                name="outcome"
+                required
+                placeholder="z.B. Erfolgreich abgeschlossen"
+              />
             </div>
           </div>
 
@@ -137,8 +170,8 @@ export function ReferenceForm() {
             <div className="flex gap-2">
               <Input
                 value={techInput}
-                onChange={(e) => setTechInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTechnology())}
+                onChange={e => setTechInput(e.target.value)}
+                onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addTechnology())}
                 placeholder="Technologie eingeben"
               />
               <Button type="button" onClick={addTechnology} size="icon">
@@ -146,7 +179,7 @@ export function ReferenceForm() {
               </Button>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
-              {technologies.map((tech) => (
+              {technologies.map(tech => (
                 <Badge key={tech} variant="secondary">
                   {tech}
                   <button type="button" onClick={() => removeTechnology(tech)} className="ml-1">
@@ -162,8 +195,8 @@ export function ReferenceForm() {
             <div className="flex gap-2">
               <Input
                 value={highlightInput}
-                onChange={(e) => setHighlightInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addHighlight())}
+                onChange={e => setHighlightInput(e.target.value)}
+                onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addHighlight())}
                 placeholder="Highlight eingeben"
               />
               <Button type="button" onClick={addHighlight} size="icon">
@@ -171,7 +204,7 @@ export function ReferenceForm() {
               </Button>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
-              {highlights.map((highlight) => (
+              {highlights.map(highlight => (
                 <Badge key={highlight} variant="secondary">
                   {highlight}
                   <button type="button" onClick={() => removeHighlight(highlight)} className="ml-1">

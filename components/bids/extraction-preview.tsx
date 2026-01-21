@@ -7,7 +7,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { X, Plus, Loader2, Globe, Sparkles, Check, ExternalLink, Calendar, Clock, FileText, AlertTriangle } from 'lucide-react';
+import {
+  X,
+  Plus,
+  Loader2,
+  Globe,
+  Sparkles,
+  Check,
+  ExternalLink,
+  Calendar,
+  Clock,
+  FileText,
+  AlertTriangle,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { suggestWebsiteUrlsAction } from '@/lib/bids/actions';
@@ -34,13 +46,19 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
   const [suggestedUrls, setSuggestedUrls] = useState<WebsiteUrl[]>([]);
 
   // Initialize websiteUrls from data
-  const websiteUrls: WebsiteUrl[] = data.websiteUrls || (data.websiteUrl ? [{
-    url: data.websiteUrl,
-    type: 'primary' as const,
-    description: 'Haupt-Website',
-    extractedFromDocument: true,
-    selected: true,
-  }] : []);
+  const websiteUrls: WebsiteUrl[] =
+    data.websiteUrls ||
+    (data.websiteUrl
+      ? [
+          {
+            url: data.websiteUrl,
+            type: 'primary' as const,
+            description: 'Haupt-Website',
+            extractedFromDocument: true,
+            selected: true,
+          },
+        ]
+      : []);
 
   const handleAddTechnology = () => {
     if (newTech.trim()) {
@@ -93,11 +111,13 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
       });
 
       if (result.success && result.suggestions.length > 0) {
-        setSuggestedUrls(result.suggestions.map(s => ({
-          ...s,
-          extractedFromDocument: false,
-          selected: false,
-        })));
+        setSuggestedUrls(
+          result.suggestions.map(s => ({
+            ...s,
+            extractedFromDocument: false,
+            selected: false,
+          }))
+        );
         toast.success(`${result.suggestions.length} URL-Vorschläge generiert`);
       } else {
         toast.info('Keine URL-Vorschläge gefunden. Bitte manuell eingeben.');
@@ -124,7 +144,10 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
 
   const handleToggleSuggestion = (index: number) => {
     const updatedSuggestions = [...suggestedUrls];
-    updatedSuggestions[index] = { ...updatedSuggestions[index], selected: !updatedSuggestions[index].selected };
+    updatedSuggestions[index] = {
+      ...updatedSuggestions[index],
+      selected: !updatedSuggestions[index].selected,
+    };
     setSuggestedUrls(updatedSuggestions);
   };
 
@@ -178,9 +201,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-blue-900">AI Confidence Score</p>
-            <p className="text-xs text-blue-700">
-              Vertrauensgrad der AI in die Extraktion
-            </p>
+            <p className="text-xs text-blue-700">Vertrauensgrad der AI in die Extraktion</p>
           </div>
           <div className="text-2xl font-bold text-blue-900">
             {Math.round(data.confidenceScore * 100)}%
@@ -194,7 +215,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         <Input
           id="customerName"
           value={data.customerName}
-          onChange={(e) => setData({ ...data, customerName: e.target.value })}
+          onChange={e => setData({ ...data, customerName: e.target.value })}
           placeholder="Name des Kunden"
         />
       </div>
@@ -206,7 +227,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
           <Input
             id="industry"
             value={data.industry || ''}
-            onChange={(e) => setData({ ...data, industry: e.target.value })}
+            onChange={e => setData({ ...data, industry: e.target.value })}
             placeholder="z.B. Automotive, Banking, Insurance"
           />
         </div>
@@ -222,7 +243,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
           <select
             id="companySize"
             value={data.companySize || ''}
-            onChange={(e) => setData({ ...data, companySize: e.target.value as any })}
+            onChange={e => setData({ ...data, companySize: e.target.value as any })}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
             <option value="">-- Bitte wählen --</option>
@@ -241,7 +262,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
             <Input
               id="employeeCountRange"
               value={data.employeeCountRange || ''}
-              onChange={(e) => setData({ ...data, employeeCountRange: e.target.value })}
+              onChange={e => setData({ ...data, employeeCountRange: e.target.value })}
               placeholder="z.B. 100-500 oder 1000+"
             />
           </div>
@@ -254,7 +275,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
             <Input
               id="revenueRange"
               value={data.revenueRange || ''}
-              onChange={(e) => setData({ ...data, revenueRange: e.target.value })}
+              onChange={e => setData({ ...data, revenueRange: e.target.value })}
               placeholder="z.B. 10-50 Mio EUR"
             />
           </div>
@@ -266,7 +287,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
           <select
             id="procurementType"
             value={data.procurementType || ''}
-            onChange={(e) => setData({ ...data, procurementType: e.target.value as any })}
+            onChange={e => setData({ ...data, procurementType: e.target.value as any })}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
             <option value="">-- Bitte wählen --</option>
@@ -283,7 +304,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
             <Input
               id="industryVertical"
               value={data.industryVertical || ''}
-              onChange={(e) => setData({ ...data, industryVertical: e.target.value })}
+              onChange={e => setData({ ...data, industryVertical: e.target.value })}
               placeholder="Spezifischer Branchen-Sektor"
             />
           </div>
@@ -296,7 +317,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
             <Input
               id="companyLocation"
               value={data.companyLocation || ''}
-              onChange={(e) => setData({ ...data, companyLocation: e.target.value })}
+              onChange={e => setData({ ...data, companyLocation: e.target.value })}
               placeholder="z.B. München, Frankfurt am Main"
             />
           </div>
@@ -339,48 +360,57 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
           {websiteUrls.filter(u => u.extractedFromDocument).length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground">Aus Dokument extrahiert:</p>
-              {websiteUrls.filter(u => u.extractedFromDocument).map((urlItem, idx) => (
-                <Card key={`extracted-${idx}`} className={urlItem.selected ? 'border-primary' : ''}>
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <a
-                          href={urlItem.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium hover:underline flex items-center gap-1"
-                        >
-                          {urlItem.url}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                        {urlItem.description && (
-                          <p className="text-xs text-muted-foreground truncate">{urlItem.description}</p>
-                        )}
+              {websiteUrls
+                .filter(u => u.extractedFromDocument)
+                .map((urlItem, idx) => (
+                  <Card
+                    key={`extracted-${idx}`}
+                    className={urlItem.selected ? 'border-primary' : ''}
+                  >
+                    <CardContent className="p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <a
+                            href={urlItem.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium hover:underline flex items-center gap-1"
+                          >
+                            {urlItem.url}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                          {urlItem.description && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {urlItem.description}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="secondary" className="shrink-0">
+                          {urlItem.type}
+                        </Badge>
                       </div>
-                      <Badge variant="secondary" className="shrink-0">{urlItem.type}</Badge>
-                    </div>
-                    <div className="flex items-center gap-2 ml-2">
-                      <Button
-                        type="button"
-                        variant={urlItem.selected ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => handleToggleUrl(idx, true)}
-                      >
-                        {urlItem.selected ? <Check className="h-4 w-4" /> : 'Auswählen'}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveUrl(idx, true)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="flex items-center gap-2 ml-2">
+                        <Button
+                          type="button"
+                          variant={urlItem.selected ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleToggleUrl(idx, true)}
+                        >
+                          {urlItem.selected ? <Check className="h-4 w-4" /> : 'Auswählen'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveUrl(idx, true)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
             </div>
           )}
 
@@ -389,7 +419,10 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
             <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground">AI-Vorschläge:</p>
               {suggestedUrls.map((urlItem, idx) => (
-                <Card key={`suggested-${idx}`} className={urlItem.selected ? 'border-primary' : 'border-dashed'}>
+                <Card
+                  key={`suggested-${idx}`}
+                  className={urlItem.selected ? 'border-primary' : 'border-dashed'}
+                >
                   <CardContent className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <Sparkles className="h-4 w-4 text-yellow-500 shrink-0" />
@@ -404,10 +437,14 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
                           <ExternalLink className="h-3 w-3" />
                         </a>
                         {urlItem.description && (
-                          <p className="text-xs text-muted-foreground truncate">{urlItem.description}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {urlItem.description}
+                          </p>
                         )}
                       </div>
-                      <Badge variant="outline" className="shrink-0">{urlItem.type}</Badge>
+                      <Badge variant="outline" className="shrink-0">
+                        {urlItem.type}
+                      </Badge>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
                       <Button
@@ -437,7 +474,8 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
           {websiteUrls.length === 0 && suggestedUrls.length === 0 && (
             <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
               <p className="text-sm text-yellow-800">
-                Keine Website-URLs im Dokument gefunden. Klicken Sie auf &quot;AI-Vorschläge&quot; oder fügen Sie manuell URLs hinzu.
+                Keine Website-URLs im Dokument gefunden. Klicken Sie auf &quot;AI-Vorschläge&quot;
+                oder fügen Sie manuell URLs hinzu.
               </p>
             </div>
           )}
@@ -446,8 +484,8 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
           <div className="flex gap-2 mt-3">
             <Input
               value={newUrl}
-              onChange={(e) => setNewUrl(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddManualUrl()}
+              onChange={e => setNewUrl(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAddManualUrl()}
               placeholder="https://www.beispiel.de"
               type="url"
             />
@@ -465,7 +503,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
           <Input
             id="projectName"
             value={data.projectName || ''}
-            onChange={(e) => setData({ ...data, projectName: e.target.value })}
+            onChange={e => setData({ ...data, projectName: e.target.value })}
             placeholder="Name oder Titel des Projekts"
           />
         </div>
@@ -477,7 +515,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         <Textarea
           id="projectDescription"
           value={data.projectDescription}
-          onChange={(e) => setData({ ...data, projectDescription: e.target.value })}
+          onChange={e => setData({ ...data, projectDescription: e.target.value })}
           placeholder="Detaillierte Beschreibung der Anforderungen"
           rows={6}
         />
@@ -503,8 +541,8 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         <div className="flex gap-2">
           <Input
             value={newTech}
-            onChange={(e) => setNewTech(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddTechnology()}
+            onChange={e => setNewTech(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && handleAddTechnology()}
             placeholder="Technologie hinzufügen (Enter drücken)"
           />
           <Button type="button" onClick={handleAddTechnology} variant="outline" size="icon">
@@ -537,7 +575,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         <div className="flex gap-2">
           <Textarea
             value={newRequirement}
-            onChange={(e) => setNewRequirement(e.target.value)}
+            onChange={e => setNewRequirement(e.target.value)}
             placeholder="Neue Anforderung hinzufügen"
             rows={2}
           />
@@ -554,7 +592,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
           <Input
             id="budgetRange"
             value={data.budgetRange || ''}
-            onChange={(e) => setData({ ...data, budgetRange: e.target.value })}
+            onChange={e => setData({ ...data, budgetRange: e.target.value })}
             placeholder="z.B. 100.000 - 500.000 EUR"
           />
         </div>
@@ -567,22 +605,19 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
           <Input
             id="timeline"
             value={data.timeline || ''}
-            onChange={(e) => setData({ ...data, timeline: e.target.value })}
+            onChange={e => setData({ ...data, timeline: e.target.value })}
             placeholder="z.B. 6 Monate, Q1 2026"
           />
         </div>
       )}
 
       {/* Submission Deadline Visualization */}
-      <SubmissionDeadlineCard
-        data={data}
-        onChange={(updates) => setData({ ...data, ...updates })}
-      />
+      <SubmissionDeadlineCard data={data} onChange={updates => setData({ ...data, ...updates })} />
 
       {/* Required Deliverables */}
       <RequiredDeliverablesCard
         deliverables={data.requiredDeliverables || []}
-        onChange={(deliverables) => setData({ ...data, requiredDeliverables: deliverables })}
+        onChange={deliverables => setData({ ...data, requiredDeliverables: deliverables })}
       />
 
       {/* Confirm Button */}
@@ -629,7 +664,9 @@ function SubmissionDeadlineCard({
 
       {/* Deadline Visualization Banner */}
       {deadline && (
-        <Card className={`border-2 ${isExpired ? 'border-red-500 bg-red-50' : isUrgent ? 'border-orange-500 bg-orange-50' : 'border-blue-500 bg-blue-50'}`}>
+        <Card
+          className={`border-2 ${isExpired ? 'border-red-500 bg-red-50' : isUrgent ? 'border-orange-500 bg-orange-50' : 'border-blue-500 bg-blue-50'}`}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -641,21 +678,40 @@ function SubmissionDeadlineCard({
                   <Calendar className="h-8 w-8 text-blue-600" />
                 )}
                 <div>
-                  <p className={`text-sm font-medium ${isExpired ? 'text-red-900' : isUrgent ? 'text-orange-900' : 'text-blue-900'}`}>
+                  <p
+                    className={`text-sm font-medium ${isExpired ? 'text-red-900' : isUrgent ? 'text-orange-900' : 'text-blue-900'}`}
+                  >
                     Abgabefrist
                   </p>
-                  <p className={`text-2xl font-bold ${isExpired ? 'text-red-700' : isUrgent ? 'text-orange-700' : 'text-blue-700'}`}>
-                    {deadline.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                  <p
+                    className={`text-2xl font-bold ${isExpired ? 'text-red-700' : isUrgent ? 'text-orange-700' : 'text-blue-700'}`}
+                  >
+                    {deadline.toLocaleDateString('de-DE', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
                     {data.submissionTime && ` um ${data.submissionTime} Uhr`}
                   </p>
                 </div>
               </div>
-              <div className={`text-right p-3 rounded-lg ${isExpired ? 'bg-red-100' : isUrgent ? 'bg-orange-100' : 'bg-blue-100'}`}>
-                <p className={`text-3xl font-bold ${isExpired ? 'text-red-700' : isUrgent ? 'text-orange-700' : 'text-blue-700'}`}>
+              <div
+                className={`text-right p-3 rounded-lg ${isExpired ? 'bg-red-100' : isUrgent ? 'bg-orange-100' : 'bg-blue-100'}`}
+              >
+                <p
+                  className={`text-3xl font-bold ${isExpired ? 'text-red-700' : isUrgent ? 'text-orange-700' : 'text-blue-700'}`}
+                >
                   {isExpired ? Math.abs(daysUntilDeadline!) : daysUntilDeadline}
                 </p>
-                <p className={`text-xs font-medium ${isExpired ? 'text-red-600' : isUrgent ? 'text-orange-600' : 'text-blue-600'}`}>
-                  {isExpired ? 'Tage überfällig' : daysUntilDeadline === 1 ? 'Tag verbleibend' : 'Tage verbleibend'}
+                <p
+                  className={`text-xs font-medium ${isExpired ? 'text-red-600' : isUrgent ? 'text-orange-600' : 'text-blue-600'}`}
+                >
+                  {isExpired
+                    ? 'Tage überfällig'
+                    : daysUntilDeadline === 1
+                      ? 'Tag verbleibend'
+                      : 'Tage verbleibend'}
                 </p>
               </div>
             </div>
@@ -667,7 +723,10 @@ function SubmissionDeadlineCard({
                 <div className="flex items-center gap-2 text-sm">
                   <span className="font-medium">{projectStart.toLocaleDateString('de-DE')}</span>
                   <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full" style={{ width: '100%' }} />
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full"
+                      style={{ width: '100%' }}
+                    />
                   </div>
                   <span className="font-medium">{projectEnd.toLocaleDateString('de-DE')}</span>
                 </div>
@@ -686,18 +745,20 @@ function SubmissionDeadlineCard({
               id="submissionDeadline"
               type="date"
               value={data.submissionDeadline || ''}
-              onChange={(e) => onChange({ submissionDeadline: e.target.value })}
+              onChange={e => onChange({ submissionDeadline: e.target.value })}
               className="flex-1"
             />
             <Input
               type="time"
               value={data.submissionTime || ''}
-              onChange={(e) => onChange({ submissionTime: e.target.value })}
+              onChange={e => onChange({ submissionTime: e.target.value })}
               placeholder="12:00"
               className="w-24"
             />
           </div>
-          <p className="text-xs text-muted-foreground">Heute: {today.toLocaleDateString('de-DE')}</p>
+          <p className="text-xs text-muted-foreground">
+            Heute: {today.toLocaleDateString('de-DE')}
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -706,7 +767,7 @@ function SubmissionDeadlineCard({
             id="projectStartDate"
             type="date"
             value={data.projectStartDate || ''}
-            onChange={(e) => onChange({ projectStartDate: e.target.value })}
+            onChange={e => onChange({ projectStartDate: e.target.value })}
           />
         </div>
 
@@ -716,7 +777,7 @@ function SubmissionDeadlineCard({
             id="projectEndDate"
             type="date"
             value={data.projectEndDate || ''}
-            onChange={(e) => onChange({ projectEndDate: e.target.value })}
+            onChange={e => onChange({ projectEndDate: e.target.value })}
           />
         </div>
       </div>
@@ -799,9 +860,7 @@ function RequiredDeliverablesCard({
         {deliverables.length > 0 && (
           <div className="flex items-center gap-2">
             <Badge variant="default">{mandatoryCount} Pflicht</Badge>
-            {optionalCount > 0 && (
-              <Badge variant="secondary">{optionalCount} Optional</Badge>
-            )}
+            {optionalCount > 0 && <Badge variant="secondary">{optionalCount} Optional</Badge>}
           </div>
         )}
       </div>
@@ -814,7 +873,9 @@ function RequiredDeliverablesCard({
               <CardContent className="p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${item.mandatory ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${item.mandatory ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
+                    >
                       {idx + 1}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -825,7 +886,7 @@ function RequiredDeliverablesCard({
                     </div>
                     <select
                       value={item.format || ''}
-                      onChange={(e) => handleUpdateFormat(idx, e.target.value)}
+                      onChange={e => handleUpdateFormat(idx, e.target.value)}
                       className="text-xs border rounded px-2 py-1 bg-background"
                     >
                       <option value="">Format</option>
@@ -862,8 +923,8 @@ function RequiredDeliverablesCard({
       <div className="flex gap-2">
         <Input
           value={newDeliverable}
-          onChange={(e) => setNewDeliverable(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          onChange={e => setNewDeliverable(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
           placeholder="z.B. Angebotsdokument, Referenzliste, Konzeptpapier..."
         />
         <Button type="button" onClick={handleAdd} variant="outline" size="icon">
@@ -875,9 +936,7 @@ function RequiredDeliverablesCard({
       {deliverables.length === 0 && (
         <div className="rounded-lg border border-dashed p-4 text-center">
           <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground">
-            Keine abzugebenden Unterlagen definiert.
-          </p>
+          <p className="text-sm text-muted-foreground">Keine abzugebenden Unterlagen definiert.</p>
           <p className="text-xs text-muted-foreground mt-1">
             Fügen Sie die geforderten Dokumente hinzu (z.B. Angebot, Konzept, Referenzen).
           </p>
@@ -888,7 +947,14 @@ function RequiredDeliverablesCard({
       {deliverables.length === 0 && (
         <div className="flex flex-wrap gap-2">
           <p className="text-xs text-muted-foreground w-full">Übliche Unterlagen:</p>
-          {['Angebotsdokument', 'Preisblatt', 'Konzeptpapier', 'Referenzliste', 'Projektplan', 'Team-Profile'].map((suggestion) => (
+          {[
+            'Angebotsdokument',
+            'Preisblatt',
+            'Konzeptpapier',
+            'Referenzliste',
+            'Projektplan',
+            'Team-Profile',
+          ].map(suggestion => (
             <Button
               key={suggestion}
               type="button"

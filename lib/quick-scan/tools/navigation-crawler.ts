@@ -56,9 +56,12 @@ async function extractNavigation(page: Page): Promise<{
     for (const selector of navSelectors) {
       const nav = document.querySelector(selector);
       if (nav) {
-        const topLevelItems = nav.querySelectorAll(':scope > ul > li, :scope > div > a, :scope > a');
-        topLevelItems.forEach((item) => {
-          const link = item.querySelector('a') || (item.tagName === 'A' ? item as HTMLAnchorElement : null);
+        const topLevelItems = nav.querySelectorAll(
+          ':scope > ul > li, :scope > div > a, :scope > a'
+        );
+        topLevelItems.forEach(item => {
+          const link =
+            item.querySelector('a') || (item.tagName === 'A' ? (item as HTMLAnchorElement) : null);
           if (!link) return;
 
           const navItem: NavItem = {
@@ -71,7 +74,7 @@ async function extractNavigation(page: Page): Promise<{
           const subMenu = item.querySelector('ul, .submenu, .dropdown-menu');
           if (subMenu) {
             const subItems = subMenu.querySelectorAll(':scope > li > a, :scope > a');
-            subItems.forEach((subLink) => {
+            subItems.forEach(subLink => {
               const subAnchor = subLink as HTMLAnchorElement;
               navItem.children!.push({
                 label: (subAnchor.textContent || '').trim().slice(0, 50),
@@ -92,7 +95,7 @@ async function extractNavigation(page: Page): Promise<{
     const footer = document.querySelector('footer');
     if (footer) {
       const footerLinks = footer.querySelectorAll('a');
-      footerLinks.forEach((link) => {
+      footerLinks.forEach(link => {
         const label = (link.textContent || '').trim().slice(0, 50);
         if (label && !footerNavItems.some(n => n.label === label)) {
           footerNavItems.push({
@@ -128,10 +131,10 @@ async function extractNavigation(page: Page): Promise<{
 
     // Check for sticky header
     const header = document.querySelector('header');
-    const stickyHeader = header ? (
-      getComputedStyle(header).position === 'fixed' ||
-      getComputedStyle(header).position === 'sticky'
-    ) : false;
+    const stickyHeader = header
+      ? getComputedStyle(header).position === 'fixed' ||
+        getComputedStyle(header).position === 'sticky'
+      : false;
 
     // Check for mobile menu
     const mobileMenu = !!(
@@ -160,16 +163,20 @@ async function extractLinks(page: Page, baseUrl: string): Promise<string[]> {
   const baseUrlObj = new URL(baseUrl);
   const baseDomain = baseUrlObj.hostname;
 
-  return page.evaluate((domain) => {
+  return page.evaluate(domain => {
     const links = new Set<string>();
-    document.querySelectorAll('a[href]').forEach((anchor) => {
+    document.querySelectorAll('a[href]').forEach(anchor => {
       const href = anchor.getAttribute('href');
       if (!href) return;
 
       try {
         const url = new URL(href, window.location.origin);
         // Only internal links
-        if (url.hostname === domain || url.hostname === `www.${domain}` || domain === `www.${url.hostname}`) {
+        if (
+          url.hostname === domain ||
+          url.hostname === `www.${domain}` ||
+          domain === `www.${url.hostname}`
+        ) {
           // Clean URL
           const cleanUrl = `${url.origin}${url.pathname}`.replace(/\/$/, '');
           links.add(cleanUrl);
@@ -255,11 +262,7 @@ export async function crawlNavigation(
   url: string,
   options: CrawlOptions = {}
 ): Promise<CrawlResult> {
-  const {
-    maxDepth = 3,
-    maxPages = 500,
-    timeout = 30000,
-  } = options;
+  const { maxDepth = 3, maxPages = 500, timeout = 30000 } = options;
 
   let browser: Browser | null = null;
   const errors: string[] = [];
@@ -275,7 +278,8 @@ export async function crawlNavigation(
 
     const context = await browser.newContext({
       viewport: { width: 1920, height: 1080 },
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     });
 
     const page = await context.newPage();
@@ -334,7 +338,9 @@ export async function crawlNavigation(
           });
         }
       } catch (err) {
-        errors.push(`Failed to crawl ${currentUrl}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        errors.push(
+          `Failed to crawl ${currentUrl}: ${err instanceof Error ? err.message : 'Unknown error'}`
+        );
       }
     }
 

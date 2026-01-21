@@ -38,8 +38,7 @@ export function ActivityStream({
   autoStart = false,
   grouped = false,
 }: ActivityStreamProps) {
-  const { events, isStreaming, error, decision, urlSuggestion, start, abort } =
-    useAgentStream();
+  const { events, isStreaming, error, decision, urlSuggestion, start, abort } = useAgentStream();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-start on mount if requested
@@ -70,9 +69,7 @@ export function ActivityStream({
 
   // Filter events to show only relevant ones
   const visibleEvents = events.filter(
-    (e) =>
-      e.type === AgentEventType.AGENT_PROGRESS ||
-      e.type === AgentEventType.AGENT_COMPLETE
+    e => e.type === AgentEventType.AGENT_PROGRESS || e.type === AgentEventType.AGENT_COMPLETE
   );
 
   // Grouped view - shows agents with collapsible sections
@@ -106,9 +103,7 @@ export function ActivityStream({
                           Mit dieser URL scannen
                         </Button>
                       </div>
-                      <p className="text-xs text-amber-600 mt-2">
-                        {urlSuggestion.reason}
-                      </p>
+                      <p className="text-xs text-amber-600 mt-2">{urlSuggestion.reason}</p>
                     </div>
                   )}
                 </div>
@@ -175,9 +170,7 @@ export function ActivityStream({
                           Mit dieser URL scannen
                         </Button>
                       </div>
-                      <p className="text-xs text-amber-600 mt-2">
-                        {urlSuggestion.reason}
-                      </p>
+                      <p className="text-xs text-amber-600 mt-2">{urlSuggestion.reason}</p>
                     </div>
                   )}
                 </div>
@@ -192,9 +185,7 @@ export function ActivityStream({
               <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg mt-4">
                 <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-green-900">
-                    Analyse abgeschlossen
-                  </p>
+                  <p className="text-sm font-medium text-green-900">Analyse abgeschlossen</p>
                   <p className="text-sm text-green-700">
                     Alle Agenten haben die Verarbeitung abgeschlossen
                   </p>

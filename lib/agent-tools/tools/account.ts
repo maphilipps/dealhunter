@@ -15,11 +15,13 @@ registry.register({
   category: 'account',
   inputSchema: listAccountsInputSchema,
   async execute(input, context: ToolContext) {
-    const results = await db.select().from(accounts)
+    const results = await db
+      .select()
+      .from(accounts)
       .where(eq(accounts.userId, context.userId))
       .orderBy(desc(accounts.createdAt))
       .limit(input.limit);
-    
+
     return { success: true, data: results };
   },
 });
@@ -34,29 +36,29 @@ registry.register({
   category: 'account',
   inputSchema: getAccountInputSchema,
   async execute(input, context: ToolContext) {
-    const [account] = await db.select().from(accounts)
-      .where(eq(accounts.id, input.id))
-      .limit(1);
-    
+    const [account] = await db.select().from(accounts).where(eq(accounts.id, input.id)).limit(1);
+
     if (!account) {
       return { success: false, error: 'Account not found' };
     }
-    
+
     if (account.userId !== context.userId) {
       return { success: false, error: 'No access to this account' };
     }
-    
-    const opportunities = await db.select({
-      id: rfps.id,
-      status: rfps.status,
-      source: rfps.source,
-      stage: rfps.stage,
-      decision: rfps.decision,
-      createdAt: rfps.createdAt,
-    }).from(rfps)
+
+    const opportunities = await db
+      .select({
+        id: rfps.id,
+        status: rfps.status,
+        source: rfps.source,
+        stage: rfps.stage,
+        decision: rfps.decision,
+        createdAt: rfps.createdAt,
+      })
+      .from(rfps)
       .where(eq(rfps.accountId, input.id))
       .orderBy(desc(rfps.createdAt));
-    
+
     return { success: true, data: { account, opportunities } };
   },
 });
@@ -74,14 +76,17 @@ registry.register({
   category: 'account',
   inputSchema: createAccountInputSchema,
   async execute(input, context: ToolContext) {
-    const [account] = await db.insert(accounts).values({
-      userId: context.userId,
-      name: input.name,
-      industry: input.industry,
-      website: input.website,
-      notes: input.notes,
-    }).returning();
-    
+    const [account] = await db
+      .insert(accounts)
+      .values({
+        userId: context.userId,
+        name: input.name,
+        industry: input.industry,
+        website: input.website,
+        notes: input.notes,
+      })
+      .returning();
+
     return { success: true, data: account };
   },
 });
@@ -100,29 +105,28 @@ registry.register({
   category: 'account',
   inputSchema: updateAccountInputSchema,
   async execute(input, context: ToolContext) {
-    const [existing] = await db.select().from(accounts)
-      .where(eq(accounts.id, input.id))
-      .limit(1);
-    
+    const [existing] = await db.select().from(accounts).where(eq(accounts.id, input.id)).limit(1);
+
     if (!existing) {
       return { success: false, error: 'Account not found' };
     }
-    
+
     if (existing.userId !== context.userId) {
       return { success: false, error: 'No access to this account' };
     }
-    
+
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (input.name) updateData.name = input.name;
     if (input.industry) updateData.industry = input.industry;
     if (input.website !== undefined) updateData.website = input.website;
     if (input.notes !== undefined) updateData.notes = input.notes;
-    
-    const [updated] = await db.update(accounts)
+
+    const [updated] = await db
+      .update(accounts)
       .set(updateData)
       .where(eq(accounts.id, input.id))
       .returning();
-    
+
     return { success: true, data: updated };
   },
 });
@@ -137,20 +141,18 @@ registry.register({
   category: 'account',
   inputSchema: deleteAccountInputSchema,
   async execute(input, context: ToolContext) {
-    const [existing] = await db.select().from(accounts)
-      .where(eq(accounts.id, input.id))
-      .limit(1);
-    
+    const [existing] = await db.select().from(accounts).where(eq(accounts.id, input.id)).limit(1);
+
     if (!existing) {
       return { success: false, error: 'Account not found' };
     }
-    
+
     if (existing.userId !== context.userId) {
       return { success: false, error: 'No access to this account' };
     }
-    
+
     await db.delete(accounts).where(eq(accounts.id, input.id));
-    
+
     return { success: true, data: { id: input.id, deleted: true } };
   },
 });

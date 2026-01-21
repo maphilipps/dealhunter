@@ -43,7 +43,14 @@ function getScoreColor(score: number): string {
   return 'text-red-600 bg-red-50';
 }
 
-function ScoreCell({ score, confidence, notes, webSearchUsed, onResearch, isResearching }: {
+function ScoreCell({
+  score,
+  confidence,
+  notes,
+  webSearchUsed,
+  onResearch,
+  isResearching,
+}: {
   score: number;
   confidence: number;
   notes?: string;
@@ -72,7 +79,7 @@ function ScoreCell({ score, confidence, notes, webSearchUsed, onResearch, isRese
               <span className="text-sm font-medium">n/a</span>
               {onResearch && (
                 <button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     onResearch();
                   }}
@@ -99,7 +106,9 @@ function ScoreCell({ score, confidence, notes, webSearchUsed, onResearch, isRese
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={`flex items-center justify-center gap-1 px-2 py-1 rounded ${getScoreColor(score)}`}>
+          <div
+            className={`flex items-center justify-center gap-1 px-2 py-1 rounded ${getScoreColor(score)}`}
+          >
             {score >= 70 ? (
               <CheckCircle2 className="h-4 w-4" />
             ) : score >= 40 ? (
@@ -152,19 +161,24 @@ export function CMSEvaluationMatrix({
   onResearchRequirement,
   researchingCell,
 }: CMSEvaluationMatrixProps) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['functional', 'technical']));
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set(['functional', 'technical'])
+  );
 
   // Group requirements by category
-  const requirementsByCategory = result.requirements.reduce((acc, req) => {
-    if (!acc[req.category]) {
-      acc[req.category] = [];
-    }
-    acc[req.category].push(req);
-    return acc;
-  }, {} as Record<string, RequirementMatch[]>);
+  const requirementsByCategory = result.requirements.reduce(
+    (acc, req) => {
+      if (!acc[req.category]) {
+        acc[req.category] = [];
+      }
+      acc[req.category].push(req);
+      return acc;
+    },
+    {} as Record<string, RequirementMatch[]>
+  );
 
   const toggleCategory = (category: string) => {
-    setExpandedCategories((prev) => {
+    setExpandedCategories(prev => {
       const next = new Set(prev);
       if (next.has(category)) {
         next.delete(category);
@@ -205,19 +219,20 @@ export function CMSEvaluationMatrix({
               <p className="text-2xl font-bold text-green-900">
                 {result.recommendation.primaryCms}
               </p>
-              <p className="text-sm text-green-700 mt-1">
-                {result.recommendation.reasoning}
-              </p>
+              <p className="text-sm text-green-700 mt-1">{result.recommendation.reasoning}</p>
               {result.recommendation.alternativeCms && (
                 <p className="text-xs text-green-600 mt-2">
-                  Alternative: {result.recommendation.alternativeCms} - {result.recommendation.alternativeReasoning}
+                  Alternative: {result.recommendation.alternativeCms} -{' '}
+                  {result.recommendation.alternativeReasoning}
                 </p>
               )}
             </div>
             <div className="text-right">
               <div className="flex items-center gap-2">
                 <Progress value={result.recommendation.confidence} className="h-3 w-32" />
-                <span className="font-bold text-green-800">{result.recommendation.confidence}%</span>
+                <span className="font-bold text-green-800">
+                  {result.recommendation.confidence}%
+                </span>
               </div>
               <p className="text-xs text-green-600 mt-1">Confidence</p>
             </div>
@@ -230,13 +245,14 @@ export function CMSEvaluationMatrix({
         <CardHeader>
           <CardTitle className="text-lg">CMS-Vergleich</CardTitle>
           <CardDescription>
-            {result.metadata.totalRequirements} Anforderungen, davon {result.metadata.mustHaveCount} Must-Have
+            {result.metadata.totalRequirements} Anforderungen, davon {result.metadata.mustHaveCount}{' '}
+            Must-Have
             {result.metadata.webSearchUsed && ' (mit Web Search)'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {result.comparedTechnologies.map((cms) => (
+            {result.comparedTechnologies.map(cms => (
               <button
                 key={cms.id}
                 onClick={() => onSelectCMS?.(cms.id)}
@@ -249,12 +265,16 @@ export function CMSEvaluationMatrix({
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-medium">{cms.name}</span>
                   {cms.isBaseline && (
-                    <Badge variant="secondary" className="text-xs">Baseline</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      Baseline
+                    </Badge>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Progress value={cms.overallScore} className="h-2 flex-1" />
-                  <span className={`text-sm font-bold ${getScoreColor(cms.overallScore).split(' ')[0]}`}>
+                  <span
+                    className={`text-sm font-bold ${getScoreColor(cms.overallScore).split(' ')[0]}`}
+                  >
                     {cms.overallScore}%
                   </span>
                 </div>
@@ -274,9 +294,7 @@ export function CMSEvaluationMatrix({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Anforderungs-Matrix</CardTitle>
-          <CardDescription>
-            Detaillierter Vergleich aller erkannten Anforderungen
-          </CardDescription>
+          <CardDescription>Detaillierter Vergleich aller erkannten Anforderungen</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -285,7 +303,7 @@ export function CMSEvaluationMatrix({
                 <TableRow>
                   <TableHead className="min-w-[200px]">Anforderung</TableHead>
                   <TableHead className="w-20">Priorität</TableHead>
-                  {result.comparedTechnologies.map((cms) => (
+                  {result.comparedTechnologies.map(cms => (
                     <TableHead key={cms.id} className="text-center min-w-[100px]">
                       {cms.name}
                     </TableHead>
@@ -303,7 +321,8 @@ export function CMSEvaluationMatrix({
                       <TableCell colSpan={2 + result.comparedTechnologies.length}>
                         <div className="flex items-center gap-2">
                           <span className="font-medium">
-                            {REQUIREMENT_CATEGORIES[category as keyof typeof REQUIREMENT_CATEGORIES]?.label || category}
+                            {REQUIREMENT_CATEGORIES[category as keyof typeof REQUIREMENT_CATEGORIES]
+                              ?.label || category}
                           </span>
                           <Badge variant="outline" className="text-xs">
                             {requirements.length}
@@ -330,7 +349,7 @@ export function CMSEvaluationMatrix({
                           <TableCell>
                             <PriorityBadge priority={req.priority} />
                           </TableCell>
-                          {result.comparedTechnologies.map((cms) => {
+                          {result.comparedTechnologies.map(cms => {
                             const scoreData = req.cmsScores[cms.id];
                             const cellKey = `${cms.id}-${req.requirement}`;
                             return (
@@ -341,7 +360,11 @@ export function CMSEvaluationMatrix({
                                     confidence={scoreData.confidence}
                                     notes={scoreData.notes}
                                     webSearchUsed={scoreData.webSearchUsed}
-                                    onResearch={onResearchRequirement ? () => onResearchRequirement(cms.id, req.requirement) : undefined}
+                                    onResearch={
+                                      onResearchRequirement
+                                        ? () => onResearchRequirement(cms.id, req.requirement)
+                                        : undefined
+                                    }
                                     isResearching={researchingCell === cellKey}
                                   />
                                 ) : (
@@ -373,9 +396,7 @@ export function CMSEvaluationMatrix({
                 </span>
               )}
             </div>
-            <div>
-              Durchschnittlicher Match-Score: {result.metadata.averageMatchScore}%
-            </div>
+            <div>Durchschnittlicher Match-Score: {result.metadata.averageMatchScore}%</div>
           </div>
         </CardContent>
       </Card>
@@ -389,15 +410,16 @@ export function CMSEvaluationMatrix({
                 <h3 className="font-semibold text-orange-900">CMS auswählen</h3>
                 <p className="text-sm text-orange-700">
                   {selectedCMS
-                    ? `Ausgewählt: ${result.comparedTechnologies.find((c) => c.id === selectedCMS)?.name}`
+                    ? `Ausgewählt: ${result.comparedTechnologies.find(c => c.id === selectedCMS)?.name}`
                     : 'Wählen Sie das CMS für dieses Projekt'}
                 </p>
               </div>
-              <Button
-                disabled={!selectedCMS}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                Mit {selectedCMS ? result.comparedTechnologies.find((c) => c.id === selectedCMS)?.name : 'CMS'} fortfahren
+              <Button disabled={!selectedCMS} className="bg-orange-600 hover:bg-orange-700">
+                Mit{' '}
+                {selectedCMS
+                  ? result.comparedTechnologies.find(c => c.id === selectedCMS)?.name
+                  : 'CMS'}{' '}
+                fortfahren
               </Button>
             </div>
           </CardContent>

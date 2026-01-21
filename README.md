@@ -2,13 +2,13 @@
 
 > AI-powered Business Development decision platform for adesso SE
 
-Dealhunter automates the complete RFP (Request for Proposal) evaluation workflow - from document upload to BIT/NO BIT decision and team assignment - using AI agents powered by Vercel AI SDK v5.
+Dealhunter automates the complete RFP (Request for Proposal) evaluation workflow - from document upload to BID/NO-BID decision and team assignment - using AI agents powered by Vercel AI SDK v5.
 
 ## Features
 
 - **AI-Powered Extraction** - Automatically extract key information from RFPs (PDF, DOCX, text)
 - **Quick Scan** - Detect tech stack and match to Business Units in seconds
-- **BIT Evaluation** - Multi-agent analysis for bid/no-bid recommendations
+- **BID Evaluation** - Multi-agent analysis for bid/no-bid recommendations
 - **Deep Analysis** - Background jobs for comprehensive company research
 - **Team Assignment** - AI-suggested team composition based on skills
 - **Analytics Dashboard** - Track bid rates, conversion metrics, and performance
@@ -36,8 +36,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Testbenutzer
 
-| E-Mail | Passwort | Rolle | Beschreibung |
-|--------|----------|-------|--------------|
+| E-Mail            | Passwort   | Rolle | Beschreibung                    |
+| ----------------- | ---------- | ----- | ------------------------------- |
 | `admin@adesso.de` | `admin123` | Admin | Vollzugriff auf alle Funktionen |
 
 ### Rollen
@@ -51,6 +51,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 Die Seed-Daten (`npm run db:seed`) erstellen:
 
 **Business Lines:**
+
 - Banking & Insurance
 - Automotive
 - Energy & Utilities
@@ -61,6 +62,7 @@ Die Seed-Daten (`npm run db:seed`) erstellen:
 - Technology & Innovation
 
 **Technologien:**
+
 - Drupal, TYPO3, AEM, Contentful (CMS)
 - React, Angular, Vue.js, Next.js (Frontend)
 - Java, .NET, Python, Node.js (Backend)
@@ -69,6 +71,7 @@ Die Seed-Daten (`npm run db:seed`) erstellen:
 - Kubernetes, Docker (DevOps)
 
 **Kompetenzen:**
+
 - Project Management, Technical Architecture, Backend Development
 - Frontend Development, UX Design, QA Engineering, DevOps
 - Business Analysis, Data Engineering, AI/ML
@@ -106,6 +109,7 @@ The application uses SQLite with Drizzle ORM. Key tables include:
 ### Vector Search (Future)
 
 For duplicate detection and semantic search, the application is designed to use SQLite's vec0 extension:
+
 - **Embedding Model:** `text-embedding-3-large` (3072 dimensions)
 - **Expected Scale:** < 10,000 RFPs
 - **Use Cases:** Duplicate RFP detection, semantic similarity matching
@@ -123,7 +127,7 @@ Preview & Edit ← User confirms/edits
      ↓
 QUICK SCAN Agent ← AI SDK generateObject
      ↓              (Tech stack, BL recommendation)
-BIT/NO BIT Evaluation
+BID/NO-BID Evaluation
      ↓
 ├─ TECH Agent ← Multi-agent parallel execution
 ├─ COMMERCIAL Agent
@@ -156,7 +160,7 @@ lib/
 ├── agents/                  # AI SDK Agents
 │   ├── extraction/          # Extraction agent
 │   ├── quick-scan/          # Quick Scan agent
-│   ├── bit-evaluation/      # Bit/No Bit evaluation
+│   ├── bid-evaluation/      # Bid/No-Bid evaluation
 │   └── team/                # Team suggestion agent
 ├── db/
 │   ├── schema.ts           # Drizzle schema
@@ -183,6 +187,7 @@ AUTH_SECRET=your-secret-key
 **Error:** `Error: Database connection failed`
 
 **Solution:**
+
 ```bash
 # Recreate database
 rm local.db
@@ -195,6 +200,7 @@ npm run db:seed
 **Error:** `401 Unauthorized` when calling AI endpoints
 
 **Solution:**
+
 1. Check your `.env.local` file has `OPENAI_API_KEY` set
 2. Verify the API key is correct
 3. Check `OPENAI_BASE_URL` is set to `https://adesso-ai-hub.3asabc.de/v1`
@@ -205,6 +211,7 @@ npm run db:seed
 
 **Solution:**
 Check `tsconfig.json` has correct path aliases:
+
 ```json
 {
   "compilerOptions": {
@@ -220,6 +227,7 @@ Check `tsconfig.json` has correct path aliases:
 **Error:** `Session not found` or unable to login
 
 **Solution:**
+
 ```bash
 # Generate new AUTH_SECRET
 openssl rand -base64 32
@@ -236,6 +244,7 @@ npm run dev
 **Error:** `Port 3000 is already in use`
 
 **Solution:**
+
 ```bash
 # Kill process on port 3000
 lsof -ti:3000 | xargs kill -9
@@ -249,6 +258,7 @@ PORT=3001 npm run dev
 **Error:** File upload returns 500 error
 
 **Solution:**
+
 1. Check file size (max 10MB)
 2. Verify file type (PDF, DOCX, TXT)
 3. Check disk space
@@ -259,6 +269,7 @@ PORT=3001 npm run dev
 **Issue:** AI agents take too long to respond
 
 **Solution:**
+
 1. Check your internet connection
 2. Verify adesso AI Hub availability
 3. Consider using smaller models (GPT-4o-mini)

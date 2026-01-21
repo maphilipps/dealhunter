@@ -14,22 +14,26 @@ Thank you for your interest in contributing to Dealhunter! This guide will help 
 ### Getting Started
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd dealhunter
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.example .env.local
    ```
 
    Edit `.env.local` and add your API keys:
+
    ```bash
    OPENAI_API_KEY=your-api-key
    OPENAI_BASE_URL=https://adesso-ai-hub.3asabc.de/v1
@@ -37,12 +41,14 @@ Thank you for your interest in contributing to Dealhunter! This guide will help 
    ```
 
 4. **Initialize database**
+
    ```bash
    npm run db:push    # Apply schema
    npm run db:seed    # Load seed data
    ```
 
 5. **Start development server**
+
    ```bash
    npm run dev
    ```
@@ -68,6 +74,7 @@ We use **trunk-based development**:
 ### Making Changes
 
 1. **Create a feature branch**
+
    ```bash
    git checkout -b feat/your-feature-name
    ```
@@ -78,6 +85,7 @@ We use **trunk-based development**:
    - Update documentation as needed
 
 3. **Test your changes**
+
    ```bash
    npm run build        # Verify build works
    npm run type-check   # Check TypeScript (if available)
@@ -102,6 +110,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 ```
 
 **Types:**
+
 - `feat:` - New feature
 - `fix:` - Bug fix
 - `docs:` - Documentation changes
@@ -111,6 +120,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 - `chore:` - Maintenance tasks
 
 **Examples:**
+
 ```bash
 feat(bids): add quick scan agent
 fix(auth): resolve session timeout issue
@@ -121,6 +131,7 @@ refactor(agents): simplify extraction logic
 ### Pull Request Process
 
 1. **Push your branch**
+
    ```bash
    git push origin feat/your-feature-name
    ```
@@ -150,20 +161,22 @@ refactor(agents): simplify extraction logic
 - Export types from component files
 
 **Good:**
+
 ```typescript
-import { z } from 'zod'
+import { z } from 'zod';
 
 const UserSchema = z.object({
   name: z.string(),
   email: z.string().email(),
-})
+});
 
-type User = z.infer<typeof UserSchema>
+type User = z.infer<typeof UserSchema>;
 ```
 
 **Bad:**
+
 ```typescript
-const user: any = { name: 'John', email: 'invalid' }
+const user: any = { name: 'John', email: 'invalid' };
 ```
 
 ### React Components
@@ -226,24 +239,24 @@ lib/
 - Handle errors gracefully
 
 ```typescript
-'use server'
+'use server';
 
-import { z } from 'zod'
-import { db } from '@/lib/db'
+import { z } from 'zod';
+import { db } from '@/lib/db';
 
 const CreateBidSchema = z.object({
   title: z.string().min(1),
   description: z.string(),
-})
+});
 
 export async function createBid(input: unknown) {
-  const data = CreateBidSchema.parse(input)
+  const data = CreateBidSchema.parse(input);
 
   try {
-    const bid = await db.insert(bids).values(data).returning()
-    return { success: true, data: bid }
+    const bid = await db.insert(bids).values(data).returning();
+    return { success: true, data: bid };
   } catch (error) {
-    return { success: false, error: 'Failed to create bid' }
+    return { success: false, error: 'Failed to create bid' };
   }
 }
 ```
@@ -256,8 +269,8 @@ export async function createBid(input: unknown) {
 - Add proper error handling
 
 ```typescript
-import { streamText } from 'ai'
-import { openai } from '@ai-sdk/openai'
+import { streamText } from 'ai';
+import { openai } from '@ai-sdk/openai';
 
 export async function analyzeBid(bidId: string) {
   const result = streamText({
@@ -265,11 +278,11 @@ export async function analyzeBid(bidId: string) {
     system: 'You are a bid analysis expert.',
     prompt: `Analyze bid ${bidId}`,
     onFinish: async ({ text }) => {
-      await saveToDB(bidId, text)
+      await saveToDB(bidId, text);
     },
-  })
+  });
 
-  return result.toDataStreamResponse()
+  return result.toDataStreamResponse();
 }
 ```
 
@@ -282,27 +295,30 @@ npm test
 ```
 
 Write tests for:
+
 - Utility functions
 - Data transformations
 - Validation logic
 - Agent tools
 
 **Example:**
+
 ```typescript
-import { describe, it, expect } from '@jest/globals'
-import { calculateBidScore } from '@/lib/scoring'
+import { describe, it, expect } from '@jest/globals';
+import { calculateBidScore } from '@/lib/scoring';
 
 describe('calculateBidScore', () => {
   it('should return high score for good fit', () => {
-    const score = calculateBidScore({ tech: 0.9, commercial: 0.8 })
-    expect(score).toBeGreaterThan(0.8)
-  })
-})
+    const score = calculateBidScore({ tech: 0.9, commercial: 0.8 });
+    expect(score).toBeGreaterThan(0.8);
+  });
+});
 ```
 
 ### Integration Tests
 
 Test full workflows:
+
 - File upload → Extraction → Quick Scan
 - Bid evaluation flow
 - Team assignment
@@ -314,6 +330,7 @@ npx playwright test
 ```
 
 Test critical user journeys:
+
 - Login flow
 - Create new bid
 - Run evaluation
@@ -343,6 +360,7 @@ This creates a migration file in `drizzle/` directory.
 ### Seed Data
 
 Update `lib/db/seed.ts` for new reference data:
+
 - Business Lines
 - Technologies
 - Competencies
@@ -353,14 +371,17 @@ Update `lib/db/seed.ts` for new reference data:
 ### Local Development
 
 1. **Enable verbose logging**
+
    ```typescript
-   console.log('[DEBUG]', data)
+   console.log('[DEBUG]', data);
    ```
 
 2. **Use Drizzle Studio**
+
    ```bash
    npm run db:studio
    ```
+
    View and edit database data at [https://local.drizzle.studio](https://local.drizzle.studio)
 
 3. **Check AI responses**
@@ -369,9 +390,9 @@ Update `lib/db/seed.ts` for new reference data:
    const result = await streamText({
      model: openai('gpt-4o-mini'),
      onFinish: ({ text, usage }) => {
-       console.log('[AI Response]', { text, usage })
+       console.log('[AI Response]', { text, usage });
      },
-   })
+   });
    ```
 
 ### Browser DevTools
@@ -386,30 +407,27 @@ Update `lib/db/seed.ts` for new reference data:
 
 ```typescript
 // Bad - N+1 query
-const bids = await db.select().from(bids)
+const bids = await db.select().from(bids);
 for (const bid of bids) {
-  const user = await db.select().from(users).where(eq(users.id, bid.userId))
+  const user = await db.select().from(users).where(eq(users.id, bid.userId));
 }
 
 // Good - Single query with join
-const bids = await db
-  .select()
-  .from(bids)
-  .leftJoin(users, eq(bids.userId, users.id))
+const bids = await db.select().from(bids).leftJoin(users, eq(bids.userId, users.id));
 ```
 
 ### Optimize AI Requests
 
 ```typescript
 // Use smaller models for simple tasks
-const model = isSimpleTask ? openai('gpt-4o-mini') : openai('gpt-4o')
+const model = isSimpleTask ? openai('gpt-4o-mini') : openai('gpt-4o');
 
 // Stream for better UX
-const result = streamText({ model, prompt })
+const result = streamText({ model, prompt });
 
 // Cache results
-const cached = await redis.get(key)
-if (cached) return cached
+const cached = await redis.get(key);
+if (cached) return cached;
 ```
 
 ### Optimize React Rendering
@@ -442,14 +460,15 @@ const Component = memo(({ data }) => <div>{data}</div>)
  */
 export function calculateBidScore(factors: ScoringFactors): number {
   // Weight technical fit higher for technical projects
-  const techWeight = factors.projectType === 'technical' ? 0.6 : 0.4
-  return factors.tech * techWeight + factors.commercial * (1 - techWeight)
+  const techWeight = factors.projectType === 'technical' ? 0.6 : 0.4;
+  return factors.tech * techWeight + factors.commercial * (1 - techWeight);
 }
 ```
 
 ### Update Documentation
 
 When adding features, update:
+
 - README.md (if user-facing)
 - ARCHITECTURE.md (if architectural change)
 - API.md (if new API endpoint)

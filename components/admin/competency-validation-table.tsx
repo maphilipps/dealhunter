@@ -101,7 +101,7 @@ export function CompetencyValidationTable({ data }: CompetencyValidationTablePro
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((comp) => {
+            {data.map(comp => {
               const certifications = JSON.parse(comp.certifications || '[]');
               return (
                 <TableRow key={comp.id}>
@@ -122,21 +122,23 @@ export function CompetencyValidationTable({ data }: CompetencyValidationTablePro
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      {comp.description || <span className="text-muted-foreground">Keine Beschreibung</span>}
+                      {comp.description || (
+                        <span className="text-muted-foreground">Keine Beschreibung</span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
                       <div className="font-medium">{comp.level}</div>
                       {certifications.length > 0 && (
-                        <div className="text-muted-foreground">{certifications.length} Zertifikate</div>
+                        <div className="text-muted-foreground">
+                          {certifications.length} Zertifikate
+                        </div>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    {comp.createdAt
-                      ? new Date(comp.createdAt).toLocaleDateString('de-DE')
-                      : 'N/A'}
+                    {comp.createdAt ? new Date(comp.createdAt).toLocaleDateString('de-DE') : 'N/A'}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
@@ -180,7 +182,7 @@ export function CompetencyValidationTable({ data }: CompetencyValidationTablePro
             <Textarea
               id="feedback"
               value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
+              onChange={e => setFeedback(e.target.value)}
               placeholder="z.B. 'Bitte ergänzen Sie spezifische Projekterfahrungen und Zertifizierungen.'"
               rows={4}
             />
@@ -189,10 +191,7 @@ export function CompetencyValidationTable({ data }: CompetencyValidationTablePro
             <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
               Abbrechen
             </Button>
-            <Button
-              onClick={handleRejectSubmit}
-              disabled={isSubmitting || !feedback.trim()}
-            >
+            <Button onClick={handleRejectSubmit} disabled={isSubmitting || !feedback.trim()}>
               {isSubmitting ? 'Ablehne...' : 'Ablehnen'}
             </Button>
           </DialogFooter>

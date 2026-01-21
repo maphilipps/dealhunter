@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p2
-issue_id: "023"
+issue_id: '023'
 tags: [code-review, security, validation, zod]
 dependencies: []
 ---
@@ -17,6 +17,7 @@ Server action parameters (especially `bidId`) are not validated with Zod before 
 **Source:** security-sentinel agent, kieran-typescript-reviewer agent
 
 **Affected Functions:**
+
 - `triggerBaselineComparison(bidId: string)` - `lib/baseline-comparison/actions.ts`
 - `getBaselineComparisonResult(bidId: string)` - `lib/baseline-comparison/actions.ts`
 - `triggerProjectPlanning(bidId: string)` - `lib/project-planning/actions.ts`
@@ -30,6 +31,7 @@ Server action parameters (especially `bidId`) are not validated with Zod before 
 ## Proposed Solutions
 
 ### Solution 1: Add Zod validation to each action
+
 ```typescript
 import { z } from 'zod';
 
@@ -43,6 +45,7 @@ export async function triggerBaselineComparison(bidId: string) {
   // ... rest of function
 }
 ```
+
 - **Effort:** Small
 - **Risk:** Low
 - **Pros:** Defense-in-depth, consistent with guidelines
@@ -55,6 +58,7 @@ export async function triggerBaselineComparison(bidId: string) {
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/baseline-comparison/actions.ts`
 - `lib/project-planning/actions.ts`
 - `lib/notifications/actions.ts`
@@ -67,6 +71,6 @@ export async function triggerBaselineComparison(bidId: string) {
 
 ## Work Log
 
-| Date | Action | Learning |
-|------|--------|----------|
+| Date       | Action                           | Learning                             |
+| ---------- | -------------------------------- | ------------------------------------ |
 | 2026-01-18 | Discovered via security-sentinel | Input validation is defense-in-depth |

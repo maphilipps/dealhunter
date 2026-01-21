@@ -1,5 +1,10 @@
 import OpenAI from 'openai';
-import { legalAssessmentSchema, type LegalAssessment, legalQuickCheckSchema, type LegalQuickCheck } from '../schema';
+import {
+  legalAssessmentSchema,
+  type LegalAssessment,
+  legalQuickCheckSchema,
+  type LegalQuickCheck,
+} from '../schema';
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
 // Initialize OpenAI client with adesso AI Hub
@@ -38,8 +43,12 @@ WICHTIG: Alle Texte auf Deutsch.`,
 Extracted Requirements:
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
-${input.quickScanResults ? `Quick Scan Results:
-${JSON.stringify(input.quickScanResults, null, 2)}` : ''}
+${
+  input.quickScanResults
+    ? `Quick Scan Results:
+${JSON.stringify(input.quickScanResults, null, 2)}`
+    : ''
+}
 
 Critical Red Flag Categories to check:
 - **liability**: Unbegrenzte Haftung, unfaire Haftungsklauseln
@@ -152,10 +161,14 @@ WICHTIG: Gib immer eine fundierte Einschätzung ab. Alle Begründungen und Texte
 Extracted Requirements:
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
-${input.quickScanResults ? `
+${
+  input.quickScanResults
+    ? `
 Quick Scan Results:
 ${JSON.stringify(input.quickScanResults, null, 2)}
-` : ''}
+`
+    : ''
+}
 ${contractInsights}
 ${complianceInsights}
 
@@ -220,11 +233,12 @@ Respond with JSON containing a "fullCheck" object with:
   }
 
   // Calculate overall scores
-  const legalRiskScore = quickCheck?.quickRiskScore ||
+  const legalRiskScore =
+    quickCheck?.quickRiskScore ||
     (fullCheck ? Math.round((100 - (fullCheck.overallLegalScore || 50)) / 10) : 5);
   const overallLegalScore = quickCheck
-    ? Math.max(0, 100 - (quickCheck.quickRiskScore * 10))
-    : (fullCheck?.overallLegalScore || 50);
+    ? Math.max(0, 100 - quickCheck.quickRiskScore * 10)
+    : fullCheck?.overallLegalScore || 50;
 
   // Combine results
   const finalCompletion = await openai.chat.completions.create({
@@ -239,11 +253,19 @@ Antworte mit validem JSON ohne Markdown-Code-Blöcke.`,
         role: 'user',
         content: `Create final legal assessment summary based on:
 
-${quickCheck ? `Quick Check Results:
-${JSON.stringify(quickCheck, null, 2)}` : ''}
+${
+  quickCheck
+    ? `Quick Check Results:
+${JSON.stringify(quickCheck, null, 2)}`
+    : ''
+}
 
-${fullCheck ? `Full Check Results:
-${JSON.stringify(fullCheck, null, 2)}` : ''}
+${
+  fullCheck
+    ? `Full Check Results:
+${JSON.stringify(fullCheck, null, 2)}`
+    : ''
+}
 
 Provide:
 - overallLegalScore (number 0-100): ${overallLegalScore}
@@ -271,7 +293,7 @@ Provide:
     fullCheck: fullCheck,
     overallLegalScore: finalResult.overallLegalScore || overallLegalScore,
     legalRiskScore: finalResult.legalRiskScore || legalRiskScore,
-    confidence: finalResult.confidence || (quickCheck?.confidence || 50),
+    confidence: finalResult.confidence || quickCheck?.confidence || 50,
     reasoning: finalResult.reasoning || 'Rechtliche Analyse durchgeführt.',
     criticalBlockers: finalResult.criticalBlockers || [],
   };

@@ -7,6 +7,7 @@
 ## Dokumentation
 
 ### 1. **QUICKSCAN_REFACTORING_ANALYSIS.md** (40 KB)
+
 Die umfassende technische Analyse mit 14 Sektionen:
 
 - **Abschnitt 1:** Executive Summary & Ziele
@@ -25,6 +26,7 @@ Die umfassende technische Analyse mit 14 Sektionen:
 - **Abschnitt 14:** Zusammenfassung & Nächste Schritte
 
 ### 2. **QUICKSCAN_LINE_REFERENCE.md** (24 KB)
+
 Schnelle Zeilen-Referenz für Code-Navigation:
 
 - **Streaming Infrastructure:** event-types.ts, event-emitter.ts (exakte Zeilen)
@@ -37,6 +39,7 @@ Schnelle Zeilen-Referenz für Code-Navigation:
 - **Quick Reference:** 2-Phase Implementation Blueprint
 
 ### 3. **QUICKSCAN_ANALYSIS_SUMMARY.txt** (13 KB)
+
 Visuelle Zusammenfassung für schnelle Übersicht:
 
 - Executive Summary
@@ -53,18 +56,21 @@ Visuelle Zusammenfassung für schnelle Übersicht:
 ## Schnelle Navigation
 
 ### Für Überblick (Start hier)
+
 ```
 1. README_ANALYSIS.md (diese Datei)
 2. QUICKSCAN_ANALYSIS_SUMMARY.txt (visuelle Zusammenfassung)
 ```
 
 ### Für Implementation
+
 ```
 1. QUICKSCAN_LINE_REFERENCE.md (Zeilen-Nummern & Code)
 2. QUICKSCAN_REFACTORING_ANALYSIS.md Sektion 11 (Refactoring Checklist)
 ```
 
 ### Für Deep Dive
+
 ```
 1. QUICKSCAN_REFACTORING_ANALYSIS.md (vollständig lesen)
 2. QUICKSCAN_LINE_REFERENCE.md (Zeilen durchklicken)
@@ -74,6 +80,7 @@ Visuelle Zusammenfassung für schnelle Übersicht:
 ## Key Findings
 
 ✅ **COMPLETE & READY:**
+
 - Streaming Infrastructure (SSE + Web Streams API)
 - Business Units Singleton Cache (lines 66-92 in agent.ts)
 - Phase Event System (PHASE_START, ANALYSIS_COMPLETE already defined)
@@ -82,6 +89,7 @@ Visuelle Zusammenfassung für schnelle Übersicht:
 - Tools (10 specialized sub-tools, all parallelizable)
 
 ⚠️ **REFACTORING NEEDED:**
+
 - Explicit 2-phase event emission (COLLECT + SYNTHESIZE)
 - DrupalMappingData generation in synthesis phase
 - Phase Progress UI component
@@ -90,6 +98,7 @@ Visuelle Zusammenfassung für schnelle Übersicht:
 ## Critical Code References
 
 ### Business Units Singleton Cache
+
 **File:** `/Users/marc.philipps/Sites/dealhunter/lib/quick-scan/agent.ts`
 **Lines:** 66-92
 **Status:** ✅ Already implemented - Use this pattern!
@@ -107,6 +116,7 @@ async function getBusinessUnitsOnce(): Promise<CachedBusinessUnit[]> {
 ```
 
 ### Phase Events Already Defined
+
 **File:** `/Users/marc.philipps/Sites/dealhunter/lib/streaming/event-types.ts`
 **Lines:** 11-31
 **Status:** ✅ Ready to use
@@ -123,21 +133,23 @@ interface PhaseStartData {
 ```
 
 ### Drupal Mapping Data Structure
+
 **File:** `/Users/marc.philipps/Sites/dealhunter/lib/quick-scan/types.ts`
 **Lines:** 392-399
 **Status:** ✅ Defined and ready
 
 ```typescript
 export interface DrupalMappingData {
-  suggestedParagraphTypes: string[];    // z.B. ["hero", "cards_grid"]
-  suggestedContentTypes: string[];      // z.B. ["article", "product"]
-  suggestedTaxonomies: string[];        // z.B. ["category", "tag"]
-  suggestedMediaTypes: string[];        // z.B. ["image", "video"]
+  suggestedParagraphTypes: string[]; // z.B. ["hero", "cards_grid"]
+  suggestedContentTypes: string[]; // z.B. ["article", "product"]
+  suggestedTaxonomies: string[]; // z.B. ["category", "tag"]
+  suggestedMediaTypes: string[]; // z.B. ["image", "video"]
   estimatedViews: number;
 }
 ```
 
 ### Database Schema Ready
+
 **File:** `/Users/marc.philipps/Sites/dealhunter/lib/db/schema.ts`
 **Lines:** 412-479
 **Status:** ✅ All 18 JSON fields ready to persist
@@ -145,16 +157,16 @@ export interface DrupalMappingData {
 ```typescript
 export const quickScans = sqliteTable('quick_scans', {
   // ... existing fields ...
-  
+
   // QuickScan 2.0 Fields (Lines 449-455)
   siteTree: text('site_tree'),
   contentTypes: text('content_types'),
   migrationComplexity: text('migration_complexity'),
   decisionMakers: text('decision_makers'),
-  
+
   // Activity & Visualization
-  activityLog: text('activity_log'),     // For streaming replay
-  visualizationTree: text('visualization_tree'),  // For json-render
+  activityLog: text('activity_log'), // For streaming replay
+  visualizationTree: text('visualization_tree'), // For json-render
 });
 ```
 
@@ -217,16 +229,19 @@ Tools:
 ## Prioritäten
 
 ### Muss (MUST - Diese Woche)
+
 - [ ] Phase event emission implementieren (COLLECT + SYNTHESIZE)
 - [ ] DrupalMappingData in synthesis generation
 - [ ] DB persistence für drupalMapping testen
 
 ### Sollte (SHOULD - Nächste Woche)
+
 - [ ] PhaseProgressCard UI component erstellen
 - [ ] Task checklist per phase anzeigen
 - [ ] Phase duration tracking
 
 ### Kann (NICE - 2 Wochen)
+
 - [ ] Drupal-specific result display
 - [ ] "Ten Questions for BL" generation
 - [ ] Drupal baseline comparison
@@ -241,16 +256,19 @@ Tools:
 ## Testing
 
 **Unit Tests:**
+
 - getBusinessUnitsOnce() cache behavior
 - Phase event emission timing
 - DrupalMappingData generation
 
 **Integration Tests:**
+
 - Full 2-phase workflow with timing
 - COLLECT before SYNTHESIZE ordering
 - Event sequence correctness
 
 **E2E Tests:**
+
 - Website → QuickScan → UI rendering
 - Agent activity streaming
 - Drupal mapping validation

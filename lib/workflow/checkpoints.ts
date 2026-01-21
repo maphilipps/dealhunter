@@ -38,11 +38,15 @@ export const WorkflowStateSchema = z.object({
   updatedAt: z.date(),
   completedAt: z.date().optional(),
   data: z.record(z.string(), z.any()), // Workflow-specific data
-  errors: z.array(z.object({
-    step: z.string(),
-    message: z.string(),
-    timestamp: z.date(),
-  })).optional(),
+  errors: z
+    .array(
+      z.object({
+        step: z.string(),
+        message: z.string(),
+        timestamp: z.date(),
+      })
+    )
+    .optional(),
   version: z.number().int().default(1),
 });
 
@@ -113,13 +117,11 @@ export async function saveCheckpoint(state: WorkflowState): Promise<void> {
       })),
     };
 
-    await fs.writeFile(
-      checkpointPath,
-      JSON.stringify(serialized, null, 2),
-      'utf-8'
-    );
+    await fs.writeFile(checkpointPath, JSON.stringify(serialized, null, 2), 'utf-8');
 
-    console.log(`[Checkpoint] Saved state for workflow ${state.workflowId} (step ${state.currentStep}, progress ${state.progress}%)`);
+    console.log(
+      `[Checkpoint] Saved state for workflow ${state.workflowId} (step ${state.currentStep}, progress ${state.progress}%)`
+    );
   } catch (error) {
     console.error('[Checkpoint] Failed to save checkpoint:', error);
     throw error;
@@ -161,7 +163,9 @@ export async function loadCheckpoint(workflowId: string): Promise<WorkflowState 
     // Validate against schema
     const state = WorkflowStateSchema.parse(deserialized);
 
-    console.log(`[Checkpoint] Loaded state for workflow ${workflowId} (step ${state.currentStep}, progress ${state.progress}%)`);
+    console.log(
+      `[Checkpoint] Loaded state for workflow ${workflowId} (step ${state.currentStep}, progress ${state.progress}%)`
+    );
 
     return state;
   } catch (error) {
@@ -192,9 +196,13 @@ export async function resumeFromCheckpoint(workflowId: string): Promise<Workflow
   }
 
   if (state.status === 'failed') {
-    console.log(`[Checkpoint] Workflow ${workflowId} previously failed, resuming from step ${state.currentStep}`);
+    console.log(
+      `[Checkpoint] Workflow ${workflowId} previously failed, resuming from step ${state.currentStep}`
+    );
   } else {
-    console.log(`[Checkpoint] Resuming workflow ${workflowId} from step ${state.currentStep} (${state.progress}%)`);
+    console.log(
+      `[Checkpoint] Resuming workflow ${workflowId} from step ${state.currentStep} (${state.progress}%)`
+    );
   }
 
   return state;
@@ -207,7 +215,10 @@ export async function resumeFromCheckpoint(workflowId: string): Promise<Workflow
  * @param keepForDebug - If true, rename file instead of deleting (default: false)
  * @returns Promise<void>
  */
-export async function cleanupCheckpoint(workflowId: string, keepForDebug: boolean = false): Promise<void> {
+export async function cleanupCheckpoint(
+  workflowId: string,
+  keepForDebug: boolean = false
+): Promise<void> {
   try {
     const checkpointPath = getCheckpointPath(workflowId);
 
@@ -318,7 +329,9 @@ export function createWorkflowState<T extends WorkflowState>(
  */
 export function updateWorkflowState<T extends WorkflowState>(
   state: T,
-  updates: Partial<Pick<T, 'status' | 'currentStep' | 'stepIndex' | 'progress' | 'data' | 'errors' | 'completedAt'>>
+  updates: Partial<
+    Pick<T, 'status' | 'currentStep' | 'stepIndex' | 'progress' | 'data' | 'errors' | 'completedAt'>
+  >
 ): T {
   return {
     ...state,

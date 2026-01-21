@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p3
-issue_id: "040"
+issue_id: '040'
 tags: [architecture, performance, async, gemini-analysis]
 dependencies: []
 ---
@@ -21,6 +21,7 @@ The Quick Scan server action blocks the HTTP response while waiting for a potent
 **File:** `lib/quick-scan/actions.ts`
 
 **Line 65 - Blocking await:**
+
 ```typescript
 export async function startQuickScan(bidId: string) {
   // ... validation
@@ -38,6 +39,7 @@ export async function startQuickScan(bidId: string) {
 ```
 
 **Current flow:**
+
 ```
 User clicks "Start Scan"
   → Server Action starts
@@ -51,6 +53,7 @@ User clicks "Start Scan"
 ## Proposed Solutions
 
 ### Solution A: Fire-and-forget with polling (Recommended)
+
 **Pros:** Immediate response, no timeout risk, good UX
 **Cons:** Requires polling logic on client
 **Effort:** Medium (1-2 hours)
@@ -87,12 +90,14 @@ const { data } = useSWR(`/api/quick-scan/${bidId}/status`, fetcher, {
 ```
 
 ### Solution B: Streaming with AI SDK
+
 **Pros:** Real-time updates, best UX
 **Cons:** More complex, requires streaming setup
 **Effort:** Large (3-4 hours)
 **Risk:** Medium
 
 ### Solution C: Inngest/background job service
+
 **Pros:** Robust, retries, monitoring
 **Cons:** Additional dependency, infrastructure
 **Effort:** Large (4+ hours)
@@ -105,6 +110,7 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/quick-scan/actions.ts` (refactor to async pattern)
 - `components/bids/bid-detail-client.tsx` (add polling)
 - Possibly new API route for status polling
@@ -119,8 +125,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                           | Learnings                                            |
+| ---------- | -------------------------------- | ---------------------------------------------------- |
 | 2026-01-18 | Created from Gemini CLI analysis | Long AI operations should never block HTTP responses |
 
 ## Resources

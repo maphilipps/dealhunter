@@ -25,13 +25,8 @@ export const mockAIResponses = {
       max: 35,
       unit: 'PT',
     },
-    risks: [
-      'Tight deadline may require additional resources',
-    ],
-    opportunities: [
-      'Potential for long-term partnership',
-      'Strategic account in target industry',
-    ],
+    risks: ['Tight deadline may require additional resources'],
+    opportunities: ['Potential for long-term partnership', 'Strategic account in target industry'],
   },
 
   decision: {
@@ -58,22 +53,13 @@ export const mockAIResponses = {
     recommendedBusinessUnit: 'Digital Solutions',
     confidence: 0.9,
     reasoning: 'Best technical fit and available capacity',
-    alternativeUnits: [
-      { name: 'Web Development', confidence: 0.75 },
-    ],
+    alternativeUnits: [{ name: 'Web Development', confidence: 0.75 }],
   },
 };
 
 export const mockStreamingResponse = {
   async *generateText(prompt: string) {
-    const chunks = [
-      'Analyzing',
-      ' requirements',
-      '...\n',
-      'Technical',
-      ' fit:',
-      ' Strong',
-    ];
+    const chunks = ['Analyzing', ' requirements', '...\n', 'Technical', ' fit:', ' Strong'];
 
     for (const chunk of chunks) {
       yield { text: chunk };

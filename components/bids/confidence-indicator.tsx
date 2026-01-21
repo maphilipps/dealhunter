@@ -102,9 +102,7 @@ export function ConfidenceIndicator({
               <p className="text-sm text-muted-foreground">{config.description}</p>
             </div>
             <div className="text-right">
-              <div className={cn('font-bold', config.color, sizes.scoreSize)}>
-                {confidence}%
-              </div>
+              <div className={cn('font-bold', config.color, sizes.scoreSize)}>{confidence}%</div>
               <Badge variant="outline" className={cn('mt-1', config.color)}>
                 {config.label}
               </Badge>
@@ -119,8 +117,8 @@ export function ConfidenceIndicator({
               <div className="text-sm">
                 <p className="font-medium">Unter Schwellenwert ({threshold}%)</p>
                 <p className="text-muted-foreground mt-1">
-                  Diese Empfehlung sollte manuell von einem Experten überprüft werden.
-                  Zusätzliche Informationen oder eine zweite Meinung können hilfreich sein.
+                  Diese Empfehlung sollte manuell von einem Experten überprüft werden. Zusätzliche
+                  Informationen oder eine zweite Meinung können hilfreich sein.
                 </p>
               </div>
             </div>

@@ -19,8 +19,5 @@ export async function POST(request: Request) {
 
   await start(workflowInbound, [parsedBody.data]);
 
-  return Response.json(
-    { message: 'Form submitted successfully' },
-    { status: 200 }
-  );
+  return Response.json({ message: 'Form submitted successfully' }, { status: 200 });
 }

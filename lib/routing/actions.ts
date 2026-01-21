@@ -48,11 +48,7 @@ export async function assignBusinessUnit(
     }
 
     // Get bid
-    const bids = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const bids = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (bids.length === 0) {
       return {
@@ -96,9 +92,7 @@ export async function assignBusinessUnit(
     const businessLine = bls[0];
 
     // Parse extracted requirements for email
-    const extractedReqs = bid.extractedRequirements
-      ? JSON.parse(bid.extractedRequirements)
-      : {};
+    const extractedReqs = bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : {};
     const customerName = extractedReqs.customerName || 'Unbekannter Kunde';
     const projectDescription = extractedReqs.projectDescription || 'Keine Beschreibung verfügbar';
 
@@ -142,7 +136,7 @@ export async function assignBusinessUnit(
 
     // Revalidate cache for updated views
     revalidatePath(`/bl-review/${bidId}`);
-    revalidatePath("/bl-review");
+    revalidatePath('/bl-review');
 
     // ROUTE-003: Send email notification to BL leader
     const emailResult = await sendBLAssignmentEmail({
@@ -162,7 +156,9 @@ export async function assignBusinessUnit(
 
     return {
       success: true,
-      warning: emailResult.success ? undefined : 'Zuweisung erfolgreich, aber E-Mail-Benachrichtigung fehlgeschlagen',
+      warning: emailResult.success
+        ? undefined
+        : 'Zuweisung erfolgreich, aber E-Mail-Benachrichtigung fehlgeschlagen',
     };
   } catch (error) {
     console.error('Error assigning business line:', error);
@@ -203,11 +199,7 @@ export async function getBusinessLineRecommendation(bidId: string) {
 
   try {
     // Get bid with extracted requirements
-    const bids = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const bids = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (bids.length === 0) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -216,14 +208,10 @@ export async function getBusinessLineRecommendation(bidId: string) {
     const bid = bids[0];
 
     // Parse extracted requirements
-    const extractedReqs = bid.extractedRequirements
-      ? JSON.parse(bid.extractedRequirements)
-      : {};
+    const extractedReqs = bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : {};
 
     // Parse quick scan results if available
-    const quickScan = bid.quickScanResults
-      ? JSON.parse(bid.quickScanResults)
-      : {};
+    const quickScan = bid.quickScanResults ? JSON.parse(bid.quickScanResults) : {};
 
     // Build input for routing agent
     const routingInput: RouteBusinessUnitInput = {

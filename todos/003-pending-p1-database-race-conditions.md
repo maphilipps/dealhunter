@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "003"
+issue_id: '003'
 tags: [code-review, data-integrity, concurrency, database]
 dependencies: []
 ---
@@ -13,6 +13,7 @@ dependencies: []
 SSE stream endpoints perform multiple database operations (read bid, stream evaluation, update bid) without transaction boundaries or optimistic locking. If two users trigger evaluation simultaneously, or if a user triggers evaluation while another update is in progress, race conditions can cause data corruption, lost updates, or inconsistent state.
 
 **Why it matters:**
+
 - Data corruption risk (evaluation results overwritten)
 - Inconsistent bid status transitions
 - Lost agent outputs if concurrent writes occur
@@ -25,6 +26,7 @@ SSE stream endpoints perform multiple database operations (read bid, stream eval
 **Location:** `app/api/bids/[id]/quick-scan/stream/route.ts:54-60`
 
 **Evidence:**
+
 ```typescript
 // evaluate/stream/route.ts
 const stream = createAgentEventStream(async (emit) => {
@@ -44,6 +46,7 @@ const stream = createAgentEventStream(async (emit) => {
 ```
 
 **Race Scenarios:**
+
 1. User triggers evaluation twice in quick succession → second overwrites first
 2. Evaluation completes while user edits bid → edits lost
 3. Two agents update same bid fields → last write wins
@@ -58,12 +61,14 @@ const stream = createAgentEventStream(async (emit) => {
 Add version column, check on update, retry if mismatch.
 
 **Pros:**
+
 - Prevents lost updates
 - Simple to implement with Drizzle
 - Industry standard pattern
 - No blocking/locking overhead
 
 **Cons:**
+
 - Requires schema migration
 - Need retry logic for conflicts
 - Client may need to refetch on conflict
@@ -72,6 +77,7 @@ Add version column, check on update, retry if mismatch.
 **Risk:** Low
 
 **Implementation:**
+
 ```typescript
 // Schema addition
 export const bidOpportunities = sqliteTable('bid_opportunities', {
@@ -115,11 +121,13 @@ const stream = createAgentEventStream(async (emit) => {
 Wrap all operations in a transaction.
 
 **Pros:**
+
 - ACID guarantees
 - Familiar pattern
 - Rollback on failure
 
 **Cons:**
+
 - Long transactions (30+ seconds) hold locks
 - Can cause deadlocks
 - Not suitable for streaming operations
@@ -135,11 +143,13 @@ Wrap all operations in a transaction.
 Set status to 'evaluating' before running, prevent concurrent evals.
 
 **Pros:**
+
 - Simple application-level lock
 - No schema changes
 - Easy to understand
 
 **Cons:**
+
 - Not a complete solution (race on status set)
 - Orphaned locks if process crashes
 - No protection for other field updates
@@ -151,23 +161,26 @@ Set status to 'evaluating' before running, prevent concurrent evals.
 
 ## Recommended Action
 
-*(To be filled during triage)*
+_(To be filled during triage)_
 
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/db/schema.ts` (add version field)
 - `app/api/bids/[id]/evaluate/stream/route.ts` (add version check)
 - `app/api/bids/[id]/quick-scan/stream/route.ts` (add version check)
 - Any other endpoints that update bidOpportunities
 
 **Database Changes:**
+
 ```sql
 -- Migration
 ALTER TABLE bid_opportunities ADD COLUMN version INTEGER NOT NULL DEFAULT 1;
 ```
 
 **Concurrency Patterns:**
+
 - Optimistic locking (version field)
 - Compare-and-swap on updates
 - Retry logic for conflicts

@@ -39,31 +39,36 @@
 ## Phase 1: Upload & Extraktion
 
 ### Beschreibung
+
 BD Manager lädt Kundenanfrage hoch. Das System extrahiert automatisch alle relevanten Informationen.
 
 ### Input-Formate
+
 - PDF (Ausschreibungen, RFPs, RFIs)
 - E-Mail-Weiterleitungen
 - CRM-Export (HubSpot, Salesforce)
 - Freitext-Beschreibung
 
 ### AI-Extraktion
-| Feld | Beschreibung |
-|------|--------------|
-| Kundenname | Name des anfragenden Unternehmens |
-| Projektbeschreibung | Zusammenfassung des Vorhabens |
-| Technologien | Genannte oder erkannte Technologien |
-| Budget | Budgetrahmen (falls angegeben) |
-| Timeline | Gewünschter Zeitrahmen |
-| Scope | Umfang und Anforderungen |
-| Deadline | Abgabefrist für Angebot |
+
+| Feld                | Beschreibung                        |
+| ------------------- | ----------------------------------- |
+| Kundenname          | Name des anfragenden Unternehmens   |
+| Projektbeschreibung | Zusammenfassung des Vorhabens       |
+| Technologien        | Genannte oder erkannte Technologien |
+| Budget              | Budgetrahmen (falls angegeben)      |
+| Timeline            | Gewünschter Zeitrahmen              |
+| Scope               | Umfang und Anforderungen            |
+| Deadline            | Abgabefrist für Angebot             |
 
 ### Beteiligte Rollen
-| Rolle | Aktion |
-|-------|--------|
+
+| Rolle          | Aktion                               |
+| -------------- | ------------------------------------ |
 | **BD Manager** | Lädt Dokument hoch, prüft Extraktion |
 
 ### Dauer
+
 < 60 Sekunden
 
 ---
@@ -71,18 +76,19 @@ BD Manager lädt Kundenanfrage hoch. Das System extrahiert automatisch alle rele
 ## Phase 2: Quick Scan
 
 ### Beschreibung
+
 Automatische Analyse der Kunden-Website zur Erkennung des Tech Stacks und Empfehlung der zuständigen Business Line.
 
 ### Analyse-Umfang
 
-| Bereich | Details |
-|---------|---------|
-| **CMS-Erkennung** | WordPress, Drupal, Typo3, Magnolia, Ibexa, Sulu, Firstspirit, Custom |
-| **Frontend Frameworks** | React, Vue, Angular, jQuery, Vanilla JS |
-| **Hosting** | AWS, Azure, Google Cloud, On-Premise |
-| **Content Volume** | Seitenanzahl, URL-Patterns |
-| **Features** | Formulare, Suche, E-Commerce, User Accounts |
-| **Integrationen** | Analytics, CRM, Payment, Marketing Tools |
+| Bereich                 | Details                                                              |
+| ----------------------- | -------------------------------------------------------------------- |
+| **CMS-Erkennung**       | WordPress, Drupal, Typo3, Magnolia, Ibexa, Sulu, Firstspirit, Custom |
+| **Frontend Frameworks** | React, Vue, Angular, jQuery, Vanilla JS                              |
+| **Hosting**             | AWS, Azure, Google Cloud, On-Premise                                 |
+| **Content Volume**      | Seitenanzahl, URL-Patterns                                           |
+| **Features**            | Formulare, Suche, E-Commerce, User Accounts                          |
+| **Integrationen**       | Analytics, CRM, Payment, Marketing Tools                             |
 
 ### BL-Empfehlung
 
@@ -102,17 +108,19 @@ Automatische Analyse der Kunden-Website zur Erkennung des Tech Stacks und Empfeh
 
 ### Business Line Zuordnung
 
-| Business Line | Bereichsleiter | Technologien |
-|---------------|----------------|--------------|
-| **PHP** | Francesco Raaphorst | Drupal, Ibexa, Sulu |
-| **WEM** | Michael Rittinghaus | Magnolia, Firstspirit |
+| Business Line | Bereichsleiter      | Technologien          |
+| ------------- | ------------------- | --------------------- |
+| **PHP**       | Francesco Raaphorst | Drupal, Ibexa, Sulu   |
+| **WEM**       | Michael Rittinghaus | Magnolia, Firstspirit |
 
 ### Beteiligte Rollen
-| Rolle | Aktion |
-|-------|--------|
+
+| Rolle          | Aktion                                           |
+| -------------- | ------------------------------------------------ |
 | **BD Manager** | Prüft Ergebnis, kann BL-Empfehlung überschreiben |
 
 ### Dauer
+
 2-5 Minuten
 
 ---
@@ -120,21 +128,24 @@ Automatische Analyse der Kunden-Website zur Erkennung des Tech Stacks und Empfeh
 ## Phase 3: Bit/No Bit Bewertung
 
 ### Beschreibung
+
 Multi-Agent System bewertet die Opportunity aus verschiedenen Perspektiven und erstellt eine fundierte Empfehlung.
 
 ### Bewertungs-Agents (Parallel)
 
-| Agent | Fokus | Gewichtung |
-|-------|-------|------------|
-| **Tech Agent** | Technische Anforderungen, Komplexität, adesso-Kompetenzen | Hoch |
-| **Legal Agent** | Vertragsrisiken, Haftung, Compliance, Vergaberecht | Hoch |
-| **Commercial Agent** | Budget, Marge, Wirtschaftlichkeit | Hoch |
-| **Competition Agent** | Bekannte Mitbieter, Win-Wahrscheinlichkeit | Mittel |
-| **Reference Agent** | Passende Referenzprojekte | Mittel |
-| **Capability Agent** | Verfügbare Skills und Kapazitäten | Hoch |
+| Agent                 | Fokus                                                     | Gewichtung |
+| --------------------- | --------------------------------------------------------- | ---------- |
+| **Tech Agent**        | Technische Anforderungen, Komplexität, adesso-Kompetenzen | Hoch       |
+| **Legal Agent**       | Vertragsrisiken, Haftung, Compliance, Vergaberecht        | Hoch       |
+| **Commercial Agent**  | Budget, Marge, Wirtschaftlichkeit                         | Hoch       |
+| **Competition Agent** | Bekannte Mitbieter, Win-Wahrscheinlichkeit                | Mittel     |
+| **Reference Agent**   | Passende Referenzprojekte                                 | Mittel     |
+| **Capability Agent**  | Verfügbare Skills und Kapazitäten                         | Hoch       |
 
 ### Coordinator Agent (Sequenziell)
+
 Führt alle Teil-Analysen zusammen und erstellt:
+
 - **Entscheidungsbaum** mit allen Faktoren
 - **Pro/Contra** Argumente
 - **Red Flags** (kritische Warnsignale)
@@ -142,12 +153,12 @@ Führt alle Teil-Analysen zusammen und erstellt:
 
 ### Red Flag Detection
 
-| Kategorie | Beispiele |
-|-----------|-----------|
-| **Budget** | "50% unter Marktdurchschnitt" |
-| **Timeline** | "Go-Live in 6 Wochen unrealistisch" |
-| **Legal** | "Unbegrenzte Haftungsklausel" |
-| **Technical** | "Legacy-System ohne API" |
+| Kategorie     | Beispiele                           |
+| ------------- | ----------------------------------- |
+| **Budget**    | "50% unter Marktdurchschnitt"       |
+| **Timeline**  | "Go-Live in 6 Wochen unrealistisch" |
+| **Legal**     | "Unbegrenzte Haftungsklausel"       |
+| **Technical** | "Legacy-System ohne API"            |
 
 ### Output
 
@@ -173,15 +184,18 @@ Führt alle Teil-Analysen zusammen und erstellt:
 ```
 
 ### Bei "No Bit"
+
 - Alternative BL-Empfehlung (falls andere BL besser passt)
 - Begründung im Entscheidungsbaum
 
 ### Beteiligte Rollen
-| Rolle | Aktion |
-|-------|--------|
+
+| Rolle          | Aktion                                      |
+| -------------- | ------------------------------------------- |
 | **BD Manager** | Prüft Bewertung, trifft finale Entscheidung |
 
 ### Dauer
+
 5-15 Minuten
 
 ---
@@ -189,6 +203,7 @@ Führt alle Teil-Analysen zusammen und erstellt:
 ## Phase 4: BL-Routing
 
 ### Beschreibung
+
 Nach positiver Bit-Entscheidung wird die Opportunity dem zuständigen Bereichsleiter zugewiesen.
 
 ### Routing-Logik
@@ -215,17 +230,20 @@ Nach positiver Bit-Entscheidung wird die Opportunity dem zuständigen Bereichsle
 ```
 
 ### BD kann überschreiben
+
 - AI-Empfehlung ist Vorschlag
 - BD kann anderen BL wählen
 - Override wird mit Begründung im Audit Trail geloggt
 
 ### Beteiligte Rollen
-| Rolle | Aktion |
-|-------|--------|
-| **BD Manager** | Bestätigt oder überschreibt BL-Zuweisung |
+
+| Rolle              | Aktion                                    |
+| ------------------ | ----------------------------------------- |
+| **BD Manager**     | Bestätigt oder überschreibt BL-Zuweisung  |
 | **Bereichsleiter** | Wird benachrichtigt über neue Opportunity |
 
 ### Dauer
+
 < 1 Minute (User-Aktion)
 
 ---
@@ -233,87 +251,99 @@ Nach positiver Bit-Entscheidung wird die Opportunity dem zuständigen Bereichsle
 ## Phase 5: Full Website Scan
 
 ### Beschreibung
+
 Umfassende Analyse der Kunden-Website nach BL-Zuweisung. Sammelt ALLE relevanten Informationen für Angebotserstellung und Projektplanung.
 
 ### Trigger
+
 - Automatisch nach `bitDecision: 'bit'` UND `assignedBusinessLineId` gesetzt
 - Läuft als Background Job
 
 ### Analyse-Bereiche
 
 #### 5.1 Content Architecture
-| Element | Analyse |
-|---------|---------|
-| **Page Types** | Startseite, Produktseiten, Blog, Kontakt, etc. |
-| **Content Types** | Strukturierte Inhaltstypen |
-| **Taxonomien** | Kategorien, Tags, Hierarchien |
-| **Media Types** | Bilder, Videos, Downloads, Dokumente |
-| **Content Volume** | Anzahl Seiten pro Typ |
+
+| Element            | Analyse                                        |
+| ------------------ | ---------------------------------------------- |
+| **Page Types**     | Startseite, Produktseiten, Blog, Kontakt, etc. |
+| **Content Types**  | Strukturierte Inhaltstypen                     |
+| **Taxonomien**     | Kategorien, Tags, Hierarchien                  |
+| **Media Types**    | Bilder, Videos, Downloads, Dokumente           |
+| **Content Volume** | Anzahl Seiten pro Typ                          |
 
 #### 5.2 Frontend Komponenten
-| Komponente | Details |
-|------------|---------|
-| **Navigation** | Header, Footer, Mega-Menu, Mobile-Nav |
-| **Hero Sections** | Slider, Video-Hero, Static Hero |
-| **Content Blocks** | Teaser, Cards, Accordions, Tabs |
-| **Forms** | Kontakt, Newsletter, Suche, Login |
-| **Interactive** | Modals, Lightbox, Animationen |
-| **Media** | Galerien, Video-Player, Audio |
+
+| Komponente         | Details                               |
+| ------------------ | ------------------------------------- |
+| **Navigation**     | Header, Footer, Mega-Menu, Mobile-Nav |
+| **Hero Sections**  | Slider, Video-Hero, Static Hero       |
+| **Content Blocks** | Teaser, Cards, Accordions, Tabs       |
+| **Forms**          | Kontakt, Newsletter, Suche, Login     |
+| **Interactive**    | Modals, Lightbox, Animationen         |
+| **Media**          | Galerien, Video-Player, Audio         |
 
 #### 5.3 Design System
-| Aspekt | Analyse |
-|--------|---------|
-| **Farben** | Primary, Secondary, Accent, Grays |
-| **Typografie** | Fonts, Größen, Hierarchie |
-| **Spacing** | Grid, Abstände, Breakpoints |
-| **Icons** | Icon-Set, Custom Icons |
-| **Animationen** | Transitions, Hover-States |
+
+| Aspekt          | Analyse                           |
+| --------------- | --------------------------------- |
+| **Farben**      | Primary, Secondary, Accent, Grays |
+| **Typografie**  | Fonts, Größen, Hierarchie         |
+| **Spacing**     | Grid, Abstände, Breakpoints       |
+| **Icons**       | Icon-Set, Custom Icons            |
+| **Animationen** | Transitions, Hover-States         |
 
 #### 5.4 Integrationen
-| Typ | Beispiele |
-|-----|-----------|
-| **Analytics** | Google Analytics, Matomo, Hotjar |
+
+| Typ           | Beispiele                          |
+| ------------- | ---------------------------------- |
+| **Analytics** | Google Analytics, Matomo, Hotjar   |
 | **Marketing** | HubSpot, Mailchimp, ActiveCampaign |
-| **CRM** | Salesforce, Dynamics, Custom |
-| **Payment** | Stripe, PayPal, Klarna |
-| **Search** | Algolia, Elasticsearch, Native |
-| **CDN** | Cloudflare, Fastly, AWS CloudFront |
+| **CRM**       | Salesforce, Dynamics, Custom       |
+| **Payment**   | Stripe, PayPal, Klarna             |
+| **Search**    | Algolia, Elasticsearch, Native     |
+| **CDN**       | Cloudflare, Fastly, AWS CloudFront |
 
 #### 5.5 Accessibility
-| Prüfung | Details |
-|---------|---------|
-| **WCAG Level** | A, AA, AAA, Non-Compliant |
-| **Issues** | Critical, Serious, Moderate, Minor |
-| **Bereiche** | Kontrast, Alt-Texte, Keyboard-Nav, ARIA |
+
+| Prüfung        | Details                                 |
+| -------------- | --------------------------------------- |
+| **WCAG Level** | A, AA, AAA, Non-Compliant               |
+| **Issues**     | Critical, Serious, Moderate, Minor      |
+| **Bereiche**   | Kontrast, Alt-Texte, Keyboard-Nav, ARIA |
 
 #### 5.6 Performance
-| Metrik | Messung |
-|--------|---------|
-| **Core Web Vitals** | LCP, FID, CLS |
-| **Ladezeit** | First Paint, TTI |
-| **Assets** | Bildgrößen, JS-Bundle, CSS |
+
+| Metrik              | Messung                    |
+| ------------------- | -------------------------- |
+| **Core Web Vitals** | LCP, FID, CLS              |
+| **Ladezeit**        | First Paint, TTI           |
+| **Assets**          | Bildgrößen, JS-Bundle, CSS |
 
 #### 5.7 SEO-Status
-| Aspekt | Analyse |
-|--------|---------|
-| **Meta Tags** | Title, Description, OG Tags |
-| **Struktur** | Headings, Schema.org, Sitemap |
+
+| Aspekt        | Analyse                         |
+| ------------- | ------------------------------- |
+| **Meta Tags** | Title, Description, OG Tags     |
+| **Struktur**  | Headings, Schema.org, Sitemap   |
 | **Technical** | Robots.txt, Canonical, Hreflang |
 
 #### 5.8 Migration Complexity
-| Faktor | Bewertung |
-|--------|-----------|
-| **Export-Möglichkeit** | API, Database, Scraping |
-| **Datenqualität** | Clean, Moderate Cleanup, Heavy Cleanup |
-| **Komplexität** | Simple, Medium, Complex |
+
+| Faktor                 | Bewertung                              |
+| ---------------------- | -------------------------------------- |
+| **Export-Möglichkeit** | API, Database, Scraping                |
+| **Datenqualität**      | Clean, Moderate Cleanup, Heavy Cleanup |
+| **Komplexität**        | Simple, Medium, Complex                |
 
 ### Beteiligte Rollen
-| Rolle | Aktion |
-|-------|--------|
-| **System** | Führt Scan automatisch durch |
+
+| Rolle              | Aktion                          |
+| ------------------ | ------------------------------- |
+| **System**         | Führt Scan automatisch durch    |
 | **Bereichsleiter** | Wird benachrichtigt wenn fertig |
 
 ### Dauer
+
 10-30 Minuten (Background)
 
 ---
@@ -321,6 +351,7 @@ Umfassende Analyse der Kunden-Website nach BL-Zuweisung. Sammelt ALLE relevanten
 ## Phase 6: Baseline-Vergleich
 
 ### Beschreibung
+
 Vergleich der analysierten Website mit der adesso-Baseline (z.B. adessoCMS). Zeigt was bereits vorhanden ist und was neu gebaut werden muss.
 
 ### Baseline-Definition
@@ -329,13 +360,13 @@ Eine Baseline beschreibt **was wir bereits haben** - fertige Komponenten, Patter
 
 #### Beispiel: adessoCMS Baseline
 
-| Kategorie | Vorhanden |
-|-----------|-----------|
-| **Content Types** | Page, Article, News, Event, Person, Location |
-| **Paragraphs** | Hero, Teaser, Text, Image, Gallery, Accordion, Tabs, CTA, Quote, Video |
-| **Navigation** | Mega-Menu, Footer, Breadcrumb, Mobile-Nav |
-| **Features** | Search, Contact Form, Newsletter, Social Share |
-| **Integrationen** | Google Analytics, Cookie Consent |
+| Kategorie         | Vorhanden                                                              |
+| ----------------- | ---------------------------------------------------------------------- |
+| **Content Types** | Page, Article, News, Event, Person, Location                           |
+| **Paragraphs**    | Hero, Teaser, Text, Image, Gallery, Accordion, Tabs, CTA, Quote, Video |
+| **Navigation**    | Mega-Menu, Footer, Breadcrumb, Mobile-Nav                              |
+| **Features**      | Search, Contact Form, Newsletter, Social Share                         |
+| **Integrationen** | Google Analytics, Cookie Consent                                       |
 
 ### Vergleichs-Output
 
@@ -374,8 +405,9 @@ Eine Baseline beschreibt **was wir bereits haben** - fertige Komponenten, Patter
 ```
 
 ### Beteiligte Rollen
-| Rolle | Aktion |
-|-------|--------|
+
+| Rolle              | Aktion                              |
+| ------------------ | ----------------------------------- |
 | **Bereichsleiter** | Prüft Vergleich, identifiziert Gaps |
 
 ---
@@ -383,6 +415,7 @@ Eine Baseline beschreibt **was wir bereits haben** - fertige Komponenten, Patter
 ## Phase 7: Projekt-Planung
 
 ### Beschreibung
+
 Basierend auf dem Full Website Scan und Baseline-Vergleich wird eine Projekt-Timeline mit benötigten Disziplinen erstellt.
 
 ### Projekt-Phasen
@@ -448,14 +481,14 @@ Basierend auf dem Full Website Scan und Baseline-Vergleich wird eine Projekt-Tim
 
 ### Disziplinen
 
-| Kürzel | Disziplin | Beschreibung |
-|--------|-----------|--------------|
-| **PL** | Projektleitung | Projektsteuerung, Kommunikation, Risikomanagement |
-| **CON** | Consulting | Anforderungsanalyse, Konzeption, Workshops |
-| **UI/UX** | Design | User Research, Wireframes, UI Design, Prototyping |
-| **DEV** | Development | Frontend, Backend, CMS, Integrationen |
-| **SEO** | Search Engine Optimization | Technical SEO, Content SEO, Analytics |
-| **QA** | Quality Assurance | Testing, Accessibility, Performance |
+| Kürzel    | Disziplin                  | Beschreibung                                      |
+| --------- | -------------------------- | ------------------------------------------------- |
+| **PL**    | Projektleitung             | Projektsteuerung, Kommunikation, Risikomanagement |
+| **CON**   | Consulting                 | Anforderungsanalyse, Konzeption, Workshops        |
+| **UI/UX** | Design                     | User Research, Wireframes, UI Design, Prototyping |
+| **DEV**   | Development                | Frontend, Backend, CMS, Integrationen             |
+| **SEO**   | Search Engine Optimization | Technical SEO, Content SEO, Analytics             |
+| **QA**    | Quality Assurance          | Testing, Accessibility, Performance               |
 
 ### Disziplinen pro Phase
 
@@ -481,36 +514,39 @@ Basierend auf dem Full Website Scan und Baseline-Vergleich wird eine Projekt-Tim
 
 ### Rollen-Matrix
 
-| Rolle | Discovery | Design | Development | QA | Go-Live |
-|-------|:---------:|:------:|:-----------:|:--:|:-------:|
-| **Projektleiter (PL)** | ●● | ●● | ●● | ●● | ●● |
-| **Consultant (CON)** | ●● | ● | ○ | - | - |
-| **UX Designer** | ● | ●● | ○ | - | - |
-| **UI Designer** | - | ●● | ○ | - | - |
-| **Technical Architect** | ●● | ● | ● | ○ | ● |
-| **Backend Developer** | - | ○ | ●● | ● | ●● |
-| **Frontend Developer** | - | ○ | ●● | ● | ● |
-| **SEO Specialist** | ● | - | ● | ●● | ● |
-| **QA Engineer** | - | - | ● | ●● | ● |
+| Rolle                   | Discovery | Design | Development | QA  | Go-Live |
+| ----------------------- | :-------: | :----: | :---------: | :-: | :-----: |
+| **Projektleiter (PL)**  |    ●●     |   ●●   |     ●●      | ●●  |   ●●    |
+| **Consultant (CON)**    |    ●●     |   ●    |      ○      |  -  |    -    |
+| **UX Designer**         |     ●     |   ●●   |      ○      |  -  |    -    |
+| **UI Designer**         |     -     |   ●●   |      ○      |  -  |    -    |
+| **Technical Architect** |    ●●     |   ●    |      ●      |  ○  |    ●    |
+| **Backend Developer**   |     -     |   ○    |     ●●      |  ●  |   ●●    |
+| **Frontend Developer**  |     -     |   ○    |     ●●      |  ●  |    ●    |
+| **SEO Specialist**      |     ●     |   -    |      ●      | ●●  |    ●    |
+| **QA Engineer**         |     -     |   -    |      ●      | ●●  |    ●    |
 
 **Legende:** ●● = Vollzeit, ● = Teilzeit, ○ = Punktuell, - = Nicht beteiligt
 
 ### Beteiligte Rollen
-| Rolle | Aktion |
-|-------|--------|
-| **Bereichsleiter** | Prüft Timeline, passt Phasen an |
-| **System** | Generiert initiale Timeline basierend auf Scan |
+
+| Rolle              | Aktion                                         |
+| ------------------ | ---------------------------------------------- |
+| **Bereichsleiter** | Prüft Timeline, passt Phasen an                |
+| **System**         | Generiert initiale Timeline basierend auf Scan |
 
 ---
 
 ## Phase 8: Team Assignment
 
 ### Beschreibung
+
 Basierend auf Projekt-Anforderungen und benötigten Disziplinen wird das optimale Team zusammengestellt.
 
 ### AI-Vorschlag
 
 Das System schlägt ein Team vor basierend auf:
+
 - **Required Skills** - Aus Full Website Scan abgeleitet
 - **Verfügbarkeit** - Kapazität der Mitarbeiter
 - **Erfahrung** - Ähnliche Projekte, Technologie-Expertise
@@ -518,17 +554,17 @@ Das System schlägt ein Team vor basierend auf:
 
 ### Team-Rollen
 
-| Rolle | Beschreibung | Anzahl |
-|-------|--------------|--------|
-| **Projektleiter** | Gesamtverantwortung, Kundenmanagement | 1 |
-| **Technical Architect** | Technische Konzeption, Code Reviews | 1 |
-| **Lead Developer** | Technische Umsetzungsleitung | 1 |
-| **Backend Developer** | CMS, APIs, Integrationen | 1-3 |
-| **Frontend Developer** | Components, Styling, Interaktionen | 1-3 |
-| **UX/UI Designer** | Research, Wireframes, Visual Design | 1-2 |
-| **Consultant** | Anforderungen, Workshops, Konzeption | 1 |
-| **SEO Specialist** | Technical SEO, Analytics | 0-1 |
-| **QA Engineer** | Testing, Qualitätssicherung | 0-1 |
+| Rolle                   | Beschreibung                          | Anzahl |
+| ----------------------- | ------------------------------------- | ------ |
+| **Projektleiter**       | Gesamtverantwortung, Kundenmanagement | 1      |
+| **Technical Architect** | Technische Konzeption, Code Reviews   | 1      |
+| **Lead Developer**      | Technische Umsetzungsleitung          | 1      |
+| **Backend Developer**   | CMS, APIs, Integrationen              | 1-3    |
+| **Frontend Developer**  | Components, Styling, Interaktionen    | 1-3    |
+| **UX/UI Designer**      | Research, Wireframes, Visual Design   | 1-2    |
+| **Consultant**          | Anforderungen, Workshops, Konzeption  | 1      |
+| **SEO Specialist**      | Technical SEO, Analytics              | 0-1    |
+| **QA Engineer**         | Testing, Qualitätssicherung           | 0-1    |
 
 ### Team-Übersicht
 
@@ -575,8 +611,9 @@ Das System schlägt ein Team vor basierend auf:
 ```
 
 ### Beteiligte Rollen
-| Rolle | Aktion |
-|-------|--------|
+
+| Rolle              | Aktion                                       |
+| ------------------ | -------------------------------------------- |
 | **Bereichsleiter** | Prüft AI-Vorschlag, passt Team an, gibt frei |
 
 ---
@@ -584,6 +621,7 @@ Das System schlägt ein Team vor basierend auf:
 ## Phase 9: Team-Benachrichtigung
 
 ### Beschreibung
+
 Das zugewiesene Team wird per E-Mail über die neue Opportunity informiert.
 
 ### E-Mail-Template
@@ -617,6 +655,7 @@ Automatisch generiert von Dealhunter
 ### PDF-Attachment
 
 Das PDF enthält:
+
 - Kundenname & Kontakt
 - Projekt-Beschreibung
 - Scope & Anforderungen
@@ -627,12 +666,14 @@ Das PDF enthält:
 - Nächste Schritte
 
 ### Beteiligte Rollen
-| Rolle | Aktion |
-|-------|--------|
-| **Bereichsleiter** | Löst Benachrichtigung aus |
-| **Team-Mitglieder** | Erhalten E-Mail + PDF |
+
+| Rolle               | Aktion                    |
+| ------------------- | ------------------------- |
+| **Bereichsleiter**  | Löst Benachrichtigung aus |
+| **Team-Mitglieder** | Erhalten E-Mail + PDF     |
 
 ### Dauer
+
 < 30 Sekunden
 
 ---
@@ -641,16 +682,16 @@ Das PDF enthält:
 
 ### System-Benutzer (mit Login)
 
-| Rolle | Beschreibung | Phasen |
-|-------|--------------|--------|
-| **BD Manager** | Lädt Anfragen hoch, prüft Extraktion, trifft Bit/No Bit Entscheidung | 1, 2, 3, 4 |
-| **Bereichsleiter** | Prüft Analysen, plant Projekt, stellt Team zusammen, benachrichtigt | 5, 6, 7, 8, 9 |
-| **Admin** | Pflegt Stammdaten (BLs, Technologien, Mitarbeiter, Baselines) | Übergreifend |
+| Rolle              | Beschreibung                                                         | Phasen        |
+| ------------------ | -------------------------------------------------------------------- | ------------- |
+| **BD Manager**     | Lädt Anfragen hoch, prüft Extraktion, trifft Bit/No Bit Entscheidung | 1, 2, 3, 4    |
+| **Bereichsleiter** | Prüft Analysen, plant Projekt, stellt Team zusammen, benachrichtigt  | 5, 6, 7, 8, 9 |
+| **Admin**          | Pflegt Stammdaten (BLs, Technologien, Mitarbeiter, Baselines)        | Übergreifend  |
 
 ### Keine System-User
 
-| Rolle | Beschreibung |
-|-------|--------------|
+| Rolle               | Beschreibung                                  |
+| ------------------- | --------------------------------------------- |
 | **Team-Mitglieder** | Erhalten nur E-Mail + PDF, kein System-Zugang |
 
 ---
@@ -691,17 +732,17 @@ Das PDF enthält:
 
 ## Zeitlicher Ablauf (Gesamt)
 
-| Phase | Dauer | Kumuliert |
-|-------|-------|-----------|
-| Upload & Extraktion | < 1 min | 1 min |
-| Quick Scan | 2-5 min | 6 min |
-| Bit/No Bit Bewertung | 5-15 min | 21 min |
-| BL-Routing | < 1 min | 22 min |
-| Full Website Scan | 10-30 min | 52 min |
-| Baseline-Vergleich | < 1 min | 53 min |
-| Projekt-Planung | 5-10 min (User) | 63 min |
-| Team Assignment | 5-10 min (User) | 73 min |
-| Team-Benachrichtigung | < 1 min | 74 min |
+| Phase                 | Dauer           | Kumuliert |
+| --------------------- | --------------- | --------- |
+| Upload & Extraktion   | < 1 min         | 1 min     |
+| Quick Scan            | 2-5 min         | 6 min     |
+| Bit/No Bit Bewertung  | 5-15 min        | 21 min    |
+| BL-Routing            | < 1 min         | 22 min    |
+| Full Website Scan     | 10-30 min       | 52 min    |
+| Baseline-Vergleich    | < 1 min         | 53 min    |
+| Projekt-Planung       | 5-10 min (User) | 63 min    |
+| Team Assignment       | 5-10 min (User) | 73 min    |
+| Team-Benachrichtigung | < 1 min         | 74 min    |
 
 **Gesamtdauer:** ~75 Minuten (davon ~45 min automatisch, ~30 min User-Interaktion)
 
@@ -709,16 +750,16 @@ Das PDF enthält:
 
 ## Glossar
 
-| Begriff | Definition |
-|---------|------------|
-| **Bit** | Entscheidung, ein Angebot abzugeben |
-| **No Bit** | Entscheidung, kein Angebot abzugeben |
-| **BL** | Business Line (Geschäftsbereich) |
-| **BD** | Business Development |
-| **Baseline** | Referenz-Implementierung mit vorhandenen Komponenten |
-| **Quick Scan** | Schnelle Tech-Stack-Erkennung für BL-Routing |
-| **Full Website Scan** | Umfassende Analyse aller Website-Aspekte |
-| **Red Flag** | Kritisches Warnsignal bei der Bewertung |
+| Begriff               | Definition                                           |
+| --------------------- | ---------------------------------------------------- |
+| **Bit**               | Entscheidung, ein Angebot abzugeben                  |
+| **No Bit**            | Entscheidung, kein Angebot abzugeben                 |
+| **BL**                | Business Line (Geschäftsbereich)                     |
+| **BD**                | Business Development                                 |
+| **Baseline**          | Referenz-Implementierung mit vorhandenen Komponenten |
+| **Quick Scan**        | Schnelle Tech-Stack-Erkennung für BL-Routing         |
+| **Full Website Scan** | Umfassende Analyse aller Website-Aspekte             |
+| **Red Flag**          | Kritisches Warnsignal bei der Bewertung              |
 
 ---
 

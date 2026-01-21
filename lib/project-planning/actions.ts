@@ -26,11 +26,7 @@ export async function triggerProjectPlanning(bidId: string): Promise<GeneratePro
   }
 
   // Get bid
-  const [bid] = await db
-    .select()
-    .from(rfps)
-    .where(eq(rfps.id, bidId))
-    .limit(1);
+  const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
   if (!bid) {
     return { success: false, error: 'Bid nicht gefunden' };
@@ -89,11 +85,7 @@ export async function triggerProjectPlanning(bidId: string): Promise<GeneratePro
   if (bid.quickScanResults) {
     try {
       const quickScan = JSON.parse(bid.quickScanResults);
-      technologies = [
-        quickScan.cms,
-        quickScan.framework,
-        quickScan.backend,
-      ].filter(Boolean);
+      technologies = [quickScan.cms, quickScan.framework, quickScan.backend].filter(Boolean);
     } catch {
       // Continue without technologies
     }

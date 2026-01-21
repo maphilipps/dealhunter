@@ -108,9 +108,7 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
               </Badge>
             </div>
           </div>
-          <CardDescription>
-            Analyse von {quickScan.websiteUrl}
-          </CardDescription>
+          <CardDescription>Analyse von {quickScan.websiteUrl}</CardDescription>
         </CardHeader>
       </Card>
 
@@ -155,9 +153,7 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
       )}
 
       {/* AI-Generated Visualization */}
-      {tree && !isLoading && (
-        <QuickScanRenderer tree={tree} />
-      )}
+      {tree && !isLoading && <QuickScanRenderer tree={tree} />}
     </div>
   );
 }

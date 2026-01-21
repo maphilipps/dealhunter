@@ -14,11 +14,15 @@ export const BusinessLineRoutingSchema = z.object({
   recommendedBU: z.string().describe('Name of the recommended business unit'),
   confidence: z.number().min(0).max(100).describe('Confidence score (0-100)'),
   reasoning: z.string().describe('Explanation of why this business unit was recommended'),
-  alternativeBUs: z.array(z.object({
-    name: z.string(),
-    confidence: z.number().min(0).max(100),
-    reasoning: z.string(),
-  })).describe('Alternative business units with lower confidence scores'),
+  alternativeBUs: z
+    .array(
+      z.object({
+        name: z.string(),
+        confidence: z.number().min(0).max(100),
+        reasoning: z.string(),
+      })
+    )
+    .describe('Alternative business units with lower confidence scores'),
   matchedKeywords: z.array(z.string()).describe('Keywords from BU that matched'),
   matchedTechnologies: z.array(z.string()).describe('Technologies from BU that matched'),
 });
@@ -65,25 +69,31 @@ export async function matchBusinessLine(
       .leftJoin(technologies, eq(technologies.businessUnitId, businessUnits.id));
 
     // Group technologies by business unit
-    const businessUnitsMap = allBusinessUnits.reduce((acc, row) => {
-      if (!acc[row.name]) {
-        acc[row.name] = {
-          name: row.name,
-          keywords: JSON.parse(row.keywords || '[]') as string[],
-          technologies: [],
-          leaderName: row.leaderName,
-        };
-      }
-      if (row.technologies) {
-        acc[row.name].technologies.push(row.technologies);
-      }
-      return acc;
-    }, {} as Record<string, {
-      name: string;
-      keywords: string[];
-      technologies: string[];
-      leaderName: string;
-    }>);
+    const businessUnitsMap = allBusinessUnits.reduce(
+      (acc, row) => {
+        if (!acc[row.name]) {
+          acc[row.name] = {
+            name: row.name,
+            keywords: JSON.parse(row.keywords || '[]') as string[],
+            technologies: [],
+            leaderName: row.leaderName,
+          };
+        }
+        if (row.technologies) {
+          acc[row.name].technologies.push(row.technologies);
+        }
+        return acc;
+      },
+      {} as Record<
+        string,
+        {
+          name: string;
+          keywords: string[];
+          technologies: string[];
+          leaderName: string;
+        }
+      >
+    );
 
     const businessUnitsData = Object.values(businessUnitsMap);
 
@@ -110,12 +120,16 @@ Identifizierte Technologien:
 ${input.technologies?.join(', ') || 'Keine angegeben'}
     `.trim();
 
-    const businessUnitsContext = businessUnitsData.map(bu => `
+    const businessUnitsContext = businessUnitsData
+      .map(bu =>
+        `
 Business Unit: ${bu.name}
 Leader: ${bu.leaderName}
 Keywords: ${bu.keywords.join(', ')}
 Technologies: ${bu.technologies.join(', ') || 'Keine'}
-    `.trim()).join('\n\n---\n\n');
+    `.trim()
+      )
+      .join('\n\n---\n\n');
 
     // Call AI to match business line
     const result = await generateObject({

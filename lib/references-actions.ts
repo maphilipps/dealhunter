@@ -37,7 +37,16 @@ export async function createReference(data: {
     highlights,
   } = data;
 
-  if (!projectName || !customerName || !industry || !scope || !teamSize || !durationMonths || !budgetRange || !outcome) {
+  if (
+    !projectName ||
+    !customerName ||
+    !industry ||
+    !scope ||
+    !teamSize ||
+    !durationMonths ||
+    !budgetRange ||
+    !outcome
+  ) {
     return { success: false, error: 'Alle Pflichtfelder müssen ausgefüllt werden' };
   }
 
@@ -63,7 +72,7 @@ export async function createReference(data: {
 
     return {
       success: true,
-      referenceId: reference.id
+      referenceId: reference.id,
     };
   } catch (error) {
     console.error('Reference creation error:', error);
@@ -79,14 +88,11 @@ export async function getReferences() {
   }
 
   try {
-    const allReferences = await db
-      .select()
-      .from(references)
-      .orderBy(desc(references.createdAt));
+    const allReferences = await db.select().from(references).orderBy(desc(references.createdAt));
 
     return {
       success: true,
-      references: allReferences
+      references: allReferences,
     };
   } catch (error) {
     console.error('Get references error:', error);
@@ -103,7 +109,7 @@ export async function getReference(id: string) {
 
   try {
     const reference = await db.query.references.findFirst({
-      where: eq(references.id, id)
+      where: eq(references.id, id),
     });
 
     if (!reference) {
@@ -112,7 +118,7 @@ export async function getReference(id: string) {
 
     return {
       success: true,
-      reference
+      reference,
     };
   } catch (error) {
     console.error('Get reference error:', error);

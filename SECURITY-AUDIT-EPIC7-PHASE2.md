@@ -90,17 +90,20 @@ for (const endpoint of apiEndpoints) {
 #### Attack Scenarios
 
 1. **Internal Network Scanning:**
+
    ```
    POST /api/bids/[id]/deep-analysis/trigger
    websiteUrl = "http://192.168.1.1"  // Internal network
    ```
 
 2. **Cloud Metadata Service Access:**
+
    ```
    websiteUrl = "http://169.254.169.254/latest/meta-data/"  // AWS metadata
    ```
 
 3. **Port Scanning:**
+
    ```
    websiteUrl = "http://internal-service:8080"
    ```
@@ -130,6 +133,7 @@ curl -X POST https://dealhunter.example.com/api/bids/[id]/deep-analysis/trigger 
 **IMMEDIATE ACTION REQUIRED:**
 
 1. **Implement URL Validation:**
+
    ```typescript
    // Create /lib/deep-analysis/utils/url-validator.ts
    const BLOCKED_HOSTS = [
@@ -137,9 +141,9 @@ curl -X POST https://dealhunter.example.com/api/bids/[id]/deep-analysis/trigger 
      'localhost',
      '0.0.0.0',
      '169.254.169.254', // AWS metadata
-     '192.168.0.0/16',   // Private network
-     '10.0.0.0/8',       // Private network
-     '172.16.0.0/12',    // Private network
+     '192.168.0.0/16', // Private network
+     '10.0.0.0/8', // Private network
+     '172.16.0.0/12', // Private network
    ];
 
    export function isAllowedUrl(url: string): boolean {
@@ -166,6 +170,7 @@ curl -X POST https://dealhunter.example.com/api/bids/[id]/deep-analysis/trigger 
    ```
 
 2. **Add DNS resolution check to detect rebinding attacks:**
+
    ```typescript
    import { resolve } from 'dns/promises';
 
@@ -179,6 +184,7 @@ curl -X POST https://dealhunter.example.com/api/bids/[id]/deep-analysis/trigger 
    ```
 
 3. **Apply validation to all fetch calls:**
+
    ```typescript
    export async function fetchSitemap(websiteUrl: string): Promise<Sitemap> {
      if (!isAllowedUrl(websiteUrl)) {
@@ -220,6 +226,7 @@ const $ = cheerio.load(xmlText, { xmlMode: true });
 #### Attack Scenarios
 
 1. **File Disclosure:**
+
    ```xml
    <?xml version="1.0"?>
    <!DOCTYPE sitemap [
@@ -233,6 +240,7 @@ const $ = cheerio.load(xmlText, { xmlMode: true });
    ```
 
 2. **SSRF via XXE:**
+
    ```xml
    <!DOCTYPE sitemap [
      <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/">
@@ -254,13 +262,14 @@ const $ = cheerio.load(xmlText, { xmlMode: true });
 **IMMEDIATE ACTION REQUIRED:**
 
 1. **Switch to safe XML parser:**
+
    ```typescript
    // Replace cheerio with xml2js or fast-xml-parser with safe defaults
    import { XMLParser } from 'fast-xml-parser';
 
    const parser = new XMLParser({
      ignoreAttributes: false,
-     processEntities: false,  // CRITICAL: Disable entity processing
+     processEntities: false, // CRITICAL: Disable entity processing
      allowBooleanAttributes: true,
    });
 
@@ -268,6 +277,7 @@ const $ = cheerio.load(xmlText, { xmlMode: true });
    ```
 
 2. **Or configure cheerio more safely:**
+
    ```typescript
    // Note: Cheerio doesn't have built-in XXE protection
    // Validate XML before parsing
@@ -277,7 +287,7 @@ const $ = cheerio.load(xmlText, { xmlMode: true });
 
    const $ = cheerio.load(xmlText, {
      xmlMode: true,
-     decodeEntities: false  // Prevent entity expansion
+     decodeEntities: false, // Prevent entity expansion
    });
    ```
 
@@ -302,13 +312,13 @@ The `sanitizedString` schema in `/lib/deep-analysis/schemas.ts` uses incomplete 
 ```typescript
 // VULNERABLE: Incomplete pattern matching
 const sanitizedString = z.string().refine(
-  (val) => {
+  val => {
     const dangerousPatterns = [
-      /<script/i,           // Can be bypassed with: <sCrIpT>
-      /<\/script/i,         // Only checks closing tag
-      /javascript:/i,       // Can be bypassed with: javas&#99;ript:
-      /on\w+=/i,           // Can be bypassed with: on\x00load=
-      /<iframe/i,          // Can be bypassed with: <iframe\x00>
+      /<script/i, // Can be bypassed with: <sCrIpT>
+      /<\/script/i, // Only checks closing tag
+      /javascript:/i, // Can be bypassed with: javas&#99;ript:
+      /on\w+=/i, // Can be bypassed with: on\x00load=
+      /<iframe/i, // Can be bypassed with: <iframe\x00>
       /<embed/i,
       /<object/i,
     ];
@@ -321,43 +331,50 @@ const sanitizedString = z.string().refine(
 #### Bypass Techniques
 
 1. **Case-insensitive bypass (already handled with /i flag, but incomplete):**
+
    ```javascript
-   "<ScRiPt>alert(1)</sCrIpT>"  // BLOCKED by current regex
+   '<ScRiPt>alert(1)</sCrIpT>'; // BLOCKED by current regex
    ```
 
 2. **HTML entity encoding:**
+
    ```javascript
-   "&#60;script&#62;alert(1)&#60;/script&#62;"  // NOT BLOCKED
+   '&#60;script&#62;alert(1)&#60;/script&#62;'; // NOT BLOCKED
    ```
 
 3. **Unicode escaping:**
+
    ```javascript
-   "\u003cscript\u003ealert(1)\u003c/script\u003e"  // NOT BLOCKED
+   '\u003cscript\u003ealert(1)\u003c/script\u003e'; // NOT BLOCKED
    ```
 
 4. **Null byte injection:**
+
    ```javascript
-   "<iframe\x00 src='evil.com'></iframe>"  // NOT BLOCKED
+   "<iframe\x00 src='evil.com'></iframe>"; // NOT BLOCKED
    ```
 
 5. **URL encoding:**
+
    ```javascript
-   "%3Cscript%3Ealert(1)%3C/script%3E"  // NOT BLOCKED
+   '%3Cscript%3Ealert(1)%3C/script%3E'; // NOT BLOCKED
    ```
 
 6. **Mixed encoding:**
+
    ```javascript
-   "<img src=x on&#101;rror=alert(1)>"  // NOT BLOCKED (on\w+= won't match)
+   '<img src=x on&#101;rror=alert(1)>'; // NOT BLOCKED (on\w+= won't match)
    ```
 
 7. **SVG XSS:**
+
    ```javascript
-   "<svg/onload=alert(1)>"  // NOT BLOCKED
+   '<svg/onload=alert(1)>'; // NOT BLOCKED
    ```
 
 8. **Style-based XSS:**
    ```javascript
-   "<div style='background:url(javascript:alert(1))'>test</div>"  // NOT BLOCKED
+   "<div style='background:url(javascript:alert(1))'>test</div>"; // NOT BLOCKED
    ```
 
 #### Attack Scenarios
@@ -372,22 +389,22 @@ const sanitizedString = z.string().refine(
 6. When admin views results, XSS executes in browser
 
 **Example Attack Flow:**
+
 ```html
 <!-- Attacker's website page title -->
 <title>Product Page &#60;img src=x onerror=alert(document.cookie)&#62;</title>
 
 <!-- After Content Architecture Agent processes it -->
-{
-  "pageType": "Product Page <img src=x onerror=alert(document.cookie)>",
-  "confidence": 90,
-  "reasoning": "Standard product layout"
-}
+{ "pageType": "Product Page <img src="x" onerror="alert(document.cookie)" />", "confidence": 90,
+"reasoning": "Standard product layout" }
 
 <!-- Stored in database as JSON string -->
-contentArchitecture: '{"pageTypes":[{"type":"Product Page <img src=x onerror=alert(document.cookie)>","count":50}]}'
+contentArchitecture: '{"pageTypes":[{"type":"Product Page
+<img src="x" onerror="alert(document.cookie)" />","count":50}]}'
 
 <!-- When rendered in UI (if not properly escaped) -->
-<div>{pageType.type}</div>  // XSS EXECUTES
+<div>{pageType.type}</div>
+// XSS EXECUTES
 ```
 
 #### Remediation Steps
@@ -395,19 +412,21 @@ contentArchitecture: '{"pageTypes":[{"type":"Product Page <img src=x onerror=ale
 **IMMEDIATE ACTION REQUIRED:**
 
 1. **Use DOMPurify or equivalent library:**
+
    ```typescript
    import DOMPurify from 'isomorphic-dompurify';
 
-   const sanitizedString = z.string().transform((val) => {
+   const sanitizedString = z.string().transform(val => {
      // Strip ALL HTML tags
      return DOMPurify.sanitize(val, { ALLOWED_TAGS: [] });
    });
    ```
 
 2. **Or use comprehensive regex-based approach:**
+
    ```typescript
    const sanitizedString = z.string().refine(
-     (val) => {
+     val => {
        // Decode HTML entities first
        const decoded = val
          .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
@@ -445,6 +464,7 @@ contentArchitecture: '{"pageTypes":[{"type":"Product Page <img src=x onerror=ale
    ```
 
 3. **Add output encoding in UI layer (defense in depth):**
+
    ```typescript
    // In React components, always use proper escaping
    import DOMPurify from 'isomorphic-dompurify';
@@ -484,10 +504,7 @@ The deep analysis trigger endpoint has no rate limiting, allowing attackers to t
 
 ```typescript
 // VULNERABLE: No rate limiting
-export async function POST(
-  _request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -527,13 +544,11 @@ export async function POST(
 **IMMEDIATE ACTION REQUIRED:**
 
 1. **Add per-user rate limiting:**
+
    ```typescript
    import { ratelimit } from '@/lib/ratelimit';
 
-   export async function POST(
-     _request: Request,
-     context: { params: Promise<{ id: string }> }
-   ) {
+   export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
      const session = await auth();
 
      if (!session?.user?.id) {
@@ -543,15 +558,15 @@ export async function POST(
      // Rate limit: 5 analyses per user per hour
      const { success, remaining } = await ratelimit.limit(
        `deep-analysis:${session.user.id}`,
-       5,  // 5 requests
-       3600000  // per hour
+       5, // 5 requests
+       3600000 // per hour
      );
 
      if (!success) {
        return NextResponse.json(
          {
            error: 'Rate limit exceeded. Maximum 5 deep analyses per hour.',
-           remainingMinutes: Math.ceil(remaining / 60000)
+           remainingMinutes: Math.ceil(remaining / 60000),
          },
          { status: 429 }
        );
@@ -562,6 +577,7 @@ export async function POST(
    ```
 
 2. **Add global rate limiting:**
+
    ```typescript
    // Limit total concurrent deep analyses
    const [runningCount] = await db
@@ -569,7 +585,8 @@ export async function POST(
      .from(deepMigrationAnalyses)
      .where(eq(deepMigrationAnalyses.status, 'running'));
 
-   if (runningCount.count >= 10) {  // Max 10 concurrent analyses
+   if (runningCount.count >= 10) {
+     // Max 10 concurrent analyses
      return NextResponse.json(
        { error: 'System at capacity. Please try again later.' },
        { status: 503 }
@@ -578,6 +595,7 @@ export async function POST(
    ```
 
 3. **Add cost monitoring:**
+
    ```typescript
    // Track API costs per user
    async function checkUserCostLimit(userId: string): Promise<boolean> {
@@ -588,10 +606,7 @@ export async function POST(
        .from(deepMigrationAnalyses)
        .innerJoin(bidOpportunities, eq(bidOpportunities.id, deepMigrationAnalyses.bidOpportunityId))
        .where(
-         and(
-           eq(bidOpportunities.userId, userId),
-           gte(deepMigrationAnalyses.createdAt, monthStart)
-         )
+         and(eq(bidOpportunities.userId, userId), gte(deepMigrationAnalyses.createdAt, monthStart))
        );
 
      // Limit to 50 analyses per user per month
@@ -647,6 +662,7 @@ export async function fetchPageContent(url: string): Promise<string> {
 #### Remediation Steps
 
 1. **Implement robots.txt parser:**
+
    ```typescript
    import robotsParser from 'robots-parser';
 
@@ -683,6 +699,7 @@ export async function fetchPageContent(url: string): Promise<string> {
    ```
 
 2. **Add crawl delay respect:**
+
    ```typescript
    const lastFetchTime = new Map<string, number>();
 
@@ -692,9 +709,7 @@ export async function fetchPageContent(url: string): Promise<string> {
      const timeSinceLastFetch = now - lastFetch;
 
      if (timeSinceLastFetch < delay) {
-       await new Promise(resolve =>
-         setTimeout(resolve, delay - timeSinceLastFetch)
-       );
+       await new Promise(resolve => setTimeout(resolve, delay - timeSinceLastFetch));
      }
 
      lastFetchTime.set(host, Date.now());
@@ -721,12 +736,15 @@ The `websiteUrl` field in bid opportunities is validated by `sanitizedUrl` schem
 
 ```typescript
 // INCOMPLETE: Only checks protocol, not hostname
-const sanitizedUrl = z.string().url().refine(
-  (val) => {
-    return val.startsWith('http://') || val.startsWith('https://');
-  },
-  { message: 'URL must use http or https protocol' }
-);
+const sanitizedUrl = z
+  .string()
+  .url()
+  .refine(
+    val => {
+      return val.startsWith('http://') || val.startsWith('https://');
+    },
+    { message: 'URL must use http or https protocol' }
+  );
 ```
 
 **File:** `/app/api/bids/[id]/deep-analysis/trigger/route.ts`
@@ -744,18 +762,20 @@ if (!bid.websiteUrl) {
 #### Attack Scenarios
 
 1. **Internal Network Access:**
+
    ```javascript
-   websiteUrl: "http://192.168.1.100:8080/admin"  // ALLOWED by current schema
+   websiteUrl: 'http://192.168.1.100:8080/admin'; // ALLOWED by current schema
    ```
 
 2. **Localhost Access:**
+
    ```javascript
-   websiteUrl: "http://localhost:5432/postgresql"  // ALLOWED
+   websiteUrl: 'http://localhost:5432/postgresql'; // ALLOWED
    ```
 
 3. **Cloud Metadata Access:**
    ```javascript
-   websiteUrl: "http://169.254.169.254/latest/meta-data/"  // ALLOWED
+   websiteUrl: 'http://169.254.169.254/latest/meta-data/'; // ALLOWED
    ```
 
 #### Remediation Steps
@@ -796,7 +816,9 @@ const html = await response.text();
 export async function fetchSitemap(websiteUrl: string): Promise<Sitemap> {
   // ... existing code
 
-  const response = await fetch(sitemapUrl, { /* ... */ });
+  const response = await fetch(sitemapUrl, {
+    /* ... */
+  });
 
   if (!response.ok) {
     continue;
@@ -839,7 +861,7 @@ const contentArchitecture = await step.run('content-architecture', async () => {
   await db
     .update(deepMigrationAnalyses)
     .set({
-      contentArchitecture: JSON.stringify(result),  // No re-validation
+      contentArchitecture: JSON.stringify(result), // No re-validation
       updatedAt: new Date(),
     })
     .where(eq(deepMigrationAnalyses.id, analysis.id));
@@ -901,23 +923,23 @@ const context = await browser.newContext({
 const browser = await chromium.launch({
   headless: true,
   args: [
-    '--disable-dev-shm-usage',  // Prevent /dev/shm memory issues
+    '--disable-dev-shm-usage', // Prevent /dev/shm memory issues
     '--no-sandbox',
     '--disable-setuid-sandbox',
     '--disable-gpu',
-    '--single-process',  // Reduce memory usage
-    '--max-old-space-size=512',  // Limit V8 heap to 512MB
-  ]
+    '--single-process', // Reduce memory usage
+    '--max-old-space-size=512', // Limit V8 heap to 512MB
+  ],
 });
 
 const context = await browser.newContext({
   userAgent: 'Dealhunter-DeepAnalysis/1.0 (Accessibility Audit Bot)',
-  viewport: { width: 1280, height: 720 },  // Fixed viewport
-  ignoreHTTPSErrors: true,  // Optional: handle invalid certs
+  viewport: { width: 1280, height: 720 }, // Fixed viewport
+  ignoreHTTPSErrors: true, // Optional: handle invalid certs
 
   // Resource limits
   javaScriptEnabled: true,
-  serviceWorkers: 'block',  // Block service workers
+  serviceWorkers: 'block', // Block service workers
 });
 
 // Set page limits
@@ -949,10 +971,7 @@ const [existing] = await db
   .select()
   .from(deepMigrationAnalyses)
   .where(
-    and(
-      eq(deepMigrationAnalyses.bidOpportunityId, id),
-      eq(deepMigrationAnalyses.status, 'running')
-    )
+    and(eq(deepMigrationAnalyses.bidOpportunityId, id), eq(deepMigrationAnalyses.status, 'running'))
   )
   .limit(1);
 
@@ -973,13 +992,17 @@ await inngest.send({
 ```typescript
 // Use database-level unique constraint
 // In schema.ts:
-export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
-  // ... existing fields
-}, (table) => ({
-  uniqueRunning: uniqueIndex('unique_running_analysis')
-    .on(table.bidOpportunityId, table.status)
-    .where(eq(table.status, 'running'))
-}));
+export const deepMigrationAnalyses = sqliteTable(
+  'deep_migration_analyses',
+  {
+    // ... existing fields
+  },
+  table => ({
+    uniqueRunning: uniqueIndex('unique_running_analysis')
+      .on(table.bidOpportunityId, table.status)
+      .where(eq(table.status, 'running')),
+  })
+);
 
 // In trigger route:
 try {
@@ -1001,13 +1024,9 @@ try {
     name: 'deep-analysis.run',
     data: { bidId: id, userId: session.user.id, analysisId: analysis.id },
   });
-
 } catch (error) {
   if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-    return NextResponse.json(
-      { error: 'Analysis already running' },
-      { status: 409 }
-    );
+    return NextResponse.json({ error: 'Analysis already running' }, { status: 409 });
   }
   throw error;
 }
@@ -1029,6 +1048,7 @@ The crawler uses a generic User-Agent without contact information, violating RFC
 #### Affected Code Locations
 
 All crawler files use:
+
 ```
 User-Agent: Dealhunter-DeepAnalysis/1.0 (Migration Analysis Bot)
 ```
@@ -1039,7 +1059,7 @@ User-Agent: Dealhunter-DeepAnalysis/1.0 (Migration Analysis Bot)
 const USER_AGENT = [
   'Dealhunter-DeepAnalysis/1.0',
   '(+https://dealhunter.adesso.de/about/crawler;',
-  'crawler@adesso.de)'
+  'crawler@adesso.de)',
 ].join(' ');
 ```
 
@@ -1050,6 +1070,7 @@ const USER_AGENT = [
 ### 12. Authentication & Authorization
 
 **Current State:**
+
 - ✅ Authentication check in trigger endpoint (line 12-16)
 - ✅ Bid ownership verification (line 21-29)
 - ❌ No role-based access control (RBAC)
@@ -1058,13 +1079,11 @@ const USER_AGENT = [
 **Recommendations:**
 
 1. **Add RBAC for deep analysis:**
+
    ```typescript
    // Only allow 'admin' or 'bl' roles to trigger deep analysis
    if (!['admin', 'bl'].includes(session.user.role)) {
-     return NextResponse.json(
-       { error: 'Insufficient permissions' },
-       { status: 403 }
-     );
+     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
    }
    ```
 
@@ -1091,16 +1110,15 @@ const USER_AGENT = [
 **Recommendations:**
 
 1. **Validate JSON on retrieval:**
+
    ```typescript
    const analysis = await db.query.deepMigrationAnalyses.findFirst({
-     where: eq(deepMigrationAnalyses.id, id)
+     where: eq(deepMigrationAnalyses.id, id),
    });
 
    if (analysis.contentArchitecture) {
      // Re-validate before use
-     const validated = ContentArchitectureSchema.parse(
-       JSON.parse(analysis.contentArchitecture)
-     );
+     const validated = ContentArchitectureSchema.parse(JSON.parse(analysis.contentArchitecture));
      // Use validated instead of raw data
    }
    ```
@@ -1118,6 +1136,7 @@ const USER_AGENT = [
 **Issues Found:**
 
 1. **Stack traces in responses:**
+
    ```typescript
    // In deep-analysis.ts error handler
    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -1130,16 +1149,18 @@ const USER_AGENT = [
 **Recommendations:**
 
 1. **Sanitize error messages:**
+
    ```typescript
-   const errorMessage = error instanceof Error
-     ? 'Analysis failed. Please try again.'  // Generic message to client
-     : 'Unknown error';
+   const errorMessage =
+     error instanceof Error
+       ? 'Analysis failed. Please try again.' // Generic message to client
+       : 'Unknown error';
 
    // Log full details server-side only
    console.error('[Deep Analysis Error]', {
      bidId,
      analysisId: analysis.id,
-     error: error instanceof Error ? error.stack : error
+     error: error instanceof Error ? error.stack : error,
    });
    ```
 
@@ -1149,15 +1170,12 @@ const USER_AGENT = [
      warn: (message: string, data?: any) => {
        if (process.env.NODE_ENV === 'production') {
          // Redact URLs in production
-         const redacted = message.replace(
-           /(https?:\/\/[^\s]+)/g,
-           '[REDACTED_URL]'
-         );
+         const redacted = message.replace(/(https?:\/\/[^\s]+)/g, '[REDACTED_URL]');
          console.warn(redacted);
        } else {
          console.warn(message, data);
        }
-     }
+     },
    };
    ```
 
@@ -1167,18 +1185,18 @@ const USER_AGENT = [
 
 ### OWASP Top 10 2021 Compliance
 
-| Category | Status | Findings |
-|----------|--------|----------|
-| A01 - Broken Access Control | ⚠️ PARTIAL | Inngest webhook bypass (#12) |
-| A02 - Cryptographic Failures | ✅ PASS | HTTPS enforced in URL schema |
-| A03 - Injection | ❌ FAIL | XSS (#3), XXE (#2), SSRF (#1) |
-| A04 - Insecure Design | ❌ FAIL | No rate limiting (#4), no URL validation (#6) |
-| A05 - Security Misconfiguration | ⚠️ PARTIAL | Verbose errors (#14) |
-| A06 - Vulnerable Components | ✅ PASS | Dependencies up-to-date |
-| A07 - Authentication Failures | ✅ PASS | Next-Auth implemented |
-| A08 - Software & Data Integrity | ❌ FAIL | LLM output not re-validated (#8) |
-| A09 - Logging & Monitoring | ⚠️ PARTIAL | No security event logging |
-| A10 - SSRF | ❌ FAIL | Multiple SSRF vectors (#1, #6) |
+| Category                        | Status     | Findings                                      |
+| ------------------------------- | ---------- | --------------------------------------------- |
+| A01 - Broken Access Control     | ⚠️ PARTIAL | Inngest webhook bypass (#12)                  |
+| A02 - Cryptographic Failures    | ✅ PASS    | HTTPS enforced in URL schema                  |
+| A03 - Injection                 | ❌ FAIL    | XSS (#3), XXE (#2), SSRF (#1)                 |
+| A04 - Insecure Design           | ❌ FAIL    | No rate limiting (#4), no URL validation (#6) |
+| A05 - Security Misconfiguration | ⚠️ PARTIAL | Verbose errors (#14)                          |
+| A06 - Vulnerable Components     | ✅ PASS    | Dependencies up-to-date                       |
+| A07 - Authentication Failures   | ✅ PASS    | Next-Auth implemented                         |
+| A08 - Software & Data Integrity | ❌ FAIL    | LLM output not re-validated (#8)              |
+| A09 - Logging & Monitoring      | ⚠️ PARTIAL | No security event logging                     |
+| A10 - SSRF                      | ❌ FAIL    | Multiple SSRF vectors (#1, #6)                |
 
 ### Security Headers
 
@@ -1189,24 +1207,24 @@ const USER_AGENT = [
 const securityHeaders = [
   {
     key: 'X-Content-Type-Options',
-    value: 'nosniff'
+    value: 'nosniff',
   },
   {
     key: 'X-Frame-Options',
-    value: 'DENY'
+    value: 'DENY',
   },
   {
     key: 'X-XSS-Protection',
-    value: '1; mode=block'
+    value: '1; mode=block',
   },
   {
     key: 'Referrer-Policy',
-    value: 'strict-origin-when-cross-origin'
+    value: 'strict-origin-when-cross-origin',
   },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=()'
-  }
+    value: 'camera=(), microphone=(), geolocation=()',
+  },
 ];
 ```
 
@@ -1214,19 +1232,19 @@ const securityHeaders = [
 
 ## Risk Matrix
 
-| Finding | Severity | Likelihood | Impact | Priority |
-|---------|----------|------------|--------|----------|
-| #1 SSRF in URL Fetching | CRITICAL | HIGH | RCE, Data Theft | P0 |
-| #2 XXE in Sitemap Parser | CRITICAL | HIGH | File Disclosure | P0 |
-| #3 XSS in Schemas | CRITICAL | MEDIUM | Session Hijack | P0 |
-| #4 No Rate Limiting | HIGH | HIGH | DoS | P1 |
-| #5 Robots.txt Violation | HIGH | HIGH | Legal Liability | P1 |
-| #6 URL Validation | HIGH | MEDIUM | SSRF | P1 |
-| #7 Content-Type Check | MEDIUM | MEDIUM | Injection | P2 |
-| #8 LLM Output Validation | MEDIUM | LOW | Data Integrity | P2 |
-| #9 Memory Exhaustion | MEDIUM | MEDIUM | DoS | P2 |
-| #10 Race Condition | MEDIUM | LOW | Duplication | P3 |
-| #11 User-Agent Header | MEDIUM | LOW | Blocking | P3 |
+| Finding                  | Severity | Likelihood | Impact          | Priority |
+| ------------------------ | -------- | ---------- | --------------- | -------- |
+| #1 SSRF in URL Fetching  | CRITICAL | HIGH       | RCE, Data Theft | P0       |
+| #2 XXE in Sitemap Parser | CRITICAL | HIGH       | File Disclosure | P0       |
+| #3 XSS in Schemas        | CRITICAL | MEDIUM     | Session Hijack  | P0       |
+| #4 No Rate Limiting      | HIGH     | HIGH       | DoS             | P1       |
+| #5 Robots.txt Violation  | HIGH     | HIGH       | Legal Liability | P1       |
+| #6 URL Validation        | HIGH     | MEDIUM     | SSRF            | P1       |
+| #7 Content-Type Check    | MEDIUM   | MEDIUM     | Injection       | P2       |
+| #8 LLM Output Validation | MEDIUM   | LOW        | Data Integrity  | P2       |
+| #9 Memory Exhaustion     | MEDIUM   | MEDIUM     | DoS             | P2       |
+| #10 Race Condition       | MEDIUM   | LOW        | Duplication     | P3       |
+| #11 User-Agent Header    | MEDIUM   | LOW        | Blocking        | P3       |
 
 ---
 
@@ -1301,15 +1319,13 @@ import { describe, it, expect } from '@jest/globals';
 
 describe('SSRF Protection', () => {
   it('should block internal IPs', async () => {
-    await expect(
-      analyzeContentArchitecture('http://192.168.1.1')
-    ).rejects.toThrow('Invalid URL');
+    await expect(analyzeContentArchitecture('http://192.168.1.1')).rejects.toThrow('Invalid URL');
   });
 
   it('should block localhost', async () => {
-    await expect(
-      analyzeContentArchitecture('http://localhost:3000')
-    ).rejects.toThrow('Invalid URL');
+    await expect(analyzeContentArchitecture('http://localhost:3000')).rejects.toThrow(
+      'Invalid URL'
+    );
   });
 
   it('should block cloud metadata', async () => {
@@ -1383,6 +1399,7 @@ The Epic 7 Phase 2 implementation introduces significant security vulnerabilitie
 **Risk Assessment:**
 
 Without remediation, the system is vulnerable to:
+
 - Internal network compromise via SSRF
 - Data exfiltration via XXE
 - Session hijacking via XSS

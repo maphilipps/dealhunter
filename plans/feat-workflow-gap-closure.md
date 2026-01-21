@@ -54,11 +54,13 @@ Die Analyse zeigt kritische Gaps:
 **Ziel:** Einheitliche Navigation für alle BL-Phasen
 
 **Dateien:**
+
 - `app/(dashboard)/bl-review/[id]/layout.tsx` - Tab Layout
 - `app/(dashboard)/bl-review/[id]/page.tsx` - Overview Tab
 - `components/bl-review/bl-review-tabs.tsx` - Tab Navigation Component
 
 **Implementation:**
+
 - ShadCN Tabs Component für Navigation
 - Dynamische Tabs basierend auf Bid-Status
 - Breadcrumbs: Dashboard → BL Review → {Kunde}
@@ -68,11 +70,13 @@ Die Analyse zeigt kritische Gaps:
 **Ziel:** BL sieht kompakte Zusammenfassung der Multi-Agent Bewertung
 
 **Dateien:**
+
 - `app/(dashboard)/bl-review/[id]/questions/page.tsx` - 10 Fragen View
 - `components/bl-review/ten-questions-card.tsx` - Fragen-Karten
 - `lib/bit-evaluation/ten-questions.ts` - Fragen-Extraktion aus Agent-Results
 
 **10 Fragen Format:**
+
 1. Passt der Tech Stack zu unseren Kompetenzen?
 2. Ist das Budget realistisch?
 3. Ist die Timeline machbar?
@@ -89,11 +93,13 @@ Die Analyse zeigt kritische Gaps:
 **Ziel:** Visualisierung "Was haben wir?" vs "Was fehlt?"
 
 **Dateien:**
+
 - `app/(dashboard)/bl-review/[id]/baseline/page.tsx` - Baseline View
 - `components/bl-review/baseline-comparison.tsx` - Split View Component
 - `components/bl-review/baseline-coverage-chart.tsx` - Donut Chart
 
 **UI-Elemente:**
+
 - Split View: Links "Vorhanden (aus Baseline)", Rechts "Neu zu entwickeln"
 - Kategorien: Content Types, Paragraphs, Features, Integrationen
 - Abdeckungs-Donut: "62% Baseline-Abdeckung"
@@ -104,12 +110,14 @@ Die Analyse zeigt kritische Gaps:
 **Ziel:** Timeline-Visualisierung mit Phasen und Disziplinen
 
 **Dateien:**
+
 - `app/(dashboard)/bl-review/[id]/planning/page.tsx` - Planning View
 - `components/bl-review/project-timeline.tsx` - Timeline Component
 - `components/bl-review/discipline-matrix.tsx` - Rollen pro Phase
 - `components/bl-review/pt-breakdown-chart.tsx` - PT-Verteilung
 
 **UI-Elemente:**
+
 - Horizontale Timeline: Discovery → Design → Development → QA → Go-Live
 - Wochen-Angaben pro Phase
 - Disziplinen-Matrix (PL, CON, UI/UX, DEV, SEO, QA)
@@ -120,6 +128,7 @@ Die Analyse zeigt kritische Gaps:
 **Ziel:** BL kann AI-Vorschlag interaktiv anpassen
 
 **Dateien:**
+
 - `app/(dashboard)/bl-review/[id]/team/page.tsx` - Team Builder
 - `components/bl-review/team-builder.tsx` - Drag & Drop Interface
 - `components/bl-review/employee-card.tsx` - Draggable Card
@@ -127,6 +136,7 @@ Die Analyse zeigt kritische Gaps:
 - `lib/team/assign-team.ts` - Server Action
 
 **UI-Elemente:**
+
 - Linke Spalte: Verfügbare Mitarbeiter (gefiltert nach Skills)
 - Rechte Spalte: Rollen-Slots (PL, Architect, Lead Dev, etc.)
 - Drag & Drop mit dnd-kit
@@ -134,6 +144,7 @@ Die Analyse zeigt kritische Gaps:
 - "AI-Vorschlag übernehmen" Button
 
 **Dependencies:**
+
 ```bash
 npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
 ```
@@ -143,11 +154,13 @@ npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
 **Ziel:** Professionelles PDF als E-Mail-Anhang
 
 **Dateien:**
+
 - `app/api/bids/[id]/pdf/route.ts` - PDF API Route
 - `components/pdf/bid-report.tsx` - React-PDF Template
 - `lib/notifications/send-team-notification.ts` - E-Mail mit PDF
 
 **PDF-Inhalt (gemäß WORKFLOW.md):**
+
 1. Kundenname & Kontakt
 2. Projekt-Beschreibung
 3. Scope & Anforderungen
@@ -158,6 +171,7 @@ npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
 8. Nächste Schritte
 
 **Dependencies:**
+
 ```bash
 npm install @react-pdf/renderer react-pdf-tailwind
 ```
@@ -167,11 +181,13 @@ npm install @react-pdf/renderer react-pdf-tailwind
 **Ziel:** Team-Benachrichtigung per E-Mail mit PDF-Anhang
 
 **Dateien:**
+
 - `emails/team-assignment.tsx` - React Email Template
 - `lib/notifications/send-team-notification.ts` - Resend Integration
 - `app/(dashboard)/bl-review/[id]/notify/page.tsx` - Preview & Send UI
 
 **E-Mail-Template:**
+
 ```
 Betreff: [Dealhunter] Angebotsteam für {CustomerName}
 
@@ -191,6 +207,7 @@ Automatisch generiert von Dealhunter
 ```
 
 **Dependencies:**
+
 ```bash
 npm install resend @react-email/components
 ```
@@ -228,12 +245,12 @@ npm install resend @react-email/components
 
 ## Success Metrics
 
-| Metrik | Ziel |
-|--------|------|
-| Workflow Completion Rate | 100% der Phasen nutzbar |
-| Time to Notify | < 5 Min nach BL-Entscheidung |
-| PDF Generation Success | > 99% |
-| Email Delivery Rate | > 95% |
+| Metrik                   | Ziel                         |
+| ------------------------ | ---------------------------- |
+| Workflow Completion Rate | 100% der Phasen nutzbar      |
+| Time to Notify           | < 5 Min nach BL-Entscheidung |
+| PDF Generation Success   | > 99%                        |
+| Email Delivery Rate      | > 95%                        |
 
 ---
 
@@ -278,54 +295,62 @@ RESEND_FROM_EMAIL=dealhunter@adesso.de
 
 ## Risk Analysis & Mitigation
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| PDF-Lib Inkompatibilität | Medium | High | Test mit Next.js 16 vor Implementation |
-| Resend Rate Limits | Low | Medium | Batch-Versand mit Delays |
-| dnd-kit SSR Issues | Medium | Medium | Dynamic Import mit ssr: false |
-| Large PDF Files | Low | Low | Bilder komprimieren, keine Fonts embedden |
+| Risk                     | Likelihood | Impact | Mitigation                                |
+| ------------------------ | ---------- | ------ | ----------------------------------------- |
+| PDF-Lib Inkompatibilität | Medium     | High   | Test mit Next.js 16 vor Implementation    |
+| Resend Rate Limits       | Low        | Medium | Batch-Versand mit Delays                  |
+| dnd-kit SSR Issues       | Medium     | Medium | Dynamic Import mit ssr: false             |
+| Large PDF Files          | Low        | Low    | Bilder komprimieren, keine Fonts embedden |
 
 ---
 
 ## Implementation Phases
 
 ### Epic 1: Tab Navigation Foundation (1 Tag)
+
 - [ ] `bl-review/[id]/layout.tsx` mit ShadCN Tabs
 - [ ] Routing für alle Sub-Pages
 - [ ] Breadcrumb-Integration
 
 ### Epic 2: 10 Fragen Tab (0.5 Tag)
+
 - [ ] `questions/page.tsx` mit Card-Grid
 - [ ] Fragen-Extraktion aus bestehenden Agent-Results
 - [ ] Confidence-Indicators pro Frage
 
 ### Epic 3: Baseline-Vergleich Tab (1 Tag)
+
 - [ ] `baseline/page.tsx` mit Split View
 - [ ] Baseline Coverage Donut Chart
 - [ ] PT-Impact Calculation
 
 ### Epic 4: Projekt-Planung Tab (1 Tag)
+
 - [ ] `planning/page.tsx` mit Timeline
 - [ ] Disziplinen-Matrix Component
 - [ ] PT-Breakdown Stacked Bar
 
 ### Epic 5: Team Builder (1.5 Tage)
+
 - [ ] dnd-kit Integration
 - [ ] `team/page.tsx` mit Drag & Drop
 - [ ] Server Action für Team-Speicherung
 - [ ] Skill-Gap Warnings
 
 ### Epic 6: PDF Generation (1 Tag)
+
 - [ ] @react-pdf/renderer Setup
 - [ ] `components/pdf/bid-report.tsx` Template
 - [ ] API Route `/api/bids/[id]/pdf`
 
 ### Epic 7: E-Mail Integration (0.5 Tag)
+
 - [ ] Resend Setup
 - [ ] React Email Template
 - [ ] `notify/page.tsx` mit Preview
 
 ### Epic 8: Integration & Testing (1 Tag)
+
 - [ ] End-to-End Flow Test
 - [ ] Error Handling
 - [ ] Status-Updates
@@ -422,18 +447,21 @@ erDiagram
 ## References & Research
 
 ### Internal References
+
 - `lib/baseline-comparison/index.ts` - Baseline Logic (bereits implementiert)
 - `lib/project-planning/index.ts` - Planning Logic (bereits implementiert)
 - `lib/team/suggest-team.ts` - Team Suggestion (bereits implementiert)
 - `lib/notifications/index.ts` - Basic E-Mail (zu erweitern)
 
 ### External References
+
 - [dnd-kit Documentation](https://dndkit.com/)
 - [@react-pdf/renderer](https://react-pdf.org/)
 - [Resend Next.js Guide](https://resend.com/docs/send-with-nextjs)
 - [React Email Components](https://react.email/docs/introduction)
 
 ### Related Work
+
 - WORKFLOW.md - Phasen 6-9 Definition
 - SPEC.md - Technische Spezifikationen
 - Francesco Interview - Original Vision

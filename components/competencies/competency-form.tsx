@@ -11,7 +11,9 @@ export function CompetencyForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<'technology' | 'methodology' | 'industry' | 'soft_skill'>('technology');
+  const [category, setCategory] = useState<
+    'technology' | 'methodology' | 'industry' | 'soft_skill'
+  >('technology');
   const [level, setLevel] = useState<'basic' | 'advanced' | 'expert'>('basic');
   const [certifications, setCertifications] = useState<string[]>([]);
   const [certInput, setCertInput] = useState('');
@@ -25,7 +27,7 @@ export function CompetencyForm() {
   };
 
   const handleRemoveCert = (cert: string) => {
-    setCertifications(certifications.filter((c) => c !== cert));
+    setCertifications(certifications.filter(c => c !== cert));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,7 +68,7 @@ export function CompetencyForm() {
             id="name"
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={e => setName(e.target.value)}
             placeholder="z.B. React, Scrum, Change Management"
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
@@ -81,7 +83,7 @@ export function CompetencyForm() {
           <select
             id="category"
             value={category}
-            onChange={(e) => setCategory(e.target.value as any)}
+            onChange={e => setCategory(e.target.value as any)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
             required
@@ -100,7 +102,7 @@ export function CompetencyForm() {
           <select
             id="level"
             value={level}
-            onChange={(e) => setLevel(e.target.value as any)}
+            onChange={e => setLevel(e.target.value as any)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
             required
@@ -119,7 +121,7 @@ export function CompetencyForm() {
         <textarea
           id="description"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={e => setDescription(e.target.value)}
           placeholder="Beschreiben Sie diese Kompetenz..."
           rows={3}
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
@@ -133,8 +135,8 @@ export function CompetencyForm() {
           <input
             type="text"
             value={certInput}
-            onChange={(e) => setCertInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCert())}
+            onChange={e => setCertInput(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), handleAddCert())}
             placeholder="z.B. AWS Certified Developer"
             className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
@@ -151,7 +153,7 @@ export function CompetencyForm() {
 
         {certifications.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {certifications.map((cert) => (
+            {certifications.map(cert => (
               <span
                 key={cert}
                 className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm"

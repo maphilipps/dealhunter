@@ -8,7 +8,7 @@ async function seed() {
 
   // Check if admin user exists
   const existingAdmin = await db.query.users.findFirst({
-    where: eq(users.role, 'admin')
+    where: eq(users.role, 'admin'),
   });
 
   if (!existingAdmin) {
@@ -17,7 +17,7 @@ async function seed() {
       email: 'admin@adesso.de',
       password: hashedPassword,
       name: 'System Administrator',
-      role: 'admin'
+      role: 'admin',
     });
     console.log('Admin user created: admin@adesso.de (password: admin123)');
   } else {
@@ -28,19 +28,33 @@ async function seed() {
   const existingBL = await db.query.businessUnits.findFirst();
 
   if (!existingBL) {
-    const phpBL = await db.insert(businessUnits).values({
-      name: 'PHP',
-      leaderName: 'Francesco Raaphorst',
-      leaderEmail: 'francesco.raaphorst@adesso.de',
-      keywords: JSON.stringify(['drupal', 'php', 'symfony', 'laravel', 'wordpress', 'typo3', 'cms'])
-    }).returning();
+    const phpBL = await db
+      .insert(businessUnits)
+      .values({
+        name: 'PHP',
+        leaderName: 'Francesco Raaphorst',
+        leaderEmail: 'francesco.raaphorst@adesso.de',
+        keywords: JSON.stringify([
+          'drupal',
+          'php',
+          'symfony',
+          'laravel',
+          'wordpress',
+          'typo3',
+          'cms',
+        ]),
+      })
+      .returning();
 
-    const wemBL = await db.insert(businessUnits).values({
-      name: 'WEM',
-      leaderName: 'Michael Rittinghaus',
-      leaderEmail: 'michael.rittinghaus@adesso.de',
-      keywords: JSON.stringify(['magnolia', 'firstspirit', 'wem', 'java', 'enterprise'])
-    }).returning();
+    const wemBL = await db
+      .insert(businessUnits)
+      .values({
+        name: 'WEM',
+        leaderName: 'Michael Rittinghaus',
+        leaderEmail: 'michael.rittinghaus@adesso.de',
+        keywords: JSON.stringify(['magnolia', 'firstspirit', 'wem', 'java', 'enterprise']),
+      })
+      .returning();
 
     console.log('Business Lines created: PHP, WEM');
 
@@ -57,9 +71,9 @@ async function seed() {
             paragraphs: 20,
             taxonomies: 8,
             views: 12,
-            blocks: 10
+            blocks: 10,
           }),
-          isDefault: true
+          isDefault: true,
         },
         {
           name: 'Ibexa',
@@ -68,9 +82,9 @@ async function seed() {
           baselineName: 'Ibexa Standard',
           baselineEntityCounts: JSON.stringify({
             contentTypes: 12,
-            blocks: 8
+            blocks: 8,
           }),
-          isDefault: false
+          isDefault: false,
         },
         {
           name: 'Sulu',
@@ -79,10 +93,10 @@ async function seed() {
           baselineName: 'Sulu Standard',
           baselineEntityCounts: JSON.stringify({
             contentTypes: 10,
-            snippets: 5
+            snippets: 5,
           }),
-          isDefault: false
-        }
+          isDefault: false,
+        },
       ]);
       console.log('Technologies created for PHP: Drupal, Ibexa, Sulu');
     }
@@ -98,9 +112,9 @@ async function seed() {
           baselineEntityCounts: JSON.stringify({
             contentTypes: 14,
             templates: 18,
-            apps: 6
+            apps: 6,
           }),
-          isDefault: true
+          isDefault: true,
         },
         {
           name: 'FirstSpirit',
@@ -110,10 +124,10 @@ async function seed() {
           baselineEntityCounts: JSON.stringify({
             contentTypes: 16,
             templates: 20,
-            modules: 8
+            modules: 8,
           }),
-          isDefault: false
-        }
+          isDefault: false,
+        },
       ]);
       console.log('Technologies created for WEM: Magnolia, FirstSpirit');
     }
@@ -126,7 +140,7 @@ async function seed() {
 
 seed()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error('Seed failed:', error);
     process.exit(1);
   });

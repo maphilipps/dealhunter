@@ -34,7 +34,7 @@ graph TB
     subgraph "AI Layer"
         ExtractAgent[Extract Agent]
         QuickScanAgent[Quick Scan Agent]
-        BITAgent[BIT Evaluation Agent]
+        BIDAgent[BID Evaluation Agent]
         MultiAgent[Multi-Agent System]
     end
 
@@ -62,10 +62,10 @@ graph TB
     Pages --> ServerActions
     API --> ExtractAgent
     API --> QuickScanAgent
-    API --> BITAgent
+    API --> BIDAgent
     ExtractAgent --> MultiAgent
     QuickScanAgent --> MultiAgent
-    BITAgent --> MultiAgent
+    BIDAgent --> MultiAgent
     API --> Inngest
     Inngest --> DeepAnalysis
     Inngest --> EmailNotif
@@ -83,44 +83,44 @@ graph TB
 
 ### Frontend
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Framework** | Next.js 16 (App Router) | React framework with SSR/SSG |
-| **UI Library** | ShadCN UI | Component library (Radix + Tailwind) |
-| **Styling** | Tailwind CSS v4 | Utility-first CSS framework |
-| **AI UI** | Vercel AI SDK Elements | Streaming conversation UI |
-| **Charts** | Recharts | Data visualization |
-| **Forms** | React Hook Form + Zod | Form handling & validation |
-| **State** | Zustand | Client state management |
+| Layer          | Technology              | Purpose                              |
+| -------------- | ----------------------- | ------------------------------------ |
+| **Framework**  | Next.js 16 (App Router) | React framework with SSR/SSG         |
+| **UI Library** | ShadCN UI               | Component library (Radix + Tailwind) |
+| **Styling**    | Tailwind CSS v4         | Utility-first CSS framework          |
+| **AI UI**      | Vercel AI SDK Elements  | Streaming conversation UI            |
+| **Charts**     | Recharts                | Data visualization                   |
+| **Forms**      | React Hook Form + Zod   | Form handling & validation           |
+| **State**      | Zustand                 | Client state management              |
 
 ### Backend
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Runtime** | Node.js 20+ | JavaScript runtime |
-| **Framework** | Next.js API Routes | API endpoints |
-| **AI SDK** | Vercel AI SDK v5 | LLM orchestration |
-| **Database** | Drizzle ORM | Type-safe SQL queries |
-| **Auth** | NextAuth.js v5 | Authentication & sessions |
-| **Jobs** | Inngest | Background job processing |
-| **Validation** | Zod | Schema validation |
+| Layer          | Technology         | Purpose                   |
+| -------------- | ------------------ | ------------------------- |
+| **Runtime**    | Node.js 20+        | JavaScript runtime        |
+| **Framework**  | Next.js API Routes | API endpoints             |
+| **AI SDK**     | Vercel AI SDK v5   | LLM orchestration         |
+| **Database**   | Drizzle ORM        | Type-safe SQL queries     |
+| **Auth**       | NextAuth.js v5     | Authentication & sessions |
+| **Jobs**       | Inngest            | Background job processing |
+| **Validation** | Zod                | Schema validation         |
 
 ### Data & Storage
 
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| **Database** | SQLite (dev)<br/>PostgreSQL (prod) | Relational data storage |
-| **File Storage** | Vercel Blob (prod)<br/>Local FS (dev) | Document storage |
-| **Cache** | In-memory (dev)<br/>Redis (future) | Caching layer |
+| Component        | Technology                            | Purpose                 |
+| ---------------- | ------------------------------------- | ----------------------- |
+| **Database**     | SQLite (dev)<br/>PostgreSQL (prod)    | Relational data storage |
+| **File Storage** | Vercel Blob (prod)<br/>Local FS (dev) | Document storage        |
+| **Cache**        | In-memory (dev)<br/>Redis (future)    | Caching layer           |
 
 ### AI & External Services
 
-| Service | Provider | Purpose |
-|---------|----------|---------|
-| **LLM** | adesso AI Hub (OpenAI-compatible) | GPT-4o, GPT-4o-mini |
-| **Web Search** | Exa | Semantic web search |
-| **Notifications** | Slack API | Team notifications |
-| **Email** | Resend (future) | Email notifications |
+| Service           | Provider                          | Purpose             |
+| ----------------- | --------------------------------- | ------------------- |
+| **LLM**           | adesso AI Hub (OpenAI-compatible) | GPT-4o, GPT-4o-mini |
+| **Web Search**    | Exa                               | Semantic web search |
+| **Notifications** | Slack API                         | Team notifications  |
+| **Email**         | Resend (future)                   | Email notifications |
 
 ---
 
@@ -147,6 +147,7 @@ app/
 ```
 
 **Key Patterns:**
+
 - Server Components by default
 - Client Components marked with `'use client'`
 - Server Actions for mutations
@@ -161,7 +162,7 @@ app/api/
 ├── rfps/[id]/
 │   ├── extraction/stream/   # SSE: Extraction
 │   ├── quick-scan/stream/   # SSE: Quick Scan
-│   ├── evaluate/stream/     # SSE: BIT Evaluation
+│   ├── evaluate/stream/     # SSE: BID Evaluation
 │   ├── deep-analysis/       # Background job control
 │   ├── visualization/       # json-render UI
 │   └── bu-matching/         # BU recommendation
@@ -173,6 +174,7 @@ app/api/
 ```
 
 **API Characteristics:**
+
 - RESTful design
 - SSE for streaming
 - JSON responses
@@ -190,7 +192,7 @@ lib/
 │   ├── quick-scan/          # Quick Scan Agent
 │   │   ├── agent.ts
 │   │   └── tools/          # Tech detection, BU matching
-│   └── bit-evaluation/      # BIT Evaluation Agent
+│   └── bid-evaluation/      # BID Evaluation Agent
 │       ├── agent.ts
 │       └── agents/         # Sub-agents
 │           ├── capability-agent.ts
@@ -202,6 +204,7 @@ lib/
 ```
 
 **Agent Design Pattern:**
+
 - Tool-calling agents (Vercel AI SDK)
 - Streaming responses
 - Structured outputs (Zod)
@@ -255,7 +258,7 @@ sequenceDiagram
     participant API
     participant ExtractAgent
     participant QuickScanAgent
-    participant BITAgent
+    participant BIDAgent
     participant DB
     participant Inngest
 
@@ -286,16 +289,16 @@ sequenceDiagram
     QuickScanAgent-->>API: agent-complete
     API-->>UI: SSE: agent-complete
 
-    User->>UI: Run BIT Evaluation
+    User->>UI: Run BID Evaluation
     UI->>API: GET /api/rfps/{id}/evaluate/stream
-    API->>BITAgent: Run evaluation
-    BITAgent->>BITAgent: Run 6 sub-agents in parallel
-    BITAgent-->>API: Stream events from all agents
+    API->>BIDAgent: Run evaluation
+    BIDAgent->>BIDAgent: Run 6 sub-agents in parallel
+    BIDAgent-->>API: Stream events from all agents
     API-->>UI: SSE: agent-thinking, tool-result
-    BITAgent->>BITAgent: Aggregate scores
-    BITAgent->>DB: Save evaluation
-    BITAgent-->>API: agent-complete
-    API-->>UI: SSE: agent-complete (BIT/NO BIT)
+    BIDAgent->>BIDAgent: Aggregate scores
+    BIDAgent->>DB: Save evaluation
+    BIDAgent-->>API: agent-complete
+    API-->>UI: SSE: agent-complete (BID/NO-BID)
 
     User->>UI: Trigger Deep Analysis
     UI->>API: POST /api/rfps/{id}/deep-analysis/trigger
@@ -349,7 +352,7 @@ graph LR
 ```mermaid
 graph TB
     subgraph "Coordinator Agent"
-        Coord[BIT Evaluation Coordinator]
+        Coord[BID Evaluation Coordinator]
     end
 
     subgraph "Sub-Agents (Parallel)"
@@ -363,7 +366,7 @@ graph TB
 
     subgraph "Aggregation"
         Agg[Score Aggregation]
-        Decision[BIT/NO BIT Decision]
+        Decision[BID/NO-BID Decision]
     end
 
     Coord --> Cap
@@ -385,33 +388,33 @@ graph TB
 
 ### Agent Capabilities
 
-| Agent | Model | Tools | Output |
-|-------|-------|-------|--------|
-| **Extract Agent** | GPT-4o-mini | Extract fields, PII removal | Structured JSON |
-| **Quick Scan Agent** | GPT-4o-mini | Tech detection, BU matching | Tech stack + BU |
-| **Capability Agent** | GPT-4o-mini | Skill matching, gap analysis | Capability score (0-1) |
-| **Competition Agent** | GPT-4o-mini | Web search, competitor analysis | Competition score (0-1) |
-| **Deal Quality Agent** | GPT-4o-mini | Budget analysis, ROI calculation | Deal quality score (0-1) |
-| **Legal Agent** | GPT-4o-mini | Contract analysis, risk detection | Legal score (0-1) |
-| **Reference Agent** | GPT-4o-mini | Project similarity search | Reference score (0-1) |
-| **Strategic Fit Agent** | GPT-4o-mini | Alignment analysis | Strategic fit score (0-1) |
+| Agent                   | Model       | Tools                             | Output                    |
+| ----------------------- | ----------- | --------------------------------- | ------------------------- |
+| **Extract Agent**       | GPT-4o-mini | Extract fields, PII removal       | Structured JSON           |
+| **Quick Scan Agent**    | GPT-4o-mini | Tech detection, BU matching       | Tech stack + BU           |
+| **Capability Agent**    | GPT-4o-mini | Skill matching, gap analysis      | Capability score (0-1)    |
+| **Competition Agent**   | GPT-4o-mini | Web search, competitor analysis   | Competition score (0-1)   |
+| **Deal Quality Agent**  | GPT-4o-mini | Budget analysis, ROI calculation  | Deal quality score (0-1)  |
+| **Legal Agent**         | GPT-4o-mini | Contract analysis, risk detection | Legal score (0-1)         |
+| **Reference Agent**     | GPT-4o-mini | Project similarity search         | Reference score (0-1)     |
+| **Strategic Fit Agent** | GPT-4o-mini | Alignment analysis                | Strategic fit score (0-1) |
 
 ### Event-Driven Streaming
 
 ```typescript
 // Agent event stream
 type AgentEvent =
-  | { type: 'agent-start', data: { agentName: string } }
-  | { type: 'agent-thinking', data: { thought: string } }
-  | { type: 'tool-call', data: { toolName: string, args: any } }
-  | { type: 'tool-result', data: { toolName: string, result: any } }
-  | { type: 'agent-message', data: { message: string } }
-  | { type: 'agent-complete', data: { result: any } }
-  | { type: 'error', data: { message: string } }
+  | { type: 'agent-start'; data: { agentName: string } }
+  | { type: 'agent-thinking'; data: { thought: string } }
+  | { type: 'tool-call'; data: { toolName: string; args: any } }
+  | { type: 'tool-result'; data: { toolName: string; result: any } }
+  | { type: 'agent-message'; data: { message: string } }
+  | { type: 'agent-complete'; data: { result: any } }
+  | { type: 'error'; data: { message: string } };
 
 // Event emitter pattern
-const emitter = createAgentEventStream()
-emitter.emit('agent-thinking', { thought: 'Analyzing tech stack...' })
+const emitter = createAgentEventStream();
+emitter.emit('agent-thinking', { thought: 'Analyzing tech stack...' });
 ```
 
 ---
@@ -546,11 +549,11 @@ sequenceDiagram
 
 ### Authorization Model
 
-| Role | Permissions |
-|------|------------|
-| **admin** | Full system access, user management, admin panel |
-| **bl** (BU Lead) | View/edit RFPs in own BU, assign teams |
-| **bd** (BD Manager) | Create/edit own RFPs, view all RFPs |
+| Role                | Permissions                                      |
+| ------------------- | ------------------------------------------------ |
+| **admin**           | Full system access, user management, admin panel |
+| **bl** (BU Lead)    | View/edit RFPs in own BU, assign teams           |
+| **bd** (BD Manager) | Create/edit own RFPs, view all RFPs              |
 
 ### Security Layers
 
@@ -628,11 +631,11 @@ graph TB
 
 ### Environment Configuration
 
-| Environment | Database | File Storage | Cache | Jobs |
-|------------|----------|--------------|-------|------|
-| **Development** | SQLite | Local FS | In-memory | Inngest Dev |
-| **Preview** | PostgreSQL | Vercel Blob | In-memory | Inngest |
-| **Production** | PostgreSQL | Vercel Blob | Redis (future) | Inngest |
+| Environment     | Database   | File Storage | Cache          | Jobs        |
+| --------------- | ---------- | ------------ | -------------- | ----------- |
+| **Development** | SQLite     | Local FS     | In-memory      | Inngest Dev |
+| **Preview**     | PostgreSQL | Vercel Blob  | In-memory      | Inngest     |
+| **Production**  | PostgreSQL | Vercel Blob  | Redis (future) | Inngest     |
 
 ### Scaling Characteristics
 
@@ -669,13 +672,13 @@ graph TB
 
 ### Performance Targets
 
-| Metric | Target |
-|--------|--------|
-| **Upload** | < 30s (extraction complete) |
-| **Quick Scan** | < 60s |
-| **BIT Evaluation** | 5-15 minutes |
-| **Deep Analysis** | 10-30 minutes (background) |
-| **Page Load** | < 2s (FCP) |
+| Metric             | Target                      |
+| ------------------ | --------------------------- |
+| **Upload**         | < 30s (extraction complete) |
+| **Quick Scan**     | < 60s                       |
+| **BID Evaluation** | 5-15 minutes                |
+| **Deep Analysis**  | 10-30 minutes (background)  |
+| **Page Load**      | < 2s (FCP)                  |
 
 ---
 

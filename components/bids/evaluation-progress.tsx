@@ -60,13 +60,11 @@ export function EvaluationProgress({ status }: EvaluationProgressProps) {
             </>
           )}
         </CardTitle>
-        <CardDescription>
-          Multi-Agent Analyse der Opportunity
-        </CardDescription>
+        <CardDescription>Multi-Agent Analyse der Opportunity</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
-          {agents.map((agent) => {
+          {agents.map(agent => {
             const Icon = agent.icon;
             return (
               <div
@@ -91,8 +89,8 @@ export function EvaluationProgress({ status }: EvaluationProgressProps) {
                     {agent.status === 'completed'
                       ? 'Abgeschlossen'
                       : agent.status === 'running'
-                      ? 'Analysiert...'
-                      : 'Wartet...'}
+                        ? 'Analysiert...'
+                        : 'Wartet...'}
                   </p>
                 </div>
               </div>

@@ -18,12 +18,14 @@ The `deepMigrationAnalyses` table references `bidOpportunities` via foreign key,
 ## Findings
 
 **Data Integrity Guardian Report:**
+
 - Foreign key: `bidOpportunityId` → `bidOpportunities.id`
 - Current behavior: Delete bid → analysis records orphaned
 - Expected behavior: Delete bid → cascade delete all associated analyses
 - Risk: Orphaned records accumulate over time, queries return invalid data
 
 **Evidence:**
+
 ```typescript
 // lib/db/schema.ts (current)
 export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
@@ -34,6 +36,7 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 ```
 
 **Current Migration:**
+
 ```sql
 -- drizzle/0013_brave_amphibian.sql
 FOREIGN KEY (`bid_opportunity_id`)
@@ -43,6 +46,7 @@ FOREIGN KEY (`bid_opportunity_id`)
 ```
 
 **Scenario:**
+
 1. User uploads bid → creates bid record (id: "bid_123")
 2. Triggers deep analysis → creates analysis record (bidOpportunityId: "bid_123")
 3. User deletes bid (mistake, duplicate, etc.) → bid_123 deleted
@@ -52,13 +56,16 @@ FOREIGN KEY (`bid_opportunity_id`)
 ## Proposed Solutions
 
 ### Solution 1: Add CASCADE DELETE to Foreign Key (Recommended)
+
 **Pros:**
+
 - Database enforces referential integrity
 - Automatic cleanup, no application logic needed
 - Standard SQL pattern
 - Prevents orphaned records
 
 **Cons:**
+
 - Deletes analysis data when bid deleted (expected behavior)
 - Need migration to update existing FK
 
@@ -66,6 +73,7 @@ FOREIGN KEY (`bid_opportunity_id`)
 **Risk**: Very Low
 
 **Implementation:**
+
 ```typescript
 // lib/db/schema.ts
 export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
@@ -76,6 +84,7 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 ```
 
 **Migration:**
+
 ```sql
 -- SQLite doesn't support ALTER FOREIGN KEY, need to recreate table:
 
@@ -100,11 +109,14 @@ ALTER TABLE `deep_migration_analyses_new`
 ```
 
 ### Solution 2: Application-Level Cascade Delete
+
 **Pros:**
+
 - No schema migration needed
 - More control over deletion logic
 
 **Cons:**
+
 - Easy to forget in new delete code paths
 - Not enforced by database
 - More complex, error-prone
@@ -113,24 +125,26 @@ ALTER TABLE `deep_migration_analyses_new`
 **Risk**: Medium (can be bypassed/forgotten)
 
 **Implementation:**
+
 ```typescript
 // lib/bids/actions.ts
 export async function deleteBid(bidId: string) {
   // ❌ Manual cascade (fragile)
-  await db.delete(deepMigrationAnalyses)
-    .where(eq(deepMigrationAnalyses.bidOpportunityId, bidId));
+  await db.delete(deepMigrationAnalyses).where(eq(deepMigrationAnalyses.bidOpportunityId, bidId));
 
-  await db.delete(bidOpportunities)
-    .where(eq(bidOpportunities.id, bidId));
+  await db.delete(bidOpportunities).where(eq(bidOpportunities.id, bidId));
 }
 ```
 
 ### Solution 3: Soft Delete Bids Instead
+
 **Pros:**
+
 - No data loss
 - Audit trail preserved
 
 **Cons:**
+
 - More complex queries (must filter deleted)
 - Storage not reclaimed
 - Doesn't solve orphaned record problem
@@ -147,6 +161,7 @@ This is the standard database pattern for parent-child relationships. Analysis r
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/db/schema.ts` - Add onDelete: 'cascade'
 - `drizzle/migrations/XXXX_add_cascade_delete.sql` - NEW migration
 
@@ -156,6 +171,7 @@ This is the standard database pattern for parent-child relationships. Analysis r
 
 **Other Tables to Review:**
 Consider adding CASCADE to other foreign keys:
+
 - `quickScans.bidOpportunityId` → should also CASCADE
 - `deepMigrationAnalyses.userId` (if added per HIGH-003) → NO CASCADE (keep user if analysis deleted)
 

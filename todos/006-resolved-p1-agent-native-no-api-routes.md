@@ -19,6 +19,7 @@ Epic 7 implements deep migration analysis as a UI-only feature with no API route
 ## Findings
 
 **Agent-Native Reviewer Report:**
+
 - Deep analysis can only be triggered via UI button clicks
 - No API route to programmatically start analysis
 - No API route to check analysis status
@@ -26,6 +27,7 @@ Epic 7 implements deep migration analysis as a UI-only feature with no API route
 - Agents cannot integrate with deep analysis workflow
 
 **Current State:**
+
 - ✅ Database schema exists
 - ✅ Inngest background job exists
 - ❌ NO `/api/bids/[id]/deep-analysis/trigger` route
@@ -33,11 +35,13 @@ Epic 7 implements deep migration analysis as a UI-only feature with no API route
 - ❌ NO `/api/bids/[id]/deep-analysis/results` route
 
 **Violations:**
+
 1. **Action Parity**: User can trigger analysis (UI button), agent cannot (no API)
 2. **Context Parity**: User sees results (UI page), agent cannot retrieve (no API)
 3. **Workflow Integration**: Deep analysis isolated from AI agent workflows
 
 **Example Agent Use Cases (Currently Impossible):**
+
 - AI agent auto-triggers deep analysis when BIT decision = "yes"
 - Slack bot checks analysis status and notifies when complete
 - Automated quality check retrieves results and validates data
@@ -46,13 +50,16 @@ Epic 7 implements deep migration analysis as a UI-only feature with no API route
 ## Proposed Solutions
 
 ### Solution 1: Add RESTful API Routes (Recommended)
+
 **Pros:**
+
 - Standard HTTP endpoints
 - Easy to integrate with any client
 - Supports both humans and agents
 - Consistent with existing `/api/bids/[id]/evaluate/stream` pattern
 
 **Cons:**
+
 - Need to implement 3 routes
 - Access control required (see HIGH-003)
 
@@ -60,21 +67,17 @@ Epic 7 implements deep migration analysis as a UI-only feature with no API route
 **Risk**: Low
 
 **Implementation:**
+
 ```typescript
 // app/api/bids/[id]/deep-analysis/trigger/route.ts
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user?.id) return new Response('Unauthorized', { status: 401 });
 
-  const [bid] = await db.select()
+  const [bid] = await db
+    .select()
     .from(bidOpportunities)
-    .where(and(
-      eq(bidOpportunities.id, params.id),
-      eq(bidOpportunities.userId, session.user.id)
-    ));
+    .where(and(eq(bidOpportunities.id, params.id), eq(bidOpportunities.userId, session.user.id)));
 
   if (!bid) return new Response('Not found', { status: 404 });
 
@@ -88,19 +91,19 @@ export async function POST(
 }
 
 // app/api/bids/[id]/deep-analysis/status/route.ts
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user?.id) return new Response('Unauthorized', { status: 401 });
 
-  const [analysis] = await db.select()
+  const [analysis] = await db
+    .select()
     .from(deepMigrationAnalyses)
-    .where(and(
-      eq(deepMigrationAnalyses.bidOpportunityId, params.id),
-      eq(deepMigrationAnalyses.userId, session.user.id) // Requires HIGH-003 fix
-    ))
+    .where(
+      and(
+        eq(deepMigrationAnalyses.bidOpportunityId, params.id),
+        eq(deepMigrationAnalyses.userId, session.user.id) // Requires HIGH-003 fix
+      )
+    )
     .orderBy(desc(deepMigrationAnalyses.createdAt))
     .limit(1);
 
@@ -115,20 +118,20 @@ export async function GET(
 }
 
 // app/api/bids/[id]/deep-analysis/results/route.ts
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user?.id) return new Response('Unauthorized', { status: 401 });
 
-  const [analysis] = await db.select()
+  const [analysis] = await db
+    .select()
     .from(deepMigrationAnalyses)
-    .where(and(
-      eq(deepMigrationAnalyses.bidOpportunityId, params.id),
-      eq(deepMigrationAnalyses.userId, session.user.id),
-      eq(deepMigrationAnalyses.status, 'completed')
-    ))
+    .where(
+      and(
+        eq(deepMigrationAnalyses.bidOpportunityId, params.id),
+        eq(deepMigrationAnalyses.userId, session.user.id),
+        eq(deepMigrationAnalyses.status, 'completed')
+      )
+    )
     .orderBy(desc(deepMigrationAnalyses.createdAt))
     .limit(1);
 
@@ -144,12 +147,15 @@ export async function GET(
 ```
 
 ### Solution 2: Add MCP Server for Deep Analysis
+
 **Pros:**
+
 - Native agent integration
 - Type-safe tool definitions
 - Follows agent-native best practices
 
 **Cons:**
+
 - More complex than HTTP routes
 - Requires MCP infrastructure
 - Higher learning curve
@@ -158,11 +164,14 @@ export async function GET(
 **Risk**: Medium (new pattern for team)
 
 ### Solution 3: Defer to Phase 3 (Not Recommended)
+
 **Pros:**
+
 - Less work now
 - Can focus on UI first
 
 **Cons:**
+
 - Violates agent-native principles
 - Creates technical debt
 - Limits automation potential
@@ -180,12 +189,14 @@ Agent-native architecture is a core principle, not a nice-to-have. These routes 
 ## Technical Details
 
 **Affected Files:**
+
 - `app/api/bids/[id]/deep-analysis/trigger/route.ts` - NEW
 - `app/api/bids/[id]/deep-analysis/status/route.ts` - NEW
 - `app/api/bids/[id]/deep-analysis/results/route.ts` - NEW
 - `lib/db/schema.ts` - Add userId (see HIGH-003)
 
 **Dependencies:**
+
 - HIGH-003: Must add userId to deepMigrationAnalyses for access control
 
 **Database Changes:** None (uses existing schema + HIGH-003 changes)
@@ -208,11 +219,13 @@ Agent-native architecture is a core principle, not a nice-to-have. These routes 
 **2026-01-17**: Issue identified by agent-native-reviewer during Epic 7 Phase 1 review
 
 **2026-01-17**: Issue resolved - Implemented all three API routes:
+
 - `app/api/bids/[id]/deep-analysis/trigger/route.ts` (POST) - Already existed, enhanced with validation
 - `app/api/bids/[id]/deep-analysis/status/route.ts` (GET) - New route created
 - `app/api/bids/[id]/deep-analysis/results/route.ts` (GET) - New route created
 
 All routes implement:
+
 - Authentication via NextAuth session validation
 - Ownership verification by joining through bidOpportunities table
 - Proper HTTP status codes (401, 404, 200, 500)

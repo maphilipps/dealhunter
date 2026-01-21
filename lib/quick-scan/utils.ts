@@ -50,7 +50,9 @@ export function getScoreColorClass(score: number): string {
 /**
  * Get badge variant for audit scores
  */
-export function getScoreBadgeVariant(score: number): 'default' | 'secondary' | 'destructive' | 'outline' {
+export function getScoreBadgeVariant(
+  score: number
+): 'default' | 'secondary' | 'destructive' | 'outline' {
   if (score >= 80) return 'default';
   if (score >= 50) return 'secondary';
   return 'destructive';

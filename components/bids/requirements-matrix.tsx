@@ -13,21 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
-  Loader2,
-  Play,
-  RefreshCw,
-  CheckCircle2,
-  AlertCircle,
-  Info,
-  Zap,
-} from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Loader2, Play, RefreshCw, CheckCircle2, AlertCircle, Info, Zap } from 'lucide-react';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
 
 interface MatrixCell {
@@ -169,9 +156,7 @@ function MatrixCellDisplay({ cell }: { cell: MatrixCell | undefined }) {
         <TooltipContent className="max-w-xs">
           <div className="space-y-1.5">
             <p className="font-medium">{notes}</p>
-            <p className="text-xs text-muted-foreground">
-              Confidence: {confidence}%
-            </p>
+            <p className="text-xs text-muted-foreground">Confidence: {confidence}%</p>
             {evidence && evidence.length > 0 && (
               <div className="text-xs">
                 <p className="font-medium">Evidenz:</p>
@@ -286,15 +271,10 @@ export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixP
   }, [rfpId]);
 
   // Calculate overall scores per CMS
-  const cmsScores = matrix?.technologies.map((tech) => {
-    const techCells = matrix.cells.filter(
-      (c) => c.cmsId === tech.id && c.result
-    );
+  const cmsScores = matrix?.technologies.map(tech => {
+    const techCells = matrix.cells.filter(c => c.cmsId === tech.id && c.result);
 
-    const totalScore = techCells.reduce(
-      (sum, c) => sum + (c.result?.score || 0),
-      0
-    );
+    const totalScore = techCells.reduce((sum, c) => sum + (c.result?.score || 0), 0);
     const avgScore = techCells.length > 0 ? Math.round(totalScore / techCells.length) : 0;
 
     return { ...tech, avgScore };
@@ -360,9 +340,7 @@ export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixP
               </span>
             )}
             {matrix.metadata.durationMs && (
-              <span>
-                {Math.round(matrix.metadata.durationMs / 1000)}s Recherche
-              </span>
+              <span>{Math.round(matrix.metadata.durationMs / 1000)}s Recherche</span>
             )}
           </div>
         )}
@@ -373,9 +351,7 @@ export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixP
           <div className="text-center py-12 text-muted-foreground">
             <Info className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Noch keine Matrix-Recherche durchgeführt.</p>
-            <p className="text-sm">
-              Klicke auf "Matrix starten" um parallele Agenten zu starten.
-            </p>
+            <p className="text-sm">Klicke auf "Matrix starten" um parallele Agenten zu starten.</p>
           </div>
         )}
 
@@ -388,9 +364,7 @@ export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixP
                   <div
                     key={cms.id}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
-                      index === 0
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-muted/50'
+                      index === 0 ? 'bg-green-50 border-green-200' : 'bg-muted/50'
                     }`}
                   >
                     <span className="font-medium text-lg">{index + 1}.</span>
@@ -400,10 +374,7 @@ export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixP
                         Baseline
                       </Badge>
                     )}
-                    <Badge
-                      variant="outline"
-                      className={`${getScoreColor(cms.avgScore)} font-mono`}
-                    >
+                    <Badge variant="outline" className={`${getScoreColor(cms.avgScore)} font-mono`}>
                       {cms.avgScore}%
                     </Badge>
                   </div>
@@ -418,7 +389,7 @@ export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixP
                   <TableRow>
                     <TableHead className="min-w-[200px]">Anforderung</TableHead>
                     <TableHead className="w-10">Prio</TableHead>
-                    {matrix.technologies.map((tech) => (
+                    {matrix.technologies.map(tech => (
                       <TableHead key={tech.id} className="text-center min-w-[100px]">
                         {tech.name}
                         {tech.isBaseline && (
@@ -431,15 +402,15 @@ export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixP
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {matrix.requirements.map((req) => (
+                  {matrix.requirements.map(req => (
                     <TableRow key={req.name}>
                       <TableCell className="font-medium">{req.name}</TableCell>
                       <TableCell>
                         <PriorityBadge priority={req.priority} />
                       </TableCell>
-                      {matrix.technologies.map((tech) => {
+                      {matrix.technologies.map(tech => {
                         const cell = matrix.cells.find(
-                          (c) => c.requirement === req.name && c.cmsId === tech.id
+                          c => c.requirement === req.name && c.cmsId === tech.id
                         );
                         return (
                           <TableCell key={tech.id} className="text-center p-2">

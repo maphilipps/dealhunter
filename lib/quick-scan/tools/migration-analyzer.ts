@@ -13,11 +13,13 @@ const aiAnalysisResultSchema = z.object({
   recommendation: z.enum(['easy', 'moderate', 'complex', 'very_complex']),
   warnings: z.array(z.string()),
   opportunities: z.array(z.string()).optional(),
-  estimatedEffort: z.object({
-    minPT: z.number(),
-    maxPT: z.number(),
-    confidence: z.number().min(0).max(100),
-  }).optional(),
+  estimatedEffort: z
+    .object({
+      minPT: z.number(),
+      maxPT: z.number(),
+      confidence: z.number().min(0).max(100),
+    })
+    .optional(),
 });
 
 type AIAnalysisResult = z.infer<typeof aiAnalysisResultSchema>;
@@ -38,27 +40,121 @@ interface MigrationAnalysisInput {
 }
 
 // CMS Export Capabilities Database
-const CMS_EXPORT_CAPABILITIES: Record<string, {
-  hasRestApi: boolean;
-  hasXmlExport: boolean;
-  hasCli: boolean;
-  exportScore: number;
-  knownExportMethods: string[];
-  notes?: string;
-}> = {
-  'wordpress': { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 90, knownExportMethods: ['WP-CLI', 'REST API', 'XML Export', 'wp-json'], notes: 'WP-CLI und REST API verfügbar' },
-  'drupal': { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 95, knownExportMethods: ['Drush CLI', 'JSON:API', 'Views Data Export', 'Migrate API'], notes: 'Drush CLI und JSON:API verfügbar' },
-  'typo3': { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 85, knownExportMethods: ['T3 CLI', 'REST API', 'Backend Export'], notes: 'T3 CLI verfügbar, aber komplexere Struktur' },
-  'joomla': { hasRestApi: true, hasXmlExport: true, hasCli: false, exportScore: 70, knownExportMethods: ['REST API', 'Export Extensions'], notes: 'REST API vorhanden, kein CLI' },
-  'contao': { hasRestApi: false, hasXmlExport: true, hasCli: false, exportScore: 50, knownExportMethods: ['XML Export'], notes: 'Nur XML Export, begrenzte API' },
-  'shopify': { hasRestApi: true, hasXmlExport: false, hasCli: false, exportScore: 75, knownExportMethods: ['Shopify API', 'CSV Export', 'GraphQL'], notes: 'REST API gut, aber Vendor Lock-In' },
-  'wix': { hasRestApi: false, hasXmlExport: false, hasCli: false, exportScore: 20, knownExportMethods: ['Scraping'], notes: 'Kein Export möglich - Scraping erforderlich' },
-  'squarespace': { hasRestApi: false, hasXmlExport: false, hasCli: false, exportScore: 15, knownExportMethods: ['Scraping', 'Minimal XML'], notes: 'Minimaler Export - Scraping erforderlich' },
-  'sitecore': { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 80, knownExportMethods: ['Sitecore CLI', 'REST API', 'Serialization'], notes: 'Enterprise-Tools vorhanden, aber komplex' },
-  'adobe aem': { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 75, knownExportMethods: ['AEM CLI', 'Content Packages', 'Sling API'], notes: 'Gute APIs, aber komplexe Struktur' },
-  'contentful': { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 95, knownExportMethods: ['Contentful CLI', 'Management API', 'Export Tool'], notes: 'Headless CMS - voller API-Zugriff' },
-  'strapi': { hasRestApi: true, hasXmlExport: true, hasCli: true, exportScore: 95, knownExportMethods: ['REST API', 'GraphQL', 'Strapi CLI'], notes: 'Headless CMS - voller API-Zugriff' },
-  'custom': { hasRestApi: false, hasXmlExport: false, hasCli: false, exportScore: 30, knownExportMethods: [], notes: 'Unbekanntes System - manuelle Analyse erforderlich' },
+const CMS_EXPORT_CAPABILITIES: Record<
+  string,
+  {
+    hasRestApi: boolean;
+    hasXmlExport: boolean;
+    hasCli: boolean;
+    exportScore: number;
+    knownExportMethods: string[];
+    notes?: string;
+  }
+> = {
+  wordpress: {
+    hasRestApi: true,
+    hasXmlExport: true,
+    hasCli: true,
+    exportScore: 90,
+    knownExportMethods: ['WP-CLI', 'REST API', 'XML Export', 'wp-json'],
+    notes: 'WP-CLI und REST API verfügbar',
+  },
+  drupal: {
+    hasRestApi: true,
+    hasXmlExport: true,
+    hasCli: true,
+    exportScore: 95,
+    knownExportMethods: ['Drush CLI', 'JSON:API', 'Views Data Export', 'Migrate API'],
+    notes: 'Drush CLI und JSON:API verfügbar',
+  },
+  typo3: {
+    hasRestApi: true,
+    hasXmlExport: true,
+    hasCli: true,
+    exportScore: 85,
+    knownExportMethods: ['T3 CLI', 'REST API', 'Backend Export'],
+    notes: 'T3 CLI verfügbar, aber komplexere Struktur',
+  },
+  joomla: {
+    hasRestApi: true,
+    hasXmlExport: true,
+    hasCli: false,
+    exportScore: 70,
+    knownExportMethods: ['REST API', 'Export Extensions'],
+    notes: 'REST API vorhanden, kein CLI',
+  },
+  contao: {
+    hasRestApi: false,
+    hasXmlExport: true,
+    hasCli: false,
+    exportScore: 50,
+    knownExportMethods: ['XML Export'],
+    notes: 'Nur XML Export, begrenzte API',
+  },
+  shopify: {
+    hasRestApi: true,
+    hasXmlExport: false,
+    hasCli: false,
+    exportScore: 75,
+    knownExportMethods: ['Shopify API', 'CSV Export', 'GraphQL'],
+    notes: 'REST API gut, aber Vendor Lock-In',
+  },
+  wix: {
+    hasRestApi: false,
+    hasXmlExport: false,
+    hasCli: false,
+    exportScore: 20,
+    knownExportMethods: ['Scraping'],
+    notes: 'Kein Export möglich - Scraping erforderlich',
+  },
+  squarespace: {
+    hasRestApi: false,
+    hasXmlExport: false,
+    hasCli: false,
+    exportScore: 15,
+    knownExportMethods: ['Scraping', 'Minimal XML'],
+    notes: 'Minimaler Export - Scraping erforderlich',
+  },
+  sitecore: {
+    hasRestApi: true,
+    hasXmlExport: true,
+    hasCli: true,
+    exportScore: 80,
+    knownExportMethods: ['Sitecore CLI', 'REST API', 'Serialization'],
+    notes: 'Enterprise-Tools vorhanden, aber komplex',
+  },
+  'adobe aem': {
+    hasRestApi: true,
+    hasXmlExport: true,
+    hasCli: true,
+    exportScore: 75,
+    knownExportMethods: ['AEM CLI', 'Content Packages', 'Sling API'],
+    notes: 'Gute APIs, aber komplexe Struktur',
+  },
+  contentful: {
+    hasRestApi: true,
+    hasXmlExport: true,
+    hasCli: true,
+    exportScore: 95,
+    knownExportMethods: ['Contentful CLI', 'Management API', 'Export Tool'],
+    notes: 'Headless CMS - voller API-Zugriff',
+  },
+  strapi: {
+    hasRestApi: true,
+    hasXmlExport: true,
+    hasCli: true,
+    exportScore: 95,
+    knownExportMethods: ['REST API', 'GraphQL', 'Strapi CLI'],
+    notes: 'Headless CMS - voller API-Zugriff',
+  },
+  custom: {
+    hasRestApi: false,
+    hasXmlExport: false,
+    hasCli: false,
+    exportScore: 30,
+    knownExportMethods: [],
+    notes: 'Unbekanntes System - manuelle Analyse erforderlich',
+  },
 };
 
 /**
@@ -73,7 +169,14 @@ function getCmsCapabilities(cmsName?: string): {
   notes?: string;
 } {
   if (!cmsName) {
-    return { hasRestApi: false, hasXmlExport: false, hasCli: false, score: 30, knownExportMethods: [], notes: 'CMS nicht erkannt' };
+    return {
+      hasRestApi: false,
+      hasXmlExport: false,
+      hasCli: false,
+      score: 30,
+      knownExportMethods: [],
+      notes: 'CMS nicht erkannt',
+    };
   }
 
   const normalizedName = cmsName.toLowerCase();
@@ -91,7 +194,14 @@ function getCmsCapabilities(cmsName?: string): {
     }
   }
 
-  return { hasRestApi: false, hasXmlExport: false, hasCli: false, score: 30, knownExportMethods: [], notes: 'CMS nicht in Datenbank' };
+  return {
+    hasRestApi: false,
+    hasXmlExport: false,
+    hasCli: false,
+    score: 30,
+    knownExportMethods: [],
+    notes: 'CMS nicht in Datenbank',
+  };
 }
 
 /**
@@ -228,8 +338,11 @@ export async function analyzeMigrationComplexity(
 
   // Estimate data quality (simplified - would need more analysis)
   const cleanupRequired: 'minimal' | 'moderate' | 'significant' =
-    cmsCapabilities.score > 70 ? 'minimal' :
-    cmsCapabilities.score > 40 ? 'moderate' : 'significant';
+    cmsCapabilities.score > 70
+      ? 'minimal'
+      : cmsCapabilities.score > 40
+        ? 'moderate'
+        : 'significant';
 
   const dataQuality = {
     score: cmsCapabilities.score > 70 ? 80 : 50,
@@ -246,10 +359,7 @@ export async function analyzeMigrationComplexity(
   );
 
   // Estimate integration complexity
-  const integrationComplexity = estimateIntegrationComplexity(
-    input.features,
-    input.techStack
-  );
+  const integrationComplexity = estimateIntegrationComplexity(input.features, input.techStack);
 
   // Calculate overall score
   const weights = {
@@ -264,9 +374,9 @@ export async function analyzeMigrationComplexity(
 
   const overallScore = Math.round(
     cmsComplexityScore * weights.cmsExportability +
-    (100 - dataQuality.score) * weights.dataQuality +
-    contentComplexity.score * weights.contentComplexity +
-    integrationComplexity.score * weights.integrationComplexity
+      (100 - dataQuality.score) * weights.dataQuality +
+      contentComplexity.score * weights.contentComplexity +
+      integrationComplexity.score * weights.integrationComplexity
   );
 
   // Determine recommendation
@@ -310,7 +420,7 @@ export async function analyzeMigrationComplexity(
 
   // Estimate effort (rough PT calculation)
   const basePT = Math.ceil(input.pageCount / 20); // ~20 pages per PT
-  const complexityMultiplier = 1 + (overallScore / 100);
+  const complexityMultiplier = 1 + overallScore / 100;
   const minPT = Math.max(5, Math.ceil(basePT * (complexityMultiplier - 0.2)));
   const maxPT = Math.ceil(basePT * (complexityMultiplier + 0.3));
 

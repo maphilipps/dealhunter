@@ -102,9 +102,9 @@ async function discoverLinks(
     const baseUrlObj = new URL(baseUrl);
     const baseDomain = baseUrlObj.hostname;
 
-    const links = await page.evaluate((domain) => {
+    const links = await page.evaluate(domain => {
       const discovered: string[] = [];
-      document.querySelectorAll('a[href]').forEach((anchor) => {
+      document.querySelectorAll('a[href]').forEach(anchor => {
         const href = anchor.getAttribute('href');
         if (!href) return;
 
@@ -166,7 +166,7 @@ async function extractNavigationLinks(
       ];
 
       for (const selector of navSelectors) {
-        document.querySelectorAll(selector).forEach((anchor) => {
+        document.querySelectorAll(selector).forEach(anchor => {
           const href = anchor.getAttribute('href');
           if (href && (href.startsWith('/') || href.startsWith(window.location.origin))) {
             try {
@@ -183,7 +183,7 @@ async function extractNavigationLinks(
       // Footer navigation
       const footer = document.querySelector('footer');
       if (footer) {
-        footer.querySelectorAll('a[href]').forEach((anchor) => {
+        footer.querySelectorAll('a[href]').forEach(anchor => {
           const href = anchor.getAttribute('href');
           if (href && (href.startsWith('/') || href.startsWith(window.location.origin))) {
             try {
@@ -233,7 +233,7 @@ function categorizeUrls(urls: string[]): Record<string, number> {
   for (const url of urls) {
     let matched = false;
     for (const [type, patterns] of Object.entries(typePatterns)) {
-      if (patterns.some((p) => p.test(url))) {
+      if (patterns.some(p => p.test(url))) {
         counts[type] = (counts[type] || 0) + 1;
         matched = true;
         break;
@@ -271,7 +271,7 @@ export async function countPages(
     // 1. Try sitemap first (most reliable)
     try {
       const sitemapUrls = await parseSitemap(fullUrl, timeout);
-      sitemapUrls.forEach((u) => allUrls.add(u));
+      sitemapUrls.forEach(u => allUrls.add(u));
       sources.sitemap = sitemapUrls.length;
     } catch (error) {
       errors.push(`Sitemap error: ${error instanceof Error ? error.message : 'Unknown'}`);
@@ -286,8 +286,8 @@ export async function countPages(
     // 3. Link discovery from homepage
     try {
       const discoveredUrls = await discoverLinks(browser, fullUrl, timeout);
-      const newUrls = discoveredUrls.filter((u) => !allUrls.has(u));
-      newUrls.forEach((u) => allUrls.add(u));
+      const newUrls = discoveredUrls.filter(u => !allUrls.has(u));
+      newUrls.forEach(u => allUrls.add(u));
       sources.linkDiscovery = newUrls.length;
     } catch (error) {
       errors.push(`Link discovery error: ${error instanceof Error ? error.message : 'Unknown'}`);
@@ -296,8 +296,8 @@ export async function countPages(
     // 4. Navigation links
     try {
       const navUrls = await extractNavigationLinks(browser, fullUrl, timeout);
-      const newUrls = navUrls.filter((u) => !allUrls.has(u));
-      newUrls.forEach((u) => allUrls.add(u));
+      const newUrls = navUrls.filter(u => !allUrls.has(u));
+      newUrls.forEach(u => allUrls.add(u));
       sources.navigation = newUrls.length;
     } catch (error) {
       errors.push(`Navigation error: ${error instanceof Error ? error.message : 'Unknown'}`);
@@ -360,7 +360,7 @@ export async function quickPageCount(url: string): Promise<{
       const html = await response.text();
       const linkMatches = html.match(/<a[^>]+href=/gi);
       const internalLinks = linkMatches?.filter(
-        (link) => !link.includes('http') || link.includes(new URL(fullUrl).hostname)
+        link => !link.includes('http') || link.includes(new URL(fullUrl).hostname)
       );
       const estimatedCount = Math.ceil((internalLinks?.length || 20) * 5); // Rough multiplier
 

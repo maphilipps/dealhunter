@@ -17,7 +17,7 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
 } from 'lucide-react';
 import type { QuickScan } from '@/lib/db/schema';
 
@@ -43,7 +43,7 @@ export function BLDecisionPhase({ quickScan, rfpId }: BLDecisionPhaseProps) {
       const res = await fetch(`/api/rfps/${rfpId}/decision`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decision, reasoning })
+        body: JSON.stringify({ decision, reasoning }),
       });
 
       if (res.ok) {
@@ -58,7 +58,9 @@ export function BLDecisionPhase({ quickScan, rfpId }: BLDecisionPhaseProps) {
 
   if (submitted) {
     return (
-      <Card className={decision === 'bid' ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}>
+      <Card
+        className={decision === 'bid' ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}
+      >
         <CardContent className="py-12 text-center">
           {decision === 'bid' ? (
             <>
@@ -72,9 +74,7 @@ export function BLDecisionPhase({ quickScan, rfpId }: BLDecisionPhaseProps) {
             <>
               <XCircle className="h-16 w-16 mx-auto text-red-600 mb-4" />
               <h2 className="text-2xl font-bold text-red-800 mb-2">NO-BID-Entscheidung erfasst</h2>
-              <p className="text-red-700">
-                Die Anfrage wurde abgelehnt. Grund wurde dokumentiert.
-              </p>
+              <p className="text-red-700">Die Anfrage wurde abgelehnt. Grund wurde dokumentiert.</p>
             </>
           )}
         </CardContent>
@@ -110,10 +110,15 @@ export function BLDecisionPhase({ quickScan, rfpId }: BLDecisionPhaseProps) {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Confidence</p>
-              <Badge variant={
-                (quickScan.confidence || 0) >= 70 ? 'default' :
-                (quickScan.confidence || 0) >= 50 ? 'secondary' : 'destructive'
-              }>
+              <Badge
+                variant={
+                  (quickScan.confidence || 0) >= 70
+                    ? 'default'
+                    : (quickScan.confidence || 0) >= 50
+                      ? 'secondary'
+                      : 'destructive'
+                }
+              >
                 {quickScan.confidence || 0}%
               </Badge>
             </div>
@@ -153,7 +158,7 @@ export function BLDecisionPhase({ quickScan, rfpId }: BLDecisionPhaseProps) {
             <Label className="text-base mb-4 block">Wie lautet Ihre Entscheidung?</Label>
             <RadioGroup
               value={decision || ''}
-              onValueChange={(v) => setDecision(v as Decision)}
+              onValueChange={v => setDecision(v as Decision)}
               className="grid grid-cols-2 gap-4"
             >
               <Label
@@ -166,7 +171,9 @@ export function BLDecisionPhase({ quickScan, rfpId }: BLDecisionPhaseProps) {
               >
                 <RadioGroupItem value="bid" id="bid" />
                 <div className="flex items-center gap-3">
-                  <ThumbsUp className={`h-8 w-8 ${decision === 'bid' ? 'text-green-600' : 'text-slate-400'}`} />
+                  <ThumbsUp
+                    className={`h-8 w-8 ${decision === 'bid' ? 'text-green-600' : 'text-slate-400'}`}
+                  />
                   <div>
                     <p className="font-semibold text-lg">BID</p>
                     <p className="text-sm text-muted-foreground">Anfrage bearbeiten</p>
@@ -184,7 +191,9 @@ export function BLDecisionPhase({ quickScan, rfpId }: BLDecisionPhaseProps) {
               >
                 <RadioGroupItem value="no-bid" id="no-bid" />
                 <div className="flex items-center gap-3">
-                  <ThumbsDown className={`h-8 w-8 ${decision === 'no-bid' ? 'text-red-600' : 'text-slate-400'}`} />
+                  <ThumbsDown
+                    className={`h-8 w-8 ${decision === 'no-bid' ? 'text-red-600' : 'text-slate-400'}`}
+                  />
                   <div>
                     <p className="font-semibold text-lg">NO-BID</p>
                     <p className="text-sm text-muted-foreground">Anfrage ablehnen</p>
@@ -210,7 +219,7 @@ export function BLDecisionPhase({ quickScan, rfpId }: BLDecisionPhaseProps) {
                   : 'Pflicht bei No-Bid: Warum wird diese Anfrage abgelehnt?'
               }
               value={reasoning}
-              onChange={(e) => setReasoning(e.target.value)}
+              onChange={e => setReasoning(e.target.value)}
               rows={4}
               className="resize-none"
             />

@@ -8,10 +8,7 @@ async function createTestPdf() {
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  const content = fs.readFileSync(
-    path.join(process.cwd(), 'test-pdf-sample.txt'),
-    'utf-8'
-  );
+  const content = fs.readFileSync(path.join(process.cwd(), 'test-pdf-sample.txt'), 'utf-8');
 
   const lines = content.split('\n');
   let y = 800;

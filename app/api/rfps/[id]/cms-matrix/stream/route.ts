@@ -162,10 +162,7 @@ function extractRequirementsFromQuickScan(quickScanData: Record<string, unknown>
 /**
  * POST Handler - Startet die Matrix-Recherche
  */
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: rfpId } = await params;
 
   // Create streaming response
@@ -183,11 +180,7 @@ export async function POST(
   (async () => {
     try {
       // 1. Load RFP
-      const rfp = await db
-        .select()
-        .from(rfps)
-        .where(eq(rfps.id, rfpId))
-        .limit(1);
+      const rfp = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);
 
       if (!rfp.length) {
         await sendEvent({
@@ -204,9 +197,7 @@ export async function POST(
       }
 
       // 2. Parse Quick Scan Results
-      const quickScanData = rfp[0].quickScanResults
-        ? JSON.parse(rfp[0].quickScanResults)
-        : {};
+      const quickScanData = rfp[0].quickScanResults ? JSON.parse(rfp[0].quickScanResults) : {};
 
       // 3. Extract Requirements
       const requirements = extractRequirementsFromQuickScan(quickScanData);
@@ -236,23 +227,21 @@ export async function POST(
       });
 
       // 4. Load CMS Options from DB
-      const techs = await db
-        .select()
-        .from(technologies)
-        .where(eq(technologies.category, 'CMS'));
+      const techs = await db.select().from(technologies).where(eq(technologies.category, 'CMS'));
 
-      const cmsOptions = techs.length > 0
-        ? techs.map((t) => ({
-            id: t.id,
-            name: t.name,
-            isBaseline: t.isDefault || false,
-          }))
-        : [
-            { id: 'drupal', name: 'Drupal', isBaseline: true },
-            { id: 'wordpress', name: 'WordPress', isBaseline: false },
-            { id: 'contentful', name: 'Contentful', isBaseline: false },
-            { id: 'strapi', name: 'Strapi', isBaseline: false },
-          ];
+      const cmsOptions =
+        techs.length > 0
+          ? techs.map(t => ({
+              id: t.id,
+              name: t.name,
+              isBaseline: t.isDefault || false,
+            }))
+          : [
+              { id: 'drupal', name: 'Drupal', isBaseline: true },
+              { id: 'wordpress', name: 'WordPress', isBaseline: false },
+              { id: 'contentful', name: 'Contentful', isBaseline: false },
+              { id: 'strapi', name: 'Strapi', isBaseline: false },
+            ];
 
       await sendEvent({
         id: `cms-${Date.now()}`,
@@ -265,16 +254,11 @@ export async function POST(
       });
 
       // 5. Run Parallel Matrix Research
-      const matrix = await runParallelMatrixResearch(
-        requirements,
-        cmsOptions,
-        sendEvent,
-        {
-          useCache: true,
-          saveToDb: true,
-          maxConcurrency: 5,
-        }
-      );
+      const matrix = await runParallelMatrixResearch(requirements, cmsOptions, sendEvent, {
+        useCache: true,
+        saveToDb: true,
+        maxConcurrency: 5,
+      });
 
       // 6. Save to RFP
       await saveMatrixToRfp(rfpId, matrix);
@@ -321,10 +305,7 @@ export async function POST(
 /**
  * GET Handler - Lädt gespeicherte Matrix
  */
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: rfpId } = await params;
 
   const rfp = await db
@@ -337,9 +318,7 @@ export async function GET(
     return Response.json({ error: 'RFP not found' }, { status: 404 });
   }
 
-  const quickScanData = rfp[0].quickScanResults
-    ? JSON.parse(rfp[0].quickScanResults)
-    : {};
+  const quickScanData = rfp[0].quickScanResults ? JSON.parse(rfp[0].quickScanResults) : {};
 
   return Response.json({
     matrix: quickScanData.cmsMatchingMatrix || null,

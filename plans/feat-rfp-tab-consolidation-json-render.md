@@ -7,12 +7,14 @@
 **Research agents used:** 11 (json-render, ShadCN, Decision Matrix, Streaming, Drizzle, Architecture, Simplicity, Performance, Security, Frontend Design)
 
 ### Key Improvements
+
 1. **Critical simplification** - json-render entfernt durch Simplicity-Review
 2. **Performance-first approach** - Separate Tabelle für große JSON-Daten
 3. **Security hardening** - Prompt Injection Protection, Zod-Validierung
 4. **UX optimization** - Sub-Tabs statt 15+ Accordions
 
 ### Major Direction Change
+
 Nach der Analyse wird **json-render NICHT verwendet** - es ist Over-Engineering für statische Daten. Die Lösung ist statische React-Komponenten mit optimiertem Rendering.
 
 ---
@@ -26,12 +28,14 @@ Konsolidierung der 4 aktuellen RFP-Detail-Tabs zu 2 Tabs mit erweiterter Datensp
 ## Aktueller Stand
 
 **Aktuelle 4 Tabs:**
+
 1. **Overview** - Quick Scan Ergebnisse, Tech Stack, Features, Audits
 2. **BU Matching** - Business Unit Matching mit Scores
 3. **10 Fragen** - BIT-Entscheidungsfragen
 4. **Workflow** - Gescrapte Fakten, CMS Evaluation, BL-Forwarding
 
 **Dateien:**
+
 - `components/bids/bid-tabs.tsx` - Tab-Navigation
 - `components/bids/quick-scan-results.tsx` - Quick Scan UI (1829 Zeilen!)
 - `components/bids/cms-evaluation-matrix.tsx` - CMS Matrix
@@ -98,46 +102,55 @@ Konsolidierung der 4 aktuellen RFP-Detail-Tabs zu 2 Tabs mit erweiterter Datensp
 
 ```typescript
 // lib/db/schema.ts - Neue separate Tabelle
-export const quickScanDetails = sqliteTable('quick_scan_details', {
-  id: text('id').primaryKey(),
-  quickScanId: text('quick_scan_id').notNull().references(() => quickScans.id),
+export const quickScanDetails = sqliteTable(
+  'quick_scan_details',
+  {
+    id: text('id').primaryKey(),
+    quickScanId: text('quick_scan_id')
+      .notNull()
+      .references(() => quickScans.id),
 
-  // Alle Audit-Daten zusammen (oder einzeln für Granularität)
-  fullAuditData: text('full_audit_data'), // JSON - optional, lazy loaded
+    // Alle Audit-Daten zusammen (oder einzeln für Granularität)
+    fullAuditData: text('full_audit_data'), // JSON - optional, lazy loaded
 
-  // Decision Matrix (nur wenn generiert)
-  decisionMatrix: text('decision_matrix'), // JSON - validiert mit Zod
+    // Decision Matrix (nur wenn generiert)
+    decisionMatrix: text('decision_matrix'), // JSON - validiert mit Zod
 
-  // Metadata für Cache-Invalidation
-  dataHash: text('data_hash'), // Hash aller Audit-Daten für Cache
-  generatedAt: integer('generated_at', { mode: 'timestamp' }),
-}, (table) => ({
-  quickScanIdIdx: index('quick_scan_details_quick_scan_id_idx').on(table.quickScanId),
-  dataHashIdx: index('quick_scan_details_data_hash_idx').on(table.dataHash),
-}));
+    // Metadata für Cache-Invalidation
+    dataHash: text('data_hash'), // Hash aller Audit-Daten für Cache
+    generatedAt: integer('generated_at', { mode: 'timestamp' }),
+  },
+  table => ({
+    quickScanIdIdx: index('quick_scan_details_quick_scan_id_idx').on(table.quickScanId),
+    dataHashIdx: index('quick_scan_details_data_hash_idx').on(table.dataHash),
+  })
+);
 
 // Original Tabelle - Generated Columns für Performance
-export const quickScans = sqliteTable('quick_scans', {
-  // ... existierende Felder ...
+export const quickScans = sqliteTable(
+  'quick_scans',
+  {
+    // ... existierende Felder ...
 
-  // Generated Columns für häufige Queries (SQLite Pattern)
-  confidenceScore: integer('confidence_score')
-    .generatedAlwaysAs(
+    // Generated Columns für häufige Queries (SQLite Pattern)
+    confidenceScore: integer('confidence_score').generatedAlwaysAs(
       sql`CAST(json_extract(${decisionEvaluation}, '$.confidence') AS INTEGER)`
     ),
-  recommendedBL: text('recommended_bl')
-    .generatedAlwaysAs(
+    recommendedBL: text('recommended_bl').generatedAlwaysAs(
       sql`json_extract(${decisionEvaluation}, '$.recommendedBL')`
     ),
-}, (table) => ({
-  // Partial Index für aktive RFPs
-  activeStatusIdx: index('rfps_active_status_idx')
-    .on(table.status)
-    .where(sql`status != 'archived'`),
-}));
+  },
+  table => ({
+    // Partial Index für aktive RFPs
+    activeStatusIdx: index('rfps_active_status_idx')
+      .on(table.status)
+      .where(sql`status != 'archived'`),
+  })
+);
 ```
 
 **Performance-Erkenntnisse:**
+
 - SQLite hat keine direkten JSON-Indizies, aber **Generated Columns** sind die Lösung
 - Separate Tabelle verhindert unnötiges Laden von großen JSON-Spalten
 - `dataHash` ermöglicht effiziente Cache-Invalidation
@@ -370,11 +383,13 @@ export const DecisionCriterionSchema = z.object({
 
 export const DecisionMatrixSchema = z.object({
   criteria: z.array(DecisionCriterionSchema).max(50),
-  scoresByCategory: z.record(z.object({
-    totalWeight: z.number(),
-    weightedScore: z.number(),
-    normalizedScore: z.number().min(0).max(10),
-  })),
+  scoresByCategory: z.record(
+    z.object({
+      totalWeight: z.number(),
+      weightedScore: z.number(),
+      normalizedScore: z.number().min(0).max(10),
+    })
+  ),
   overallScore: z.number().min(0).max(10),
   recommendation: z.enum(['bid', 'no_bid', 'uncertain']),
   confidence: z.number().min(0).max(100),
@@ -391,6 +406,7 @@ export type DecisionMatrix = z.infer<typeof DecisionMatrixSchema>;
 ## Akzeptanzkriterien
 
 ### Funktional
+
 - [ ] 2 Tabs: "Fakten" und "Entscheidungs-Matrix"
 - [ ] Fakten-Tab mit 5 Sub-Tabs: Übersicht, Technisch, Inhalt, Qualität, Business
 - [ ] Entscheidungsmatrix mit gewichteter Tabelle
@@ -398,12 +414,14 @@ export type DecisionMatrix = z.infer<typeof DecisionMatrixSchema>;
 - [ ] Cache für Decision Matrix
 
 ### Daten
+
 - [ ] Separate `quickScanDetails` Tabelle
 - [ ] `decisionMatrix` Schema mit Zod-Validierung
 - [ ] Generated Columns für Performance
 - [ ] `dataHash` für Cache-Invalidation
 
 ### UI/UX
+
 - [ ] Progressive Disclosure - Zusammenfassung zuerst
 - [ ] Color-Coding für Scores (grün > 7, gelb 4-7, rot < 4)
 - [ ] Pagination für große Listen (>20 Items)
@@ -411,12 +429,14 @@ export type DecisionMatrix = z.infer<typeof DecisionMatrixSchema>;
 - [ ] Keyboard Navigation für Accordions
 
 ### Performance
-- [ ] Selective Column Loading (kein SELECT *)
+
+- [ ] Selective Column Loading (kein SELECT \*)
 - [ ] Separate Tabelle für große JSONs
 - [ ] Virtual Scrolling für 100+ Items
 - [ ] Response Caching mit ETag
 
 ### Security
+
 - [ ] Zod-Validierung für alle JSON-Felder
 - [ ] Prompt Injection Protection (falls AI verwendet)
 - [ ] Prototype Pollution Protection beim JSON-Parsing
@@ -425,28 +445,33 @@ export type DecisionMatrix = z.infer<typeof DecisionMatrixSchema>;
 ## Implementierungsphasen
 
 ### Phase 1: Database Schema (1h)
+
 - [ ] `quickScanDetails` Tabelle erstellen
 - [ ] Generated Columns für `quickScans`
 - [ ] Migration für bestehende Daten
 - [ ] Indexes für Performance
 
 ### Phase 2: Data Layer (1h)
+
 - [ ] Zod Schemas für Decision Matrix
 - [ ] Helper für Selective Column Loading
 - [ ] Cache-Invalidation mit dataHash
 
 ### Phase 3: UI Komponenten (3h)
+
 - [ ] `FactsTab` mit Sub-Tabs
 - [ ] `DecisionMatrixTab` mit Radar Chart
 - [ ] `BidTabs` Refactoring auf 2 Tabs
 - [ ] Sub-Tab Komponenten (Overview, Technical, etc.)
 
 ### Phase 4: Performance (2h)
+
 - [ ] Pagination für große Listen
 - [ ] Virtual Scrolling (optional für 100+ Items)
 - [ ] Response Caching
 
 ### Phase 5: Testing & Polish (1h)
+
 - [ ] Browser-Tests
 - [ ] Security-Tests
 - [ ] Performance-Tests
@@ -454,6 +479,7 @@ export type DecisionMatrix = z.infer<typeof DecisionMatrixSchema>;
 ## Referenzen
 
 ### Intern
+
 - `components/bids/bid-tabs.tsx` - Aktuelle Tab-Implementierung
 - `components/bids/quick-scan-results.tsx` - Quick Scan UI (1829 Zeilen)
 - `components/bids/phases/scraped-facts-phase.tsx` - Gescrapte Fakten (1917 Zeilen)
@@ -461,6 +487,7 @@ export type DecisionMatrix = z.infer<typeof DecisionMatrixSchema>;
 - `lib/quick-scan/schema.ts` - Quick Scan Schema
 
 ### Extern
+
 - https://ui.shadcn.com/docs/components - ShadCN Components
 - https://recharts.github.io/ - Recharts Radar Charts
 - https://tanstack.com/table/latest/docs/react/react-table - TanStack Table
@@ -470,18 +497,21 @@ export type DecisionMatrix = z.infer<typeof DecisionMatrixSchema>;
 ## Research Insights
 
 ### Best Practices
+
 - **Accordion Pattern**: Verwende `type="multiple"` mit intelligenten `defaultValue` - wichtige Sektionen standardmäßig öffnen
 - **Pagination**: 20 Items pro Seite mit "Load More" Button statt unendlichem Scroll
 - **Color Coding**: Semantische Farben mit Text-Labels (nicht nur Farbe)
 - **Generated Columns**: SQLite-Pattern für JSON-Indizierung über Virtual Columns
 
 ### Performance Considerations
+
 - **Selective Loading**: Liste-Queries nur mit notwendigen Spalten
 - **Separate Tables**: Große JSONs in separater Tabelle für bessere Query-Performance
 - **Cache Invalidation**: Hash-basierte Invalidierung statt zeitbasierter
 - **Virtual Scrolling**: Ab 100 Items notwendig, darunter Pagination reicht
 
 ### Security Considerations
+
 - **Zod Validation**: Alle JSON-Felder vor dem Speichern validieren
 - **Prototype Pollution**: JSON.parse mit Reviver für `__proto__`, `constructor`, `prototype`
 - **Input Sanitization**: User-Inputs vor AI-Prompt verwenden

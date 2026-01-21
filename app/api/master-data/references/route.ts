@@ -135,10 +135,7 @@ export async function POST(request: NextRequest) {
     const parsed = createReferenceSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: parsed.error },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error }, { status: 400 });
     }
 
     const newReference: NewReference = {
@@ -174,19 +171,13 @@ export async function PATCH(request: NextRequest) {
     const parsed = updateReferenceSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: parsed.error },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error }, { status: 400 });
     }
 
     const { id, version, ...updates } = parsed.data;
 
     // Check ownership (admins can edit all, users can only edit their own pending items)
-    const [existing] = await db
-      .select()
-      .from(references)
-      .where(eq(references.id, id));
+    const [existing] = await db.select().from(references).where(eq(references.id, id));
 
     if (!existing) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });

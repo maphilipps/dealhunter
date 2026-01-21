@@ -24,10 +24,7 @@ export const dynamic = 'force-dynamic';
  * - 401 Unauthorized: User not authenticated
  * - 404 Not Found: Bid not found, user doesn't own it, or no completed analysis exists
  */
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   // 1. Verify authentication
   const session = await auth();
   if (!session?.user?.id) {
@@ -46,10 +43,7 @@ export async function GET(
     const [bid] = await db
       .select()
       .from(rfps)
-      .where(and(
-        eq(rfps.id, id),
-        eq(rfps.userId, session.user.id)
-      ))
+      .where(and(eq(rfps.id, id), eq(rfps.userId, session.user.id)))
       .limit(1);
 
     if (!bid) {
@@ -63,10 +57,9 @@ export async function GET(
     const [analysis] = await db
       .select()
       .from(deepMigrationAnalyses)
-      .where(and(
-        eq(deepMigrationAnalyses.rfpId, id),
-        eq(deepMigrationAnalyses.status, 'completed')
-      ))
+      .where(
+        and(eq(deepMigrationAnalyses.rfpId, id), eq(deepMigrationAnalyses.status, 'completed'))
+      )
       .orderBy(desc(deepMigrationAnalyses.createdAt))
       .limit(1);
 
@@ -95,9 +88,7 @@ export async function GET(
       accessibilityAudit: analysis.accessibilityAudit
         ? JSON.parse(analysis.accessibilityAudit)
         : null,
-      ptEstimation: analysis.ptEstimation
-        ? JSON.parse(analysis.ptEstimation)
-        : null,
+      ptEstimation: analysis.ptEstimation ? JSON.parse(analysis.ptEstimation) : null,
     });
   } catch (error) {
     console.error('[API] Failed to fetch analysis results:', error);

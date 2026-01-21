@@ -82,7 +82,7 @@ async function runWithConcurrency<T, R>(
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    const promise = fn(item, i).then((result) => {
+    const promise = fn(item, i).then(result => {
       results[i] = result;
     });
 
@@ -217,7 +217,7 @@ export async function runParallelMatrixResearch(
   }
 
   // Filter cells that need research
-  const cellsToResearch = allCells.filter((c) => c.status === 'pending');
+  const cellsToResearch = allCells.filter(c => c.status === 'pending');
 
   if (cellsToResearch.length > 0) {
     emit?.({
@@ -237,7 +237,7 @@ export async function runParallelMatrixResearch(
         cell.status = 'running';
 
         // Create cell-specific emitter
-        const cellEmit: ResearchEventEmitter = (event) => {
+        const cellEmit: ResearchEventEmitter = event => {
           if (event.type === 'RESEARCH_PROGRESS' || event.type === 'RESEARCH_COMPLETE') {
             emit?.({
               id: `cell-${cell.cmsId}-${index}-${Date.now()}`,
@@ -284,7 +284,10 @@ export async function runParallelMatrixResearch(
           });
         } catch (error) {
           cell.status = 'error';
-          console.error(`[Matrix] Error researching ${cell.requirement} for ${cell.cmsName}:`, error);
+          console.error(
+            `[Matrix] Error researching ${cell.requirement} for ${cell.cmsName}:`,
+            error
+          );
         }
       },
       opts.maxConcurrency
@@ -294,13 +297,12 @@ export async function runParallelMatrixResearch(
   // Calculate final statistics
   matrix.cells = allCells;
 
-  const completedResults = allCells
-    .filter((c) => c.result)
-    .map((c) => c.result!.score);
+  const completedResults = allCells.filter(c => c.result).map(c => c.result!.score);
 
-  matrix.metadata.averageScore = completedResults.length > 0
-    ? Math.round(completedResults.reduce((a, b) => a + b, 0) / completedResults.length)
-    : 0;
+  matrix.metadata.averageScore =
+    completedResults.length > 0
+      ? Math.round(completedResults.reduce((a, b) => a + b, 0) / completedResults.length)
+      : 0;
 
   matrix.metadata.completedAt = new Date().toISOString();
   matrix.metadata.durationMs = Date.now() - startTime;
@@ -323,13 +325,11 @@ export async function runParallelMatrixResearch(
  */
 export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchingResult {
   // Group results by requirement
-  const requirementsWithScores: RequirementMatch[] = matrix.requirements.map((req) => {
+  const requirementsWithScores: RequirementMatch[] = matrix.requirements.map(req => {
     const cmsScores: RequirementMatch['cmsScores'] = {};
 
     for (const tech of matrix.technologies) {
-      const cell = matrix.cells.find(
-        (c) => c.requirement === req.name && c.cmsId === tech.id
-      );
+      const cell = matrix.cells.find(c => c.requirement === req.name && c.cmsId === tech.id);
 
       if (cell?.result) {
         cmsScores[tech.id] = {
@@ -358,10 +358,10 @@ export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchin
   });
 
   // Calculate overall scores per technology
-  const comparedTechnologies = matrix.technologies.map((tech) => {
-    const techCells = matrix.cells.filter((c) => c.cmsId === tech.id && c.result);
+  const comparedTechnologies = matrix.technologies.map(tech => {
+    const techCells = matrix.cells.filter(c => c.cmsId === tech.id && c.result);
 
-    const weightedScores = techCells.map((cell) => {
+    const weightedScores = techCells.map(cell => {
       const weight = cell.priority === 'must-have' ? 2 : cell.priority === 'should-have' ? 1.5 : 1;
       return (cell.result?.score || 50) * weight;
     });
@@ -370,19 +370,18 @@ export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchin
       return sum + (cell.priority === 'must-have' ? 2 : cell.priority === 'should-have' ? 1.5 : 1);
     }, 0);
 
-    const overallScore = totalWeight > 0
-      ? Math.round(weightedScores.reduce((a, b) => a + b, 0) / totalWeight)
-      : 50;
+    const overallScore =
+      totalWeight > 0 ? Math.round(weightedScores.reduce((a, b) => a + b, 0) / totalWeight) : 50;
 
     // Extract strengths (high scores) and weaknesses (low scores)
     const strengths = techCells
-      .filter((c) => c.result && c.result.score >= 70)
-      .map((c) => c.requirement)
+      .filter(c => c.result && c.result.score >= 70)
+      .map(c => c.requirement)
       .slice(0, 5);
 
     const weaknesses = techCells
-      .filter((c) => c.result && c.result.score < 40)
-      .map((c) => c.requirement)
+      .filter(c => c.result && c.result.score < 40)
+      .map(c => c.requirement)
       .slice(0, 5);
 
     return {
@@ -402,7 +401,7 @@ export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchin
   const primary = comparedTechnologies[0];
   const alternative = comparedTechnologies[1];
 
-  const mustHaveCount = matrix.requirements.filter((r) => r.priority === 'must-have').length;
+  const mustHaveCount = matrix.requirements.filter(r => r.priority === 'must-have').length;
 
   return {
     requirements: requirementsWithScores,
@@ -441,9 +440,7 @@ export async function saveMatrixToRfp(rfpId: string, matrix: RequirementMatrix):
       .limit(1);
 
     // Parse existing results or create new object
-    const currentResults = rfp[0]?.quickScanResults
-      ? JSON.parse(rfp[0].quickScanResults)
-      : {};
+    const currentResults = rfp[0]?.quickScanResults ? JSON.parse(rfp[0].quickScanResults) : {};
 
     // Add matrix to results
     currentResults.cmsMatchingMatrix = matrix;

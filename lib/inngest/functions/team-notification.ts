@@ -62,11 +62,7 @@ export const teamNotificationFunction = inngest.createFunction(
           })
           .where(eq(backgroundJobs.id, jobRecord.id));
 
-        const [bidData] = await db
-          .select()
-          .from(rfps)
-          .where(eq(rfps.id, bidId))
-          .limit(1);
+        const [bidData] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
         if (!bidData) {
           throw new Error(`Bid ${bidId} not found`);
@@ -149,7 +145,7 @@ export const teamNotificationFunction = inngest.createFunction(
         }
 
         // Map team members for notification
-        const teamNotifications: TeamMemberNotification[] = teamMembers.map((tm) => {
+        const teamNotifications: TeamMemberNotification[] = teamMembers.map(tm => {
           const roleLabels: Record<string, string> = {
             lead: 'Team Lead',
             architect: 'Solution Architect',
@@ -230,8 +226,8 @@ export const teamNotificationFunction = inngest.createFunction(
             progress: 100,
             currentStep: 'Notifications sent successfully',
             result: JSON.stringify({
-              totalSent: notificationResults.results.filter((r) => r.status === 'sent').length,
-              totalFailed: notificationResults.results.filter((r) => r.status === 'failed').length,
+              totalSent: notificationResults.results.filter(r => r.status === 'sent').length,
+              totalFailed: notificationResults.results.filter(r => r.status === 'failed').length,
               results: notificationResults.results,
             }),
             completedAt: new Date(),
@@ -249,8 +245,8 @@ export const teamNotificationFunction = inngest.createFunction(
         message: 'Team notifications sent successfully',
         summary: {
           totalMembers: teamMembers.length,
-          sent: notificationResults.results.filter((r) => r.status === 'sent').length,
-          failed: notificationResults.results.filter((r) => r.status === 'failed').length,
+          sent: notificationResults.results.filter(r => r.status === 'sent').length,
+          failed: notificationResults.results.filter(r => r.status === 'failed').length,
         },
       };
     } catch (error) {

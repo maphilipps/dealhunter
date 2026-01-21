@@ -22,7 +22,13 @@ export interface ProjectPlanningInput {
  * Technologie-agnostisch - funktioniert für alle Projekt-Typen.
  */
 export async function generateProjectPlan(input: ProjectPlanningInput): Promise<ProjectPlan> {
-  const { projectName, ptEstimation, baselineComparison, technologies = [], targetTimeline } = input;
+  const {
+    projectName,
+    ptEstimation,
+    baselineComparison,
+    technologies = [],
+    targetTimeline,
+  } = input;
 
   // Calculate base metrics
   const totalHours = ptEstimation.totalHours;
@@ -49,12 +55,16 @@ Erstelle einen realistischen Projekt-Plan basierend auf der PT-Schätzung - TECH
   - Komplexitätsfaktor: ${ptEstimation.breakdown.complexityMultiplier}x
   - Puffer: ${ptEstimation.breakdown.bufferHours} PT
 
-${baselineComparison ? `
+${
+  baselineComparison
+    ? `
 ## Baseline-Analyse
 - **Baseline-Abdeckung:** ${baselineCoverage.toFixed(1)}%
 - **Stunden aus Baseline:** ${baselineHours} PT (gespart)
 - **Neuentwicklung:** ${newDevHours} PT
-` : ''}
+`
+    : ''
+}
 
 ${technologies.length > 0 ? `## Technologien: ${technologies.join(', ')}` : ''}
 ${targetTimeline ? `## Ziel-Timeline: ${targetTimeline}` : ''}

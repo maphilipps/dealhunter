@@ -19,6 +19,7 @@ Deep migration analysis results can be large (estimated 1MB+ per analysis with d
 ## Findings
 
 **Performance Oracle Report:**
+
 - Estimated payload sizes:
   - contentArchitecture: ~200KB (page type mapping, sample URLs)
   - migrationComplexity: ~100KB (detailed factor analysis)
@@ -29,6 +30,7 @@ Deep migration analysis results can be large (estimated 1MB+ per analysis with d
 - Query performance: Larger text columns slow down full table scans
 
 **Trade-offs:**
+
 - CPU cost: Compress on write, decompress on read (negligible with modern CPUs)
 - Storage savings: 90% reduction in database size
 - Bandwidth savings: Faster API responses (if compressed transfer)
@@ -36,12 +38,15 @@ Deep migration analysis results can be large (estimated 1MB+ per analysis with d
 ## Proposed Solutions
 
 ### Solution 1: gzip Compression with Base64 Encoding (Recommended for Later)
+
 **Pros:**
+
 - 80-90% compression ratio for JSON
 - Standard library support (Node.js zlib)
 - Transparent to application logic (compress/decompress in accessor functions)
 
 **Cons:**
+
 - Can't query compressed JSON with SQLite JSON functions
 - Adds CPU overhead (minimal)
 - Need to migrate existing data
@@ -50,6 +55,7 @@ Deep migration analysis results can be large (estimated 1MB+ per analysis with d
 **Risk**: Low
 
 **Implementation:**
+
 ```typescript
 // lib/db/compression.ts
 import { gzip, gunzip } from 'zlib';
@@ -81,11 +87,14 @@ const contentArch = await decompressJSON(analysis.contentArchitecture); // ✅ D
 ```
 
 ### Solution 2: Store as Binary BLOB
+
 **Pros:**
+
 - More efficient than base64 encoding
 - Smaller storage footprint
 
 **Cons:**
+
 - Less portable (harder to inspect in DB tools)
 - More complex migration
 
@@ -93,12 +102,15 @@ const contentArch = await decompressJSON(analysis.contentArchitecture); // ✅ D
 **Risk**: Medium
 
 ### Solution 3: External Object Storage (S3/R2)
+
 **Pros:**
+
 - Unlimited storage
 - Keep SQLite lean
 - Built-in compression/CDN
 
 **Cons:**
+
 - External dependency
 - More complex architecture
 - Higher latency for small analyses
@@ -111,6 +123,7 @@ const contentArch = await decompressJSON(analysis.contentArchitecture); // ✅ D
 **DEFER to Phase 3 or later**
 
 This is a performance optimization that's not critical for MVP. Implement when:
+
 1. Database size exceeds 1GB
 2. Query performance becomes an issue
 3. Bandwidth costs become significant
@@ -122,6 +135,7 @@ If implemented later, use Solution 1 (gzip + base64).
 ## Technical Details
 
 **Affected Files (when implemented):**
+
 - `lib/db/compression.ts` - NEW helper functions
 - `lib/inngest/functions/deep-analysis.ts` - Use compressJSON
 - `app/api/bids/[id]/deep-analysis/results/route.ts` - Use decompressJSON
@@ -132,6 +146,7 @@ If implemented later, use Solution 1 (gzip + base64).
 **Breaking Changes:** Existing uncompressed JSON must be migrated
 
 **Compression Benchmark (typical JSON):**
+
 ```
 Uncompressed: 1,000,000 bytes
 gzip:           100,000 bytes (90% reduction) ✅
@@ -141,6 +156,7 @@ base64(gzip):   133,000 bytes (87% reduction after encoding)
 ## Acceptance Criteria
 
 (When implemented in future phase)
+
 - [ ] compressJSON and decompressJSON helper functions
 - [ ] All JSON columns compressed on write
 - [ ] All JSON columns decompressed on read

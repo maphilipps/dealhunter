@@ -24,17 +24,15 @@ export function TimelineChart({ timeline, className }: TimelineChartProps) {
   const maxDay = timeline.totalDays;
 
   // Confidence color
-  const confidenceColor = timeline.confidence >= 80
-    ? 'text-green-600 dark:text-green-400'
-    : timeline.confidence >= 60
-      ? 'text-yellow-600 dark:text-yellow-400'
-      : 'text-red-600 dark:text-red-400';
+  const confidenceColor =
+    timeline.confidence >= 80
+      ? 'text-green-600 dark:text-green-400'
+      : timeline.confidence >= 60
+        ? 'text-yellow-600 dark:text-yellow-400'
+        : 'text-red-600 dark:text-red-400';
 
-  const confidenceBadgeVariant = timeline.confidence >= 80
-    ? 'default'
-    : timeline.confidence >= 60
-      ? 'secondary'
-      : 'destructive';
+  const confidenceBadgeVariant =
+    timeline.confidence >= 80 ? 'default' : timeline.confidence >= 60 ? 'secondary' : 'destructive';
 
   return (
     <Card className={className}>
@@ -161,7 +159,8 @@ export function TimelineChart({ timeline, className }: TimelineChartProps) {
                   {phase.keyActivities && phase.keyActivities.length > 0 && (
                     <div className="text-xs text-muted-foreground pl-2">
                       {phase.keyActivities.slice(0, 2).join(' • ')}
-                      {phase.keyActivities.length > 2 && ` +${phase.keyActivities.length - 2} weitere`}
+                      {phase.keyActivities.length > 2 &&
+                        ` +${phase.keyActivities.length - 2} weitere`}
                     </div>
                   )}
                 </div>

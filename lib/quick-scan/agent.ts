@@ -28,14 +28,27 @@ import { AgentEventType, type QuickScanPhase } from '@/lib/streaming/event-types
 import { db } from '@/lib/db';
 import { businessUnits as businessUnitsTable } from '@/lib/db/schema';
 import { validateUrlForFetch } from '@/lib/utils/url-validation';
-import { runPlaywrightAudit, runHttpxTechDetection, detectEnhancedTechStack, fetchHtmlWithPlaywright, type PlaywrightAuditResult, type HttpxTechResult, type EnhancedTechStackResult } from './tools/playwright';
+import {
+  runPlaywrightAudit,
+  runHttpxTechDetection,
+  detectEnhancedTechStack,
+  fetchHtmlWithPlaywright,
+  type PlaywrightAuditResult,
+  type HttpxTechResult,
+  type EnhancedTechStackResult,
+} from './tools/playwright';
 // TODO: Restore when tech-stack module is complete
 // import { runTechStackDetection } from '@/lib/tech-stack/agent';
 interface TechStackDetectionInput {
   url: string;
   html?: string | null;
   headers?: Record<string, string>;
-  wappalyzerResults?: Array<{ name: string; categories: string[]; version?: string; confidence: number }>;
+  wappalyzerResults?: Array<{
+    name: string;
+    categories: string[];
+    version?: string;
+    confidence: number;
+  }>;
 }
 
 interface TechStackDetectionResult {
@@ -73,7 +86,8 @@ async function getBusinessUnitsOnce(): Promise<CachedBusinessUnit[]> {
       const units = await db.select().from(businessUnitsTable);
       cachedBusinessUnits = units.map(unit => ({
         name: unit.name,
-        keywords: typeof unit.keywords === 'string' ? JSON.parse(unit.keywords) : (unit.keywords || []),
+        keywords:
+          typeof unit.keywords === 'string' ? JSON.parse(unit.keywords) : unit.keywords || [],
       }));
       console.log(`[QuickScan] Business Units loaded from DB: ${cachedBusinessUnits.length}`);
     } catch (error) {
@@ -134,7 +148,11 @@ const runTechStackDetection = async (
         }
       }
 
-      if (tech.categories.some(c => ['JavaScript frameworks', 'Frontend frameworks', 'Web frameworks'].includes(c))) {
+      if (
+        tech.categories.some(c =>
+          ['JavaScript frameworks', 'Frontend frameworks', 'Web frameworks'].includes(c)
+        )
+      ) {
         if (!framework || tech.confidence > 50) {
           framework = tech.name;
           frameworkVersion = tech.version;
@@ -157,7 +175,11 @@ const runTechStackDetection = async (
         server = server || tech.name;
       }
 
-      if (tech.categories.some(c => ['JavaScript libraries', 'UI frameworks', 'CSS frameworks'].includes(c))) {
+      if (
+        tech.categories.some(c =>
+          ['JavaScript libraries', 'UI frameworks', 'CSS frameworks'].includes(c)
+        )
+      ) {
         libraries.push(tech.name);
       }
 
@@ -165,7 +187,18 @@ const runTechStackDetection = async (
         analytics.push(tech.name);
       }
 
-      if (tech.categories.some(c => ['Marketing automation', 'Cookie compliance', 'A/B testing', 'Personalization', 'Advertising', 'Live chat'].includes(c))) {
+      if (
+        tech.categories.some(c =>
+          [
+            'Marketing automation',
+            'Cookie compliance',
+            'A/B testing',
+            'Personalization',
+            'Advertising',
+            'Live chat',
+          ].includes(c)
+        )
+      ) {
         marketing.push(tech.name);
       }
     }
@@ -174,15 +207,45 @@ const runTechStackDetection = async (
   // HTML Pattern detection for CMS (if no CMS found via Wappalyzer or low confidence)
   if (input.html && (!cms || (cmsConfidence || 0) < 70)) {
     const cmsPatterns = [
-      { name: 'Drupal', patterns: [/Drupal\.settings/i, /drupal\.js/i, /\/sites\/default\/files\//i, /data-drupal/i, /X-Drupal-Cache/i, /generator.*Drupal/i], version: /Drupal\s*(\d+(\.\d+)?)/i },
-      { name: 'WordPress', patterns: [/wp-content/i, /wp-includes/i, /wp-json/i, /\/wp-admin\//i], version: /WordPress\s*(\d+(\.\d+)?(\.\d+)?)/i },
-      { name: 'TYPO3', patterns: [/typo3/i, /t3js/i, /\/typo3conf\//i, /\/typo3temp\//i, /generator.*TYPO3/i], version: /TYPO3\s*(CMS\s*)?(\d+(\.\d+)?)/i },
-      { name: 'Joomla', patterns: [/joomla/i, /\/media\/jui\//i, /\/components\/com_/i], version: /Joomla!\s*(\d+(\.\d+)?)/i },
+      {
+        name: 'Drupal',
+        patterns: [
+          /Drupal\.settings/i,
+          /drupal\.js/i,
+          /\/sites\/default\/files\//i,
+          /data-drupal/i,
+          /X-Drupal-Cache/i,
+          /generator.*Drupal/i,
+        ],
+        version: /Drupal\s*(\d+(\.\d+)?)/i,
+      },
+      {
+        name: 'WordPress',
+        patterns: [/wp-content/i, /wp-includes/i, /wp-json/i, /\/wp-admin\//i],
+        version: /WordPress\s*(\d+(\.\d+)?(\.\d+)?)/i,
+      },
+      {
+        name: 'TYPO3',
+        patterns: [/typo3/i, /t3js/i, /\/typo3conf\//i, /\/typo3temp\//i, /generator.*TYPO3/i],
+        version: /TYPO3\s*(CMS\s*)?(\d+(\.\d+)?)/i,
+      },
+      {
+        name: 'Joomla',
+        patterns: [/joomla/i, /\/media\/jui\//i, /\/components\/com_/i],
+        version: /Joomla!\s*(\d+(\.\d+)?)/i,
+      },
       { name: 'Contao', patterns: [/contao/i, /\/system\/modules\//i, /data-contao/i] },
-      { name: 'Magento', patterns: [/Magento/i, /Mage\.Cookies/i, /\/skin\/frontend\//i], version: /Magento\/(\d+(\.\d+)?)/i },
+      {
+        name: 'Magento',
+        patterns: [/Magento/i, /Mage\.Cookies/i, /\/skin\/frontend\//i],
+        version: /Magento\/(\d+(\.\d+)?)/i,
+      },
       { name: 'Shopify', patterns: [/Shopify\.shop/i, /cdn\.shopify/i, /shopify\.com/i] },
       { name: 'Sitecore', patterns: [/sitecore/i, /sc_mode/i, /\/sitecore\//i] },
-      { name: 'Adobe Experience Manager', patterns: [/cq-wcm-edit/i, /\/content\/dam\//i, /Adobe Experience Manager/i] },
+      {
+        name: 'Adobe Experience Manager',
+        patterns: [/cq-wcm-edit/i, /\/content\/dam\//i, /Adobe Experience Manager/i],
+      },
     ];
 
     const headersStr = JSON.stringify(input.headers || {});
@@ -245,10 +308,13 @@ const runTechStackDetection = async (
   }
 
   // Calculate overall confidence
-  const confidenceValues = [cmsConfidence, ...technologies.map(t => t.confidence)].filter((c): c is number => c !== undefined);
-  const overallConfidence = confidenceValues.length > 0
-    ? Math.round(confidenceValues.reduce((sum, c) => sum + c, 0) / confidenceValues.length)
-    : undefined;
+  const confidenceValues = [cmsConfidence, ...technologies.map(t => t.confidence)].filter(
+    (c): c is number => c !== undefined
+  );
+  const overallConfidence =
+    confidenceValues.length > 0
+      ? Math.round(confidenceValues.reduce((sum, c) => sum + c, 0) / confidenceValues.length)
+      : undefined;
 
   return {
     technologies,
@@ -271,24 +337,36 @@ import { gatherCompanyIntelligence } from './tools/company-research';
 import { buildAgentContext, formatContextForPrompt } from '@/lib/agent-tools/context-builder';
 // Multi-Page Analysis Tools - NEW
 import { selectDiversePages, type SampledPages } from './tools/page-sampler';
-import { fetchPages, analyzePageTech, aggregateTechResults, type PageData, type AggregatedTechResult } from './tools/multi-page-analyzer';
+import {
+  fetchPages,
+  analyzePageTech,
+  aggregateTechResults,
+  type PageData,
+  type AggregatedTechResult,
+} from './tools/multi-page-analyzer';
 import { extractComponents, type ExtractedComponents } from './tools/component-extractor';
 // QuickScan 2.0 Tools - NEW
 import { classifyContentTypes, estimateContentTypesFromUrls } from './tools/content-classifier';
 import { analyzeMigrationComplexity } from './tools/migration-analyzer';
 import { searchDecisionMakers } from './tools/decision-maker-research';
-import type { ContentTypeDistribution, MigrationComplexity, DecisionMakersResearch } from './schema';
+import type {
+  ContentTypeDistribution,
+  MigrationComplexity,
+  DecisionMakersResearch,
+} from './schema';
 // Intelligent Agent Framework - NEW
-import {
-  createIntelligentTools,
-  KNOWN_GITHUB_REPOS,
-} from '@/lib/agent-tools/intelligent-tools';
+import { createIntelligentTools, KNOWN_GITHUB_REPOS } from '@/lib/agent-tools/intelligent-tools';
 import { quickEvaluate } from '@/lib/agent-tools/evaluator';
 import { optimizeQuickScanResults } from '@/lib/agent-tools/optimizer';
 
-async function callAI<T>(systemPrompt: string, userPrompt: string, schema: any, contextSection?: string): Promise<T> {
+async function callAI<T>(
+  systemPrompt: string,
+  userPrompt: string,
+  schema: any,
+  contextSection?: string
+): Promise<T> {
   const fullSystemPrompt = contextSection ? `${systemPrompt}\n\n${contextSection}` : systemPrompt;
-  
+
   return generateStructuredOutput({
     schema,
     system: fullSystemPrompt,
@@ -384,8 +462,7 @@ export async function runQuickScan(input: QuickScanInput): Promise<QuickScanResu
     try {
       const context = await buildAgentContext(input.userId);
       contextSection = formatContextForPrompt(context);
-    } catch {
-    }
+    } catch {}
   }
 
   try {
@@ -403,7 +480,7 @@ export async function runQuickScan(input: QuickScanInput): Promise<QuickScanResu
       detectTechStack(websiteData),
       analyzeContentVolume(websiteData),
       detectFeatures(websiteData.html),
-      getBusinessUnitsOnce(),  // Singleton cache
+      getBusinessUnitsOnce(), // Singleton cache
     ]);
 
     logActivity('Generating business line recommendation');
@@ -413,7 +490,7 @@ export async function runQuickScan(input: QuickScanInput): Promise<QuickScanResu
       features,
       extractedRequirements: input.extractedRequirements,
       contextSection,
-      cachedBusinessUnits,  // Use pre-loaded BUs
+      cachedBusinessUnits, // Use pre-loaded BUs
     });
 
     logActivity('Quick Scan completed successfully');
@@ -472,7 +549,7 @@ async function checkAndSuggestUrl(url: string): Promise<UrlCheckResult> {
       redirect: 'follow',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html',
+        Accept: 'text/html',
       },
       signal: AbortSignal.timeout(10000), // 10 second timeout for quick check
     });
@@ -515,7 +592,8 @@ async function checkAndSuggestUrl(url: string): Promise<UrlCheckResult> {
         reachable: false,
         finalUrl,
         statusCode: 403,
-        reason: 'Zugriff verweigert (403) - Website blockiert möglicherweise automatisierte Zugriffe',
+        reason:
+          'Zugriff verweigert (403) - Website blockiert möglicherweise automatisierte Zugriffe',
       };
     }
 
@@ -534,7 +612,6 @@ async function checkAndSuggestUrl(url: string): Promise<UrlCheckResult> {
       statusCode: response.status,
       reason: `HTTP-Fehler ${response.status}`,
     };
-
   } catch (error) {
     // Network errors, DNS failures, timeouts
     const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
@@ -650,8 +727,9 @@ async function fetchWebsiteData(url: string): Promise<WebsiteData> {
     // First try: Simple fetch (fast, works for most sites)
     const response = await fetch(fullUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5,de;q=0.3',
       },
       signal: AbortSignal.timeout(15000),
@@ -678,7 +756,11 @@ async function fetchWebsiteData(url: string): Promise<WebsiteData> {
         result.html = playwrightResult.html;
         result.headers = playwrightResult.headers;
         result.url = playwrightResult.finalUrl;
-        console.log('Playwright fallback successful, got', Math.round(result.html.length / 1024), 'KB');
+        console.log(
+          'Playwright fallback successful, got',
+          Math.round(result.html.length / 1024),
+          'KB'
+        );
       }
     } catch (playwrightError) {
       console.error('Playwright fallback also failed:', playwrightError);
@@ -724,7 +806,12 @@ interface SitemapResult {
  */
 async function fetchSitemapUrls(baseUrl: string): Promise<SitemapResult> {
   const urls: string[] = [];
-  const sitemapPaths = ['/sitemap.xml', '/sitemap_index.xml', '/sitemap/sitemap.xml', '/page-sitemap.xml'];
+  const sitemapPaths = [
+    '/sitemap.xml',
+    '/sitemap_index.xml',
+    '/sitemap/sitemap.xml',
+    '/page-sitemap.xml',
+  ];
   let foundSitemapUrl: string | undefined;
 
   for (const path of sitemapPaths) {
@@ -787,7 +874,7 @@ async function detectTechStack(data: WebsiteData, emit?: EventEmitter): Promise<
       url: data.url,
       html: data.html,
       headers: data.headers,
-      wappalyzerResults: data.wappalyzerResults.map((t) => ({
+      wappalyzerResults: data.wappalyzerResults.map(t => ({
         name: t.name,
         categories: t.categories,
         version: t.version,
@@ -815,7 +902,8 @@ async function detectTechStack(data: WebsiteData, emit?: EventEmitter): Promise<
     .map(t => t.name)[0];
 
   const cdn = (techByCategory['CDN'] || []).map(t => t.name)[0];
-  const server = data.headers['server'] || (techByCategory['Web servers'] || []).map(t => t.name)[0];
+  const server =
+    data.headers['server'] || (techByCategory['Web servers'] || []).map(t => t.name)[0];
 
   const libraries = (techByCategory['JavaScript libraries'] || [])
     .concat(techByCategory['UI frameworks'] || [])
@@ -841,27 +929,59 @@ async function detectTechStack(data: WebsiteData, emit?: EventEmitter): Promise<
     cmsConfidence: techStackResult.cmsConfidence,
     framework: techStackResult.framework,
     frameworkVersion: techStackResult.frameworkVersion,
-    backend: techStackResult.backend?.length ? techStackResult.backend : (backend.length > 0 ? backend : undefined),
+    backend: techStackResult.backend?.length
+      ? techStackResult.backend
+      : backend.length > 0
+        ? backend
+        : undefined,
     hosting: techStackResult.hosting ?? hosting,
     cdn: techStackResult.cdn ?? cdn,
     server: techStackResult.server ?? server,
-    libraries: techStackResult.libraries?.length ? techStackResult.libraries : (libraries.length > 0 ? libraries : undefined),
-    analytics: techStackResult.analytics?.length ? techStackResult.analytics : (analytics.length > 0 ? analytics : undefined),
-    marketing: techStackResult.marketing?.length ? techStackResult.marketing : (marketing.length > 0 ? marketing : undefined),
-    overallConfidence: techStackResult.overallConfidence ?? Math.round(
-      data.wappalyzerResults.reduce((sum, t) => sum + t.confidence, 0) /
-      Math.max(data.wappalyzerResults.length, 1)
-    ),
+    libraries: techStackResult.libraries?.length
+      ? techStackResult.libraries
+      : libraries.length > 0
+        ? libraries
+        : undefined,
+    analytics: techStackResult.analytics?.length
+      ? techStackResult.analytics
+      : analytics.length > 0
+        ? analytics
+        : undefined,
+    marketing: techStackResult.marketing?.length
+      ? techStackResult.marketing
+      : marketing.length > 0
+        ? marketing
+        : undefined,
+    overallConfidence:
+      techStackResult.overallConfidence ??
+      Math.round(
+        data.wappalyzerResults.reduce((sum, t) => sum + t.confidence, 0) /
+          Math.max(data.wappalyzerResults.length, 1)
+      ),
   });
 }
 
 /**
  * AI fallback for tech stack detection - robust version with comprehensive analysis
  */
-async function detectTechStackWithAI(html: string, url: string, headers: Record<string, string>): Promise<TechStack> {
+async function detectTechStackWithAI(
+  html: string,
+  url: string,
+  headers: Record<string, string>
+): Promise<TechStack> {
   const htmlSnippet = extractTechIndicators(html);
   const headerInfo = Object.entries(headers)
-    .filter(([k]) => ['server', 'x-powered-by', 'x-generator', 'x-drupal-cache', 'x-wordpress', 'x-aspnet', 'x-frame'].some(h => k.toLowerCase().includes(h)))
+    .filter(([k]) =>
+      [
+        'server',
+        'x-powered-by',
+        'x-generator',
+        'x-drupal-cache',
+        'x-wordpress',
+        'x-aspnet',
+        'x-frame',
+      ].some(h => k.toLowerCase().includes(h))
+    )
     .map(([k, v]) => `${k}: ${v}`)
     .join('\n');
 
@@ -930,15 +1050,15 @@ function extractDetailedPatterns(html: string): string {
 
   // CMS-specific patterns
   const cmsPatterns = {
-    'WordPress': ['/wp-content/', '/wp-includes/', 'wp-json', 'wordpress'],
-    'Drupal': ['/sites/default/', '/modules/', '/themes/', 'drupal', 'Drupal.'],
-    'Typo3': ['/typo3/', '/fileadmin/', 'TYPO3'],
-    'Joomla': ['/components/', '/modules/', '/templates/', 'joomla'],
-    'Sitecore': ['/sitecore/', '/-/media/', 'scItemId'],
+    WordPress: ['/wp-content/', '/wp-includes/', 'wp-json', 'wordpress'],
+    Drupal: ['/sites/default/', '/modules/', '/themes/', 'drupal', 'Drupal.'],
+    Typo3: ['/typo3/', '/fileadmin/', 'TYPO3'],
+    Joomla: ['/components/', '/modules/', '/templates/', 'joomla'],
+    Sitecore: ['/sitecore/', '/-/media/', 'scItemId'],
     'Adobe AEM': ['/content/dam/', '/etc/designs/', 'cq:', 'granite'],
-    'Contentful': ['contentful', 'ctfl'],
-    'Strapi': ['strapi'],
-    'Sanity': ['sanity.io', 'cdn.sanity.io'],
+    Contentful: ['contentful', 'ctfl'],
+    Strapi: ['strapi'],
+    Sanity: ['sanity.io', 'cdn.sanity.io'],
   };
 
   for (const [cms, indicators] of Object.entries(cmsPatterns)) {
@@ -951,12 +1071,12 @@ function extractDetailedPatterns(html: string): string {
   // Framework patterns
   const frameworkPatterns = {
     'Next.js': ['__NEXT_DATA__', '_next/static', 'next/dist'],
-    'React': ['data-reactroot', 'react-dom', '__REACT_DEVTOOLS'],
+    React: ['data-reactroot', 'react-dom', '__REACT_DEVTOOLS'],
     'Vue.js': ['__VUE__', 'v-cloak', 'data-v-'],
-    'Angular': ['ng-version', 'ng-app', '_ngcontent'],
+    Angular: ['ng-version', 'ng-app', '_ngcontent'],
     'Nuxt.js': ['__NUXT__', '_nuxt/'],
-    'Gatsby': ['gatsby-', '__gatsby'],
-    'Svelte': ['__svelte'],
+    Gatsby: ['gatsby-', '__gatsby'],
+    Svelte: ['__svelte'],
   };
 
   for (const [framework, indicators] of Object.entries(frameworkPatterns)) {
@@ -1012,7 +1132,10 @@ function extractDetailedPatterns(html: string): string {
     patterns.push(`Analytics gefunden: ${foundAnalytics.join(', ')}`);
   }
 
-  return patterns.join('\n') || 'Keine spezifischen Patterns erkannt - Analyse basiert auf allgemeinen HTML-Strukturen';
+  return (
+    patterns.join('\n') ||
+    'Keine spezifischen Patterns erkannt - Analyse basiert auf allgemeinen HTML-Strukturen'
+  );
 }
 
 /**
@@ -1035,7 +1158,11 @@ async function analyzeContentVolume(data: WebsiteData): Promise<ContentVolume> {
   const languages = detectLanguages(data.html, data.sitemapUrls);
 
   // Estimate complexity
-  const complexity = estimateComplexity(estimatedPageCount, data.wappalyzerResults.length, data.html);
+  const complexity = estimateComplexity(
+    estimatedPageCount,
+    data.wappalyzerResults.length,
+    data.html
+  );
 
   // Count media assets in HTML
   const mediaAssets = countMediaAssets(data.html);
@@ -1114,7 +1241,18 @@ function detectLanguages(html: string, urls: string[]): string[] {
   }
 
   // Check for language patterns in URLs
-  const langPatterns = ['/en/', '/de/', '/fr/', '/es/', '/it/', '/nl/', '/ar/', '/zh/', '/ja/', '/ko/'];
+  const langPatterns = [
+    '/en/',
+    '/de/',
+    '/fr/',
+    '/es/',
+    '/it/',
+    '/nl/',
+    '/ar/',
+    '/zh/',
+    '/ja/',
+    '/ko/',
+  ];
   for (const url of urls) {
     for (const pattern of langPatterns) {
       if (url.includes(pattern)) {
@@ -1139,7 +1277,11 @@ function detectLanguages(html: string, urls: string[]): string[] {
 /**
  * Estimate site complexity
  */
-function estimateComplexity(pageCount: number, techCount: number, html: string): 'low' | 'medium' | 'high' {
+function estimateComplexity(
+  pageCount: number,
+  techCount: number,
+  html: string
+): 'low' | 'medium' | 'high' {
   // Check for complex features
   const hasEcommerce = /cart|checkout|shop|warenkorb|kasse/i.test(html);
   const hasLogin = /login|signin|sign-in|anmelden/i.test(html);
@@ -1198,8 +1340,12 @@ function extractLinksFromHtml(html: string, baseUrl: string): string[] {
       if (!href) continue;
 
       // Skip anchors, javascript, mailto, tel
-      if (href.startsWith('#') || href.startsWith('javascript:') ||
-          href.startsWith('mailto:') || href.startsWith('tel:')) {
+      if (
+        href.startsWith('#') ||
+        href.startsWith('javascript:') ||
+        href.startsWith('mailto:') ||
+        href.startsWith('tel:')
+      ) {
         continue;
       }
 
@@ -1215,7 +1361,9 @@ function extractLinksFromHtml(html: string, baseUrl: string): string[] {
           const cleanUrl = `${url.origin}${cleanPath}`;
 
           // Skip common non-content URLs
-          if (!cleanPath.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|pdf|zip|xml)$/i)) {
+          if (
+            !cleanPath.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|pdf|zip|xml)$/i)
+          ) {
             links.add(cleanUrl);
           }
         }
@@ -1331,9 +1479,17 @@ function collectFeatureEvidence(html: string): CollectedEvidence {
   const accountChecks = [
     { pattern: /<form[^>]*login|<form[^>]*signin/i, weight: 40, name: 'login form' },
     { pattern: /<input[^>]*type=["']password["']/i, weight: 35, name: 'password field' },
-    { pattern: /<[^>]*class="[^"]*login[^"]*"|<[^>]*id="[^"]*login[^"]*"/i, weight: 25, name: 'login element' },
+    {
+      pattern: /<[^>]*class="[^"]*login[^"]*"|<[^>]*id="[^"]*login[^"]*"/i,
+      weight: 25,
+      name: 'login element',
+    },
     { pattern: /my.?account|mein.?konto/i, weight: 20, name: 'account link' },
-    { pattern: /<a[^>]*href="[^"]*(?:register|signup|anmelden)[^"]*"/i, weight: 30, name: 'register link' },
+    {
+      pattern: /<a[^>]*href="[^"]*(?:register|signup|anmelden)[^"]*"/i,
+      weight: 30,
+      name: 'register link',
+    },
     { pattern: /logout|abmelden|sign.?out/i, weight: 25, name: 'logout link' },
   ];
   for (const check of accountChecks) {
@@ -1348,8 +1504,16 @@ function collectFeatureEvidence(html: string): CollectedEvidence {
     { pattern: /<input[^>]*type=["']search["']/i, weight: 50, name: 'search input type' },
     { pattern: /<form[^>]*search|<form[^>]*role=["']search["']/i, weight: 40, name: 'search form' },
     { pattern: /<[^>]*class="[^"]*search[^"]*"[^>]*>/i, weight: 20, name: 'search class' },
-    { pattern: /aria-label=["'][^"]*such|aria-label=["'][^"]*search/i, weight: 30, name: 'search aria-label' },
-    { pattern: /<button[^>]*type=["']submit["'][^>]*search/i, weight: 35, name: 'search submit button' },
+    {
+      pattern: /aria-label=["'][^"]*such|aria-label=["'][^"]*search/i,
+      weight: 30,
+      name: 'search aria-label',
+    },
+    {
+      pattern: /<button[^>]*type=["']submit["'][^>]*search/i,
+      weight: 35,
+      name: 'search submit button',
+    },
   ];
   for (const check of searchChecks) {
     if (check.pattern.test(html)) {
@@ -1361,7 +1525,11 @@ function collectFeatureEvidence(html: string): CollectedEvidence {
   // Multi-Language: Look for language switchers and hreflang
   const langChecks = [
     { pattern: /hreflang=["'][a-z]{2}["']/i, weight: 50, name: 'hreflang tags' },
-    { pattern: /<[^>]*class="[^"]*language[^"]*switcher[^"]*"/i, weight: 40, name: 'language switcher class' },
+    {
+      pattern: /<[^>]*class="[^"]*language[^"]*switcher[^"]*"/i,
+      weight: 40,
+      name: 'language switcher class',
+    },
     { pattern: /\/(?:en|de|fr|es|it|nl|pl|pt)\/[^"'>\s]/i, weight: 30, name: 'language URL paths' },
     { pattern: /data-lang|data-locale/i, weight: 25, name: 'language data attributes' },
     { pattern: /<html[^>]*lang=["'][a-z]{2}/i, weight: 15, name: 'html lang attribute' },
@@ -1379,7 +1547,11 @@ function collectFeatureEvidence(html: string): CollectedEvidence {
   // Blog/News: Look for article structures
   const blogChecks = [
     { pattern: /<article[^>]*>/i, weight: 30, name: 'article elements' },
-    { pattern: /<[^>]*class="[^"]*(?:blog|post|article)[^"]*"/i, weight: 25, name: 'blog/post classes' },
+    {
+      pattern: /<[^>]*class="[^"]*(?:blog|post|article)[^"]*"/i,
+      weight: 25,
+      name: 'blog/post classes',
+    },
     { pattern: /\/blog\/|\/news\/|\/aktuelles\//i, weight: 35, name: 'blog URL paths' },
     { pattern: /<time[^>]*datetime/i, weight: 20, name: 'datetime elements' },
     { pattern: /<[^>]*class="[^"]*author[^"]*"/i, weight: 15, name: 'author classes' },
@@ -1396,7 +1568,11 @@ function collectFeatureEvidence(html: string): CollectedEvidence {
   const formChecks = [
     { pattern: /<form[^>]*action/i, weight: 30, name: 'form with action' },
     { pattern: /<form[^>]*contact|<form[^>]*kontakt/i, weight: 40, name: 'contact form' },
-    { pattern: /<input[^>]*type=["'](?:text|email|tel)["']/i, weight: 20, name: 'text/email inputs' },
+    {
+      pattern: /<input[^>]*type=["'](?:text|email|tel)["']/i,
+      weight: 20,
+      name: 'text/email inputs',
+    },
     { pattern: /<textarea/i, weight: 25, name: 'textarea element' },
     { pattern: /<button[^>]*type=["']submit["']/i, weight: 20, name: 'submit button' },
     { pattern: /newsletter|subscribe|abonnieren/i, weight: 30, name: 'newsletter form' },
@@ -1427,7 +1603,11 @@ function collectFeatureEvidence(html: string): CollectedEvidence {
   const appChecks = [
     { pattern: /apps\.apple\.com|itunes\.apple\.com/i, weight: 50, name: 'Apple App Store link' },
     { pattern: /play\.google\.com\/store/i, weight: 50, name: 'Google Play Store link' },
-    { pattern: /<[^>]*class="[^"]*app[^"]*(?:badge|download|store)[^"]*"/i, weight: 35, name: 'app store badge' },
+    {
+      pattern: /<[^>]*class="[^"]*app[^"]*(?:badge|download|store)[^"]*"/i,
+      weight: 35,
+      name: 'app store badge',
+    },
     { pattern: /download[^>]*app|app[^>]*download/i, weight: 20, name: 'app download text' },
   ];
   for (const check of appChecks) {
@@ -1440,10 +1620,26 @@ function collectFeatureEvidence(html: string): CollectedEvidence {
   // Custom features: Only add if confidence is high
   const customChecks = [
     { pattern: /intercom|zendesk|freshdesk|drift|crisp/i, feature: 'Live Chat', minMatches: 1 },
-    { pattern: /google.?maps|mapbox|openstreetmap|leaflet/i, feature: 'Maps Integration', minMatches: 1 },
-    { pattern: /youtube\.com\/embed|vimeo\.com\/video|wistia\.com/i, feature: 'Video Embeds', minMatches: 1 },
-    { pattern: /facebook\.com\/plugins|twitter\.com\/widgets|linkedin\.com\/embed/i, feature: 'Social Widgets', minMatches: 1 },
-    { pattern: /calendly|booking\.com|reservation|terminbuchung/i, feature: 'Booking System', minMatches: 1 },
+    {
+      pattern: /google.?maps|mapbox|openstreetmap|leaflet/i,
+      feature: 'Maps Integration',
+      minMatches: 1,
+    },
+    {
+      pattern: /youtube\.com\/embed|vimeo\.com\/video|wistia\.com/i,
+      feature: 'Video Embeds',
+      minMatches: 1,
+    },
+    {
+      pattern: /facebook\.com\/plugins|twitter\.com\/widgets|linkedin\.com\/embed/i,
+      feature: 'Social Widgets',
+      minMatches: 1,
+    },
+    {
+      pattern: /calendly|booking\.com|reservation|terminbuchung/i,
+      feature: 'Booking System',
+      minMatches: 1,
+    },
     { pattern: /stripe\.com|paypal\.com|klarna/i, feature: 'Payment Provider', minMatches: 1 },
     { pattern: /\.pdf["']|download[^>]*pdf/i, feature: 'PDF Downloads', minMatches: 1 },
     { pattern: /recaptcha|hcaptcha|turnstile/i, feature: 'Bot Protection', minMatches: 1 },
@@ -1546,7 +1742,7 @@ async function loadBusinessUnitsFromDB(): Promise<Array<{ name: string; keywords
     const units = await db.select().from(businessUnitsTable);
     return units.map(unit => ({
       name: unit.name,
-      keywords: typeof unit.keywords === 'string' ? JSON.parse(unit.keywords) : (unit.keywords || []),
+      keywords: typeof unit.keywords === 'string' ? JSON.parse(unit.keywords) : unit.keywords || [],
     }));
   } catch (error) {
     console.error('Error loading business units from DB:', error);
@@ -1578,9 +1774,10 @@ function validateAndMatchBL(
   }
 
   // Check for partial match (e.g., "eCommerce" matches "eCommerce & Retail")
-  const partialMatch = businessUnits.find(bu =>
-    bu.name.toLowerCase().includes(recommendedLower) ||
-    recommendedLower.includes(bu.name.toLowerCase())
+  const partialMatch = businessUnits.find(
+    bu =>
+      bu.name.toLowerCase().includes(recommendedLower) ||
+      recommendedLower.includes(bu.name.toLowerCase())
   );
   if (partialMatch) {
     return { ...aiRecommendation, primaryBusinessLine: partialMatch.name };
@@ -1622,7 +1819,9 @@ function validateAndMatchBL(
     return {
       ...aiRecommendation,
       primaryBusinessLine: bestMatch.name,
-      reasoning: aiRecommendation.reasoning + ` (Zugeordnet zu "${bestMatch.name}" basierend auf Keyword-Matching)`,
+      reasoning:
+        aiRecommendation.reasoning +
+        ` (Zugeordnet zu "${bestMatch.name}" basierend auf Keyword-Matching)`,
     };
   }
 
@@ -1631,7 +1830,9 @@ function validateAndMatchBL(
     ...aiRecommendation,
     primaryBusinessLine: businessUnits[0].name,
     confidence: Math.min(aiRecommendation.confidence, 40),
-    reasoning: aiRecommendation.reasoning + ` (Keine direkte Übereinstimmung - Standard-Zuordnung zu "${businessUnits[0].name}")`,
+    reasoning:
+      aiRecommendation.reasoning +
+      ` (Keine direkte Übereinstimmung - Standard-Zuordnung zu "${businessUnits[0].name}")`,
   };
 }
 
@@ -1645,17 +1846,17 @@ async function recommendBusinessLine(context: {
   features: Features;
   extractedRequirements?: any;
   contextSection?: string;
-  cachedBusinessUnits?: CachedBusinessUnit[];  // Pre-loaded BUs from bootstrap
+  cachedBusinessUnits?: CachedBusinessUnit[]; // Pre-loaded BUs from bootstrap
 }): Promise<BLRecommendation> {
   // Use cached BUs if provided, otherwise use singleton cache
-  const businessUnits = context.cachedBusinessUnits ?? await getBusinessUnitsOnce();
+  const businessUnits = context.cachedBusinessUnits ?? (await getBusinessUnitsOnce());
 
   // Build dynamic BU list for prompt
   let buListPrompt: string;
   if (businessUnits.length > 0) {
-    buListPrompt = businessUnits.map(bu =>
-      `- ${bu.name} (Keywords: ${bu.keywords.join(', ')})`
-    ).join('\n');
+    buListPrompt = businessUnits
+      .map(bu => `- ${bu.name} (Keywords: ${bu.keywords.join(', ')})`)
+      .join('\n');
   } else {
     // Fallback if no BUs in DB
     buListPrompt = `- Technology & Innovation (Custom Development, Cloud Migration, Modernisierung)
@@ -1682,10 +1883,14 @@ ${JSON.stringify(context.contentVolume, null, 2)}
 **Features:**
 ${JSON.stringify(context.features, null, 2)}
 
-${context.extractedRequirements ? `
+${
+  context.extractedRequirements
+    ? `
 **Extrahierte Anforderungen aus der Ausschreibung:**
 ${JSON.stringify(context.extractedRequirements, null, 2)}
-` : '**Keine Ausschreibungsdaten verfügbar - Empfehlung basiert nur auf Website-Analyse**'}
+`
+    : '**Keine Ausschreibungsdaten verfügbar - Empfehlung basiert nur auf Website-Analyse**'
+}
 
 **VERFÜGBARE Business Lines (wähle NUR aus dieser Liste!):**
 ${buListPrompt}
@@ -1710,7 +1915,12 @@ Antworte mit JSON:
 - alternativeBusinessLines (array of {name: string, confidence: number, reason: string}): Alternativen aus der verfügbaren Liste
 - requiredSkills (array of strings): Benötigte Skills für das Projekt`;
 
-  const aiResult = await callAI<BLRecommendation>(systemPrompt, userPrompt, blRecommendationSchema, context.contextSection);
+  const aiResult = await callAI<BLRecommendation>(
+    systemPrompt,
+    userPrompt,
+    blRecommendationSchema,
+    context.contextSection
+  );
 
   // Validate and match against actual DB entries
   return validateAndMatchBL(aiResult, businessUnits, context);
@@ -1739,8 +1949,16 @@ function extractTechIndicators(html: string): string {
 
   // Look for common CMS indicators
   const cmsIndicators = [
-    'wp-content', 'wp-includes', 'drupal', 'typo3', 'joomla',
-    'sites/default', 'magento', 'shopify', 'wix', 'squarespace',
+    'wp-content',
+    'wp-includes',
+    'drupal',
+    'typo3',
+    'joomla',
+    'sites/default',
+    'magento',
+    'shopify',
+    'wix',
+    'squarespace',
   ];
 
   indicators.push('\nCMS Indicators Found:');
@@ -1759,12 +1977,19 @@ function extractTechIndicators(html: string): string {
  */
 async function performAccessibilityAudit(html: string, url: string): Promise<AccessibilityAudit> {
   // Parse HTML for accessibility checks
-  const issues: Array<{ type: string; count: number; severity: 'critical' | 'serious' | 'moderate' | 'minor'; description: string }> = [];
+  const issues: Array<{
+    type: string;
+    count: number;
+    severity: 'critical' | 'serious' | 'moderate' | 'minor';
+    description: string;
+  }> = [];
 
   // Check for images without alt text
   const imgRegex = /<img[^>]*>/gi;
   const images = html.match(imgRegex) || [];
-  const imagesWithoutAlt = images.filter(img => !img.includes('alt=') || img.includes('alt=""') || img.includes("alt=''"));
+  const imagesWithoutAlt = images.filter(
+    img => !img.includes('alt=') || img.includes('alt=""') || img.includes("alt=''")
+  );
   if (imagesWithoutAlt.length > 0) {
     issues.push({
       type: 'missing-alt',
@@ -1838,7 +2063,10 @@ async function performAccessibilityAudit(html: string, url: string): Promise<Acc
   // Check for links with descriptive text
   const links = html.match(/<a[^>]*>([^<]*)<\/a>/gi) || [];
   const badLinks = links.filter(link => {
-    const text = link.replace(/<[^>]+>/g, '').trim().toLowerCase();
+    const text = link
+      .replace(/<[^>]+>/g, '')
+      .trim()
+      .toLowerCase();
     return ['hier', 'klicken', 'mehr', 'link', 'here', 'click', 'more', 'read more'].includes(text);
   });
   if (badLinks.length > 0) {
@@ -1878,13 +2106,21 @@ async function performAccessibilityAudit(html: string, url: string): Promise<Acc
   }
 
   // Calculate scores
-  const criticalIssues = issues.filter(i => i.severity === 'critical').reduce((sum, i) => sum + i.count, 0);
-  const seriousIssues = issues.filter(i => i.severity === 'serious').reduce((sum, i) => sum + i.count, 0);
-  const moderateIssues = issues.filter(i => i.severity === 'moderate').reduce((sum, i) => sum + i.count, 0);
-  const minorIssues = issues.filter(i => i.severity === 'minor').reduce((sum, i) => sum + i.count, 0);
+  const criticalIssues = issues
+    .filter(i => i.severity === 'critical')
+    .reduce((sum, i) => sum + i.count, 0);
+  const seriousIssues = issues
+    .filter(i => i.severity === 'serious')
+    .reduce((sum, i) => sum + i.count, 0);
+  const moderateIssues = issues
+    .filter(i => i.severity === 'moderate')
+    .reduce((sum, i) => sum + i.count, 0);
+  const minorIssues = issues
+    .filter(i => i.severity === 'minor')
+    .reduce((sum, i) => sum + i.count, 0);
 
   // Calculate overall score (100 - penalties)
-  const penalty = (criticalIssues * 10) + (seriousIssues * 5) + (moderateIssues * 2) + (minorIssues * 1);
+  const penalty = criticalIssues * 10 + seriousIssues * 5 + moderateIssues * 2 + minorIssues * 1;
   const score = Math.max(0, Math.min(100, 100 - penalty));
 
   // Determine WCAG level
@@ -1928,7 +2164,7 @@ async function performAccessibilityAudit(html: string, url: string): Promise<Acc
       hasSkipLinks: hasSkipLink,
       colorContrast: 'warning', // Can't check without rendering
       keyboardNavigation: tabindexIssues === 0 ? 'pass' : 'warning',
-      formLabels: inputs.length === 0 ? 'n/a' : (inputsWithoutLabel.length === 0 ? 'pass' : 'fail'),
+      formLabels: inputs.length === 0 ? 'n/a' : inputsWithoutLabel.length === 0 ? 'pass' : 'fail',
       languageAttribute: hasLangAttr,
     },
     topIssues: issues.slice(0, 5),
@@ -1946,14 +2182,18 @@ async function performAccessibilityAudit(html: string, url: string): Promise<Acc
  */
 function extractCompanyName(html: string, url: string): string | null {
   // 1. Try og:site_name meta tag (most reliable)
-  const ogSiteNameMatch = html.match(/<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["']/i);
+  const ogSiteNameMatch = html.match(
+    /<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["']/i
+  );
   if (ogSiteNameMatch) {
     const name = ogSiteNameMatch[1].trim();
     if (name.length > 1 && !isGenericPageTitle(name)) return name;
   }
 
   // 2. Try JSON-LD structured data (schema.org Organization)
-  const jsonLdMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  const jsonLdMatch = html.match(
+    /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+  );
   if (jsonLdMatch) {
     for (const script of jsonLdMatch) {
       try {
@@ -2008,19 +2248,61 @@ function extractCompanyName(html: string, url: string): string | null {
  */
 const TITLE_BLACKLIST = new Set([
   // German generic titles
-  'startseite', 'willkommen', 'home', 'homepage', 'index',
-  'hauptseite', 'start', 'übersicht', 'overview', 'portal',
-  'aktuelles', 'news', 'blog', 'kontakt', 'contact',
-  'impressum', 'imprint', 'über uns', 'about', 'about us',
-  'menü', 'menu', 'navigation', 'login', 'anmeldung',
+  'startseite',
+  'willkommen',
+  'home',
+  'homepage',
+  'index',
+  'hauptseite',
+  'start',
+  'übersicht',
+  'overview',
+  'portal',
+  'aktuelles',
+  'news',
+  'blog',
+  'kontakt',
+  'contact',
+  'impressum',
+  'imprint',
+  'über uns',
+  'about',
+  'about us',
+  'menü',
+  'menu',
+  'navigation',
+  'login',
+  'anmeldung',
   // English generic titles
-  'welcome', 'main', 'landing', 'enter', 'intro',
-  'introduction', 'sign in', 'log in', 'register',
+  'welcome',
+  'main',
+  'landing',
+  'enter',
+  'intro',
+  'introduction',
+  'sign in',
+  'log in',
+  'register',
   // Common section titles
-  'produkte', 'products', 'leistungen', 'services',
-  'unternehmen', 'company', 'karriere', 'career', 'jobs',
-  'presse', 'press', 'media', 'referenzen', 'references',
-  'datenschutz', 'privacy', 'agb', 'terms', 'cookie',
+  'produkte',
+  'products',
+  'leistungen',
+  'services',
+  'unternehmen',
+  'company',
+  'karriere',
+  'career',
+  'jobs',
+  'presse',
+  'press',
+  'media',
+  'referenzen',
+  'references',
+  'datenschutz',
+  'privacy',
+  'agb',
+  'terms',
+  'cookie',
 ]);
 
 /**
@@ -2053,7 +2335,10 @@ function isGenericPageTitle(text: string): boolean {
 function cleanPageTitle(title: string): string | null {
   // Split by common separators
   const separators = /\s*[-–—|:|::]\s*/;
-  const parts = title.split(separators).map(p => p.trim()).filter(p => p.length > 0);
+  const parts = title
+    .split(separators)
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
 
   // Filter out generic page titles
   const meaningfulParts = parts.filter(part => !isGenericPageTitle(part));
@@ -2079,7 +2364,9 @@ async function performSEOAudit(html: string, _url: string): Promise<SEOAudit> {
   const titleLength = titleMatch ? titleMatch[1].trim().length : 0;
 
   // Check meta description
-  const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+  const metaDescMatch = html.match(
+    /<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i
+  );
   const hasMetaDescription = !!metaDescMatch && metaDescMatch[1].trim().length > 0;
   const metaDescriptionLength = metaDescMatch ? metaDescMatch[1].trim().length : 0;
 
@@ -2093,7 +2380,8 @@ async function performSEOAudit(html: string, _url: string): Promise<SEOAudit> {
   const hasSitemap = /<link[^>]*sitemap/i.test(html) || html.includes('sitemap.xml');
 
   // Check structured data
-  const hasStructuredData = /application\/ld\+json/i.test(html) || /itemtype.*schema\.org/i.test(html);
+  const hasStructuredData =
+    /application\/ld\+json/i.test(html) || /itemtype.*schema\.org/i.test(html);
 
   // Check Open Graph
   const hasOpenGraph = /<meta[^>]*property=["']og:/i.test(html);
@@ -2116,11 +2404,31 @@ async function performSEOAudit(html: string, _url: string): Promise<SEOAudit> {
   const score = Math.round((checks.filter(Boolean).length / checks.length) * 100);
 
   // Collect issues
-  const issues: Array<{ type: string; severity: 'error' | 'warning' | 'info'; description: string }> = [];
-  if (!hasTitle) issues.push({ type: 'missing-title', severity: 'error', description: 'Kein Title-Tag gefunden' });
-  if (!hasMetaDescription) issues.push({ type: 'missing-meta-desc', severity: 'warning', description: 'Keine Meta-Description vorhanden' });
-  if (!hasCanonical) issues.push({ type: 'missing-canonical', severity: 'info', description: 'Kein Canonical-Tag definiert' });
-  if (!hasOpenGraph) issues.push({ type: 'missing-og', severity: 'info', description: 'Keine Open Graph Tags' });
+  const issues: Array<{
+    type: string;
+    severity: 'error' | 'warning' | 'info';
+    description: string;
+  }> = [];
+  if (!hasTitle)
+    issues.push({
+      type: 'missing-title',
+      severity: 'error',
+      description: 'Kein Title-Tag gefunden',
+    });
+  if (!hasMetaDescription)
+    issues.push({
+      type: 'missing-meta-desc',
+      severity: 'warning',
+      description: 'Keine Meta-Description vorhanden',
+    });
+  if (!hasCanonical)
+    issues.push({
+      type: 'missing-canonical',
+      severity: 'info',
+      description: 'Kein Canonical-Tag definiert',
+    });
+  if (!hasOpenGraph)
+    issues.push({ type: 'missing-og', severity: 'info', description: 'Keine Open Graph Tags' });
 
   return seoAuditSchema.parse({
     score,
@@ -2145,16 +2453,19 @@ async function performSEOAudit(html: string, _url: string): Promise<SEOAudit> {
  */
 async function performLegalComplianceCheck(html: string): Promise<LegalCompliance> {
   // Check for imprint
-  const hasImprint = /impressum|imprint|legal notice/i.test(html) &&
+  const hasImprint =
+    /impressum|imprint|legal notice/i.test(html) &&
     (/<a[^>]*href=["'][^"']*impressum[^"']*["']/i.test(html) ||
-     /<a[^>]*href=["'][^"']*imprint[^"']*["']/i.test(html));
+      /<a[^>]*href=["'][^"']*imprint[^"']*["']/i.test(html));
 
   // Check for privacy policy
-  const hasPrivacyPolicy = /datenschutz|privacy|dsgvo|gdpr/i.test(html) &&
-    (/<a[^>]*href=["'][^"']*(datenschutz|privacy)[^"']*["']/i.test(html));
+  const hasPrivacyPolicy =
+    /datenschutz|privacy|dsgvo|gdpr/i.test(html) &&
+    /<a[^>]*href=["'][^"']*(datenschutz|privacy)[^"']*["']/i.test(html);
 
   // Check for cookie banner
-  const hasCookieBanner = /cookie|consent|ccm19|cookiefirst|onetrust|usercentrics|borlabs|complianz/i.test(html);
+  const hasCookieBanner =
+    /cookie|consent|ccm19|cookiefirst|onetrust|usercentrics|borlabs|complianz/i.test(html);
 
   // Check for terms of service
   const hasTermsOfService = /agb|terms|nutzungsbedingungen|geschäftsbedingungen/i.test(html);
@@ -2177,10 +2488,29 @@ async function performLegalComplianceCheck(html: string): Promise<LegalComplianc
   const score = Math.round((allChecks.filter(Boolean).length / allChecks.length) * 100);
 
   // Collect issues
-  const issues: Array<{ type: string; severity: 'critical' | 'warning' | 'info'; description: string }> = [];
-  if (!hasImprint) issues.push({ type: 'missing-imprint', severity: 'critical', description: 'Kein Impressum gefunden (Pflicht in DE)' });
-  if (!hasPrivacyPolicy) issues.push({ type: 'missing-privacy', severity: 'critical', description: 'Keine Datenschutzerklärung gefunden (DSGVO-Pflicht)' });
-  if (!hasCookieBanner) issues.push({ type: 'missing-cookie-banner', severity: 'warning', description: 'Kein Cookie-Banner erkannt' });
+  const issues: Array<{
+    type: string;
+    severity: 'critical' | 'warning' | 'info';
+    description: string;
+  }> = [];
+  if (!hasImprint)
+    issues.push({
+      type: 'missing-imprint',
+      severity: 'critical',
+      description: 'Kein Impressum gefunden (Pflicht in DE)',
+    });
+  if (!hasPrivacyPolicy)
+    issues.push({
+      type: 'missing-privacy',
+      severity: 'critical',
+      description: 'Keine Datenschutzerklärung gefunden (DSGVO-Pflicht)',
+    });
+  if (!hasCookieBanner)
+    issues.push({
+      type: 'missing-cookie-banner',
+      severity: 'warning',
+      description: 'Kein Cookie-Banner erkannt',
+    });
 
   return legalComplianceSchema.parse({
     score,
@@ -2222,7 +2552,8 @@ async function analyzePerformanceIndicators(html: string): Promise<PerformanceIn
     totalResources < 30 ? 'fast' : totalResources < 60 ? 'medium' : 'slow';
 
   // Count render-blocking (inline scripts without defer/async)
-  const renderBlockingScripts = (html.match(/<script(?![^>]*(?:defer|async))[^>]*src=/gi) || []).length;
+  const renderBlockingScripts = (html.match(/<script(?![^>]*(?:defer|async))[^>]*src=/gi) || [])
+    .length;
   const renderBlockingResources = renderBlockingScripts + stylesheets;
 
   return performanceIndicatorsSchema.parse({
@@ -2264,8 +2595,7 @@ export async function runQuickScanWithStreaming(
     try {
       const context = await buildAgentContext(input.userId);
       contextSection = formatContextForPrompt(context);
-    } catch {
-    }
+    } catch {}
   }
 
   const emitThought = (agent: string, thought: string, details?: string) => {
@@ -2314,7 +2644,12 @@ export async function runQuickScanWithStreaming(
   /**
    * Emit an analysis completion event for tracking individual analysis results
    */
-  const emitAnalysisComplete = (analysis: string, success: boolean, duration: number, details?: string) => {
+  const emitAnalysisComplete = (
+    analysis: string,
+    success: boolean,
+    duration: number,
+    details?: string
+  ) => {
     emit({
       type: AgentEventType.ANALYSIS_COMPLETE,
       data: {
@@ -2360,7 +2695,9 @@ export async function runQuickScanWithStreaming(
             reason: urlCheck.reason || 'URL nicht erreichbar',
           },
         });
-        throw new Error(`Website nicht erreichbar: ${urlCheck.reason}. Vorgeschlagene URL: ${urlCheck.suggestedUrl}`);
+        throw new Error(
+          `Website nicht erreichbar: ${urlCheck.reason}. Vorgeschlagene URL: ${urlCheck.suggestedUrl}`
+        );
       }
       throw new Error(`Website nicht erreichbar: ${urlCheck.reason}`);
     }
@@ -2370,7 +2707,8 @@ export async function runQuickScanWithStreaming(
 
     // Log if URL was redirected
     if (urlCheck.redirectChain && urlCheck.redirectChain.length > 1) {
-      emitThought('Website Crawler',
+      emitThought(
+        'Website Crawler',
         `URL wurde weitergeleitet`,
         `${input.websiteUrl} → ${fullUrl}`
       );
@@ -2387,45 +2725,66 @@ export async function runQuickScanWithStreaming(
     const bootstrapStart = Date.now();
     const [websiteData, cachedBusinessUnits] = await Promise.all([
       fetchWebsiteData(fullUrl),
-      getBusinessUnitsOnce(),  // Singleton cache - loaded once per session
+      getBusinessUnitsOnce(), // Singleton cache - loaded once per session
     ]);
 
-    emitAnalysisComplete('bootstrap', true, Date.now() - bootstrapStart,
-      `Website + ${cachedBusinessUnits.length} Business Units geladen`);
+    emitAnalysisComplete(
+      'bootstrap',
+      true,
+      Date.now() - bootstrapStart,
+      `Website + ${cachedBusinessUnits.length} Business Units geladen`
+    );
 
     if (!websiteData.html) {
       throw new Error('Website konnte nicht geladen werden');
     }
 
     const htmlSize = Math.round(websiteData.html.length / 1024);
-    emitThought('Website Crawler', `Website geladen: ${htmlSize} KB HTML`,
-      `${Object.keys(websiteData.headers).length} HTTP-Headers empfangen`);
+    emitThought(
+      'Website Crawler',
+      `Website geladen: ${htmlSize} KB HTML`,
+      `${Object.keys(websiteData.headers).length} HTTP-Headers empfangen`
+    );
 
     // Report Wappalyzer results
     if (websiteData.wappalyzerResults.length > 0) {
-      const techNames = websiteData.wappalyzerResults.slice(0, 5).map(t => t.name).join(', ');
-      emitThought('Wappalyzer',
+      const techNames = websiteData.wappalyzerResults
+        .slice(0, 5)
+        .map(t => t.name)
+        .join(', ');
+      emitThought(
+        'Wappalyzer',
         `${websiteData.wappalyzerResults.length} Technologien erkannt`,
         techNames + (websiteData.wappalyzerResults.length > 5 ? '...' : '')
       );
     } else {
-      emitThought('Wappalyzer', 'Keine Technologien automatisch erkannt',
-        'Verwende AI-Analyse als Fallback');
+      emitThought(
+        'Wappalyzer',
+        'Keine Technologien automatisch erkannt',
+        'Verwende AI-Analyse als Fallback'
+      );
     }
 
     // Report sitemap results
     if (websiteData.sitemapUrls.length > 0) {
-      emitThought('Sitemap Parser',
+      emitThought(
+        'Sitemap Parser',
         `${websiteData.sitemapUrls.length} Seiten in Sitemap gefunden`,
         `Analysiere URL-Struktur und Content-Typen`
       );
     } else {
-      emitThought('Sitemap Parser', 'Keine Sitemap gefunden',
-        'Schätze Seitenanzahl aus Navigation');
+      emitThought(
+        'Sitemap Parser',
+        'Keine Sitemap gefunden',
+        'Schätze Seitenanzahl aus Navigation'
+      );
     }
 
     // Mark data collection agents as complete
-    emitAgentComplete('Website Crawler', { htmlSize, headersCount: Object.keys(websiteData.headers).length });
+    emitAgentComplete('Website Crawler', {
+      htmlSize,
+      headersCount: Object.keys(websiteData.headers).length,
+    });
     emitAgentComplete('Wappalyzer', { technologiesFound: websiteData.wappalyzerResults.length });
     emitAgentComplete('Sitemap Parser', { urlsFound: websiteData.sitemapUrls.length });
 
@@ -2449,8 +2808,11 @@ export async function runQuickScanWithStreaming(
 
     // Link Discovery Fallback: If sitemap has < 5 URLs, extract links from HTML
     if (urlPool.length < 5 && websiteData.html) {
-      emitThought('Link Discovery', 'Sitemap hat wenig URLs, extrahiere Links aus Homepage...',
-        `Sitemap URLs: ${urlPool.length}`);
+      emitThought(
+        'Link Discovery',
+        'Sitemap hat wenig URLs, extrahiere Links aus Homepage...',
+        `Sitemap URLs: ${urlPool.length}`
+      );
 
       const discoveredLinks = extractLinksFromHtml(websiteData.html, fullUrl);
 
@@ -2466,7 +2828,8 @@ export async function runQuickScanWithStreaming(
       }
 
       urlSource = urlPool.length === newLinksAdded ? 'link_discovery' : 'combined';
-      emitThought('Link Discovery',
+      emitThought(
+        'Link Discovery',
         `${discoveredLinks.length} Links aus Homepage extrahiert`,
         `Neu hinzugefügt: ${newLinksAdded} | Total Pool: ${urlPool.length}`
       );
@@ -2480,8 +2843,11 @@ export async function runQuickScanWithStreaming(
 
     // Run multi-page analysis if we have enough URLs (5+)
     if (urlPool.length >= 5) {
-      emitThought('Page Sampler', 'Wähle diverse Seiten für Analyse...',
-        `Pool: ${urlPool.length} URLs (Quelle: ${urlSource})`);
+      emitThought(
+        'Page Sampler',
+        'Wähle diverse Seiten für Analyse...',
+        `Pool: ${urlPool.length} URLs (Quelle: ${urlSource})`
+      );
 
       const sampledPages = selectDiversePages(
         [fullUrl, ...urlPool],
@@ -2489,7 +2855,8 @@ export async function runQuickScanWithStreaming(
         fullUrl
       );
 
-      emitThought('Page Sampler',
+      emitThought(
+        'Page Sampler',
         `${sampledPages.urls.length} diverse Seiten ausgewählt`,
         Object.entries(sampledPages.categories)
           .filter(([, urls]) => urls.length > 0)
@@ -2497,7 +2864,10 @@ export async function runQuickScanWithStreaming(
           .join(', ')
       );
 
-      emitAgentComplete('Page Sampler', { selectedCount: sampledPages.urls.length, categories: Object.keys(sampledPages.categories).length });
+      emitAgentComplete('Page Sampler', {
+        selectedCount: sampledPages.urls.length,
+        categories: Object.keys(sampledPages.categories).length,
+      });
 
       // Fetch all selected pages in parallel
       emitThought('Multi-Page Fetcher', `Lade ${sampledPages.urls.length} Seiten parallel...`);
@@ -2513,12 +2883,20 @@ export async function runQuickScanWithStreaming(
       });
 
       const successfulPages = pageDataArray.filter(p => !p.error);
-      emitThought('Multi-Page Fetcher',
+      emitThought(
+        'Multi-Page Fetcher',
         `${successfulPages.length}/${pageDataArray.length} Seiten erfolgreich geladen`,
-        pageDataArray.filter(p => p.error).map(p => p.error).slice(0, 3).join(', ') || undefined
+        pageDataArray
+          .filter(p => p.error)
+          .map(p => p.error)
+          .slice(0, 3)
+          .join(', ') || undefined
       );
 
-      emitAgentComplete('Multi-Page Fetcher', { successful: successfulPages.length, failed: pageDataArray.length - successfulPages.length });
+      emitAgentComplete('Multi-Page Fetcher', {
+        successful: successfulPages.length,
+        failed: pageDataArray.length - successfulPages.length,
+      });
 
       // Analyze tech stack on all pages
       if (successfulPages.length > 0) {
@@ -2527,14 +2905,18 @@ export async function runQuickScanWithStreaming(
         const techResults = successfulPages.map(page => analyzePageTech(page));
         const aggregatedTech = aggregateTechResults(techResults);
 
-        emitThought('Multi-Page Tech Analyzer',
+        emitThought(
+          'Multi-Page Tech Analyzer',
           aggregatedTech.cms
             ? `CMS: ${aggregatedTech.cms.name} (${aggregatedTech.cms.detectedOn}/${aggregatedTech.pagesAnalyzed} Seiten, ${aggregatedTech.cms.confidence}% Confidence)`
             : 'Kein CMS eindeutig erkannt',
           [
             aggregatedTech.framework && `Framework: ${aggregatedTech.framework.name}`,
-            aggregatedTech.backend.length > 0 && `Backend: ${aggregatedTech.backend.map(b => b.name).join(', ')}`,
-          ].filter(Boolean).join(' | ') || undefined
+            aggregatedTech.backend.length > 0 &&
+              `Backend: ${aggregatedTech.backend.map(b => b.name).join(', ')}`,
+          ]
+            .filter(Boolean)
+            .join(' | ') || undefined
         );
 
         emitAgentComplete('Multi-Page Tech Analyzer', {
@@ -2548,7 +2930,8 @@ export async function runQuickScanWithStreaming(
 
         const extractedComponents = extractComponents(successfulPages);
 
-        emitThought('Component Extractor',
+        emitThought(
+          'Component Extractor',
           `${extractedComponents.summary.totalComponents} Komponenten gefunden`,
           `${extractedComponents.summary.uniquePatterns} Muster | Komplexität: ${extractedComponents.summary.complexity}`
         );
@@ -2572,19 +2955,28 @@ export async function runQuickScanWithStreaming(
     // PHASE 1.3: ANALYSIS (All analyses in parallel)
     // ═══════════════════════════════════════════════════════════════════════════════
     emitPhase('analysis', 'Führe alle Analysen parallel aus...');
-    emitAnalysisComplete('multiPage', !!multiPageData, Date.now() - multiPageStart,
-      multiPageData ? `${multiPageData.pageDataArray.length} Seiten analysiert` : 'Single-Page Mode');
+    emitAnalysisComplete(
+      'multiPage',
+      !!multiPageData,
+      Date.now() - multiPageStart,
+      multiPageData ? `${multiPageData.pageDataArray.length} Seiten analysiert` : 'Single-Page Mode'
+    );
 
-    emitThought('Coordinator', 'Starte parallele Analyse...',
-      '1. Tech Stack Analyse\n2. Content Volume Analyse\n3. Feature Detection');
+    emitThought(
+      'Coordinator',
+      'Starte parallele Analyse...',
+      '1. Tech Stack Analyse\n2. Content Volume Analyse\n3. Feature Detection'
+    );
 
     // Tech Stack Analysis with progress
-    emitThought('Tech Stack Analyzer', 'Analysiere Technology Stack...',
+    emitThought(
+      'Tech Stack Analyzer',
+      'Analysiere Technology Stack...',
       multiPageData?.aggregatedTech
         ? 'Verwende Multi-Page-Analyse-Ergebnisse'
-        : (websiteData.wappalyzerResults.length >= 3
-            ? 'Verwende Wappalyzer-Ergebnisse'
-            : 'Starte AI-gestützte Analyse')
+        : websiteData.wappalyzerResults.length >= 3
+          ? 'Verwende Wappalyzer-Ergebnisse'
+          : 'Starte AI-gestützte Analyse'
     );
 
     // Run analyses in parallel
@@ -2603,7 +2995,10 @@ export async function runQuickScanWithStreaming(
       const mpTech = multiPageData.aggregatedTech;
 
       // Only override if multi-page has higher confidence
-      if (mpTech.cms && (!techStack.cms || (mpTech.cms.confidence > (techStack.cmsConfidence || 0)))) {
+      if (
+        mpTech.cms &&
+        (!techStack.cms || mpTech.cms.confidence > (techStack.cmsConfidence || 0))
+      ) {
         techStack.cms = mpTech.cms.name;
         techStack.cmsVersion = mpTech.cms.version;
         techStack.cmsConfidence = mpTech.cms.confidence;
@@ -2636,23 +3031,28 @@ export async function runQuickScanWithStreaming(
       techStack.framework && `Framework: ${techStack.framework}`,
       techStack.hosting && `Hosting: ${techStack.hosting}`,
       techStack.server && `Server: ${techStack.server}`,
-    ].filter(Boolean).join(' | ');
+    ]
+      .filter(Boolean)
+      .join(' | ');
 
-    emitThought('Tech Stack Analyzer',
+    emitThought(
+      'Tech Stack Analyzer',
       techStack.cms ? `Tech Stack erkannt: ${techStack.cms}` : 'Kein CMS eindeutig erkannt',
       techSummary || 'Minimale Tech-Stack-Informationen verfügbar'
     );
 
     // Report libraries if found
     if (techStack.libraries && techStack.libraries.length > 0) {
-      emitThought('Tech Stack Analyzer',
+      emitThought(
+        'Tech Stack Analyzer',
         `${techStack.libraries.length} JavaScript Libraries gefunden`,
         techStack.libraries.slice(0, 5).join(', ')
       );
     }
 
     // Report Content Volume results
-    emitThought('Content Analyzer',
+    emitThought(
+      'Content Analyzer',
       `${contentVolume.estimatedPageCount} Seiten geschätzt`,
       `Komplexität: ${contentVolume.complexity?.toUpperCase() || 'unbekannt'}`
     );
@@ -2666,7 +3066,8 @@ export async function runQuickScanWithStreaming(
     }
 
     if (contentVolume.languages && contentVolume.languages.length > 0) {
-      emitThought('Content Analyzer',
+      emitThought(
+        'Content Analyzer',
         `${contentVolume.languages.length} Sprache(n) erkannt`,
         contentVolume.languages.join(', ')
       );
@@ -2683,13 +3084,15 @@ export async function runQuickScanWithStreaming(
       features.api && 'API',
     ].filter(Boolean);
 
-    emitThought('Feature Detector',
+    emitThought(
+      'Feature Detector',
       `${detectedFeatures.length} Kern-Features erkannt`,
       detectedFeatures.join(', ') || 'Keine speziellen Features'
     );
 
     if (features.customFeatures && features.customFeatures.length > 0) {
-      emitThought('Feature Detector',
+      emitThought(
+        'Feature Detector',
         'Weitere Features gefunden',
         features.customFeatures.join(', ')
       );
@@ -2719,9 +3122,13 @@ export async function runQuickScanWithStreaming(
         );
 
         if (searchResults && searchResults.length > 0) {
-          emitThought('Researcher',
+          emitThought(
+            'Researcher',
             `${searchResults.length} Web-Ergebnisse für ${techStack.cms}`,
-            searchResults.slice(0, 2).map(r => r.title || 'Untitled').join(' | ')
+            searchResults
+              .slice(0, 2)
+              .map(r => r.title || 'Untitled')
+              .join(' | ')
           );
         }
 
@@ -2737,7 +3144,8 @@ export async function runQuickScanWithStreaming(
           if (repoInfo && !repoInfo.error) {
             if (repoInfo.latestVersion) {
               techStack.cmsVersion = repoInfo.latestVersion;
-              emitThought('Researcher',
+              emitThought(
+                'Researcher',
                 `${techStack.cms} aktuelle Version: ${repoInfo.latestVersion}`,
                 `GitHub Stars: ${repoInfo.githubStars?.toLocaleString() || 'N/A'}`
               );
@@ -2746,7 +3154,8 @@ export async function runQuickScanWithStreaming(
         }
       } catch (error) {
         // Non-critical: Continue without verification
-        emitThought('Researcher',
+        emitThought(
+          'Researcher',
           'Web-Recherche übersprungen',
           error instanceof Error ? error.message : 'Fehler bei Recherche'
         );
@@ -2764,12 +3173,11 @@ export async function runQuickScanWithStreaming(
         );
 
         if (siteSearch && siteSearch.length > 0) {
-          const additionalUrls = siteSearch
-            .map(r => r.url)
-            .filter((url): url is string => !!url);
+          const additionalUrls = siteSearch.map(r => r.url).filter((url): url is string => !!url);
 
           if (additionalUrls.length > websiteData.sitemapUrls.length) {
-            emitThought('Researcher',
+            emitThought(
+              'Researcher',
               `${additionalUrls.length} zusätzliche Seiten via Web Search gefunden`,
               'Ergänze Content-Analyse'
             );
@@ -2816,20 +3224,38 @@ export async function runQuickScanWithStreaming(
     const companyName = extractedCompanyName || customerNameFromRfp || null;
 
     // Run enhanced audits in parallel
-    emitThought('Coordinator', 'Starte erweiterte Analysen...',
-      '1. Screenshots & A11y (Playwright)\n2. SEO & Legal Audit\n3. Company Intelligence\n4. QuickScan 2.0: Content Types, Migration, Decision Makers');
+    emitThought(
+      'Coordinator',
+      'Starte erweiterte Analysen...',
+      '1. Screenshots & A11y (Playwright)\n2. SEO & Legal Audit\n3. Company Intelligence\n4. QuickScan 2.0: Content Types, Migration, Decision Makers'
+    );
 
     try {
       // Run Playwright audit for screenshots + accessibility + navigation + performance
-      emitThought('Playwright', 'Starte Browser-basierte Analyse...',
-        'Screenshots, Accessibility, Navigation, Performance');
+      emitThought(
+        'Playwright',
+        'Starte Browser-basierte Analyse...',
+        'Screenshots, Accessibility, Navigation, Performance'
+      );
 
       // Quick content type estimation from URLs (no AI, fast)
-      const quickContentEstimate = websiteData.sitemapUrls.length > 0
-        ? estimateContentTypesFromUrls(websiteData.sitemapUrls)
-        : null;
+      const quickContentEstimate =
+        websiteData.sitemapUrls.length > 0
+          ? estimateContentTypesFromUrls(websiteData.sitemapUrls)
+          : null;
 
-      const [playwrightRes, seoRes, legalRes, perfRes, companyRes, enhancedTechRes, httpxRes, contentTypesRes, migrationRes, decisionMakersRes] = await Promise.allSettled([
+      const [
+        playwrightRes,
+        seoRes,
+        legalRes,
+        perfRes,
+        companyRes,
+        enhancedTechRes,
+        httpxRes,
+        contentTypesRes,
+        migrationRes,
+        decisionMakersRes,
+      ] = await Promise.allSettled([
         runPlaywrightAudit(fullUrl, input.bidId || 'temp', {
           takeScreenshots: true,
           runAccessibilityAudit: true,
@@ -2838,7 +3264,9 @@ export async function runQuickScanWithStreaming(
         performSEOAudit(websiteData.html, fullUrl),
         performLegalComplianceCheck(websiteData.html),
         analyzePerformanceIndicators(websiteData.html),
-        companyName ? gatherCompanyIntelligence(companyName, fullUrl, websiteData.html) : Promise.resolve(null),
+        companyName
+          ? gatherCompanyIntelligence(companyName, fullUrl, websiteData.html)
+          : Promise.resolve(null),
         detectEnhancedTechStack(fullUrl),
         runHttpxTechDetection(fullUrl),
         // QuickScan 2.0 Tools - NEW
@@ -2858,9 +3286,7 @@ export async function runQuickScanWithStreaming(
           },
           html: websiteData.html,
         }),
-        companyName
-          ? searchDecisionMakers(companyName, fullUrl)
-          : Promise.resolve(null),
+        companyName ? searchDecisionMakers(companyName, fullUrl) : Promise.resolve(null),
       ]);
 
       // Process Playwright results
@@ -2878,8 +3304,11 @@ export async function runQuickScanWithStreaming(
             timestamp: new Date().toISOString(),
           });
 
-          emitThought('Playwright', 'Screenshots erstellt',
-            `Desktop: ${playwrightResult.screenshots.desktop ? '✓' : '✗'} | Mobile: ${playwrightResult.screenshots.mobile ? '✓' : '✗'}`);
+          emitThought(
+            'Playwright',
+            'Screenshots erstellt',
+            `Desktop: ${playwrightResult.screenshots.desktop ? '✓' : '✗'} | Mobile: ${playwrightResult.screenshots.mobile ? '✓' : '✗'}`
+          );
         }
 
         // Accessibility from Playwright
@@ -2898,7 +3327,9 @@ export async function runQuickScanWithStreaming(
               hasProperHeadings: !a11y.violations.some(v => v.id.includes('heading')),
               hasSkipLinks: a11y.passes > 0,
               colorContrast: a11y.violations.some(v => v.id === 'color-contrast') ? 'fail' : 'pass',
-              keyboardNavigation: a11y.violations.some(v => v.id.includes('keyboard')) ? 'fail' : 'pass',
+              keyboardNavigation: a11y.violations.some(v => v.id.includes('keyboard'))
+                ? 'fail'
+                : 'pass',
               formLabels: a11y.violations.some(v => v.id.includes('label')) ? 'fail' : 'pass',
               languageAttribute: !a11y.violations.some(v => v.id === 'html-has-lang'),
             },
@@ -2911,9 +3342,11 @@ export async function runQuickScanWithStreaming(
             recommendations: a11y.violations.slice(0, 3).map(v => v.description),
           });
 
-          emitThought('Accessibility Audit',
+          emitThought(
+            'Accessibility Audit',
             `Score: ${a11y.score}/100 - Level: ${a11y.level}`,
-            `${a11y.violations.length} Probleme gefunden, ${a11y.passes} Tests bestanden`);
+            `${a11y.violations.length} Probleme gefunden, ${a11y.passes} Tests bestanden`
+          );
         }
 
         // Navigation structure - with URLs and hierarchy
@@ -2946,12 +3379,18 @@ export async function runQuickScanWithStreaming(
 
           // Count items with URLs (only for object items)
           const normalizedMainNav = normalizeNav(nav.mainNav as (string | NavItem)[]);
-          const urlCount = normalizedMainNav.filter(i => i.url).length +
-            normalizedMainNav.reduce((sum, i) => sum + (i.children?.filter((c: NavItem) => c.url).length || 0), 0);
+          const urlCount =
+            normalizedMainNav.filter(i => i.url).length +
+            normalizedMainNav.reduce(
+              (sum, i) => sum + (i.children?.filter((c: NavItem) => c.url).length || 0),
+              0
+            );
 
-          emitThought('Navigation Analyzer',
+          emitThought(
+            'Navigation Analyzer',
             `${nav.mainNav.length} Haupt-Navigation Items (${urlCount} mit URLs)`,
-            `Tiefe: ${nav.maxDepth} | Suche: ${nav.hasSearch ? '✓' : '✗'} | Mega-Menu: ${nav.hasMegaMenu ? '✓' : '✗'}`);
+            `Tiefe: ${nav.maxDepth} | Suche: ${nav.hasSearch ? '✓' : '✗'} | Mega-Menu: ${nav.hasMegaMenu ? '✓' : '✗'}`
+          );
         }
 
         // Performance from Playwright
@@ -2960,36 +3399,48 @@ export async function runQuickScanWithStreaming(
           performanceIndicators = performanceIndicatorsSchema.parse({
             htmlSize: Math.round(websiteData.html.length / 1024),
             resourceCount: perf.resourceCount,
-            estimatedLoadTime: perf.loadTime < 2000 ? 'fast' : perf.loadTime < 5000 ? 'medium' : 'slow',
+            estimatedLoadTime:
+              perf.loadTime < 2000 ? 'fast' : perf.loadTime < 5000 ? 'medium' : 'slow',
             hasLazyLoading: /loading=["']lazy["']/i.test(websiteData.html),
             hasMinification: websiteData.html.length < 50000 || !/\n\s{4,}/g.test(websiteData.html),
             hasCaching: Boolean(websiteData.headers['cache-control']),
             renderBlockingResources: perf.resourceCount.scripts + perf.resourceCount.stylesheets,
           });
 
-          emitThought('Performance Analyzer',
+          emitThought(
+            'Performance Analyzer',
             `Ladezeit: ${perf.loadTime}ms - ${performanceIndicators.estimatedLoadTime}`,
-            `Scripts: ${perf.resourceCount.scripts} | CSS: ${perf.resourceCount.stylesheets} | Images: ${perf.resourceCount.images}`);
+            `Scripts: ${perf.resourceCount.scripts} | CSS: ${perf.resourceCount.stylesheets} | Images: ${perf.resourceCount.images}`
+          );
         }
       } else {
-        emitThought('Playwright', 'Browser-Analyse übersprungen',
-          playwrightRes.status === 'rejected' ? (playwrightRes.reason as Error).message : 'Keine Ergebnisse');
+        emitThought(
+          'Playwright',
+          'Browser-Analyse übersprungen',
+          playwrightRes.status === 'rejected'
+            ? (playwrightRes.reason as Error).message
+            : 'Keine Ergebnisse'
+        );
       }
 
       // Process SEO results
       if (seoRes.status === 'fulfilled' && seoRes.value) {
         seoAudit = seoRes.value;
-        emitThought('SEO Audit',
+        emitThought(
+          'SEO Audit',
           `Score: ${seoAudit.score}/100`,
-          `Title: ${seoAudit.checks.hasTitle ? '✓' : '✗'} | Meta: ${seoAudit.checks.hasMetaDescription ? '✓' : '✗'} | Sitemap: ${seoAudit.checks.hasSitemap ? '✓' : '✗'}`);
+          `Title: ${seoAudit.checks.hasTitle ? '✓' : '✗'} | Meta: ${seoAudit.checks.hasMetaDescription ? '✓' : '✗'} | Sitemap: ${seoAudit.checks.hasSitemap ? '✓' : '✗'}`
+        );
       }
 
       // Process Legal results
       if (legalRes.status === 'fulfilled' && legalRes.value) {
         legalCompliance = legalRes.value;
-        emitThought('Legal Compliance',
+        emitThought(
+          'Legal Compliance',
           `Score: ${legalCompliance.score}/100`,
-          `Impressum: ${legalCompliance.checks.hasImprint ? '✓' : '✗'} | Datenschutz: ${legalCompliance.checks.hasPrivacyPolicy ? '✓' : '✗'} | Cookie Banner: ${legalCompliance.checks.hasCookieBanner ? '✓' : '✗'}`);
+          `Impressum: ${legalCompliance.checks.hasImprint ? '✓' : '✗'} | Datenschutz: ${legalCompliance.checks.hasPrivacyPolicy ? '✓' : '✗'} | Cookie Banner: ${legalCompliance.checks.hasCookieBanner ? '✓' : '✗'}`
+        );
       }
 
       // Process Performance results (fallback if Playwright didn't provide)
@@ -3000,14 +3451,18 @@ export async function runQuickScanWithStreaming(
       // Process Company Intelligence
       if (companyRes.status === 'fulfilled' && companyRes.value) {
         companyIntel = companyRes.value;
-        emitThought('Company Intelligence',
+        emitThought(
+          'Company Intelligence',
           `Unternehmensdaten: ${companyIntel.basicInfo.name}`,
-          `Branche: ${companyIntel.basicInfo.industry || 'unbekannt'} | Mitarbeiter: ${companyIntel.basicInfo.employeeCount || 'unbekannt'}`);
+          `Branche: ${companyIntel.basicInfo.industry || 'unbekannt'} | Mitarbeiter: ${companyIntel.basicInfo.employeeCount || 'unbekannt'}`
+        );
 
         if (companyIntel.newsAndReputation?.recentNews?.length) {
-          emitThought('Company Intelligence',
+          emitThought(
+            'Company Intelligence',
             `${companyIntel.newsAndReputation.recentNews.length} aktuelle News gefunden`,
-            companyIntel.newsAndReputation.recentNews[0]?.title || '');
+            companyIntel.newsAndReputation.recentNews[0]?.title || ''
+          );
         }
       }
 
@@ -3046,9 +3501,11 @@ export async function runQuickScanWithStreaming(
           const jsFrameworks = jsLibraries
             .map(f => `${f.name}${f.version ? ` (${f.version})` : ''}`)
             .join(', ');
-          emitThought('Enhanced Tech Stack',
+          emitThought(
+            'Enhanced Tech Stack',
             `${jsLibraries.length} JavaScript Framework(s) erkannt`,
-            jsFrameworks);
+            jsFrameworks
+          );
         }
 
         // Map libraries to CSS frameworks if detected
@@ -3065,21 +3522,29 @@ export async function runQuickScanWithStreaming(
           const cssFrameworks = cssLibraries
             .map(f => `${f.name}${f.version ? ` (${f.version})` : ''}`)
             .join(', ');
-          emitThought('Enhanced Tech Stack',
+          emitThought(
+            'Enhanced Tech Stack',
             `${cssLibraries.length} CSS Framework(s) erkannt`,
-            cssFrameworks);
+            cssFrameworks
+          );
         }
 
         // Report CMS if detected
         if (enhancedTech.cms) {
-          emitThought('Enhanced Tech Stack',
+          emitThought(
+            'Enhanced Tech Stack',
             `CMS erkannt: ${enhancedTech.cms.name}`,
-            `Confidence: ${enhancedTech.cms.confidence}%`);
+            `Confidence: ${enhancedTech.cms.confidence}%`
+          );
         }
 
         // Report analytics
         if (enhancedTech.analytics.length > 0) {
-          emitThought('Enhanced Tech Stack', 'Analytics erkannt', enhancedTech.analytics.join(', '));
+          emitThought(
+            'Enhanced Tech Stack',
+            'Analytics erkannt',
+            enhancedTech.analytics.join(', ')
+          );
         }
 
         // Report CDN if detected
@@ -3093,22 +3558,40 @@ export async function runQuickScanWithStreaming(
         const httpxTech = httpxRes.value;
         const detectedTechs = httpxTech.technologies.map(t => t.name);
 
-        emitThought('httpx Tech Detection',
+        emitThought(
+          'httpx Tech Detection',
           `${httpxTech.technologies.length} Technologien erkannt`,
-          detectedTechs.slice(0, 10).join(', ') + (httpxTech.technologies.length > 10 ? ` (+${httpxTech.technologies.length - 10} weitere)` : ''));
+          detectedTechs.slice(0, 10).join(', ') +
+            (httpxTech.technologies.length > 10
+              ? ` (+${httpxTech.technologies.length - 10} weitere)`
+              : '')
+        );
 
         // Map httpx technologies to TechStack categories
         for (const tech of httpxTech.technologies) {
           const techName = tech.name.toLowerCase();
 
           // CMS - httpx hat 100% Confidence und überschreibt niedrigere Signature-Confidence
-          if (techName.includes('cms') || techName.includes('drupal') || techName.includes('wordpress') ||
-              techName.includes('typo3') || techName.includes('joomla') || techName.includes('kentico') ||
-              techName.includes('sitecore') || techName.includes('umbraco') || techName.includes('aem') ||
-              techName.includes('tridion') || techName.includes('magnolia') || techName.includes('contentful')) {
+          if (
+            techName.includes('cms') ||
+            techName.includes('drupal') ||
+            techName.includes('wordpress') ||
+            techName.includes('typo3') ||
+            techName.includes('joomla') ||
+            techName.includes('kentico') ||
+            techName.includes('sitecore') ||
+            techName.includes('umbraco') ||
+            techName.includes('aem') ||
+            techName.includes('tridion') ||
+            techName.includes('magnolia') ||
+            techName.includes('contentful')
+          ) {
             // FIX: httpx überschreibt niedrigere Confidence (z.B. AEM durch /content/ matched mit 55%)
             const httpxConfidence = 100; // httpx ist sehr zuverlässig
-            if (!techStack.cms || (techStack.cmsConfidence && techStack.cmsConfidence < httpxConfidence)) {
+            if (
+              !techStack.cms ||
+              (techStack.cmsConfidence && techStack.cmsConfidence < httpxConfidence)
+            ) {
               techStack.cms = tech.name;
               techStack.cmsConfidence = httpxConfidence;
               cmsDetectionSource = 'httpx-fallback';
@@ -3116,8 +3599,14 @@ export async function runQuickScanWithStreaming(
           }
 
           // Frameworks
-          if (techName.includes('react') || techName.includes('vue') || techName.includes('angular') ||
-              techName.includes('jquery') || techName.includes('bootstrap') || techName.includes('tailwind')) {
+          if (
+            techName.includes('react') ||
+            techName.includes('vue') ||
+            techName.includes('angular') ||
+            techName.includes('jquery') ||
+            techName.includes('bootstrap') ||
+            techName.includes('tailwind')
+          ) {
             if (!techStack.libraries) techStack.libraries = [];
             if (!techStack.libraries.includes(tech.name)) {
               techStack.libraries.push(tech.name);
@@ -3125,8 +3614,14 @@ export async function runQuickScanWithStreaming(
           }
 
           // Backend
-          if (techName.includes('.net') || techName.includes('asp') || techName.includes('php') ||
-              techName.includes('java') || techName.includes('python') || techName.includes('node')) {
+          if (
+            techName.includes('.net') ||
+            techName.includes('asp') ||
+            techName.includes('php') ||
+            techName.includes('java') ||
+            techName.includes('python') ||
+            techName.includes('node')
+          ) {
             if (!techStack.backend) techStack.backend = [];
             if (!techStack.backend.includes(tech.name)) {
               techStack.backend.push(tech.name);
@@ -3134,14 +3629,23 @@ export async function runQuickScanWithStreaming(
           }
 
           // Server
-          if (techName.includes('iis') || techName.includes('nginx') || techName.includes('apache')) {
+          if (
+            techName.includes('iis') ||
+            techName.includes('nginx') ||
+            techName.includes('apache')
+          ) {
             techStack.server = tech.name;
           }
 
           // CDN
-          if (techName.includes('cloudflare') || techName.includes('cloudfront') ||
-              techName.includes('fastly') || techName.includes('akamai') ||
-              techName.includes('cdn') || techName.includes('cdnjs')) {
+          if (
+            techName.includes('cloudflare') ||
+            techName.includes('cloudfront') ||
+            techName.includes('fastly') ||
+            techName.includes('akamai') ||
+            techName.includes('cdn') ||
+            techName.includes('cdnjs')
+          ) {
             if (!techStack.cdn) {
               techStack.cdn = tech.name;
             }
@@ -3152,14 +3656,24 @@ export async function runQuickScanWithStreaming(
           }
 
           // Hosting
-          if (techName.includes('aws') || techName.includes('azure') || techName.includes('google cloud') ||
-              techName.includes('heroku') || techName.includes('vercel') || techName.includes('netlify')) {
+          if (
+            techName.includes('aws') ||
+            techName.includes('azure') ||
+            techName.includes('google cloud') ||
+            techName.includes('heroku') ||
+            techName.includes('vercel') ||
+            techName.includes('netlify')
+          ) {
             techStack.hosting = tech.name;
           }
 
           // Analytics
-          if (techName.includes('analytics') || techName.includes('google analytics') ||
-              techName.includes('gtag') || techName.includes('gtm')) {
+          if (
+            techName.includes('analytics') ||
+            techName.includes('google analytics') ||
+            techName.includes('gtag') ||
+            techName.includes('gtm')
+          ) {
             if (!techStack.analytics) techStack.analytics = [];
             if (!techStack.analytics.includes(tech.name)) {
               techStack.analytics.push(tech.name);
@@ -3176,9 +3690,11 @@ export async function runQuickScanWithStreaming(
       // Process Content Types
       if (contentTypesRes.status === 'fulfilled' && contentTypesRes.value) {
         contentTypes = contentTypesRes.value;
-        emitThought('Content Classifier',
+        emitThought(
+          'Content Classifier',
           `${contentTypes.distribution?.length || 0} Content-Typen klassifiziert`,
-          `Komplexität: ${contentTypes.complexity} | Dominanter Typ: ${contentTypes.distribution?.[0]?.type || 'unbekannt'}`);
+          `Komplexität: ${contentTypes.complexity} | Dominanter Typ: ${contentTypes.distribution?.[0]?.type || 'unbekannt'}`
+        );
       } else if (quickContentEstimate) {
         // Fallback to quick estimation
         const uniqueTypes = Object.keys(quickContentEstimate.estimated).length;
@@ -3195,17 +3711,21 @@ export async function runQuickScanWithStreaming(
           customFieldsNeeded: uniqueTypes * 2,
           recommendations: [],
         };
-        emitThought('Content Classifier',
+        emitThought(
+          'Content Classifier',
           `${uniqueTypes} Content-Typen geschätzt (URL-basiert)`,
-          `Komplexität: ${quickContentEstimate.complexity}`);
+          `Komplexität: ${quickContentEstimate.complexity}`
+        );
       }
 
       // Process Migration Complexity
       if (migrationRes.status === 'fulfilled' && migrationRes.value) {
         migrationComplexity = migrationRes.value;
-        emitThought('Migration Analyzer',
+        emitThought(
+          'Migration Analyzer',
           `Komplexität: ${migrationComplexity.recommendation} (Score: ${migrationComplexity.score}/100)`,
-          `Geschätzte PT: ${migrationComplexity.estimatedEffort?.minPT}-${migrationComplexity.estimatedEffort?.maxPT} | ${migrationComplexity.warnings?.length || 0} Warnungen`);
+          `Geschätzte PT: ${migrationComplexity.estimatedEffort?.minPT}-${migrationComplexity.estimatedEffort?.maxPT} | ${migrationComplexity.warnings?.length || 0} Warnungen`
+        );
       }
 
       // Process Decision Makers
@@ -3213,9 +3733,11 @@ export async function runQuickScanWithStreaming(
         decisionMakersResult = decisionMakersRes.value;
         const contactCount = decisionMakersResult.decisionMakers?.length || 0;
         const emailCount = decisionMakersResult.decisionMakers?.filter(d => d.email).length || 0;
-        emitThought('Decision Maker Research',
+        emitThought(
+          'Decision Maker Research',
           `${contactCount} Entscheidungsträger gefunden`,
-          `${emailCount} E-Mails | Quellen: ${decisionMakersResult.researchQuality?.sources?.join(', ') || 'keine'}`);
+          `${emailCount} E-Mails | Quellen: ${decisionMakersResult.researchQuality?.sources?.join(', ') || 'keine'}`
+        );
       }
 
       // Store raw Playwright data
@@ -3227,8 +3749,11 @@ export async function runQuickScanWithStreaming(
         };
       }
     } catch (error) {
-      emitThought('Warning', 'Einige erweiterte Analysen fehlgeschlagen',
-        error instanceof Error ? error.message : 'Unbekannter Fehler');
+      emitThought(
+        'Warning',
+        'Einige erweiterte Analysen fehlgeschlagen',
+        error instanceof Error ? error.message : 'Unbekannter Fehler'
+      );
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -3236,12 +3761,14 @@ export async function runQuickScanWithStreaming(
     // ═══════════════════════════════════════════════════════════════════════════════
     emitPhase('synthesis', 'Erstelle Gesamtbild und BL-Empfehlung...');
 
-    emitThought('Business Analyst',
+    emitThought(
+      'Business Analyst',
       'Generiere Business Line Empfehlung...',
       'Analysiere Tech Stack, Content, Features und Company Intelligence für optimale BL-Zuordnung'
     );
 
-    emitThought('AI Reasoning',
+    emitThought(
+      'AI Reasoning',
       'Starte AI-Analyse für Empfehlung...',
       'Berücksichtige: Technologie-Expertise, Projekt-Komplexität, Feature-Anforderungen, Unternehmensprofil'
     );
@@ -3253,22 +3780,23 @@ export async function runQuickScanWithStreaming(
       features,
       extractedRequirements: input.extractedRequirements,
       contextSection,
-      cachedBusinessUnits,  // Use pre-loaded BUs from bootstrap (no extra DB query)
+      cachedBusinessUnits, // Use pre-loaded BUs from bootstrap (no extra DB query)
     });
     emitAnalysisComplete('blRecommendation', true, Date.now() - blRecommendationStart);
 
     // Report recommendation reasoning
-    emitThought('Business Analyst',
+    emitThought(
+      'Business Analyst',
       `Empfehlung: ${blRecommendation.primaryBusinessLine}`,
       `Confidence: ${blRecommendation.confidence}%`
     );
 
-    emitThought('AI Reasoning',
-      'Begründung',
-      blRecommendation.reasoning
-    );
+    emitThought('AI Reasoning', 'Begründung', blRecommendation.reasoning);
 
-    if (blRecommendation.alternativeBusinessLines && blRecommendation.alternativeBusinessLines.length > 0) {
+    if (
+      blRecommendation.alternativeBusinessLines &&
+      blRecommendation.alternativeBusinessLines.length > 0
+    ) {
       const alternatives = blRecommendation.alternativeBusinessLines
         .map(alt => `${alt.name} (${alt.confidence}%)`)
         .join(', ');
@@ -3276,7 +3804,8 @@ export async function runQuickScanWithStreaming(
     }
 
     if (blRecommendation.requiredSkills && blRecommendation.requiredSkills.length > 0) {
-      emitThought('Business Analyst',
+      emitThought(
+        'Business Analyst',
         'Benötigte Skills',
         blRecommendation.requiredSkills.join(', ')
       );
@@ -3304,18 +3833,21 @@ export async function runQuickScanWithStreaming(
       decisionMakers: decisionMakersResult,
       // Multi-Page Analysis fields (NEW)
       extractedComponents: multiPageData?.extractedComponents ?? undefined,
-      multiPageAnalysis: multiPageData ? {
-        pagesAnalyzed: multiPageData.pageDataArray.filter(p => !p.error).length,
-        analyzedUrls: multiPageData.sampledPages.urls,
-        pageCategories: multiPageData.sampledPages.categories,
-        detectionMethod: cmsDetectionSource === 'httpx-fallback' ? 'httpx-fallback' : 'multi-page',
-        analysisTimestamp: new Date().toISOString(),
-      } : {
-        pagesAnalyzed: 1,
-        analyzedUrls: [fullUrl],
-        detectionMethod: cmsDetectionSource,
-        analysisTimestamp: new Date().toISOString(),
-      },
+      multiPageAnalysis: multiPageData
+        ? {
+            pagesAnalyzed: multiPageData.pageDataArray.filter(p => !p.error).length,
+            analyzedUrls: multiPageData.sampledPages.urls,
+            pageCategories: multiPageData.sampledPages.categories,
+            detectionMethod:
+              cmsDetectionSource === 'httpx-fallback' ? 'httpx-fallback' : 'multi-page',
+            analysisTimestamp: new Date().toISOString(),
+          }
+        : {
+            pagesAnalyzed: 1,
+            analyzedUrls: [fullUrl],
+            detectionMethod: cmsDetectionSource,
+            analysisTimestamp: new Date().toISOString(),
+          },
     };
 
     // Quick evaluation to check if optimization is needed
@@ -3324,7 +3856,11 @@ export async function runQuickScanWithStreaming(
         { path: 'techStack.cms', minConfidence: 70, description: 'CMS Detection' },
         { path: 'contentVolume.estimatedPageCount', description: 'Page Count' },
         { path: 'features', description: 'Feature Detection' },
-        { path: 'blRecommendation.primaryBusinessLine', minConfidence: 60, description: 'BL Recommendation' },
+        {
+          path: 'blRecommendation.primaryBusinessLine',
+          minConfidence: 60,
+          description: 'BL Recommendation',
+        },
       ],
       optionalFields: [
         { path: 'techStack.cmsVersion', bonusPoints: 5, description: 'CMS Version' },
@@ -3338,9 +3874,12 @@ export async function runQuickScanWithStreaming(
       context: 'QuickScan Website Analysis',
     });
 
-    emitThought('Evaluator',
+    emitThought(
+      'Evaluator',
       `Qualitäts-Score: ${quickEval.score}/100`,
-      quickEval.issues.length > 0 ? `${quickEval.issues.length} Verbesserungen möglich` : 'Alle Kriterien erfüllt'
+      quickEval.issues.length > 0
+        ? `${quickEval.issues.length} Verbesserungen möglich`
+        : 'Alle Kriterien erfüllt'
     );
 
     // If score is low and improvements are possible, run optimizer
@@ -3370,14 +3909,16 @@ export async function runQuickScanWithStreaming(
 
         if (optimization.finalScore > quickEval.score) {
           finalResults = { ...finalResults, ...optimization.optimized };
-          emitThought('Optimizer',
+          emitThought(
+            'Optimizer',
             `Optimierung erfolgreich: ${optimization.finalScore}/100`,
             optimization.improvements.join(', ')
           );
         }
       } catch (error) {
         // Non-critical: Continue with original results
-        emitThought('Optimizer',
+        emitThought(
+          'Optimizer',
           'Optimierung übersprungen',
           error instanceof Error ? error.message : 'Fehler'
         );
@@ -3409,18 +3950,21 @@ export async function runQuickScanWithStreaming(
           decisionMakers: decisionMakersResult,
           // Multi-Page Analysis fields (NEW)
           extractedComponents: multiPageData?.extractedComponents ?? undefined,
-          multiPageAnalysis: multiPageData ? {
-            pagesAnalyzed: multiPageData.pageDataArray.filter(p => !p.error).length,
-            analyzedUrls: multiPageData.sampledPages.urls,
-            pageCategories: multiPageData.sampledPages.categories,
-            detectionMethod: cmsDetectionSource === 'httpx-fallback' ? 'httpx-fallback' : 'multi-page',
-            analysisTimestamp: new Date().toISOString(),
-          } : {
-            pagesAnalyzed: 1,
-            analyzedUrls: [fullUrl],
-            detectionMethod: cmsDetectionSource,
-            analysisTimestamp: new Date().toISOString(),
-          },
+          multiPageAnalysis: multiPageData
+            ? {
+                pagesAnalyzed: multiPageData.pageDataArray.filter(p => !p.error).length,
+                analyzedUrls: multiPageData.sampledPages.urls,
+                pageCategories: multiPageData.sampledPages.categories,
+                detectionMethod:
+                  cmsDetectionSource === 'httpx-fallback' ? 'httpx-fallback' : 'multi-page',
+                analysisTimestamp: new Date().toISOString(),
+              }
+            : {
+                pagesAnalyzed: 1,
+                analyzedUrls: [fullUrl],
+                detectionMethod: cmsDetectionSource,
+                analysisTimestamp: new Date().toISOString(),
+              },
         },
         confidence: blRecommendation.confidence,
       },
@@ -3462,18 +4006,21 @@ export async function runQuickScanWithStreaming(
       decisionMakers: decisionMakersResult,
       // Multi-Page Analysis fields (NEW)
       extractedComponents: multiPageData?.extractedComponents ?? undefined,
-      multiPageAnalysis: multiPageData ? {
-        pagesAnalyzed: multiPageData.pageDataArray.filter(p => !p.error).length,
-        analyzedUrls: multiPageData.sampledPages.urls,
-        pageCategories: multiPageData.sampledPages.categories,
-        detectionMethod: cmsDetectionSource === 'httpx-fallback' ? 'httpx-fallback' : 'multi-page',
-        analysisTimestamp: new Date().toISOString(),
-      } : {
-        pagesAnalyzed: 1,
-        analyzedUrls: [fullUrl],
-        detectionMethod: cmsDetectionSource,
-        analysisTimestamp: new Date().toISOString(),
-      },
+      multiPageAnalysis: multiPageData
+        ? {
+            pagesAnalyzed: multiPageData.pageDataArray.filter(p => !p.error).length,
+            analyzedUrls: multiPageData.sampledPages.urls,
+            pageCategories: multiPageData.sampledPages.categories,
+            detectionMethod:
+              cmsDetectionSource === 'httpx-fallback' ? 'httpx-fallback' : 'multi-page',
+            analysisTimestamp: new Date().toISOString(),
+          }
+        : {
+            pagesAnalyzed: 1,
+            analyzedUrls: [fullUrl],
+            detectionMethod: cmsDetectionSource,
+            analysisTimestamp: new Date().toISOString(),
+          },
       rawScanData,
       activityLog,
     };

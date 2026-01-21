@@ -15,25 +15,18 @@ import {
   FileText,
   Users,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
 
 export default async function BLReviewPage() {
   const session = await auth();
 
-  if (
-    !session?.user ||
-    (session.user.role !== 'bl' && session.user.role !== 'admin')
-  ) {
+  if (!session?.user || (session.user.role !== 'bl' && session.user.role !== 'admin')) {
     redirect('/');
   }
 
   // Get the user's business unit
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
+  const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
 
   // Get all business units for admin, or just the user's for BL
   let businessUnitIds: string[] = [];
@@ -47,32 +40,40 @@ export default async function BLReviewPage() {
   }
 
   // Get bids assigned to the user's business unit(s)
-  const assignedBids = businessUnitIds.length > 0
-    ? await db
-        .select()
-        .from(rfps)
-        .where(
-          and(
-            inArray(rfps.assignedBusinessUnitId, businessUnitIds),
-            inArray(rfps.status, ['routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'])
+  const assignedBids =
+    businessUnitIds.length > 0
+      ? await db
+          .select()
+          .from(rfps)
+          .where(
+            and(
+              inArray(rfps.assignedBusinessUnitId, businessUnitIds),
+              inArray(rfps.status, [
+                'routed',
+                'full_scanning',
+                'bl_reviewing',
+                'team_assigned',
+                'notified',
+                'handed_off',
+              ])
+            )
           )
-        )
-        .orderBy(desc(rfps.updatedAt))
-    : [];
+          .orderBy(desc(rfps.updatedAt))
+      : [];
 
   // Get business unit details for display
-  const busUnits = businessUnitIds.length > 0
-    ? await db
-        .select()
-        .from(businessUnits)
-        .where(inArray(businessUnits.id, businessUnitIds))
-    : [];
+  const busUnits =
+    businessUnitIds.length > 0
+      ? await db.select().from(businessUnits).where(inArray(businessUnits.id, businessUnitIds))
+      : [];
 
   const buMap = new Map(busUnits.map(bu => [bu.id, bu]));
 
   // Group bids by status for overview
   const statusGroups = {
-    pending: assignedBids.filter(b => ['routed', 'full_scanning', 'bl_reviewing'].includes(b.status)),
+    pending: assignedBids.filter(b =>
+      ['routed', 'full_scanning', 'bl_reviewing'].includes(b.status)
+    ),
     teamAssigned: assignedBids.filter(b => b.status === 'team_assigned'),
     notified: assignedBids.filter(b => b.status === 'notified'),
     completed: assignedBids.filter(b => b.status === 'handed_off'),
@@ -97,9 +98,7 @@ export default async function BLReviewPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statusGroups.pending.length}</div>
-            <p className="text-xs text-muted-foreground">
-              RFPs warten auf Review
-            </p>
+            <p className="text-xs text-muted-foreground">RFPs warten auf Review</p>
           </CardContent>
         </Card>
         <Card>
@@ -109,9 +108,7 @@ export default async function BLReviewPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statusGroups.teamAssigned.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Bereit zur Benachrichtigung
-            </p>
+            <p className="text-xs text-muted-foreground">Bereit zur Benachrichtigung</p>
           </CardContent>
         </Card>
         <Card>
@@ -121,9 +118,7 @@ export default async function BLReviewPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statusGroups.notified.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Team wurde informiert
-            </p>
+            <p className="text-xs text-muted-foreground">Team wurde informiert</p>
           </CardContent>
         </Card>
         <Card>
@@ -133,9 +128,7 @@ export default async function BLReviewPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statusGroups.completed.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Workflow beendet
-            </p>
+            <p className="text-xs text-muted-foreground">Workflow beendet</p>
           </CardContent>
         </Card>
       </div>
@@ -148,24 +141,20 @@ export default async function BLReviewPage() {
               <AlertCircle className="h-5 w-5 text-amber-500" />
               Zu prüfende RFPs
             </CardTitle>
-            <CardDescription>
-              Diese RFPs warten auf Ihre Prüfung und Team-Zuweisung
-            </CardDescription>
+            <CardDescription>Diese RFPs warten auf Ihre Prüfung und Team-Zuweisung</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {statusGroups.pending.map((bid) => {
+              {statusGroups.pending.map(bid => {
                 const extractedData = safeJsonParseOrNull<{ customerName?: string }>(
                   bid.extractedRequirements
                 );
-                const bu = bid.assignedBusinessUnitId ? buMap.get(bid.assignedBusinessUnitId) : null;
+                const bu = bid.assignedBusinessUnitId
+                  ? buMap.get(bid.assignedBusinessUnitId)
+                  : null;
 
                 return (
-                  <Link
-                    key={bid.id}
-                    href={`/bl-review/${bid.id}`}
-                    className="block"
-                  >
+                  <Link key={bid.id} href={`/bl-review/${bid.id}`} className="block">
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
@@ -205,7 +194,9 @@ export default async function BLReviewPage() {
       )}
 
       {/* All Other Bids */}
-      {(statusGroups.teamAssigned.length > 0 || statusGroups.notified.length > 0 || statusGroups.completed.length > 0) && (
+      {(statusGroups.teamAssigned.length > 0 ||
+        statusGroups.notified.length > 0 ||
+        statusGroups.completed.length > 0) && (
         <Card>
           <CardHeader>
             <CardTitle>Weitere RFPs</CardTitle>
@@ -215,18 +206,20 @@ export default async function BLReviewPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {[...statusGroups.teamAssigned, ...statusGroups.notified, ...statusGroups.completed].map((bid) => {
+              {[
+                ...statusGroups.teamAssigned,
+                ...statusGroups.notified,
+                ...statusGroups.completed,
+              ].map(bid => {
                 const extractedData = safeJsonParseOrNull<{ customerName?: string }>(
                   bid.extractedRequirements
                 );
-                const bu = bid.assignedBusinessUnitId ? buMap.get(bid.assignedBusinessUnitId) : null;
+                const bu = bid.assignedBusinessUnitId
+                  ? buMap.get(bid.assignedBusinessUnitId)
+                  : null;
 
                 return (
-                  <Link
-                    key={bid.id}
-                    href={`/bl-review/${bid.id}`}
-                    className="block"
-                  >
+                  <Link key={bid.id} href={`/bl-review/${bid.id}`} className="block">
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
@@ -284,7 +277,10 @@ export default async function BLReviewPage() {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+  const statusConfig: Record<
+    string,
+    { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
+  > = {
     routed: { label: 'Weitergeleitet', variant: 'default' },
     full_scanning: { label: 'Deep Analysis', variant: 'default' },
     bl_reviewing: { label: 'In Prüfung', variant: 'default' },

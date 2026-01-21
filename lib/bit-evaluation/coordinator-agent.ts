@@ -77,7 +77,8 @@ export function buildDecisionTree(context: {
     label: 'Capability Match',
     score: scores.capability,
     weight: 0.25,
-    sentiment: scores.capability >= 70 ? 'positive' : scores.capability >= 50 ? 'neutral' : 'negative',
+    sentiment:
+      scores.capability >= 70 ? 'positive' : scores.capability >= 50 ? 'neutral' : 'negative',
     reasoning: context.capabilityMatch.reasoning,
     children: [
       {
@@ -106,8 +107,9 @@ export function buildDecisionTree(context: {
     type: 'criterion',
     label: 'Deal Quality',
     score: scores.dealQuality,
-    weight: 0.20,
-    sentiment: scores.dealQuality >= 70 ? 'positive' : scores.dealQuality >= 50 ? 'neutral' : 'negative',
+    weight: 0.2,
+    sentiment:
+      scores.dealQuality >= 70 ? 'positive' : scores.dealQuality >= 50 ? 'neutral' : 'negative',
     reasoning: context.dealQuality.reasoning,
     children: [
       {
@@ -115,16 +117,24 @@ export function buildDecisionTree(context: {
         type: 'criterion',
         label: 'Budget Adequacy',
         value: context.dealQuality.budgetAdequacy,
-        sentiment: context.dealQuality.budgetAdequacy === 'adequate' ? 'positive' :
-                   context.dealQuality.budgetAdequacy === 'tight' ? 'neutral' : 'negative',
+        sentiment:
+          context.dealQuality.budgetAdequacy === 'adequate'
+            ? 'positive'
+            : context.dealQuality.budgetAdequacy === 'tight'
+              ? 'neutral'
+              : 'negative',
       },
       {
         id: 'deal-timeline',
         type: 'criterion',
         label: 'Timeline Realism',
         value: context.dealQuality.timelineRealism,
-        sentiment: context.dealQuality.timelineRealism === 'realistic' ? 'positive' :
-                   context.dealQuality.timelineRealism === 'tight' ? 'neutral' : 'negative',
+        sentiment:
+          context.dealQuality.timelineRealism === 'realistic'
+            ? 'positive'
+            : context.dealQuality.timelineRealism === 'tight'
+              ? 'neutral'
+              : 'negative',
       },
       {
         id: 'deal-margin',
@@ -132,8 +142,12 @@ export function buildDecisionTree(context: {
         label: 'Expected Margin',
         score: context.dealQuality.estimatedMargin,
         value: `${context.dealQuality.estimatedMargin}%`,
-        sentiment: context.dealQuality.estimatedMargin >= 20 ? 'positive' :
-                   context.dealQuality.estimatedMargin >= 10 ? 'neutral' : 'negative',
+        sentiment:
+          context.dealQuality.estimatedMargin >= 20
+            ? 'positive'
+            : context.dealQuality.estimatedMargin >= 10
+              ? 'neutral'
+              : 'negative',
       },
     ],
   };
@@ -146,7 +160,8 @@ export function buildDecisionTree(context: {
     label: 'Strategic Fit',
     score: scores.strategicFit,
     weight: 0.15,
-    sentiment: scores.strategicFit >= 70 ? 'positive' : scores.strategicFit >= 50 ? 'neutral' : 'negative',
+    sentiment:
+      scores.strategicFit >= 70 ? 'positive' : scores.strategicFit >= 50 ? 'neutral' : 'negative',
     reasoning: context.strategicFit.reasoning,
     children: [
       {
@@ -155,7 +170,9 @@ export function buildDecisionTree(context: {
         label: 'Customer Type Match',
         score: context.strategicFit.customerTypeAssessment.customerFitScore,
         value: context.strategicFit.customerTypeAssessment.isTargetCustomer,
-        sentiment: context.strategicFit.customerTypeAssessment.isTargetCustomer ? 'positive' : 'negative',
+        sentiment: context.strategicFit.customerTypeAssessment.isTargetCustomer
+          ? 'positive'
+          : 'negative',
       },
       {
         id: 'strategic-industry',
@@ -163,7 +180,9 @@ export function buildDecisionTree(context: {
         label: 'Industry Alignment',
         score: context.strategicFit.industryAlignment.industryFitScore,
         value: context.strategicFit.industryAlignment.isTargetIndustry,
-        sentiment: context.strategicFit.industryAlignment.isTargetIndustry ? 'positive' : 'negative',
+        sentiment: context.strategicFit.industryAlignment.isTargetIndustry
+          ? 'positive'
+          : 'negative',
       },
     ],
   };
@@ -176,7 +195,12 @@ export function buildDecisionTree(context: {
     label: 'Win Probability',
     score: scores.winProbability,
     weight: 0.15,
-    sentiment: scores.winProbability >= 70 ? 'positive' : scores.winProbability >= 50 ? 'neutral' : 'negative',
+    sentiment:
+      scores.winProbability >= 70
+        ? 'positive'
+        : scores.winProbability >= 50
+          ? 'neutral'
+          : 'negative',
     reasoning: context.competitionCheck.reasoning,
     children: [
       {
@@ -184,16 +208,22 @@ export function buildDecisionTree(context: {
         type: 'criterion',
         label: 'Competition Level',
         value: context.competitionCheck.competitiveAnalysis.competitionLevel,
-        sentiment: context.competitionCheck.competitiveAnalysis.competitionLevel === 'none' ||
-                   context.competitionCheck.competitiveAnalysis.competitionLevel === 'low' ? 'positive' :
-                   context.competitionCheck.competitiveAnalysis.competitionLevel === 'medium' ? 'neutral' : 'negative',
+        sentiment:
+          context.competitionCheck.competitiveAnalysis.competitionLevel === 'none' ||
+          context.competitionCheck.competitiveAnalysis.competitionLevel === 'low'
+            ? 'positive'
+            : context.competitionCheck.competitiveAnalysis.competitionLevel === 'medium'
+              ? 'neutral'
+              : 'negative',
       },
       {
         id: 'competition-advantage',
         type: 'criterion',
         label: 'Incumbent Advantage',
         value: context.competitionCheck.winProbabilityFactors.hasIncumbentAdvantage,
-        sentiment: context.competitionCheck.winProbabilityFactors.hasIncumbentAdvantage ? 'positive' : 'neutral',
+        sentiment: context.competitionCheck.winProbabilityFactors.hasIncumbentAdvantage
+          ? 'positive'
+          : 'neutral',
       },
     ],
   };
@@ -214,14 +244,23 @@ export function buildDecisionTree(context: {
         type: 'criterion',
         label: 'Contract Type',
         value: context.legalAssessment.fullCheck?.contractTypeAssessment.isAcceptable ?? true,
-        sentiment: (context.legalAssessment.fullCheck?.contractTypeAssessment.isAcceptable ?? true) ? 'positive' : 'negative',
+        sentiment:
+          (context.legalAssessment.fullCheck?.contractTypeAssessment.isAcceptable ?? true)
+            ? 'positive'
+            : 'negative',
       },
       {
         id: 'legal-liability',
         type: 'criterion',
         label: 'Liability Risk',
-        value: !(context.legalAssessment.fullCheck?.liabilityAssessment.hasUnlimitedLiability ?? false),
-        sentiment: !(context.legalAssessment.fullCheck?.liabilityAssessment.hasUnlimitedLiability ?? false) ? 'positive' : 'critical',
+        value: !(
+          context.legalAssessment.fullCheck?.liabilityAssessment.hasUnlimitedLiability ?? false
+        ),
+        sentiment: !(
+          context.legalAssessment.fullCheck?.liabilityAssessment.hasUnlimitedLiability ?? false
+        )
+          ? 'positive'
+          : 'critical',
       },
     ],
   };
@@ -233,8 +272,9 @@ export function buildDecisionTree(context: {
     type: 'criterion',
     label: 'Reference Match',
     score: scores.reference,
-    weight: 0.10,
-    sentiment: scores.reference >= 70 ? 'positive' : scores.reference >= 50 ? 'neutral' : 'negative',
+    weight: 0.1,
+    sentiment:
+      scores.reference >= 70 ? 'positive' : scores.reference >= 50 ? 'neutral' : 'negative',
     reasoning: context.referenceMatch.reasoning,
     children: [
       {
@@ -243,15 +283,21 @@ export function buildDecisionTree(context: {
         label: 'Similar Projects',
         value: context.referenceMatch.similarProjectsAnalysis.hasRelevantReferences,
         score: context.referenceMatch.similarProjectsAnalysis.projectTypeMatchScore,
-        sentiment: context.referenceMatch.similarProjectsAnalysis.hasRelevantReferences ? 'positive' : 'negative',
+        sentiment: context.referenceMatch.similarProjectsAnalysis.hasRelevantReferences
+          ? 'positive'
+          : 'negative',
       },
       {
         id: 'reference-success',
         type: 'criterion',
         label: 'Success Rate',
         score: context.referenceMatch.successRateAnalysis.estimatedSuccessRate,
-        sentiment: context.referenceMatch.successRateAnalysis.estimatedSuccessRate >= 70 ? 'positive' :
-                   context.referenceMatch.successRateAnalysis.estimatedSuccessRate >= 50 ? 'neutral' : 'negative',
+        sentiment:
+          context.referenceMatch.successRateAnalysis.estimatedSuccessRate >= 70
+            ? 'positive'
+            : context.referenceMatch.successRateAnalysis.estimatedSuccessRate >= 50
+              ? 'neutral'
+              : 'negative',
       },
     ],
   };
@@ -264,9 +310,10 @@ export function buildDecisionTree(context: {
     label: recommendation === 'bit' ? 'Proceed with BIT' : 'Recommend NO BIT',
     score: scores.overall,
     sentiment: recommendation === 'bit' ? 'positive' : 'negative',
-    reasoning: recommendation === 'bit'
-      ? `Overall score of ${scores.overall.toFixed(1)}/100 with no critical blockers supports proceeding with bid.`
-      : `Overall score of ${scores.overall.toFixed(1)}/100 or critical blockers present recommend against bidding.`,
+    reasoning:
+      recommendation === 'bit'
+        ? `Overall score of ${scores.overall.toFixed(1)}/100 with no critical blockers supports proceeding with bid.`
+        : `Overall score of ${scores.overall.toFixed(1)}/100 or critical blockers present recommend against bidding.`,
   };
   root.children!.push(outcomeNode);
 
@@ -298,7 +345,8 @@ export function calculateConfidence(context: {
   const avgConfidence = confidences.reduce((sum, c) => sum + c, 0) / confidences.length;
 
   // Penalize if variance is high (inconsistent confidence levels)
-  const variance = confidences.reduce((sum, c) => sum + Math.pow(c - avgConfidence, 2), 0) / confidences.length;
+  const variance =
+    confidences.reduce((sum, c) => sum + Math.pow(c - avgConfidence, 2), 0) / confidences.length;
   const stdDev = Math.sqrt(variance);
 
   // Reduce confidence if standard deviation is high
@@ -454,9 +502,14 @@ Erstelle eine strukturierte Synthese mit:
         contraArguments: [],
       },
       agentResults: context.scores,
-      nextSteps: recommendation === 'bit'
-        ? ['Routing an zuständigen Bereichsleiter', 'Deep Analysis durchführen', 'Team-Staffing vorbereiten']
-        : ['Alternative Optionen prüfen', 'Kundenkommunikation vorbereiten'],
+      nextSteps:
+        recommendation === 'bit'
+          ? [
+              'Routing an zuständigen Bereichsleiter',
+              'Deep Analysis durchführen',
+              'Team-Staffing vorbereiten',
+            ]
+          : ['Alternative Optionen prüfen', 'Kundenkommunikation vorbereiten'],
       escalationRequired,
     };
   }

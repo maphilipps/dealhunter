@@ -28,7 +28,8 @@ export async function runContractAgent(input: ContractAgentInput): Promise<Contr
 
     try {
       const contractType = input.extractedRequirements?.contractType;
-      const projectType = input.extractedRequirements?.projectType || input.extractedRequirements?.projectDescription;
+      const projectType =
+        input.extractedRequirements?.projectType || input.extractedRequirements?.projectDescription;
 
       // Research contract type best practices and risks
       if (contractType || projectType) {
@@ -73,10 +74,14 @@ WICHTIG:
 Extracted Requirements:
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
-${input.quickScanResults ? `
+${
+  input.quickScanResults
+    ? `
 Quick Scan Results:
 ${JSON.stringify(input.quickScanResults, null, 2)}
-` : ''}
+`
+    : ''
+}
 ${contractTypeInsights}
 
 **Contract Type Detection Guidelines:**

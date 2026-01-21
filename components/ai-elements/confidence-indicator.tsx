@@ -74,8 +74,7 @@ export function ConfidenceIndicator({
     lg: 'h-3',
   };
 
-  const confidenceText =
-    confidence >= 80 ? 'High' : confidence >= 60 ? 'Medium' : 'Low';
+  const confidenceText = confidence >= 80 ? 'High' : confidence >= 60 ? 'Medium' : 'Low';
 
   return (
     <div className="flex items-center gap-2">

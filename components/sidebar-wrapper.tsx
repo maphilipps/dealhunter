@@ -1,22 +1,18 @@
 'use client';
 
-import { AppSidebar } from "@/components/app-sidebar"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
-import { DynamicBreadcrumb } from "@/components/dynamic-breadcrumb"
+import { AppSidebar } from '@/components/app-sidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
 
 interface SidebarWrapperProps {
   user: {
-    name: string
-    email: string
-    role: 'bd' | 'bl' | 'admin'
-    avatar: string
-  }
-  children: React.ReactNode
+    name: string;
+    email: string;
+    role: 'bd' | 'bl' | 'admin';
+    avatar: string;
+  };
+  children: React.ReactNode;
 }
 
 /**
@@ -34,10 +30,8 @@ export function SidebarWrapper({ user, children }: SidebarWrapperProps) {
           <Separator orientation="vertical" className="mr-2 h-4" />
           <DynamicBreadcrumb />
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          {children}
-        </div>
+        <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

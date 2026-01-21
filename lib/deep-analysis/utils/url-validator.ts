@@ -36,13 +36,15 @@ function ipToLong(ip: string): number {
     throw new Error('Invalid IPv4 address');
   }
 
-  return parts.reduce((acc, part) => {
-    const num = parseInt(part, 10);
-    if (num < 0 || num > 255 || isNaN(num)) {
-      throw new Error('Invalid IPv4 address');
-    }
-    return (acc << 8) + num;
-  }, 0) >>> 0; // Convert to unsigned 32-bit integer
+  return (
+    parts.reduce((acc, part) => {
+      const num = parseInt(part, 10);
+      if (num < 0 || num > 255 || isNaN(num)) {
+        throw new Error('Invalid IPv4 address');
+      }
+      return (acc << 8) + num;
+    }, 0) >>> 0
+  ); // Convert to unsigned 32-bit integer
 }
 
 /**
@@ -127,8 +129,12 @@ export function isAllowedUrl(url: string): boolean {
     }
 
     // IPv6 link-local (fe80::/10)
-    if (ipv6Lower.startsWith('fe80:') || ipv6Lower.startsWith('fe9') ||
-        ipv6Lower.startsWith('fea') || ipv6Lower.startsWith('feb')) {
+    if (
+      ipv6Lower.startsWith('fe80:') ||
+      ipv6Lower.startsWith('fe9') ||
+      ipv6Lower.startsWith('fea') ||
+      ipv6Lower.startsWith('feb')
+    ) {
       return false;
     }
 
@@ -198,8 +204,12 @@ export async function validateUrlResolution(url: string): Promise<boolean> {
           const lower = address.toLowerCase();
 
           // Check localhost and private ranges
-          if (lower === '::1' || lower.startsWith('fe80:') ||
-              lower.startsWith('fc') || lower.startsWith('fd')) {
+          if (
+            lower === '::1' ||
+            lower.startsWith('fe80:') ||
+            lower.startsWith('fc') ||
+            lower.startsWith('fd')
+          ) {
             return false;
           }
         }

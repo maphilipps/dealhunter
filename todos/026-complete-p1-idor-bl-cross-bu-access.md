@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "026"
+issue_id: '026'
 tags: [code-review, security, authorization, idor]
 dependencies: []
 ---
@@ -19,20 +19,22 @@ The authorization logic in `lib/team/actions.ts` allows ANY user with BL role to
 **From security-sentinel agent:**
 
 **Vulnerable Code (lines 40-46, 114-120, 200-205):**
+
 ```typescript
 const isOwner = bid.userId === session.user.id;
 const isAdmin = session.user.role === 'admin';
-const isBL = session.user.role === 'bl';  // ANY BL can access ANY bid
+const isBL = session.user.role === 'bl'; // ANY BL can access ANY bid
 if (!isOwner && !isAdmin && !isBL) {
   return { success: false, error: 'Keine Berechtigung' };
 }
 ```
 
 **Correct Implementation (page.tsx:88-93):**
+
 ```typescript
 if (session.user.role !== 'admin') {
   if (bid.assignedBusinessUnitId !== user?.businessUnitId) {
-    redirect('/bl-review');  // Checks BU ownership
+    redirect('/bl-review'); // Checks BU ownership
   }
 }
 ```
@@ -40,6 +42,7 @@ if (session.user.role !== 'admin') {
 ## Proposed Solutions
 
 ### Solution A: Add Business Unit ownership check (Recommended)
+
 **Pros:** Fixes vulnerability, matches page authorization
 **Cons:** Requires additional DB query for user's BU
 **Effort:** Small (30 min)
@@ -60,9 +63,11 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/team/actions.ts` (lines 40-46, 114-120, 200-205)
 
 **Comparison:**
+
 - Page authorization (page.tsx:88-93) - CORRECT
 - Action authorization (team/actions.ts) - VULNERABLE
 
@@ -75,8 +80,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                       | Learnings                                                  |
+| ---------- | ---------------------------- | ---------------------------------------------------------- |
 | 2026-01-18 | Created from security review | Authorization must check resource ownership, not just role |
 
 ## Resources

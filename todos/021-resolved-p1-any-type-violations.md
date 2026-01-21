@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "021"
+issue_id: '021'
 tags: [code-review, typescript, type-safety]
 dependencies: []
 ---
@@ -17,16 +17,19 @@ The `bid-detail-client.tsx` component uses `any` type in two locations, violatin
 **Source:** kieran-typescript-reviewer agent
 
 **Location 1:** `/Users/marc.philipps/Sites/dealhunter/components/bids/bid-detail-client.tsx:38`
+
 ```typescript
 const [quickScan, setQuickScan] = useState<any>(null);
 ```
 
 **Location 2:** `/Users/marc.philipps/Sites/dealhunter/components/bids/bid-detail-client.tsx:56`
+
 ```typescript
 const handleConfirmRequirements = async (updatedRequirements: any) => {
 ```
 
 **Impact:**
+
 - Type errors at runtime instead of compile time
 - No IDE autocompletion or error detection
 - Reduced code maintainability
@@ -34,6 +37,7 @@ const handleConfirmRequirements = async (updatedRequirements: any) => {
 ## Proposed Solutions
 
 ### Solution 1: Import and use existing types (Recommended)
+
 - Import `QuickScanResult` from `lib/quick-scan/schema.ts`
 - Import `ExtractedRequirements` type for the callback parameter
 - **Effort:** Small
@@ -48,6 +52,7 @@ const handleConfirmRequirements = async (updatedRequirements: any) => {
 ## Technical Details
 
 **Affected Files:**
+
 - `components/bids/bid-detail-client.tsx`
 
 **Required Changes:**
@@ -72,8 +77,8 @@ const handleConfirmRequirements = async (updatedRequirements: ExtractedRequireme
 
 ## Work Log
 
-| Date | Action | Learning |
-|------|--------|----------|
+| Date       | Action                                    | Learning                              |
+| ---------- | ----------------------------------------- | ------------------------------------- |
 | 2026-01-18 | Discovered via kieran-typescript-reviewer | `any` violates type safety principles |
 
 ## Resources

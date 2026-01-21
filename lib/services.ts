@@ -1,15 +1,5 @@
-import {
-  Experimental_Agent as Agent,
-  stepCountIs,
-  tool,
-  generateObject,
-  generateText
-} from 'ai';
-import {
-  FormSchema,
-  QualificationSchema,
-  qualificationSchema
-} from '@/lib/types';
+import { Experimental_Agent as Agent, stepCountIs, tool, generateObject, generateText } from 'ai';
+import { FormSchema, QualificationSchema, qualificationSchema } from '@/lib/types';
 import { sendSlackMessageWithButtons } from '@/lib/slack';
 import { z } from 'zod';
 import { searchAndContents, getContents } from '@/lib/search/web-search';
@@ -17,16 +7,13 @@ import { searchAndContents, getContents } from '@/lib/search/web-search';
 /**
  * Qualify the lead
  */
-export async function qualify(
-  lead: FormSchema,
-  research: string
-): Promise<QualificationSchema> {
+export async function qualify(lead: FormSchema, research: string): Promise<QualificationSchema> {
   const { object } = await generateObject({
     model: 'openai/gpt-5',
     schema: qualificationSchema,
     prompt: `Qualify the lead and give a reason for the qualification based on the following information: LEAD DATA: ${JSON.stringify(
       lead
-    )} and RESEARCH: ${research}`
+    )} and RESEARCH: ${research}`,
   });
 
   return object;
@@ -35,15 +22,12 @@ export async function qualify(
 /**
  * Write an email
  */
-export async function writeEmail(
-  research: string,
-  qualification: QualificationSchema
-) {
+export async function writeEmail(research: string, qualification: QualificationSchema) {
   const { text } = await generateText({
     model: 'openai/gpt-5',
     prompt: `Write an email for a ${
       qualification.category
-    } lead based on the following information: ${JSON.stringify(research)}`
+    } lead based on the following information: ${JSON.stringify(research)}`,
   });
 
   return text;
@@ -90,29 +74,26 @@ export async function sendEmail(email: string) {
 export const fetchUrl = tool({
   description: 'Return visible text from a public URL as Markdown.',
   inputSchema: z.object({
-    url: z.string().describe('Absolute URL, including http:// or https://')
+    url: z.string().describe('Absolute URL, including http:// or https://'),
   }),
   execute: async ({ url }) => {
     const result = await getContents(url, { text: true });
     return result;
-  }
+  },
 });
 
 /**
  * CRM Search tool
  */
 export const crmSearch = tool({
-  description:
-    'Search existing Vercel CRM for opportunities by company name or domain',
+  description: 'Search existing Vercel CRM for opportunities by company name or domain',
   inputSchema: z.object({
-    name: z
-      .string()
-      .describe('The name of the company to search for (e.g. "Vercel")')
+    name: z.string().describe('The name of the company to search for (e.g. "Vercel")'),
   }),
   execute: async ({ name }) => {
     // fetch from CRM like Salesforce, Hubspot, or Snowflake, etc.
     return [];
-  }
+  },
 });
 
 /**
@@ -121,12 +102,12 @@ export const crmSearch = tool({
 export const techStackAnalysis = tool({
   description: 'Return tech stack analysis for a domain.',
   inputSchema: z.object({
-    domain: z.string().describe('Domain, e.g. "vercel.com"')
+    domain: z.string().describe('Domain, e.g. "vercel.com"'),
   }),
   execute: async ({ domain }) => {
     // fetch the tech stack for the domain
     return [];
-  }
+  },
 });
 
 /**
@@ -150,9 +131,9 @@ const search = tool({
         'tweet',
         'personal site',
         'people',
-        'financial report'
+        'financial report',
       ])
-      .describe('The category of the result you are looking for')
+      .describe('The category of the result you are looking for'),
   }),
   execute: async ({ keywords, resultCategory }) => {
     /**
@@ -163,10 +144,10 @@ const search = tool({
       numResults: 2,
       type: 'keyword',
       category: resultCategory,
-      summary: true
+      summary: true,
     });
     return result;
-  }
+  },
 });
 
 /**
@@ -175,7 +156,7 @@ const search = tool({
 const queryKnowledgeBase = tool({
   description: 'Query the knowledge base for the given query.',
   inputSchema: z.object({
-    query: z.string()
+    query: z.string(),
   }),
   execute: async ({ query }: { query: string }) => {
     /**
@@ -184,7 +165,7 @@ const queryKnowledgeBase = tool({
      * Return the context from the knowledge base
      */
     return 'Context from knowledge base for the given query';
-  }
+  },
 });
 
 /**
@@ -211,8 +192,8 @@ export const researchAgent = new Agent({
     queryKnowledgeBase,
     fetchUrl,
     crmSearch,
-    techStackAnalysis
+    techStackAnalysis,
     // add other tools here
   },
-  stopWhen: [stepCountIs(20)] // stop after max 20 steps
+  stopWhen: [stepCountIs(20)], // stop after max 20 steps
 });

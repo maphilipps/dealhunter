@@ -18,6 +18,7 @@ The Epic 7 plan describes SSE progress tracking with client-side polling for ana
 ## Findings
 
 **Performance Oracle Report:**
+
 - Plan describes SSE endpoint that polls database for status updates
 - Long-running background job (10-30 minutes per analysis)
 - Client polls every 1 second for updates
@@ -25,9 +26,10 @@ The Epic 7 plan describes SSE progress tracking with client-side polling for ana
 - Better pattern: Inngest emits events → SSE pushes to client (0 polling)
 
 **Current Epic 5a Pattern (Good):**
+
 ```typescript
 // app/api/bids/[id]/evaluate/stream/route.ts
-const stream = createAgentEventStream(async (emit) => {
+const stream = createAgentEventStream(async emit => {
   emit({ type: AgentEventType.START });
 
   const result = await runBitEvaluationWithStreaming(input, emit);
@@ -39,13 +41,15 @@ const stream = createAgentEventStream(async (emit) => {
 ```
 
 **Planned Epic 7 Pattern (Bad):**
+
 ```typescript
 // ANTI-PATTERN from plan:
 const stream = new ReadableStream({
   async start(controller) {
     // ❌ Poll database every 1 second
     const interval = setInterval(async () => {
-      const [analysis] = await db.select()
+      const [analysis] = await db
+        .select()
         .from(deepMigrationAnalyses)
         .where(eq(deepMigrationAnalyses.id, analysisId));
 
@@ -53,20 +57,23 @@ const stream = new ReadableStream({
 
       if (analysis.status === 'completed') clearInterval(interval);
     }, 1000); // ❌ 1 query/second × 1,620 seconds = 1,620 queries
-  }
+  },
 });
 ```
 
 ## Proposed Solutions
 
 ### Solution 1: Inngest Event Emitter → SSE Push (Recommended)
+
 **Pros:**
+
 - Zero database polling
 - Real-time updates (sub-second latency)
 - Follows Epic 5a pattern
 - Scalable to 1000s of concurrent jobs
 
 **Cons:**
+
 - Requires Inngest event emission infrastructure
 - More complex initial setup
 
@@ -74,6 +81,7 @@ const stream = new ReadableStream({
 **Risk**: Low (proven pattern in Epic 5a)
 
 **Implementation:**
+
 ```typescript
 // lib/inngest/functions/deep-analysis.ts
 import { EventEmitter } from '@/lib/streaming/event-emitter';
@@ -111,7 +119,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const session = await auth();
   if (!session?.user?.id) return new Response('Unauthorized', { status: 401 });
 
-  const stream = createAgentEventStream(async (emit) => {
+  const stream = createAgentEventStream(async emit => {
     emit({ type: AgentEventType.START });
 
     // Trigger Inngest with emit callback
@@ -130,11 +138,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 ```
 
 ### Solution 2: Inngest Webhook → SSE Broadcast
+
 **Pros:**
+
 - Decoupled from Inngest execution
 - Standard webhook pattern
 
 **Cons:**
+
 - Requires webhook infrastructure
 - More complex state management
 - Still needs some polling or pub/sub
@@ -143,11 +154,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 **Risk**: Medium (more moving parts)
 
 ### Solution 3: Long Polling with Exponential Backoff
+
 **Pros:**
+
 - Simpler than push-based approach
 - Reduces query rate (1/sec → 1/5sec → 1/10sec)
 
 **Cons:**
+
 - Still polling (just less aggressive)
 - Not as real-time as push
 - More complex client logic
@@ -156,6 +170,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 **Risk**: Low
 
 **Implementation:**
+
 ```typescript
 // Polling interval increases over time:
 // First 1 min: 1 query/sec (60 queries)
@@ -173,6 +188,7 @@ This follows the proven Epic 5a pattern and eliminates database polling entirely
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/inngest/functions/deep-analysis.ts` - Add emit callback parameter
 - `app/api/bids/[id]/deep-analysis/stream/route.ts` - NEW SSE route
 - `lib/streaming/event-emitter.ts` - Reuse existing infrastructure

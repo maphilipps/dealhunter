@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p3
-issue_id: "024"
+issue_id: '024'
 tags: [code-review, yagni, dead-code, simplicity]
 dependencies: []
 ---
@@ -17,6 +17,7 @@ Several "getter" server actions were pre-built for future use cases that don't e
 **Source:** code-simplicity-reviewer agent
 
 **Unused Functions (171 lines of dead code):**
+
 - `getBaselineComparisonResult()` - `lib/baseline-comparison/actions.ts:118-156` (38 lines)
 - `getProjectPlan()` - `lib/project-planning/actions.ts:125-163` (38 lines)
 - `updateProjectPhase()` - `lib/project-planning/actions.ts:168-225` (57 lines)
@@ -27,6 +28,7 @@ Several "getter" server actions were pre-built for future use cases that don't e
 ## Proposed Solutions
 
 ### Solution 1: Remove unused functions (Recommended)
+
 - Delete all 4 unused functions
 - **Effort:** Small
 - **Risk:** Low
@@ -34,6 +36,7 @@ Several "getter" server actions were pre-built for future use cases that don't e
 - **Cons:** Would need to recreate if ever needed (unlikely)
 
 ### Solution 2: Keep but document as "for future use"
+
 - Add comments explaining they're intentionally unused
 - **Effort:** Small
 - **Risk:** Low
@@ -47,6 +50,7 @@ Several "getter" server actions were pre-built for future use cases that don't e
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/baseline-comparison/actions.ts`
 - `lib/project-planning/actions.ts`
 - `lib/notifications/actions.ts`
@@ -61,6 +65,6 @@ Several "getter" server actions were pre-built for future use cases that don't e
 
 ## Work Log
 
-| Date | Action | Learning |
-|------|--------|----------|
+| Date       | Action                                  | Learning                                                        |
+| ---------- | --------------------------------------- | --------------------------------------------------------------- |
 | 2026-01-18 | Discovered via code-simplicity-reviewer | Pre-building for hypothetical use cases adds maintenance burden |

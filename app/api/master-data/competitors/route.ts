@@ -17,12 +17,16 @@ const createCompetitorSchema = z.object({
   strengths: z.array(z.string()).optional(),
   weaknesses: z.array(z.string()).optional(),
   typicalMarkets: z.array(z.string()).optional(),
-  encounterNotes: z.array(z.object({
-    date: z.string(),
-    opportunity: z.string(),
-    outcome: z.string(),
-    notes: z.string().optional(),
-  })).optional(),
+  encounterNotes: z
+    .array(
+      z.object({
+        date: z.string(),
+        opportunity: z.string(),
+        outcome: z.string(),
+        notes: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 const updateCompetitorSchema = createCompetitorSchema.partial().extend({
@@ -125,10 +129,7 @@ export async function POST(request: NextRequest) {
     const parsed = createCompetitorSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: parsed.error },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error }, { status: 400 });
     }
 
     const newCompetitor: NewCompetitor = {
@@ -136,8 +137,12 @@ export async function POST(request: NextRequest) {
       industry: parsed.data.industry ? JSON.stringify(parsed.data.industry) : null,
       strengths: parsed.data.strengths ? JSON.stringify(parsed.data.strengths) : null,
       weaknesses: parsed.data.weaknesses ? JSON.stringify(parsed.data.weaknesses) : null,
-      typicalMarkets: parsed.data.typicalMarkets ? JSON.stringify(parsed.data.typicalMarkets) : null,
-      encounterNotes: parsed.data.encounterNotes ? JSON.stringify(parsed.data.encounterNotes) : null,
+      typicalMarkets: parsed.data.typicalMarkets
+        ? JSON.stringify(parsed.data.typicalMarkets)
+        : null,
+      encounterNotes: parsed.data.encounterNotes
+        ? JSON.stringify(parsed.data.encounterNotes)
+        : null,
       userId: session.user.id,
       status: 'pending',
       isValidated: false,
@@ -167,18 +172,12 @@ export async function PATCH(request: NextRequest) {
     const parsed = updateCompetitorSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: parsed.error },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error }, { status: 400 });
     }
 
     const { id, version, ...updates } = parsed.data;
 
-    const [existing] = await db
-      .select()
-      .from(competitors)
-      .where(eq(competitors.id, id));
+    const [existing] = await db.select().from(competitors).where(eq(competitors.id, id));
 
     if (!existing) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });

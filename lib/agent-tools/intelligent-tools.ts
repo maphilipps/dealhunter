@@ -92,9 +92,16 @@ export interface IntelligentTools {
 
   // Crawling
   crawlPage: (url: string) => Promise<PageContent>;
-  crawlSite: (url: string, options?: { maxDepth?: number; maxPages?: number }) => Promise<SiteCrawlResult>;
+  crawlSite: (
+    url: string,
+    options?: { maxDepth?: number; maxPages?: number }
+  ) => Promise<SiteCrawlResult>;
   quickNavScan: (url: string) => Promise<{
-    mainNav: Array<{ label: string; url?: string; children?: Array<{ label: string; url?: string }> }>;
+    mainNav: Array<{
+      label: string;
+      url?: string;
+      children?: Array<{ label: string; url?: string }>;
+    }>;
     footerNav: Array<{ label: string; url?: string }>;
     hasSearch: boolean;
     hasBreadcrumbs: boolean;
@@ -157,12 +164,14 @@ async function createWebSearch(ctx: IntelligentToolsContext) {
         data: {
           agent: ctx.agentName || 'Researcher',
           message: `${searchResults.length} Ergebnisse gefunden`,
-          toolCalls: [{
-            name: 'webSearch',
-            args: { query },
-            result: { count: searchResults.length, provider: searchProvider },
-            duration: Date.now() - startTime,
-          }],
+          toolCalls: [
+            {
+              name: 'webSearch',
+              args: { query },
+              result: { count: searchResults.length, provider: searchProvider },
+              duration: Date.now() - startTime,
+            },
+          ],
         },
       });
 
@@ -199,12 +208,14 @@ async function createFetchUrl(ctx: IntelligentToolsContext) {
         data: {
           agent: ctx.agentName || 'Crawler',
           message: `${content.length} Zeichen geladen`,
-          toolCalls: [{
-            name: 'fetchUrl',
-            args: { url },
-            result: { size: content.length },
-            duration: Date.now() - startTime,
-          }],
+          toolCalls: [
+            {
+              name: 'fetchUrl',
+              args: { url },
+              result: { size: content.length },
+              duration: Date.now() - startTime,
+            },
+          ],
         },
       });
 
@@ -212,7 +223,7 @@ async function createFetchUrl(ctx: IntelligentToolsContext) {
     } catch (error) {
       return {
         content: '',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   };
@@ -226,9 +237,7 @@ async function createGitHubRepo(ctx: IntelligentToolsContext) {
     const startTime = Date.now();
 
     // Find GitHub URL if only name given
-    const githubUrl = urlOrName.includes('github.com')
-      ? urlOrName
-      : findGitHubUrl(urlOrName);
+    const githubUrl = urlOrName.includes('github.com') ? urlOrName : findGitHubUrl(urlOrName);
 
     if (!githubUrl) {
       return { error: `No GitHub URL found for: ${urlOrName}` };
@@ -253,19 +262,21 @@ async function createGitHubRepo(ctx: IntelligentToolsContext) {
           message: info.latestVersion
             ? `v${info.latestVersion}, ${info.githubStars} Stars`
             : 'Repository Info geladen',
-          toolCalls: [{
-            name: 'githubRepo',
-            args: { url: githubUrl },
-            result: { version: info.latestVersion, stars: info.githubStars },
-            duration: Date.now() - startTime,
-          }],
+          toolCalls: [
+            {
+              name: 'githubRepo',
+              args: { url: githubUrl },
+              result: { version: info.latestVersion, stars: info.githubStars },
+              duration: Date.now() - startTime,
+            },
+          ],
         },
       });
 
       return info;
     } catch (error) {
       return {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   };
@@ -311,7 +322,11 @@ async function createCrawlPage(ctx: IntelligentToolsContext) {
         url,
         html: content,
         title,
-        text: content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 10000),
+        text: content
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 10000),
         links: links.slice(0, 100),
       };
 
@@ -320,12 +335,14 @@ async function createCrawlPage(ctx: IntelligentToolsContext) {
         data: {
           agent: ctx.agentName || 'Crawler',
           message: `${links.length} Links gefunden`,
-          toolCalls: [{
-            name: 'crawlPage',
-            args: { url },
-            result: { links: links.length, title },
-            duration: Date.now() - startTime,
-          }],
+          toolCalls: [
+            {
+              name: 'crawlPage',
+              args: { url },
+              result: { links: links.length, title },
+              duration: Date.now() - startTime,
+            },
+          ],
         },
       });
 
@@ -335,7 +352,7 @@ async function createCrawlPage(ctx: IntelligentToolsContext) {
         url,
         html: '',
         links: [],
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   };
@@ -345,7 +362,10 @@ async function createCrawlPage(ctx: IntelligentToolsContext) {
  * Multi-Page Site Crawling
  */
 async function createCrawlSite(ctx: IntelligentToolsContext) {
-  return async (url: string, options?: { maxDepth?: number; maxPages?: number }): Promise<SiteCrawlResult> => {
+  return async (
+    url: string,
+    options?: { maxDepth?: number; maxPages?: number }
+  ): Promise<SiteCrawlResult> => {
     const startTime = Date.now();
     const maxDepth = options?.maxDepth ?? 3;
     const maxPages = options?.maxPages ?? 50;
@@ -386,7 +406,11 @@ async function createCrawlSite(ctx: IntelligentToolsContext) {
             pages.push({
               url: pageUrl,
               html: content.slice(0, 50000), // Limit HTML size
-              text: content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 5000),
+              text: content
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .slice(0, 5000),
               links: [],
             });
           }
@@ -400,15 +424,17 @@ async function createCrawlSite(ctx: IntelligentToolsContext) {
         data: {
           agent: ctx.agentName || 'Crawler',
           message: `${pages.length} Seiten gecrawlt, ${result.discoveredUrls.length} URLs entdeckt`,
-          toolCalls: [{
-            name: 'crawlSite',
-            args: { url, maxDepth, maxPages },
-            result: {
-              pagesLoaded: pages.length,
-              urlsDiscovered: result.discoveredUrls.length,
+          toolCalls: [
+            {
+              name: 'crawlSite',
+              args: { url, maxDepth, maxPages },
+              result: {
+                pagesLoaded: pages.length,
+                urlsDiscovered: result.discoveredUrls.length,
+              },
+              duration: Date.now() - startTime,
             },
-            duration: Date.now() - startTime,
-          }],
+          ],
         },
       });
 
@@ -483,7 +509,12 @@ async function createScreenshot(ctx: IntelligentToolsContext) {
 async function createFetchSitemap(ctx: IntelligentToolsContext) {
   return async (url: string): Promise<SitemapResult> => {
     const baseUrl = url.startsWith('http') ? url : `https://${url}`;
-    const sitemapPaths = ['/sitemap.xml', '/sitemap_index.xml', '/sitemap/sitemap.xml', '/page-sitemap.xml'];
+    const sitemapPaths = [
+      '/sitemap.xml',
+      '/sitemap_index.xml',
+      '/sitemap/sitemap.xml',
+      '/page-sitemap.xml',
+    ];
 
     ctx.emit?.({
       type: AgentEventType.AGENT_PROGRESS,

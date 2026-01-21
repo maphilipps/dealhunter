@@ -18,16 +18,20 @@ registry.register({
   async execute(input, context: ToolContext) {
     let results;
     if (input.status) {
-      results = await db.select().from(references)
+      results = await db
+        .select()
+        .from(references)
         .where(eq(references.status, input.status))
         .orderBy(desc(references.createdAt))
         .limit(input.limit);
     } else {
-      results = await db.select().from(references)
+      results = await db
+        .select()
+        .from(references)
         .orderBy(desc(references.createdAt))
         .limit(input.limit);
     }
-    
+
     return { success: true, data: results };
   },
 });
@@ -42,14 +46,16 @@ registry.register({
   category: 'reference',
   inputSchema: getReferenceInputSchema,
   async execute(input, _context: ToolContext) {
-    const [reference] = await db.select().from(references)
+    const [reference] = await db
+      .select()
+      .from(references)
       .where(eq(references.id, input.id))
       .limit(1);
-    
+
     if (!reference) {
       return { success: false, error: 'Reference not found' };
     }
-    
+
     return { success: true, data: reference };
   },
 });
@@ -73,22 +79,25 @@ registry.register({
   category: 'reference',
   inputSchema: createReferenceInputSchema,
   async execute(input, context: ToolContext) {
-    const [reference] = await db.insert(references).values({
-      userId: context.userId,
-      projectName: input.projectName,
-      customerName: input.customerName,
-      industry: input.industry,
-      technologies: JSON.stringify(input.technologies),
-      scope: input.scope,
-      teamSize: input.teamSize,
-      durationMonths: input.durationMonths,
-      budgetRange: input.budgetRange,
-      outcome: input.outcome,
-      highlights: input.highlights ? JSON.stringify(input.highlights) : null,
-      status: 'pending',
-      isValidated: false,
-    }).returning();
-    
+    const [reference] = await db
+      .insert(references)
+      .values({
+        userId: context.userId,
+        projectName: input.projectName,
+        customerName: input.customerName,
+        industry: input.industry,
+        technologies: JSON.stringify(input.technologies),
+        scope: input.scope,
+        teamSize: input.teamSize,
+        durationMonths: input.durationMonths,
+        budgetRange: input.budgetRange,
+        outcome: input.outcome,
+        highlights: input.highlights ? JSON.stringify(input.highlights) : null,
+        status: 'pending',
+        isValidated: false,
+      })
+      .returning();
+
     return { success: true, data: reference };
   },
 });
@@ -113,18 +122,20 @@ registry.register({
   category: 'reference',
   inputSchema: updateReferenceInputSchema,
   async execute(input, context: ToolContext) {
-    const [existing] = await db.select().from(references)
+    const [existing] = await db
+      .select()
+      .from(references)
       .where(eq(references.id, input.id))
       .limit(1);
-    
+
     if (!existing) {
       return { success: false, error: 'Reference not found' };
     }
-    
+
     if (existing.userId !== context.userId && context.userRole !== 'admin') {
       return { success: false, error: 'No access to this reference' };
     }
-    
+
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (input.projectName) updateData.projectName = input.projectName;
     if (input.customerName) updateData.customerName = input.customerName;
@@ -136,12 +147,13 @@ registry.register({
     if (input.budgetRange) updateData.budgetRange = input.budgetRange;
     if (input.outcome) updateData.outcome = input.outcome;
     if (input.highlights) updateData.highlights = JSON.stringify(input.highlights);
-    
-    const [updated] = await db.update(references)
+
+    const [updated] = await db
+      .update(references)
       .set(updateData)
       .where(eq(references.id, input.id))
       .returning();
-    
+
     return { success: true, data: updated };
   },
 });
@@ -156,20 +168,22 @@ registry.register({
   category: 'reference',
   inputSchema: deleteReferenceInputSchema,
   async execute(input, context: ToolContext) {
-    const [existing] = await db.select().from(references)
+    const [existing] = await db
+      .select()
+      .from(references)
       .where(eq(references.id, input.id))
       .limit(1);
-    
+
     if (!existing) {
       return { success: false, error: 'Reference not found' };
     }
-    
+
     if (existing.userId !== context.userId && context.userRole !== 'admin') {
       return { success: false, error: 'No access to this reference' };
     }
-    
+
     await db.delete(references).where(eq(references.id, input.id));
-    
+
     return { success: true, data: { id: input.id, deleted: true } };
   },
 });

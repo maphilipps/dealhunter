@@ -32,11 +32,11 @@
 
 ### 📊 Performance Benchmarks
 
-| Operation | Ohne Optimization | Mit Optimization | Speedup |
-|-----------|------------------|------------------|---------|
-| Search 10K references für "Drupal" | 15-30s (full scan) | 50-100ms (FTS5) | **150-300x** |
-| List 1000 refs (offset 500) | 8-16s | 50ms (cursor) | **160x** |
-| AI matching mit 100 refs | 25s + €0.10/call | 3s (cached) | **8x + 90% cost** |
+| Operation                          | Ohne Optimization  | Mit Optimization | Speedup           |
+| ---------------------------------- | ------------------ | ---------------- | ----------------- |
+| Search 10K references für "Drupal" | 15-30s (full scan) | 50-100ms (FTS5)  | **150-300x**      |
+| List 1000 refs (offset 500)        | 8-16s              | 50ms (cursor)    | **160x**          |
+| AI matching mit 100 refs           | 25s + €0.10/call   | 3s (cached)      | **8x + 90% cost** |
 
 ---
 
@@ -49,11 +49,13 @@ Epic 11 implementiert ein **Crowdsourced Master Data Management System** mit Adm
 3. **Competitors** (Wettbewerber) - Competitive Intelligence, Stärken/Schwächen
 
 **Workflow:**
+
 ```
 BD/BL User erstellt → Ausstehend → Admin validiert → Genehmigt/Abgelehnt → AI nutzt validierte Daten
 ```
 
 **Kernfeatures:**
+
 - CRUD Interfaces mit Validierungs-Workflow
 - Admin Approval Queue mit Inline-Editing
 - AI Auto-Matching für Bid-to-Reference Zuordnung
@@ -67,6 +69,7 @@ BD/BL User erstellt → Ausstehend → Admin validiert → Genehmigt/Abgelehnt �
 ### Aktuelle Situation
 
 **References & Competencies (Teilweise implementiert):**
+
 - ✅ User-CRUD existiert (`/references`, `/competencies`)
 - ⚠️ References haben Validierungs-Workflow, Competencies NICHT
 - ❌ Keine Admin-UI zum Validieren
@@ -74,11 +77,13 @@ BD/BL User erstellt → Ausstehend → Admin validiert → Genehmigt/Abgelehnt �
 - ❌ AI Agents nutzen hardcodierte Daten statt DB
 
 **Competitors (Komplett fehlend):**
+
 - ❌ Keine Datenbank-Tabelle
 - ❌ Keine Routes, Actions, Components
 - ⚠️ Competition Agent existiert aber nutzt keine DB
 
 **Übergreifende Probleme:**
+
 - ❌ Keine globale Suche (Risk: Duplikate)
 - ❌ Keine Filter (Unusable bei 100+ Einträgen)
 - ❌ Keine Paginierung (Performance-Problem)
@@ -87,6 +92,7 @@ BD/BL User erstellt → Ausstehend → Admin validiert → Genehmigt/Abgelehnt �
 ### Auswirkungen
 
 **Ohne Epic 11:**
+
 - AI Agents arbeiten mit veralteten hardcodierten Daten
 - Keine Skalierung: Wissen bleibt in Köpfen statt in System
 - Manuelle Referenz-Suche bei jedem Bid (zeitaufwändig)
@@ -94,6 +100,7 @@ BD/BL User erstellt → Ausstehend → Admin validiert → Genehmigt/Abgelehnt �
 - Duplikate und Datenqualitätsprobleme
 
 **Mit Epic 11:**
+
 - AI Agents nutzen aktuelles, validiertes Wissen
 - Dezentrales Wissensmanagement (alle tragen bei)
 - Automatische Referenz-Vorschläge bei Bids (Quick Scan, BIT Evaluation)
@@ -129,47 +136,61 @@ graph TD
 #### Phase 1: Schema & Data Model (Tage 1-3)
 
 **1.1 Competitors Table Schema**
+
 ```typescript
 // lib/db/schema.ts
-export const competitors = sqliteTable('competitors', {
-  id: text('id').primaryKey().$defaultFn(() => createId()),
+export const competitors = sqliteTable(
+  'competitors',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
 
-  // User Tracking
-  userId: text('user_id').notNull().references(() => users.id),
-  validatedByUserId: text('validated_by_user_id').references(() => users.id),
+    // User Tracking
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    validatedByUserId: text('validated_by_user_id').references(() => users.id),
 
-  // Competitor Details
-  companyName: text('company_name').notNull(),
-  website: text('website'),
-  industry: text('industry'), // JSON array
-  description: text('description'),
+    // Competitor Details
+    companyName: text('company_name').notNull(),
+    website: text('website'),
+    industry: text('industry'), // JSON array
+    description: text('description'),
 
-  // Intelligence
-  strengths: text('strengths'), // JSON array
-  weaknesses: text('weaknesses'), // JSON array
-  typicalMarkets: text('typical_markets'), // JSON array
-  encounterNotes: text('encounter_notes'), // JSON array of past encounters
+    // Intelligence
+    strengths: text('strengths'), // JSON array
+    weaknesses: text('weaknesses'), // JSON array
+    typicalMarkets: text('typical_markets'), // JSON array
+    encounterNotes: text('encounter_notes'), // JSON array of past encounters
 
-  // Validation Workflow
-  status: text('status', {
-    enum: ['pending', 'approved', 'rejected', 'needs_revision']
-  }).notNull().default('pending'),
-  adminFeedback: text('admin_feedback'), // Rejection reason
-  isValidated: integer('is_validated', { mode: 'boolean' }).notNull().default(false),
-  validatedAt: integer('validated_at', { mode: 'timestamp' }),
+    // Validation Workflow
+    status: text('status', {
+      enum: ['pending', 'approved', 'rejected', 'needs_revision'],
+    })
+      .notNull()
+      .default('pending'),
+    adminFeedback: text('admin_feedback'), // Rejection reason
+    isValidated: integer('is_validated', { mode: 'boolean' }).notNull().default(false),
+    validatedAt: integer('validated_at', { mode: 'timestamp' }),
 
-  // Audit
-  version: integer('version').notNull().default(1), // Optimistic locking
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-}, (table) => ({
-  // CRITICAL: Performance Indexes (PERF-001 Fix)
-  companyNameIdx: index("competitors_company_name_idx").on(table.companyName),
-  statusIdx: index("competitors_status_idx").on(table.status),
-  validatedIdx: index("competitors_validated_idx").on(table.isValidated),
-  // Composite index für häufige Query: WHERE status='pending' AND isValidated=false
-  statusValidatedIdx: index("competitors_status_validated_idx").on(table.status, table.isValidated),
-}));
+    // Audit
+    version: integer('version').notNull().default(1), // Optimistic locking
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    // CRITICAL: Performance Indexes (PERF-001 Fix)
+    companyNameIdx: index('competitors_company_name_idx').on(table.companyName),
+    statusIdx: index('competitors_status_idx').on(table.status),
+    validatedIdx: index('competitors_validated_idx').on(table.isValidated),
+    // Composite index für häufige Query: WHERE status='pending' AND isValidated=false
+    statusValidatedIdx: index('competitors_status_validated_idx').on(
+      table.status,
+      table.isValidated
+    ),
+  })
+);
 ```
 
 ### 🔍 Phase 1 Research Insights
@@ -181,6 +202,7 @@ export const competitors = sqliteTable('competitors', {
   - **Wenn Affected Rows = 0**: Conflict detected, return error "Data was modified by another user"
 
 - ✅ **4-State Validation Workflow** (aus Best Practices Research):
+
   ```
   pending → approved | rejected | needs_revision
   rejected/needs_revision → (user edits) → pending
@@ -210,6 +232,7 @@ SELECT * FROM competitors WHERE companyName LIKE '%IBM%'
 ```
 
 **Required Indexes**:
+
 1. `companyName` - für Search queries
 2. `status` - für Admin Queue filtering
 3. `isValidated` - für AI Agent queries (`WHERE isValidated=true`)
@@ -229,13 +252,13 @@ SELECT * FROM competitors WHERE companyName LIKE '%IBM%'
 export const competitorsConstraints = {
   // DATA-001: isValidated=true ONLY when status='approved'
   validatedStatusCheck: check(
-    "validated_status_check",
+    'validated_status_check',
     sql`(is_validated = 0) OR (is_validated = 1 AND status = 'approved')`
   ),
 
   // Reject/Needs Revision requires feedback
   feedbackCheck: check(
-    "feedback_check",
+    'feedback_check',
     sql`(status NOT IN ('rejected', 'needs_revision')) OR (admin_feedback IS NOT NULL)`
   ),
 };
@@ -246,12 +269,14 @@ export const competitorsConstraints = {
 **Problem**: Adding `status` field zu existing references/competencies
 
 **UNSAFE Migration** (DATA LOSS RISK):
+
 ```sql
 -- ❌ DON'T: Existing rows get status='pending' even if validated
 ALTER TABLE references ADD COLUMN status TEXT DEFAULT 'pending';
 ```
 
 **SAFE Two-Phase Migration**:
+
 ```sql
 -- Phase 1: Add column with nullable
 ALTER TABLE references ADD COLUMN status TEXT;
@@ -268,6 +293,7 @@ END;
 ```
 
 **1.2 Update References Schema**
+
 ```typescript
 // Add missing fields to references table
 status: text('status', {
@@ -278,6 +304,7 @@ version: integer('version').notNull().default(1),
 ```
 
 **1.3 Update Competencies Schema**
+
 ```typescript
 // Add validation workflow to competencies
 validatedByUserId: text('validated_by_user_id').references(() => users.id),
@@ -291,6 +318,7 @@ version: integer('version').notNull().default(1),
 ```
 
 **1.4 Migration Script**
+
 ```bash
 # Generate migration
 npm run db:generate
@@ -440,14 +468,14 @@ export function ReferenceValidationTable({ data }: { data: Reference[] }) {
 
 ```typescript
 // lib/admin/validation-actions.ts
-"use server";
+'use server';
 
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { references, competencies, competitors } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
-import { sendEmail } from "@/lib/notifications/email";
+import { auth } from '@/auth';
+import { db } from '@/lib/db';
+import { references, competencies, competitors } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+import { sendEmail } from '@/lib/notifications/email';
 
 export async function approveReference(id: string) {
   const session = await auth();
@@ -521,10 +549,18 @@ export async function rejectReference(id: string, feedback: string) {
 }
 
 // Analog für competencies und competitors
-export async function approveCompetency(id: string) { /* ... */ }
-export async function rejectCompetency(id: string, feedback: string) { /* ... */ }
-export async function approveCompetitor(id: string) { /* ... */ }
-export async function rejectCompetitor(id: string, feedback: string) { /* ... */ }
+export async function approveCompetency(id: string) {
+  /* ... */
+}
+export async function rejectCompetency(id: string, feedback: string) {
+  /* ... */
+}
+export async function approveCompetitor(id: string) {
+  /* ... */
+}
+export async function rejectCompetitor(id: string, feedback: string) {
+  /* ... */
+}
 ```
 
 **2.4 Validation Dialog Component**
@@ -653,6 +689,7 @@ export function ValidationDialog({ type, children, onSubmit }: ValidationDialogP
 **Best Practices: Next.js 16 Server Actions**
 
 - ✅ **Error Handling Pattern** (aus Framework Docs):
+
   ```typescript
   export async function approveReference(id: string) {
     const session = await auth();
@@ -690,15 +727,20 @@ export function ValidationDialog({ type, children, onSubmit }: ValidationDialogP
           version: reference.version + 1, // Increment version
           updatedAt: new Date(),
         })
-        .where(and(
-          eq(references.id, parsed.data.id),
-          eq(references.version, reference.version) // Optimistic lock check
-        ))
+        .where(
+          and(
+            eq(references.id, parsed.data.id),
+            eq(references.version, reference.version) // Optimistic lock check
+          )
+        )
         .returning();
 
       if (!updated) {
         // Conflict detected
-        return { success: false, error: 'Daten wurden zwischenzeitlich geändert. Bitte neu laden.' };
+        return {
+          success: false,
+          error: 'Daten wurden zwischenzeitlich geändert. Bitte neu laden.',
+        };
       }
 
       revalidatePath('/admin/validations');
@@ -728,6 +770,7 @@ export function ValidationDialog({ type, children, onSubmit }: ValidationDialogP
    - **Fix**: User sieht nur eigene pending/rejected + alle approved
 
 **Authorization Middleware Pattern**:
+
 ```typescript
 // lib/admin/auth-middleware.ts
 export async function requireAdmin() {
@@ -771,7 +814,7 @@ export async function getPendingReferences(
     db
       .select({ count: sql<number>`COUNT(*)` })
       .from(references)
-      .where(eq(references.status, 'pending'))
+      .where(eq(references.status, 'pending')),
   ]);
 
   return {
@@ -792,6 +835,7 @@ export async function getPendingReferences(
 - ✅ **Empty State**: "Keine ausstehenden Validierungen 🎉"
 
 **Example Custom Cell**:
+
 ```typescript
 {
   accessorKey: "status",
@@ -817,14 +861,14 @@ export async function getPendingReferences(
 
 ```typescript
 // lib/bit-evaluation/agents/reference-agent.ts
-"use server";
+'use server';
 
-import { generateObject } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { z } from "zod";
-import { db } from "@/lib/db";
-import { references } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { generateObject } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { z } from 'zod';
+import { db } from '@/lib/db';
+import { references } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 const referenceMatchSchema = z.object({
   similarProjects: z.array(
@@ -839,36 +883,30 @@ const referenceMatchSchema = z.object({
   confidence: z.number().min(0).max(100),
 });
 
-export async function analyzeReferenceMatch(
-  techStack: string[],
-  industry: string,
-  budget: string
-) {
+export async function analyzeReferenceMatch(techStack: string[], industry: string, budget: string) {
   // Query validated references from DB
-  const validatedRefs = await db
-    .select()
-    .from(references)
-    .where(eq(references.isValidated, true));
+  const validatedRefs = await db.select().from(references).where(eq(references.isValidated, true));
 
   // Fallback to hardcoded if no validated refs
-  const referencePortfolio = validatedRefs.length > 0
-    ? validatedRefs.map(ref => ({
-        projectName: ref.projectName,
-        customerName: ref.customerName,
-        technologies: JSON.parse(ref.technologies || '[]'),
-        industry: ref.industry,
-        budgetRange: ref.budgetRange,
-        outcome: ref.outcome,
-      }))
-    : HARDCODED_FALLBACK_REFERENCES;
+  const referencePortfolio =
+    validatedRefs.length > 0
+      ? validatedRefs.map(ref => ({
+          projectName: ref.projectName,
+          customerName: ref.customerName,
+          technologies: JSON.parse(ref.technologies || '[]'),
+          industry: ref.industry,
+          budgetRange: ref.budgetRange,
+          outcome: ref.outcome,
+        }))
+      : HARDCODED_FALLBACK_REFERENCES;
 
   const { object } = await generateObject({
-    model: anthropic("claude-opus-4-5-20251101"),
+    model: anthropic('claude-opus-4-5-20251101'),
     schema: referenceMatchSchema,
     prompt: `
       Analyze how well our reference portfolio matches this bid:
 
-      Required Tech Stack: ${techStack.join(", ")}
+      Required Tech Stack: ${techStack.join(', ')}
       Industry: ${industry}
       Budget Range: ${budget}
 
@@ -888,14 +926,14 @@ export async function analyzeReferenceMatch(
 
 ```typescript
 // lib/matching/competency-matcher.ts
-"use server";
+'use server';
 
-import { generateObject } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { z } from "zod";
-import { db } from "@/lib/db";
-import { competencies } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { generateObject } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { z } from 'zod';
+import { db } from '@/lib/db';
+import { competencies } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 const competencyMatchSchema = z.object({
   matches: z.array(
@@ -909,7 +947,7 @@ const competencyMatchSchema = z.object({
   suggestions: z.array(
     z.object({
       name: z.string(),
-      category: z.enum(["technology", "industry", "methodology"]),
+      category: z.enum(['technology', 'industry', 'methodology']),
       reasoning: z.string(),
     })
   ),
@@ -922,7 +960,7 @@ export async function matchCompetencies(requirements: string) {
     .where(eq(competencies.isValidated, true));
 
   const { object } = await generateObject({
-    model: anthropic("claude-sonnet-4-5-20250929"),
+    model: anthropic('claude-sonnet-4-5-20250929'),
     schema: competencyMatchSchema,
     prompt: `
       Match relevant competencies to these requirements:
@@ -960,16 +998,20 @@ const validatedCompetitors = await db
 🚨 **CRITICAL Performance Issue**: AI matching ohne Caching
 
 **Problem**:
+
 ```typescript
 // BAD: Query DB + call LLM on EVERY request
 export async function analyzeReferenceMatch(techStack: string[]) {
   const refs = await db.select().from(references).where(eq(references.isValidated, true));
-  const result = await generateObject({ /* ... */ }); // €0.10 per call, 10-25s latency
+  const result = await generateObject({
+    /* ... */
+  }); // €0.10 per call, 10-25s latency
   return result;
 }
 ```
 
 **Cost at Scale**:
+
 - 100 Bids/Tag × €0.10/Match = **€10/Tag = €300/Monat** nur für Reference Matching
 - 10-25s Latency blockiert UI (schlechte UX)
 
@@ -981,13 +1023,10 @@ import { unstable_cache } from 'next/cache';
 
 export const analyzeReferenceMatch = unstable_cache(
   async (techStack: string[], industry: string, budget: string) => {
-    const refs = await db
-      .select()
-      .from(references)
-      .where(eq(references.isValidated, true));
+    const refs = await db.select().from(references).where(eq(references.isValidated, true));
 
     const { object } = await generateObject({
-      model: anthropic("claude-sonnet-4-5-20250929"), // Cheaper model for matching
+      model: anthropic('claude-sonnet-4-5-20250929'), // Cheaper model for matching
       schema: referenceMatchSchema,
       prompt: `/* ... */`,
     });
@@ -1047,10 +1086,7 @@ export class MasterDataRepository {
   }
 
   async getValidatedCompetencies(category?: string): Promise<CompetencyPortfolio[]> {
-    const query = db
-      .select()
-      .from(competencies)
-      .where(eq(competencies.isValidated, true));
+    const query = db.select().from(competencies).where(eq(competencies.isValidated, true));
 
     if (category) {
       query.where(eq(competencies.category, category));
@@ -1069,6 +1105,7 @@ const referencePortfolio = await repo.getValidatedReferences();
 ```
 
 **Benefits**:
+
 - ✅ Schema changes nur in Repository, nicht in allen Agents
 - ✅ Einfaches Testen (Mock Repository)
 - ✅ Wiederverwendung über mehrere Agents
@@ -1117,21 +1154,21 @@ export async function analyzeReferenceMatch(
 
 ```typescript
 // app/api/search/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { references, competencies, competitors } from "@/lib/db/schema";
-import { or, like, eq } from "drizzle-orm";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { db } from '@/lib/db';
+import { references, competencies, competitors } from '@/lib/db/schema';
+import { or, like, eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const query = searchParams.get("q") || "";
-  const type = searchParams.get("type") || "all";
+  const query = searchParams.get('q') || '';
+  const type = searchParams.get('type') || 'all';
 
   const results = {
     references: [],
@@ -1139,7 +1176,7 @@ export async function GET(request: NextRequest) {
     competitors: [],
   };
 
-  if (type === "all" || type === "references") {
+  if (type === 'all' || type === 'references') {
     results.references = await db
       .select()
       .from(references)
@@ -1154,28 +1191,22 @@ export async function GET(request: NextRequest) {
       .limit(50);
   }
 
-  if (type === "all" || type === "competencies") {
+  if (type === 'all' || type === 'competencies') {
     results.competencies = await db
       .select()
       .from(competencies)
       .where(
-        or(
-          like(competencies.name, `%${query}%`),
-          like(competencies.description, `%${query}%`)
-        )
+        or(like(competencies.name, `%${query}%`), like(competencies.description, `%${query}%`))
       )
       .limit(50);
   }
 
-  if (type === "all" || type === "competitors") {
+  if (type === 'all' || type === 'competitors') {
     results.competitors = await db
       .select()
       .from(competitors)
       .where(
-        or(
-          like(competitors.companyName, `%${query}%`),
-          like(competitors.industry, `%${query}%`)
-        )
+        or(like(competitors.companyName, `%${query}%`), like(competitors.industry, `%${query}%`))
       )
       .limit(50);
   }
@@ -1285,16 +1316,13 @@ export async function getReferences(page = 1, limit = 20, filters = {}) {
 
 ```typescript
 // lib/validation/duplicate-check.ts
-"use server";
+'use server';
 
-import { db } from "@/lib/db";
-import { references } from "@/lib/db/schema";
-import { and, like, eq } from "drizzle-orm";
+import { db } from '@/lib/db';
+import { references } from '@/lib/db/schema';
+import { and, like, eq } from 'drizzle-orm';
 
-export async function checkDuplicateReference(
-  projectName: string,
-  customerName: string
-) {
+export async function checkDuplicateReference(projectName: string, customerName: string) {
   const similar = await db
     .select()
     .from(references)
@@ -1320,6 +1348,7 @@ export async function checkDuplicateReference(
 🚨 **CRITICAL Performance Issue**: LIKE queries für Textsuche
 
 **Problem**:
+
 ```sql
 -- Current: Full table scan, 80-150x slower than FTS5
 SELECT * FROM references
@@ -1339,16 +1368,19 @@ WHERE projectName LIKE '%Drupal%'
 
 ```typescript
 // lib/db/schema.ts
-export const referencesFts = sqliteTable('references_fts', {
-  // FTS5 virtual table for full-text search
-  projectName: text('project_name'),
-  customerName: text('customer_name'),
-  technologies: text('technologies'),
-  industry: text('industry'),
-  description: text('description'),
-}, (table) => ({
-  // FTS5 configuration
-  ftsConfig: sql`USING fts5(
+export const referencesFts = sqliteTable(
+  'references_fts',
+  {
+    // FTS5 virtual table for full-text search
+    projectName: text('project_name'),
+    customerName: text('customer_name'),
+    technologies: text('technologies'),
+    industry: text('industry'),
+    description: text('description'),
+  },
+  table => ({
+    // FTS5 configuration
+    ftsConfig: sql`USING fts5(
     project_name,
     customer_name,
     technologies,
@@ -1356,8 +1388,9 @@ export const referencesFts = sqliteTable('references_fts', {
     description,
     content='references',
     content_rowid='id'
-  )`
-}));
+  )`,
+  })
+);
 
 // Sync trigger: Keep FTS table in sync with references
 sql`
@@ -1379,11 +1412,11 @@ END;
 CREATE TRIGGER references_fts_delete AFTER DELETE ON references BEGIN
   DELETE FROM references_fts WHERE rowid = old.id;
 END;
-`
+`;
 
 // app/api/search/route.ts
 export async function GET(request: NextRequest) {
-  const query = searchParams.get("q") || "";
+  const query = searchParams.get('q') || '';
 
   // FTS5 query syntax
   const results = await db.execute(sql`
@@ -1400,6 +1433,7 @@ export async function GET(request: NextRequest) {
 ```
 
 **FTS5 Benefits**:
+
 - ✅ **80-150x faster** als LIKE queries
 - ✅ **Ranking**: Relevanz-Score für Sortierung
 - ✅ **Stemming**: "migrate", "migration", "migrating" → same results
@@ -1412,11 +1446,7 @@ export async function GET(request: NextRequest) {
 
 ```typescript
 // BAD: Offset 500 = Scans 500 rows and discards them
-const items = await db
-  .select()
-  .from(references)
-  .limit(20)
-  .offset(500); // Slow! Scans + discards 500 rows
+const items = await db.select().from(references).limit(20).offset(500); // Slow! Scans + discards 500 rows
 ```
 
 **Benchmark (1000 references)**:
@@ -1444,14 +1474,9 @@ export async function getPendingReferences(
 
   if (cursor) {
     // Get items AFTER cursor
-    const cursorItem = await db
-      .select()
-      .from(references)
-      .where(eq(references.id, cursor));
+    const cursorItem = await db.select().from(references).where(eq(references.id, cursor));
 
-    query.where(
-      lt(references.createdAt, cursorItem[0].createdAt)
-    );
+    query.where(lt(references.createdAt, cursorItem[0].createdAt));
   }
 
   const items = await query;
@@ -1471,22 +1496,22 @@ export async function getPendingReferences(
 
 ```typescript
 // middleware.ts
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, "10 s"), // 10 req/10s
+  limiter: Ratelimit.slidingWindow(10, '10 s'), // 10 req/10s
   analytics: true,
 });
 
 export async function middleware(request: NextRequest) {
-  if (request.nextUrl.pathname.startsWith("/api/search")) {
-    const ip = request.ip ?? "127.0.0.1";
+  if (request.nextUrl.pathname.startsWith('/api/search')) {
+    const ip = request.ip ?? '127.0.0.1';
     const { success } = await ratelimit.limit(ip);
 
     if (!success) {
-      return new Response("Too Many Requests", { status: 429 });
+      return new Response('Too Many Requests', { status: 429 });
     }
   }
 
@@ -1529,6 +1554,7 @@ if (exactMatches.length === 0) {
 ### Functional Requirements
 
 **MD-001: References CRUD**
+
 - [x] User kann Reference erstellen mit allen Feldern (projectName, customerName, technologies, etc.)
 - [x] Reference wird mit `status='pending'` gespeichert
 - [x] User sieht eigene References in `/references`
@@ -1537,6 +1563,7 @@ if (exactMatches.length === 0) {
 - [ ] User kann rejected References editieren und resubmitten
 
 **MD-002: Admin Validation**
+
 - [ ] Admin sieht alle pending References in `/admin/validations`
 - [ ] Admin kann Reference genehmigen → `status='approved', isValidated=true`
 - [ ] Admin kann Reference ablehnen mit Feedback → `status='rejected', adminFeedback='...'`
@@ -1545,24 +1572,28 @@ if (exactMatches.length === 0) {
 - [ ] User erhält E-Mail bei Approval/Rejection
 
 **MD-003: Competencies CRUD**
+
 - [x] User kann Competency erstellen (name, category, level, certifications)
 - [ ] Competency wird mit `status='pending'` gespeichert (MIGRATION nötig)
 - [ ] Admin kann Competencies validieren analog zu References
 - [ ] Validated Competencies werden für AI Matching verwendet
 
 **MD-004: Competitors CRUD**
+
 - [ ] User kann Competitor erstellen (companyName, strengths, weaknesses, encounters)
 - [ ] Competitor wird mit `status='pending'` gespeichert
 - [ ] Admin kann Competitors validieren
 - [ ] Validated Competitors werden in Competition Agent verwendet
 
 **MD-005: AI Auto-Matching**
+
 - [ ] Reference Agent query validierte References aus DB statt hardcoded data
 - [ ] Competency Matcher Agent findet passende Skills für Bids
 - [ ] Competition Agent nutzt validierte Competitor Intelligence
 - [ ] Match Results zeigen Confidence Scores (0-100%)
 
 **MD-006: Search & Filter**
+
 - [ ] Global Search Bar in Header/Sidebar
 - [ ] Search durchsucht References, Competencies, Competitors
 - [ ] Ergebnisse gruppiert nach Typ (Tabs)
@@ -1572,17 +1603,20 @@ if (exactMatches.length === 0) {
 ### Non-Functional Requirements
 
 **Performance**
+
 - [ ] Search Response < 500ms für 1000+ Einträge
 - [ ] Pagination verhindert Memory Issues bei großen Datasets
 - [ ] AI Matching < 10s für Reference Portfolio mit 100+ Projekten
 
 **Security**
+
 - [ ] Nur Admins können validieren (role='admin' check)
 - [ ] Optimistic Locking verhindert concurrent edit conflicts (version field)
 - [ ] User sieht nur eigene pending/rejected References
 - [ ] User sieht alle approved References
 
 **Usability**
+
 - [ ] Duplicate Warning vor Submit (wenn ähnliche Einträge existieren)
 - [ ] Empty State mit "Erste Referenz anlegen" CTA
 - [ ] Loading States bei AI Matching
@@ -1591,18 +1625,21 @@ if (exactMatches.length === 0) {
 ### Quality Gates
 
 **Code Quality**
+
 - [ ] Alle Server Actions haben Error Handling mit try-catch
 - [ ] Alle Actions haben Auth + Role Checks
 - [ ] Zod Schemas validieren alle Inputs
 - [ ] TypeScript strict mode ohne Errors
 
 **Testing**
+
 - [ ] Duplicate Check funktioniert (Unit Test)
 - [ ] Validation Workflow funktioniert (Integration Test)
 - [ ] Search findet relevante Results (E2E Test)
 - [ ] Pagination funktioniert korrekt
 
 **Documentation**
+
 - [ ] CLAUDE.md aktualisiert mit Epic 11 Patterns
 - [ ] README enthält Nutzungsanleitung für Master Data Management
 - [ ] Inline Comments für komplexe Logik (AI Matching, Duplicate Detection)
@@ -1616,19 +1653,25 @@ if (exactMatches.length === 0) {
 **Problem:** Full table scans bei Search ineffizient ab 10.000+ Einträgen.
 
 **Solutions:**
+
 1. **SQLite FTS5** (Full-Text Search Extension)
    - Virtual table für Volltextsuche
    - Schneller als `LIKE` queries
    - Aufwand: Medium (neue Tabelle, Sync-Trigger)
 
 2. **Drizzle Indexes**
+
    ```typescript
-   export const references = sqliteTable('references', {
-     // ... fields
-   }, (table) => ({
-     projectNameIdx: index("project_name_idx").on(table.projectName),
-     statusIdx: index("status_idx").on(table.status),
-   }));
+   export const references = sqliteTable(
+     'references',
+     {
+       // ... fields
+     },
+     table => ({
+       projectNameIdx: index('project_name_idx').on(table.projectName),
+       statusIdx: index('status_idx').on(table.status),
+     })
+   );
    ```
 
 3. **Redis Cache** (Optional)
@@ -1645,6 +1688,7 @@ if (exactMatches.length === 0) {
 **Current Challenge:** Reference Agent uses hardcoded text, ignores crowdsourced data.
 
 **Proposed Algorithm:**
+
 1. Query validated references: `SELECT * FROM references WHERE isValidated = true`
 2. Extract features from Bid (techStack, industry, budgetRange, timeline)
 3. Calculate similarity per reference:
@@ -1656,6 +1700,7 @@ if (exactMatches.length === 0) {
 5. Return top 5 with explanations
 
 **Implementation:**
+
 - Use LLM for semantic matching (better than keyword)
 - Cache results in `bidOpportunities.bitEvaluation.referenceMatches` JSON
 - Re-run only if new references validated since last BIT evaluation
@@ -1687,6 +1732,7 @@ if (exactMatches.length === 0) {
 ### Validation Workflow States
 
 **State Diagram:**
+
 ```
 pending → approved (validated)
 pending → rejected (with feedback) → (user edits) → pending
@@ -1694,6 +1740,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 ```
 
 **Fields:**
+
 - `status`: enum (pending, approved, rejected, needs_revision)
 - `adminFeedback`: text (required for rejected/needs_revision)
 - `isValidated`: boolean (true only for approved)
@@ -1701,6 +1748,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - `validatedAt`: timestamp
 
 **Invariants:**
+
 - `isValidated=true` IFF `status='approved'`
 - `adminFeedback` required if `status IN ('rejected', 'needs_revision')`
 - `validatedByUserId` must have `role='admin'`
@@ -1709,13 +1757,13 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 
 ## Success Metrics
 
-| Metrik | Ziel | Messung |
-|--------|------|---------|
-| **Adoption** | 80% der BDs erstellen mind. 1 Reference in 1. Monat | DB Query: `SELECT COUNT(DISTINCT userId) FROM references` |
-| **Data Quality** | >90% Approval Rate | `COUNT(approved) / COUNT(pending + approved + rejected)` |
-| **AI Utilization** | Reference Agent findet Matches in 70% der Bids | Track `referenceMatches.length > 0` in BIT evaluations |
-| **Search Usage** | 50% der Sessions nutzen Search vor Create | Track API calls `/api/search` |
-| **Duplicate Prevention** | <5% Duplicate Warning Overrides | Track "Continue anyway" clicks vs. warnings shown |
+| Metrik                   | Ziel                                                | Messung                                                   |
+| ------------------------ | --------------------------------------------------- | --------------------------------------------------------- |
+| **Adoption**             | 80% der BDs erstellen mind. 1 Reference in 1. Monat | DB Query: `SELECT COUNT(DISTINCT userId) FROM references` |
+| **Data Quality**         | >90% Approval Rate                                  | `COUNT(approved) / COUNT(pending + approved + rejected)`  |
+| **AI Utilization**       | Reference Agent findet Matches in 70% der Bids      | Track `referenceMatches.length > 0` in BIT evaluations    |
+| **Search Usage**         | 50% der Sessions nutzen Search vor Create           | Track API calls `/api/search`                             |
+| **Duplicate Prevention** | <5% Duplicate Warning Overrides                     | Track "Continue anyway" clicks vs. warnings shown         |
 
 ---
 
@@ -1723,17 +1771,18 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 
 ### Dependencies
 
-| Dependency | Status | Blocker? |
-|------------|--------|----------|
-| Epic 1: DB Schema & Auth | ✅ Complete | No |
-| Epic 2: Admin Panel Patterns | ✅ Complete | No |
-| ShadCN Data Table Component | ✅ Available | No |
-| Vercel AI SDK v5 | ✅ Installed | No |
+| Dependency                     | Status             | Blocker?                    |
+| ------------------------------ | ------------------ | --------------------------- |
+| Epic 1: DB Schema & Auth       | ✅ Complete        | No                          |
+| Epic 2: Admin Panel Patterns   | ✅ Complete        | No                          |
+| ShadCN Data Table Component    | ✅ Available       | No                          |
+| Vercel AI SDK v5               | ✅ Installed       | No                          |
 | E-Mail Notifications (Epic 10) | ❌ Not implemented | Minor (can use console.log) |
 
 ### Risks
 
 **Risk 1: Schema Migration in Production**
+
 - **Impact:** High (data loss if migration fails)
 - **Likelihood:** Low (SQLite migrations sind stabil)
 - **Mitigation:**
@@ -1742,6 +1791,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
   - Use `ALTER TABLE ADD COLUMN` (safe operation)
 
 **Risk 2: Admin Validation Backlog**
+
 - **Impact:** Medium (user frustration wenn References nicht zeitnah validiert)
 - **Likelihood:** Medium (abhängig von Admin Capacity)
 - **Mitigation:**
@@ -1750,6 +1800,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
   - Delegation: BL-specific validation rights
 
 **Risk 3: AI Matching Quality with Few References**
+
 - **Impact:** Medium (schlechte Matches bei <10 validated references)
 - **Likelihood:** High (am Anfang)
 - **Mitigation:**
@@ -1758,6 +1809,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
   - Show "Limited data" badge wenn <10 references
 
 **Risk 4: Duplicate Detection False Positives**
+
 - **Impact:** Low (User kann override)
 - **Likelihood:** Medium (Fuzzy Matching ist imperfect)
 - **Mitigation:**
@@ -1772,37 +1824,44 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 ### Post-MVP Enhancements
 
 **1. Bulk Import**
+
 - CSV Upload für References (z.B. aus CRM export)
 - Validation: Same schema checks, batch processing
 - Use Case: Migration von Legacy System
 
 **2. Reference Expiration**
+
 - Auto-flag References >3 years alt als "Veraltet"
 - Admin can manually mark as "Still relevant"
 - Use Case: Tech relevance degrades (PHP 5 vs PHP 8)
 
 **3. Competency → Employee Link**
+
 - M:N junction table `employeeCompetencies`
 - Employee selects from validated competencies
 - Team Agent uses for skill matching
 - Use Case: "Find me a React Expert" → Lists employees with validated React competency
 
 **4. Competitor Win/Loss Tracking**
+
 - Add `encounterOutcome` enum to Bid: won/lost/pending
 - Track win rate against specific competitors
 - Dashboard: "We won 70% against Accenture in 2025"
 
 **5. AI-Suggested Tags**
+
 - Autocomplete für technologies field
 - Suggestions from validated Technologies table
 - Prevents "Drupal", "drupal", "Drupal CMS" fragmentation
 
 **6. Reference Export to PDF**
+
 - Generate professional reference sheet
 - Include logo, project details, testimonials
 - Use Case: Sales presentations, RFP responses
 
 **7. Community Voting**
+
 - Upvote/Downvote für References (Quality Signal)
 - High-voted References prioritized in AI Matching
 - Gamification: Leaderboard für Contributors
@@ -1814,6 +1873,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 ### Phase 1: Schema & Data Model (Tage 1-3)
 
 #### Database Migrations
+
 - [ ] Create `competitors` table with validation workflow fields
 - [ ] Add `status`, `adminFeedback`, `version` to `references` table
 - [ ] Add validation workflow fields to `competencies` table
@@ -1822,6 +1882,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Verify schema in Drizzle Studio: `npm run db:studio`
 
 #### Seed Data (Optional)
+
 - [ ] Seed 10-20 sample References from past projects
 - [ ] Seed 10-15 common Competencies (Drupal, React, Agile, etc.)
 - [ ] Seed 5-10 known Competitors (Accenture, IBM iX, etc.)
@@ -1832,6 +1893,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 ### Phase 2: Admin Validation UI (Tage 4-8)
 
 #### Admin Validation Dashboard
+
 - [ ] Create `/app/(dashboard)/admin/validations/page.tsx`
 - [ ] Implement Tabs component (References, Competencies, Competitors)
 - [ ] Create `getPendingReferences()`, `getPendingCompetencies()`, `getPendingCompetitors()` actions
@@ -1839,6 +1901,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Test with sample data
 
 #### Validation Table Components
+
 - [ ] Create `components/admin/reference-validation-table.tsx` using ShadCN DataTable
 - [ ] Create `components/admin/competency-validation-table.tsx`
 - [ ] Create `components/admin/competitor-validation-table.tsx`
@@ -1846,6 +1909,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Add action buttons (Approve, Reject, Edit)
 
 #### Validation Actions
+
 - [ ] Implement `approveReference()`, `rejectReference()` in `lib/admin/validation-actions.ts`
 - [ ] Implement `approveCompetency()`, `rejectCompetency()`
 - [ ] Implement `approveCompetitor()`, `rejectCompetitor()`
@@ -1854,6 +1918,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Add `revalidatePath()` calls
 
 #### Validation Dialog
+
 - [ ] Create `components/admin/validation-dialog.tsx` (Approve/Reject modals)
 - [ ] Add feedback Textarea for rejection
 - [ ] Add loading states
@@ -1861,12 +1926,14 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Test approval/rejection flows
 
 #### Email Notifications
+
 - [ ] Implement `sendValidationEmail()` in `lib/notifications/email.ts`
 - [ ] Send email on approval: "Reference validated!"
 - [ ] Send email on rejection with feedback
 - [ ] Test email delivery (console.log if SMTP not configured)
 
 #### Navigation Updates
+
 - [ ] Add "Validierung" link to Admin menu in `components/app-sidebar.tsx`
 - [ ] Add pending count badge to sidebar (fetch count in layout)
 - [ ] Test navigation and role-based visibility
@@ -1876,6 +1943,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 ### Phase 3: AI Integration (Tage 9-12)
 
 #### Reference Agent DB Integration
+
 - [ ] Update `lib/bit-evaluation/agents/reference-agent.ts`
 - [ ] Replace hardcoded text with `db.select().from(references).where(isValidated=true)`
 - [ ] Format DB results for LLM context
@@ -1884,6 +1952,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Test with real BIT evaluation
 
 #### Competency Matching Agent
+
 - [ ] Create `lib/matching/competency-matcher.ts`
 - [ ] Query validated competencies from DB
 - [ ] Implement AI-powered similarity matching (Zod schema)
@@ -1892,6 +1961,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Test with sample bid requirements
 
 #### Competition Agent Update
+
 - [ ] Update `lib/bit-evaluation/agents/competition-agent.ts`
 - [ ] Query validated competitors from DB
 - [ ] Include strengths/weaknesses in LLM context
@@ -1899,6 +1969,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Test with sample bids
 
 #### Caching Strategy
+
 - [ ] Implement reference match caching in `bidOpportunities.bitEvaluation.referenceMatches` JSON
 - [ ] Cache competency matches for 24h
 - [ ] Invalidate cache when new references validated
@@ -1909,6 +1980,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 ### Phase 4: Search & Usability (Tage 13-15)
 
 #### Global Search API
+
 - [ ] Create `/app/api/search/route.ts`
 - [ ] Implement query logic with `LIKE` for projectName, customerName, companyName, etc.
 - [ ] Add pagination (max 50 results per type)
@@ -1917,6 +1989,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Optimize query performance (add indexes if slow)
 
 #### Search Bar Component
+
 - [ ] Create `components/search/global-search.tsx`
 - [ ] Implement debounced input (300ms delay)
 - [ ] Add tabbed results (References, Competencies, Competitors)
@@ -1925,6 +1998,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Integrate into Header or Sidebar
 
 #### Pagination
+
 - [ ] Update `getReferences()` to accept `page` and `limit` params
 - [ ] Update `/references` page to use pagination
 - [ ] Add "Previous | Next" buttons
@@ -1932,6 +2006,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Test with >100 entries
 
 #### Duplicate Detection
+
 - [ ] Create `lib/validation/duplicate-check.ts`
 - [ ] Implement exact match check (projectName + customerName)
 - [ ] Add warning dialog before submit
@@ -1940,6 +2015,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Test with similar project names
 
 #### Filters for List Pages
+
 - [ ] Add filter dropdowns to `/references` (status, industry, technology)
 - [ ] Add filter dropdowns to `/competencies` (category, level, status)
 - [ ] Add filter dropdowns to `/competitors` (industry, status)
@@ -1951,6 +2027,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 ### Testing & Validation
 
 #### Manual Testing
+
 - [ ] Create Reference as BD user → verify `status='pending'`
 - [ ] Login as Admin → verify Reference appears in validation queue
 - [ ] Approve Reference → verify `isValidated=true`, email sent
@@ -1962,6 +2039,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Test duplicate detection → verify warning appears
 
 #### Browser Testing
+
 - [ ] Chrome DevTools MCP: Take screenshot of validation dashboard
 - [ ] Chrome DevTools MCP: Check console for errors
 - [ ] Chrome DevTools MCP: Test responsive design (mobile view)
@@ -1969,6 +2047,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [ ] Next.js DevTools MCP: Verify routes are registered
 
 #### Performance Testing
+
 - [ ] Load 1000 references → verify list page loads <2s
 - [ ] Run global search with 1000 entries → verify <500ms response
 - [ ] Run AI matching with 100 references → verify <10s
@@ -1979,12 +2058,14 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 ### Documentation
 
 #### Code Documentation
+
 - [ ] Add JSDoc comments to complex functions (duplicate-check, AI matching)
 - [ ] Add inline comments for validation state machine
 - [ ] Document schema invariants (isValidated IFF status='approved')
 - [ ] Add README section for Master Data Management
 
 #### User Documentation
+
 - [ ] Update CLAUDE.md with Epic 11 patterns
 - [ ] Document validation workflow states
 - [ ] Add examples for search queries
@@ -1995,6 +2076,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 ## References & Research
 
 ### Repository Patterns
+
 - DB Schema: `lib/db/schema.ts` (lines 95-167: existing references + competencies)
 - Admin Actions: `lib/admin/technologies-actions.ts` (CRUD pattern template)
 - Form Components: `components/admin/technology-form.tsx` (multi-field form pattern)
@@ -2003,6 +2085,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - Reference Matching: `lib/bit-evaluation/agents/reference-agent.ts` (matching logic)
 
 ### External Best Practices
+
 - [9+ Proven Data Management Best Practices](https://estuary.dev/blog/data-management-best-practices/)
 - [Data Quality Management Guide](https://improvado.io/blog/data-quality-management)
 - [Master Data Management Best Practices](https://www.esystems.fi/en/blog/master-data-management-best-practices-how-to-do-it-right)
@@ -2012,6 +2095,7 @@ pending → needs_revision (admin requests changes) → (user edits) → pending
 - [Enterprise Table UX Design](https://www.denovers.com/blog/enterprise-table-ux-design)
 
 ### Framework Documentation
+
 - [Next.js 16 Forms with ShadCN](https://medium.com/frontendweb/how-to-build-forms-in-2026-using-next-js-16-and-shadcn-step-by-step-guide-44839d0a999c)
 - [ShadCN Data Table Component](https://ui.shadcn.com/docs/components/data-table)
 - [ShadCN Data Table Filters Template](https://www.shadcn.io/template/openstatushq-data-table-filters)

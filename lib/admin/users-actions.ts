@@ -20,7 +20,7 @@ export async function getUsers() {
         email: users.email,
         name: users.name,
         role: users.role,
-        createdAt: users.createdAt
+        createdAt: users.createdAt,
       })
       .from(users)
       .where(isNull(users.deletedAt))
@@ -41,11 +41,7 @@ export async function updateUserRole(userId: string, role: 'bd' | 'bl' | 'admin'
   }
 
   try {
-    const [user] = await db
-      .update(users)
-      .set({ role })
-      .where(eq(users.id, userId))
-      .returning();
+    const [user] = await db.update(users).set({ role }).where(eq(users.id, userId)).returning();
 
     revalidatePath('/admin/users');
     return { success: true, user };
@@ -68,9 +64,7 @@ export async function deleteUser(userId: string) {
 
   try {
     // Soft delete instead of hard delete to avoid FK constraint violations
-    await db.update(users)
-      .set({ deletedAt: new Date() })
-      .where(eq(users.id, userId));
+    await db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, userId));
     revalidatePath('/admin/users');
     return { success: true };
   } catch (error) {

@@ -50,8 +50,8 @@ export function AbortButton({ onAbort, disabled = false }: AbortButtonProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel analysis?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will stop the current evaluation. Any partial results will be
-              lost. Are you sure you want to continue?
+              This will stop the current evaluation. Any partial results will be lost. Are you sure
+              you want to continue?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

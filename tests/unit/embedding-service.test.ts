@@ -345,8 +345,12 @@ describe('Integration: Embedding Math Pipeline', () => {
 
     // Create two vectors with specific cosine similarity
     // To get lower similarity, we need more significant differences
-    const embA = Array(3072).fill(0).map((_, i) => (i % 2 === 0 ? 1.0 : 0.0));
-    const embB = Array(3072).fill(0).map((_, i) => (i % 3 === 0 ? 1.0 : 0.0));
+    const embA = Array(3072)
+      .fill(0)
+      .map((_, i) => (i % 2 === 0 ? 1.0 : 0.0));
+    const embB = Array(3072)
+      .fill(0)
+      .map((_, i) => (i % 3 === 0 ? 1.0 : 0.0));
 
     const cosineSim = cosineSimilarity(embA, embB);
     const percentage = similarityToPercentage(cosineSim);

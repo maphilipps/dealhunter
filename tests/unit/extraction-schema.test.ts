@@ -69,7 +69,7 @@ describe('Extraction Schema - Budget Range', () => {
   it('should validate supported currencies', () => {
     const currencies = ['EUR', 'USD', 'GBP', 'CHF'];
 
-    currencies.forEach((currency) => {
+    currencies.forEach(currency => {
       const data = {
         customerName: 'Test Customer',
         projectDescription: 'Test project',
@@ -192,7 +192,7 @@ describe('Extraction Schema - CMS Constraints', () => {
   it('should validate all flexibility values', () => {
     const flexibilityValues = ['rigid', 'preferred', 'flexible', 'unknown'] as const;
 
-    flexibilityValues.forEach((flexibility) => {
+    flexibilityValues.forEach(flexibility => {
       const data = {
         customerName: 'Test Customer',
         projectDescription: 'Test project',
@@ -337,7 +337,7 @@ describe('Extraction Schema - Contact Categorization', () => {
   it('should validate all contact categories', () => {
     const categories = ['decision_maker', 'influencer', 'coordinator', 'unknown'] as const;
 
-    categories.forEach((category) => {
+    categories.forEach(category => {
       const data = {
         customerName: 'Test Customer',
         projectDescription: 'Test project',

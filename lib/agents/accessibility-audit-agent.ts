@@ -16,7 +16,6 @@ import { chromium } from 'playwright';
 import { db } from '../db';
 import { websiteAudits } from '../db/schema';
 
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -124,11 +123,8 @@ export async function analyzeAccessibility(
           });
 
           // Run axe audit with WCAG 2.1 AA tags
-          const results = await new AxeBuilder({ page })
-            .withTags(['wcag2a', 'wcag2aa'])
-            .analyze();
+          const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
 
-           
           allViolations.push(...results.violations);
 
           await page.close();
@@ -157,7 +153,6 @@ export async function analyzeAccessibility(
       }
     >();
 
-     
     for (const violation of allViolations) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
       const existing = violationMap.get(violation.id);

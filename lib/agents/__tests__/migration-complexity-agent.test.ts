@@ -62,7 +62,9 @@ describe('Migration Complexity Agent', () => {
     ...overrides,
   });
 
-  const createMockInput = (overrides: Partial<AnalyzeMigrationComplexityInput> = {}): AnalyzeMigrationComplexityInput => ({
+  const createMockInput = (
+    overrides: Partial<AnalyzeMigrationComplexityInput> = {}
+  ): AnalyzeMigrationComplexityInput => ({
     websiteUrl: 'https://example.com',
     techStack: {
       cms: 'WordPress',
@@ -87,15 +89,27 @@ describe('Migration Complexity Agent', () => {
       const mockAIResponse = {
         object: {
           complexityFactors: [
-            { factor: 'Standard CMS', impact: 'positive' as const, score: -10, description: 'WordPress is well supported' },
-            { factor: 'Small site', impact: 'positive' as const, score: -15, description: 'Only 100 pages' },
+            {
+              factor: 'Standard CMS',
+              impact: 'positive' as const,
+              score: -10,
+              description: 'WordPress is well supported',
+            },
+            {
+              factor: 'Small site',
+              impact: 'positive' as const,
+              score: -15,
+              description: 'Only 100 pages',
+            },
           ],
           risks: [],
           recommendations: ['Use automated migration tools'],
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>);
+      vi.mocked(generateObject).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      );
 
       const input = createMockInput({
         contentArchitecture: createMockContentArchitecture({ pageCount: 100 }),
@@ -113,15 +127,27 @@ describe('Migration Complexity Agent', () => {
       const mockAIResponse = {
         object: {
           complexityFactors: [
-            { factor: 'Standard CMS', impact: 'positive' as const, score: -5, description: 'WordPress is well supported' },
-            { factor: 'Moderate size', impact: 'negative' as const, score: 5, description: '500 pages' },
+            {
+              factor: 'Standard CMS',
+              impact: 'positive' as const,
+              score: -5,
+              description: 'WordPress is well supported',
+            },
+            {
+              factor: 'Moderate size',
+              impact: 'negative' as const,
+              score: 5,
+              description: '500 pages',
+            },
           ],
           risks: [],
           recommendations: ['Plan phased migration'],
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>);
+      vi.mocked(generateObject).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      );
 
       const input = createMockInput({
         contentArchitecture: createMockContentArchitecture({ pageCount: 500 }),
@@ -139,9 +165,24 @@ describe('Migration Complexity Agent', () => {
       const mockAIResponse = {
         object: {
           complexityFactors: [
-            { factor: 'Custom CMS', impact: 'negative' as const, score: 12, description: 'Proprietary system' },
-            { factor: 'Large site', impact: 'negative' as const, score: 8, description: '2000 pages' },
-            { factor: 'Many integrations', impact: 'negative' as const, score: 5, description: 'Multiple 3rd-party APIs' },
+            {
+              factor: 'Custom CMS',
+              impact: 'negative' as const,
+              score: 12,
+              description: 'Proprietary system',
+            },
+            {
+              factor: 'Large site',
+              impact: 'negative' as const,
+              score: 8,
+              description: '2000 pages',
+            },
+            {
+              factor: 'Many integrations',
+              impact: 'negative' as const,
+              score: 5,
+              description: 'Multiple 3rd-party APIs',
+            },
           ],
           risks: [
             {
@@ -156,7 +197,9 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>);
+      vi.mocked(generateObject).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      );
 
       const input = createMockInput({
         techStack: {
@@ -184,10 +227,30 @@ describe('Migration Complexity Agent', () => {
       const mockAIResponse = {
         object: {
           complexityFactors: [
-            { factor: 'Legacy custom CMS', impact: 'negative' as const, score: 20, description: '15-year-old proprietary system' },
-            { factor: 'Massive site', impact: 'negative' as const, score: 15, description: '15000 pages' },
-            { factor: 'Complex integrations', impact: 'negative' as const, score: 12, description: '20+ integrated systems' },
-            { factor: 'Outdated tech', impact: 'negative' as const, score: 10, description: 'PHP 5.6, jQuery 1.x' },
+            {
+              factor: 'Legacy custom CMS',
+              impact: 'negative' as const,
+              score: 20,
+              description: '15-year-old proprietary system',
+            },
+            {
+              factor: 'Massive site',
+              impact: 'negative' as const,
+              score: 15,
+              description: '15000 pages',
+            },
+            {
+              factor: 'Complex integrations',
+              impact: 'negative' as const,
+              score: 12,
+              description: '20+ integrated systems',
+            },
+            {
+              factor: 'Outdated tech',
+              impact: 'negative' as const,
+              score: 10,
+              description: 'PHP 5.6, jQuery 1.x',
+            },
           ],
           risks: [
             {
@@ -205,11 +268,17 @@ describe('Migration Complexity Agent', () => {
               mitigation: 'Phased approach with clear milestones',
             },
           ],
-          recommendations: ['Dedicated migration team', 'Budget 18+ months', 'Extensive testing phase'],
+          recommendations: [
+            'Dedicated migration team',
+            'Budget 18+ months',
+            'Extensive testing phase',
+          ],
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>);
+      vi.mocked(generateObject).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      );
 
       const input = createMockInput({
         techStack: {
@@ -243,14 +312,21 @@ describe('Migration Complexity Agent', () => {
       const mockAIResponse = {
         object: {
           complexityFactors: [
-            { factor: 'Standard CMS', impact: 'positive' as const, score: 0, description: 'Neutral' },
+            {
+              factor: 'Standard CMS',
+              impact: 'positive' as const,
+              score: 0,
+              description: 'Neutral',
+            },
           ],
           risks: [],
           recommendations: [],
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>);
+      vi.mocked(generateObject).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      );
 
       const input = createMockInput({
         contentArchitecture: createMockContentArchitecture({ pageCount: 7500 }),
@@ -267,14 +343,21 @@ describe('Migration Complexity Agent', () => {
       const mockAIResponse = {
         object: {
           complexityFactors: [
-            { factor: 'Standard CMS', impact: 'positive' as const, score: 0, description: 'Neutral' },
+            {
+              factor: 'Standard CMS',
+              impact: 'positive' as const,
+              score: 0,
+              description: 'Neutral',
+            },
           ],
           risks: [],
           recommendations: [],
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>);
+      vi.mocked(generateObject).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      );
 
       const input = createMockInput({
         contentArchitecture: createMockContentArchitecture({ pageCount: 15000 }),
@@ -291,14 +374,21 @@ describe('Migration Complexity Agent', () => {
       const mockAIResponse = {
         object: {
           complexityFactors: [
-            { factor: 'Standard CMS', impact: 'positive' as const, score: 0, description: 'Neutral' },
+            {
+              factor: 'Standard CMS',
+              impact: 'positive' as const,
+              score: 0,
+              description: 'Neutral',
+            },
           ],
           risks: [],
           recommendations: [],
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>);
+      vi.mocked(generateObject).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      );
 
       const input = createMockInput({
         contentArchitecture: createMockContentArchitecture({ pageCount: 1000 }),
@@ -339,14 +429,21 @@ describe('Migration Complexity Agent', () => {
       const mockAIResponse = {
         object: {
           complexityFactors: [
-            { factor: 'Test Factor', impact: factorScore >= 0 ? 'negative' as const : 'positive' as const, score: factorScore, description: 'Test' },
+            {
+              factor: 'Test Factor',
+              impact: factorScore >= 0 ? ('negative' as const) : ('positive' as const),
+              score: factorScore,
+              description: 'Test',
+            },
           ],
           risks: [],
           recommendations: [],
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>);
+      vi.mocked(generateObject).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      );
 
       const input = createMockInput({
         contentArchitecture: createMockContentArchitecture({ pageCount: 100 }), // No page multiplier
@@ -431,7 +528,9 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>);
+      vi.mocked(generateObject).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      );
 
       const input = createMockInput();
 
@@ -491,7 +590,9 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>);
+      vi.mocked(generateObject).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      );
 
       const input = createMockInput();
 

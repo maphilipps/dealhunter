@@ -17,8 +17,14 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { leads, backgroundJobs } from '../db/schema';
-import { analyzeContentArchitecture, type ContentArchitectureResult } from './content-architecture-agent';
-import { analyzeMigrationComplexity, type MigrationComplexityResult } from './migration-complexity-agent';
+import {
+  analyzeContentArchitecture,
+  type ContentArchitectureResult,
+} from './content-architecture-agent';
+import {
+  analyzeMigrationComplexity,
+  type MigrationComplexityResult,
+} from './migration-complexity-agent';
 import { analyzeAccessibility, type AccessibilityAuditResult } from './accessibility-audit-agent';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -61,9 +67,7 @@ export interface OrchestrationResult {
  * @param input - Lead ID, website URL, user ID
  * @returns Orchestration result with all agent outputs
  */
-export async function runDeepScanAgents(
-  input: OrchestrationInput
-): Promise<OrchestrationResult> {
+export async function runDeepScanAgents(input: OrchestrationInput): Promise<OrchestrationResult> {
   console.error(`[Orchestrator] Starting deep scan for lead ${input.leadId}`);
 
   const errors: string[] = [];

@@ -7,6 +7,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads, websiteAudits } from '@/lib/db/schema';
 import { crawlWebsite } from './website-crawler';
+import { analyzeContentArchitecture } from '@/lib/agents/content-architecture-agent';
 
 export interface StartFullScanInput {
   leadId: string;
@@ -117,7 +118,7 @@ export async function startFullScan(input: StartFullScanInput): Promise<StartFul
       .where(eq(leads.id, leadId));
 
     // Perform crawl (in background - this is async)
-    performFullScanAsync(auditId, lead.websiteUrl).catch((error) => {
+    performFullScanAsync(auditId, lead.websiteUrl).catch(error => {
       console.error(`[Full-Scan] Error for audit ${auditId}:`, error);
     });
 
@@ -171,6 +172,23 @@ async function performFullScanAsync(auditId: string, websiteUrl: string): Promis
       return;
     }
 
+    // Run Content Architecture Agent
+    console.error(`[Full-Scan] Running Content Architecture Agent for audit ${auditId}`);
+    const contentArchitecture = await analyzeContentArchitecture({
+      websiteUrl,
+      crawlData: {
+        homepage: crawlResult.homepage,
+        samplePages: crawlResult.samplePages,
+        crawledAt: crawlResult.crawledAt,
+      },
+    });
+
+    console.error(`[Full-Scan] Content Architecture completed:`, {
+      success: contentArchitecture.success,
+      pageCount: contentArchitecture.pageCount,
+      contentTypes: contentArchitecture.contentTypes.length,
+    });
+
     // Update audit with results
     await db
       .update(websiteAudits)
@@ -189,10 +207,18 @@ async function performFullScanAsync(auditId: string, websiteUrl: string): Promis
         server: crawlResult.techStack?.server || null,
         techStack: JSON.stringify(crawlResult.techStack),
 
+        // Content Architecture (DEA-93)
+        pageCount: contentArchitecture.pageCount,
+        contentTypes: JSON.stringify(contentArchitecture.contentTypes),
+        navigationStructure: JSON.stringify(contentArchitecture.navigationStructure),
+        siteTree: JSON.stringify(contentArchitecture.siteTree),
+        contentVolume: JSON.stringify(contentArchitecture.contentVolume),
+
         // Raw data for future processing
         rawAuditData: JSON.stringify({
           crawlResult,
           samplePages: crawlResult.samplePages,
+          contentArchitecture,
         }),
       })
       .where(eq(websiteAudits.id, auditId));

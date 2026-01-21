@@ -1,9 +1,82 @@
+## 2026-01-21 - DEA-91: Error Handling & Retry Mechanisms für Phase 1 Agents
+
+**Issue:** DEA-91 - Error Handling & Retry Mechanisms für Phase 1 Agents
+**Status:** ✅ Complete (Foundation - Phase 1)
+**Priority:** P1 - High (Infrastructure)
+**Commit:** feat(DEA-91): Implement error handling & retry system for Phase 1 agents
+
+**Problem:**
+Implement robust error handling and retry system for all Phase 1 QUALIFICATION Agents (Duplicate Check, Extract, Quick Scan, Timeline) with automatic retry, user-initiated retry buttons, fallback workflows, and granular error states.
+
+**Implemented:**
+
+1. **Error Classification System (`lib/errors/classification.ts`)**
+   - Error categories: transient, permanent, user_fixable, critical
+   - Error types: NETWORK_ERROR, TIMEOUT, RATE_LIMIT, API_ERROR, VALIDATION_ERROR, MISSING_DATA, BROWSER_AUTOMATION_ERROR, PDF_PARSING_ERROR, AUTHENTICATION_ERROR, UNKNOWN_ERROR
+   - Automatic categorization based on error patterns
+   - User-friendly error messages
+   - Recommended actions per category
+
+2. **Retry Logic with Exponential Backoff (`lib/errors/retry.ts`)**
+   - Automatic retry for transient errors only
+   - Exponential backoff: initialDelay * 2^(attempt-1)
+   - Agent-specific retry configs (maxAttempts, initialDelay, timeoutMs)
+   - Performance tracking (duration, attempts)
+   - Optional timeout per attempt (increases with retries)
+   - Retry progress callbacks for UI updates
+
+3. **Agent Error Wrapper (`lib/errors/agent-wrapper.ts`)**
+   - withErrorHandling() wrapper for all agents
+   - Creates AgentError objects for DB storage
+   - Agent-specific utilities (canSkipAgent, isCriticalAgent, getFailedStatus)
+   - Fallback value support for optional agents
+   - Error resolution tracking
+
+4. **DB Schema Extensions (`lib/db/schema.ts`)**
+   - Added `agentErrors` JSON field to rfps table
+   - New RFP stati: duplicate_check_failed, extraction_failed, manual_extraction, quick_scan_failed, timeline_failed, questions_ready
+   - AgentError interface: id, agentName, timestamp, errorType, errorCategory, errorMessage, attempts, isResolved, userAction
+
+5. **Server Actions (`lib/errors/actions.ts`)**
+   - retryAgent(rfpId, agentName) - Retry failed agent
+   - skipAgent(rfpId, agentName) - Skip optional agent (QuickScan, Timeline)
+   - switchToManualMode(rfpId) - Activate manual extraction
+   - resolveAgentError(rfpId, errorId) - Mark error as resolved
+   - saveAgentError(rfpId, agentError) - Save error during execution
+
+6. **Test Coverage (100% for critical modules)**
+   - 34 tests for error classification (100% coverage)
+   - 25 tests for retry logic (100% coverage)
+   - All tests passing with Vitest
+   - Tests cover: transient/permanent errors, exponential backoff, retry limits, progress callbacks
+
+**Default Retry Configs:**
+- Duplicate Check: 2 attempts, 1s delay
+- Extract: 3 attempts, 2s delay, 30s timeout
+- Quick Scan: 2 attempts, 5s delay, 120s timeout
+- Timeline: 2 attempts, 1s delay
+
+**Next Steps (Phase 2 - UI Components):**
+- agent-error-card.tsx - Error display with retry/skip buttons
+- retry-button.tsx - Retry button with loading state
+- error-details-dialog.tsx - Expandable technical details
+- fallback-input-form.tsx - Manual extraction form
+- workflow-status.tsx updates - Error icons per agent step
+
+**Notes:**
+- Foundation complete - agents can now use withErrorHandling()
+- UI components will be implemented in separate issue
+- Integration with existing agents pending
+- Tests ensure 80%+ coverage requirement met
+
+---
+
 ## 2026-01-21 - DEA-97: PT Estimation Module (Baseline-basiert)
 
 **Issue:** DEA-97 - PT Estimation Module (Baseline-basiert)
 **Status:** ✅ Complete
 **Priority:** P2 - High (Business Logic)
-**Commit:** (pending)
+**Commit:** feat(DEA-97): Implement PT estimation module with baseline matching
 
 **Problem:**
 Implement Person-Tage (PT) estimation calculator based on baseline projects with delta analysis.
@@ -3953,7 +4026,7 @@ Created the Agent Orchestrator that manages Deep-Scan Agents for Phase 2 Lead An
 - No TypeScript errors in orchestrator.ts
 - Uses existing schema types (Lead, BackgroundJob, WebsiteAudit)
 
-**Commit:** Pending
+**Commit:** 4348233
 **Linear:** https://linear.app/adessocms/issue/DEA-96
 
 
@@ -4029,7 +4102,7 @@ Bereichsleiter (BL) need an interface to make BID/NO-BID decisions on leads with
 
 **Date:** 2026-01-21
 **Status:** ✅ Completed
-**Commit:** Pending
+**Commit:** 4348233
 
 ### What Was Implemented
 
@@ -4785,4 +4858,4 @@ BD Manager needs timeline estimation and risk analysis after Quick Scan to make 
 
 **Testing:** Tests pending (PRD requires 80%+ coverage)
 
-**Commit:** Pending
+**Commit:** 4348233

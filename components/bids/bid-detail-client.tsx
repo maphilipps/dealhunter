@@ -11,7 +11,18 @@ import { BLRoutingCard } from './bl-routing-card';
 import { DecisionCard } from './decision-card';
 import { DecisionConfidenceBanner } from './decision-confidence-banner';
 import { DeepAnalysisCard } from './deep-analysis-card';
+import { DocumentsSidebar } from './documents-sidebar';
+import { DuplicateWarning } from './duplicate-warning';
 import { ExtractionPreview } from './extraction-preview';
+import { LowConfidenceDialog } from './low-confidence-dialog';
+import { NotificationCard } from './notification-card';
+import { ProjectPlanningCard } from './project-planning-card';
+import { QuickScanResults } from './quick-scan-results';
+import { TeamBuilder } from './team-builder';
+import { TenQuestionsCard } from './ten-questions-card';
+import { WebsiteUrlInput } from './website-url-input';
+
+import { ActivityStream } from '@/components/ai-elements/activity-stream';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -31,18 +42,8 @@ import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 
-import { QuickScanResults } from './quick-scan-results';
-import { WebsiteUrlInput } from './website-url-input';
 
-import { ActivityStream } from '@/components/ai-elements/activity-stream';
 
-import { LowConfidenceDialog } from './low-confidence-dialog';
-import { TeamBuilder } from './team-builder';
-import { DocumentsSidebar } from './documents-sidebar';
-import { ProjectPlanningCard } from './project-planning-card';
-import { NotificationCard } from './notification-card';
-import { DuplicateWarning } from './duplicate-warning';
-import { TenQuestionsCard } from './ten-questions-card';
 
 interface BidDetailClientProps {
   bid: BidOpportunity;

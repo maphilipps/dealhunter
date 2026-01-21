@@ -49,8 +49,32 @@ export const extractedRequirementsSchema = z.object({
     .describe('List of technologies, frameworks, or platforms mentioned'),
   scope: z.string().optional().describe('Project scope (e.g., development, migration, consulting)'),
 
+  // CMS Constraints
+  cmsConstraints: z
+    .object({
+      required: z.array(z.string()).optional().describe('Required CMS systems (e.g., ["Drupal"])'),
+      preferred: z.array(z.string()).optional().describe('Preferred CMS systems (e.g., ["WordPress"])'),
+      excluded: z.array(z.string()).optional().describe('Excluded CMS systems (e.g., ["Joomla"])'),
+      flexibility: z
+        .enum(['rigid', 'preferred', 'flexible', 'unknown'])
+        .describe('How flexible the CMS requirement is'),
+      confidence: z.number().min(0).max(100).describe('Confidence score 0-100'),
+      rawText: z.string().describe('Original text mentioning CMS constraints'),
+    })
+    .optional()
+    .describe('CMS system constraints and preferences'),
+
   // Business Requirements
-  budgetRange: z.string().optional().describe('Budget range or estimated cost if mentioned'),
+  budgetRange: z
+    .object({
+      min: z.number().optional().describe('Minimum budget in base currency units'),
+      max: z.number().optional().describe('Maximum budget in base currency units'),
+      currency: z.enum(['EUR', 'USD', 'GBP', 'CHF']).default('EUR').describe('Currency code'),
+      confidence: z.number().min(0).max(100).describe('Confidence score 0-100'),
+      rawText: z.string().describe('Original text from document'),
+    })
+    .optional()
+    .describe('Structured budget range with currency and confidence'),
   timeline: z.string().optional().describe('Project timeline or deadline if mentioned'),
   teamSize: z.number().optional().describe('Required team size if mentioned'),
 
@@ -75,9 +99,12 @@ export const extractedRequirementsSchema = z.object({
       z.object({
         name: z.string().describe('Name of the deliverable'),
         description: z.string().optional().describe('Description of what is required'),
+        deadline: z.string().optional().describe('Deadline in ISO format YYYY-MM-DD'),
+        deadlineTime: z.string().optional().describe('Exact time for deadline in HH:MM format'),
         format: z.string().optional().describe('Required format (e.g., PDF, Word, hardcopy)'),
         copies: z.number().optional().describe('Number of copies required'),
         mandatory: z.boolean().default(true).describe('Whether this deliverable is mandatory'),
+        confidence: z.number().min(0).max(100).describe('Confidence score 0-100'),
       })
     )
     .optional()
@@ -87,6 +114,23 @@ export const extractedRequirementsSchema = z.object({
   contactPerson: z.string().optional().describe('Name of contact person at customer'),
   contactEmail: z.string().optional().describe('Email of contact person'),
   contactPhone: z.string().optional().describe('Phone number of contact person'),
+
+  // Structured Contacts with Categorization
+  contacts: z
+    .array(
+      z.object({
+        name: z.string().describe('Contact person name'),
+        role: z.string().describe('Job title or role'),
+        email: z.string().optional().describe('Email address'),
+        phone: z.string().optional().describe('Phone number'),
+        category: z
+          .enum(['decision_maker', 'influencer', 'coordinator', 'unknown'])
+          .describe('Contact category based on decision-making power'),
+        confidence: z.number().min(0).max(100).describe('Confidence score 0-100'),
+      })
+    )
+    .optional()
+    .describe('List of contacts with categorization'),
 
   // Additional Context
   keyRequirements: z

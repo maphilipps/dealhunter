@@ -2,6 +2,27 @@ import type { QuickScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 // ========================================
+// Helper Functions
+// ========================================
+
+/**
+ * Format budget range object to display string
+ */
+function formatBudgetRange(budgetRange: ExtractedRequirements['budgetRange']): string | undefined {
+  if (!budgetRange) return undefined;
+  if (!budgetRange.min && !budgetRange.max) return undefined;
+
+  const min = budgetRange.min
+    ? new Intl.NumberFormat('de-DE').format(budgetRange.min)
+    : '0';
+  const max = budgetRange.max
+    ? new Intl.NumberFormat('de-DE').format(budgetRange.max)
+    : '∞';
+
+  return `${min} - ${max} ${budgetRange.currency}`;
+}
+
+// ========================================
 // 10 Fragen Texte nach Projekttyp
 // ========================================
 
@@ -356,7 +377,7 @@ export function buildQuestionsWithStatus(
         },
         {
           answered: !!(extractedData?.budgetRange || companyIntelligence?.financials),
-          answer: extractedData?.budgetRange || companyIntelligence?.financials?.revenueClass,
+          answer: formatBudgetRange(extractedData?.budgetRange) || companyIntelligence?.financials?.revenueClass,
         },
         {
           answered: !!(
@@ -411,7 +432,7 @@ export function buildQuestionsWithStatus(
         },
         {
           answered: !!(extractedData?.budgetRange || companyIntelligence?.financials),
-          answer: extractedData?.budgetRange || companyIntelligence?.financials?.revenueClass,
+          answer: formatBudgetRange(extractedData?.budgetRange) || companyIntelligence?.financials?.revenueClass,
         },
         {
           answered: !!(extractedData?.timeline || extractedData?.submissionDeadline),
@@ -475,7 +496,7 @@ export function buildQuestionsWithStatus(
         },
         {
           answered: !!(extractedData?.budgetRange || companyIntelligence?.financials),
-          answer: extractedData?.budgetRange || companyIntelligence?.financials?.revenueClass,
+          answer: formatBudgetRange(extractedData?.budgetRange) || companyIntelligence?.financials?.revenueClass,
         },
         {
           answered: !!(extractedData?.timeline || extractedData?.submissionDeadline),

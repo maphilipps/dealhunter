@@ -15,6 +15,7 @@ export default tseslint.config(
       'coverage/**',
       '*.config.js',
       '*.config.mjs',
+      '*.config.ts',
       'drizzle/**',
       'audits/**',
       'WhatWeb/**',

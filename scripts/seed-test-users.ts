@@ -7,6 +7,12 @@ async function seedTestUsers() {
 
   const testUsers = [
     {
+      email: 'e2e@test.com',
+      name: 'E2E Test User',
+      role: 'bd' as const,
+      password: 'test1234',
+    },
+    {
       email: 'bd@test.com',
       name: 'BD Manager Test',
       role: 'bd' as const,
@@ -44,6 +50,7 @@ async function seedTestUsers() {
 
   console.log('\nTest users created successfully!');
   console.log('Login credentials:');
+  console.log('- E2E Test: e2e@test.com / test1234');
   console.log('- BD Manager: bd@test.com / Test1234');
   console.log('- BL: bl@test.com / Test1234');
   console.log('- Admin: admin@test.com / Test1234');

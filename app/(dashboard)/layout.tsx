@@ -24,6 +24,16 @@ const getUserById = cache(async (userId: string) => {
 });
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  // Note: Auth and DB query are sequential (not parallel) because the DB query depends on session.user.id.
+  // This is intentional and optimal for this use case:
+  // - Early redirect prevents unnecessary DB queries for unauthenticated users
+  // - React.cache() ensures per-request deduplication (DEA-123)
+  // - Parallel execution is not possible without the user ID from auth()
+  //
+  // Alternative patterns considered (DEA-113):
+  // - Promise.all: Not possible (DB query requires session ID)
+  // - Cache users table: Adds complexity without significant benefit
+  // - after() for user check: Not appropriate (user data needed for render)
   const session = await auth();
 
   if (!session?.user) {

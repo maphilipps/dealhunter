@@ -1,13 +1,15 @@
 'use server';
 
-import { db } from '@/lib/db';
-import { rfps, businessUnits } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { sendBLAssignmentEmail } from '@/lib/notifications/email';
-import { auth } from '@/lib/auth';
+
 import { matchBusinessLine, type RouteBusinessUnitInput } from './routing-agent';
+
 import { createAuditLog } from '@/lib/admin/audit-actions';
+import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { rfps, businessUnits } from '@/lib/db/schema';
+import { sendBLAssignmentEmail } from '@/lib/notifications/email';
 
 export interface AssignBusinessUnitInput {
   bidId: string;
@@ -92,13 +94,16 @@ export async function assignBusinessUnit(
     const businessLine = bls[0];
 
     // Parse extracted requirements for email
-    const extractedReqs = bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : {};
-    const customerName = extractedReqs.customerName || 'Unbekannter Kunde';
-    const projectDescription = extractedReqs.projectDescription || 'Keine Beschreibung verfügbar';
+    const extractedReqs = bid.extractedRequirements
+      ? (JSON.parse(bid.extractedRequirements) as Record<string, unknown>)
+      : {};
+    const customerName = (extractedReqs.customerName as string | undefined) || 'Unbekannter Kunde';
+    const projectDescription =
+      (extractedReqs.projectDescription as string | undefined) || 'Keine Beschreibung verfügbar';
 
     // DEA-25: Create audit log if this is an override
     const aiRecommendation = bid.quickScanResults
-      ? JSON.parse(bid.quickScanResults).recommendedBusinessUnit
+      ? (JSON.parse(bid.quickScanResults) as Record<string, unknown>).recommendedBusinessUnit
       : null;
 
     if (overrideReason) {
@@ -117,7 +122,7 @@ export async function assignBusinessUnit(
     await db
       .update(rfps)
       .set({
-        assignedBusinessUnitId: businessLineName,
+        assignedBusinessUnitId: businessLine.id,
         assignedBLNotifiedAt: notifiedAt,
         status: 'routed',
         updatedAt: new Date(),
@@ -133,6 +138,15 @@ export async function assignBusinessUnit(
         }),
       })
       .where(eq(rfps.id, bidId));
+
+    // DEA-38: Auto-convert to Lead when status becomes 'routed'
+    const { convertRfpToLead } = await import('@/lib/leads/actions');
+    const leadResult = await convertRfpToLead({ rfpId: bidId });
+
+    if (!leadResult.success) {
+      console.error('Lead conversion failed:', leadResult.error);
+      // Don't fail the entire operation - the routing was successful
+    }
 
     // Revalidate cache for updated views
     revalidatePath(`/bl-review/${bidId}`);
@@ -208,19 +222,28 @@ export async function getBusinessLineRecommendation(bidId: string) {
     const bid = bids[0];
 
     // Parse extracted requirements
-    const extractedReqs = bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : {};
+    const extractedReqs = bid.extractedRequirements
+      ? (JSON.parse(bid.extractedRequirements) as Record<string, unknown>)
+      : {};
 
     // Parse quick scan results if available
-    const quickScan = bid.quickScanResults ? JSON.parse(bid.quickScanResults) : {};
+    const quickScan = bid.quickScanResults
+      ? (JSON.parse(bid.quickScanResults) as Record<string, unknown>)
+      : {};
 
     // Build input for routing agent
     const routingInput: RouteBusinessUnitInput = {
-      customerName: extractedReqs.customerName,
-      projectDescription: extractedReqs.projectDescription,
-      requirements: extractedReqs.requirements,
-      websiteUrl: bid.websiteUrl || extractedReqs.websiteUrl,
-      industry: extractedReqs.industry,
-      technologies: quickScan.techStack?.detected || extractedReqs.technologies || [],
+      customerName: extractedReqs.customerName as string | undefined,
+      projectDescription: extractedReqs.projectDescription as string | undefined,
+      requirements: extractedReqs.requirements as string | undefined,
+      websiteUrl: bid.websiteUrl || (extractedReqs.websiteUrl as string | undefined) || undefined,
+      industry: extractedReqs.industry as string | undefined,
+      technologies:
+        ((quickScan.techStack as Record<string, unknown> | undefined)?.detected as
+          | string[]
+          | undefined) ||
+        (extractedReqs.technologies as string[] | undefined) ||
+        [],
     };
 
     // Call AI routing agent

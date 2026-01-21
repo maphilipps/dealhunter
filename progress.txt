@@ -4268,3 +4268,91 @@ Create detailed view of all website audit results with comprehensive sections fo
 - Back button to return to Lead Overview
 - All sections fully functional with real data display
 
+---
+
+## DEA-103: PT Estimation Detail Page
+
+**Implemented:** 2026-01-21
+
+**Summary:**
+Created comprehensive PT Estimation detail page with interactive charts and detailed breakdowns. The page displays Person-Tage (PT) estimations calculated by the PT Calculator module, including phase breakdowns, discipline matrix, assumptions, and risk buffer indicators.
+
+**Components Implemented:**
+
+1. **Total PT Card**
+   - Large display of total hours
+   - Conversion to person-days (÷8)
+   - Estimated project duration in months
+   - Estimated costs (if available)
+
+2. **Risk Buffer & Confidence Indicator**
+   - Risk buffer percentage with progress bar
+   - Visual calculation of buffer hours
+   - Confidence level badge (High/Medium/Low)
+   - Contextual explanation based on confidence level
+
+3. **Phasen-Breakdown Chart** (ShadCN chart-bar-stacked)
+   - Interactive horizontal bar chart showing hours per phase
+   - Phases: Foundation Setup, Custom Development, Integrations, Content Migration, Testing & QA
+   - Tooltip with hours, percentage, and phase description
+   - Detailed table below chart with all phase information
+   - Total row showing 100% validation
+
+4. **Discipline Matrix Chart** (ShadCN chart-pie-donut-text)
+   - Interactive pie chart showing role distribution
+   - Roles: Solution Architect, Backend Developer, Frontend Developer, QA Engineer, Project Manager, DevOps Engineer
+   - Custom color scheme for each role
+   - Tooltip with hours and percentages
+   - Companion table with color-coded role indicators
+   - Total validation row
+
+5. **Assumptions List**
+   - All calculation assumptions displayed as cards
+   - Checkmark icons for visual clarity
+   - Warning banner reminding to validate with customer
+   - Items include: baseline reference, delta calculations, complexity factors, page counts
+
+6. **Project Timeline** (if available)
+   - Planned start date
+   - Planned end date
+   - German date formatting
+
+**Client Components Created:**
+- `components/estimation/phases-chart.tsx` - Client-side bar chart component
+- `components/estimation/disciplines-chart.tsx` - Client-side pie chart component
+
+Both components properly use 'use client' directive and integrate with ShadCN's ChartContainer and Recharts.
+
+**Technical Implementation:**
+- Server component for data fetching (optimal performance)
+- Client components for interactive charts (proper RSC pattern)
+- Type-safe parsing of JSON database fields
+- Proper integration with `lib/estimations/pt-calculator.ts` types
+- Graceful handling of missing PT estimation data
+- Responsive grid layouts for all sections
+
+**Data Flow:**
+1. Fetches lead data from database
+2. Retrieves PT estimation from `ptEstimations` table
+3. Parses JSON fields: phases, disciplines, assumptions
+4. Renders with ShadCN UI components
+5. Charts rendered client-side with Recharts
+
+**Navigation:**
+- Back button to Lead Overview
+- Accessible from `/leads/[id]/estimation`
+- Proper breadcrumb context
+
+**Files Created:**
+- `app/(dashboard)/leads/[id]/estimation/page.tsx` (430 lines)
+- `components/estimation/phases-chart.tsx` (60 lines)
+- `components/estimation/disciplines-chart.tsx` (68 lines)
+
+**Testing:**
+- Page loads correctly with no console errors
+- Properly displays "no data" state when PT estimation not yet calculated
+- Navigation works correctly
+- All ShadCN components render properly
+
+**Commit:** feat(DEA-103): Implement PT Estimation Detail Page
+

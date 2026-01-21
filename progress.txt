@@ -5188,3 +5188,43 @@ Test Results:
 - lib/estimations/calculator.ts
 
 
+
+## 2026-01-22 - Test Coverage Improvement
+
+**Task:** Fix failing tests and identify untested files
+**Status:** ✅ Complete (Phase 1: Fix Failing Tests)
+**Branch:** test-coverage
+**Commit:** fae0975
+
+**Completed:**
+1. Fixed 23 failing tests in lib/bit-evaluation/__tests__/actions.test.ts
+   - Changed auth mock structure to return { user: mockUser, expires: ... }
+   - Updated all test cases to properly wrap users in session objects
+   - Fixed reason length validation strings
+   - Updated test expectations to match implementation flow
+   - All 489 tests now passing
+
+2. Identified 145 files without tests in lib/ directory
+   - Created find-untested.js script to scan codebase
+   - Prioritized by business criticality
+   - High-priority untested modules include:
+     * lib/auth/actions.ts - Authentication server actions
+     * lib/auth/permissions.ts - Permission checks
+     * lib/bids/duplicate-check-agent.ts - Duplicate detection
+     * lib/extraction/agent.ts - RFP extraction
+     * lib/timeline/integration.ts - Timeline estimation
+     * lib/cms-matching/* - CMS matching agents
+     * Various agent-tools and utility functions
+
+**Test Statistics:**
+- Test Files: 21 passed
+- Tests: 489 passed
+- Coverage: Existing tests cover core bid evaluation, extraction, timeline, and utility modules
+- Untested: 145 files remain without test coverage
+
+**Next Steps (Future Iterations):**
+- Write tests for high-priority untested modules (target 80%+ coverage)
+- Focus on auth, extraction, and business-critical agents first
+- Create tests for new features before implementation (TDD approach)
+- Maintain 80%+ coverage requirement for all new code
+

@@ -3,7 +3,8 @@
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
-import { matchBusinessLine, type RouteBusinessUnitInput } from './routing-agent';
+import { matchBusinessLine } from './routing-agent';
+import { type RouteBusinessUnitInput } from './schemas';
 
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';

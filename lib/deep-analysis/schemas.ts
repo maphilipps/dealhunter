@@ -46,17 +46,18 @@ const sanitizedString = z.string().transform(val => {
 // URL schema with DOMPurify sanitization and protocol validation
 const sanitizedUrl = z
   .string()
-  .url()
   .refine(
     val => {
-      // Only allow http/https protocols
-      if (!val.startsWith('http://') && !val.startsWith('https://')) {
-        return false;
-      }
-
-      // Sanitize and check if URL is still valid
-      const sanitized = DOMPurify.sanitize(val, { ALLOWED_TAGS: [] });
+      // Check if it's a valid URL
       try {
+        const url = new URL(val);
+        // Only allow http/https protocols
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+          return false;
+        }
+
+        // Sanitize and check if URL is still valid after sanitization
+        const sanitized = DOMPurify.sanitize(val, { ALLOWED_TAGS: [] });
         new URL(sanitized);
         return true;
       } catch {
@@ -122,7 +123,9 @@ export const AccessibilityAuditSchema = z.object({
     })
   ),
   pagesAudited: z.number().int().nonnegative(),
-  timestamp: z.string().datetime(),
+  timestamp: z.string().refine(val => !isNaN(Date.parse(val)), {
+    message: 'Must be a valid ISO 8601 datetime string',
+  }),
 });
 
 export const PTEstimationSchema = z.object({

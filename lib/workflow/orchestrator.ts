@@ -93,7 +93,10 @@ const TRIGGER_RULES: Partial<Record<RFPStatus, TriggerRule>> = {
     condition: rfp => {
       // First check for duplicates
       if (rfp.duplicateCheckResult) {
-        const result = JSON.parse(rfp.duplicateCheckResult);
+        const result = JSON.parse(rfp.duplicateCheckResult) as {
+          hasDuplicates?: boolean;
+          userOverride?: boolean;
+        };
         // If duplicates found and no override, skip
         if (result.hasDuplicates && !result.userOverride) {
           return false;
@@ -104,7 +107,7 @@ const TRIGGER_RULES: Partial<Record<RFPStatus, TriggerRule>> = {
       if (rfp.websiteUrl) return true;
 
       if (rfp.extractedRequirements) {
-        const extracted: ExtractedRequirements = JSON.parse(rfp.extractedRequirements);
+        const extracted = JSON.parse(rfp.extractedRequirements) as ExtractedRequirements;
         return !!(
           extracted.websiteUrl ||
           (extracted.websiteUrls && extracted.websiteUrls.length > 0)
@@ -216,7 +219,7 @@ export async function triggerNextAgent(
   // Apply context updates (e.g., user override, decision)
   const contextualRfp = { ...rfp };
   if (context?.userOverride && rfp.duplicateCheckResult) {
-    const result = JSON.parse(rfp.duplicateCheckResult);
+    const result = JSON.parse(rfp.duplicateCheckResult) as Record<string, unknown>;
     result.userOverride = true;
     contextualRfp.duplicateCheckResult = JSON.stringify(result);
   }
@@ -395,12 +398,18 @@ function getStatusLabel(status: RFPStatus): string {
   const labels: Record<RFPStatus, string> = {
     draft: 'Entwurf',
     duplicate_checking: 'Duplikat-Prüfung läuft',
+    duplicate_check_failed: 'Duplikat-Prüfung fehlgeschlagen',
     duplicate_warning: 'Duplikat gefunden',
     extracting: 'Extraktion läuft',
+    extraction_failed: 'Extraktion fehlgeschlagen',
+    manual_extraction: 'Manuelle Eingabe erforderlich',
     reviewing: 'Prüfung erforderlich',
     quick_scanning: 'Quick Scan läuft',
+    quick_scan_failed: 'Quick Scan fehlgeschlagen',
     timeline_estimating: 'Timeline-Schätzung läuft',
+    timeline_failed: 'Timeline-Schätzung fehlgeschlagen',
     bit_pending: 'BID/NO-BID Entscheidung erforderlich',
+    questions_ready: 'Fragen bereit',
     decision_made: 'Entscheidung getroffen',
     evaluating: 'Evaluierung läuft',
     archived: 'Archiviert (NO-BID)',

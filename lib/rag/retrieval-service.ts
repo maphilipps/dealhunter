@@ -9,10 +9,12 @@
  * 5. Ranking by similarity
  */
 
+import { eq, and, sql } from 'drizzle-orm';
+
+import { generateQueryEmbedding } from './embedding-service';
+
 import { db } from '@/lib/db';
 import { rfpEmbeddings } from '@/lib/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
-import { generateQueryEmbedding } from './embedding-service';
 
 export interface RAGQuery {
   rfpId: string;

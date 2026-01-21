@@ -5,11 +5,11 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, quickScans } from '@/lib/db/schema';
 import { runQuickScanWithStreaming } from '@/lib/quick-scan/agent';
+import { embedAgentOutput } from '@/lib/rag/embedding-service';
 import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
 import { generateTimelineFromQuickScan } from '@/lib/timeline/integration';
 import { onAgentComplete } from '@/lib/workflow/orchestrator';
-import { embedAgentOutput } from '@/lib/rag/embedding-service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

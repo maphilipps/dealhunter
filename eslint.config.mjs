@@ -19,6 +19,7 @@ export default tseslint.config(
       'audits/**',
       'WhatWeb/**',
       '.swc/**',
+      'tests/**',
       '**/*.js',
       '**/*.mjs',
       '**/*.cjs',
@@ -64,15 +65,6 @@ export default tseslint.config(
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'prefer-const': 'warn',
       'no-debugger': 'warn',
-    },
-  },
-
-  {
-    files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', 'tests/**/*'],
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off',
-      'no-console': 'off',
     },
   },
 

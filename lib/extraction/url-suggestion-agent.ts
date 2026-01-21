@@ -42,7 +42,10 @@ export async function suggestWebsiteUrls(input: UrlSuggestionInput): Promise<Url
     // === PHASE 1: Web Search for actual URLs ===
     let webSearchResults: Array<{ url: string; title: string; snippet: string }> = [];
 
-    if (input.useWebSearch !== false) {
+    // Default to using web search unless explicitly disabled
+    const shouldUseWebSearch = input.useWebSearch !== false;
+
+    if (shouldUseWebSearch) {
       const intelligentTools = createIntelligentTools({ agentName: 'URL Researcher' });
 
       try {
@@ -51,7 +54,7 @@ export async function suggestWebsiteUrls(input: UrlSuggestionInput): Promise<Url
           ? `"${input.customerName}" ${input.industry} official website`
           : `"${input.customerName}" official website homepage`;
 
-        console.log(`[URL Suggestion] Searching: "${searchQuery}"`);
+        console.warn(`[URL Suggestion] Searching: "${searchQuery}"`);
         const searchResults = await intelligentTools.webSearch(searchQuery, 5);
 
         if (searchResults && searchResults.length > 0) {
@@ -62,10 +65,13 @@ export async function suggestWebsiteUrls(input: UrlSuggestionInput): Promise<Url
               title: r.title || 'Untitled',
               snippet: r.snippet || '',
             }));
-          console.log(`[URL Suggestion] Found ${webSearchResults.length} URLs via Web Search`);
+          console.warn(`[URL Suggestion] Found ${webSearchResults.length} URLs via Web Search`);
+        } else {
+          console.warn('[URL Suggestion] Web Search returned no results');
         }
       } catch (error) {
-        console.warn('[URL Suggestion] Web Search failed:', error);
+        console.error('[URL Suggestion] Web Search failed:', error);
+        // Continue with AI-only suggestions
       }
     }
 

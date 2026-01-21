@@ -2,18 +2,22 @@
  * RAG Embedding Service (DEA-107)
  *
  * Generates embeddings for agent outputs and stores them in the database.
- * Reuses existing OpenAI infrastructure from lib/bids/embedding-service.ts
+ *
+ * Requires OPENAI_EMBEDDING_API_KEY to be set.
+ * If not configured, embedding operations are silently skipped.
  */
 
 import type { Chunk } from './chunk-service';
 import { chunkAgentOutput } from './chunk-service';
 
-import { openai } from '@/lib/ai/config';
+import {
+  EMBEDDING_DIMENSIONS,
+  EMBEDDING_MODEL,
+  getEmbeddingClient,
+  isEmbeddingEnabled,
+} from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
 import { rfpEmbeddings } from '@/lib/db/schema';
-
-const EMBEDDING_MODEL = 'text-embedding-3-large';
-const EMBEDDING_DIMENSIONS = 3072;
 
 export interface ChunkWithEmbedding extends Chunk {
   embedding: number[];
@@ -22,16 +26,24 @@ export interface ChunkWithEmbedding extends Chunk {
 /**
  * Generate embeddings for multiple chunks in a single batch
  * More efficient than individual calls
+ * Returns null if embeddings are not enabled
  */
-export async function generateChunkEmbeddings(chunks: Chunk[]): Promise<ChunkWithEmbedding[]> {
+export async function generateChunkEmbeddings(
+  chunks: Chunk[]
+): Promise<ChunkWithEmbedding[] | null> {
   if (chunks.length === 0) {
     return [];
+  }
+
+  const client = getEmbeddingClient();
+  if (!client) {
+    return null;
   }
 
   const texts = chunks.map(c => c.content);
 
   // Batch-Embedding via OpenAI API
-  const response = await openai.embeddings.create({
+  const response = await client.embeddings.create({
     model: EMBEDDING_MODEL,
     input: texts,
     dimensions: EMBEDDING_DIMENSIONS,
@@ -56,6 +68,12 @@ export async function embedAgentOutput(
   agentName: string,
   output: Record<string, unknown>
 ): Promise<void> {
+  // Check if embeddings are enabled
+  if (!isEmbeddingEnabled()) {
+    // Silent skip - expected behavior when not configured
+    return;
+  }
+
   try {
     // 1. Chunk agent output
     const chunks = await chunkAgentOutput({ rfpId, agentName, output });
@@ -67,6 +85,11 @@ export async function embedAgentOutput(
 
     // 2. Generate embeddings
     const chunksWithEmbeddings = await generateChunkEmbeddings(chunks);
+
+    if (!chunksWithEmbeddings) {
+      // Embeddings disabled - should not happen since we checked above
+      return;
+    }
 
     // 3. Store in database
     await db.insert(rfpEmbeddings).values(
@@ -101,16 +124,5 @@ export async function embedBatchAgentOutputs(
   }
 }
 
-/**
- * Generate embedding for a single query string
- * Used by retrieval service
- */
-export async function generateQueryEmbedding(query: string): Promise<number[]> {
-  const response = await openai.embeddings.create({
-    model: EMBEDDING_MODEL,
-    input: query,
-    dimensions: EMBEDDING_DIMENSIONS,
-  });
-
-  return response.data[0].embedding;
-}
+// Re-export generateQueryEmbedding from the config for backward compatibility
+export { generateQueryEmbedding, isEmbeddingEnabled } from '@/lib/ai/embedding-config';

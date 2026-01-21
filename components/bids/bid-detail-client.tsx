@@ -1,12 +1,13 @@
 'use client';
 
-import { Loader2, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle2, RotateCcw, ArrowRight, Building2 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 import { BaselineComparisonCard } from './baseline-comparison-card';
-import { BitDecisionActions } from './bit-decision-actions';
+// BitDecisionActions removed - BID/NO-BID decision is made by BL, not BD
 import { BLRoutingCard } from './bl-routing-card';
 import { DecisionCard } from './decision-card';
 import { DecisionConfidenceBanner } from './decision-confidence-banner';
@@ -38,7 +39,7 @@ import {
   retriggerBitEvaluation,
 } from '@/lib/bit-evaluation/actions';
 import type { BidOpportunity, QuickScan } from '@/lib/db/schema';
-import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
+import { startQuickScan, getQuickScanResult, retriggerQuickScan } from '@/lib/quick-scan/actions';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 
@@ -63,6 +64,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   const [needsWebsiteUrl, setNeedsWebsiteUrl] = useState(false);
   const [isSubmittingUrl, setIsSubmittingUrl] = useState(false);
   const [isRetriggeringBit, setIsRetriggeringBit] = useState(false);
+  const [isRetriggeringQuickScan, setIsRetriggeringQuickScan] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [duplicateCheck, setDuplicateCheck] = useState<DuplicateCheckResult | null>(
     bid.duplicateCheckResult ? JSON.parse(bid.duplicateCheckResult) : null
@@ -119,8 +121,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     }
   };
 
-  // Check if Quick Scan completed - no longer auto-starts BIT evaluation
-  // Two-Workflow: BD Manager makes manual BIT/NO BIT decision via BitDecisionActions
+  // Check if Quick Scan completed - BD routes to BL, BL makes BID/NO-BID decision
   const checkQuickScanCompletion = async () => {
     const scanResult = await getQuickScanResult(bid.id);
 
@@ -212,6 +213,28 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     } catch (error) {
       toast.error('Ein Fehler ist aufgetreten');
       setIsRetriggeringBit(false);
+    }
+  };
+
+  // Handle Quick Scan re-trigger
+  const handleRetriggerQuickScan = async () => {
+    setIsRetriggeringQuickScan(true);
+    toast.info('Starte Quick Scan erneut...');
+
+    try {
+      const result = await retriggerQuickScan(bid.id);
+
+      if (result.success) {
+        toast.success('Quick Scan gestartet - bitte warten...');
+        // Force page reload to show ActivityStream
+        window.location.reload();
+      } else {
+        toast.error(result.error || 'Quick Scan Re-Trigger fehlgeschlagen');
+        setIsRetriggeringQuickScan(false);
+      }
+    } catch (error) {
+      toast.error('Ein Fehler ist aufgetreten');
+      setIsRetriggeringQuickScan(false);
     }
   };
 
@@ -476,8 +499,21 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           {/* Extracted Requirements Summary */}
           {extractedData && (
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <CardTitle>Extrahierte Anforderungen</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRetriggerQuickScan}
+                  disabled={isRetriggeringQuickScan}
+                >
+                  {isRetriggeringQuickScan ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                  )}
+                  Quick Scan neu starten
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2">
@@ -553,7 +589,6 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             (() => {
               const questionsCount = calculateAnsweredQuestionsCount(quickScan, extractedData);
               const questionsWithStatus = buildQuestionsWithStatus(quickScan, extractedData);
-              const isIbexa = quickScan.cms?.toLowerCase().includes('ibexa');
 
               return (
                 <>
@@ -571,21 +606,30 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
                     totalCount={questionsWithStatus.summary.total}
                   />
 
-                  {/* BIT/NO-BIT Decision Actions */}
-                  <BitDecisionActions
-                    bidId={bid.id}
-                    answeredQuestionsCount={questionsCount.answered}
-                    totalQuestionsCount={questionsCount.total}
-                    overallScore={quickScan.confidence || undefined}
-                    blRecommendation={{
-                      primaryBusinessLine:
-                        quickScan.recommendedBusinessUnit || 'Technology & Innovation',
-                      confidence: quickScan.confidence || 0,
-                      reasoning: quickScan.reasoning || '',
-                      alternativeBusinessLines: [],
-                    }}
-                    isIbexa={isIbexa}
-                  />
+                  {/* BL Routing Action - BID/NO-BID decision is made by BL after routing */}
+                  <Card className="border-indigo-200 bg-indigo-50/50">
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5 text-indigo-600" />
+                        <CardTitle className="text-indigo-900">An Business Line weiterleiten</CardTitle>
+                      </div>
+                      <CardDescription className="text-indigo-700">
+                        Weiterleitung an {quickScan.recommendedBusinessUnit || 'empfohlene BL'}
+                        {quickScan.confidence ? ` (${quickScan.confidence}% Konfidenz)` : ''}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Die BID/NO-BID Entscheidung wird vom Bereichsleiter nach dem Routing getroffen.
+                      </p>
+                      <Link href={`/rfps/${bid.id}/routing`}>
+                        <Button className="w-full bg-indigo-600 hover:bg-indigo-700">
+                          <ArrowRight className="h-4 w-4 mr-2" />
+                          Timeline & BL-Routing
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
                 </>
               );
             })()}

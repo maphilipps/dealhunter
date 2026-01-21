@@ -1,10 +1,11 @@
-import { generateObject } from 'ai';
+import { generateObject, type LanguageModel } from 'ai';
 import { extractedRequirementsSchema, type ExtractedRequirements } from './schema';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
+import { openai } from '@/lib/ai/providers';
 
 // Use Claude Haiku 4.5 via adesso AI Hub (OpenAI-compatible endpoint)
-const model = 'openai/claude-haiku-4.5';
+const model = openai('claude-haiku-4.5') as unknown as LanguageModel;
 
 export interface ExtractionInput {
   rawText: string;

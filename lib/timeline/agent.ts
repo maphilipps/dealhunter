@@ -1,10 +1,11 @@
-import { generateObject } from 'ai';
+import { generateObject, type LanguageModel } from 'ai';
 import {
   projectTimelineSchema,
   STANDARD_PHASES,
   COMPLEXITY_MULTIPLIERS,
   type ProjectTimeline,
 } from './schema';
+import { openai } from '@/lib/ai/providers';
 
 /**
  * Input for Timeline Agent
@@ -130,7 +131,7 @@ ${input.specialRequirements?.length ? `## Special Requirements\n${input.specialR
 `.trim();
 
   const { object } = await generateObject({
-    model: 'openai/gpt-4o-mini',
+    model: openai('claude-haiku-4.5') as unknown as LanguageModel,
     schema: projectTimelineSchema,
     prompt: `Du bist ein erfahrener Projektplaner bei adesso SE.
 

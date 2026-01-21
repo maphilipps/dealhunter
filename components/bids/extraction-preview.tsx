@@ -588,13 +588,35 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
       {/* Budget Range */}
       {data.budgetRange !== undefined && (
         <div className="space-y-2">
-          <Label htmlFor="budgetRange">Budgetbereich</Label>
-          <Input
-            id="budgetRange"
-            value={data.budgetRange || ''}
-            onChange={e => setData({ ...data, budgetRange: e.target.value })}
-            placeholder="z.B. 100.000 - 500.000 EUR"
-          />
+          <Label>Budgetbereich</Label>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="space-y-2">
+                {data.budgetRange.min || data.budgetRange.max ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-semibold">
+                      {data.budgetRange.min
+                        ? new Intl.NumberFormat('de-DE').format(data.budgetRange.min)
+                        : '0'}{' '}
+                      -{' '}
+                      {data.budgetRange.max
+                        ? new Intl.NumberFormat('de-DE').format(data.budgetRange.max)
+                        : '∞'}{' '}
+                      {data.budgetRange.currency}
+                    </span>
+                    <Badge variant={data.budgetRange.confidence >= 70 ? 'default' : 'secondary'}>
+                      {data.budgetRange.confidence}% sicher
+                    </Badge>
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Kein Budget angegeben</span>
+                )}
+                {data.budgetRange.rawText && (
+                  <p className="text-sm text-muted-foreground">Originaltext: "{data.budgetRange.rawText}"</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -801,9 +823,12 @@ function SubmissionDeadlineCard({
 type Deliverable = {
   name: string;
   description?: string;
+  deadline?: string;
+  deadlineTime?: string;
   format?: string;
   copies?: number;
   mandatory: boolean;
+  confidence: number;
 };
 
 /**
@@ -825,6 +850,7 @@ function RequiredDeliverablesCard({
         {
           name: newDeliverable.trim(),
           mandatory: true,
+          confidence: 100,
         },
       ]);
       setNewDeliverable('');
@@ -961,7 +987,7 @@ function RequiredDeliverablesCard({
               variant="outline"
               size="sm"
               className="text-xs"
-              onClick={() => onChange([...deliverables, { name: suggestion, mandatory: true }])}
+              onClick={() => onChange([...deliverables, { name: suggestion, mandatory: true, confidence: 80 }])}
             >
               <Plus className="h-3 w-3 mr-1" />
               {suggestion}

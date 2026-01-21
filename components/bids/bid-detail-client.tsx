@@ -325,8 +325,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Draft state - Show raw input and start extraction button
   if (bid.status === 'draft' && !isExtracting) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 max-w-full overflow-hidden">
+        <div className="space-y-6 min-w-0">
           <Card>
             <CardHeader>
               <CardTitle>Rohdaten</CardTitle>
@@ -365,8 +365,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Extracting state - Show ActivityStream with real-time progress
   if (isExtracting || bid.status === 'extracting') {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 max-w-full overflow-hidden">
+        <div className="space-y-6 min-w-0">
           <Card>
             <CardHeader>
               <CardTitle>Rohdaten</CardTitle>
@@ -407,8 +407,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Reviewing state - Show extraction preview and edit form
   if (bid.status === 'reviewing' && extractedData) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 max-w-full overflow-hidden">
+        <div className="space-y-6 min-w-0">
           {/* Duplicate Warning */}
           {duplicateCheck?.hasDuplicates && (
             <DuplicateWarning
@@ -460,8 +460,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     ].includes(bid.status)
   ) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 max-w-full overflow-hidden">
+        <div className="space-y-6 min-w-0">
           {/* Extracted Requirements Summary */}
           {extractedData && (
             <Card>
@@ -772,7 +772,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Other states - Show extracted data readonly
   if (extractedData) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 max-w-full overflow-hidden">
         <Card>
           <CardHeader>
             <CardTitle>Extrahierte Anforderungen</CardTitle>

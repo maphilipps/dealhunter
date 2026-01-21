@@ -180,6 +180,23 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
         </Card>
       )}
 
+      {/* BL Decision CTA (if in bl_reviewing status) */}
+      {lead.status === 'bl_reviewing' && !lead.blVote && (
+        <Card className="border-primary">
+          <CardHeader>
+            <CardTitle>BID/NO-BID Entscheidung</CardTitle>
+            <CardDescription>
+              Dieser Lead wartet auf Ihre Entscheidung
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href={`/leads/${id}/decision`}>Entscheidung treffen</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Quick Actions */}
       <Card>
         <CardHeader>

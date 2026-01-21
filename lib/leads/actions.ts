@@ -3,6 +3,8 @@
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
+import { z } from 'zod';
+
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -149,7 +151,6 @@ export async function convertRfpToLead(
       : {};
 
     // Parse Quick Scan data for decision makers (DEA-92)
-    let quickScanData: Record<string, unknown> | null = null;
     let decisionMakers: unknown[] | null = null;
 
     if (rfp.quickScanId) {
@@ -162,7 +163,6 @@ export async function convertRfpToLead(
         .limit(1);
 
       if (quickScan?.decisionMakers) {
-        quickScanData = quickScan as unknown as Record<string, unknown>;
         decisionMakers = JSON.parse(quickScan.decisionMakers as string) as unknown[];
       }
     }
@@ -223,6 +223,145 @@ export async function convertRfpToLead(
     };
   } catch (error) {
     console.error('Error converting RFP to Lead:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
+}
+
+// ===== DEA-104: BID/NO-BID Decision =====
+
+const blDecisionSchema = z.object({
+  leadId: z.string().min(1, 'Lead ID ist erforderlich'),
+  vote: z.enum(['BID', 'NO-BID']),
+  confidenceScore: z
+    .number()
+    .int('Confidence Score muss eine Ganzzahl sein')
+    .min(0, 'Confidence Score muss zwischen 0 und 100 liegen')
+    .max(100, 'Confidence Score muss zwischen 0 und 100 liegen'),
+  reasoning: z.string().min(10, 'Begründung muss mindestens 10 Zeichen lang sein'),
+});
+
+export type BLDecisionInput = z.infer<typeof blDecisionSchema>;
+
+export interface BLDecisionResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * DEA-104: BL Decision - BID/NO-BID Vote
+ *
+ * This function:
+ * 1. Validates the decision input
+ * 2. Checks that the lead exists and is in bl_reviewing status
+ * 3. Updates the lead with BL vote, confidence score, and reasoning
+ * 4. Updates status to 'bid_voted' (BID) or 'archived' (NO-BID)
+ * 5. Creates an audit trail entry
+ *
+ * @param input - BL decision data
+ * @returns Success status
+ */
+export async function submitBLDecision(input: BLDecisionInput): Promise<BLDecisionResult> {
+  // Security: Authentication check
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  // Security: Only BL role can make decisions
+  if (session.user.role !== 'bl' && session.user.role !== 'admin') {
+    return {
+      success: false,
+      error: 'Nur Bereichsleiter können BID/NO-BID Entscheidungen treffen',
+    };
+  }
+
+  try {
+    // Validate input with Zod
+    const validationResult = blDecisionSchema.safeParse(input);
+
+    if (!validationResult.success) {
+      const errors = validationResult.error.issues.map(e => e.message).join(', ');
+      return {
+        success: false,
+        error: `Validierungsfehler: ${errors}`,
+      };
+    }
+
+    const { leadId, vote, confidenceScore, reasoning } = validationResult.data;
+
+    // Get lead
+    const [lead] = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+
+    if (!lead) {
+      return {
+        success: false,
+        error: 'Lead nicht gefunden',
+      };
+    }
+
+    // Check if lead is in correct status
+    if (lead.status !== 'bl_reviewing') {
+      return {
+        success: false,
+        error: 'Lead befindet sich nicht im Status "bl_reviewing"',
+      };
+    }
+
+    // Check if decision already exists
+    if (lead.blVote) {
+      return {
+        success: false,
+        error: 'Für diesen Lead wurde bereits eine Entscheidung getroffen',
+      };
+    }
+
+    // Determine new status based on vote
+    const newStatus = vote === 'BID' ? 'bid_voted' : 'archived';
+
+    // Update lead with decision
+    await db
+      .update(leads)
+      .set({
+        blVote: vote,
+        blConfidenceScore: confidenceScore,
+        blReasoning: reasoning,
+        blVotedAt: new Date(),
+        blVotedByUserId: session.user.id,
+        status: newStatus,
+        updatedAt: new Date(),
+      })
+      .where(eq(leads.id, leadId));
+
+    // Create audit trail
+    await createAuditLog({
+      action: 'update',
+      entityType: 'rfp',
+      entityId: leadId,
+      previousValue: JSON.stringify({
+        status: lead.status,
+        blVote: null,
+      }),
+      newValue: JSON.stringify({
+        status: newStatus,
+        blVote: vote,
+        blConfidenceScore: confidenceScore,
+      }),
+      reason: `BL Decision: ${vote} (Confidence: ${confidenceScore}%) - ${reasoning}`,
+    });
+
+    // Revalidate cache
+    revalidatePath(`/leads/${leadId}`);
+    revalidatePath(`/leads/${leadId}/decision`);
+    revalidatePath('/leads');
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('Error submitting BL decision:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',

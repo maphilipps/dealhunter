@@ -1,6 +1,6 @@
 'use server';
 
-import { generateObject } from 'ai';
+import { generateObject, type LanguageModel } from 'ai';
 
 import { openai } from '@/lib/ai/providers';
 import { db } from '@/lib/db';
@@ -12,9 +12,47 @@ import {
 } from './schemas';
 
 /**
+ * Deterministic Technology → Business Unit Mapping
+ *
+ * For certain technologies, we want automatic routing without AI:
+ * - Ibexa → PHP
+ * - FirstSpirit → WEM
+ */
+const TECH_TO_BU_MAPPING: Record<string, string> = {
+  ibexa: 'PHP',
+  firstspirit: 'WEM',
+  'first spirit': 'WEM',
+};
+
+/**
+ * Check if any detected technology has a deterministic Business Unit mapping
+ *
+ * @param technologies - Array of detected technology names
+ * @returns Business Unit name if deterministic match found, null otherwise
+ */
+function getDeterministicBusinessUnit(technologies: string[]): string | null {
+  if (!technologies || technologies.length === 0) {
+    return null;
+  }
+
+  // Normalize technology names to lowercase for matching
+  const normalizedTechs = technologies.map(t => t.toLowerCase().trim());
+
+  // Check for deterministic matches
+  for (const tech of normalizedTechs) {
+    if (TECH_TO_BU_MAPPING[tech]) {
+      return TECH_TO_BU_MAPPING[tech];
+    }
+  }
+
+  return null;
+}
+
+/**
  * DEA-5: Routing Agent - matchBusinessLine Tool
  *
  * AI-based business line matching using:
+ * - Deterministic technology mapping (Ibexa → PHP, FirstSpirit → WEM)
  * - NLP matching against Business Line keywords
  * - Technology stack matching
  * - Confidence-based recommendations
@@ -26,6 +64,28 @@ export async function matchBusinessLine(
   input: RouteBusinessUnitInput
 ): Promise<{ success: boolean; result?: BusinessLineRoutingResult; error?: string }> {
   try {
+    // STEP 1: Check for deterministic technology mapping (Ibexa → PHP, FirstSpirit → WEM)
+    const deterministicBU = getDeterministicBusinessUnit(input.technologies || []);
+
+    if (deterministicBU) {
+      // Direct mapping found - skip AI, return deterministic result with 100% confidence
+      const detectedTech = input.technologies?.find(
+        t => TECH_TO_BU_MAPPING[t.toLowerCase().trim()]
+      );
+      return {
+        success: true,
+        result: {
+          recommendedBU: deterministicBU,
+          confidence: 100,
+          reasoning: `Automatisches Routing basierend auf erkannter Technologie: ${detectedTech}. Diese Technologie wird direkt der Business Unit "${deterministicBU}" zugeordnet.`,
+          alternativeBUs: [], // No alternatives for deterministic mappings
+          matchedKeywords: [],
+          matchedTechnologies: [detectedTech || ''],
+        },
+      };
+    }
+
+    // STEP 2: No deterministic match - use AI for matching
     // Get all business units with their keywords and technologies
     const { eq } = await import('drizzle-orm');
     const allBusinessUnits = await db
@@ -103,7 +163,7 @@ Technologies: ${bu.technologies.join(', ') || 'Keine'}
 
     // Call AI to match business line
     const result = await generateObject({
-      model: openai('gpt-4o'),
+      model: openai('gpt-4o') as unknown as LanguageModel,
       schema: BusinessLineRoutingSchema,
       system: `Du bist ein Business Line Routing Agent für adesso SE.
 

@@ -2724,3 +2724,113 @@ All E2E tests (including existing ones) currently fail due to missing Playwright
 - Create separate issue for implementing Playwright authentication setup
 - Once auth is resolved, all E2E tests can run successfully
 
+
+
+---
+## 2026-01-21: DEA-69 - E2E Tests: Quick Scan & 10 Questions
+
+**Issue:** https://linear.app/adessocms/issue/DEA-69
+**Commit:** 976e1c8 - feat(DEA-69): E2E Tests for Quick Scan & 10 Questions
+
+### Implemented
+
+Comprehensive E2E test suite for Quick Scan workflow (18 tests across 5 test suites):
+
+**Test Coverage:**
+- **TC-1: Quick Scan Start** (3 tests)
+  - Auto-start after extraction with URL
+  - Status changes to quick_scanning
+  - ActivityStream shows agent activity
+
+- **TC-2: Quick Scan Running** (4 tests)
+  - Website crawling and analysis
+  - Tech Stack Detection
+  - 10 Questions generation
+  - Progress indicators
+
+- **TC-3: Questions Ready State** (5 tests)
+  - Status transition to questions_ready
+  - Questions and answers display
+  - Confidence Score visibility (0-100)
+  - BL Recommendation Badge
+  - BID/NO-BID buttons enabled
+
+- **TC-4: URL Suggestions - DEA-32 Fix** (3 tests)
+  - URL prompt when none provided
+  - URL Suggestion Agent trigger
+  - Manual URL input with Quick Scan restart
+
+- **TC-5: Error Cases** (3 tests)
+  - Invalid URL validation
+  - Unreachable website error handling
+  - AI Agent timeout handling
+
+**Key Implementation:**
+- Helper functions: `createRFPWithUrl()`, `createRFPWithoutUrl()`
+- Updated to new upload form structure (#website-url, #additional-text)
+- Comprehensive timeout handling (90s for Quick Scan, 15s for extraction)
+- Graceful error state validation
+
+**File Created:**
+- `tests/e2e/quick-scan.spec.ts` (365 lines)
+
+**Notes:**
+- Tests adapted to current upload form structure (removed old textarea[name="rawInput"] references)
+- All tests follow existing test patterns from bid-no-bid-evaluation.spec.ts
+- Covers full Quick Scan workflow from RFP creation to BID/NO-BID decision readiness
+
+---
+
+## DEA-34: Lead Dashboard Grundstruktur & Layout mit Sidebar Navigation (2026-01-21)
+
+**Issue:** https://linear.app/adessocms/issue/DEA-34
+**Commit:** 6193a77 - feat(DEA-34): Lead Dashboard Grundstruktur & Layout mit Sidebar Navigation
+
+### Implemented
+
+Lead Dashboard mit VitePress-style Sidebar Navigation:
+
+**Route Structure:**
+- `/leads/[id]` - Lead Dashboard Entry Point
+- Layout mit Sidebar (links) + Content Area (rechts)
+- Responsive Design mit ShadCN Sidebar (collapsible icon mode)
+
+**Navigation Sections:**
+1. **Overview**
+   - Übersicht (Lead Status, Projektinformationen, BL Entscheidung)
+
+2. **Analysis**
+   - Quick Scan
+   - BIT Decision
+   - Website Audit
+
+3. **Matching & Estimation**
+   - CMS Matching
+   - Baseline Comparison
+   - PT Estimation
+
+4. **Intelligence**
+   - References
+   - Risiken & Mitigation
+
+**Lead Overview Page Features:**
+- Status Card mit aktueller Phase (routed, full_scanning, bl_reviewing, etc.)
+- Business Unit Assignment Display
+- Projektinformationen (Website, Beschreibung, Budget, Requirements)
+- BL Entscheidung (Vote, Confidence Score, Reasoning)
+- Quick Actions (Links zu Analysen und ursprünglichem RFP)
+
+**Files Created:**
+- `app/(dashboard)/leads/[id]/layout.tsx` - Sidebar layout with navigation
+- `app/(dashboard)/leads/[id]/page.tsx` - Overview page with lead details
+
+**Tech Stack:**
+- ShadCN Sidebar Component
+- Next.js App Router (Server Components)
+- Drizzle ORM queries (leads, rfps, businessUnits)
+
+**Notes:**
+- All navigation items are defined but pages need to be created in future epics
+- Breadcrumbs show customer name in header
+- Mobile: Drawer menu, Desktop: Fixed sidebar
+- Follows same pattern as RFP detail pages

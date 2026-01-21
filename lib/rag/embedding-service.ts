@@ -5,11 +5,12 @@
  * Reuses existing OpenAI infrastructure from lib/bids/embedding-service.ts
  */
 
-import { db } from '@/lib/db';
-import { rfpEmbeddings } from '@/lib/db/schema';
-import { openai } from '@/lib/ai/config';
 import type { Chunk } from './chunk-service';
 import { chunkAgentOutput } from './chunk-service';
+
+import { openai } from '@/lib/ai/config';
+import { db } from '@/lib/db';
+import { rfpEmbeddings } from '@/lib/db/schema';
 
 const EMBEDDING_MODEL = 'text-embedding-3-large';
 const EMBEDDING_DIMENSIONS = 3072;

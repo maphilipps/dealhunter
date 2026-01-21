@@ -7,6 +7,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
+
 import { queryRAG } from '@/lib/rag/retrieval-service';
 
 /**

@@ -322,17 +322,17 @@ const runTechStackDetection = async (
   };
 };
 // Multi-Page Analysis Tools - NEW
-import { extractComponents, type ExtractedComponents } from './tools/component-extractor';
 // QuickScan 2.0 Tools - NEW
-import { classifyContentTypes, estimateContentTypesFromUrls } from './tools/content-classifier';
-import { analyzeMigrationComplexity } from './tools/migration-analyzer';
-import { searchDecisionMakers } from './tools/decision-maker-research';
 import type {
   ContentTypeDistribution,
   MigrationComplexity,
   DecisionMakersResearch,
 } from './schema';
 import { gatherCompanyIntelligence } from './tools/company-research';
+import { extractComponents, type ExtractedComponents } from './tools/component-extractor';
+import { classifyContentTypes, estimateContentTypesFromUrls } from './tools/content-classifier';
+import { searchDecisionMakers } from './tools/decision-maker-research';
+import { analyzeMigrationComplexity } from './tools/migration-analyzer';
 import {
   fetchPages,
   analyzePageTech,

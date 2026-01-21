@@ -81,7 +81,7 @@ export function PipelineOverview({ opportunities }: PipelineOverviewProps) {
                 <TableRow key={opp.id}>
                   <TableCell>
                     <div className="flex flex-col">
-                      <Link href={`/bids/${opp.id}`} className="font-medium hover:underline">
+                      <Link href={`/rfps/${opp.id}`} className="font-medium hover:underline">
                         {customerName}
                       </Link>
                       <span className="text-sm text-muted-foreground line-clamp-1">
@@ -108,7 +108,7 @@ export function PipelineOverview({ opportunities }: PipelineOverviewProps) {
                     {formatDistanceToNow(new Date(opp.createdAt), { addSuffix: true })}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Link href={`/bids/${opp.id}`} className="text-sm font-medium hover:underline">
+                    <Link href={`/rfps/${opp.id}`} className="text-sm font-medium hover:underline">
                       View
                     </Link>
                   </TableCell>

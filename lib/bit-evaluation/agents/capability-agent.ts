@@ -83,10 +83,14 @@ WICHTIG: Gib immer eine fundierte Einschätzung ab, auch wenn nicht alle technis
 **Extrahierte Anforderungen:**
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
-${input.quickScanResults ? `
+${
+  input.quickScanResults
+    ? `
 **Quick Scan Ergebnisse (Tech Stack des Kunden):**
 ${JSON.stringify(input.quickScanResults, null, 2)}
-` : ''}
+`
+    : ''
+}
 ${githubInsights}
 ${technologyInsights}
 

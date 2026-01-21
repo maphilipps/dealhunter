@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "025"
+issue_id: '025'
 tags: [code-review, nextjs, server-actions, caching]
 dependencies: []
 ---
@@ -22,6 +22,7 @@ Server Actions in `lib/routing/actions.ts` and `lib/team/actions.ts` update the 
 2. `lib/team/actions.ts:165` - After `assignTeam()` updates bid, no revalidation
 
 **Evidence:**
+
 ```typescript
 // After successful update (line 159), there's no:
 // revalidatePath(`/bl-review/${bidId}`);
@@ -31,6 +32,7 @@ Server Actions in `lib/routing/actions.ts` and `lib/team/actions.ts` update the 
 ## Proposed Solutions
 
 ### Solution A: Add revalidatePath after mutations (Recommended)
+
 **Pros:** Simple, follows Next.js best practices
 **Cons:** None
 **Effort:** Small (15 min)
@@ -51,6 +53,7 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/routing/actions.ts` (line 159, after update)
 - `lib/team/actions.ts` (line 165, after update)
 
@@ -62,8 +65,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                   | Learnings                                            |
+| ---------- | ------------------------ | ---------------------------------------------------- |
 | 2026-01-18 | Created from code review | Next.js Server Actions require explicit revalidation |
 
 ## Resources

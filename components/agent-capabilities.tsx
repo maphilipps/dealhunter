@@ -3,7 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Bot, Wrench, Shield, AlertCircle } from 'lucide-react';
 
@@ -86,9 +91,7 @@ export function AgentCapabilities() {
       <Card>
         <CardContent className="flex items-center gap-3 py-6">
           <AlertCircle className="h-5 w-5 text-destructive" />
-          <span className="text-muted-foreground">
-            {error || 'Keine Daten verfügbar'}
-          </span>
+          <span className="text-muted-foreground">{error || 'Keine Daten verfügbar'}</span>
         </CardContent>
       </Card>
     );
@@ -122,20 +125,15 @@ export function AgentCapabilities() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
-            {data.agents.map((agent) => (
-              <div
-                key={agent.id}
-                className="flex flex-col gap-2 rounded-lg border p-4"
-              >
+            {data.agents.map(agent => (
+              <div key={agent.id} className="flex flex-col gap-2 rounded-lg border p-4">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{agent.name}</span>
                   <Badge variant={agent.status === 'active' ? 'default' : 'secondary'}>
                     {agent.status === 'active' ? 'Aktiv' : 'Inaktiv'}
                   </Badge>
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  {agent.description}
-                </span>
+                <span className="text-sm text-muted-foreground">{agent.description}</span>
               </div>
             ))}
           </div>
@@ -154,7 +152,7 @@ export function AgentCapabilities() {
         </CardHeader>
         <CardContent>
           <Accordion type="multiple" className="w-full">
-            {data.tools.byCategory.map((category) => (
+            {data.tools.byCategory.map(category => (
               <AccordionItem key={category.id} value={category.id}>
                 <AccordionTrigger>
                   <span className="flex items-center gap-2">
@@ -164,15 +162,13 @@ export function AgentCapabilities() {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-2">
-                    {category.tools.map((tool) => (
+                    {category.tools.map(tool => (
                       <div
                         key={tool.name}
                         className="flex flex-col rounded-md bg-muted/50 px-3 py-2"
                       >
                         <code className="text-sm font-medium">{tool.name}</code>
-                        <span className="text-xs text-muted-foreground">
-                          {tool.description}
-                        </span>
+                        <span className="text-xs text-muted-foreground">{tool.description}</span>
                       </div>
                     ))}
                   </div>
@@ -189,9 +185,7 @@ export function AgentCapabilities() {
             <Shield className="h-5 w-5" />
             Berechtigungen
           </CardTitle>
-          <CardDescription>
-            Ihre Berechtigungen als {data.user.role.toUpperCase()}
-          </CardDescription>
+          <CardDescription>Ihre Berechtigungen als {data.user.role.toUpperCase()}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
@@ -221,7 +215,7 @@ function AgentCapabilitiesSkeleton() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4].map(i => (
               <div key={i} className="rounded-lg border p-4">
                 <Skeleton className="h-5 w-40 mb-2" />
                 <Skeleton className="h-4 w-full" />
@@ -237,7 +231,7 @@ function AgentCapabilitiesSkeleton() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3].map(i => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>

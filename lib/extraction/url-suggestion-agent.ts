@@ -12,12 +12,14 @@ const openai = new OpenAI({
  * Schema for URL suggestions
  */
 export const urlSuggestionSchema = z.object({
-  suggestions: z.array(z.object({
-    url: z.string().describe('Suggested website URL'),
-    type: z.enum(['primary', 'product', 'regional', 'related']).describe('Type of website'),
-    description: z.string().describe('Why this URL is relevant'),
-    confidence: z.number().min(0).max(100).describe('Confidence in this suggestion'),
-  })),
+  suggestions: z.array(
+    z.object({
+      url: z.string().describe('Suggested website URL'),
+      type: z.enum(['primary', 'product', 'regional', 'related']).describe('Type of website'),
+      description: z.string().describe('Why this URL is relevant'),
+      confidence: z.number().min(0).max(100).describe('Confidence in this suggestion'),
+    })
+  ),
   reasoning: z.string().describe('Overall reasoning for suggestions'),
 });
 
@@ -35,9 +37,7 @@ export interface UrlSuggestionInput {
  * AI Agent for suggesting website URLs when none are found in the document
  * UPGRADED: Uses EXA Web Search to find actual URLs, then validates with AI
  */
-export async function suggestWebsiteUrls(
-  input: UrlSuggestionInput
-): Promise<UrlSuggestion> {
+export async function suggestWebsiteUrls(input: UrlSuggestionInput): Promise<UrlSuggestion> {
   try {
     // === PHASE 1: Web Search for actual URLs ===
     let webSearchResults: Array<{ url: string; title: string; snippet: string }> = [];
@@ -87,7 +87,10 @@ export async function suggestWebsiteUrls(
     if (webSearchResults.length > 0) {
       webSearchContext = `\n\nWEB SEARCH RESULTS (found via EXA):\n${webSearchResults
         .slice(0, 5)
-        .map((r, i) => `${i + 1}. ${r.url}\n   Title: ${r.title}\n   Snippet: ${r.snippet.substring(0, 150)}`)
+        .map(
+          (r, i) =>
+            `${i + 1}. ${r.url}\n   Title: ${r.title}\n   Snippet: ${r.snippet.substring(0, 150)}`
+        )
         .join('\n\n')}`;
     }
 
@@ -122,9 +125,11 @@ URL RESEARCH STRATEGIES:
 
 ${contextParts.join('\n')}${webSearchContext}
 
-${webSearchResults.length > 0
-  ? `IMPORTANT: Web search found ${webSearchResults.length} URLs. Analyze these and select the most relevant ones. Prioritize URLs from web search over guessing.`
-  : 'No web search results available - suggest URLs based on company name and common patterns.'}
+${
+  webSearchResults.length > 0
+    ? `IMPORTANT: Web search found ${webSearchResults.length} URLs. Analyze these and select the most relevant ones. Prioritize URLs from web search over guessing.`
+    : 'No web search results available - suggest URLs based on company name and common patterns.'
+}
 
 Based on the company name, industry, and context (and web search results if available), suggest the most likely official website URLs.
 

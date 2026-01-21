@@ -26,11 +26,53 @@ npm run db:studio        # Open Drizzle Studio
 
 **WICHTIG:** Verwende immer `d3k` für den Dev-Server, NICHT `npm run dev`!
 
+## Code Quality Tools
+
+### Prettier & ESLint
+
+Dieses Projekt nutzt **Prettier** für automatisches Code-Formatting und **ESLint** für Code-Qualität und Best Practices.
+
+**Automatisch (empfohlen):**
+
+- VS Code: Format-on-Save aktiviert (siehe `.vscode/settings.json`)
+- Pre-commit Hooks: Automatisches Format + Lint auf staged files
+
+**Manuell:**
+
+```bash
+npm run format          # Gesamte Codebase formatieren
+npm run format:check    # Formatting prüfen (CI/CD)
+npm run lint            # Linting-Fehler anzeigen
+npm run lint:fix        # Linting-Fehler auto-fixen
+npm run typecheck       # TypeScript type checking
+```
+
+**Konfiguration:**
+
+- `.prettierrc` - Prettier Config (2 spaces, single quotes, semicolons)
+- `eslint.config.mjs` - ESLint Config (Next.js + TypeScript rules)
+- `.husky/pre-commit` - Git Pre-commit Hook (via husky)
+- `package.json` → `lint-staged` - Staged files Linting
+
+**Pre-commit Hook Verhalten:**
+
+- Automatisches Format + Lint auf alle staged `.ts`/`.tsx` Dateien
+- Automatisches Format auf `.json`, `.md`, `.yml` Dateien
+- Auto-fixes werden automatisch committed
+- Hook überspringen: `git commit --no-verify` (nur in Notfällen!)
+
+**Integration mit MCP Tools:**
+
+- `d3k` zeigt ESLint-Fehler im Browser an (Dev Server)
+- `fix_my_app(focusArea: 'build')` analysiert ESLint + TypeScript Fehler
+- `agent_browser_action` für Browser-basierte Tests nach Lint-Fixes
+
 ## Large Codebase Analysis mit Gemini CLI
 
 Für die Analyse großer Codebases oder mehrerer Dateien, die Context Limits überschreiten könnten, verwende Gemini CLI mit seinem massiven Context Window.
 
 **Verwende `gemini -p` wenn:**
+
 - Gesamte Codebases oder große Verzeichnisse analysiert werden
 - Mehrere große Dateien verglichen werden
 - Projekt-weite Patterns oder Architektur verstanden werden müssen
@@ -38,11 +80,13 @@ Für die Analyse großer Codebases oder mehrerer Dateien, die Context Limits üb
 - Spezifische Features, Patterns oder Security-Maßnahmen codebase-weit verifiziert werden
 
 **Wichtige Hinweise:**
+
 - Pfade in @ Syntax sind relativ zum aktuellen Working Directory beim Aufruf von gemini
 - Kein --yolo Flag für read-only Analysen nötig
 - Sei spezifisch, wonach du suchst, um genaue Ergebnisse zu erhalten
 
 **Beispiel:**
+
 ```bash
 # Analysiere alle Server Actions für fehlende Zod Validation
 gemini -p "Check all files in @lib for Server Actions that are missing Zod validation. List files with issues." @lib/**/*.ts
@@ -132,6 +176,7 @@ Für AI-generierte UI-Komponenten mit Guardrails:
 ```
 
 **Integration Points:**
+
 - **Analytics Dashboard** - User-generierte Custom Widgets
 - **Agent Results** - Strukturierte Visualisierung von Agent Outputs
 - **Dynamic Reports** - AI-generierte Compliance & Risk Reports
@@ -168,40 +213,40 @@ Team Assignment + Notification
 
 ### ShadCN Components (bevorzugt verwenden)
 
-| Use Case | Component |
-|----------|-----------|
-| **Layout** | `sidebar`, `navigation-menu`, `breadcrumb` |
-| **Data Viz** | `chart` (Pie, Bar, Line, Radar, Radial) |
-| **Tables** | `table`, `data-table-demo` (mit Sorting/Filtering) |
-| **Forms** | `form`, `select`, `slider`, `checkbox`, `switch` |
-| **Feedback** | `alert`, `progress`, `skeleton`, `spinner` |
-| **Dialogs** | `dialog`, `alert-dialog`, `sheet` |
-| **Expansion** | `accordion`, `collapsible`, `tabs` |
-| **Status** | `badge`, `avatar`, `tooltip` |
+| Use Case      | Component                                          |
+| ------------- | -------------------------------------------------- |
+| **Layout**    | `sidebar`, `navigation-menu`, `breadcrumb`         |
+| **Data Viz**  | `chart` (Pie, Bar, Line, Radar, Radial)            |
+| **Tables**    | `table`, `data-table-demo` (mit Sorting/Filtering) |
+| **Forms**     | `form`, `select`, `slider`, `checkbox`, `switch`   |
+| **Feedback**  | `alert`, `progress`, `skeleton`, `spinner`         |
+| **Dialogs**   | `dialog`, `alert-dialog`, `sheet`                  |
+| **Expansion** | `accordion`, `collapsible`, `tabs`                 |
+| **Status**    | `badge`, `avatar`, `tooltip`                       |
 
 ### AI SDK Elements (für Agent UI)
 
-| Component | Use For |
-|-----------|---------|
-| `<Conversation>` | Agent Activity Stream (live updates) |
-| `<Message>` | Individual Agent Outputs |
-| `<MessageActions>` | Copy, Expand, Retry buttons |
-| `<Reasoning>` | Chain-of-Thought display |
-| `<Sources>` | Referenced data and citations |
-| `<PromptInput>` | User input fields (if needed) |
-| `<Loader>` | Processing states with animation |
+| Component          | Use For                              |
+| ------------------ | ------------------------------------ |
+| `<Conversation>`   | Agent Activity Stream (live updates) |
+| `<Message>`        | Individual Agent Outputs             |
+| `<MessageActions>` | Copy, Expand, Retry buttons          |
+| `<Reasoning>`      | Chain-of-Thought display             |
+| `<Sources>`        | Referenced data and citations        |
+| `<PromptInput>`    | User input fields (if needed)        |
+| `<Loader>`         | Processing states with animation     |
 
 ### Chart Usage (Recharts-basiert)
 
-| Data Type | ShadCN Chart Block |
-|-----------|-------------------|
-| Bit/No Bit Rate | `chart-pie-donut-text` |
-| Pipeline Funnel | `chart-bar-horizontal` |
-| Opportunities by BL | `chart-bar-stacked` |
-| Time to Decision | `chart-line-default` |
-| Risk Assessment | `chart-radar-default` |
-| Confidence Score | `chart-radial-label` |
-| PT Breakdown | `chart-bar-stacked` |
+| Data Type           | ShadCN Chart Block     |
+| ------------------- | ---------------------- |
+| Bit/No Bit Rate     | `chart-pie-donut-text` |
+| Pipeline Funnel     | `chart-bar-horizontal` |
+| Opportunities by BL | `chart-bar-stacked`    |
+| Time to Decision    | `chart-line-default`   |
+| Risk Assessment     | `chart-radar-default`  |
+| Confidence Score    | `chart-radial-label`   |
+| PT Breakdown        | `chart-bar-stacked`    |
 
 ## Project Structure
 
@@ -283,6 +328,7 @@ lib/
 ## Key Principles
 
 ### 1. Continuously Shippable Application
+
 - **Jedes Epic muss eine nutzbare Anwendung hinterlassen** - keine halbfertigen Features
 - Die App muss nach jedem Commit besser werden, nie schlechter
 - Alle Seiten müssen ins bestehende Layout passen (Sidebar, Breadcrumbs, etc.)
@@ -291,6 +337,7 @@ lib/
 - **Regel:** Vor jedem Commit die betroffenen Seiten im Browser prüfen
 
 ### 2. Navigation Integrity
+
 - **Nur Views mit echtem Inhalt in der Navigation verlinken** - keine Dummy-Seiten oder Platzhalter
 - Keine "Coming soon..." oder leere Seiten in der Sidebar/Navigation
 - **Jede View muss erreichbar sein** - alle Seiten müssen irgendwo verlinkt sein (Navigation, Buttons, Links)
@@ -299,37 +346,51 @@ lib/
 - **Regel:** Nach Navigation-Änderungen alle Links durchklicken und prüfen
 
 ### 3. Workflow-Driven Development
+
 - Alle Features als Agent Workflows implementieren
 - Live streaming mit AI SDK Elements
 - Structured outputs mit generateObject
 
 ### 4. ShadCN First
+
 - Immer ShadCN Komponenten verwenden (nie custom components)
 - Examples als Referenz nutzen
 - Recharts für Charts (via ShadCN chart component)
 
 ### 5. Agent-Native UI
+
 - Agent Activity sichtbar machen (Conversation component)
 - Chain-of-Thought anzeigen (Reasoning component)
 - Tool calls transparent darstellen
 
 ### 6. MCP-Driven Discovery
+
 - ShadCN MCP für alle UI Komponenten
 - Context7 MCP für AI SDK und Next.js Docs
 - Chrome DevTools MCP für Visual Testing
 - Next.js DevTools MCP für Server Diagnostics
 
 ### 7. Visual Verification
+
 - Nach jeder UI Änderung: Screenshot mit Chrome DevTools MCP
 - Console Logs prüfen
 - Responsive Design testen
 
 ### 8. EPICS.md Dokumentationsstil
+
 - **Nur Beschreibungen, keine Code-Skizzen** - Code entsteht während der Implementierung
 - Features und Agents beschreiben: Was sie tun, welche Inputs/Outputs, welche Gewichtung
 - Keine TypeScript-Beispiele oder Interface-Definitionen in EPICS.md
 - Technische Details gehören in den Code selbst, nicht in die Planung
 - **Regel:** EPICS.md = WAS gebaut wird, Code = WIE es gebaut wird
+
+### 9. Code Quality & Consistency
+
+- **Prettier für Formatting** - Automatisches Format-on-Save, kein manuelles Formatieren
+- **ESLint für Best Practices** - TypeScript-strict, React Hooks, Import Ordering
+- **Pre-commit Hooks** - Automatische Qualitätssicherung vor jedem Commit
+- **AI-Friendly Configuration** - Warnings statt Errors für Style (AI kann Feedback verarbeiten)
+- **VS Code Integration** - Format-on-Save + ESLint Auto-Fix aktiviert
 
 ## Plan Mode
 
@@ -343,16 +404,16 @@ Plan Mode trennt Research von Execution - Claude analysiert und plant, ohne Änd
 
 ### Verfügbare Tools in Plan Mode
 
-| Tool | Funktion |
-|------|----------|
-| `Read` | Dateien lesen |
-| `LS` | Verzeichnisse auflisten |
-| `Glob` | Datei-Pattern suchen |
-| `Grep` | Inhalte durchsuchen |
-| `Task` | Research Agents starten |
-| `TodoWrite` | Aufgaben planen |
-| `WebFetch` | Web-Inhalte abrufen |
-| `WebSearch` | Web-Suchen |
+| Tool        | Funktion                |
+| ----------- | ----------------------- |
+| `Read`      | Dateien lesen           |
+| `LS`        | Verzeichnisse auflisten |
+| `Glob`      | Datei-Pattern suchen    |
+| `Grep`      | Inhalte durchsuchen     |
+| `Task`      | Research Agents starten |
+| `TodoWrite` | Aufgaben planen         |
+| `WebFetch`  | Web-Inhalte abrufen     |
+| `WebSearch` | Web-Suchen              |
 
 **Gesperrt:** File edits, Bash commands, state-modifying operations.
 
@@ -384,14 +445,14 @@ Plan Mode trennt Research von Execution - Claude analysiert und plant, ohne Änd
 
 ### Plan Mode vs. Direkte Implementierung
 
-| Situation | Empfehlung |
-|-----------|------------|
-| Typo fixen, kleine Änderung | Direkt implementieren |
-| Neues Feature, mehrere Dateien | **Plan Mode** |
-| Bug mit klarer Ursache | Direkt implementieren |
-| Architektur-Entscheidung nötig | **Plan Mode** |
-| Bekanntes Pattern anwenden | Direkt implementieren |
-| Unbekannte Codebase erkunden | **Plan Mode** |
+| Situation                      | Empfehlung            |
+| ------------------------------ | --------------------- |
+| Typo fixen, kleine Änderung    | Direkt implementieren |
+| Neues Feature, mehrere Dateien | **Plan Mode**         |
+| Bug mit klarer Ursache         | Direkt implementieren |
+| Architektur-Entscheidung nötig | **Plan Mode**         |
+| Bekanntes Pattern anwenden     | Direkt implementieren |
+| Unbekannte Codebase erkunden   | **Plan Mode**         |
 
 > **Tipp:** Im Zweifel Plan Mode nutzen - es ist besser, einen kurzen Plan zu erstellen, als Code zu produzieren, der verworfen werden muss.
 
@@ -428,11 +489,13 @@ Plan Mode trennt Research von Execution - Claude analysiert und plant, ohne Änd
 ```
 
 **Linear MCP Tools:**
+
 - `mcp__linear-server__create_comment(issueId, body)` - Step dokumentieren
 - `mcp__linear-server__update_issue(id, state)` - Status updaten
 - `mcp__linear-server__get_issue(id)` - Issue Details abrufen
 
 **Test Coverage Enforcement:**
+
 - Minimum 80% Vitest coverage REQUIRED
 - Falls <80%: Sub-Issue erstellen, blockieren bis erreicht
 
@@ -458,6 +521,7 @@ EXA_API_KEY=
 ## Debugging with MCPs
 
 ### Visual Issues
+
 ```typescript
 // Screenshot für Bug Report
 take_screenshot(filePath: 'bug-screenshots/dashboard-broken.png')
@@ -467,6 +531,7 @@ take_snapshot() // A11y tree
 ```
 
 ### Console Errors
+
 ```typescript
 // Alle Errors
 list_console_messages(types: ['error'])
@@ -476,6 +541,7 @@ list_console_messages(types: ['error', 'warn'], pageSize: 50)
 ```
 
 ### Network Issues
+
 ```typescript
 // Failed requests
 list_network_requests(resourceTypes: ['fetch'], pageIdx: 0)
@@ -485,6 +551,7 @@ get_network_request(reqid: 123)
 ```
 
 ### Dev Server Errors
+
 ```typescript
 // Next.js Compilation Errors
 nextjs_call(port: '3000', toolName: 'get_errors')
@@ -509,6 +576,7 @@ fix_my_app(focusArea: 'all')
 ```
 
 **Workflow bei Build-Fehlern:**
+
 1. `fix_my_app(focusArea: 'build')` aufrufen
 2. Höchstpriorisierten Fehler beheben
 3. Erneut `fix_my_app` aufrufen um zu verifizieren
@@ -539,6 +607,7 @@ agent_browser_action(action: 'scroll', params: { direction: 'down', amount: 3 },
 ```
 
 **Vorteile von agent-browser:**
+
 - Zuverlässiger als Chrome DevTools in Sandbox-Umgebungen
 - Ref-basiertes Klicken (@e1, @e2, etc.)
 - Session-Isolation für parallele Tests

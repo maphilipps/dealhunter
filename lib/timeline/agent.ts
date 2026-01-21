@@ -1,5 +1,10 @@
 import { generateObject } from 'ai';
-import { projectTimelineSchema, STANDARD_PHASES, COMPLEXITY_MULTIPLIERS, type ProjectTimeline } from './schema';
+import {
+  projectTimelineSchema,
+  STANDARD_PHASES,
+  COMPLEXITY_MULTIPLIERS,
+  type ProjectTimeline,
+} from './schema';
 
 /**
  * Input for Timeline Agent
@@ -35,9 +40,9 @@ export interface TimelineAgentInput {
 function calculateBaseDays(input: TimelineAgentInput): number {
   const pages = input.estimatedPageCount || 50; // Default assumption
   const contentTypes = input.contentTypes || 5;
-  const integrations = (input.detectedIntegrations?.length || 0);
+  const integrations = input.detectedIntegrations?.length || 0;
 
-  const baseDays = (pages * 0.5) + (contentTypes * 5) + (integrations * 10) + 30;
+  const baseDays = pages * 0.5 + contentTypes * 5 + integrations * 10 + 30;
 
   return Math.ceil(baseDays);
 }

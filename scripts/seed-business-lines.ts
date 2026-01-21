@@ -127,7 +127,7 @@ async function seedBusinessLines() {
 }
 
 seedBusinessLines()
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Error seeding business lines:', error);
     process.exit(1);
   })

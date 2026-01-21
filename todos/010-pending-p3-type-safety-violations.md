@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p3
-issue_id: "010"
+issue_id: '010'
 tags: [code-review, typescript, type-safety, code-quality]
 dependencies: []
 ---
@@ -13,6 +13,7 @@ dependencies: []
 Multiple locations use `as any` type assertions to bypass TypeScript's type system, hiding potential runtime errors and reducing code quality. This is a code smell that indicates improper type definitions or incomplete type handling.
 
 **Why it matters:**
+
 - Defeats purpose of TypeScript
 - Hides bugs at compile time → runtime crashes
 - Makes refactoring dangerous
@@ -24,13 +25,15 @@ Multiple locations use `as any` type assertions to bypass TypeScript's type syst
 **Location:** Multiple files (exact locations to be identified during fix)
 
 **Evidence from Pattern Recognition review:**
+
 > "Type Safety: 'as any' casting used in several places, defeating TypeScript's purpose"
 
 **Common Patterns:**
+
 ```typescript
 // Anti-pattern examples (hypothetical)
 const data = JSON.parse(response) as any;
-const result = await someFunction() as any;
+const result = (await someFunction()) as any;
 dispatch({ type: 'ACTION', payload: something as any });
 ```
 
@@ -43,12 +46,14 @@ dispatch({ type: 'ACTION', payload: something as any });
 Replace `as any` with proper TypeScript types.
 
 **Pros:**
+
 - Type safety restored
 - Better IDE support
 - Catches bugs at compile time
 - Follows TypeScript best practices
 
 **Cons:**
+
 - Requires understanding of data structures
 - May need to create new type definitions
 
@@ -56,6 +61,7 @@ Replace `as any` with proper TypeScript types.
 **Risk:** Low
 
 **Implementation Pattern:**
+
 ```typescript
 // BEFORE: Type safety defeated
 const data = JSON.parse(response) as any;
@@ -88,11 +94,13 @@ dispatch({ type: 'ADD_EVENT', event } satisfies AddEventAction);
 Use type guards for runtime type checking.
 
 **Pros:**
+
 - Runtime safety + compile-time safety
 - Explicit validation
 - Good for external data
 
 **Cons:**
+
 - More verbose
 - Need to write guard functions
 
@@ -106,11 +114,13 @@ Use type guards for runtime type checking.
 Use Zod for runtime validation and type inference.
 
 **Pros:**
+
 - Runtime validation
 - Type inference
 - Excellent for API responses
 
 **Cons:**
+
 - Adds dependency
 - Learning curve
 - Overkill for internal types
@@ -122,21 +132,24 @@ Use Zod for runtime validation and type inference.
 
 ## Recommended Action
 
-*(To be filled during triage)*
+_(To be filled during triage)_
 
 ## Technical Details
 
 **Investigation Needed:**
 Run this command to find all `as any` usages:
+
 ```bash
 grep -r "as any" app/ components/ lib/ hooks/
 ```
 
 **Affected Files:**
+
 - (To be determined after grep)
-- Likely candidates: hooks/use-agent-stream.ts, components/ai-elements/*.tsx
+- Likely candidates: hooks/use-agent-stream.ts, components/ai-elements/\*.tsx
 
 **Type Definitions Needed:**
+
 - Ensure AgentEvent types are complete
 - Ensure StreamAction types are complete
 - Add proper return types to all functions

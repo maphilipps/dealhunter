@@ -75,10 +75,7 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       conditions.push(
-        or(
-          like(competencies.name, `%${search}%`),
-          like(competencies.description, `%${search}%`)
-        )
+        or(like(competencies.name, `%${search}%`), like(competencies.description, `%${search}%`))
       );
     }
 
@@ -127,15 +124,14 @@ export async function POST(request: NextRequest) {
     const parsed = createCompetencySchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: parsed.error },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error }, { status: 400 });
     }
 
     const newCompetency: NewCompetency = {
       ...parsed.data,
-      certifications: parsed.data.certifications ? JSON.stringify(parsed.data.certifications) : null,
+      certifications: parsed.data.certifications
+        ? JSON.stringify(parsed.data.certifications)
+        : null,
       userId: session.user.id,
       status: 'pending',
       isValidated: false,
@@ -165,18 +161,12 @@ export async function PATCH(request: NextRequest) {
     const parsed = updateCompetencySchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: parsed.error },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error }, { status: 400 });
     }
 
     const { id, version, ...updates } = parsed.data;
 
-    const [existing] = await db
-      .select()
-      .from(competencies)
-      .where(eq(competencies.id, id));
+    const [existing] = await db.select().from(competencies).where(eq(competencies.id, id));
 
     if (!existing) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });

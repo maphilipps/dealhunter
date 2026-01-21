@@ -4,10 +4,7 @@ import { quickScans } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getAllBUMatches } from '@/lib/business-units/matching';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
@@ -19,19 +16,13 @@ export async function GET(
       .limit(1);
 
     if (quickScanResults.length === 0) {
-      return NextResponse.json(
-        { error: 'Quick Scan nicht gefunden' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Quick Scan nicht gefunden' }, { status: 404 });
     }
 
     const quickScan = quickScanResults[0];
 
     if (quickScan.status !== 'completed') {
-      return NextResponse.json(
-        { error: 'Quick Scan noch nicht abgeschlossen' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Quick Scan noch nicht abgeschlossen' }, { status: 400 });
     }
 
     // Calculate BU matches
@@ -40,9 +31,6 @@ export async function GET(
     return NextResponse.json({ matches });
   } catch (error) {
     console.error('Error calculating BU matches:', error);
-    return NextResponse.json(
-      { error: 'Fehler beim Berechnen der BU Matches' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Fehler beim Berechnen der BU Matches' }, { status: 500 });
   }
 }

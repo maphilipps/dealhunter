@@ -8,7 +8,11 @@ import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { CheckCircle2, XCircle, ChevronDown, Loader2, Play, Sparkles } from 'lucide-react';
 import { triggerBaselineComparison } from '@/lib/baseline-comparison/actions';
-import type { BaselineComparisonResult, BaselineItem, BaselineCategory } from '@/lib/baseline-comparison/schema';
+import type {
+  BaselineComparisonResult,
+  BaselineItem,
+  BaselineCategory,
+} from '@/lib/baseline-comparison/schema';
 
 interface BaselineComparisonCardProps {
   bidId: string;
@@ -27,7 +31,11 @@ const categoryLabels: Record<BaselineCategory, string> = {
   forms: 'Formulare',
 };
 
-export function BaselineComparisonCard({ bidId, initialResult, hasDeepAnalysis }: BaselineComparisonCardProps) {
+export function BaselineComparisonCard({
+  bidId,
+  initialResult,
+  hasDeepAnalysis,
+}: BaselineComparisonCardProps) {
   const [result, setResult] = useState<BaselineComparisonResult | null>(initialResult || null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -66,14 +74,12 @@ export function BaselineComparisonCard({ bidId, initialResult, hasDeepAnalysis }
             <Sparkles className="h-5 w-5" />
             Baseline-Vergleich
           </CardTitle>
-          <CardDescription>
-            Deep Analysis muss zuerst abgeschlossen sein
-          </CardDescription>
+          <CardDescription>Deep Analysis muss zuerst abgeschlossen sein</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Der Baseline-Vergleich benötigt Daten aus der Deep Analysis.
-            Bitte führen Sie zuerst die Deep Analysis durch.
+            Der Baseline-Vergleich benötigt Daten aus der Deep Analysis. Bitte führen Sie zuerst die
+            Deep Analysis durch.
           </p>
         </CardContent>
       </Card>
@@ -89,20 +95,16 @@ export function BaselineComparisonCard({ bidId, initialResult, hasDeepAnalysis }
             <Sparkles className="h-5 w-5" />
             Baseline-Vergleich
           </CardTitle>
-          <CardDescription>
-            Vergleich mit adesso-Baseline durchführen
-          </CardDescription>
+          <CardDescription>Vergleich mit adesso-Baseline durchführen</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Analysiert welche Features aus der adesso-Baseline übernommen werden können
-            und welche neu entwickelt werden müssen.
+            Analysiert welche Features aus der adesso-Baseline übernommen werden können und welche
+            neu entwickelt werden müssen.
           </p>
 
           {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
+            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
           )}
 
           <Button onClick={handleTrigger} disabled={isPending}>
@@ -183,7 +185,7 @@ export function BaselineComparisonCard({ bidId, initialResult, hasDeepAnalysis }
         {/* Category Breakdown */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium">Nach Kategorie</h4>
-          {result.categoryBreakdown.map((cat) => (
+          {result.categoryBreakdown.map(cat => (
             <Collapsible
               key={cat.category}
               open={openCategories.has(cat.category)}
@@ -201,7 +203,9 @@ export function BaselineComparisonCard({ bidId, initialResult, hasDeepAnalysis }
                     <span className="text-sm text-muted-foreground">
                       {cat.coveragePercent.toFixed(0)}%
                     </span>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${openCategories.has(cat.category) ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${openCategories.has(cat.category) ? 'rotate-180' : ''}`}
+                    />
                   </div>
                 </button>
               </CollapsibleTrigger>
@@ -252,16 +256,12 @@ function ItemRow({ item, type }: { item: BaselineItem; type: 'baseline' | 'new' 
         )}
         <span>{item.name}</span>
         {item.baselineMatch && (
-          <span className="text-xs text-muted-foreground">
-            → {item.baselineMatch}
-          </span>
+          <span className="text-xs text-muted-foreground">→ {item.baselineMatch}</span>
         )}
       </div>
       <div className="flex items-center gap-2">
         {item.estimatedHours && (
-          <span className="text-xs text-muted-foreground">
-            {item.estimatedHours} PT
-          </span>
+          <span className="text-xs text-muted-foreground">{item.estimatedHours} PT</span>
         )}
         <Badge variant="outline" className="text-xs">
           {item.confidence}%

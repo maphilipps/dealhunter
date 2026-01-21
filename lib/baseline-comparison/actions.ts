@@ -18,18 +18,16 @@ export interface TriggerBaselineComparisonResult {
  * Triggert den Baseline-Vergleich für einen Bid
  * Erfordert abgeschlossene Deep Analysis
  */
-export async function triggerBaselineComparison(bidId: string): Promise<TriggerBaselineComparisonResult> {
+export async function triggerBaselineComparison(
+  bidId: string
+): Promise<TriggerBaselineComparisonResult> {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: 'Nicht authentifiziert' };
   }
 
   // Get bid with deep analysis
-  const [bid] = await db
-    .select()
-    .from(rfps)
-    .where(eq(rfps.id, bidId))
-    .limit(1);
+  const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
   if (!bid) {
     return { success: false, error: 'Bid nicht gefunden' };

@@ -26,7 +26,22 @@ export const quickScanCatalogSchema = {
     title: z.string(),
     description: z.string().optional(),
     variant: z.enum(['default', 'highlight', 'warning', 'success', 'info']).optional(),
-    icon: z.enum(['tech', 'content', 'features', 'recommendation', 'accessibility', 'seo', 'legal', 'performance', 'navigation', 'company', 'migration', 'screenshots']).optional(),
+    icon: z
+      .enum([
+        'tech',
+        'content',
+        'features',
+        'recommendation',
+        'accessibility',
+        'seo',
+        'legal',
+        'performance',
+        'navigation',
+        'company',
+        'migration',
+        'screenshots',
+      ])
+      .optional(),
     collapsible: z.boolean().optional(),
     defaultOpen: z.boolean().optional(),
   }),
@@ -78,26 +93,32 @@ export const quickScanCatalogSchema = {
     name: z.string(),
     version: z.string().optional(),
     confidence: z.number().optional(),
-    category: z.enum(['cms', 'framework', 'backend', 'hosting', 'library', 'tool', 'analytics', 'cdn']).optional(),
+    category: z
+      .enum(['cms', 'framework', 'backend', 'hosting', 'library', 'tool', 'analytics', 'cdn'])
+      .optional(),
   }),
 
   TechStack: z.object({
     title: z.string().optional(),
-    technologies: z.array(z.object({
-      name: z.string(),
-      version: z.string().optional(),
-      confidence: z.number().optional(),
-      category: z.string().optional(),
-    })),
+    technologies: z.array(
+      z.object({
+        name: z.string(),
+        version: z.string().optional(),
+        confidence: z.number().optional(),
+        category: z.string().optional(),
+      })
+    ),
   }),
 
   FeatureList: z.object({
     title: z.string().optional(),
-    features: z.array(z.object({
-      name: z.string(),
-      detected: z.boolean(),
-      details: z.string().optional(),
-    })),
+    features: z.array(
+      z.object({
+        name: z.string(),
+        detected: z.boolean(),
+        details: z.string().optional(),
+      })
+    ),
   }),
 
   // ========================================
@@ -112,11 +133,13 @@ export const quickScanCatalogSchema = {
 
   AlternativesList: z.object({
     title: z.string().optional(),
-    alternatives: z.array(z.object({
-      name: z.string(),
-      confidence: z.number(),
-      reason: z.string(),
-    })),
+    alternatives: z.array(
+      z.object({
+        name: z.string(),
+        confidence: z.number(),
+        reason: z.string(),
+      })
+    ),
   }),
 
   SkillsList: z.object({
@@ -137,41 +160,55 @@ export const quickScanCatalogSchema = {
       moderate: z.number(),
       minor: z.number(),
     }),
-    checks: z.array(z.object({
-      name: z.string(),
-      passed: z.boolean(),
-    })).optional(),
+    checks: z
+      .array(
+        z.object({
+          name: z.string(),
+          passed: z.boolean(),
+        })
+      )
+      .optional(),
   }),
 
   SEOAudit: z.object({
     score: z.number().optional(),
-    checks: z.array(z.object({
-      name: z.string(),
-      passed: z.boolean(),
-    })),
+    checks: z.array(
+      z.object({
+        name: z.string(),
+        passed: z.boolean(),
+      })
+    ),
   }),
 
   LegalCompliance: z.object({
     score: z.number(),
-    checks: z.array(z.object({
-      name: z.string(),
-      passed: z.boolean(),
-    })),
+    checks: z.array(
+      z.object({
+        name: z.string(),
+        passed: z.boolean(),
+      })
+    ),
     cookieTool: z.string().optional(),
   }),
 
   PerformanceCard: z.object({
     loadTime: z.enum(['fast', 'medium', 'slow']).optional(),
-    resources: z.object({
-      scripts: z.number().optional(),
-      stylesheets: z.number().optional(),
-      images: z.number().optional(),
-      fonts: z.number().optional(),
-    }).optional(),
-    optimizations: z.array(z.object({
-      name: z.string(),
-      enabled: z.boolean(),
-    })).optional(),
+    resources: z
+      .object({
+        scripts: z.number().optional(),
+        stylesheets: z.number().optional(),
+        images: z.number().optional(),
+        fonts: z.number().optional(),
+      })
+      .optional(),
+    optimizations: z
+      .array(
+        z.object({
+          name: z.string(),
+          enabled: z.boolean(),
+        })
+      )
+      .optional(),
   }),
 
   // ========================================
@@ -182,53 +219,73 @@ export const quickScanCatalogSchema = {
     pageCount: z.number().optional(),
     complexity: z.enum(['low', 'medium', 'high']).optional(),
     languages: z.array(z.string()).optional(),
-    contentTypes: z.array(z.object({
-      type: z.string(),
-      count: z.number(),
-    })).optional(),
-    media: z.object({
-      images: z.number().optional(),
-      videos: z.number().optional(),
-      documents: z.number().optional(),
-    }).optional(),
+    contentTypes: z
+      .array(
+        z.object({
+          type: z.string(),
+          count: z.number(),
+        })
+      )
+      .optional(),
+    media: z
+      .object({
+        images: z.number().optional(),
+        videos: z.number().optional(),
+        documents: z.number().optional(),
+      })
+      .optional(),
   }),
 
   ContentTypeDistribution: z.object({
     title: z.string().optional(),
-    types: z.array(z.object({
-      type: z.string(),
-      count: z.number(),
-      percentage: z.number(),
-    })),
+    types: z.array(
+      z.object({
+        type: z.string(),
+        count: z.number(),
+        percentage: z.number(),
+      })
+    ),
     recommendations: z.array(z.string()).optional(),
   }),
 
   NavigationStats: z.object({
     totalItems: z.number(),
     maxDepth: z.number(),
-    features: z.object({
-      search: z.boolean().optional(),
-      breadcrumbs: z.boolean().optional(),
-      megaMenu: z.boolean().optional(),
-    }).optional(),
+    features: z
+      .object({
+        search: z.boolean().optional(),
+        breadcrumbs: z.boolean().optional(),
+        megaMenu: z.boolean().optional(),
+      })
+      .optional(),
     mainNavItems: z.array(z.string()).optional(),
   }),
 
   SiteTree: z.object({
     totalPages: z.number(),
     maxDepth: z.number(),
-    sources: z.object({
-      sitemap: z.number().optional(),
-      linkDiscovery: z.number().optional(),
-    }).optional(),
-    sections: z.array(z.object({
-      path: z.string(),
-      count: z.number(),
-      children: z.array(z.object({
-        path: z.string(),
-        count: z.number(),
-      })).optional(),
-    })).optional(),
+    sources: z
+      .object({
+        sitemap: z.number().optional(),
+        linkDiscovery: z.number().optional(),
+      })
+      .optional(),
+    sections: z
+      .array(
+        z.object({
+          path: z.string(),
+          count: z.number(),
+          children: z
+            .array(
+              z.object({
+                path: z.string(),
+                count: z.number(),
+              })
+            )
+            .optional(),
+        })
+      )
+      .optional(),
   }),
 
   // ========================================
@@ -253,20 +310,24 @@ export const quickScanCatalogSchema = {
 
   DecisionMakersList: z.object({
     title: z.string().optional(),
-    contacts: z.array(z.object({
-      name: z.string(),
-      role: z.string(),
-      email: z.string().optional(),
-      emailConfidence: z.enum(['confirmed', 'likely', 'derived', 'unknown']).optional(),
-      phone: z.string().optional(),
-      linkedInUrl: z.string().optional(),
-      source: z.string().optional(),
-    })),
-    researchQuality: z.object({
-      linkedInFound: z.number().optional(),
-      emailsConfirmed: z.number().optional(),
-      emailsDerived: z.number().optional(),
-    }).optional(),
+    contacts: z.array(
+      z.object({
+        name: z.string(),
+        role: z.string(),
+        email: z.string().optional(),
+        emailConfidence: z.enum(['confirmed', 'likely', 'derived', 'unknown']).optional(),
+        phone: z.string().optional(),
+        linkedInUrl: z.string().optional(),
+        source: z.string().optional(),
+      })
+    ),
+    researchQuality: z
+      .object({
+        linkedInFound: z.number().optional(),
+        emailsConfirmed: z.number().optional(),
+        emailsDerived: z.number().optional(),
+      })
+      .optional(),
   }),
 
   NewsItem: z.object({
@@ -279,13 +340,15 @@ export const quickScanCatalogSchema = {
 
   NewsList: z.object({
     title: z.string().optional(),
-    items: z.array(z.object({
-      title: z.string(),
-      source: z.string().optional(),
-      date: z.string().optional(),
-      sentiment: z.enum(['positive', 'neutral', 'negative']).optional(),
-      summary: z.string().optional(),
-    })),
+    items: z.array(
+      z.object({
+        title: z.string(),
+        source: z.string().optional(),
+        date: z.string().optional(),
+        sentiment: z.enum(['positive', 'neutral', 'negative']).optional(),
+        summary: z.string().optional(),
+      })
+    ),
   }),
 
   // ========================================
@@ -305,16 +368,22 @@ export const quickScanCatalogSchema = {
   MigrationComplexity: z.object({
     score: z.number(),
     recommendation: z.enum(['easy', 'moderate', 'complex', 'very_complex']).optional(),
-    factors: z.array(z.object({
-      name: z.string(),
-      score: z.number(),
-      notes: z.string().optional(),
-    })).optional(),
-    estimatedEffort: z.object({
-      minPT: z.number(),
-      maxPT: z.number(),
-      confidence: z.number(),
-    }).optional(),
+    factors: z
+      .array(
+        z.object({
+          name: z.string(),
+          score: z.number(),
+          notes: z.string().optional(),
+        })
+      )
+      .optional(),
+    estimatedEffort: z
+      .object({
+        minPT: z.number(),
+        maxPT: z.number(),
+        confidence: z.number(),
+      })
+      .optional(),
   }),
 
   // ========================================
@@ -324,23 +393,28 @@ export const quickScanCatalogSchema = {
   QuestionChecklist: z.object({
     title: z.string().optional(),
     projectType: z.enum(['migration', 'greenfield', 'relaunch']).optional(),
-    questions: z.array(z.object({
-      id: z.number(),
-      question: z.string(),
-      answered: z.boolean(),
-      answer: z.string().optional(),
-    })),
-    summary: z.object({
-      answered: z.number(),
-      total: z.number(),
-    }).optional(),
+    questions: z.array(
+      z.object({
+        id: z.number(),
+        question: z.string(),
+        answered: z.boolean(),
+        answer: z.string().optional(),
+      })
+    ),
+    summary: z
+      .object({
+        answered: z.number(),
+        total: z.number(),
+      })
+      .optional(),
   }),
 };
 
 // Component descriptions for AI
 export const quickScanComponentDescriptions = {
   // Layout
-  ResultCard: 'Container card for grouping related information with optional icon, styling, and collapsible behavior',
+  ResultCard:
+    'Container card for grouping related information with optional icon, styling, and collapsible behavior',
   Grid: 'Layout container for arranging children in columns',
   Section: 'Section header with title, description, and optional badge',
   // Metrics
@@ -376,7 +450,8 @@ export const quickScanComponentDescriptions = {
   // Migration
   MigrationComplexity: 'Migration complexity analysis with factors and effort estimate',
   // Questions
-  QuestionChecklist: '10 Questions checklist with progress and answered/unanswered status per question',
+  QuestionChecklist:
+    '10 Questions checklist with progress and answered/unanswered status per question',
 };
 
 // System prompt for AI

@@ -12,7 +12,7 @@ import {
   ArrowRight,
   TrendingUp,
   TrendingDown,
-  Minus
+  Minus,
 } from 'lucide-react';
 import type { QuickScan } from '@/lib/db/schema';
 
@@ -48,7 +48,7 @@ const criteriaLabels: Record<keyof BUMatchCriteria, string> = {
   featuresScore: 'Features',
   referencesScore: 'Referenzen',
   industryScore: 'Branche',
-  keywordsScore: 'Keywords'
+  keywordsScore: 'Keywords',
 };
 
 function ScoreTrend({ score, baseline }: { score: number; baseline: number }) {
@@ -131,13 +131,13 @@ export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) 
               <CheckCircle2 className="h-6 w-6 text-green-600" />
               <div>
                 <CardTitle className="text-green-900">{bestMatch.businessUnit.name}</CardTitle>
-                <CardDescription className="text-green-700">
-                  Beste Übereinstimmung
-                </CardDescription>
+                <CardDescription className="text-green-700">Beste Übereinstimmung</CardDescription>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-4xl font-bold text-green-700">{Math.round(bestMatch.totalScore)}%</div>
+              <div className="text-4xl font-bold text-green-700">
+                {Math.round(bestMatch.totalScore)}%
+              </div>
               <Badge className="bg-green-600">Empfohlen</Badge>
             </div>
           </div>
@@ -145,7 +145,7 @@ export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) 
         <CardContent>
           {/* Criteria Breakdown */}
           <div className="grid grid-cols-5 gap-4 mb-6">
-            {(Object.keys(criteriaLabels) as Array<keyof BUMatchCriteria>).map((key) => (
+            {(Object.keys(criteriaLabels) as Array<keyof BUMatchCriteria>).map(key => (
               <div key={key} className="text-center">
                 <p className="text-xs text-green-700 mb-2">{criteriaLabels[key]}</p>
                 <div className="relative h-24 bg-green-200 rounded-lg overflow-hidden">
@@ -163,7 +163,9 @@ export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) 
 
           {/* Reasoning */}
           <div className="bg-white/70 rounded-lg p-4 mb-4">
-            <p className="text-sm font-medium text-green-800 mb-2">Warum {bestMatch.businessUnit.shortName}?</p>
+            <p className="text-sm font-medium text-green-800 mb-2">
+              Warum {bestMatch.businessUnit.shortName}?
+            </p>
             <p className="text-sm text-green-900">{bestMatch.reasoning}</p>
           </div>
 
@@ -172,7 +174,7 @@ export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) 
             <div className="mb-4">
               <p className="text-xs text-green-700 mb-2">Gematchte Technologien</p>
               <div className="flex flex-wrap gap-1">
-                {bestMatch.matchedTechnologies.map((tech) => (
+                {bestMatch.matchedTechnologies.map(tech => (
                   <Badge key={tech} className="bg-green-100 text-green-800 border-green-300">
                     {tech}
                   </Badge>
@@ -202,7 +204,7 @@ export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) 
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {otherMatches.map((match) => {
+            {otherMatches.map(match => {
               const scoreDiff = bestMatch.totalScore - match.totalScore;
 
               return (
@@ -229,13 +231,15 @@ export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) 
 
                   {/* Criteria Comparison */}
                   <div className="grid grid-cols-5 gap-2 mb-3">
-                    {(Object.keys(criteriaLabels) as Array<keyof BUMatchCriteria>).map((key) => {
+                    {(Object.keys(criteriaLabels) as Array<keyof BUMatchCriteria>).map(key => {
                       const score = match.criteria[key];
                       const bestScore = bestMatch.criteria[key];
 
                       return (
                         <div key={key} className="text-center">
-                          <p className="text-xs text-muted-foreground mb-1">{criteriaLabels[key]}</p>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            {criteriaLabels[key]}
+                          </p>
                           <div className="flex items-center justify-center gap-1">
                             <Progress value={score} className="h-2 w-12" />
                             <span className="text-xs font-medium">{Math.round(score)}%</span>
@@ -263,8 +267,7 @@ export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) 
                               .map(k => criteriaLabels[k])
                               .join(', ') || 'einigen Kriterien'
                           }`
-                        : 'Knapp hinter der Top-Empfehlung, aber nicht optimal'
-                    }
+                        : 'Knapp hinter der Top-Empfehlung, aber nicht optimal'}
                   </div>
 
                   {/* Alternative selection */}
@@ -289,9 +292,7 @@ export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) 
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-orange-900">
-                  Weiterleitung ausgewählt
-                </h3>
+                <h3 className="font-semibold text-orange-900">Weiterleitung ausgewählt</h3>
                 <p className="text-sm text-orange-700">
                   {buMatches.find(m => m.businessUnit.id === selectedBU)?.businessUnit.name}
                 </p>

@@ -27,7 +27,16 @@ export interface SearchResult {
 export interface SearchOptions {
   numResults?: number;
   type?: 'keyword' | 'neural' | 'auto';
-  category?: 'company' | 'research paper' | 'news' | 'pdf' | 'github' | 'tweet' | 'personal site' | 'financial report' | 'people';
+  category?:
+    | 'company'
+    | 'research paper'
+    | 'news'
+    | 'pdf'
+    | 'github'
+    | 'tweet'
+    | 'personal site'
+    | 'financial report'
+    | 'people';
   summary?: boolean;
   includeDomains?: string[];
   excludeDomains?: string[];
@@ -78,9 +87,10 @@ export async function searchAndContents(
         exaOptions.summary = true;
       }
       if (options.contents?.text) {
-        exaOptions.text = typeof options.contents.text === 'object'
-          ? options.contents.text
-          : { maxCharacters: 3000 };
+        exaOptions.text =
+          typeof options.contents.text === 'object'
+            ? options.contents.text
+            : { maxCharacters: 3000 };
       } else {
         // Default: get text content
         exaOptions.text = { maxCharacters: 3000 };
@@ -117,7 +127,7 @@ export async function searchAndContents(
 
   // Fetch contents for each result if summary is requested
   const enrichedResults = await Promise.all(
-    results.map(async (result) => {
+    results.map(async result => {
       const enriched: SearchResult = {
         title: result.title,
         url: result.url,
@@ -155,9 +165,7 @@ export async function getContents(
       const exaOptions: Record<string, unknown> = {};
 
       if (options.text !== false) {
-        exaOptions.text = options.maxCharacters
-          ? { maxCharacters: options.maxCharacters }
-          : true;
+        exaOptions.text = options.maxCharacters ? { maxCharacters: options.maxCharacters } : true;
       }
 
       const response = await exa.getContents([url], exaOptions);

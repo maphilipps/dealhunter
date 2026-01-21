@@ -1,84 +1,82 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { PlusCircle } from "lucide-react"
-import Link from "next/link"
-import { QuickStats } from "@/components/bids/quick-stats"
-import { FilterBar } from "@/components/bids/filter-bar"
-import { AccountGroupedList } from "@/components/bids/account-grouped-list"
-import { PipelineOverview } from "@/components/bids/pipeline-overview"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { PlusCircle } from 'lucide-react';
+import Link from 'next/link';
+import { QuickStats } from '@/components/bids/quick-stats';
+import { FilterBar } from '@/components/bids/filter-bar';
+import { AccountGroupedList } from '@/components/bids/account-grouped-list';
+import { PipelineOverview } from '@/components/bids/pipeline-overview';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface BidOpportunity {
-  id: string
-  status: string
-  decision: string
-  source: string
-  accountId?: string
-  accountName?: string
-  projectName?: string
-  createdAt: Date
-  websiteUrl?: string
-  extractedRequirements?: any
+  id: string;
+  status: string;
+  decision: string;
+  source: string;
+  accountId?: string;
+  accountName?: string;
+  projectName?: string;
+  createdAt: Date;
+  websiteUrl?: string;
+  extractedRequirements?: any;
 }
 
 interface Stats {
-  totalBids: number
-  activeBids: number
-  bidRate: number
-  pendingEvaluations: number
+  totalBids: number;
+  activeBids: number;
+  bidRate: number;
+  pendingEvaluations: number;
 }
 
 export default function DashboardPage() {
-  const [opportunities, setOpportunities] = useState<BidOpportunity[]>([])
+  const [opportunities, setOpportunities] = useState<BidOpportunity[]>([]);
   const [stats, setStats] = useState<Stats>({
     totalBids: 0,
     activeBids: 0,
     bidRate: 0,
-    pendingEvaluations: 0
-  })
-  const [isLoading, setIsLoading] = useState(true)
+    pendingEvaluations: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
   // Filter state
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [sourceFilter, setSourceFilter] = useState('all')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch data
   useEffect(() => {
     async function fetchData() {
-      setIsLoading(true)
+      setIsLoading(true);
       try {
-        const params = new URLSearchParams()
-        if (statusFilter !== 'all') params.set('status', statusFilter)
-        if (sourceFilter !== 'all') params.set('source', sourceFilter)
-        if (searchQuery.trim()) params.set('search', searchQuery)
+        const params = new URLSearchParams();
+        if (statusFilter !== 'all') params.set('status', statusFilter);
+        if (sourceFilter !== 'all') params.set('source', sourceFilter);
+        if (searchQuery.trim()) params.set('search', searchQuery);
 
-        const response = await fetch(`/api/bids?${params.toString()}`)
-        if (!response.ok) throw new Error('Failed to fetch bids')
+        const response = await fetch(`/api/bids?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to fetch bids');
 
-        const data = await response.json()
-        setOpportunities(data.opportunities)
-        setStats(data.stats)
+        const data = await response.json();
+        setOpportunities(data.opportunities);
+        setStats(data.stats);
       } catch (error) {
-        console.error('Error fetching bids:', error)
+        console.error('Error fetching bids:', error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
 
-    fetchData()
-  }, [statusFilter, sourceFilter, searchQuery])
+    fetchData();
+  }, [statusFilter, sourceFilter, searchQuery]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            AI-powered BD decision platform
-          </p>
+          <p className="text-muted-foreground">AI-powered BD decision platform</p>
         </div>
         <Button asChild>
           <Link href="/rfps/new">
@@ -125,5 +123,5 @@ export default function DashboardPage() {
         </Tabs>
       )}
     </div>
-  )
+  );
 }

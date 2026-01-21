@@ -19,15 +19,17 @@ resolved: 2026-01-17
 The crawler utilities fetch arbitrary URLs without validation, allowing Server-Side Request Forgery (SSRF) attacks.
 
 **Affected Files:**
+
 - `/lib/deep-analysis/utils/crawler.ts` (lines 24-102, 141-162)
 - `/lib/deep-analysis/utils/cms-detector.ts` (lines 46-62)
 
 **Vulnerable Code:**
+
 ```typescript
 // No validation before fetch
 export async function fetchSitemap(websiteUrl: string): Promise<Sitemap> {
   const sitemapUrls = [
-    `${websiteUrl}/sitemap.xml`,  // websiteUrl can be internal IP
+    `${websiteUrl}/sitemap.xml`, // websiteUrl can be internal IP
     // ...
   ];
 

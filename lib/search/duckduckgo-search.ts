@@ -25,10 +25,7 @@ interface ContentResponse {
  * Search DuckDuckGo locally without API key
  * Scrapes the HTML results page for search results
  */
-export async function searchDuckDuckGo(
-  query: string,
-  numResults = 5
-): Promise<SearchResponse> {
+export async function searchDuckDuckGo(query: string, numResults = 5): Promise<SearchResponse> {
   try {
     const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
 
@@ -125,7 +122,7 @@ export async function fetchUrlContents(url: string): Promise<ContentResponse> {
     const response = await fetch(validUrl.toString(), {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; DealHunterBot/1.0)',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9,de;q=0.8',
       },
       signal: AbortSignal.timeout(15000),

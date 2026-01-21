@@ -49,10 +49,7 @@ export async function getBidDocuments(bidId: string) {
     const bid = await db
       .select()
       .from(rfps)
-      .where(and(
-        eq(rfps.id, bidId),
-        eq(rfps.userId, session.user.id)
-      ))
+      .where(and(eq(rfps.id, bidId), eq(rfps.userId, session.user.id)))
       .limit(1);
 
     if (!bid.length) {
@@ -88,8 +85,8 @@ export async function uploadPdfBid(formData: FormData) {
   }
 
   const file = formData.get('file') as File | null;
-  const source = formData.get('source') as 'reactive' | 'proactive' || 'reactive';
-  const stage = formData.get('stage') as 'cold' | 'warm' | 'rfp' || 'rfp';
+  const source = (formData.get('source') as 'reactive' | 'proactive') || 'reactive';
+  const stage = (formData.get('stage') as 'cold' | 'warm' | 'rfp') || 'rfp';
   const enableDSGVO = formData.get('enableDSGVO') === 'true';
   const accountId = formData.get('accountId') as string | null;
 
@@ -126,11 +123,13 @@ export async function uploadPdfBid(formData: FormData) {
       const piiMatches = detectPII(extractedText);
       if (piiMatches.length > 0) {
         extractedText = cleanText(extractedText, piiMatches);
-        piiData = JSON.stringify(piiMatches.map(m => ({
-          type: m.type,
-          original: m.original,
-          replacement: m.replacement
-        })));
+        piiData = JSON.stringify(
+          piiMatches.map(m => ({
+            type: m.type,
+            original: m.original,
+            replacement: m.replacement,
+          }))
+        );
       }
     }
 
@@ -165,7 +164,7 @@ export async function uploadPdfBid(formData: FormData) {
     return {
       success: true,
       bidId: bidOpportunity.id,
-      piiRemoved: enableDSGVO && (piiData !== null)
+      piiRemoved: enableDSGVO && piiData !== null,
     };
   } catch (error) {
     console.error('PDF upload error:', error);
@@ -218,7 +217,7 @@ export async function uploadFreetextBid(data: {
 
     return {
       success: true,
-      bidId: bidOpportunity.id
+      bidId: bidOpportunity.id,
     };
   } catch (error) {
     console.error('Freetext upload error:', error);
@@ -276,7 +275,7 @@ export async function uploadEmailBid(data: {
     return {
       success: true,
       bidId: bidOpportunity.id,
-      metadata
+      metadata,
     };
   } catch (error) {
     console.error('Email upload error:', error);
@@ -297,11 +296,7 @@ export async function startExtraction(bidId: string) {
 
   try {
     // Get the bid opportunity
-    const [bid] = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -317,13 +312,16 @@ export async function startExtraction(bidId: string) {
       .set({
         status: 'extracting',
         version: bid.version + 1,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(and(eq(rfps.id, bidId), eq(rfps.version, bid.version)))
       .returning();
 
     if (!updated || updated.length === 0) {
-      return { success: false, error: 'Bid wurde während der Bearbeitung geändert. Bitte aktualisieren Sie die Seite.' };
+      return {
+        success: false,
+        error: 'Bid wurde während der Bearbeitung geändert. Bitte aktualisieren Sie die Seite.',
+      };
     }
 
     // Run extraction
@@ -370,11 +368,7 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
 
   try {
     // Get the bid opportunity
-    const [bid] = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -395,7 +389,7 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
 
     // Auto-launch Quick Scan (fire-and-forget)
     // Don't await - let it run in background while user sees success
-    startQuickScan(bidId).catch((error) => {
+    startQuickScan(bidId).catch(error => {
       console.error('Auto Quick Scan launch failed:', error);
     });
 
@@ -429,14 +423,17 @@ export async function uploadCombinedBid(formData: FormData) {
   const file = formData.get('file') as File | null;
   const websiteUrl = (formData.get('websiteUrl') as string)?.trim() || '';
   const additionalText = (formData.get('additionalText') as string)?.trim() || '';
-  const source = formData.get('source') as 'reactive' | 'proactive' || 'reactive';
-  const stage = formData.get('stage') as 'cold' | 'warm' | 'rfp' || 'rfp';
+  const source = (formData.get('source') as 'reactive' | 'proactive') || 'reactive';
+  const stage = (formData.get('stage') as 'cold' | 'warm' | 'rfp') || 'rfp';
   const enableDSGVO = formData.get('enableDSGVO') === 'true';
   const accountId = formData.get('accountId') as string | null;
 
   // At least one input is required
   if (!file && !websiteUrl && !additionalText) {
-    return { success: false, error: 'Mindestens eine Eingabe (PDF, URL oder Text) ist erforderlich' };
+    return {
+      success: false,
+      error: 'Mindestens eine Eingabe (PDF, URL oder Text) ist erforderlich',
+    };
   }
 
   // Validate accountId if provided
@@ -486,11 +483,13 @@ export async function uploadCombinedBid(formData: FormData) {
         const piiMatches = detectPII(extractedText);
         if (piiMatches.length > 0) {
           extractedText = cleanText(extractedText, piiMatches);
-          piiData = JSON.stringify(piiMatches.map(m => ({
-            type: m.type,
-            original: m.original,
-            replacement: m.replacement
-          })));
+          piiData = JSON.stringify(
+            piiMatches.map(m => ({
+              type: m.type,
+              original: m.original,
+              replacement: m.replacement,
+            }))
+          );
         }
       }
 
@@ -559,7 +558,7 @@ export async function uploadCombinedBid(formData: FormData) {
     return {
       success: true,
       bidId: bidOpportunity.id,
-      piiRemoved: enableDSGVO && (piiData !== null),
+      piiRemoved: enableDSGVO && piiData !== null,
       inputType,
     };
   } catch (error) {
@@ -617,11 +616,7 @@ export async function forwardToBusinessLeader(bidId: string, businessUnitId: str
 
   try {
     // Get the bid
-    const [bid] = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -676,11 +671,7 @@ export async function makeBitDecision(bidId: string, decision: 'bid' | 'no_bid',
 
   try {
     // Get the bid
-    const [bid] = await db
-      .select()
-      .from(rfps)
-      .where(eq(rfps.id, bidId))
-      .limit(1);
+    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };

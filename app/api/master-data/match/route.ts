@@ -71,10 +71,7 @@ export async function POST(request: NextRequest) {
     const parsed = matchRequestSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: parsed.error },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error }, { status: 400 });
     }
 
     const {
@@ -149,7 +146,7 @@ async function matchReferences(params: {
     .limit(limit * 3); // Get more candidates for scoring
 
   // Score and rank
-  const scored = allReferences.map((ref) => {
+  const scored = allReferences.map(ref => {
     let score = 0;
     const reasons: string[] = [];
 
@@ -157,7 +154,7 @@ async function matchReferences(params: {
     const refTechs = ref.technologies ? JSON.parse(ref.technologies) : [];
 
     // Technology matches (weighted heavily)
-    const techMatches = technologies.filter((t) =>
+    const techMatches = technologies.filter(t =>
       refTechs.some((rt: string) => rt.toLowerCase().includes(t.toLowerCase()))
     );
 
@@ -193,7 +190,7 @@ async function matchReferences(params: {
 
   // Sort by score and return top N
   return scored
-    .filter((r) => r.matchScore > 0)
+    .filter(r => r.matchScore > 0)
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, limit);
 }
@@ -211,16 +208,16 @@ async function matchCompetencies(params: {
     .where(eq(competencies.isValidated, true))
     .limit(limit * 3);
 
-  const allSearchTerms = [...technologies, ...skills].map((s) => s.toLowerCase());
+  const allSearchTerms = [...technologies, ...skills].map(s => s.toLowerCase());
 
-  const scored = allCompetencies.map((comp) => {
+  const scored = allCompetencies.map(comp => {
     let score = 0;
     const reasons: string[] = [];
 
     const compName = comp.name.toLowerCase();
 
     // Direct name matches
-    const nameMatches = allSearchTerms.filter((term) => compName.includes(term));
+    const nameMatches = allSearchTerms.filter(term => compName.includes(term));
 
     if (nameMatches.length > 0) {
       score += nameMatches.length * 8;
@@ -252,7 +249,7 @@ async function matchCompetencies(params: {
   });
 
   return scored
-    .filter((c) => c.matchScore > 0)
+    .filter(c => c.matchScore > 0)
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, limit);
 }
@@ -270,15 +267,15 @@ async function matchCompetitors(params: {
     .where(eq(competitors.isValidated, true))
     .limit(limit * 2);
 
-  const scored = allCompetitors.map((comp) => {
+  const scored = allCompetitors.map(comp => {
     let score = 0;
     const reasons: string[] = [];
 
     const compName = comp.companyName.toLowerCase();
 
     // Direct name match
-    const nameMatch = competitorNames.some((cn) =>
-      compName.includes(cn.toLowerCase()) || cn.toLowerCase().includes(compName)
+    const nameMatch = competitorNames.some(
+      cn => compName.includes(cn.toLowerCase()) || cn.toLowerCase().includes(compName)
     );
 
     if (nameMatch) {
@@ -313,7 +310,7 @@ async function matchCompetitors(params: {
   });
 
   return scored
-    .filter((c) => c.matchScore > 0)
+    .filter(c => c.matchScore > 0)
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, limit);
 }

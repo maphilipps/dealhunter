@@ -1,8 +1,8 @@
-"use server";
+'use server';
 
-import { db } from "@/lib/db";
-import { references, competencies, competitors } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { db } from '@/lib/db';
+import { references, competencies, competitors } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 
 // ============================================================================
 // Master Data Matching Functions
@@ -63,13 +63,13 @@ export async function findMatchingReferences(params: {
     .where(and(...conditions))
     .limit(limit * 3);
 
-  const scored = allReferences.map((ref) => {
+  const scored = allReferences.map(ref => {
     let score = 0;
     const reasons: string[] = [];
 
     const refTechs = ref.technologies ? JSON.parse(ref.technologies) : [];
 
-    const techMatches = technologies.filter((t) =>
+    const techMatches = technologies.filter(t =>
       refTechs.some((rt: string) => rt.toLowerCase().includes(t.toLowerCase()))
     );
 
@@ -102,7 +102,7 @@ export async function findMatchingReferences(params: {
   });
 
   return scored
-    .filter((r) => r.matchScore > 0)
+    .filter(r => r.matchScore > 0)
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, limit);
 }
@@ -123,15 +123,15 @@ export async function findMatchingCompetencies(params: {
     .where(eq(competencies.isValidated, true))
     .limit(limit * 3);
 
-  const allSearchTerms = [...technologies, ...skills].map((s) => s.toLowerCase());
+  const allSearchTerms = [...technologies, ...skills].map(s => s.toLowerCase());
 
-  const scored = allCompetencies.map((comp) => {
+  const scored = allCompetencies.map(comp => {
     let score = 0;
     const reasons: string[] = [];
 
     const compName = comp.name.toLowerCase();
 
-    const nameMatches = allSearchTerms.filter((term) => compName.includes(term));
+    const nameMatches = allSearchTerms.filter(term => compName.includes(term));
 
     if (nameMatches.length > 0) {
       score += nameMatches.length * 8;
@@ -161,7 +161,7 @@ export async function findMatchingCompetencies(params: {
   });
 
   return scored
-    .filter((c) => c.matchScore > 0)
+    .filter(c => c.matchScore > 0)
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, limit);
 }
@@ -182,14 +182,14 @@ export async function findMatchingCompetitors(params: {
     .where(eq(competitors.isValidated, true))
     .limit(limit * 2);
 
-  const scored = allCompetitors.map((comp) => {
+  const scored = allCompetitors.map(comp => {
     let score = 0;
     const reasons: string[] = [];
 
     const compName = comp.companyName.toLowerCase();
 
-    const nameMatch = competitorNames.some((cn) =>
-      compName.includes(cn.toLowerCase()) || cn.toLowerCase().includes(compName)
+    const nameMatch = competitorNames.some(
+      cn => compName.includes(cn.toLowerCase()) || cn.toLowerCase().includes(compName)
     );
 
     if (nameMatch) {
@@ -222,7 +222,7 @@ export async function findMatchingCompetitors(params: {
   });
 
   return scored
-    .filter((c) => c.matchScore > 0)
+    .filter(c => c.matchScore > 0)
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, limit);
 }

@@ -9,7 +9,11 @@ import { toast } from 'sonner';
 import { updateExtractedRequirements } from '@/lib/bids/actions';
 import { calculateAnsweredQuestionsCount } from '@/lib/bids/ten-questions';
 import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
-import { startBitEvaluation, getBitEvaluationResult, retriggerBitEvaluation } from '@/lib/bit-evaluation/actions';
+import {
+  startBitEvaluation,
+  getBitEvaluationResult,
+  retriggerBitEvaluation,
+} from '@/lib/bit-evaluation/actions';
 import type { BidOpportunity, QuickScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
@@ -110,7 +114,9 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     const scanResult = await getQuickScanResult(bid.id);
 
     if (scanResult.success && scanResult.quickScan?.status === 'completed') {
-      toast.success('Quick Scan abgeschlossen! Bitte prüfen Sie die 10 Fragen und treffen Sie eine BIT/NO BIT Entscheidung.');
+      toast.success(
+        'Quick Scan abgeschlossen! Bitte prüfen Sie die 10 Fragen und treffen Sie eine BIT/NO BIT Entscheidung.'
+      );
       router.refresh();
     } else if (scanResult.success && scanResult.quickScan?.status === 'running') {
       // Quick Scan still running, poll again
@@ -121,7 +127,9 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   };
 
   // Handle URL submission when Quick Scan needs a URL
-  const handleUrlSubmit = async (urls: Array<{ url: string; type: string; description?: string; selected: boolean }>) => {
+  const handleUrlSubmit = async (
+    urls: Array<{ url: string; type: string; description?: string; selected: boolean }>
+  ) => {
     setIsSubmittingUrl(true);
 
     try {
@@ -199,14 +207,30 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Load quick scan if status is quick_scanning or later
   useEffect(() => {
     const loadQuickScan = async () => {
-      if (['quick_scanning', 'questions_ready', 'bit_pending', 'evaluating', 'decision_made', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status)) {
+      if (
+        [
+          'quick_scanning',
+          'questions_ready',
+          'bit_pending',
+          'evaluating',
+          'decision_made',
+          'routed',
+          'full_scanning',
+          'bl_reviewing',
+          'team_assigned',
+          'notified',
+          'handed_off',
+        ].includes(bid.status)
+      ) {
         setIsLoadingQuickScan(true);
         const result = await getQuickScanResult(bid.id);
         if (result.success && result.quickScan) {
           setQuickScan(result.quickScan);
           setNeedsWebsiteUrl(false);
         } else if (bid.status === 'quick_scanning') {
-          const hasUrl = extractedData?.websiteUrl || (extractedData?.websiteUrls && extractedData.websiteUrls.length > 0);
+          const hasUrl =
+            extractedData?.websiteUrl ||
+            (extractedData?.websiteUrls && extractedData.websiteUrls.length > 0);
           if (!hasUrl) {
             setNeedsWebsiteUrl(true);
           }
@@ -214,13 +238,24 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         setIsLoadingQuickScan(false);
       }
     };
-    
+
     loadQuickScan();
   }, [bid.id, bid.status, extractedData, refreshKey]);
 
   // Load BIT evaluation result if status is decision_made or later
   useEffect(() => {
-    if (['decision_made', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off', 'archived'].includes(bid.status)) {
+    if (
+      [
+        'decision_made',
+        'routed',
+        'full_scanning',
+        'bl_reviewing',
+        'team_assigned',
+        'notified',
+        'handed_off',
+        'archived',
+      ].includes(bid.status)
+    ) {
       setIsLoadingBitEvaluation(true);
       getBitEvaluationResult(bid.id).then(result => {
         if (result.success && result.result) {
@@ -258,7 +293,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         setAutoStartState('starting');
 
         startQuickScan(bid.id)
-          .then((result) => {
+          .then(result => {
             if (result.success) {
               setAutoStartState('polling');
               toast.success('Quick Scan automatisch gestartet!');
@@ -295,9 +330,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           <Card>
             <CardHeader>
               <CardTitle>Rohdaten</CardTitle>
-              <CardDescription>
-                Extrahierter Text aus dem Dokument
-              </CardDescription>
+              <CardDescription>Extrahierter Text aus dem Dokument</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="rounded-lg bg-muted p-4">
@@ -312,9 +345,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           <Card>
             <CardHeader>
               <CardTitle>Nächster Schritt</CardTitle>
-              <CardDescription>
-                AI-gestützte Extraktion der Anforderungen
-              </CardDescription>
+              <CardDescription>AI-gestützte Extraktion der Anforderungen</CardDescription>
             </CardHeader>
             <CardContent>
               <Button onClick={handleStartExtraction} disabled={isExtracting}>
@@ -339,9 +370,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           <Card>
             <CardHeader>
               <CardTitle>Rohdaten</CardTitle>
-              <CardDescription>
-                Extrahierter Text aus dem Dokument
-              </CardDescription>
+              <CardDescription>Extrahierter Text aus dem Dokument</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="rounded-lg bg-muted p-4">
@@ -361,7 +390,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
               setIsExtracting(false);
               router.refresh();
             }}
-            onError={(error) => {
+            onError={error => {
               toast.error(error || 'Extraktion fehlgeschlagen');
               setIsExtracting(false);
             }}
@@ -414,285 +443,324 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   }
 
   // Quick Scanning or later states - Show Quick Scan results
-  if (['quick_scanning', 'questions_ready', 'bit_pending', 'evaluating', 'decision_made', 'routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off', 'archived'].includes(bid.status)) {
+  if (
+    [
+      'quick_scanning',
+      'questions_ready',
+      'bit_pending',
+      'evaluating',
+      'decision_made',
+      'routed',
+      'full_scanning',
+      'bl_reviewing',
+      'team_assigned',
+      'notified',
+      'handed_off',
+      'archived',
+    ].includes(bid.status)
+  ) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
         <div className="space-y-6">
-        {/* Extracted Requirements Summary */}
-        {extractedData && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Extrahierte Anforderungen</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                {extractedData.customerName && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Kunde</p>
-                    <p className="text-lg">{extractedData.customerName}</p>
-                  </div>
-                )}
-                {extractedData.technologies && extractedData.technologies.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Technologien</p>
-                    <div className="flex flex-wrap gap-2">
-                      {extractedData.technologies.slice(0, 5).map((tech: string, idx: number) => (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs"
-                        >
-                          {tech}
-                        </span>
-                      ))}
-                      {extractedData.technologies.length > 5 && (
-                        <span className="text-xs text-muted-foreground">
-                          +{extractedData.technologies.length - 5} mehr
-                        </span>
-                      )}
+          {/* Extracted Requirements Summary */}
+          {extractedData && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Extrahierte Anforderungen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {extractedData.customerName && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Kunde</p>
+                      <p className="text-lg">{extractedData.customerName}</p>
                     </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Website URL Input (when needed) */}
-        {needsWebsiteUrl && extractedData && (
-          <WebsiteUrlInput
-            customerName={extractedData.customerName}
-            industry={extractedData.industry}
-            projectDescription={extractedData.projectDescription}
-            technologies={extractedData.technologies}
-            onSubmit={handleUrlSubmit}
-            isSubmitting={isSubmittingUrl}
-          />
-        )}
-
-        {/* Quick Scan Results */}
-        {isLoadingQuickScan && !needsWebsiteUrl && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm text-muted-foreground">Lade Quick Scan Ergebnisse...</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {quickScan && (
-          <QuickScanResults
-            quickScan={quickScan}
-            bidId={bid.id}
-            onRefresh={handleRefresh}
-            extractedData={extractedData}
-          />
-        )}
-
-        {/* BD Qualification Decision (questions_ready or bit_pending status) */}
-        {['questions_ready', 'bit_pending'].includes(bid.status) && quickScan && (() => {
-          const questionsCount = calculateAnsweredQuestionsCount(quickScan, extractedData);
-          return (
-            <BitDecisionActions
-              bidId={bid.id}
-              answeredQuestionsCount={questionsCount.answered}
-              totalQuestionsCount={questionsCount.total}
-              overallScore={quickScan.confidence || undefined}
-            />
-          );
-        })()}
-
-        {/* BIT Evaluation Progress (evaluating status) */}
-        {bid.status === 'evaluating' && (
-          <ActivityStream
-            streamUrl={`/api/rfps/${bid.id}/evaluate/stream`}
-            title="BIT/NO BIT Evaluierung"
-            onComplete={() => {
-              toast.success('BIT Evaluierung abgeschlossen!');
-              handleRefresh();
-            }}
-            autoStart={true}
-          />
-        )}
-
-        {/* BIT Evaluation Results (decision_made status) */}
-        {bid.status === 'decision_made' && (
-          <>
-            {isLoadingBitEvaluation && (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm text-muted-foreground">Lade BIT Evaluierung...</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {bitEvaluationResult && (
-              <>
-                <div className="flex items-center justify-between">
-                  <div />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRetriggerBitEvaluation}
-                    disabled={isRetriggeringBit}
-                  >
-                    {isRetriggeringBit ? (
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    ) : (
-                      <RotateCcw className="h-4 w-4 mr-1" />
-                    )}
-                    Erneut evaluieren
-                  </Button>
+                  )}
+                  {extractedData.technologies && extractedData.technologies.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-2">Technologien</p>
+                      <div className="flex flex-wrap gap-2">
+                        {extractedData.technologies.slice(0, 5).map((tech: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs"
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                        {extractedData.technologies.length > 5 && (
+                          <span className="text-xs text-muted-foreground">
+                            +{extractedData.technologies.length - 5} mehr
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <DecisionCard result={bitEvaluationResult} />
+              </CardContent>
+            </Card>
+          )}
 
-                {/* Show BL Routing Card for BIT decisions */}
-                {bitEvaluationResult.decision.decision === 'bit' && quickScan && (
-                  <BLRoutingCard
+          {/* Website URL Input (when needed) */}
+          {needsWebsiteUrl && extractedData && (
+            <WebsiteUrlInput
+              customerName={extractedData.customerName}
+              industry={extractedData.industry}
+              projectDescription={extractedData.projectDescription}
+              technologies={extractedData.technologies}
+              onSubmit={handleUrlSubmit}
+              isSubmitting={isSubmittingUrl}
+            />
+          )}
+
+          {/* Quick Scan Results */}
+          {isLoadingQuickScan && !needsWebsiteUrl && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">
+                    Lade Quick Scan Ergebnisse...
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {quickScan && (
+            <QuickScanResults
+              quickScan={quickScan}
+              bidId={bid.id}
+              onRefresh={handleRefresh}
+              extractedData={extractedData}
+            />
+          )}
+
+          {/* BD Qualification Decision (questions_ready or bit_pending status) */}
+          {['questions_ready', 'bit_pending'].includes(bid.status) &&
+            quickScan &&
+            (() => {
+              const questionsCount = calculateAnsweredQuestionsCount(quickScan, extractedData);
+              return (
+                <BitDecisionActions
+                  bidId={bid.id}
+                  answeredQuestionsCount={questionsCount.answered}
+                  totalQuestionsCount={questionsCount.total}
+                  overallScore={quickScan.confidence || undefined}
+                />
+              );
+            })()}
+
+          {/* BIT Evaluation Progress (evaluating status) */}
+          {bid.status === 'evaluating' && (
+            <ActivityStream
+              streamUrl={`/api/rfps/${bid.id}/evaluate/stream`}
+              title="BIT/NO BIT Evaluierung"
+              onComplete={() => {
+                toast.success('BIT Evaluierung abgeschlossen!');
+                handleRefresh();
+              }}
+              autoStart={true}
+            />
+          )}
+
+          {/* BIT Evaluation Results (decision_made status) */}
+          {bid.status === 'decision_made' && (
+            <>
+              {isLoadingBitEvaluation && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm text-muted-foreground">Lade BIT Evaluierung...</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {bitEvaluationResult && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRetriggerBitEvaluation}
+                      disabled={isRetriggeringBit}
+                    >
+                      {isRetriggeringBit ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <RotateCcw className="h-4 w-4 mr-1" />
+                      )}
+                      Erneut evaluieren
+                    </Button>
+                  </div>
+                  <DecisionCard result={bitEvaluationResult} />
+
+                  {/* Show BL Routing Card for BIT decisions */}
+                  {bitEvaluationResult.decision.decision === 'bit' && quickScan && (
+                    <BLRoutingCard
+                      bidId={bid.id}
+                      recommendation={{
+                        primaryBusinessLine:
+                          quickScan.recommendedBusinessUnit || 'Technology & Innovation',
+                        confidence: quickScan.confidence || 0,
+                        reasoning: quickScan.reasoning || '',
+                        alternativeBusinessLines: [],
+                        requiredSkills: [],
+                      }}
+                    />
+                  )}
+
+                  {/* Show Deep Analysis Card for BIT decisions */}
+                  {bitEvaluationResult.decision.decision === 'bit' && (
+                    <DeepAnalysisCard
+                      bidId={bid.id}
+                      websiteUrl={bid.websiteUrl}
+                      existingAnalysis={null}
+                    />
+                  )}
+
+                  <LowConfidenceDialog
+                    open={showLowConfidenceDialog}
+                    onOpenChange={setShowLowConfidenceDialog}
                     bidId={bid.id}
-                    recommendation={{
-                      primaryBusinessLine: quickScan.recommendedBusinessUnit || 'Technology & Innovation',
-                      confidence: quickScan.confidence || 0,
-                      reasoning: quickScan.reasoning || '',
-                      alternativeBusinessLines: [],
-                      requiredSkills: [],
-                    }}
+                    decision={bitEvaluationResult.decision.decision}
+                    confidence={bitEvaluationResult.decision.overallConfidence}
+                    reasoning={bitEvaluationResult.decision.reasoning}
                   />
-                )}
+                </>
+              )}
+            </>
+          )}
 
-                {/* Show Deep Analysis Card for BIT decisions */}
-                {bitEvaluationResult.decision.decision === 'bit' && (
+          {/* Phase 6/7/9: Routed status and later - Show Team Builder, Baseline, Planning, Notifications */}
+          {[
+            'routed',
+            'full_scanning',
+            'bl_reviewing',
+            'team_assigned',
+            'notified',
+            'handed_off',
+          ].includes(bid.status) &&
+            (() => {
+              // Check what data is available for the new components
+              const hasDeepAnalysis = bid.deepMigrationAnalysisId !== null;
+              const hasTeam = bid.assignedTeam !== null;
+
+              // Parse results if available
+              let baselineResult = null;
+              let projectPlan = null;
+              let notificationResults = null;
+
+              if (bid.baselineComparisonResult) {
+                try {
+                  baselineResult = JSON.parse(bid.baselineComparisonResult);
+                } catch {}
+              }
+              if (bid.projectPlanningResult) {
+                try {
+                  projectPlan = JSON.parse(bid.projectPlanningResult);
+                } catch {}
+              }
+              if (bid.teamNotifications) {
+                try {
+                  notificationResults = JSON.parse(bid.teamNotifications);
+                } catch {}
+              }
+
+              return (
+                <>
+                  {/* Deep Analysis */}
                   <DeepAnalysisCard
                     bidId={bid.id}
                     websiteUrl={bid.websiteUrl}
                     existingAnalysis={null}
                   />
-                )}
 
-                <LowConfidenceDialog
-                  open={showLowConfidenceDialog}
-                  onOpenChange={setShowLowConfidenceDialog}
-                  bidId={bid.id}
-                  decision={bitEvaluationResult.decision.decision}
-                  confidence={bitEvaluationResult.decision.overallConfidence}
-                  reasoning={bitEvaluationResult.decision.reasoning}
-                />
-              </>
-            )}
-          </>
-        )}
+                  {/* Phase 6: Baseline-Vergleich */}
+                  <BaselineComparisonCard
+                    bidId={bid.id}
+                    initialResult={baselineResult}
+                    hasDeepAnalysis={hasDeepAnalysis}
+                  />
 
-        {/* Phase 6/7/9: Routed status and later - Show Team Builder, Baseline, Planning, Notifications */}
-        {['routed', 'full_scanning', 'bl_reviewing', 'team_assigned', 'notified', 'handed_off'].includes(bid.status) && (() => {
-          // Check what data is available for the new components
-          const hasDeepAnalysis = bid.deepMigrationAnalysisId !== null;
-          const hasTeam = bid.assignedTeam !== null;
+                  {/* Phase 7: Projekt-Planung */}
+                  <ProjectPlanningCard
+                    bidId={bid.id}
+                    initialPlan={projectPlan}
+                    hasDeepAnalysis={hasDeepAnalysis}
+                  />
 
-          // Parse results if available
-          let baselineResult = null;
-          let projectPlan = null;
-          let notificationResults = null;
+                  {/* Team Builder */}
+                  {bid.status === 'routed' && <TeamBuilder bidId={bid.id} />}
 
-          if (bid.baselineComparisonResult) {
-            try { baselineResult = JSON.parse(bid.baselineComparisonResult); } catch {}
-          }
-          if (bid.projectPlanningResult) {
-            try { projectPlan = JSON.parse(bid.projectPlanningResult); } catch {}
-          }
-          if (bid.teamNotifications) {
-            try { notificationResults = JSON.parse(bid.teamNotifications); } catch {}
-          }
+                  {/* Team Assignment Summary (if team_assigned or later) */}
+                  {['team_assigned', 'notified', 'handed_off'].includes(bid.status) &&
+                    bid.assignedTeam && (
+                      <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
+                        <CardHeader>
+                          <CardTitle className="text-green-900 dark:text-green-100">
+                            Team zugewiesen
+                          </CardTitle>
+                          <CardDescription className="text-green-700 dark:text-green-300">
+                            Das Team wurde erfolgreich zugewiesen
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <pre className="text-sm overflow-auto">
+                            {JSON.stringify(JSON.parse(bid.assignedTeam), null, 2)}
+                          </pre>
+                        </CardContent>
+                      </Card>
+                    )}
 
-          return (
-            <>
-              {/* Deep Analysis */}
-              <DeepAnalysisCard
-                bidId={bid.id}
-                websiteUrl={bid.websiteUrl}
-                existingAnalysis={null}
-              />
+                  {/* Phase 9: Team-Benachrichtigung */}
+                  <NotificationCard
+                    bidId={bid.id}
+                    hasTeam={hasTeam}
+                    initialResults={notificationResults}
+                    notifiedAt={bid.teamNotifiedAt}
+                  />
 
-              {/* Phase 6: Baseline-Vergleich */}
-              <BaselineComparisonCard
-                bidId={bid.id}
-                initialResult={baselineResult}
-                hasDeepAnalysis={hasDeepAnalysis}
-              />
+                  {/* Workflow Complete Badge */}
+                  {bid.status === 'handed_off' && (
+                    <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                          <CheckCircle2 className="h-5 w-5" />
+                          Workflow abgeschlossen
+                        </CardTitle>
+                        <CardDescription className="text-blue-700 dark:text-blue-300">
+                          Alle Phasen wurden erfolgreich durchlaufen. Das Projekt wurde übergeben.
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  )}
 
-              {/* Phase 7: Projekt-Planung */}
-              <ProjectPlanningCard
-                bidId={bid.id}
-                initialPlan={projectPlan}
-                hasDeepAnalysis={hasDeepAnalysis}
-              />
-
-              {/* Team Builder */}
-              {bid.status === 'routed' && <TeamBuilder bidId={bid.id} />}
-
-              {/* Team Assignment Summary (if team_assigned or later) */}
-              {['team_assigned', 'notified', 'handed_off'].includes(bid.status) && bid.assignedTeam && (
-                <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
-                  <CardHeader>
-                    <CardTitle className="text-green-900 dark:text-green-100">Team zugewiesen</CardTitle>
-                    <CardDescription className="text-green-700 dark:text-green-300">
-                      Das Team wurde erfolgreich zugewiesen
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <pre className="text-sm overflow-auto">{JSON.stringify(JSON.parse(bid.assignedTeam), null, 2)}</pre>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Phase 9: Team-Benachrichtigung */}
-              <NotificationCard
-                bidId={bid.id}
-                hasTeam={hasTeam}
-                initialResults={notificationResults}
-                notifiedAt={bid.teamNotifiedAt}
-              />
-
-              {/* Workflow Complete Badge */}
-              {bid.status === 'handed_off' && (
-                <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
-                      <CheckCircle2 className="h-5 w-5" />
-                      Workflow abgeschlossen
-                    </CardTitle>
-                    <CardDescription className="text-blue-700 dark:text-blue-300">
-                      Alle Phasen wurden erfolgreich durchlaufen. Das Projekt wurde übergeben.
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              )}
-
-              {/* Archived (NO BIT) Status */}
-              {bid.status === 'archived' && (
-                <Card className="border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/20">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      <CheckCircle2 className="h-5 w-5" />
-                      Opportunity archiviert (NO BIT)
-                    </CardTitle>
-                    <CardDescription className="text-gray-600 dark:text-gray-400">
-                      Diese Opportunity wurde als NO BIT markiert und archiviert.
-                      {bid.alternativeRecommendation && (
-                        <span className="block mt-2">
-                          <strong>Begründung:</strong> {bid.alternativeRecommendation}
-                        </span>
-                      )}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              )}
-            </>
-          );
-        })()}
+                  {/* Archived (NO BIT) Status */}
+                  {bid.status === 'archived' && (
+                    <Card className="border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/20">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                          <CheckCircle2 className="h-5 w-5" />
+                          Opportunity archiviert (NO BIT)
+                        </CardTitle>
+                        <CardDescription className="text-gray-600 dark:text-gray-400">
+                          Diese Opportunity wurde als NO BIT markiert und archiviert.
+                          {bid.alternativeRecommendation && (
+                            <span className="block mt-2">
+                              <strong>Begründung:</strong> {bid.alternativeRecommendation}
+                            </span>
+                          )}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  )}
+                </>
+              );
+            })()}
         </div>
         <aside className="lg:sticky lg:top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
           <DocumentsSidebar bidId={bid.id} />
@@ -708,9 +776,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         <Card>
           <CardHeader>
             <CardTitle>Extrahierte Anforderungen</CardTitle>
-            <CardDescription>
-              Von AI extrahierte und bestätigte Daten
-            </CardDescription>
+            <CardDescription>Von AI extrahierte und bestätigte Daten</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

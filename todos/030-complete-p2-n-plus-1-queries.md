@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p2
-issue_id: "030"
+issue_id: '030'
 tags: [code-review, performance, database, n-plus-1]
 dependencies: []
 ---
@@ -19,6 +19,7 @@ The BL Review detail page (`app/(dashboard)/bl-review/[id]/page.tsx`) makes 4 se
 **From performance-oracle agent:**
 
 **Sequential queries (lines 71-111):**
+
 ```typescript
 // Query 1: Get bid (line 71-75)
 const [bid] = await db.select().from(bidOpportunities)...
@@ -36,6 +37,7 @@ const [quickScan] = bid.quickScanId ? await db.select()...
 ## Proposed Solutions
 
 ### Solution A: Use single JOIN query (Recommended)
+
 **Pros:** 70-80% query time reduction
 **Cons:** Slightly more complex query
 **Effort:** Medium (30 min)
@@ -58,6 +60,7 @@ const result = await db
 ```
 
 ### Solution B: Use Promise.all for parallel queries
+
 **Pros:** Simpler than JOIN
 **Cons:** Still 4 queries, just parallel
 **Effort:** Small (15 min)
@@ -70,6 +73,7 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `app/(dashboard)/bl-review/[id]/page.tsx` (lines 71-111)
 
 ## Acceptance Criteria
@@ -80,8 +84,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                          | Learnings                              |
+| ---------- | ------------------------------- | -------------------------------------- |
 | 2026-01-18 | Created from performance review | N+1 is a common Server Component issue |
 
 ## Resources

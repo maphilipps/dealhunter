@@ -4,7 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle2, XCircle, AlertTriangle, ThumbsUp, ThumbsDown, GitBranch } from 'lucide-react';
+import {
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  ThumbsUp,
+  ThumbsDown,
+  GitBranch,
+} from 'lucide-react';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 import { DecisionTree } from './decision-tree';
 import { ConfidenceIndicator, ConfidenceBreakdown } from './confidence-indicator';
@@ -103,7 +110,13 @@ export function DecisionCard({ result }: DecisionCardProps) {
             <div className="flex flex-col items-end gap-2">
               <Badge
                 variant={isLowConfidence ? 'destructive' : 'secondary'}
-                className={isLowConfidence ? '' : isBit ? 'bg-green-100 text-green-900' : 'bg-red-100 text-red-900'}
+                className={
+                  isLowConfidence
+                    ? ''
+                    : isBit
+                      ? 'bg-green-100 text-green-900'
+                      : 'bg-red-100 text-red-900'
+                }
               >
                 {result.decision.overallConfidence}% Confidence
               </Badge>
@@ -233,7 +246,9 @@ export function DecisionCard({ result }: DecisionCardProps) {
             <CardContent>
               <ol className="list-decimal list-inside space-y-2">
                 {result.decision.nextSteps.map((step, idx) => (
-                  <li key={idx} className="text-sm">{step}</li>
+                  <li key={idx} className="text-sm">
+                    {step}
+                  </li>
                 ))}
               </ol>
             </CardContent>
@@ -266,7 +281,9 @@ export function DecisionCard({ result }: DecisionCardProps) {
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-semibold mb-2">Executive Summary</h4>
-                    <p className="text-sm text-muted-foreground">{result.coordinatorOutput.synthesis.executiveSummary}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {result.coordinatorOutput.synthesis.executiveSummary}
+                    </p>
                   </div>
                   {result.coordinatorOutput.synthesis.keyStrengths.length > 0 && (
                     <div>
@@ -341,7 +358,9 @@ export function DecisionCard({ result }: DecisionCardProps) {
                 <p className="text-sm font-medium text-amber-900 mb-2">Mögliche Partner:</p>
                 <div className="flex flex-wrap gap-2">
                   {result.alternative.partnerSuggestions.map((partner, idx) => (
-                    <Badge key={idx} variant="secondary">{partner}</Badge>
+                    <Badge key={idx} variant="secondary">
+                      {partner}
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -349,11 +368,15 @@ export function DecisionCard({ result }: DecisionCardProps) {
 
             {result.alternative.reducedScopeOptions.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-amber-900 mb-2">Reduzierter Scope Optionen:</p>
+                <p className="text-sm font-medium text-amber-900 mb-2">
+                  Reduzierter Scope Optionen:
+                </p>
                 <ul className="space-y-2">
                   {result.alternative.reducedScopeOptions.map((option, idx) => (
                     <li key={idx} className="text-sm">
-                      <Badge variant="outline" className="mr-2">{option.viability}</Badge>
+                      <Badge variant="outline" className="mr-2">
+                        {option.viability}
+                      </Badge>
                       {option.scope}
                     </li>
                   ))}
@@ -362,8 +385,12 @@ export function DecisionCard({ result }: DecisionCardProps) {
             )}
 
             <div className="rounded-lg bg-white p-4">
-              <p className="text-sm font-medium text-amber-900 mb-2">Vorgeschlagene Kundenkommunikation:</p>
-              <p className="text-sm text-amber-800 italic">{result.alternative.customerCommunication}</p>
+              <p className="text-sm font-medium text-amber-900 mb-2">
+                Vorgeschlagene Kundenkommunikation:
+              </p>
+              <p className="text-sm text-amber-800 italic">
+                {result.alternative.customerCommunication}
+              </p>
             </div>
           </CardContent>
         </Card>

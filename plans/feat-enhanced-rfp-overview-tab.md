@@ -10,6 +10,7 @@
 ## Enhancement Summary
 
 **Research Agents verwendet:**
+
 - Next.js Reviewer (Architecture, Data Fetching, Revalidation)
 - Performance Oracle (Bundle Size, CLS, JSON Parsing)
 - Security Sentinel (IDOR, XSS, Authorization)
@@ -31,6 +32,7 @@
 ### Critical Security Blockers
 
 ⚠️ **DO NOT SHIP until these are fixed:**
+
 - `lib/team/actions.ts` - Missing BU ownership check (IDOR)
 - `app/api/rfps/[id]/bu-matching/route.ts` - No auth check
 - `lib/routing/actions.ts` - No auth check in `assignBusinessUnit`
@@ -40,6 +42,7 @@
 ## Overview
 
 Die RFP Overview-Tab zeigt aktuell zu wenig Informationen. QuickScan-Daten sind **vorhanden aber ungenutzt**. Dieses Feature erweitert die Overview-Tab um:
+
 - **Umfassende Company Intelligence** (alles was wir über das Unternehmen wissen)
 - **Tech Stack Visualisierung** (kategorisierte Badges + Donut Chart)
 - **Content Analysis Dashboard** (Accessibility, SEO, Performance Scores)
@@ -49,26 +52,30 @@ Die RFP Overview-Tab zeigt aktuell zu wenig Informationen. QuickScan-Daten sind 
 ## Problem Statement / Motivation
 
 ### Aktueller Zustand
+
 Die Overview-Tab in `/app/(dashboard)/bl-review/[id]/page.tsx` (Zeilen 262-371) zeigt nur:
+
 - Customer Name, Industry, Project Description (aus `extractedDataTyped`)
 - BIT/NO BIT Badge
 - Technologies List (einfache Badge-Liste)
 - Action Buttons (Next Steps)
 
 ### Was fehlt
+
 Der `quickScan`-Parameter wird in der Overview-Tab **NICHT verwendet** (obwohl er geladen wird - Zeile 105-111). Verfügbare aber ungenutzte Daten:
 
-| Datentyp | DB-Feld | Schema |
-|----------|---------|--------|
-| Company Info | `quickScans.companyIntelligence` | `lib/quick-scan/schema.ts:277-340` |
-| Tech Stack | `quickScans.techStack` | `lib/quick-scan/schema.ts:6-31` |
-| Content Volume | `quickScans.contentVolume` | `lib/quick-scan/schema.ts:38-58` |
-| Navigation | `quickScans.navigationStructure` | `lib/quick-scan/schema.ts:240-272` |
-| Accessibility | `quickScans.accessibilityAudit` | `lib/quick-scan/schema.ts:63-98` |
-| SEO | `quickScans.seoAudit` | `lib/quick-scan/schema.ts:121-146` |
-| Performance | `quickScans.performanceIndicators` | `lib/quick-scan/schema.ts:167-201` |
+| Datentyp       | DB-Feld                            | Schema                             |
+| -------------- | ---------------------------------- | ---------------------------------- |
+| Company Info   | `quickScans.companyIntelligence`   | `lib/quick-scan/schema.ts:277-340` |
+| Tech Stack     | `quickScans.techStack`             | `lib/quick-scan/schema.ts:6-31`    |
+| Content Volume | `quickScans.contentVolume`         | `lib/quick-scan/schema.ts:38-58`   |
+| Navigation     | `quickScans.navigationStructure`   | `lib/quick-scan/schema.ts:240-272` |
+| Accessibility  | `quickScans.accessibilityAudit`    | `lib/quick-scan/schema.ts:63-98`   |
+| SEO            | `quickScans.seoAudit`              | `lib/quick-scan/schema.ts:121-146` |
+| Performance    | `quickScans.performanceIndicators` | `lib/quick-scan/schema.ts:167-201` |
 
 ### Business Value
+
 - **BD-Team sieht sofort ALLE relevanten Informationen** zum Kunden
 - **Bessere Entscheidungsgrundlage** für BIT/NO BIT
 - **Professionellerer Eindruck** der Plattform
@@ -92,6 +99,7 @@ components/rfp-overview/
 ```
 
 **Rationale (from Simplicity Review):**
+
 - 75% code reduction (1,100 LOC → 300 LOC)
 - Single file easier to maintain than 11 scattered files
 - Show data inline instead of accordion/collapsible patterns
@@ -136,14 +144,14 @@ components/rfp-overview/
 // ❌ WRONG: Plan originally proposed
 const companyIntelligence = quickScan?.companyIntelligence
   ? CompanyIntelligenceSchema.safeParse(JSON.parse(quickScan.companyIntelligence))
-  : null
+  : null;
 
 // ✅ CORRECT: Use existing utility
-import { safeJsonParseOrNull } from '@/lib/utils/parse'
+import { safeJsonParseOrNull } from '@/lib/utils/parse';
 
 const companyIntelligence = safeJsonParseOrNull<CompanyIntelligence>(
   quickScan?.companyIntelligence
-)
+);
 ```
 
 #### 2. Suspense Boundaries - Remove Incorrect Usage (Next.js Review)
@@ -192,11 +200,11 @@ const TechStackChart = dynamic(
 
 ```typescript
 // lib/quick-scan/actions.ts - ADD THIS
-import { revalidatePath } from 'next/cache'
+import { revalidatePath } from 'next/cache';
 
 export async function runQuickScanAction(rfpId: string) {
-  await runQuickScan(rfpId)
-  revalidatePath(`/bl-review/${rfpId}`)  // Invalidate cache
+  await runQuickScan(rfpId);
+  revalidatePath(`/bl-review/${rfpId}`); // Invalidate cache
 }
 ```
 
@@ -512,16 +520,19 @@ export function TechStackChart({ data }: { data: TechStackData | null }) {
 ## Implementation Phases (SIMPLIFIED)
 
 ### Phase 0: Security Fixes (BLOCKING)
+
 - [ ] Fix IDOR vulnerability in `lib/team/actions.ts`
 - [ ] Add auth to `app/api/rfps/[id]/bu-matching/route.ts`
 - [ ] Add auth to `lib/routing/actions.ts`
 
 ### Phase 1: Data Integration
+
 - [ ] Parse all QuickScan JSON fields server-side in page.tsx
 - [ ] Create typed `overviewData` object
 - [ ] Add `revalidatePath` to QuickScan actions
 
 ### Phase 2: Overview Section (MVP)
+
 - [ ] Create `components/rfp-overview/overview-section.tsx`
 - [ ] Implement Company Profile card (inline data)
 - [ ] Implement Tech Stack badges grid
@@ -529,11 +540,13 @@ export function TechStackChart({ data }: { data: TechStackData | null }) {
 - [ ] Create Empty State with "Run QuickScan" action
 
 ### Phase 3: Tech Stack Chart (Enhancement)
+
 - [ ] Create `components/rfp-overview/tech-stack-chart.tsx`
 - [ ] Dynamic import with `ssr: false`
 - [ ] Fixed-height container for CLS prevention
 
 ### Phase 4: Testing
+
 - [ ] Chrome DevTools Screenshot verification
 - [ ] Mobile responsive testing
 - [ ] Error state testing
@@ -542,14 +555,14 @@ export function TechStackChart({ data }: { data: TechStackData | null }) {
 
 ## Risk Analysis & Mitigation (UPDATED)
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| **IDOR Cross-BU Access** | **CRITICAL** | Fix before shipping - add BU ownership checks |
-| QuickScan-Daten fehlend | Medium | Graceful Degradation mit Empty States |
-| Chart Rendering Performance | Low | Dynamic import Recharts (-155KB) |
-| Layout Shift (CLS) | Medium | Fixed-height containers |
-| JSON Parsing Errors | Medium | Use `safeJsonParseOrNull` |
-| External Link Security | Medium | Validate URLs, use `rel="noopener noreferrer"` |
+| Risk                        | Impact       | Mitigation                                     |
+| --------------------------- | ------------ | ---------------------------------------------- |
+| **IDOR Cross-BU Access**    | **CRITICAL** | Fix before shipping - add BU ownership checks  |
+| QuickScan-Daten fehlend     | Medium       | Graceful Degradation mit Empty States          |
+| Chart Rendering Performance | Low          | Dynamic import Recharts (-155KB)               |
+| Layout Shift (CLS)          | Medium       | Fixed-height containers                        |
+| JSON Parsing Errors         | Medium       | Use `safeJsonParseOrNull`                      |
+| External Link Security      | Medium       | Validate URLs, use `rel="noopener noreferrer"` |
 
 ---
 
@@ -558,28 +571,28 @@ export function TechStackChart({ data }: { data: TechStackData | null }) {
 ### Donut Chart Pattern (from registry)
 
 ```tsx
-"use client"
+'use client';
 
-import { Pie, PieChart } from "recharts"
+import { Pie, PieChart } from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from "@/components/ui/chart"
+} from '@/components/ui/chart';
 
 const chartData = [
-  { category: "frontend", count: 5, fill: "var(--color-frontend)" },
-  { category: "backend", count: 3, fill: "var(--color-backend)" },
-  { category: "infrastructure", count: 2, fill: "var(--color-infrastructure)" },
-]
+  { category: 'frontend', count: 5, fill: 'var(--color-frontend)' },
+  { category: 'backend', count: 3, fill: 'var(--color-backend)' },
+  { category: 'infrastructure', count: 2, fill: 'var(--color-infrastructure)' },
+];
 
 const chartConfig = {
-  count: { label: "Technologies" },
-  frontend: { label: "Frontend", color: "var(--chart-1)" },
-  backend: { label: "Backend", color: "var(--chart-2)" },
-  infrastructure: { label: "Infrastructure", color: "var(--chart-3)" },
-} satisfies ChartConfig
+  count: { label: 'Technologies' },
+  frontend: { label: 'Frontend', color: 'var(--chart-1)' },
+  backend: { label: 'Backend', color: 'var(--chart-2)' },
+  infrastructure: { label: 'Infrastructure', color: 'var(--chart-3)' },
+} satisfies ChartConfig;
 
 export function TechStackDonut() {
   return (
@@ -589,7 +602,7 @@ export function TechStackDonut() {
         <Pie data={chartData} dataKey="count" nameKey="category" innerRadius={60} />
       </PieChart>
     </ChartContainer>
-  )
+  );
 }
 ```
 
@@ -598,6 +611,7 @@ export function TechStackDonut() {
 ## References
 
 ### Internal References
+
 - Aktuelle Overview-Tab: `app/(dashboard)/bl-review/[id]/page.tsx:262-371`
 - QuickScan Schema: `lib/quick-scan/schema.ts`
 - DB Schema: `lib/db/schema.ts:405-458`
@@ -605,11 +619,13 @@ export function TechStackDonut() {
 - Existing BU Matching Tab: `components/bl-review/bu-matching-tab.tsx`
 
 ### External References
+
 - [ShadCN Chart Component](https://ui.shadcn.com/docs/components/chart)
 - [Next.js Server Components](https://nextjs.org/docs/app/getting-started/server-and-client-components)
 - [Recharts Documentation](https://recharts.org/en-US)
 
 ### Research References (from Deepening)
+
 - Next.js Reviewer: Revalidation patterns, Suspense usage
 - Performance Oracle: Bundle optimization, CLS prevention
 - Security Sentinel: IDOR vulnerabilities, auth patterns

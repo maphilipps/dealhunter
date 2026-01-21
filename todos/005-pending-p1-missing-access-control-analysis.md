@@ -18,6 +18,7 @@ The `deep_migration_analyses` table has no user ownership tracking and no API ro
 ## Findings
 
 **Security Agent Report:**
+
 - `deepMigrationAnalyses` table has no `userId` column
 - Access control relies entirely on `bidOpportunityId` foreign key
 - No explicit check that requesting user owns the associated bid
@@ -25,10 +26,13 @@ The `deep_migration_analyses` table has no user ownership tracking and no API ro
 - Risk of IDOR (Insecure Direct Object Reference) vulnerability
 
 **Current Schema:**
+
 ```typescript
 // lib/db/schema.ts (deep_migration_analyses)
 export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
-  id: text('id').primaryKey().$defaultFn(() => createId()),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
   bidOpportunityId: text('bid_opportunity_id')
     .notNull()
     .references(() => bidOpportunities.id),
@@ -38,6 +42,7 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 ```
 
 **Attack Scenario:**
+
 1. Attacker discovers analysis ID (e.g., via timing attack, leaked logs)
 2. Requests `/api/analysis/[id]` (future route)
 3. If no ownership check → sees competitor's analysis
@@ -46,13 +51,16 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 ## Proposed Solutions
 
 ### Solution 1: Add userId Column to Schema (Recommended)
+
 **Pros:**
+
 - Direct ownership tracking
 - Fast access control queries (no joins needed)
 - Explicit security boundary
 - Easier to audit
 
 **Cons:**
+
 - Requires schema migration
 - Denormalized data (userId in both tables)
 
@@ -60,11 +68,14 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 **Risk**: Low
 
 **Implementation:**
+
 ```typescript
 // lib/db/schema.ts
 export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
-  id: text('id').primaryKey().$defaultFn(() => createId()),
-  userId: text('user_id')  // ✅ Add this
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  userId: text('user_id') // ✅ Add this
     .notNull()
     .references(() => users.id),
   bidOpportunityId: text('bid_opportunity_id')
@@ -75,18 +86,22 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 ```
 
 **API Route Example:**
+
 ```typescript
 // app/api/analysis/[id]/route.ts (Phase 2)
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user?.id) return new Response('Unauthorized', { status: 401 });
 
-  const [analysis] = await db.select()
+  const [analysis] = await db
+    .select()
     .from(deepMigrationAnalyses)
-    .where(and(
-      eq(deepMigrationAnalyses.id, params.id),
-      eq(deepMigrationAnalyses.userId, session.user.id) // ✅ Ownership check
-    ));
+    .where(
+      and(
+        eq(deepMigrationAnalyses.id, params.id),
+        eq(deepMigrationAnalyses.userId, session.user.id) // ✅ Ownership check
+      )
+    );
 
   if (!analysis) return new Response('Not found', { status: 404 });
   return Response.json(analysis);
@@ -94,11 +109,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 ```
 
 ### Solution 2: Always Join Through Bids Table
+
 **Pros:**
+
 - No schema change needed
 - Uses existing foreign key
 
 **Cons:**
+
 - Slower queries (requires join)
 - More complex access control logic
 - Easy to forget join in new routes
@@ -107,23 +125,30 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 **Risk**: High (can be forgotten)
 
 **Implementation:**
+
 ```typescript
 // app/api/analysis/[id]/route.ts (Phase 2)
-const [analysis] = await db.select()
+const [analysis] = await db
+  .select()
   .from(deepMigrationAnalyses)
   .innerJoin(bidOpportunities, eq(deepMigrationAnalyses.bidOpportunityId, bidOpportunities.id))
-  .where(and(
-    eq(deepMigrationAnalyses.id, params.id),
-    eq(bidOpportunities.userId, session.user.id) // ❌ Easy to forget
-  ));
+  .where(
+    and(
+      eq(deepMigrationAnalyses.id, params.id),
+      eq(bidOpportunities.userId, session.user.id) // ❌ Easy to forget
+    )
+  );
 ```
 
 ### Solution 3: Row-Level Security (RLS) at DB Level
+
 **Pros:**
+
 - Enforced at database level
 - Can't be bypassed by application code
 
 **Cons:**
+
 - SQLite doesn't support RLS
 - Would need to switch to PostgreSQL
 - Major infrastructure change
@@ -140,12 +165,14 @@ This is the most explicit and maintainable approach. The denormalization is acce
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/db/schema.ts` - Add userId column
 - `drizzle/migrations/` - Generate new migration
 - `lib/inngest/functions/deep-analysis.ts` - Set userId when creating record
 - Future API routes - Use userId for access control
 
 **Migration:**
+
 ```sql
 -- New migration file
 ALTER TABLE `deep_migration_analyses` ADD `user_id` text NOT NULL REFERENCES users(id);

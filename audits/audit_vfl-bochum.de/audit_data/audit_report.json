@@ -1,0 +1,252 @@
+{
+  "project_name": "VfL Bochum 1848 Website Relaunch",
+  "url": "https://www.vfl-bochum.de",
+  "current_cms": "BloomReach Experience Manager (brXM/Hippo CMS)",
+  "audit_date": "2025-11-26",
+  "summary": {
+    "total_pages_sitemap": 60,
+    "content_types_identified": 25,
+    "paragraph_components": 18,
+    "integrations": 8,
+    "social_channels": 8
+  },
+  "key_findings": {
+    "executive_summary": "Die Website vfl-bochum.de verwendet ein komplexes Headless-CMS-Setup mit BloomReach Experience Manager (brXM) als Backend und Next.js als Frontend. Die Architektur ist modern, aber proprietär und teuer in der Lizenzierung. Ein Wechsel zu Drupal CMS bietet erhebliche Kosteneinsparungen, mehr Flexibilität und bessere AI-Integration bei vergleichbarer oder besserer Editor-Experience.",
+    "strengths": [
+      "Moderne Headless-Architektur mit API-first Ansatz",
+      "Responsive Design mit mobilfreundlicher Navigation",
+      "Integration mit externen Systemen (Ticketing, Merchandising, 1848TV)",
+      "Strukturierte Content-Typen für sportspezifische Inhalte",
+      "Gute Social-Media-Integration"
+    ],
+    "opportunities": [
+      "Migration zu Open-Source CMS (Drupal) für Kosteneinsparung",
+      "AI-gestützte Content-Erstellung und -Optimierung",
+      "Verbesserte Accessibility (WCAG 2.1 AA Compliance)",
+      "Performance-Optimierung durch besseres Caching",
+      "Konsolidierung der verschiedenen Subdomains"
+    ],
+    "challenges": [
+      "Komplexe Migration von proprietärem CMS",
+      "Integration mit bestehenden externen Systemen muss erhalten bleiben",
+      "Video-Plattform (1848TV) ist separates System",
+      "Salesforce Web-to-Case Integration muss migriert werden",
+      "Hohe Content-Vielfalt erfordert flexible Paragraph-Struktur"
+    ]
+  },
+  "technology_stack": {
+    "current": {
+      "cms": "BloomReach Experience Manager (brXM/Hippo CMS)",
+      "cms_version": "1.0",
+      "frontend": "Next.js (SSG/SSR)",
+      "backend_api": "https://backend.vfl-bochum.de/site/de/resourceapi",
+      "design_system": "Custom (design.vfl-bochum.de)",
+      "webserver": "Nginx",
+      "analytics": "Google Tag Manager (GTM-K5B3MHM)",
+      "programming_language": "Java (Backend), JavaScript/React (Frontend)"
+    },
+    "recommended": {
+      "cms": "Drupal CMS 2.0",
+      "frontend_approach": "Traditional Drupal Theme oder Optional Headless mit Next.js",
+      "admin_theme": "Gin Admin Theme",
+      "visual_builder": "Canvas (Experience Builder)",
+      "base_theme": "Mercury Theme"
+    }
+  },
+  "content_volume": {
+    "total_pages": 60,
+    "by_section": {
+      "verein": 11,
+      "stadion": 8,
+      "fans": 8,
+      "talentwerk": 6,
+      "termine": 4,
+      "frauen": 4,
+      "spielplan": 2,
+      "news": 2,
+      "netzwerk": 2,
+      "jobs": 2,
+      "1848tv": 2,
+      "other": 9
+    },
+    "estimated_news_articles": "500+",
+    "estimated_videos": "335+",
+    "estimated_team_members": "30+",
+    "estimated_partners": "12+"
+  },
+  "content_architecture": {
+    "page_types": [
+      {
+        "name": "Homepage",
+        "drupal_mapping": "Landing Page",
+        "complexity": "complex",
+        "description": "Hero, News Slider, Video Slider, Product Slider, Newsletter, Partner Grid"
+      },
+      {
+        "name": "News/Artikel",
+        "drupal_mapping": "Article/News",
+        "complexity": "medium",
+        "description": "Titel, Bild, Inhalt, Tags, Datum, Kategorie"
+      },
+      {
+        "name": "Video",
+        "drupal_mapping": "Video Content Type",
+        "complexity": "medium",
+        "description": "Video-Embed, Titel, Beschreibung, Tags, Thumbnail"
+      },
+      {
+        "name": "Teammitglied",
+        "drupal_mapping": "Person",
+        "complexity": "medium",
+        "description": "Spieler/Staff-Profile mit Bild, Position, Stats"
+      },
+      {
+        "name": "Partner",
+        "drupal_mapping": "Partner (Custom CT)",
+        "complexity": "simple",
+        "description": "Logo, Name, Link, Kategorie (Lead/Premium/Top/Network)"
+      },
+      {
+        "name": "Termin/Event",
+        "drupal_mapping": "Event",
+        "complexity": "medium",
+        "description": "Spieltage, Events mit Datum, Ort, Gegner"
+      },
+      {
+        "name": "Landing Page",
+        "drupal_mapping": "Landing Page",
+        "complexity": "complex",
+        "description": "Flexible Sektionen-Seiten (Verein, Fans, etc.)"
+      },
+      {
+        "name": "Inhaltsseite",
+        "drupal_mapping": "Basic Page",
+        "complexity": "simple",
+        "description": "Einfache Textseiten (Impressum, Datenschutz, Kontakt)"
+      },
+      {
+        "name": "Job/Stellenanzeige",
+        "drupal_mapping": "Job (Custom CT)",
+        "complexity": "medium",
+        "description": "Stellenbeschreibung, Anforderungen, Bewerbung"
+      }
+    ],
+    "paragraph_types": [
+      {"name": "Hero Teaser", "complexity": "complex", "drupal_mapping": "hero"},
+      {"name": "News Slider", "complexity": "complex", "drupal_mapping": "views"},
+      {"name": "Video Slider", "complexity": "complex", "drupal_mapping": "carousel"},
+      {"name": "Teaser Slider", "complexity": "complex", "drupal_mapping": "carousel"},
+      {"name": "Product Slider", "complexity": "complex", "drupal_mapping": "carousel"},
+      {"name": "Team Slider", "complexity": "complex", "drupal_mapping": "carousel"},
+      {"name": "Newsletter", "complexity": "medium", "drupal_mapping": "newsletter"},
+      {"name": "Free Content/Text", "complexity": "simple", "drupal_mapping": "text"},
+      {"name": "Free HTML", "complexity": "medium", "drupal_mapping": "custom_code"},
+      {"name": "Generic Block", "complexity": "simple", "drupal_mapping": "block_reference"},
+      {"name": "Teaser", "complexity": "medium", "drupal_mapping": "card"},
+      {"name": "Teaser Grid", "complexity": "medium", "drupal_mapping": "card_group"},
+      {"name": "Image/Video", "complexity": "simple", "drupal_mapping": "media"},
+      {"name": "Headline", "complexity": "simple", "drupal_mapping": "text"},
+      {"name": "CTA Button", "complexity": "simple", "drupal_mapping": "cta"},
+      {"name": "Banderole (Ticker)", "complexity": "medium", "drupal_mapping": "custom"},
+      {"name": "Accordion", "complexity": "medium", "drupal_mapping": "accordion"},
+      {"name": "Partner Grid", "complexity": "medium", "drupal_mapping": "logo_collection"}
+    ],
+    "taxonomies": [
+      {"name": "Partner-Kategorien", "terms": 7, "drupal_mapping": "partner_category"},
+      {"name": "News Tags", "terms": "50+", "drupal_mapping": "tags"},
+      {"name": "Team-Kategorien", "terms": 5, "drupal_mapping": "team_category"},
+      {"name": "Content-Kategorien", "terms": 10, "drupal_mapping": "category"}
+    ],
+    "media_types": [
+      {"name": "Image", "complexity": "simple", "description": "Standard-Bilder mit Focal Point"},
+      {"name": "Video", "complexity": "medium", "description": "Eingebettete Videos (1848TV, YouTube)"},
+      {"name": "Player Image Set", "complexity": "medium", "description": "Spielerfotos in verschiedenen Formaten"},
+      {"name": "Hero Image Set", "complexity": "medium", "description": "Hero-Banner mit responsiven Varianten"},
+      {"name": "Logo", "complexity": "simple", "description": "Partner-Logos (1c und 4c Varianten)"},
+      {"name": "Document", "complexity": "simple", "description": "PDF-Downloads"}
+    ]
+  },
+  "features": {
+    "navigation": {
+      "main_menu": "Multi-level Mega Menu",
+      "burger_menu": "Mobile Burger Navigation",
+      "footer_menu": "Footer Navigation",
+      "sticky_nav": "Sticky Navigation on scroll",
+      "match_center_nav": "Sport-spezifische Navigation"
+    },
+    "interactive": [
+      {"name": "Suche", "complexity": "medium", "drupal_module": "Search API"},
+      {"name": "Kontaktformular", "complexity": "medium", "drupal_module": "Webform + Salesforce Integration"},
+      {"name": "Newsletter-Anmeldung", "complexity": "simple", "drupal_module": "Simplenews oder Custom"},
+      {"name": "Spielplan/Matchcenter", "complexity": "complex", "drupal_module": "Custom Module + API"},
+      {"name": "Tabelle", "complexity": "medium", "drupal_module": "Custom Module + API"},
+      {"name": "Liveticker", "complexity": "complex", "drupal_module": "Custom Module + API"}
+    ],
+    "listings": [
+      {"name": "News Grid/Slider", "drupal_view": "news_listing"},
+      {"name": "Video Grid/Slider", "drupal_view": "video_listing"},
+      {"name": "Team Grid", "drupal_view": "team_listing"},
+      {"name": "Partner Grid", "drupal_view": "partner_listing"},
+      {"name": "Event/Termin Liste", "drupal_view": "event_listing"},
+      {"name": "Job Liste", "drupal_view": "job_listing"}
+    ]
+  },
+  "performance": {
+    "ttfb": "172ms",
+    "total_load": "371ms",
+    "page_size": "1.17 MB",
+    "observations": [
+      "TTFB ist gut (< 200ms)",
+      "Initiale HTML-Größe ist groß durch eingebettete JSON-Daten",
+      "Next.js SSR/SSG sorgt für gute initiale Ladezeiten",
+      "Viele externe Ressourcen (CDN, Design-System)"
+    ],
+    "recommendations": [
+      "JSON-Payload optimieren (nur notwendige Daten)",
+      "Lazy Loading für Below-the-fold Content",
+      "Image-Optimierung mit WebP/AVIF",
+      "Caching-Strategie verbessern"
+    ]
+  },
+  "accessibility": {
+    "estimated_compliance": "Partial WCAG 2.1 A",
+    "observations": [
+      "Modern responsive design vorhanden",
+      "Strukturierte Headings",
+      "Alt-Texte für Bilder vorhanden",
+      "Kontrastprüfung erforderlich"
+    ],
+    "remediation_needed": [
+      "ARIA-Labels vervollständigen",
+      "Keyboard Navigation prüfen",
+      "Skip Links hinzufügen",
+      "Fokus-Indikatoren verbessern",
+      "Farbkontraste optimieren"
+    ]
+  },
+  "migration": {
+    "source_system": "BloomReach brXM",
+    "migration_approach": "API Export + Custom Migration Scripts",
+    "complexity": "high",
+    "challenges": [
+      "Kein Standard-Export verfügbar",
+      "Komplexe verschachtelte Komponentenstruktur",
+      "Viele verknüpfte Entities",
+      "Media-Migration erfordert URL-Mapping"
+    ],
+    "content_cleanup": [
+      "HTML-Struktur normalisieren",
+      "Redundante Wrapper entfernen",
+      "Image-URLs auf neues System anpassen",
+      "Interne Links aktualisieren"
+    ],
+    "estimated_content_volume": {
+      "pages": 60,
+      "news_articles": 500,
+      "videos": 335,
+      "team_members": 30,
+      "partners": 50,
+      "media_files": 2000
+    }
+  }
+}

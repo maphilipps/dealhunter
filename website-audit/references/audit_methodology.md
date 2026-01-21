@@ -5,6 +5,7 @@ This document outlines the comprehensive methodology for auditing websites in pr
 ## Audit Philosophy
 
 **Goal:** Create a complete, actionable analysis of the existing website to:
+
 1. Map all features to Drupal architecture
 2. Identify content structures and volumes
 3. Assess technical requirements
@@ -23,12 +24,14 @@ This document outlines the comprehensive methodology for auditing websites in pr
 **Tools:** Chrome DevTools MCP, Puppeteer
 
 **Tasks:**
+
 1. Navigate to the website
 2. Take initial screenshots (homepage, key pages)
 3. Extract site structure (navigation menus, footer links)
 4. Identify main sections and page types
 
 **MCP Commands:**
+
 ```
 mcp__chrome-devtools__navigate_page (url)
 mcp__chrome-devtools__take_screenshot (fullPage: true)
@@ -42,6 +45,7 @@ mcp__chrome-devtools__take_snapshot
 **Tools:** Chrome DevTools MCP, WebFetch
 
 **Tasks:**
+
 1. Inspect page source for CMS indicators
 2. Check meta tags, generators, frameworks
 3. Analyze CSS/JS assets (libraries, frameworks)
@@ -49,6 +53,7 @@ mcp__chrome-devtools__take_snapshot
 5. Check for common CMS patterns (WordPress, Joomla, Typo3, etc.)
 
 **Detection patterns:**
+
 - WordPress: `/wp-content/`, `<meta name="generator" content="WordPress">`
 - Joomla: `/components/`, `/modules/`
 - Typo3: `typo3temp/`, `typo3conf/`
@@ -56,6 +61,7 @@ mcp__chrome-devtools__take_snapshot
 - Custom CMS: Look for unique patterns
 
 **MCP Commands:**
+
 ```
 mcp__chrome-devtools__evaluate_script
 ```
@@ -67,6 +73,7 @@ mcp__chrome-devtools__evaluate_script
 **Tools:** Chrome DevTools MCP, Sitemap parsing
 
 **Tasks:**
+
 1. Find and parse sitemap.xml (if available)
 2. Extract all page URLs
 3. Categorize pages by type (articles, pages, products, etc.)
@@ -74,12 +81,14 @@ mcp__chrome-devtools__evaluate_script
 5. Identify URL patterns
 
 **Sitemap locations to check:**
+
 - `/sitemap.xml`
 - `/sitemap_index.xml`
 - `/robots.txt` (sitemap reference)
 - `/sitemap/`
 
 **MCP Commands:**
+
 ```
 mcp__chrome-devtools__navigate_page (url: 'https://example.com/sitemap.xml')
 mcp__chrome-devtools__take_snapshot
@@ -94,12 +103,14 @@ mcp__chrome-devtools__take_snapshot
 **Tools:** Chrome DevTools MCP, AI analysis
 
 **Tasks:**
+
 1. Sample pages from each category
 2. Analyze page structure and content patterns
 3. Identify distinct page types
 4. Document fields/components per page type
 
 **Page types to identify:**
+
 - Homepage
 - Standard pages
 - News/Blog articles
@@ -111,6 +122,7 @@ mcp__chrome-devtools__take_snapshot
 - Search results
 
 **For each page type, document:**
+
 - Title/heading structure
 - Body content (rich text, plain text)
 - Images (hero, gallery, inline)
@@ -120,6 +132,7 @@ mcp__chrome-devtools__take_snapshot
 - CTAs and forms
 
 **MCP Commands:**
+
 ```
 mcp__chrome-devtools__navigate_page
 mcp__chrome-devtools__take_snapshot (verbose: true)
@@ -133,12 +146,14 @@ mcp__chrome-devtools__take_screenshot
 **Tools:** Visual analysis, Chrome DevTools
 
 **Tasks:**
+
 1. Identify reusable content components
 2. Document component patterns
 3. Count component usage
 4. Map to Drupal paragraph types
 
 **Components to identify:**
+
 - Text blocks (WYSIWYG content)
 - Image blocks (single, gallery, carousel)
 - Video embeds (YouTube, Vimeo, uploaded)
@@ -157,6 +172,7 @@ mcp__chrome-devtools__take_screenshot
 - Newsletter signups
 
 **For each component:**
+
 - Visual appearance (screenshot)
 - Content fields
 - Layout variations
@@ -170,6 +186,7 @@ mcp__chrome-devtools__take_screenshot
 **Tools:** Navigation analysis, content sampling
 
 **Tasks:**
+
 1. Identify categories (news categories, product types)
 2. Document tags/keywords
 3. Analyze hierarchies
@@ -177,6 +194,7 @@ mcp__chrome-devtools__take_screenshot
 5. Check for location/region classification
 
 **Taxonomy types:**
+
 - Categories (hierarchical organization)
 - Tags (free-form keywords)
 - Authors (if not user entities)
@@ -185,6 +203,7 @@ mcp__chrome-devtools__take_screenshot
 - Content types/formats
 
 **For each taxonomy:**
+
 - Vocabulary name
 - Hierarchical or flat?
 - Number of terms
@@ -198,6 +217,7 @@ mcp__chrome-devtools__take_screenshot
 **Tools:** Chrome DevTools, image analysis
 
 **Tasks:**
+
 1. Sample media usage across pages
 2. Identify media types (images, documents, videos, audio)
 3. Estimate media library size
@@ -205,12 +225,14 @@ mcp__chrome-devtools__take_screenshot
 5. Analyze image usage patterns
 
 **Media types:**
+
 - Images (JPG, PNG, SVG, WebP)
 - Documents (PDF, DOC, XLS)
 - Videos (MP4, YouTube, Vimeo)
 - Audio (MP3, WAV)
 
 **For each media type:**
+
 - Usage frequency
 - Typical file sizes
 - Naming patterns
@@ -226,6 +248,7 @@ mcp__chrome-devtools__take_screenshot
 **Tools:** Chrome DevTools MCP, Puppeteer
 
 **Tasks:**
+
 1. Identify forms (contact, search, registration, etc.)
 2. Document user interactions (login, comments, ratings)
 3. Check for search functionality
@@ -234,6 +257,7 @@ mcp__chrome-devtools__take_screenshot
 6. Document integrations (maps, social, analytics)
 
 **Features to document:**
+
 - Contact forms (fields, validation, submission)
 - Search (full-text, filters, autocomplete)
 - User accounts (registration, login, profiles)
@@ -249,6 +273,7 @@ mcp__chrome-devtools__take_screenshot
 - Analytics/tracking
 
 **For each feature:**
+
 - Description
 - Complexity
 - Required Drupal modules
@@ -256,6 +281,7 @@ mcp__chrome-devtools__take_screenshot
 - Integration requirements
 
 **MCP Commands:**
+
 ```
 mcp__chrome-devtools__click
 mcp__chrome-devtools__fill
@@ -269,6 +295,7 @@ mcp__chrome-devtools__evaluate_script
 **Tools:** Chrome DevTools snapshot
 
 **Tasks:**
+
 1. Document main navigation structure
 2. Check for mega menus
 3. Identify breadcrumbs
@@ -282,6 +309,7 @@ mcp__chrome-devtools__evaluate_script
 **Tools:** Page sampling
 
 **Tasks:**
+
 1. Identify content listing pages
 2. Document listing types (grid, list, table, carousel)
 3. Check pagination/infinite scroll
@@ -289,6 +317,7 @@ mcp__chrome-devtools__evaluate_script
 5. Document related content displays
 
 **Listing types:**
+
 - News/blog listings
 - Event calendars
 - Team directories
@@ -298,6 +327,7 @@ mcp__chrome-devtools__evaluate_script
 - Category/tag pages
 
 **For each listing:**
+
 - Content type displayed
 - Layout (grid, list, table)
 - Pagination style
@@ -314,6 +344,7 @@ mcp__chrome-devtools__evaluate_script
 **Tools:** Chrome DevTools Performance
 
 **Tasks:**
+
 1. Record performance trace
 2. Analyze Core Web Vitals (LCP, FID, CLS)
 3. Check page load times
@@ -322,6 +353,7 @@ mcp__chrome-devtools__evaluate_script
 6. Check caching headers
 
 **MCP Commands:**
+
 ```
 mcp__chrome-devtools__performance_start_trace
 mcp__chrome-devtools__performance_stop_trace
@@ -329,6 +361,7 @@ mcp__chrome-devtools__performance_analyze_insight
 ```
 
 **Metrics to capture:**
+
 - Largest Contentful Paint (LCP) - should be < 2.5s
 - First Input Delay (FID) - should be < 100ms
 - Cumulative Layout Shift (CLS) - should be < 0.1
@@ -344,6 +377,7 @@ mcp__chrome-devtools__performance_analyze_insight
 **Tools:** Network panel, Chrome DevTools
 
 **Tasks:**
+
 1. Check image formats and sizes
 2. Analyze CSS/JS bundles
 3. Check for minification/compression
@@ -351,6 +385,7 @@ mcp__chrome-devtools__performance_analyze_insight
 5. Check CDN usage
 
 **MCP Commands:**
+
 ```
 mcp__chrome-devtools__list_network_requests
 mcp__chrome-devtools__get_network_request
@@ -365,6 +400,7 @@ mcp__chrome-devtools__get_network_request
 **Tools:** Accessibility MCP (axe-core)
 
 **Tasks:**
+
 1. Test homepage for accessibility
 2. Sample key pages
 3. Check color contrast
@@ -375,6 +411,7 @@ mcp__chrome-devtools__get_network_request
 8. Check form labels
 
 **MCP Commands:**
+
 ```
 mcp__a11y-accessibility__test_accessibility (url, tags: ['wcag2aa'])
 mcp__a11y-accessibility__check_color_contrast
@@ -382,6 +419,7 @@ mcp__a11y-accessibility__check_aria_attributes
 ```
 
 **Issues to identify:**
+
 - Color contrast failures
 - Missing alt text
 - Invalid ARIA
@@ -395,6 +433,7 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 5.2 Accessibility Remediation Planning
 
 **Tasks:**
+
 1. Categorize issues by severity
 2. Estimate remediation effort
 3. Plan implementation approach
@@ -406,6 +445,7 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 6.1 Content Export Assessment
 
 **Tasks:**
+
 1. Determine if CMS has export functionality
 2. Check for database access
 3. Evaluate API availability
@@ -413,6 +453,7 @@ mcp__a11y-accessibility__check_aria_attributes
 5. Identify migration challenges
 
 **Migration approaches:**
+
 - **Best:** Structured export (XML, JSON, CSV)
 - **Good:** Database access with queries
 - **Medium:** API with pagination
@@ -423,12 +464,14 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 6.2 Content Cleanup Requirements
 
 **Tasks:**
+
 1. Identify HTML cleanup needed
 2. Check for broken links/images
 3. Assess content quality
 4. Document manual cleanup required
 
 **Cleanup categories:**
+
 - HTML tag cleanup (remove inline styles, deprecated tags)
 - Image path corrections
 - Broken link fixing
@@ -441,12 +484,14 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 6.3 Migration Complexity
 
 **Tasks:**
+
 1. Classify migration complexity (simple/medium/complex)
 2. Estimate effort per content type
 3. Plan migration phases
 4. Identify risks
 
 **Complexity factors:**
+
 - **Simple (1x):** Clean exports, direct field mapping
 - **Medium (2x):** HTML cleanup, some restructuring
 - **Complex (3-4x):** Custom parsing, significant restructuring
@@ -458,12 +503,14 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 7.1 Content Type Design
 
 **Tasks:**
+
 1. Map page types to Drupal content types
 2. Design field structure for each
 3. Plan taxonomy integrations
 4. Design view modes
 
 **For each content type:**
+
 - Name and machine name
 - Fields (type, cardinality, required/optional)
 - Taxonomies attached
@@ -476,12 +523,14 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 7.2 Paragraph Type Design
 
 **Tasks:**
+
 1. Map components to paragraph types
 2. Design fields for each paragraph
 3. Plan nesting/relationships
 4. Consider section wrapper pattern
 
 **For each paragraph type:**
+
 - Name and machine name
 - Fields
 - Allowed parent types
@@ -493,12 +542,14 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 7.3 View Design
 
 **Tasks:**
+
 1. Map listings to Drupal Views
 2. Design filters and sorting
 3. Plan display formats
 4. Configure pagination
 
 **For each view:**
+
 - Name and purpose
 - Content type queried
 - Display types (page, block, feed)
@@ -511,11 +562,13 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 7.4 Module Selection
 
 **Tasks:**
+
 1. Identify required contributed modules
 2. Document custom module needs
 3. Plan integration modules
 
 **Module categories:**
+
 - Core functionality (Paragraphs, Webform, Pathauto)
 - Admin UX (Gin, Admin Toolbar)
 - SEO (Yoast, Metatag)
@@ -531,6 +584,7 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 8.1 Bottom-Up Estimation
 
 **Tasks:**
+
 1. Count all entities (content types, paragraphs, views, etc.)
 2. Classify complexity for each
 3. Calculate base hours using estimation table
@@ -546,6 +600,7 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 8.2 Baseline Comparison
 
 **Tasks:**
+
 1. Compare to adessoCMS baseline
 2. Calculate scale factor
 3. Adjust for complexity differences
@@ -558,12 +613,14 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 8.3 Risk Assessment
 
 **Tasks:**
+
 1. Identify project risks
 2. Assign risk levels (low/medium/high)
 3. Recommend appropriate buffer
 4. Document assumptions
 
 **Risk factors:**
+
 - Unclear requirements
 - Complex migration
 - Custom development scope
@@ -578,6 +635,7 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 9.1 Compile Audit Report
 
 **Tasks:**
+
 1. Aggregate all audit findings
 2. Structure documentation
 3. Generate VitePress site
@@ -585,6 +643,7 @@ mcp__a11y-accessibility__check_aria_attributes
 5. Export estimates
 
 **Report sections:**
+
 1. Executive Summary
 2. Current Site Analysis
 3. Content Architecture
@@ -603,6 +662,7 @@ mcp__a11y-accessibility__check_aria_attributes
 #### 9.2 Estimation Summary
 
 **Tasks:**
+
 1. Create estimate summary document
 2. Present as ranges (optimistic/likely/pessimistic)
 3. Include timeline projections
@@ -685,6 +745,7 @@ Before finalizing audit:
 ## Audit Artifacts
 
 **Required outputs:**
+
 1. ✅ VitePress site with full audit
 2. ✅ Estimation spreadsheet/document
 3. ✅ Architecture diagrams
@@ -700,14 +761,15 @@ Before finalizing audit:
 
 **Typical audit duration:**
 
-| Audit Scope | Duration | Notes |
-|-------------|----------|-------|
-| Small site (10-30 pages) | 1-2 days | Limited features, simple structure |
-| Medium site (30-100 pages) | 2-4 days | Multiple content types, moderate features |
-| Large site (100-500 pages) | 4-8 days | Complex structure, many features |
+| Audit Scope                  | Duration  | Notes                                     |
+| ---------------------------- | --------- | ----------------------------------------- |
+| Small site (10-30 pages)     | 1-2 days  | Limited features, simple structure        |
+| Medium site (30-100 pages)   | 2-4 days  | Multiple content types, moderate features |
+| Large site (100-500 pages)   | 4-8 days  | Complex structure, many features          |
 | Enterprise site (500+ pages) | 1-2 weeks | Extensive features, multiple integrations |
 
 **Audit phases timeline:**
+
 - Discovery: 10%
 - Content analysis: 25%
 - Functionality analysis: 20%
@@ -719,6 +781,7 @@ Before finalizing audit:
 ## Tips for Effective Audits
 
 **Do:**
+
 - ✅ Use automation (MCP tools) extensively
 - ✅ Take screenshots liberally
 - ✅ Document assumptions immediately
@@ -729,6 +792,7 @@ Before finalizing audit:
 - ✅ Present estimates as ranges
 
 **Don't:**
+
 - ❌ Skip performance/accessibility analysis
 - ❌ Underestimate migration complexity
 - ❌ Forget to include testing effort
@@ -744,6 +808,7 @@ See the VitePress template in `assets/vitepress-template/` for the complete repo
 ## Continuous Improvement
 
 After each audit:
+
 1. Review accuracy of estimates vs. actuals
 2. Update baseline data
 3. Refine estimation formulas

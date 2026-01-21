@@ -119,7 +119,7 @@ export function validateUrlForFetch(url: string): void {
   if (isInternalUrl(url)) {
     throw new Error(
       'URL validation failed: Cannot fetch internal URLs, localhost, or private IP addresses. ' +
-      'This request has been blocked for security reasons.'
+        'This request has been blocked for security reasons.'
     );
   }
 
@@ -131,7 +131,7 @@ export function validateUrlForFetch(url: string): void {
     if (!allowedProtocols.includes(parsed.protocol)) {
       throw new Error(
         `URL validation failed: Protocol "${parsed.protocol}" is not allowed. ` +
-        'Only HTTP and HTTPS are supported.'
+          'Only HTTP and HTTPS are supported.'
       );
     }
   } catch (error) {

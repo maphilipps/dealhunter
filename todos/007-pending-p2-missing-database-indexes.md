@@ -19,6 +19,7 @@ The `deep_migration_analyses` table has no indexes on frequently queried columns
 ## Findings
 
 **Performance Oracle Report:**
+
 - Common query pattern: "Find latest analysis for bid X" → needs bidOpportunityId index
 - Status filtering: "Show all running analyses" → needs status index
 - Job lookup: "Find analysis by Inngest jobId" → needs jobId index
@@ -26,47 +27,49 @@ The `deep_migration_analyses` table has no indexes on frequently queried columns
 - With indexes: Binary search, 100-1000x faster
 
 **Evidence:**
+
 ```typescript
 // Common queries (NO INDEXES):
 // 1. Find analysis by bid (O(n) scan)
-await db.select()
+await db
+  .select()
   .from(deepMigrationAnalyses)
   .where(eq(deepMigrationAnalyses.bidOpportunityId, bidId)); // ❌ No index
 
 // 2. Find running analyses (O(n) scan)
-await db.select()
-  .from(deepMigrationAnalyses)
-  .where(eq(deepMigrationAnalyses.status, 'running')); // ❌ No index
+await db.select().from(deepMigrationAnalyses).where(eq(deepMigrationAnalyses.status, 'running')); // ❌ No index
 
 // 3. Find analysis by jobId (O(n) scan)
-await db.select()
-  .from(deepMigrationAnalyses)
-  .where(eq(deepMigrationAnalyses.jobId, inngestRunId)); // ❌ No index
+await db.select().from(deepMigrationAnalyses).where(eq(deepMigrationAnalyses.jobId, inngestRunId)); // ❌ No index
 ```
 
 **Performance Impact (projected):**
 | Records | Without Index | With Index | Speedup |
 |---------|--------------|------------|---------|
-| 10      | 1ms          | 1ms        | 1x      |
-| 100     | 10ms         | 2ms        | 5x      |
-| 1,000   | 100ms        | 3ms        | 33x     |
-| 10,000  | 1,000ms      | 4ms        | 250x    |
+| 10 | 1ms | 1ms | 1x |
+| 100 | 10ms | 2ms | 5x |
+| 1,000 | 100ms | 3ms | 33x |
+| 10,000 | 1,000ms | 4ms | 250x |
 
 ## Proposed Solutions
 
 ### Solution 1: Add Composite Index on (bidOpportunityId, status) (Recommended)
+
 **Pros:**
+
 - Covers most common query pattern
 - Single index handles multiple query types
 - Minimal storage overhead
 
 **Cons:**
+
 - Need separate index for jobId
 
 **Effort**: Small (30 minutes)
 **Risk**: Very Low
 
 **Implementation:**
+
 ```sql
 -- New migration file
 CREATE INDEX `idx_deep_migration_analyses_bid_status`
@@ -81,11 +84,14 @@ CREATE INDEX `idx_deep_migration_analyses_user_id`
 ```
 
 ### Solution 2: Add Individual Indexes
+
 **Pros:**
+
 - Flexible for query optimizer
 - Each column individually indexed
 
 **Cons:**
+
 - More storage space
 - More index maintenance overhead
 - Composite index is more efficient
@@ -94,11 +100,14 @@ CREATE INDEX `idx_deep_migration_analyses_user_id`
 **Risk**: Very Low
 
 ### Solution 3: Defer Until Performance Issue Observed
+
 **Pros:**
+
 - Less work now
 - Can optimize later if needed
 
 **Cons:**
+
 - Users will experience slowness first
 - Reactive instead of proactive
 - Migration more disruptive with existing data
@@ -115,20 +124,27 @@ Indexes should be added during schema design, not after performance issues arise
 ## Technical Details
 
 **Affected Files:**
+
 - `drizzle/migrations/XXXX_add_deep_analysis_indexes.sql` - NEW migration
 
 **Schema Change (in code):**
+
 ```typescript
 // lib/db/schema.ts
-export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
-  // ... existing columns
-}, (table) => ({
-  // ✅ Add indexes
-  bidStatusIdx: index('idx_deep_migration_analyses_bid_status')
-    .on(table.bidOpportunityId, table.status),
-  jobIdIdx: index('idx_deep_migration_analyses_job_id')
-    .on(table.jobId),
-}));
+export const deepMigrationAnalyses = sqliteTable(
+  'deep_migration_analyses',
+  {
+    // ... existing columns
+  },
+  table => ({
+    // ✅ Add indexes
+    bidStatusIdx: index('idx_deep_migration_analyses_bid_status').on(
+      table.bidOpportunityId,
+      table.status
+    ),
+    jobIdIdx: index('idx_deep_migration_analyses_job_id').on(table.jobId),
+  })
+);
 ```
 
 **Database Changes:** Adds 2 indexes
@@ -136,14 +152,18 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 **Breaking Changes:** None (additive only, improves performance)
 
 **Query Improvement Example:**
+
 ```typescript
 // BEFORE: O(n) table scan
-const [analysis] = await db.select()
+const [analysis] = await db
+  .select()
   .from(deepMigrationAnalyses)
-  .where(and(
-    eq(deepMigrationAnalyses.bidOpportunityId, bidId),
-    eq(deepMigrationAnalyses.status, 'completed')
-  ))
+  .where(
+    and(
+      eq(deepMigrationAnalyses.bidOpportunityId, bidId),
+      eq(deepMigrationAnalyses.status, 'completed')
+    )
+  )
   .orderBy(desc(deepMigrationAnalyses.createdAt))
   .limit(1);
 // Query time: 100ms (at 1000 records)

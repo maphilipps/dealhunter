@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p3
-issue_id: "041"
+issue_id: '041'
 tags: [performance, caching, gemini-analysis]
 dependencies: []
 ---
@@ -21,6 +21,7 @@ The BU Matching component fetches `/api/bids/${bidId}/bu-matching` on every moun
 **File:** `components/bids/bu-matching-tab.tsx`
 
 **Line 27 - Fetch without caching:**
+
 ```typescript
 // Fetches on every component mount
 useEffect(() => {
@@ -31,6 +32,7 @@ useEffect(() => {
 ```
 
 **Issues:**
+
 1. No client-side caching (SWR/React Query)
 2. No server-side caching (unstable_cache)
 3. BU matching result computed every time
@@ -39,6 +41,7 @@ useEffect(() => {
 ## Proposed Solutions
 
 ### Solution A: Store result in database (Recommended)
+
 **Pros:** Single computation, persistent, fast subsequent loads
 **Cons:** Schema change, need to invalidate on bid update
 **Effort:** Medium (1 hour)
@@ -61,6 +64,7 @@ if (!bid.buMatchingResult) {
 ```
 
 ### Solution B: Use unstable_cache on API route
+
 **Pros:** Simple, no schema change
 **Cons:** Cache invalidation complexity
 **Effort:** Small (30 min)
@@ -78,6 +82,7 @@ const getCachedBuMatching = unstable_cache(
 ```
 
 ### Solution C: Use SWR on client
+
 **Pros:** Simple client-side caching
 **Cons:** Still computes on server each time (just caches response)
 **Effort:** Small (15 min)
@@ -86,11 +91,9 @@ const getCachedBuMatching = unstable_cache(
 ```typescript
 import useSWR from 'swr';
 
-const { data: buMatching } = useSWR(
-  `/api/bids/${bidId}/bu-matching`,
-  fetcher,
-  { revalidateOnFocus: false }
-);
+const { data: buMatching } = useSWR(`/api/bids/${bidId}/bu-matching`, fetcher, {
+  revalidateOnFocus: false,
+});
 ```
 
 ## Recommended Action
@@ -100,6 +103,7 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `components/bids/bu-matching-tab.tsx` (add caching)
 - `app/api/bids/[id]/bu-matching/route.ts` (add server caching)
 - Optionally: `lib/db/schema.ts` (add result column)
@@ -113,8 +117,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                           | Learnings                                         |
+| ---------- | -------------------------------- | ------------------------------------------------- |
 | 2026-01-18 | Created from Gemini CLI analysis | Expensive computations should be cached or stored |
 
 ## Resources

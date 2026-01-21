@@ -1,6 +1,6 @@
 /**
  * Agent Tools Type Definitions
- * 
+ *
  * These types define the contract for agent-callable tools.
  * Each tool is a primitive operation that agents can invoke.
  */
@@ -22,7 +22,23 @@ export interface ToolResult<T = unknown> {
 export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
   name: string;
   description: string;
-  category: 'rfp' | 'account' | 'reference' | 'competency' | 'employee' | 'technology' | 'business-unit' | 'user' | 'validation' | 'team' | 'routing' | 'notification' | 'document' | 'quickscan' | 'research' | 'staffing';
+  category:
+    | 'rfp'
+    | 'account'
+    | 'reference'
+    | 'competency'
+    | 'employee'
+    | 'technology'
+    | 'business-unit'
+    | 'user'
+    | 'validation'
+    | 'team'
+    | 'routing'
+    | 'notification'
+    | 'document'
+    | 'quickscan'
+    | 'research'
+    | 'staffing';
   inputSchema: z.ZodSchema<TInput>;
   execute: (input: TInput, context: ToolContext) => Promise<ToolResult<TOutput>>;
 }

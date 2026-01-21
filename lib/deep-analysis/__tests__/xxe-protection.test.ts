@@ -22,7 +22,7 @@ describe('XXE Protection', () => {
 <urlset><url><loc>&xxe;</loc></url></urlset>`;
 
       expect(() => validateXml(maliciousXml)).toThrow(
-        'XML contains DOCTYPE declaration - not allowed for security reasons',
+        'XML contains DOCTYPE declaration - not allowed for security reasons'
       );
     });
 
@@ -32,7 +32,7 @@ describe('XXE Protection', () => {
 <urlset><url><loc>&xxe;</loc></url></urlset>`;
 
       expect(() => validateXml(maliciousXml)).toThrow(
-        'XML contains ENTITY declaration - not allowed for security reasons',
+        'XML contains ENTITY declaration - not allowed for security reasons'
       );
     });
 
@@ -42,7 +42,7 @@ describe('XXE Protection', () => {
 <urlset></urlset>`;
 
       expect(() => validateXml(maliciousXml)).toThrow(
-        'XML contains SYSTEM reference - not allowed for security reasons',
+        'XML contains SYSTEM reference - not allowed for security reasons'
       );
     });
 
@@ -52,7 +52,7 @@ describe('XXE Protection', () => {
 <urlset></urlset>`;
 
       expect(() => validateXml(maliciousXml)).toThrow(
-        'XML contains PUBLIC reference - not allowed for security reasons',
+        'XML contains PUBLIC reference - not allowed for security reasons'
       );
     });
 
@@ -63,7 +63,7 @@ describe('XXE Protection', () => {
 </urlset>`;
 
       expect(() => validateXml(maliciousXml)).toThrow(
-        'XML contains parameter entity - not allowed for security reasons',
+        'XML contains parameter entity - not allowed for security reasons'
       );
     });
 
@@ -113,11 +113,11 @@ describe('XXE Protection', () => {
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(maliciousXml),
-        } as Response),
+        } as Response)
       ) as jest.Mock;
 
       await expect(fetchSitemap('https://evil.com')).rejects.toThrow(
-        'XML contains DOCTYPE declaration',
+        'XML contains DOCTYPE declaration'
       );
     });
 
@@ -134,11 +134,11 @@ describe('XXE Protection', () => {
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(maliciousXml),
-        } as Response),
+        } as Response)
       ) as jest.Mock;
 
       await expect(fetchSitemap('https://evil.com')).rejects.toThrow(
-        'XML contains DOCTYPE declaration',
+        'XML contains DOCTYPE declaration'
       );
     });
 
@@ -158,7 +158,7 @@ describe('XXE Protection', () => {
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(maliciousXml),
-        } as Response),
+        } as Response)
       ) as jest.Mock;
 
       await expect(fetchSitemap('https://evil.com')).rejects.toThrow();
@@ -182,7 +182,7 @@ describe('XXE Protection', () => {
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(validXml),
-        } as Response),
+        } as Response)
       ) as jest.Mock;
 
       const result = await fetchSitemap('https://example.com');
@@ -254,7 +254,7 @@ describe('XXE Protection', () => {
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(validXml),
-        } as Response),
+        } as Response)
       ) as jest.Mock;
 
       const result = await fetchSitemap('https://example.com');
@@ -275,7 +275,7 @@ describe('XXE Protection', () => {
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(maliciousSitemapIndex),
-        } as Response),
+        } as Response)
       ) as jest.Mock;
 
       const result = await fetchSitemap('https://example.com');
@@ -296,7 +296,7 @@ describe('XXE Protection', () => {
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(emptyXml),
-        } as Response),
+        } as Response)
       ) as jest.Mock;
 
       await expect(fetchSitemap('https://example.com')).rejects.toThrow('No sitemap found');
@@ -313,7 +313,7 @@ describe('XXE Protection', () => {
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(malformedXml),
-        } as Response),
+        } as Response)
       ) as jest.Mock;
 
       // fast-xml-parser should handle this gracefully
@@ -335,7 +335,7 @@ describe('XXE Protection', () => {
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(xmlWithWhitespace),
-        } as Response),
+        } as Response)
       ) as jest.Mock;
 
       const result = await fetchSitemap('https://example.com');

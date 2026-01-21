@@ -13,9 +13,9 @@ import DOMPurify from 'isomorphic-dompurify';
  */
 export function sanitizeText(text: string): string {
   return DOMPurify.sanitize(text, {
-    ALLOWED_TAGS: [],      // No HTML allowed
-    ALLOWED_ATTR: [],      // No attributes allowed
-    KEEP_CONTENT: true,    // Keep text content
+    ALLOWED_TAGS: [], // No HTML allowed
+    ALLOWED_ATTR: [], // No attributes allowed
+    KEEP_CONTENT: true, // Keep text content
   });
 }
 

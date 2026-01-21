@@ -5,10 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { inngest } from '@/lib/inngest/client';
 
-export async function POST(
-  _request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -29,19 +26,17 @@ export async function POST(
   }
 
   if (!bid.websiteUrl) {
-    return NextResponse.json({ error: 'No website URL found - cannot run Deep Analysis' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'No website URL found - cannot run Deep Analysis' },
+      { status: 400 }
+    );
   }
 
   // Check if analysis already running
   const [existing] = await db
     .select()
     .from(deepMigrationAnalyses)
-    .where(
-      and(
-        eq(deepMigrationAnalyses.rfpId, id),
-        eq(deepMigrationAnalyses.status, 'running')
-      )
-    )
+    .where(and(eq(deepMigrationAnalyses.rfpId, id), eq(deepMigrationAnalyses.status, 'running')))
     .limit(1);
 
   if (existing) {

@@ -34,8 +34,15 @@ interface BaselineEntityCounts {
  * Kategorisiert Features in "Vorhanden" vs "Neu zu entwickeln".
  * Berechnet Baseline-Abdeckung und Stundenersparnis.
  */
-export async function runBaselineComparison(input: BaselineComparisonInput): Promise<BaselineComparisonResult> {
-  const { contentArchitecture, baselineEntityCounts, baselineName = 'adessoCMS 2.0', baselineHours = 400 } = input;
+export async function runBaselineComparison(
+  input: BaselineComparisonInput
+): Promise<BaselineComparisonResult> {
+  const {
+    contentArchitecture,
+    baselineEntityCounts,
+    baselineName = 'adessoCMS 2.0',
+    baselineHours = 400,
+  } = input;
 
   // Parse baseline entity counts if available
   const baseline: BaselineEntityCounts = baselineEntityCounts || {
@@ -50,13 +57,13 @@ export async function runBaselineComparison(input: BaselineComparisonInput): Pro
   };
 
   // Format content architecture for AI
-  const pageTypesInfo = contentArchitecture.pageTypes.map(pt =>
-    `- ${pt.type}: ${pt.count} Seiten`
-  ).join('\n');
+  const pageTypesInfo = contentArchitecture.pageTypes
+    .map(pt => `- ${pt.type}: ${pt.count} Seiten`)
+    .join('\n');
 
-  const contentMappingInfo = contentArchitecture.contentTypeMapping.map(m =>
-    `- ${m.pageType} → ${m.drupalContentType} (Konfidenz: ${m.confidence}%)`
-  ).join('\n');
+  const contentMappingInfo = contentArchitecture.contentTypeMapping
+    .map(m => `- ${m.pageType} → ${m.drupalContentType} (Konfidenz: ${m.confidence}%)`)
+    .join('\n');
 
   const { object } = await generateObject({
     model: 'openai/gpt-4o-mini',

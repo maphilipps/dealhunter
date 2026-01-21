@@ -4,7 +4,14 @@ import { z } from 'zod';
 import type { DecisionMakersResearch, DecisionMaker } from '../schema';
 
 // Valid source types for DecisionMaker
-type DecisionMakerSource = 'impressum' | 'linkedin' | 'xing' | 'website' | 'web_search' | 'derived' | 'team_page';
+type DecisionMakerSource =
+  | 'impressum'
+  | 'linkedin'
+  | 'xing'
+  | 'website'
+  | 'web_search'
+  | 'derived'
+  | 'team_page';
 
 /**
  * Decision Maker Research Tool - SMART VERSION
@@ -55,10 +62,13 @@ const SEARCH_STRATEGIES = [
 
 // Common email patterns for derivation
 const EMAIL_PATTERNS = [
-  (first: string, last: string, domain: string) => `${first.toLowerCase()}.${last.toLowerCase()}@${domain}`,
-  (first: string, last: string, domain: string) => `${first.toLowerCase()[0]}.${last.toLowerCase()}@${domain}`,
+  (first: string, last: string, domain: string) =>
+    `${first.toLowerCase()}.${last.toLowerCase()}@${domain}`,
+  (first: string, last: string, domain: string) =>
+    `${first.toLowerCase()[0]}.${last.toLowerCase()}@${domain}`,
   (first: string, last: string, domain: string) => `${first.toLowerCase()}@${domain}`,
-  (first: string, last: string, domain: string) => `${first.toLowerCase()[0]}${last.toLowerCase()}@${domain}`,
+  (first: string, last: string, domain: string) =>
+    `${first.toLowerCase()[0]}${last.toLowerCase()}@${domain}`,
   (first: string, last: string, domain: string) => `${last.toLowerCase()}@${domain}`,
 ];
 
@@ -76,7 +86,10 @@ function extractDomain(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '');
   } catch {
-    return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+    return url
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .split('/')[0];
   }
 }
 
@@ -99,7 +112,7 @@ function deriveEmails(name: string, domain: string): Array<{ email: string; conf
 
   return EMAIL_PATTERNS.map((pattern, index) => ({
     email: pattern(firstName, lastName, cleanDomain),
-    confidence: 100 - (index * 15),
+    confidence: 100 - index * 15,
   })).slice(0, 3);
 }
 
@@ -110,25 +123,40 @@ async function extractPeopleFromPage(
   pageContent: string,
   pageUrl: string,
   companyName: string
-): Promise<Array<{ name: string; role: string; email?: string; linkedInUrl?: string; phone?: string; source: DecisionMakerSource }>> {
+): Promise<
+  Array<{
+    name: string;
+    role: string;
+    email?: string;
+    linkedInUrl?: string;
+    phone?: string;
+    source: DecisionMakerSource;
+  }>
+> {
   try {
-    const result = await generateStructuredOutput<z.ZodObject<{
-      people: z.ZodArray<z.ZodObject<{
-        name: z.ZodString;
-        role: z.ZodString;
-        email: z.ZodOptional<z.ZodString>;
-        linkedInUrl: z.ZodOptional<z.ZodString>;
-        phone: z.ZodOptional<z.ZodString>;
-      }>>;
-    }>>({
+    const result = await generateStructuredOutput<
+      z.ZodObject<{
+        people: z.ZodArray<
+          z.ZodObject<{
+            name: z.ZodString;
+            role: z.ZodString;
+            email: z.ZodOptional<z.ZodString>;
+            linkedInUrl: z.ZodOptional<z.ZodString>;
+            phone: z.ZodOptional<z.ZodString>;
+          }>
+        >;
+      }>
+    >({
       schema: z.object({
-        people: z.array(z.object({
-          name: z.string().describe('Vollständiger Name der Person'),
-          role: z.string().describe('Position/Rolle in der Firma'),
-          email: z.string().optional().describe('E-Mail-Adresse wenn gefunden'),
-          linkedInUrl: z.string().optional().describe('LinkedIn URL wenn gefunden'),
-          phone: z.string().optional().describe('Telefonnummer wenn gefunden'),
-        })),
+        people: z.array(
+          z.object({
+            name: z.string().describe('Vollständiger Name der Person'),
+            role: z.string().describe('Position/Rolle in der Firma'),
+            email: z.string().optional().describe('E-Mail-Adresse wenn gefunden'),
+            linkedInUrl: z.string().optional().describe('LinkedIn URL wenn gefunden'),
+            phone: z.string().optional().describe('Telefonnummer wenn gefunden'),
+          })
+        ),
       }),
       system: `Du bist ein Experte für die Extraktion von Kontaktinformationen aus Webseiten.
 
@@ -150,9 +178,13 @@ ${pageContent.slice(0, 10000)}
 Gib ein JSON zurück mit allen gefundenen Führungspersonen.`,
     });
 
-    const source: DecisionMakerSource = pageUrl.includes('linkedin.com') ? 'linkedin' :
-              pageUrl.includes('xing.com') ? 'xing' :
-              pageUrl.includes('impressum') ? 'impressum' : 'web_search';
+    const source: DecisionMakerSource = pageUrl.includes('linkedin.com')
+      ? 'linkedin'
+      : pageUrl.includes('xing.com')
+        ? 'xing'
+        : pageUrl.includes('impressum')
+          ? 'impressum'
+          : 'web_search';
     return result.people.map(p => ({
       ...p,
       source,
@@ -201,7 +233,16 @@ async function executeSearchStrategy(
   companyName: string,
   websiteDomain: string,
   existingNames: Set<string>
-): Promise<Array<{ name: string; role: string; email?: string; linkedInUrl?: string; phone?: string; source: DecisionMakerSource }>> {
+): Promise<
+  Array<{
+    name: string;
+    role: string;
+    email?: string;
+    linkedInUrl?: string;
+    phone?: string;
+    source: DecisionMakerSource;
+  }>
+> {
   const query = strategy(companyName);
   const isLinkedInSearch = query.includes('site:linkedin.com');
   const isXingSearch = query.includes('site:xing.com');
@@ -219,7 +260,14 @@ async function executeSearchStrategy(
       return [];
     }
 
-    const foundPeople: Array<{ name: string; role: string; email?: string; linkedInUrl?: string; phone?: string; source: DecisionMakerSource }> = [];
+    const foundPeople: Array<{
+      name: string;
+      role: string;
+      email?: string;
+      linkedInUrl?: string;
+      phone?: string;
+      source: DecisionMakerSource;
+    }> = [];
 
     // For LinkedIn/Xing searches, parse results directly
     if (isLinkedInSearch) {
@@ -239,7 +287,8 @@ async function executeSearchStrategy(
     for (const result of searchResults.results.slice(0, 3)) {
       // Skip if it's a different company's website
       const resultDomain = extractDomain(result.url);
-      const isSameDomain = resultDomain.includes(websiteDomain) || websiteDomain.includes(resultDomain);
+      const isSameDomain =
+        resultDomain.includes(websiteDomain) || websiteDomain.includes(resultDomain);
       const isLinkedIn = result.url.includes('linkedin.com');
       const isXing = result.url.includes('xing.com');
 
@@ -359,12 +408,12 @@ export async function searchDecisionMakers(
   }
 
   // Calculate confidence score
-  const confidence = Math.min(100, Math.round(
-    (decisionMakers.length * 15) +
-    (linkedInFound * 10) +
-    (emailsConfirmed * 20) +
-    (emailsDerived * 5)
-  ));
+  const confidence = Math.min(
+    100,
+    Math.round(
+      decisionMakers.length * 15 + linkedInFound * 10 + emailsConfirmed * 20 + emailsDerived * 5
+    )
+  );
 
   console.log(`[Decision Makers] Research complete:`);
   console.log(`  - Total contacts: ${decisionMakers.length}`);
@@ -421,12 +470,14 @@ export async function quickContactSearch(websiteUrl: string): Promise<{
     const phones = pageContent.text.match(phonePattern) || [];
 
     // Find generic contact email
-    const mainEmail = emails.find(e =>
-      e.toLowerCase().startsWith('info@') ||
-      e.toLowerCase().startsWith('kontakt@') ||
-      e.toLowerCase().startsWith('mail@') ||
-      e.toLowerCase().startsWith('office@')
-    ) || emails[0];
+    const mainEmail =
+      emails.find(
+        e =>
+          e.toLowerCase().startsWith('info@') ||
+          e.toLowerCase().startsWith('kontakt@') ||
+          e.toLowerCase().startsWith('mail@') ||
+          e.toLowerCase().startsWith('office@')
+      ) || emails[0];
 
     return {
       mainEmail,

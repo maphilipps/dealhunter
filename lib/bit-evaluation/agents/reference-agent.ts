@@ -28,8 +28,9 @@ export async function runReferenceAgent(input: ReferenceAgentInput): Promise<Ref
     const intelligentTools = createIntelligentTools({ agentName: 'Reference Researcher' });
 
     try {
-      const industry = input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
-                       input.extractedRequirements?.industry;
+      const industry =
+        input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
+        input.extractedRequirements?.industry;
       const techStack = input.quickScanResults?.techStack;
       const cms = techStack?.cms;
 
@@ -87,10 +88,14 @@ WICHTIG: Gib immer eine fundierte Einschätzung ab. Alle Begründungen und Texte
 Extracted Requirements:
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
-${input.quickScanResults ? `
+${
+  input.quickScanResults
+    ? `
 Quick Scan Results:
 ${JSON.stringify(input.quickScanResults, null, 2)}
-` : ''}
+`
+    : ''
+}
 ${adessoReferences}
 ${industryProjects}
 

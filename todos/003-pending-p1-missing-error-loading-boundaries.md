@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "003"
+issue_id: '003'
 tags: [code-review, nextjs, error-handling, ux]
 dependencies: []
 ---
@@ -11,6 +11,7 @@ dependencies: []
 ## Problem Statement
 
 The bid detail route (`/bids/[id]`) has no `error.tsx` or `loading.tsx` files. This means:
+
 1. Unhandled errors bubble to root error boundary (poor UX)
 2. No loading state during Server Component data fetching (users see blank page)
 3. No route-level error recovery mechanism
@@ -24,6 +25,7 @@ The bid detail route (`/bids/[id]`) has no `error.tsx` or `loading.tsx` files. T
 **From nextjs-reviewer agent:**
 
 Current structure:
+
 ```
 app/(dashboard)/bids/[id]/
   ├── page.tsx        # ✅ Exists
@@ -32,11 +34,13 @@ app/(dashboard)/bids/[id]/
 ```
 
 **Missing Capabilities:**
+
 1. **No error boundary** - Database errors, auth failures, or invalid IDs show generic Next.js error
 2. **No loading state** - 100-500ms delay during navigation shows blank screen
 3. **No retry mechanism** - Users can't recover from transient errors
 
 **User Experience Impact:**
+
 - Navigation to bid details feels laggy/broken
 - Errors are confusing and unhelpful
 - No way to recover from failures without browser refresh
@@ -44,6 +48,7 @@ app/(dashboard)/bids/[id]/
 ## Proposed Solutions
 
 ### Solution 1: Add Standard Error and Loading Components (Recommended)
+
 **Effort:** Small (15-20 minutes)
 **Risk:** Low
 **Pros:** Next.js best practice, immediate UX improvement
@@ -52,6 +57,7 @@ app/(dashboard)/bids/[id]/
 Create two new files following Next.js 16 conventions:
 
 **File 1:** `/Users/marc.philipps/Sites/dealhunter/app/(dashboard)/bids/[id]/loading.tsx`
+
 ```tsx
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -83,6 +89,7 @@ export default function BidDetailLoading() {
 ```
 
 **File 2:** `/Users/marc.philipps/Sites/dealhunter/app/(dashboard)/bids/[id]/error.tsx`
+
 ```tsx
 'use client';
 
@@ -112,9 +119,7 @@ export default function BidDetailError({
             <AlertCircle className="h-5 w-5 text-red-600" />
             <CardTitle className="text-red-600">Ein Fehler ist aufgetreten</CardTitle>
           </div>
-          <CardDescription>
-            {error.message || 'Bid konnte nicht geladen werden'}
-          </CardDescription>
+          <CardDescription>{error.message || 'Bid konnte nicht geladen werden'}</CardDescription>
         </CardHeader>
         <CardContent>
           <Button onClick={reset}>Erneut versuchen</Button>
@@ -132,14 +137,17 @@ export default function BidDetailError({
 ## Technical Details
 
 **New Files:**
+
 - `/Users/marc.philipps/Sites/dealhunter/app/(dashboard)/bids/[id]/loading.tsx` (new)
 - `/Users/marc.philipps/Sites/dealhunter/app/(dashboard)/bids/[id]/error.tsx` (new)
 
 **Affected Components:**
+
 - Uses existing ShadCN components (Skeleton, Card, Button)
 - Follows Apple-style UX (clean, minimal, actionable)
 
 **Testing Requirements:**
+
 - Navigate to bid detail and verify loading skeleton appears during data fetch
 - Simulate error (invalid bid ID) and verify error UI with retry button
 - Click retry button and verify page reloads

@@ -115,7 +115,7 @@ export function ReferenceValidationTable({ data }: ReferenceValidationTableProps
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((ref) => {
+            {data.map(ref => {
               const technologies = JSON.parse(ref.technologies || '[]');
               return (
                 <TableRow key={ref.id}>
@@ -142,9 +142,7 @@ export function ReferenceValidationTable({ data }: ReferenceValidationTableProps
                     </div>
                   </TableCell>
                   <TableCell>
-                    {ref.createdAt
-                      ? new Date(ref.createdAt).toLocaleDateString('de-DE')
-                      : 'N/A'}
+                    {ref.createdAt ? new Date(ref.createdAt).toLocaleDateString('de-DE') : 'N/A'}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
@@ -188,7 +186,7 @@ export function ReferenceValidationTable({ data }: ReferenceValidationTableProps
             <Textarea
               id="feedback"
               value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
+              onChange={e => setFeedback(e.target.value)}
               placeholder="z.B. 'Bitte ergänzen Sie den Kundennamen und die Projektergebnisse.'"
               rows={4}
             />
@@ -197,10 +195,7 @@ export function ReferenceValidationTable({ data }: ReferenceValidationTableProps
             <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
               Abbrechen
             </Button>
-            <Button
-              onClick={handleRejectSubmit}
-              disabled={isSubmitting || !feedback.trim()}
-            >
+            <Button onClick={handleRejectSubmit} disabled={isSubmitting || !feedback.trim()}>
               {isSubmitting ? 'Ablehne...' : 'Ablehnen'}
             </Button>
           </DialogFooter>

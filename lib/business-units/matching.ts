@@ -14,16 +14,16 @@ import { eq } from 'drizzle-orm';
  * Match-Kriterien (je 20%)
  */
 export interface BUMatchCriteria {
-  techStackScore: number;      // 20% - CMS/Framework Match
-  featuresScore: number;        // 20% - Feature-Set Übereinstimmung
-  referencesScore: number;      // 20% - Passende Referenzen
-  industryScore: number;        // 20% - Branche Match
-  keywordsScore: number;        // 20% - NLP Match
+  techStackScore: number; // 20% - CMS/Framework Match
+  featuresScore: number; // 20% - Feature-Set Übereinstimmung
+  referencesScore: number; // 20% - Passende Referenzen
+  industryScore: number; // 20% - Branche Match
+  keywordsScore: number; // 20% - NLP Match
 }
 
 export interface BUMatchResult {
   businessUnit: BusinessUnit;
-  totalScore: number;           // 0-100
+  totalScore: number; // 0-100
   criteria: BUMatchCriteria;
   matchedTechnologies: string[];
   matchedReferences: Reference[];
@@ -46,7 +46,8 @@ async function calculateTechStackScore(
 
   if (techStack.cms) detectedTechs.push(techStack.cms.toLowerCase());
   if (techStack.framework) detectedTechs.push(techStack.framework.toLowerCase());
-  if (techStack.backend) detectedTechs.push(...techStack.backend.map((t: string) => t.toLowerCase()));
+  if (techStack.backend)
+    detectedTechs.push(...techStack.backend.map((t: string) => t.toLowerCase()));
 
   if (detectedTechs.length === 0) {
     return { score: 0, matched: [] };
@@ -81,10 +82,7 @@ async function calculateTechStackScore(
  * Berechnet Features Match Score (0-100)
  * Vergleicht erkannte Features mit typischen Features der BU
  */
-function calculateFeaturesScore(
-  quickScan: QuickScan,
-  _businessUnit: BusinessUnit
-): number {
+function calculateFeaturesScore(quickScan: QuickScan, _businessUnit: BusinessUnit): number {
   const features = quickScan.features ? JSON.parse(quickScan.features) : {};
 
   // Count detected features
@@ -124,10 +122,7 @@ async function calculateReferencesScore(
   }
 
   // Get all validated references
-  const allRefs = await db
-    .select()
-    .from(references)
-    .where(eq(references.isValidated, true));
+  const allRefs = await db.select().from(references).where(eq(references.isValidated, true));
 
   // Find references that match detected technologies
   const matchedRefs: Reference[] = [];
@@ -160,10 +155,7 @@ async function calculateReferencesScore(
  * Berechnet Industry Match Score (0-100)
  * Vergleicht erkannte Branche mit typischen Branchen der BU
  */
-function calculateIndustryScore(
-  quickScan: QuickScan,
-  _businessUnit: BusinessUnit
-): number {
+function calculateIndustryScore(quickScan: QuickScan, _businessUnit: BusinessUnit): number {
   const companyIntelligence = quickScan.companyIntelligence
     ? JSON.parse(quickScan.companyIntelligence)
     : null;
@@ -176,7 +168,14 @@ function calculateIndustryScore(
 
   // Simple industry categorization
   // In a real system, this would match against BU-specific industry expertise
-  const knownIndustries = ['automotive', 'finance', 'healthcare', 'retail', 'manufacturing', 'energy'];
+  const knownIndustries = [
+    'automotive',
+    'finance',
+    'healthcare',
+    'retail',
+    'manufacturing',
+    'energy',
+  ];
 
   if (knownIndustries.some(i => industry.includes(i))) {
     return 80; // Good match for known industries
@@ -189,10 +188,7 @@ function calculateIndustryScore(
  * Berechnet Keywords Match Score (0-100)
  * NLP Match gegen Anforderungen
  */
-function calculateKeywordsScore(
-  quickScan: QuickScan,
-  businessUnit: BusinessUnit
-): number {
+function calculateKeywordsScore(quickScan: QuickScan, businessUnit: BusinessUnit): number {
   const buKeywords = JSON.parse(businessUnit.keywords) as string[];
   const buKeywordsLower = buKeywords.map(k => k.toLowerCase());
 
@@ -253,24 +249,23 @@ export async function calculateBUMatch(
   };
 
   // Total score: weighted average (each 20%)
-  const totalScore = (
+  const totalScore =
     criteria.techStackScore * 0.2 +
     criteria.featuresScore * 0.2 +
     criteria.referencesScore * 0.2 +
     criteria.industryScore * 0.2 +
-    criteria.keywordsScore * 0.2
-  );
+    criteria.keywordsScore * 0.2;
 
   // Generate reasoning
   const reasons: string[] = [];
-  if (techStack.score >= 80) reasons.push(`Starke Tech-Stack Übereinstimmung (${techStack.matched.join(', ')})`);
+  if (techStack.score >= 80)
+    reasons.push(`Starke Tech-Stack Übereinstimmung (${techStack.matched.join(', ')})`);
   if (refs.score >= 80) reasons.push(`${refs.matched.length} passende Referenzen`);
   if (industry >= 80) reasons.push('Branchenerfahrung vorhanden');
   if (keywords >= 80) reasons.push('Keywords matchen gut');
 
-  const reasoning = reasons.length > 0
-    ? reasons.join('; ')
-    : 'Moderater Match basierend auf verfügbaren Daten';
+  const reasoning =
+    reasons.length > 0 ? reasons.join('; ') : 'Moderater Match basierend auf verfügbaren Daten';
 
   return {
     businessUnit,
@@ -290,9 +285,7 @@ export async function getAllBUMatches(quickScan: QuickScan): Promise<BUMatchResu
   const allBUs = await db.select().from(businessUnits);
 
   // Calculate match for each BU
-  const matches = await Promise.all(
-    allBUs.map(bu => calculateBUMatch(quickScan, bu))
-  );
+  const matches = await Promise.all(allBUs.map(bu => calculateBUMatch(quickScan, bu)));
 
   // Sort by total score descending
   matches.sort((a, b) => b.totalScore - a.totalScore);

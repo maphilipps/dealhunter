@@ -221,7 +221,7 @@ export async function sendTeamNotificationEmails(
     }
   }
 
-  const allSent = results.every((r) => r.status === 'sent');
+  const allSent = results.every(r => r.status === 'sent');
   return { success: allSent, results };
 }
 
@@ -235,7 +235,16 @@ function generateTeamNotificationHtml(data: {
   projectPlanSummary?: { totalWeeks: number; totalHours: number; startPhase: string };
   blLeaderName: string;
 }): string {
-  const { memberName, role, projectName, customerName, projectDescription, projectUrl, projectPlanSummary, blLeaderName } = data;
+  const {
+    memberName,
+    role,
+    projectName,
+    customerName,
+    projectDescription,
+    projectUrl,
+    projectPlanSummary,
+    blLeaderName,
+  } = data;
 
   return `
 <!DOCTYPE html>
@@ -264,7 +273,9 @@ function generateTeamNotificationHtml(data: {
       <p style="margin: 0; color: #6b7280; line-height: 1.6;">${projectDescription}</p>
     </div>
 
-    ${projectPlanSummary ? `
+    ${
+      projectPlanSummary
+        ? `
     <div style="background: #f9fafb; padding: 15px; margin: 20px 0; border-radius: 6px;">
       <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #374151; text-transform: uppercase; letter-spacing: 0.05em;">Projekt-Übersicht</h3>
       <table style="width: 100%; font-size: 14px;">
@@ -282,7 +293,9 @@ function generateTeamNotificationHtml(data: {
         </tr>
       </table>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
     <div style="margin: 30px 0;">
       <a href="${projectUrl}" style="display: inline-block; background: #10b981; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 500;">

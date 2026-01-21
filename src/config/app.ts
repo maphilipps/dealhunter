@@ -18,7 +18,7 @@
 export const aiConfig = {
   baseUrl: process.env.AI_HUB_URL || 'https://adesso-ai-hub.3asabc.de/v1',
   model: process.env.AI_MODEL || 'gpt-oss-120b-sovereign',
-} as const
+} as const;
 
 /**
  * Upload Configuration
@@ -35,7 +35,7 @@ export const uploadConfig = {
   minTextLength: 50,
   maxTextLength: 10000,
   maxEmailLength: 20000,
-} as const
+} as const;
 
 /**
  * Type-safe configuration object
@@ -46,7 +46,7 @@ export const uploadConfig = {
 export const config = {
   ai: aiConfig,
   upload: uploadConfig,
-} as const
+} as const;
 
 /**
  * Helper function to format file size for display
@@ -56,10 +56,10 @@ export const config = {
  */
 export function formatFileSize(bytes: number): string {
   if (bytes >= 1024 * 1024) {
-    return `${Math.round(bytes / (1024 * 1024))}MB`
+    return `${Math.round(bytes / (1024 * 1024))}MB`;
   }
   if (bytes >= 1024) {
-    return `${Math.round(bytes / 1024)}KB`
+    return `${Math.round(bytes / 1024)}KB`;
   }
-  return `${bytes}B`
+  return `${bytes}B`;
 }

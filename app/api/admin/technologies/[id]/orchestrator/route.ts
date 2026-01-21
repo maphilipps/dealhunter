@@ -14,10 +14,7 @@ import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
  * - reviewMode?: 'quick' | 'deep' - Review-Modus (default: 'quick')
  * - maxConcurrency?: number - Max parallele Agents (default: 3)
  */
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.id) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -104,7 +101,9 @@ export async function POST(
   } catch (error) {
     console.error('Orchestrator error:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Orchestrator fehlgeschlagen' }),
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Orchestrator fehlgeschlagen',
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

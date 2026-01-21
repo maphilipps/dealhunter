@@ -1,12 +1,12 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   getPendingReferences,
   getPendingCompetencies,
-  getPendingCompetitors
-} from "@/lib/admin/validation-actions";
-import { ReferenceValidationTable } from "@/components/admin/reference-validation-table";
-import { CompetencyValidationTable } from "@/components/admin/competency-validation-table";
-import { CompetitorValidationTable } from "@/components/admin/competitor-validation-table";
+  getPendingCompetitors,
+} from '@/lib/admin/validation-actions';
+import { ReferenceValidationTable } from '@/components/admin/reference-validation-table';
+import { CompetencyValidationTable } from '@/components/admin/competency-validation-table';
+import { CompetitorValidationTable } from '@/components/admin/competitor-validation-table';
 
 export default async function AdminValidationsPage() {
   const [references, competencies, competitors] = await Promise.all([
@@ -21,9 +21,7 @@ export default async function AdminValidationsPage() {
 
       <Tabs defaultValue="references">
         <TabsList>
-          <TabsTrigger value="references">
-            Referenzen ({references.items?.length || 0})
-          </TabsTrigger>
+          <TabsTrigger value="references">Referenzen ({references.items?.length || 0})</TabsTrigger>
           <TabsTrigger value="competencies">
             Kompetenzen ({competencies.items?.length || 0})
           </TabsTrigger>

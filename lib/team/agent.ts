@@ -21,10 +21,11 @@ export interface TeamSuggestionInput {
  * Analyzes requirements and suggests optimal team composition
  */
 export async function suggestTeam(input: TeamSuggestionInput): Promise<TeamSuggestion> {
-  const { extractedRequirements, quickScanResults, assignedBusinessLine, availableEmployees } = input;
+  const { extractedRequirements, quickScanResults, assignedBusinessLine, availableEmployees } =
+    input;
 
   // Format employee data for AI
-  const employeesList = availableEmployees.map((emp) => ({
+  const employeesList = availableEmployees.map(emp => ({
     id: emp.id,
     name: emp.name,
     email: emp.email,
@@ -41,8 +42,14 @@ export async function suggestTeam(input: TeamSuggestionInput): Promise<TeamSugge
     integrations: quickScanResults?.integrations || [],
     features: quickScanResults?.features || [],
     complexity: {
-      hasAnimations: quickScanResults?.features?.some((f: string) => f.toLowerCase().includes('animation')) || false,
-      hasI18n: quickScanResults?.features?.some((f: string) => f.toLowerCase().includes('multilingual') || f.toLowerCase().includes('i18n')) || false,
+      hasAnimations:
+        quickScanResults?.features?.some((f: string) => f.toLowerCase().includes('animation')) ||
+        false,
+      hasI18n:
+        quickScanResults?.features?.some(
+          (f: string) =>
+            f.toLowerCase().includes('multilingual') || f.toLowerCase().includes('i18n')
+        ) || false,
       hasComplexComponents: quickScanResults?.features?.length > 10 || false,
     },
   };
@@ -52,7 +59,8 @@ export async function suggestTeam(input: TeamSuggestionInput): Promise<TeamSugge
     messages: [
       {
         role: 'system',
-        content: 'You are an expert team builder for software development projects at adesso SE. Always respond with valid JSON. Do not include markdown code blocks.',
+        content:
+          'You are an expert team builder for software development projects at adesso SE. Always respond with valid JSON. Do not include markdown code blocks.',
       },
       {
         role: 'user',
@@ -83,13 +91,21 @@ Your task is to suggest an optimal team composition for this bid opportunity.
 
 ## Available Employees (from ${assignedBusinessLine})
 
-${employeesList.length === 0 ? 'No employees found in this business line. Suggest placeholder roles for new hires.' : employeesList.map((emp, idx) => `
+${
+  employeesList.length === 0
+    ? 'No employees found in this business line. Suggest placeholder roles for new hires.'
+    : employeesList
+        .map(
+          (emp, idx) => `
 Employee ${idx + 1}:
 - Name: ${emp.name}
 - Skills: ${emp.skills.join(', ')}
 - Roles: ${emp.roles.join(', ')}
 - Availability: ${emp.availability}
-`).join('\n')}
+`
+        )
+        .join('\n')
+}
 
 ## Team Building Guidelines
 

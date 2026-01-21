@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p3
-issue_id: "006"
+issue_id: '006'
 tags: [code-review, simplicity, yagni, ux]
 dependencies: [005]
 ---
@@ -15,6 +15,7 @@ The Quick Scan activity log tracks implementation details like "Starting Quick S
 **Impact:** LOW - No user benefit, adds noise to code and UI. Users already see progress via status and estimated time.
 
 **Location:**
+
 - `/Users/marc.philipps/Sites/dealhunter/lib/quick-scan/agent.ts:24-44`
 - `/Users/marc.philipps/Sites/dealhunter/lib/db/schema.ts:330`
 - `/Users/marc.philipps/Sites/dealhunter/components/bids/quick-scan-results.tsx:42-58`
@@ -24,6 +25,7 @@ The Quick Scan activity log tracks implementation details like "Starting Quick S
 **From code-simplicity-reviewer agent:**
 
 **Current Implementation:**
+
 ```typescript
 // lib/quick-scan/agent.ts (23 lines)
 const activityLog: Array<{
@@ -47,12 +49,14 @@ logActivity('Fetching website content', input.websiteUrl);
 
 **What Users See:**
 During "running" state, UI shows:
+
 - "Quick Scan läuft" header
 - Progress bar at 66%
 - "~3-5 Minuten" estimated time
 - Last 3 activity log entries (e.g., "Analyzing tech stack")
 
 **Problems:**
+
 1. **Redundant Information:** Status + progress bar + time estimate already communicate progress
 2. **Implementation Details:** Log entries like "Fetching website content" are developer-facing, not user-facing
 3. **No Debugging Value:** Production errors go to `console.error`, not activity log
@@ -64,18 +68,21 @@ During "running" state, UI shows:
 ## Proposed Solutions
 
 ### Solution 1: Remove Entirely (Recommended)
+
 **Effort:** Small (15-20 minutes)
 **Risk:** Low
 **Pros:** Simplifies code, reduces database size, cleaner UI
 **Cons:** None (no user value lost)
 
 **Changes:**
+
 1. Remove `activityLog` array and `logActivity()` from `agent.ts`
 2. Remove all `logActivity()` calls (11 instances)
 3. Remove `activityLog` column from database schema
 4. Remove activity log display from `quick-scan-results.tsx`
 
 **UI During "Running" State:**
+
 ```tsx
 <Card>
   <CardHeader>
@@ -83,15 +90,11 @@ During "running" state, UI shows:
       <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
       Quick Scan läuft
     </CardTitle>
-    <CardDescription>
-      Analyse der Kunden-Website: {quickScan.websiteUrl}
-    </CardDescription>
+    <CardDescription>Analyse der Kunden-Website: {quickScan.websiteUrl}</CardDescription>
   </CardHeader>
   <CardContent>
     <Progress value={66} className="h-2" />
-    <p className="text-sm text-muted-foreground mt-2">
-      ~3-5 Minuten
-    </p>
+    <p className="text-sm text-muted-foreground mt-2">~3-5 Minuten</p>
   </CardContent>
 </Card>
 ```
@@ -99,6 +102,7 @@ During "running" state, UI shows:
 Clean, simple, sufficient feedback.
 
 ### Solution 2: Keep for Debugging (Not Recommended)
+
 **Effort:** Medium (refactor to only store on error)
 **Risk:** Low
 **Pros:** Available for debugging failed scans
@@ -115,12 +119,14 @@ Only save `activityLog` when status is 'failed', omit during 'running'/'complete
 ## Technical Details
 
 **Affected Files:**
+
 - `/Users/marc.philipps/Sites/dealhunter/lib/quick-scan/agent.ts` (remove 23 lines)
 - `/Users/marc.philipps/Sites/dealhunter/lib/db/schema.ts` (remove `activityLog` field)
 - `/Users/marc.philipps/Sites/dealhunter/components/bids/quick-scan-results.tsx` (remove 16 lines)
 - Create database migration to drop `activity_log` column
 
 **Migration:**
+
 ```sql
 -- Migration: 0013_remove_activity_log.sql
 ALTER TABLE quick_scans DROP COLUMN activity_log;

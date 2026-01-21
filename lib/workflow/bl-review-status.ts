@@ -12,13 +12,7 @@ export type BLReviewPhase =
   | 'notification'
   | 'handoff';
 
-export type TabId =
-  | 'overview'
-  | 'bu-matching'
-  | 'questions'
-  | 'baseline'
-  | 'planning'
-  | 'team';
+export type TabId = 'overview' | 'bu-matching' | 'questions' | 'baseline' | 'planning' | 'team';
 
 interface TransitionResult {
   allowed: boolean;
@@ -30,7 +24,10 @@ interface TransitionResult {
  * Simple switch-based validation - no XState needed for linear workflow
  */
 export function canTransitionTo(
-  bid: Pick<BidOpportunity, 'quickScanId' | 'deepMigrationAnalysisId' | 'assignedTeam' | 'teamNotifiedAt'>,
+  bid: Pick<
+    BidOpportunity,
+    'quickScanId' | 'deepMigrationAnalysisId' | 'assignedTeam' | 'teamNotifiedAt'
+  >,
   nextPhase: BLReviewPhase
 ): TransitionResult {
   switch (nextPhase) {
@@ -112,7 +109,8 @@ export function getCurrentPhase(
   if (status === 'handed_off') return 'handoff';
   if (status === 'notified' || bid.teamNotifiedAt) return 'notification';
   if (status === 'team_assigned' || bid.assignedTeam) return 'team_assignment';
-  if (['bl_reviewing', 'full_scanning', 'analysis_complete'].includes(status)) return 'deep_analysis';
+  if (['bl_reviewing', 'full_scanning', 'analysis_complete'].includes(status))
+    return 'deep_analysis';
 
   return 'bu_matching';
 }
@@ -122,7 +120,10 @@ export function getCurrentPhase(
  * Returns array of phases with completion status
  */
 export function getWorkflowProgress(
-  bid: Pick<BidOpportunity, 'quickScanId' | 'deepMigrationAnalysisId' | 'assignedTeam' | 'teamNotifiedAt' | 'status'>
+  bid: Pick<
+    BidOpportunity,
+    'quickScanId' | 'deepMigrationAnalysisId' | 'assignedTeam' | 'teamNotifiedAt' | 'status'
+  >
 ): Array<{ phase: BLReviewPhase; label: string; completed: boolean; current: boolean }> {
   const phases: Array<{ phase: BLReviewPhase; label: string }> = [
     { phase: 'bu_matching', label: 'BU Matching' },
@@ -134,7 +135,7 @@ export function getWorkflowProgress(
 
   const currentPhase = getCurrentPhase(bid);
 
-  return phases.map((p) => {
+  return phases.map(p => {
     let completed = false;
 
     switch (p.phase) {

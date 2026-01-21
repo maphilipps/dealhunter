@@ -22,13 +22,13 @@ This guide covers deploying Dealhunter to Vercel and other production environmen
 
 Vercel will auto-detect Next.js. Configure as follows:
 
-| Setting | Value |
-|---------|-------|
-| **Framework Preset** | Next.js |
-| **Build Command** | `npm run build` |
-| **Output Directory** | `.next` |
-| **Install Command** | `npm install` |
-| **Node Version** | 20.x |
+| Setting              | Value           |
+| -------------------- | --------------- |
+| **Framework Preset** | Next.js         |
+| **Build Command**    | `npm run build` |
+| **Output Directory** | `.next`         |
+| **Install Command**  | `npm install`   |
+| **Node Version**     | 20.x            |
 
 ### 3. Environment Variables
 
@@ -59,6 +59,7 @@ SLACK_CHANNEL_ID=C01234567
 ```
 
 **IMPORTANT:**
+
 - Use the "Production", "Preview", and "Development" scopes appropriately
 - Never commit `.env.local` or secrets to Git
 - Generate a strong `AUTH_SECRET` using `openssl rand -base64 32`
@@ -72,6 +73,7 @@ Dealhunter uses SQLite for local development and can use PostgreSQL for producti
 No additional configuration needed. The database file (`local.db`) is created automatically.
 
 **Note:** SQLite is suitable for development and small deployments but has limitations:
+
 - No concurrent writes from multiple instances
 - File-based storage may not persist across Vercel deployments
 
@@ -80,22 +82,26 @@ No additional configuration needed. The database file (`local.db`) is created au
 For production, use a managed PostgreSQL service:
 
 **Vercel Postgres:**
+
 1. Go to your Vercel project → Storage → Create Database
 2. Select "Postgres"
 3. Copy the `DATABASE_URL` connection string
 4. Add to Environment Variables
 
 **Alternative Providers:**
+
 - [Neon](https://neon.tech) - Serverless Postgres
 - [Supabase](https://supabase.com) - Postgres with extras
 - [Railway](https://railway.app) - Simple deployment
 
 Update `DATABASE_URL` in Environment Variables:
+
 ```bash
 DATABASE_URL=postgresql://user:password@host:5432/dbname
 ```
 
 **Run migrations:**
+
 ```bash
 npm run db:push
 ```
@@ -218,8 +224,8 @@ Inngest will automatically discover your functions at `/api/inngest`.
 Vercel automatically caches static assets. For API routes:
 
 ```typescript
-export const dynamic = 'force-static' // Static generation
-export const revalidate = 3600        // ISR (1 hour)
+export const dynamic = 'force-static'; // Static generation
+export const revalidate = 3600; // ISR (1 hour)
 ```
 
 ### Image Optimization
@@ -238,7 +244,7 @@ images: {
 For low-latency responses, use Edge Runtime:
 
 ```typescript
-export const runtime = 'edge'
+export const runtime = 'edge';
 ```
 
 ## Monitoring
@@ -246,6 +252,7 @@ export const runtime = 'edge'
 ### Vercel Analytics
 
 Enable in Project Settings → Analytics:
+
 - Web Vitals
 - Page views
 - User sessions
@@ -270,7 +277,7 @@ View logs in Vercel Dashboard → Deployments → [Your Deployment] → Function
 For structured logging, use:
 
 ```typescript
-console.log(JSON.stringify({ level: 'info', message: 'Event', data }))
+console.log(JSON.stringify({ level: 'info', message: 'Event', data }));
 ```
 
 ## Troubleshooting
@@ -278,27 +285,33 @@ console.log(JSON.stringify({ level: 'info', message: 'Event', data }))
 ### Build Errors
 
 **Error:** `Cannot find module '@/lib/...'`
+
 - **Fix:** Check `tsconfig.json` paths configuration
 
 **Error:** `Database connection failed`
+
 - **Fix:** Verify `DATABASE_URL` in Environment Variables
 
 ### Runtime Errors
 
 **Error:** `401 Unauthorized` on AI requests
+
 - **Fix:** Check `OPENAI_API_KEY` and `OPENAI_BASE_URL`
 
 **Error:** `Invalid AUTH_SECRET`
+
 - **Fix:** Generate new secret: `openssl rand -base64 32`
 
 ### Performance Issues
 
 **Slow page loads:**
+
 - Enable Vercel Analytics to identify bottlenecks
 - Check database query performance
 - Use ISR or Static Generation where possible
 
 **AI timeouts:**
+
 - Increase function timeout in `vercel.json`:
   ```json
   {
@@ -355,6 +368,7 @@ CMD ["npm", "start"]
 ```
 
 Build and run:
+
 ```bash
 docker build -t dealhunter .
 docker run -p 3000:3000 --env-file .env.local dealhunter
@@ -371,6 +385,7 @@ npm start
 ```
 
 Use PM2 for process management:
+
 ```bash
 npm i -g pm2
 pm2 start npm --name dealhunter -- start
@@ -381,6 +396,7 @@ pm2 startup
 ## Support
 
 For deployment issues:
+
 - Check [Vercel Documentation](https://vercel.com/docs)
 - Review [Next.js Deployment Guide](https://nextjs.org/docs/deployment)
 - Contact adesso DevOps team

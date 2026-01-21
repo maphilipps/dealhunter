@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "043"
+issue_id: '043'
 tags: [code-review, security, quickscan, playwright, ssrf]
 dependencies: []
 ---
@@ -17,10 +17,12 @@ Die Playwright-basierte URL-Navigation im QuickScan validiert URLs nicht ausreic
 **Source:** security-sentinel Review Agent (Plan Review)
 
 **Betroffene Dateien:**
+
 - `lib/quick-scan/tools/playwright.ts` - URL wird ohne Validierung an Playwright übergeben
 - `lib/quick-scan/agent.ts` - URLs aus User-Input werden nicht sanitized
 
 **Risiko-Szenario:**
+
 ```
 User gibt URL ein: http://169.254.169.254/latest/meta-data/
 → QuickScan navigiert zu AWS Metadata Service
@@ -28,6 +30,7 @@ User gibt URL ein: http://169.254.169.254/latest/meta-data/
 ```
 
 **Fehlende Validierung:**
+
 1. Keine Blocklist für interne IP-Ranges (10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.x)
 2. Keine DNS-Rebinding Protection
 3. Keine Protocol-Einschränkung (file://, ftp://, etc.)
@@ -44,14 +47,14 @@ User gibt URL ein: http://169.254.169.254/latest/meta-data/
 ```typescript
 // lib/security/url-validator.ts
 const BLOCKED_IP_RANGES = [
-  /^127\./,              // Localhost
-  /^10\./,               // Private Class A
-  /^172\.(1[6-9]|2\d|3[01])\./,  // Private Class B
-  /^192\.168\./,         // Private Class C
-  /^169\.254\./,         // Link-local
-  /^0\./,                // Current network
-  /^::1$/,               // IPv6 localhost
-  /^fe80:/,              // IPv6 link-local
+  /^127\./, // Localhost
+  /^10\./, // Private Class A
+  /^172\.(1[6-9]|2\d|3[01])\./, // Private Class B
+  /^192\.168\./, // Private Class C
+  /^169\.254\./, // Link-local
+  /^0\./, // Current network
+  /^::1$/, // IPv6 localhost
+  /^fe80:/, // IPv6 link-local
 ];
 
 export function validateExternalUrl(url: string): { valid: boolean; reason?: string } {
@@ -80,6 +83,7 @@ Option A implementieren - zentrale URL-Validierung vor jedem Playwright-Aufruf.
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/quick-scan/tools/playwright.ts:runPlaywrightAudit()`
 - `lib/quick-scan/agent.ts:runQuickScan()`
 - Neues File: `lib/security/url-validator.ts`
@@ -97,8 +101,8 @@ Option A implementieren - zentrale URL-Validierung vor jedem Playwright-Aufruf.
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                        | Learnings                         |
+| ---------- | ----------------------------- | --------------------------------- |
 | 2026-01-20 | Todo erstellt aus Plan Review | security-sentinel fand SSRF-Lücke |
 
 ## Resources

@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p2
-issue_id: "004"
+issue_id: '004'
 tags: [code-review, agent-native, api, architecture]
 dependencies: []
 ---
@@ -11,6 +11,7 @@ dependencies: []
 ## Problem Statement
 
 The Quick Scan feature is only accessible through UI components and server actions requiring user authentication. AI agents cannot:
+
 1. Programmatically trigger Quick Scans
 2. Access scan results via API
 3. Discover Quick Scan capabilities
@@ -25,6 +26,7 @@ The Quick Scan feature is only accessible through UI components and server actio
 **From agent-native-reviewer agent:**
 
 **Current State:**
+
 - ❌ No REST API endpoints for Quick Scan
 - ❌ No MCP tools for Quick Scan
 - ❌ No integration with Workflow DevKit
@@ -35,6 +37,7 @@ The Quick Scan feature is only accessible through UI components and server actio
 **Agent Capability Score:** 2/5
 
 **What Agents Cannot Do:**
+
 1. Cannot trigger scan for a bid (no API, only UI button)
 2. Cannot poll for scan completion (no webhook, only manual refresh)
 3. Cannot access raw results (JSON in database not exposed)
@@ -44,6 +47,7 @@ The Quick Scan feature is only accessible through UI components and server actio
 ## Proposed Solutions
 
 ### Solution 1: REST API Endpoints (Recommended for Phase 1)
+
 **Effort:** Medium (1-2 hours)
 **Risk:** Low
 **Pros:** Standard approach, easy to consume, works with any agent
@@ -52,6 +56,7 @@ The Quick Scan feature is only accessible through UI components and server actio
 Create API routes:
 
 **File 1:** `/Users/marc.philipps/Sites/dealhunter/app/api/quick-scan/route.ts`
+
 ```typescript
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -81,11 +86,9 @@ export async function POST(req: Request) {
 ```
 
 **File 2:** `/Users/marc.philipps/Sites/dealhunter/app/api/quick-scan/[bidId]/route.ts`
+
 ```typescript
-export async function GET(
-  req: Request,
-  { params }: { params: { bidId: string } }
-) {
+export async function GET(req: Request, { params }: { params: { bidId: string } }) {
   const apiKey = req.headers.get('x-api-key');
   if (apiKey !== process.env.INTERNAL_API_KEY) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -97,6 +100,7 @@ export async function GET(
 ```
 
 ### Solution 2: Workflow DevKit Integration
+
 **Effort:** Medium (1-2 hours)
 **Risk:** Low
 **Pros:** Integrates with existing workflow infrastructure, durable execution
@@ -105,13 +109,14 @@ export async function GET(
 Add Quick Scan to inbound lead workflow:
 
 **File:** `/Users/marc.philipps/Sites/dealhunter/workflows/inbound/steps.ts`
+
 ```typescript
 export const stepQuickScan = async (bidId: string, websiteUrl: string) => {
   'use step';
 
   const result = await runQuickScan({
     websiteUrl,
-    extractedRequirements: null
+    extractedRequirements: null,
   });
 
   return result;
@@ -119,6 +124,7 @@ export const stepQuickScan = async (bidId: string, websiteUrl: string) => {
 ```
 
 Update workflow:
+
 ```typescript
 // workflows/inbound/index.ts
 const extraction = await stepExtract(data);
@@ -127,6 +133,7 @@ const qualification = await stepQualify(data, research, quickScan);
 ```
 
 ### Solution 3: MCP Tools (Long-term)
+
 **Effort:** Large (3-4 hours)
 **Risk:** Medium
 **Pros:** Best agent discoverability, follows MCP standards
@@ -141,11 +148,13 @@ Expose Quick Scan as MCP tools for AI agents to discover and call.
 ## Technical Details
 
 **New Files:**
+
 - `/Users/marc.philipps/Sites/dealhunter/app/api/quick-scan/route.ts` (POST - start scan)
 - `/Users/marc.philipps/Sites/dealhunter/app/api/quick-scan/[bidId]/route.ts` (GET - get results)
 - Add `INTERNAL_API_KEY` to `.env` for agent authentication
 
 **Updated Files:**
+
 - `/Users/marc.philipps/Sites/dealhunter/lib/quick-scan/actions.ts` (add system-level bypass for auth)
 
 **Breaking Changes:** None - additive only

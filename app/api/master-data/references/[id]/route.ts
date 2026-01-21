@@ -13,10 +13,7 @@ const idSchema = z.object({
 // GET /api/master-data/references/[id]
 // ============================================================================
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -30,10 +27,7 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
-    const [reference] = await db
-      .select()
-      .from(references)
-      .where(eq(references.id, parsed.data.id));
+    const [reference] = await db.select().from(references).where(eq(references.id, parsed.data.id));
 
     if (!reference) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -73,10 +67,7 @@ export async function DELETE(
     }
 
     // Check ownership
-    const [existing] = await db
-      .select()
-      .from(references)
-      .where(eq(references.id, parsed.data.id));
+    const [existing] = await db.select().from(references).where(eq(references.id, parsed.data.id));
 
     if (!existing) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });

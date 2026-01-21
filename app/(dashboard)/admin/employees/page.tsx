@@ -40,7 +40,7 @@ export default function EmployeesPage() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (event) => {
+    reader.onload = async event => {
       const csvData = event.target?.result as string;
       setIsImporting(true);
 
@@ -100,7 +100,8 @@ export default function EmployeesPage() {
                     <code className="text-xs bg-muted p-2 rounded block mt-2">
                       name,email,businessUnitId,skills,roles,availabilityStatus
                       <br />
-                      Max Mustermann,max@example.com,bu-id-123,React;TypeScript,developer;lead,available
+                      Max
+                      Mustermann,max@example.com,bu-id-123,React;TypeScript,developer;lead,available
                     </code>
                     <br />
                     <span className="text-xs text-muted-foreground">
@@ -117,9 +118,7 @@ export default function EmployeesPage() {
                     disabled={isImporting}
                     className="w-full"
                   />
-                  {isImporting && (
-                    <p className="text-sm text-muted-foreground">Importiere...</p>
-                  )}
+                  {isImporting && <p className="text-sm text-muted-foreground">Importiere...</p>}
                 </div>
               </DialogContent>
             </Dialog>

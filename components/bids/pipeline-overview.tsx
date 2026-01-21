@@ -1,24 +1,31 @@
-import Link from "next/link"
-import { formatDistanceToNow } from "date-fns"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { StatusBadge } from "./status-badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import Link from 'next/link';
+import { formatDistanceToNow } from 'date-fns';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { StatusBadge } from './status-badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 export interface BidOpportunity {
-  id: string
-  status: string
-  decision: string
-  source: string
-  accountName?: string
-  projectName?: string
-  createdAt: Date
-  websiteUrl?: string
-  extractedRequirements?: any
+  id: string;
+  status: string;
+  decision: string;
+  source: string;
+  accountName?: string;
+  projectName?: string;
+  createdAt: Date;
+  websiteUrl?: string;
+  extractedRequirements?: any;
 }
 
 interface PipelineOverviewProps {
-  opportunities: BidOpportunity[]
+  opportunities: BidOpportunity[];
 }
 
 export function PipelineOverview({ opportunities }: PipelineOverviewProps) {
@@ -37,7 +44,7 @@ export function PipelineOverview({ opportunities }: PipelineOverviewProps) {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -59,22 +66,22 @@ export function PipelineOverview({ opportunities }: PipelineOverviewProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {opportunities.map((opp) => {
-              const customerName = opp.accountName ||
+            {opportunities.map(opp => {
+              const customerName =
+                opp.accountName ||
                 (opp.extractedRequirements && JSON.parse(opp.extractedRequirements).customerName) ||
-                'Unknown Customer'
-              const projectName = opp.projectName ||
-                (opp.extractedRequirements && JSON.parse(opp.extractedRequirements).projectDescription) ||
-                'Untitled Project'
+                'Unknown Customer';
+              const projectName =
+                opp.projectName ||
+                (opp.extractedRequirements &&
+                  JSON.parse(opp.extractedRequirements).projectDescription) ||
+                'Untitled Project';
 
               return (
                 <TableRow key={opp.id}>
                   <TableCell>
                     <div className="flex flex-col">
-                      <Link
-                        href={`/bids/${opp.id}`}
-                        className="font-medium hover:underline"
-                      >
+                      <Link href={`/bids/${opp.id}`} className="font-medium hover:underline">
                         {customerName}
                       </Link>
                       <span className="text-sm text-muted-foreground line-clamp-1">
@@ -92,38 +99,25 @@ export function PipelineOverview({ opportunities }: PipelineOverviewProps) {
                   </TableCell>
                   <TableCell>
                     {opp.decision === 'bid' && (
-                      <Badge className="bg-green-50 text-green-700 border-green-300">
-                        Bid
-                      </Badge>
+                      <Badge className="bg-green-50 text-green-700 border-green-300">Bid</Badge>
                     )}
-                    {opp.decision === 'no_bid' && (
-                      <Badge variant="destructive">
-                        No Bid
-                      </Badge>
-                    )}
-                    {opp.decision === 'pending' && (
-                      <Badge variant="outline">
-                        Pending
-                      </Badge>
-                    )}
+                    {opp.decision === 'no_bid' && <Badge variant="destructive">No Bid</Badge>}
+                    {opp.decision === 'pending' && <Badge variant="outline">Pending</Badge>}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDistanceToNow(new Date(opp.createdAt), { addSuffix: true })}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Link
-                      href={`/bids/${opp.id}`}
-                      className="text-sm font-medium hover:underline"
-                    >
+                    <Link href={`/bids/${opp.id}`} className="text-sm font-medium hover:underline">
                       View
                     </Link>
                   </TableCell>
                 </TableRow>
-              )
+              );
             })}
           </TableBody>
         </Table>
       </CardContent>
     </Card>
-  )
+  );
 }

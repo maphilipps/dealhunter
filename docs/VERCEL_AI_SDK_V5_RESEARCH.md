@@ -30,6 +30,7 @@ Die AI SDK Core bietet zwei Haupt-Funktionen:
 - **`streamText`**: Streamt Text in Echtzeit (ideal für Chat und interaktive UIs)
 
 **Offizielle Dokumentation:**
+
 - [AI SDK Core: Generating Text](https://ai-sdk.dev/docs/ai-sdk-core/generating-text)
 - [AI SDK Core: generateText Reference](https://ai-sdk.dev/docs/reference/ai-sdk-core/generate-text)
 - [AI SDK Core: streamText Reference](https://ai-sdk.dev/docs/reference/ai-sdk-core/stream-text)
@@ -68,8 +69,12 @@ const result = await generateText({
   model: openai('gpt-4o'),
   prompt: 'Research and analyze...',
   tools: {
-    searchWeb: tool({ /* ... */ }),
-    analyzeData: tool({ /* ... */ }),
+    searchWeb: tool({
+      /* ... */
+    }),
+    analyzeData: tool({
+      /* ... */
+    }),
   },
   maxSteps: 5, // Maximum loop iterations
 });
@@ -104,7 +109,7 @@ const stream = streamText({
     console.log('Steps taken:', steps);
   },
 
-  onError: (error) => {
+  onError: error => {
     // Log errors without crashing
     console.error('Stream error:', error);
   },
@@ -148,6 +153,7 @@ const stream = streamText({
 ## 2. Tool Definition & Execution
 
 **Offizielle Dokumentation:**
+
 - [How to build AI Agents with Vercel AI SDK](https://vercel.com/kb/guide/how-to-build-ai-agents-with-vercel-and-the-ai-sdk)
 - [AI SDK 5 Blog Post](https://vercel.com/blog/ai-sdk-5)
 
@@ -186,9 +192,15 @@ const result = await generateText({
   model: openai('gpt-4o'),
   prompt: 'Research legal risks for this contract',
   tools: {
-    searchCaseLaw: tool({ /* ... */ }),
-    analyzeContract: tool({ /* ... */ }),
-    checkCompliance: tool({ /* ... */ }),
+    searchCaseLaw: tool({
+      /* ... */
+    }),
+    analyzeContract: tool({
+      /* ... */
+    }),
+    checkCompliance: tool({
+      /* ... */
+    }),
   },
   maxSteps: 10, // Stop after 10 tool calls
   onStepFinish: ({ step, toolCalls, toolResults }) => {
@@ -205,7 +217,9 @@ const result = await generateText({
 const cacheTool = tool({
   description: 'Expensive computation',
   parameters: z.object({ data: z.string() }),
-  execute: async ({ data }) => { /* ... */ },
+  execute: async ({ data }) => {
+    /* ... */
+  },
   // Cache tool definition with Anthropic (reduces token usage)
   experimental_providerOptions: {
     anthropic: {
@@ -224,6 +238,7 @@ AI SDK 5 unterstützt nativ Provider-executed Tools (z.B. Anthropic Claude Compu
 ## 3. generateObject für Structured Output
 
 **Offizielle Dokumentation:**
+
 - [AI SDK Core: Generating Structured Data](https://ai-sdk.dev/docs/ai-sdk-core/generating-structured-data)
 - [AI SDK Core: generateObject Reference](https://ai-sdk.dev/docs/reference/ai-sdk-core/generate-object)
 - [Structured Data Extraction | Vercel Academy](https://vercel.com/academy/ai-sdk/structured-data-extraction)
@@ -290,7 +305,9 @@ const result = await generateText({
   model: openai('gpt-4o'),
   prompt: 'Research and analyze...',
   tools: {
-    searchWeb: tool({ /* ... */ }),
+    searchWeb: tool({
+      /* ... */
+    }),
   },
   output: Output.object({
     schema: analysisSchema,
@@ -305,7 +322,7 @@ const result = await generateText({
 
 Dealhunter verwendet **manuelle JSON-Parsing** statt AI SDK Structured Output:
 
-```typescript
+````typescript
 // Current approach (manual parsing):
 async function callAI<T>(systemPrompt: string, userPrompt: string, schema: any): Promise<T> {
   const completion = await openai.chat.completions.create({
@@ -346,9 +363,10 @@ const result = await generateText({
 
 // result.object is already validated
 return result.object;
-```
+````
 
 **Vorteil AI SDK Approach:**
+
 - Kein manuelles Markdown-Cleanup nötig
 - Type-Safe Output (TypeScript inference)
 - Automatische Zod Validation
@@ -359,6 +377,7 @@ return result.object;
 ## 4. Multi-Agent Orchestrierung
 
 **Offizielle Dokumentation:**
+
 - [Building AI Agent Workflows With Vercel's AI SDK](https://www.callstack.com/blog/building-ai-agent-workflows-with-vercels-ai-sdk-a-practical-guide)
 - [How to allow multiple agents to stream back an object - GitHub Discussion](https://github.com/vercel/ai/discussions/3298)
 
@@ -385,26 +404,32 @@ const finalDecision = await runCoordinatorAgent({
 **Beispiel aus Dealhunter Code:**
 
 ```typescript
-// BIT Evaluation: 6 Agents in parallel
-const [capabilityMatch, dealQuality, strategicFit, competitionCheck, legalAssessment, referenceMatch] =
-  await Promise.all([
-    runCapabilityAgent({ extractedRequirements, quickScanResults }),
-    runDealQualityAgent({ extractedRequirements, quickScanResults }),
-    runStrategicFitAgent({ extractedRequirements, quickScanResults }),
-    runCompetitionAgent({ extractedRequirements, quickScanResults }),
-    runLegalAgent({ extractedRequirements, quickScanResults }),
-    runReferenceAgent({ extractedRequirements, quickScanResults }),
-  ]);
+// BID Evaluation: 6 Agents in parallel
+const [
+  capabilityMatch,
+  dealQuality,
+  strategicFit,
+  competitionCheck,
+  legalAssessment,
+  referenceMatch,
+] = await Promise.all([
+  runCapabilityAgent({ extractedRequirements, quickScanResults }),
+  runDealQualityAgent({ extractedRequirements, quickScanResults }),
+  runStrategicFitAgent({ extractedRequirements, quickScanResults }),
+  runCompetitionAgent({ extractedRequirements, quickScanResults }),
+  runLegalAgent({ extractedRequirements, quickScanResults }),
+  runReferenceAgent({ extractedRequirements, quickScanResults }),
+]);
 
 // Calculate weighted scores
 const weightedScores = {
   overall:
     capabilityMatch.overallCapabilityScore * 0.25 +
-    dealQuality.overallDealQualityScore * 0.20 +
+    dealQuality.overallDealQualityScore * 0.2 +
     strategicFit.overallStrategicFitScore * 0.15 +
     competitionCheck.estimatedWinProbability * 0.15 +
     legalAssessment.overallLegalScore * 0.15 +
-    referenceMatch.overallReferenceScore * 0.10,
+    referenceMatch.overallReferenceScore * 0.1,
 };
 ```
 
@@ -431,14 +456,14 @@ const bitEvaluation = await runBitEvaluationAgent({
 
 ```typescript
 const agentPromises = [
-  runCapabilityAgent({ requirements }).then((result) => {
+  runCapabilityAgent({ requirements }).then(result => {
     emit({
       type: AgentEventType.AGENT_COMPLETE,
       data: { agent: 'Capability', result, confidence: result.confidence },
     });
     return result;
   }),
-  runLegalAgent({ requirements }).then((result) => {
+  runLegalAgent({ requirements }).then(result => {
     emit({
       type: AgentEventType.AGENT_COMPLETE,
       data: { agent: 'Legal', result, confidence: result.confidence },
@@ -450,7 +475,7 @@ const agentPromises = [
 const results = await Promise.all(agentPromises);
 ```
 
-**Beispiel aus Dealhunter Code (BIT Evaluation mit Streaming):**
+**Beispiel aus Dealhunter Code (BID Evaluation mit Streaming):**
 
 ```typescript
 export async function runBitEvaluationWithStreaming(
@@ -461,19 +486,20 @@ export async function runBitEvaluationWithStreaming(
     type: AgentEventType.AGENT_PROGRESS,
     data: {
       agent: 'Coordinator',
-      message: 'Running parallel agent evaluation (Capability, Deal Quality, Strategic Fit, Competition, Legal, Reference)',
+      message:
+        'Running parallel agent evaluation (Capability, Deal Quality, Strategic Fit, Competition, Legal, Reference)',
     },
   });
 
   const agentPromises = [
-    runCapabilityAgent({ extractedRequirements, quickScanResults }).then((result) => {
+    runCapabilityAgent({ extractedRequirements, quickScanResults }).then(result => {
       emit({
         type: AgentEventType.AGENT_COMPLETE,
         data: { agent: 'Capability', result, confidence: result.confidence },
       });
       return result;
     }),
-    runDealQualityAgent({ extractedRequirements, quickScanResults }).then((result) => {
+    runDealQualityAgent({ extractedRequirements, quickScanResults }).then(result => {
       emit({
         type: AgentEventType.AGENT_COMPLETE,
         data: { agent: 'Deal Quality', result, confidence: result.confidence },
@@ -483,12 +509,14 @@ export async function runBitEvaluationWithStreaming(
     // ... weitere Agents
   ];
 
-  const [capabilityMatch, dealQuality, /* ... */] = await Promise.all(agentPromises);
+  const [capabilityMatch, dealQuality /* ... */] = await Promise.all(agentPromises);
 
   // Coordinator fasst Ergebnisse zusammen
-  const decision = await generateBitDecision({ /* all results */ });
+  const decision = await generateBitDecision({
+    /* all results */
+  });
 
-  return { capabilityMatch, dealQuality, decision, /* ... */ };
+  return { capabilityMatch, dealQuality, decision /* ... */ };
 }
 ```
 
@@ -517,6 +545,7 @@ const aggregated = await runAggregatorAgent({ results });
 ```
 
 **Quelle:**
+
 - [Tour of Restate for Agents with Vercel AI SDK](https://docs.restate.dev/tour/vercel-ai-agents)
 
 ---
@@ -524,6 +553,7 @@ const aggregated = await runAggregatorAgent({ results });
 ## 5. Frontend Hooks
 
 **Offizielle Dokumentation:**
+
 - [AI SDK UI: useChat Reference](https://ai-sdk.dev/docs/reference/ai-sdk-ui/use-chat)
 - [AI SDK UI: Overview](https://ai-sdk.dev/docs/ai-sdk-ui/overview)
 - [Basic Chatbot | Vercel Academy](https://vercel.com/academy/ai-sdk/basic-chatbot)
@@ -667,12 +697,12 @@ export function useAgentStream() {
     const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
 
-    eventSource.onmessage = (event) => {
+    eventSource.onmessage = event => {
       const agentEvent: AgentEvent = JSON.parse(event.data);
       dispatch({ type: 'ADD_EVENT', event: agentEvent });
     };
 
-    eventSource.onerror = (error) => {
+    eventSource.onerror = error => {
       console.error('EventSource error:', error);
       dispatch({ type: 'SET_ERROR', error: 'Stream connection failed' });
     };
@@ -718,6 +748,7 @@ export default function EvaluationPage() {
 ## 6. Streaming UI Patterns
 
 **Offizielle Dokumentation:**
+
 - [AI SDK RSC: Streaming React Components](https://ai-sdk.dev/docs/ai-sdk-rsc/streaming-react-components)
 - [Generative UI Chatbot with React Server Components](https://vercel.com/templates/next.js/rsc-genui)
 - [AI SDK 3.0 with Generative UI support](https://vercel.com/blog/ai-sdk-3-generative-ui)
@@ -801,7 +832,7 @@ export async function GET(req: NextRequest) {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
     },
   });
 }
@@ -851,6 +882,7 @@ export default function AgentProgressUI() {
 ## 7. Error Handling & Retry Patterns
 
 **Offizielle Dokumentation:**
+
 - [AI SDK Core: Error Handling](https://ai-sdk.dev/docs/ai-sdk-core/error-handling)
 - [AI SDK UI: Error Handling](https://ai-sdk.dev/docs/ai-sdk-ui/error-handling)
 - [AI SDK Core: Settings](https://ai-sdk.dev/docs/ai-sdk-core/settings)
@@ -869,6 +901,7 @@ const result = await generateText({
 ```
 
 **Retry Behavior:**
+
 - Automatisch bei Rate Limits und Transient Errors
 - Verwendet Exponential Backoff
 - Wirft Error nach Erschöpfung aller Retries
@@ -878,7 +911,7 @@ const result = await generateText({
 ```typescript
 const { messages, error } = useChat({
   api: '/api/chat',
-  onError: (error) => {
+  onError: error => {
     console.error('Chat error:', error);
     toast.error(`Chat failed: ${error.message}`);
   },
@@ -977,8 +1010,11 @@ if (playwrightRes.status === 'fulfilled' && playwrightRes.value) {
   playwrightResult = playwrightRes.value;
   screenshots = playwrightResult.screenshots;
 } else {
-  emitThought('Playwright', 'Browser-Analyse übersprungen',
-    playwrightRes.status === 'rejected' ? playwrightRes.reason.message : 'Keine Ergebnisse');
+  emitThought(
+    'Playwright',
+    'Browser-Analyse übersprungen',
+    playwrightRes.status === 'rejected' ? playwrightRes.reason.message : 'Keine Ergebnisse'
+  );
 }
 
 // Continue with partial results - SEO, Legal, etc.
@@ -994,14 +1030,14 @@ if (playwrightRes.status === 'fulfilled' && playwrightRes.value) {
 
 ```typescript
 const agentPromises = [
-  runCapabilityAgent({ requirements }).then((result) => {
+  runCapabilityAgent({ requirements }).then(result => {
     emit({
       type: AgentEventType.AGENT_COMPLETE,
       data: { agent: 'Capability', result, confidence: result.confidence },
     });
     return result;
   }),
-  runLegalAgent({ requirements }).then((result) => {
+  runLegalAgent({ requirements }).then(result => {
     emit({
       type: AgentEventType.AGENT_COMPLETE,
       data: { agent: 'Legal', result, confidence: result.confidence },
@@ -1014,6 +1050,7 @@ const results = await Promise.all(agentPromises);
 ```
 
 **Vorteil:**
+
 - Agents laufen parallel (schneller als Sequential)
 - UI erhält sofort Updates wenn einzelne Agents fertig sind
 - User sieht Fortschritt in Echtzeit
@@ -1032,9 +1069,7 @@ function streamReducer(state: StreamState, action: Action): StreamState {
 
       // Circular buffer: keep only last MAX_EVENTS
       const newEvents =
-        allEvents.length > MAX_EVENTS
-          ? allEvents.slice(allEvents.length - MAX_EVENTS)
-          : allEvents;
+        allEvents.length > MAX_EVENTS ? allEvents.slice(allEvents.length - MAX_EVENTS) : allEvents;
 
       return { ...state, events: newEvents };
     }
@@ -1043,6 +1078,7 @@ function streamReducer(state: StreamState, action: Action): StreamState {
 ```
 
 **Vorteil:**
+
 - Verhindert unbounded memory growth bei langen Agent-Streams
 - Behält die wichtigsten (neuesten) Events
 - Performance bleibt konstant
@@ -1075,6 +1111,7 @@ export function useAgentStream() {
 ```
 
 **Vorteil:**
+
 - Weniger Re-Renders
 - Keine Race Conditions
 - Einfacher zu testen
@@ -1093,19 +1130,23 @@ const emitThought = (agent: string, thought: string, details?: string) => {
 };
 
 // Usage in agents:
-emitThought('Tech Stack Analyzer', 'Analysiere Technology Stack...',
+emitThought(
+  'Tech Stack Analyzer',
+  'Analysiere Technology Stack...',
   websiteData.wappalyzerResults.length >= 3
     ? 'Verwende Wappalyzer-Ergebnisse'
     : 'Starte AI-gestützte Analyse'
 );
 
-emitThought('Tech Stack Analyzer',
+emitThought(
+  'Tech Stack Analyzer',
   techStack.cms ? `Tech Stack erkannt: ${techStack.cms}` : 'Kein CMS eindeutig erkannt',
   techSummary || 'Minimale Tech-Stack-Informationen verfügbar'
 );
 ```
 
 **Vorteil:**
+
 - User versteht was der Agent gerade macht
 - Debugging wird einfacher (Activity Log)
 - Vertrauen in AI-Entscheidungen steigt
@@ -1124,12 +1165,12 @@ const weightedScores = {
   legal: legalAssessment.overallLegalScore,
   reference: referenceMatch.overallReferenceScore,
   overall:
-    capabilityMatch.overallCapabilityScore * 0.25 +  // 25% weight
-    dealQuality.overallDealQualityScore * 0.20 +     // 20% weight
-    strategicFit.overallStrategicFitScore * 0.15 +   // 15% weight
+    capabilityMatch.overallCapabilityScore * 0.25 + // 25% weight
+    dealQuality.overallDealQualityScore * 0.2 + // 20% weight
+    strategicFit.overallStrategicFitScore * 0.15 + // 15% weight
     competitionCheck.estimatedWinProbability * 0.15 + // 15% weight
-    legalAssessment.overallLegalScore * 0.15 +       // 15% weight
-    referenceMatch.overallReferenceScore * 0.10,     // 10% weight
+    legalAssessment.overallLegalScore * 0.15 + // 15% weight
+    referenceMatch.overallReferenceScore * 0.1, // 10% weight
 };
 
 // Decision logic based on weighted score + blockers
@@ -1137,6 +1178,7 @@ const shouldBit = weightedScores.overall >= 55 && allCriticalBlockers.length ===
 ```
 
 **Vorteil:**
+
 - Business-Logik transparent
 - Scores sind nachvollziehbar
 - Leicht anpassbar (Gewichtungen konfigurierbar)
@@ -1168,6 +1210,7 @@ async function detectTechStack(data: WebsiteData): Promise<TechStack> {
 ```
 
 **Vorteil:**
+
 - Best-of-both-worlds (Speed von Wappalyzer + Accuracy von AI)
 - Graceful Degradation
 - Immer ein Ergebnis (auch wenn niedrige Confidence)
@@ -1179,16 +1222,19 @@ async function detectTechStack(data: WebsiteData): Promise<TechStack> {
 ### Für Dealhunter Multi-Agent System
 
 **1. Behalte aktuelle Architektur bei (OpenAI SDK direkt):**
+
 - Funktioniert gut für synchrone Agents
 - Manuelle JSON-Parsing ist akzeptabel (mit Zod Validation)
 - Keine unmittelbaren Vorteile durch AI SDK Migration
 
 **2. Erwäge AI SDK für zukünftige Features:**
+
 - **Streaming Agents:** Verwende `streamText` statt `generateText` für Live-Updates
 - **Structured Output:** Verwende `Output.object()` statt manuellem JSON-Parsing
 - **Tool-Calling Loops:** Verwende `maxSteps` für Multi-Step Agents mit Tools
 
 **3. Multi-Agent Best Practices implementiert:**
+
 - ✅ Parallel Execution mit `Promise.all`
 - ✅ Progress Callbacks für Live-Updates
 - ✅ Weighted Scoring für finale Entscheidungen
@@ -1196,6 +1242,7 @@ async function detectTechStack(data: WebsiteData): Promise<TechStack> {
 - ✅ Chain-of-Thought Logging
 
 **4. Frontend Streaming:**
+
 - ✅ Custom `useAgentStream` Hook ist besser als `useChat` für Multi-Agent UI
 - ✅ Circular Buffer verhindert Memory Leaks
 - ✅ Reducer für Complex State Management
@@ -1208,7 +1255,9 @@ Falls du AI SDK einführen möchtest:
 
 ```typescript
 // Before (current):
-const completion = await openai.chat.completions.create({ /* ... */ });
+const completion = await openai.chat.completions.create({
+  /* ... */
+});
 const cleaned = cleanupMarkdown(completion.choices[0].message.content);
 return schema.parse(JSON.parse(cleaned));
 
@@ -1243,8 +1292,12 @@ const result = await generateText({
   model: openai('gpt-4o'),
   prompt: 'Research company intelligence',
   tools: {
-    searchWeb: tool({ /* ... */ }),
-    scrapeLinkedIn: tool({ /* ... */ }),
+    searchWeb: tool({
+      /* ... */
+    }),
+    scrapeLinkedIn: tool({
+      /* ... */
+    }),
   },
   maxSteps: 5,
   output: Output.object({ schema: companyIntelligenceSchema }),

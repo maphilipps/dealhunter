@@ -12,10 +12,7 @@ export const runtime = 'nodejs';
  * GET /api/rfps/[id]/facts-visualization
  * Generate Facts Tab visualization from QuickScan and ExtractedData
  */
-export async function GET(
-  _request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.id) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {

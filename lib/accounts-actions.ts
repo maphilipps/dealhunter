@@ -67,11 +67,7 @@ export async function getAccountById(accountId: string) {
   }
 
   try {
-    const [account] = await db
-      .select()
-      .from(accounts)
-      .where(eq(accounts.id, accountId))
-      .limit(1);
+    const [account] = await db.select().from(accounts).where(eq(accounts.id, accountId)).limit(1);
 
     if (!account) {
       return { success: false, error: 'Account nicht gefunden' };
@@ -97,11 +93,7 @@ export async function getAccountWithOpportunities(accountId: string) {
   }
 
   try {
-    const [account] = await db
-      .select()
-      .from(accounts)
-      .where(eq(accounts.id, accountId))
-      .limit(1);
+    const [account] = await db.select().from(accounts).where(eq(accounts.id, accountId)).limit(1);
 
     if (!account) {
       return { success: false, error: 'Account nicht gefunden' };

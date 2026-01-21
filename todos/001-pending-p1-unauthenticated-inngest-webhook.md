@@ -21,6 +21,7 @@ The Inngest webhook endpoint at `app/api/inngest/route.ts` is completely unauthe
 ## Findings
 
 **Security Agent Report:**
+
 - Endpoint exposes `GET`, `POST`, `PUT` methods without authentication
 - No signature verification on incoming webhooks
 - No rate limiting or request validation
@@ -28,6 +29,7 @@ The Inngest webhook endpoint at `app/api/inngest/route.ts` is completely unauthe
 - Could exhaust API quota, corrupt analysis data, or inject malicious payloads
 
 **Evidence:**
+
 ```typescript
 // app/api/inngest/route.ts
 export const { GET, POST, PUT } = serve({
@@ -38,6 +40,7 @@ export const { GET, POST, PUT } = serve({
 ```
 
 **Attack Scenarios:**
+
 1. Mass trigger deep analysis for non-existent bids → DoS via DB/API exhaustion
 2. Trigger analysis for competitor's bids (if bidId guessable) → data manipulation
 3. Inject malicious event payloads → potential RCE if job processes untrusted data
@@ -45,13 +48,16 @@ export const { GET, POST, PUT } = serve({
 ## Proposed Solutions
 
 ### Solution 1: Inngest Signing Key Verification (Recommended)
+
 **Pros:**
+
 - Industry standard for webhook security
 - Built into Inngest SDK
 - Cryptographically secure signature validation
 - No custom auth logic needed
 
 **Cons:**
+
 - Requires INNGEST_SIGNING_KEY env var
 - Dev environment setup complexity
 
@@ -59,6 +65,7 @@ export const { GET, POST, PUT } = serve({
 **Risk**: Low (well-documented pattern)
 
 **Implementation:**
+
 ```typescript
 import { serve } from 'inngest/next';
 import { inngest } from '@/lib/inngest/client';
@@ -72,12 +79,15 @@ export const { GET, POST, PUT } = serve({
 ```
 
 ### Solution 2: Custom Middleware with Bearer Token
+
 **Pros:**
+
 - Simple implementation
 - Works with existing auth system
 - Easy to test locally
 
 **Cons:**
+
 - Non-standard for Inngest webhooks
 - Requires custom token management
 - Less secure than cryptographic signatures
@@ -86,11 +96,14 @@ export const { GET, POST, PUT } = serve({
 **Risk**: Medium (custom auth can have bugs)
 
 ### Solution 3: IP Allowlist
+
 **Pros:**
+
 - Simple firewall rule
 - No code changes
 
 **Cons:**
+
 - Inngest IPs may change
 - Doesn't prevent internal attacks
 - Not portable across environments
@@ -107,6 +120,7 @@ This is the industry-standard approach for webhook security and is explicitly su
 ## Technical Details
 
 **Affected Files:**
+
 - `app/api/inngest/route.ts` - Add signingKey parameter
 - `.env.local` - Add INNGEST_SIGNING_KEY
 - `.env.example` - Document new env var
@@ -116,6 +130,7 @@ This is the industry-standard approach for webhook security and is explicitly su
 **Breaking Changes:** None (backwards compatible with existing Inngest setup)
 
 **Migration Path:**
+
 1. Generate signing key from Inngest dashboard
 2. Add to environment variables
 3. Update route.ts to use signingKey
@@ -137,6 +152,7 @@ This is the industry-standard approach for webhook security and is explicitly su
 **2026-01-17**: Issue identified by security-sentinel agent during Epic 7 Phase 1 review
 
 **2026-01-17**: Issue resolved - Implemented Solution 1 (Inngest Signing Key Verification)
+
 - Added `signingKey: process.env.INNGEST_SIGNING_KEY` parameter to serve() config in `app/api/inngest/route.ts`
 - Added comprehensive security documentation in code comments explaining setup and rationale
 - Documented INNGEST_SIGNING_KEY in `.env.example` with instructions to get key from Inngest dashboard

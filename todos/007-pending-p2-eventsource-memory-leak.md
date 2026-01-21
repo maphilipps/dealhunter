@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p2
-issue_id: "007"
+issue_id: '007'
 tags: [code-review, performance, memory-leak, cleanup]
 dependencies: []
 ---
@@ -13,6 +13,7 @@ dependencies: []
 The `useAgentStream` hook creates EventSource connections but doesn't properly clean them up when the component unmounts or when a new stream starts. This causes memory leaks, zombie connections, and continued processing of events from old streams.
 
 **Why it matters:**
+
 - Memory leaks on navigation (EventSource never closed)
 - Server resources wasted on zombie connections
 - Multiple concurrent streams if user navigates back/forth
@@ -24,12 +25,13 @@ The `useAgentStream` hook creates EventSource connections but doesn't properly c
 **Location:** `hooks/use-agent-stream.ts:67-85`
 
 **Evidence:**
+
 ```typescript
 const start = useCallback((url: string) => {
   // Creates new EventSource but doesn't close old one
   const eventSource = new EventSource(url);
 
-  eventSource.onmessage = (event) => {
+  eventSource.onmessage = event => {
     const agentEvent: AgentEvent = JSON.parse(event.data);
     dispatch({ type: 'ADD_EVENT', event: agentEvent });
   };
@@ -48,6 +50,7 @@ const start = useCallback((url: string) => {
 ```
 
 **Leak Scenarios:**
+
 1. User navigates away → EventSource never closed → server keeps sending
 2. User starts new evaluation → old EventSource still active → both running
 3. Component re-renders → multiple listeners attached
@@ -61,18 +64,21 @@ const start = useCallback((url: string) => {
 Add cleanup function to close EventSource on unmount.
 
 **Pros:**
+
 - Follows React best practices
 - Prevents all leak scenarios
 - Simple fix
 - No behavior changes
 
 **Cons:**
+
 - None
 
 **Effort:** Small (30 minutes)
 **Risk:** Low
 
 **Implementation:**
+
 ```typescript
 export function useAgentStream() {
   const [state, dispatch] = useReducer(streamReducer, initialState);
@@ -96,7 +102,7 @@ export function useAgentStream() {
 
     const eventSource = new EventSource(url);
 
-    eventSource.onmessage = (event) => {
+    eventSource.onmessage = event => {
       const agentEvent: AgentEvent = JSON.parse(event.data);
       dispatch({ type: 'ADD_EVENT', event: agentEvent });
     };
@@ -127,11 +133,13 @@ export function useAgentStream() {
 Use AbortController to manage stream lifecycle.
 
 **Pros:**
+
 - More modern API
 - Can abort server-side processing
 - Better error handling
 
 **Cons:**
+
 - EventSource doesn't support AbortSignal natively
 - Need polyfill or wrapper
 - More complex
@@ -146,9 +154,11 @@ Use AbortController to manage stream lifecycle.
 Track active streams in global state.
 
 **Pros:**
+
 - Can prevent multiple concurrent streams
 
 **Cons:**
+
 - Over-engineered
 - Global state management overhead
 - Doesn't fix root cleanup issue
@@ -160,18 +170,21 @@ Track active streams in global state.
 
 ## Recommended Action
 
-*(To be filled during triage)*
+_(To be filled during triage)_
 
 ## Technical Details
 
 **Affected Files:**
+
 - `hooks/use-agent-stream.ts` (primary fix)
 
 **Memory Impact:**
+
 - Before: EventSource connections never closed → infinite growth
 - After: Connections closed on unmount → constant memory
 
 **Browser Behavior:**
+
 - Before: Browser shows "connection still active" on navigation
 - After: Clean navigation with proper cleanup
 

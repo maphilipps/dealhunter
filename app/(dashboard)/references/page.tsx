@@ -22,9 +22,7 @@ export default async function ReferencesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold mb-2">Meine Referenzen</h1>
-          <p className="text-muted-foreground">
-            Verwalten Sie Ihre Projekt-Referenzen
-          </p>
+          <p className="text-muted-foreground">Verwalten Sie Ihre Projekt-Referenzen</p>
         </div>
         <Button asChild>
           <Link href="/references/new">
@@ -36,18 +34,14 @@ export default async function ReferencesPage() {
 
       {userReferences.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">
-            Noch keine Referenzen erstellt
-          </p>
+          <p className="text-muted-foreground mb-4">Noch keine Referenzen erstellt</p>
           <Button asChild variant="link">
-            <Link href="/references/new">
-              Erste Referenz erstellen
-            </Link>
+            <Link href="/references/new">Erste Referenz erstellen</Link>
           </Button>
         </div>
       ) : (
         <div className="grid gap-4">
-          {userReferences.map((ref) => (
+          {userReferences.map(ref => (
             <Card key={ref.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">

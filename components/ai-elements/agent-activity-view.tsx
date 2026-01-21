@@ -4,11 +4,7 @@ import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Loader2,
   CheckCircle2,
@@ -20,7 +16,12 @@ import {
   Search,
   Sparkles,
 } from 'lucide-react';
-import type { AgentEvent, PhaseStartData, AnalysisCompleteData, QuickScanPhase } from '@/lib/streaming/event-types';
+import type {
+  AgentEvent,
+  PhaseStartData,
+  AnalysisCompleteData,
+  QuickScanPhase,
+} from '@/lib/streaming/event-types';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
 interface AgentGroup {
@@ -56,7 +57,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
     const phases: PhaseInfo[] = [];
     let currentPhase: PhaseInfo | null = null;
 
-    events.forEach((event) => {
+    events.forEach(event => {
       if (event.type === AgentEventType.PHASE_START && event.data) {
         const data = event.data as PhaseStartData;
         // Save previous phase if exists
@@ -137,7 +138,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
     ];
 
     // Initialize expected agents
-    expectedAgents.forEach((agent) => {
+    expectedAgents.forEach(agent => {
       groups[agent] = {
         name: agent,
         status: 'pending',
@@ -146,7 +147,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
     });
 
     // Process events
-    events.forEach((event) => {
+    events.forEach(event => {
       if (
         event.type !== AgentEventType.AGENT_PROGRESS &&
         event.type !== AgentEventType.AGENT_COMPLETE
@@ -181,18 +182,18 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
       }
     });
 
-    return Object.values(groups).filter((g) => g.events.length > 0 || g.status !== 'pending');
+    return Object.values(groups).filter(g => g.events.length > 0 || g.status !== 'pending');
   }, [events]);
 
   // Calculate overall progress
   const progress = useMemo(() => {
-    const completed = agentGroups.filter((g) => g.status === 'complete').length;
+    const completed = agentGroups.filter(g => g.status === 'complete').length;
     const total = Math.max(agentGroups.length, 5); // At least 5 expected agents
     return Math.round((completed / total) * 100);
   }, [agentGroups]);
 
   const toggleAgent = (agentName: string) => {
-    setExpandedAgents((prev) => {
+    setExpandedAgents(prev => {
       const next = new Set(prev);
       if (next.has(agentName)) {
         next.delete(agentName);
@@ -220,7 +221,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
     const colors: Record<string, string> = {
       // Phase 1: Bootstrap
       'Website Crawler': 'bg-cyan-500/10 text-cyan-700 border-cyan-200',
-      'Wappalyzer': 'bg-cyan-500/10 text-cyan-700 border-cyan-200',
+      Wappalyzer: 'bg-cyan-500/10 text-cyan-700 border-cyan-200',
       'Sitemap Parser': 'bg-cyan-500/10 text-cyan-700 border-cyan-200',
       // Phase 1.2: Multi-Page
       'Link Discovery': 'bg-purple-500/10 text-purple-700 border-purple-200',
@@ -232,13 +233,13 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
       'Tech Stack Analyzer': 'bg-violet-500/10 text-violet-700 border-violet-200',
       'Content Analyzer': 'bg-emerald-500/10 text-emerald-700 border-emerald-200',
       'Feature Detector': 'bg-amber-500/10 text-amber-700 border-amber-200',
-      'Coordinator': 'bg-indigo-500/10 text-indigo-700 border-indigo-200',
+      Coordinator: 'bg-indigo-500/10 text-indigo-700 border-indigo-200',
       // Intelligent Agent Framework
-      'Researcher': 'bg-sky-500/10 text-sky-700 border-sky-200',
-      'Evaluator': 'bg-lime-500/10 text-lime-700 border-lime-200',
-      'Optimizer': 'bg-orange-500/10 text-orange-700 border-orange-200',
+      Researcher: 'bg-sky-500/10 text-sky-700 border-sky-200',
+      Evaluator: 'bg-lime-500/10 text-lime-700 border-lime-200',
+      Optimizer: 'bg-orange-500/10 text-orange-700 border-orange-200',
       // Phase 4: Enhanced Audits
-      'Playwright': 'bg-teal-500/10 text-teal-700 border-teal-200',
+      Playwright: 'bg-teal-500/10 text-teal-700 border-teal-200',
       'Accessibility Audit': 'bg-teal-500/10 text-teal-700 border-teal-200',
       'Navigation Analyzer': 'bg-teal-500/10 text-teal-700 border-teal-200',
       'Performance Analyzer': 'bg-teal-500/10 text-teal-700 border-teal-200',
@@ -373,9 +374,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
 
         {/* Current Phase Message */}
         {currentPhase && (
-          <p className="text-sm text-muted-foreground mt-2">
-            {currentPhase.message}
-          </p>
+          <p className="text-sm text-muted-foreground mt-2">{currentPhase.message}</p>
         )}
       </CardHeader>
       <CardContent className="space-y-2">
@@ -392,7 +391,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
           </div>
         )}
 
-        {agentGroups.map((group) => (
+        {agentGroups.map(group => (
           <Collapsible
             key={group.name}
             open={expandedAgents.has(group.name)}
@@ -406,10 +405,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
               >
                 <div className="flex items-center gap-3">
                   {getStatusIcon(group.status)}
-                  <Badge
-                    variant="outline"
-                    className={`${getAgentColor(group.name)} font-medium`}
-                  >
+                  <Badge variant="outline" className={`${getAgentColor(group.name)} font-medium`}>
                     {group.name}
                   </Badge>
                   <span className="text-sm text-muted-foreground">
@@ -432,19 +428,14 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="ml-4 mt-1 space-y-1 border-l-2 border-muted pl-4 py-2">
-                {group.events.map((event) => {
+                {group.events.map(event => {
                   const data = event.data as { message?: string };
                   return (
-                    <div
-                      key={event.id}
-                      className="flex items-start gap-2 text-sm py-1"
-                    >
+                    <div key={event.id} className="flex items-start gap-2 text-sm py-1">
                       <span className="text-xs text-muted-foreground font-mono min-w-[60px]">
                         {formatTime(event.timestamp)}
                       </span>
-                      <span className="text-foreground">
-                        {data.message || 'Verarbeitung...'}
-                      </span>
+                      <span className="text-foreground">{data.message || 'Verarbeitung...'}</span>
                     </div>
                   );
                 })}
@@ -457,12 +448,10 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
           <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg mt-4">
             <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-green-900">
-                Analyse abgeschlossen
-              </p>
+              <p className="text-sm font-medium text-green-900">Analyse abgeschlossen</p>
               <p className="text-xs text-green-700">
-                {agentGroups.filter((g) => g.status === 'complete').length} von{' '}
-                {agentGroups.length} Agents fertig
+                {agentGroups.filter(g => g.status === 'complete').length} von {agentGroups.length}{' '}
+                Agents fertig
               </p>
             </div>
           </div>

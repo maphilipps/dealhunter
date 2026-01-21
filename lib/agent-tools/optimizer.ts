@@ -85,7 +85,9 @@ async function handleTechStackIssue(
 
   // Try web search for tech stack verification
   if (results.websiteUrl) {
-    const siteSearch = await tools.webSearch(`site:${new URL(results.websiteUrl).hostname} technology stack`);
+    const siteSearch = await tools.webSearch(
+      `site:${new URL(results.websiteUrl).hostname} technology stack`
+    );
     if (siteSearch.length > 0) {
       // Extract tech mentions from search results
       const techMentions = siteSearch.map(r => r.snippet).join(' ');
@@ -139,15 +141,21 @@ async function handleCompanyIssue(
   });
 
   // Search for company information
-  const companyName = results.companyIntelligence?.basicInfo?.name ||
-                      results.extractedRequirements?.customerName ||
-                      (results.websiteUrl ? new URL(results.websiteUrl).hostname.replace('www.', '') : null);
+  const companyName =
+    results.companyIntelligence?.basicInfo?.name ||
+    results.extractedRequirements?.customerName ||
+    (results.websiteUrl ? new URL(results.websiteUrl).hostname.replace('www.', '') : null);
 
   if (companyName) {
-    const searchResults = await tools.webSearch(`"${companyName}" company info employees revenue industry`);
+    const searchResults = await tools.webSearch(
+      `"${companyName}" company info employees revenue industry`
+    );
 
     if (searchResults.length > 0) {
-      const allText = searchResults.map(r => `${r.title} ${r.snippet}`).join(' ').toLowerCase();
+      const allText = searchResults
+        .map(r => `${r.title} ${r.snippet}`)
+        .join(' ')
+        .toLowerCase();
 
       // Extract employee count patterns
       const employeePatterns = [
@@ -170,7 +178,15 @@ async function handleCompanyIssue(
       }
 
       // Extract industry from search results
-      const industries = ['IT', 'Finance', 'Healthcare', 'Manufacturing', 'Retail', 'Education', 'Media'];
+      const industries = [
+        'IT',
+        'Finance',
+        'Healthcare',
+        'Manufacturing',
+        'Retail',
+        'Education',
+        'Media',
+      ];
       for (const industry of industries) {
         if (allText.includes(industry.toLowerCase())) {
           optimized.companyIntelligence = {
@@ -214,7 +230,10 @@ async function handleFeaturesIssue(
 
     if (crawlResult.pages.length > 0) {
       // Analyze all pages for features
-      const allText = crawlResult.pages.map(p => p.text || '').join(' ').toLowerCase();
+      const allText = crawlResult.pages
+        .map(p => p.text || '')
+        .join(' ')
+        .toLowerCase();
 
       // Detect features
       const featurePatterns: Record<string, RegExp[]> = {
@@ -321,7 +340,9 @@ async function handleConfidenceIssue(
   // Verify via additional sources
   if (field.includes('cms') && results.techStack?.cms) {
     // Double-check CMS via web search
-    const searchResults = await tools.webSearch(`"${results.techStack.cms}" CMS latest version features`);
+    const searchResults = await tools.webSearch(
+      `"${results.techStack.cms}" CMS latest version features`
+    );
 
     if (searchResults.length > 0) {
       // Get GitHub info for authoritative version
@@ -571,7 +592,11 @@ export async function evaluateAndOptimize<T extends Record<string, any>>(
   evaluate: (results: T) => Promise<EvaluationResult>,
   tools: IntelligentTools,
   ctx: OptimizerContext = {}
-): Promise<{ results: T; evaluation: EvaluationResult; optimizationResult?: OptimizationResult<T> }> {
+): Promise<{
+  results: T;
+  evaluation: EvaluationResult;
+  optimizationResult?: OptimizationResult<T>;
+}> {
   const evaluation = await evaluate(results);
 
   if (evaluation.qualityScore >= (ctx.targetScore || 80) || !evaluation.canImprove) {

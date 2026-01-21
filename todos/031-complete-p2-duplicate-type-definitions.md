@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p2
-issue_id: "031"
+issue_id: '031'
 tags: [code-review, typescript, dry]
 dependencies: []
 ---
@@ -19,6 +19,7 @@ dependencies: []
 **From kieran-typescript-reviewer and code-simplicity-reviewer agents:**
 
 **Duplicate definitions (lines 12-24):**
+
 ```typescript
 // Zod schema (lines 12-17)
 const AssignBusinessUnitInputSchema = z.object({
@@ -40,6 +41,7 @@ export interface AssignBusinessUnitInput {
 ## Proposed Solutions
 
 ### Solution A: Use Zod inference (Recommended)
+
 **Pros:** Single source of truth, DRY
 **Cons:** None
 **Effort:** Tiny (5 min)
@@ -64,6 +66,7 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/routing/actions.ts` (lines 19-24 - remove interface)
 
 ## Acceptance Criteria
@@ -74,8 +77,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                   | Learnings                                |
+| ---------- | ------------------------ | ---------------------------------------- |
 | 2026-01-18 | Created from code review | Use Zod inference, don't duplicate types |
 
 ## Resources

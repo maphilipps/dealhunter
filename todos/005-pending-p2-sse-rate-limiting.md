@@ -1,9 +1,9 @@
 ---
 status: pending
 priority: p2
-issue_id: "005"
+issue_id: '005'
 tags: [code-review, security, rate-limiting, ddos]
-dependencies: ["001"]
+dependencies: ['001']
 ---
 
 # Missing Rate Limiting on SSE Endpoints
@@ -13,6 +13,7 @@ dependencies: ["001"]
 SSE endpoints have no rate limiting, allowing a malicious user to open unlimited concurrent streams and exhaust server resources. Each stream spawns multiple AI agent calls (4 parallel agents in BIT evaluation), making this a high-cost DoS vector.
 
 **Why it matters:**
+
 - DoS attack vector (open 100 concurrent streams)
 - Resource exhaustion (4 AI calls per stream × 100 streams = 400 concurrent AI requests)
 - Cost explosion (AI API costs)
@@ -25,6 +26,7 @@ SSE endpoints have no rate limiting, allowing a malicious user to open unlimited
 **Location:** `app/api/bids/[id]/quick-scan/stream/route.ts`
 
 **Evidence:**
+
 ```typescript
 // No rate limiting present
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -37,6 +39,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 ```
 
 **Attack Scenario:**
+
 ```bash
 # Malicious user opens 100 streams
 for i in {1..100}; do
@@ -57,12 +60,14 @@ done
 Track active streams per user in Redis, limit to 3 concurrent.
 
 **Pros:**
+
 - Effective DoS prevention
 - Works across server instances (shared state)
 - Fast lookups with Redis
 - Industry standard pattern
 
 **Cons:**
+
 - Requires Redis dependency
 - Need to handle stream cleanup on abort
 
@@ -70,6 +75,7 @@ Track active streams per user in Redis, limit to 3 concurrent.
 **Risk:** Low
 
 **Implementation:**
+
 ```typescript
 import { Redis } from '@upstash/redis';
 
@@ -109,11 +115,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 Track streams in-memory Map (won't work across instances).
 
 **Pros:**
+
 - No Redis dependency
 - Simple implementation
 - Zero latency
 
 **Cons:**
+
 - Doesn't work with multiple server instances
 - Lost on server restart
 - Not production-ready for horizontal scaling
@@ -128,10 +136,12 @@ Track streams in-memory Map (won't work across instances).
 Allow only 1 evaluation per bid at a time.
 
 **Pros:**
+
 - Prevents duplicate evaluations
 - Simple logic
 
 **Cons:**
+
 - Doesn't prevent user from evaluating 100 different bids
 - Not a complete DoS solution
 - Frustrates legitimate concurrent usage
@@ -143,20 +153,23 @@ Allow only 1 evaluation per bid at a time.
 
 ## Recommended Action
 
-*(To be filled during triage)*
+_(To be filled during triage)_
 
 ## Technical Details
 
 **Affected Files:**
+
 - `app/api/bids/[id]/evaluate/stream/route.ts`
 - `app/api/bids/[id]/quick-scan/stream/route.ts`
 - `lib/rate-limiting/stream-limiter.ts` (new utility)
 
 **Dependencies:**
+
 - Upstash Redis or similar KV store
 - Environment variable: `REDIS_URL`
 
 **Configuration:**
+
 ```env
 REDIS_URL=redis://...
 MAX_CONCURRENT_STREAMS_PER_USER=3

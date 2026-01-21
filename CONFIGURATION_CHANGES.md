@@ -23,7 +23,7 @@ Successfully centralized all hardcoded configuration values into a single, type-
   - `model`: AI model name (overridable via `AI_MODEL` env var)
 
 - **Upload Configuration:**
-  - `maxPdfSize`: 5MB (5 * 1024 * 1024 bytes)
+  - `maxPdfSize`: 5MB (5 _ 1024 _ 1024 bytes)
   - `minTextLength`: 50 characters
   - `maxTextLength`: 10,000 characters
   - `maxEmailLength`: 20,000 characters
@@ -33,12 +33,14 @@ Successfully centralized all hardcoded configuration values into a single, type-
 The following files need to be updated to use the centralized configuration:
 
 #### `/src/app/actions/bids.ts`
+
 - Replace hardcoded `baseURL: 'https://adesso-ai-hub.3asabc.de/v1'` with `config.ai.baseUrl`
 - Replace hardcoded model name `'gpt-oss-120b-sovereign'` with `config.ai.model`
 - Replace hardcoded file size `5 * 1024 * 1024` with `config.upload.maxPdfSize`
 - Add import: `import { config } from '@/config/app'`
 
 #### `/src/lib/validations/bid.ts`
+
 - Replace hardcoded validation limits with config values:
   - `50` → `config.upload.minTextLength`
   - `10000` → `config.upload.maxTextLength`
@@ -48,6 +50,7 @@ The following files need to be updated to use the centralized configuration:
 - Add imports: `import { config, formatFileSize } from '@/config/app'`
 
 #### `/src/components/upload/pdf-dropzone.tsx` (if exists)
+
 - Replace hardcoded file size validation `5 * 1024 * 1024` with `config.upload.maxPdfSize`
 - Use `formatFileSize()` for displaying max file size in UI
 - Add imports: `import { config, formatFileSize } from '@/config/app'`
@@ -84,18 +87,18 @@ The following environment variables can be used to override defaults:
 
 ```typescript
 // Import the configuration
-import { config, formatFileSize } from '@/config/app'
+import { config, formatFileSize } from '@/config/app';
 
 // Access AI settings
-const baseUrl = config.ai.baseUrl
-const model = config.ai.model
+const baseUrl = config.ai.baseUrl;
+const model = config.ai.model;
 
 // Access upload limits
-const maxSize = config.upload.maxPdfSize
-const minLength = config.upload.minTextLength
+const maxSize = config.upload.maxPdfSize;
+const minLength = config.upload.minTextLength;
 
 // Format file sizes for display
-const displaySize = formatFileSize(config.upload.maxPdfSize) // "5MB"
+const displaySize = formatFileSize(config.upload.maxPdfSize); // "5MB"
 ```
 
 ## Acceptance Criteria Status

@@ -11,7 +11,7 @@ import {
   FieldGroup,
   FieldLabel,
   FieldLegend,
-  FieldSet
+  FieldSet,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,14 +26,14 @@ export function LeadForm() {
       name: '',
       phone: '',
       company: '',
-      message: ''
-    }
+      message: '',
+    },
   });
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     const response = await fetch('/api/submit', {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
 
     if (response.ok) {
@@ -69,12 +69,8 @@ export function LeadForm() {
                     placeholder="john@company.com"
                     autoComplete="email"
                   />
-                  <FieldDescription>
-                    Please use your work email address.
-                  </FieldDescription>
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
+                  <FieldDescription>Please use your work email address.</FieldDescription>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
@@ -95,9 +91,7 @@ export function LeadForm() {
                       placeholder="John Doe"
                       autoComplete="name"
                     />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
@@ -116,9 +110,7 @@ export function LeadForm() {
                       placeholder="(555) 123-4567"
                       autoComplete="tel"
                     />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
@@ -137,12 +129,8 @@ export function LeadForm() {
                     placeholder="Acme Inc."
                     autoComplete="organization"
                   />
-                  <FieldDescription>
-                    Optional: Tell us where you work.
-                  </FieldDescription>
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
+                  <FieldDescription>Optional: Tell us where you work.</FieldDescription>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
@@ -151,9 +139,7 @@ export function LeadForm() {
 
         <FieldSet>
           <FieldLegend>Your Message</FieldLegend>
-          <FieldDescription>
-            Tell us about your project or inquiry.
-          </FieldDescription>
+          <FieldDescription>Tell us about your project or inquiry.</FieldDescription>
           <FieldGroup>
             <Controller
               name="message"
@@ -171,12 +157,8 @@ export function LeadForm() {
                     rows={6}
                     className="resize-none"
                   />
-                  <FieldDescription>
-                    {field.value.length}/500 characters
-                  </FieldDescription>
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
+                  <FieldDescription>{field.value.length}/500 characters</FieldDescription>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />

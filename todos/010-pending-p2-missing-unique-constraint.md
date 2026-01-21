@@ -18,12 +18,14 @@ Multiple deep analysis jobs can run concurrently for the same bid with the same 
 ## Findings
 
 **Data Integrity Guardian Report:**
+
 - No constraint prevents duplicate analyses for same bid + version
 - Schema includes `version` column (default 1) but no uniqueness enforcement
 - Race condition: Two requests → two Inngest jobs → two "running" analyses
 - User confusion: Which analysis is the "real" one?
 
 **Evidence:**
+
 ```typescript
 // lib/db/schema.ts (current)
 export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
@@ -34,6 +36,7 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 ```
 
 **Race Condition Scenario:**
+
 1. User opens bid detail page
 2. Clicks "Run Deep Analysis" button
 3. Button doesn't disable immediately (network lag)
@@ -43,6 +46,7 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 7. Database has 2 "running" analyses for same bid + version ❌
 
 **Expected Behavior:**
+
 - Second insert should fail with UNIQUE constraint violation
 - Application shows error: "Analysis already running for this bid"
 - User sees existing job progress, not duplicate
@@ -50,13 +54,16 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 ## Proposed Solutions
 
 ### Solution 1: Add UNIQUE Constraint + Handle Conflict (Recommended)
+
 **Pros:**
+
 - Database enforces uniqueness
 - Prevents duplicate jobs at source
 - Idempotent operations (safe to retry)
 - Clear error handling
 
 **Cons:**
+
 - Need error handling for constraint violations
 - Migration to add constraint
 
@@ -64,33 +71,43 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 **Risk**: Low
 
 **Implementation:**
+
 ```typescript
 // lib/db/schema.ts
-export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
-  bidOpportunityId: text('bid_opportunity_id').notNull(),
-  version: integer('version').notNull().default(1),
-  // ... other columns
-}, (table) => ({
-  uniqueBidVersion: uniqueIndex('unique_bid_version')
-    .on(table.bidOpportunityId, table.version), // ✅ Add this
-}));
+export const deepMigrationAnalyses = sqliteTable(
+  'deep_migration_analyses',
+  {
+    bidOpportunityId: text('bid_opportunity_id').notNull(),
+    version: integer('version').notNull().default(1),
+    // ... other columns
+  },
+  table => ({
+    uniqueBidVersion: uniqueIndex('unique_bid_version').on(table.bidOpportunityId, table.version), // ✅ Add this
+  })
+);
 
 // app/api/bids/[id]/deep-analysis/trigger/route.ts
 try {
-  const [existing] = await db.select()
+  const [existing] = await db
+    .select()
     .from(deepMigrationAnalyses)
-    .where(and(
-      eq(deepMigrationAnalyses.bidOpportunityId, bidId),
-      eq(deepMigrationAnalyses.version, 1),
-      inArray(deepMigrationAnalyses.status, ['pending', 'running'])
-    ));
+    .where(
+      and(
+        eq(deepMigrationAnalyses.bidOpportunityId, bidId),
+        eq(deepMigrationAnalyses.version, 1),
+        inArray(deepMigrationAnalyses.status, ['pending', 'running'])
+      )
+    );
 
   if (existing) {
-    return Response.json({
-      error: 'Analysis already running',
-      jobId: existing.jobId,
-      status: existing.status,
-    }, { status: 409 }); // ✅ Conflict
+    return Response.json(
+      {
+        error: 'Analysis already running',
+        jobId: existing.jobId,
+        status: existing.status,
+      },
+      { status: 409 }
+    ); // ✅ Conflict
   }
 
   // Create analysis + trigger job
@@ -113,24 +130,28 @@ try {
 } catch (error) {
   if (error.code === 'SQLITE_CONSTRAINT') {
     // Race condition: analysis was created between SELECT and INSERT
-    const [existing] = await db.select()
+    const [existing] = await db
+      .select()
       .from(deepMigrationAnalyses)
-      .where(and(
-        eq(deepMigrationAnalyses.bidOpportunityId, bidId),
-        eq(deepMigrationAnalyses.version, 1)
-      ));
+      .where(
+        and(eq(deepMigrationAnalyses.bidOpportunityId, bidId), eq(deepMigrationAnalyses.version, 1))
+      );
 
-    return Response.json({
-      error: 'Analysis already running',
-      jobId: existing!.jobId,
-      status: existing!.status,
-    }, { status: 409 });
+    return Response.json(
+      {
+        error: 'Analysis already running',
+        jobId: existing!.jobId,
+        status: existing!.status,
+      },
+      { status: 409 }
+    );
   }
   throw error;
 }
 ```
 
 **Migration:**
+
 ```sql
 -- New migration
 CREATE UNIQUE INDEX `unique_bid_version`
@@ -138,11 +159,14 @@ CREATE UNIQUE INDEX `unique_bid_version`
 ```
 
 ### Solution 2: Application-Level Lock with SELECT FOR UPDATE
+
 **Pros:**
+
 - Prevents race at application level
 - More control over lock timing
 
 **Cons:**
+
 - SQLite doesn't support SELECT FOR UPDATE
 - Would need PostgreSQL or manual locking
 
@@ -150,11 +174,14 @@ CREATE UNIQUE INDEX `unique_bid_version`
 **Risk**: N/A
 
 ### Solution 3: Idempotency Key Pattern
+
 **Pros:**
+
 - Standard distributed systems pattern
 - Works across multiple servers
 
 **Cons:**
+
 - More complex implementation
 - Requires separate idempotency key table
 - Overkill for single-server SQLite app
@@ -171,6 +198,7 @@ This is the simplest and most robust solution for preventing duplicate analyses.
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/db/schema.ts` - Add uniqueIndex
 - `app/api/bids/[id]/deep-analysis/trigger/route.ts` - Add conflict handling
 - `drizzle/migrations/XXXX_add_unique_bid_version.sql` - NEW migration
@@ -180,6 +208,7 @@ This is the simplest and most robust solution for preventing duplicate analyses.
 **Breaking Changes:** Duplicate analyses will be rejected (desired behavior)
 
 **UI Improvements:**
+
 - Disable "Run Analysis" button when analysis running
 - Show existing job progress instead of allowing new trigger
 - Clear error message if duplicate attempted

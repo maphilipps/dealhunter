@@ -1,11 +1,9 @@
 import { App, LogLevel } from '@slack/bolt';
 import { VercelReceiver } from '@vercel/slack-bolt';
 
-const logLevel =
-  process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO;
+const logLevel = process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO;
 
-const hasSlackCredentials =
-  process.env.SLACK_BOT_TOKEN && process.env.SLACK_SIGNING_SECRET;
+const hasSlackCredentials = process.env.SLACK_BOT_TOKEN && process.env.SLACK_SIGNING_SECRET;
 
 if (!hasSlackCredentials) {
   console.warn(
@@ -17,7 +15,7 @@ if (!hasSlackCredentials) {
 export const receiver = hasSlackCredentials
   ? new VercelReceiver({
       signingSecret: process.env.SLACK_SIGNING_SECRET!,
-      logLevel
+      logLevel,
     })
   : null;
 
@@ -30,7 +28,7 @@ export const slackApp = hasSlackCredentials
       signingSecret: process.env.SLACK_SIGNING_SECRET!,
       receiver: receiver!,
       deferInitialization: true,
-      logLevel
+      logLevel,
     })
   : null;
 
@@ -59,8 +57,8 @@ export async function sendSlackMessageWithButtons(
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text
-        }
+          text,
+        },
       },
       {
         type: 'actions',
@@ -70,24 +68,24 @@ export async function sendSlackMessageWithButtons(
             text: {
               type: 'plain_text',
               text: '👍 Approve',
-              emoji: true
+              emoji: true,
             },
             style: 'primary',
-            action_id: 'lead_approved'
+            action_id: 'lead_approved',
           },
           {
             type: 'button',
             text: {
               type: 'plain_text',
               text: '👎 Reject',
-              emoji: true
+              emoji: true,
             },
             style: 'danger',
-            action_id: 'lead_rejected'
-          }
-        ]
-      }
-    ]
+            action_id: 'lead_rejected',
+          },
+        ],
+      },
+    ],
   });
 
   if (!result.ok || !result.ts) {
@@ -96,6 +94,6 @@ export async function sendSlackMessageWithButtons(
 
   return {
     messageTs: result.ts,
-    channel: result.channel!
+    channel: result.channel!,
   };
 }

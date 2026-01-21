@@ -84,10 +84,14 @@ WICHTIG: Du musst eine fundierte Einschätzung geben, auch wenn nicht alle Infor
 **Extrahierte Anforderungen:**
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
-${input.quickScanResults ? `
+${
+  input.quickScanResults
+    ? `
 **Quick Scan Ergebnisse (Website-Analyse):**
 ${JSON.stringify(input.quickScanResults, null, 2)}
-` : ''}
+`
+    : ''
+}
 ${customerNews}
 ${marketInsights}
 

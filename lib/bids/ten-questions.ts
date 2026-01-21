@@ -132,9 +132,31 @@ function detectProjectType(
   const projectDesc = extractedData?.projectDescription?.toLowerCase() || '';
   const allText = `${scopeLower} ${keyReqs} ${projectDesc}`;
 
-  const migrationKeywords = ['migration', 'umzug', 'wechsel', 'ablösung', 'ersetzen', 'migrate', 'cms-wechsel'];
-  const greenfieldKeywords = ['neuentwicklung', 'neu entwickeln', 'von grund auf', 'greenfield', 'neue website', 'neue plattform'];
-  const relaunchKeywords = ['relaunch', 'redesign', 'neugestaltung', 'überarbeitung', 'modernisierung', 'refresh'];
+  const migrationKeywords = [
+    'migration',
+    'umzug',
+    'wechsel',
+    'ablösung',
+    'ersetzen',
+    'migrate',
+    'cms-wechsel',
+  ];
+  const greenfieldKeywords = [
+    'neuentwicklung',
+    'neu entwickeln',
+    'von grund auf',
+    'greenfield',
+    'neue website',
+    'neue plattform',
+  ];
+  const relaunchKeywords = [
+    'relaunch',
+    'redesign',
+    'neugestaltung',
+    'überarbeitung',
+    'modernisierung',
+    'refresh',
+  ];
 
   const hasMigrationSignal = migrationKeywords.some(kw => allText.includes(kw)) || !!techStack?.cms;
   const hasGreenfieldSignal = greenfieldKeywords.some(kw => allText.includes(kw));
@@ -226,24 +248,52 @@ export function calculateAnsweredQuestionsCount(
   const techStack = parseJsonField<TechStackData>(quickScan.techStack);
   const contentVolume = parseJsonField<ContentVolumeData>(quickScan.contentVolume);
   const features = parseJsonField<FeaturesData>(quickScan.features);
-  const companyIntelligence = parseJsonField<CompanyIntelligenceData>(quickScan.companyIntelligence);
+  const companyIntelligence = parseJsonField<CompanyIntelligenceData>(
+    quickScan.companyIntelligence
+  );
   const accessibilityAudit = parseJsonField<AccessibilityAuditData>(quickScan.accessibilityAudit);
   const seoAudit = parseJsonField<SeoAuditData>(quickScan.seoAudit);
   const legalCompliance = parseJsonField<LegalComplianceData>(quickScan.legalCompliance);
-  const migrationFeasibility = parseJsonField<MigrationFeasibilityData>((quickScan as { migrationFeasibility?: string }).migrationFeasibility);
+  const migrationFeasibility = parseJsonField<MigrationFeasibilityData>(
+    (quickScan as { migrationFeasibility?: string }).migrationFeasibility
+  );
 
   const projectType = detectProjectType(techStack, extractedData);
 
   let answered: number;
   switch (projectType) {
     case 'migration':
-      answered = countMigrationAnswers(quickScan, extractedData, techStack, contentVolume, features, companyIntelligence, migrationFeasibility);
+      answered = countMigrationAnswers(
+        quickScan,
+        extractedData,
+        techStack,
+        contentVolume,
+        features,
+        companyIntelligence,
+        migrationFeasibility
+      );
       break;
     case 'greenfield':
-      answered = countGreenfieldAnswers(quickScan, extractedData, techStack, features, companyIntelligence, legalCompliance);
+      answered = countGreenfieldAnswers(
+        quickScan,
+        extractedData,
+        techStack,
+        features,
+        companyIntelligence,
+        legalCompliance
+      );
       break;
     case 'relaunch':
-      answered = countRelaunchAnswers(quickScan, extractedData, techStack, contentVolume, features, accessibilityAudit, seoAudit, companyIntelligence);
+      answered = countRelaunchAnswers(
+        quickScan,
+        extractedData,
+        techStack,
+        contentVolume,
+        features,
+        accessibilityAudit,
+        seoAudit,
+        companyIntelligence
+      );
       break;
   }
 
@@ -260,15 +310,23 @@ export function calculateAnsweredQuestionsCount(
 export function buildQuestionsWithStatus(
   quickScan: QuickScan,
   extractedData?: ExtractedRequirements | null
-): { questions: QuestionWithStatus[]; projectType: ProjectType; summary: { answered: number; total: number } } {
+): {
+  questions: QuestionWithStatus[];
+  projectType: ProjectType;
+  summary: { answered: number; total: number };
+} {
   const techStack = parseJsonField<TechStackData>(quickScan.techStack);
   const contentVolume = parseJsonField<ContentVolumeData>(quickScan.contentVolume);
   const features = parseJsonField<FeaturesData>(quickScan.features);
-  const companyIntelligence = parseJsonField<CompanyIntelligenceData>(quickScan.companyIntelligence);
+  const companyIntelligence = parseJsonField<CompanyIntelligenceData>(
+    quickScan.companyIntelligence
+  );
   const accessibilityAudit = parseJsonField<AccessibilityAuditData>(quickScan.accessibilityAudit);
   const seoAudit = parseJsonField<SeoAuditData>(quickScan.seoAudit);
   const legalCompliance = parseJsonField<LegalComplianceData>(quickScan.legalCompliance);
-  const migrationFeasibility = parseJsonField<MigrationFeasibilityData>((quickScan as { migrationFeasibility?: string }).migrationFeasibility);
+  const migrationFeasibility = parseJsonField<MigrationFeasibilityData>(
+    (quickScan as { migrationFeasibility?: string }).migrationFeasibility
+  );
 
   const projectType = detectProjectType(techStack, extractedData);
 
@@ -279,46 +337,162 @@ export function buildQuestionsWithStatus(
     case 'migration':
       questionTexts = MIGRATION_QUESTIONS;
       answersWithStatus = [
-        { answered: !!techStack?.cms, answer: techStack?.cms ? `${techStack.cms}${techStack.cmsVersion ? ` v${techStack.cmsVersion}` : ''}` : undefined },
-        { answered: !!contentVolume?.estimatedPageCount, answer: contentVolume?.estimatedPageCount ? `${contentVolume.estimatedPageCount} Seiten` : undefined },
-        { answered: !!(migrationFeasibility || techStack?.cms), answer: migrationFeasibility?.exportMethod || (techStack?.cms ? 'Ja, CMS erkannt' : undefined) },
-        { answered: !!(extractedData?.budgetRange || companyIntelligence?.financials), answer: extractedData?.budgetRange || companyIntelligence?.financials?.revenueClass },
-        { answered: !!(extractedData?.timeline || extractedData?.submissionDeadline || contentVolume?.complexity), answer: extractedData?.timeline || extractedData?.submissionDeadline || (contentVolume?.complexity ? `Komplexität: ${contentVolume.complexity}` : undefined) },
-        { answered: !!Object.values(features || {}).some(Boolean), answer: features ? buildFeatureString(features) : undefined },
-        { answered: !!techStack?.cms, answer: techStack?.cms ? `CMS: ${techStack.cms}` : undefined },
-        { answered: !!(techStack?.cms || quickScan.recommendedBusinessUnit || extractedData?.technologies?.length), answer: extractedData?.technologies?.join(', ') || techStack?.framework },
+        {
+          answered: !!techStack?.cms,
+          answer: techStack?.cms
+            ? `${techStack.cms}${techStack.cmsVersion ? ` v${techStack.cmsVersion}` : ''}`
+            : undefined,
+        },
+        {
+          answered: !!contentVolume?.estimatedPageCount,
+          answer: contentVolume?.estimatedPageCount
+            ? `${contentVolume.estimatedPageCount} Seiten`
+            : undefined,
+        },
+        {
+          answered: !!(migrationFeasibility || techStack?.cms),
+          answer:
+            migrationFeasibility?.exportMethod || (techStack?.cms ? 'Ja, CMS erkannt' : undefined),
+        },
+        {
+          answered: !!(extractedData?.budgetRange || companyIntelligence?.financials),
+          answer: extractedData?.budgetRange || companyIntelligence?.financials?.revenueClass,
+        },
+        {
+          answered: !!(
+            extractedData?.timeline ||
+            extractedData?.submissionDeadline ||
+            contentVolume?.complexity
+          ),
+          answer:
+            extractedData?.timeline ||
+            extractedData?.submissionDeadline ||
+            (contentVolume?.complexity ? `Komplexität: ${contentVolume.complexity}` : undefined),
+        },
+        {
+          answered: !!Object.values(features || {}).some(Boolean),
+          answer: features ? buildFeatureString(features) : undefined,
+        },
+        {
+          answered: !!techStack?.cms,
+          answer: techStack?.cms ? `CMS: ${techStack.cms}` : undefined,
+        },
+        {
+          answered: !!(
+            techStack?.cms ||
+            quickScan.recommendedBusinessUnit ||
+            extractedData?.technologies?.length
+          ),
+          answer: extractedData?.technologies?.join(', ') || techStack?.framework,
+        },
         { answered: true, answer: 'SEO-Analyse verfügbar' },
-        { answered: !!quickScan.recommendedBusinessUnit, answer: quickScan.recommendedBusinessUnit ? `${quickScan.recommendedBusinessUnit} (${quickScan.confidence}%)` : undefined },
+        {
+          answered: !!quickScan.recommendedBusinessUnit,
+          answer: quickScan.recommendedBusinessUnit
+            ? `${quickScan.recommendedBusinessUnit} (${quickScan.confidence}%)`
+            : undefined,
+        },
       ];
       break;
     case 'greenfield':
       questionTexts = GREENFIELD_QUESTIONS;
       answersWithStatus = [
-        { answered: !!(extractedData?.technologies?.length || techStack?.framework), answer: extractedData?.technologies?.join(', ') || techStack?.framework },
-        { answered: !!(Object.values(features || {}).some(Boolean) || extractedData?.keyRequirements?.length), answer: features ? buildFeatureString(features) : extractedData?.keyRequirements?.slice(0, 3).join(', ') },
-        { answered: !!(extractedData?.budgetRange || companyIntelligence?.financials), answer: extractedData?.budgetRange || companyIntelligence?.financials?.revenueClass },
-        { answered: !!(extractedData?.timeline || extractedData?.submissionDeadline), answer: extractedData?.timeline || extractedData?.submissionDeadline },
-        { answered: !!(features?.api || features?.ecommerce), answer: features?.api ? 'API Integration' : (features?.ecommerce ? 'E-Commerce' : undefined) },
-        { answered: !!(extractedData?.industry || extractedData?.technologies?.length), answer: extractedData?.industry },
-        { answered: !!(legalCompliance || extractedData?.procurementType || extractedData?.constraints?.length), answer: legalCompliance ? `DSGVO Score: ${legalCompliance.score}%` : extractedData?.constraints?.join(', ') },
-        { answered: !!(quickScan.recommendedBusinessUnit || extractedData?.technologies?.length), answer: extractedData?.technologies?.join(', ') },
+        {
+          answered: !!(extractedData?.technologies?.length || techStack?.framework),
+          answer: extractedData?.technologies?.join(', ') || techStack?.framework,
+        },
+        {
+          answered: !!(
+            Object.values(features || {}).some(Boolean) || extractedData?.keyRequirements?.length
+          ),
+          answer: features
+            ? buildFeatureString(features)
+            : extractedData?.keyRequirements?.slice(0, 3).join(', '),
+        },
+        {
+          answered: !!(extractedData?.budgetRange || companyIntelligence?.financials),
+          answer: extractedData?.budgetRange || companyIntelligence?.financials?.revenueClass,
+        },
+        {
+          answered: !!(extractedData?.timeline || extractedData?.submissionDeadline),
+          answer: extractedData?.timeline || extractedData?.submissionDeadline,
+        },
+        {
+          answered: !!(features?.api || features?.ecommerce),
+          answer: features?.api
+            ? 'API Integration'
+            : features?.ecommerce
+              ? 'E-Commerce'
+              : undefined,
+        },
+        {
+          answered: !!(extractedData?.industry || extractedData?.technologies?.length),
+          answer: extractedData?.industry,
+        },
+        {
+          answered: !!(
+            legalCompliance ||
+            extractedData?.procurementType ||
+            extractedData?.constraints?.length
+          ),
+          answer: legalCompliance
+            ? `DSGVO Score: ${legalCompliance.score}%`
+            : extractedData?.constraints?.join(', '),
+        },
+        {
+          answered: !!(quickScan.recommendedBusinessUnit || extractedData?.technologies?.length),
+          answer: extractedData?.technologies?.join(', '),
+        },
         { answered: true, answer: 'Hosting-Optionen analysiert' },
-        { answered: !!quickScan.recommendedBusinessUnit, answer: quickScan.recommendedBusinessUnit ? `${quickScan.recommendedBusinessUnit} (${quickScan.confidence}%)` : undefined },
+        {
+          answered: !!quickScan.recommendedBusinessUnit,
+          answer: quickScan.recommendedBusinessUnit
+            ? `${quickScan.recommendedBusinessUnit} (${quickScan.confidence}%)`
+            : undefined,
+        },
       ];
       break;
     case 'relaunch':
       questionTexts = RELAUNCH_QUESTIONS;
       answersWithStatus = [
-        { answered: !!accessibilityAudit, answer: accessibilityAudit ? `Score: ${accessibilityAudit.score}%` : undefined },
-        { answered: !!seoAudit, answer: seoAudit?.score !== undefined ? `Score: ${seoAudit.score}%` : undefined },
-        { answered: !!Object.values(features || {}).some(Boolean), answer: features ? buildFeatureString(features) : undefined },
-        { answered: !!contentVolume?.estimatedPageCount, answer: contentVolume?.estimatedPageCount ? `${contentVolume.estimatedPageCount} Seiten` : undefined },
-        { answered: !!(extractedData?.budgetRange || companyIntelligence?.financials), answer: extractedData?.budgetRange || companyIntelligence?.financials?.revenueClass },
-        { answered: !!(extractedData?.timeline || extractedData?.submissionDeadline), answer: extractedData?.timeline || extractedData?.submissionDeadline },
-        { answered: !!(techStack?.cms || techStack?.framework), answer: techStack?.cms || techStack?.framework },
+        {
+          answered: !!accessibilityAudit,
+          answer: accessibilityAudit ? `Score: ${accessibilityAudit.score}%` : undefined,
+        },
+        {
+          answered: !!seoAudit,
+          answer: seoAudit?.score !== undefined ? `Score: ${seoAudit.score}%` : undefined,
+        },
+        {
+          answered: !!Object.values(features || {}).some(Boolean),
+          answer: features ? buildFeatureString(features) : undefined,
+        },
+        {
+          answered: !!contentVolume?.estimatedPageCount,
+          answer: contentVolume?.estimatedPageCount
+            ? `${contentVolume.estimatedPageCount} Seiten`
+            : undefined,
+        },
+        {
+          answered: !!(extractedData?.budgetRange || companyIntelligence?.financials),
+          answer: extractedData?.budgetRange || companyIntelligence?.financials?.revenueClass,
+        },
+        {
+          answered: !!(extractedData?.timeline || extractedData?.submissionDeadline),
+          answer: extractedData?.timeline || extractedData?.submissionDeadline,
+        },
+        {
+          answered: !!(techStack?.cms || techStack?.framework),
+          answer: techStack?.cms || techStack?.framework,
+        },
         { answered: true, answer: 'Design & Performance Analyse verfügbar' },
         { answered: true, answer: 'SEO-Rankings dokumentiert' },
-        { answered: !!quickScan.recommendedBusinessUnit, answer: quickScan.recommendedBusinessUnit ? `${quickScan.recommendedBusinessUnit} (${quickScan.confidence}%)` : undefined },
+        {
+          answered: !!quickScan.recommendedBusinessUnit,
+          answer: quickScan.recommendedBusinessUnit
+            ? `${quickScan.recommendedBusinessUnit} (${quickScan.confidence}%)`
+            : undefined,
+        },
       ];
       break;
   }

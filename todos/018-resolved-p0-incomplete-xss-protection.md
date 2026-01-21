@@ -20,17 +20,19 @@ resolution: Implemented DOMPurify-based sanitization with comprehensive protecti
 The `sanitizedString` schema uses incomplete regex patterns that can be bypassed with HTML entity encoding, unicode escaping, and other techniques.
 
 **Affected Files:**
+
 - `/lib/deep-analysis/schemas.ts` (lines 4-19)
 
 **Vulnerable Code:**
+
 ```typescript
 const sanitizedString = z.string().refine(
-  (val) => {
+  val => {
     const dangerousPatterns = [
-      /<script/i,           // Can be bypassed with HTML entities
+      /<script/i, // Can be bypassed with HTML entities
       /<\/script/i,
-      /javascript:/i,       // Can be bypassed with encoding
-      /on\w+=/i,           // Incomplete event handler check
+      /javascript:/i, // Can be bypassed with encoding
+      /on\w+=/i, // Incomplete event handler check
       /<iframe/i,
       /<embed/i,
       /<object/i,
@@ -44,28 +46,33 @@ const sanitizedString = z.string().refine(
 ## Bypass Techniques
 
 ### 1. HTML Entity Encoding
+
 ```javascript
-"&#60;script&#62;alert(1)&#60;/script&#62;"  // NOT BLOCKED
+'&#60;script&#62;alert(1)&#60;/script&#62;'; // NOT BLOCKED
 ```
 
 ### 2. Unicode Escaping
+
 ```javascript
-"\u003cscript\u003ealert(1)\u003c/script\u003e"  // NOT BLOCKED
+'\u003cscript\u003ealert(1)\u003c/script\u003e'; // NOT BLOCKED
 ```
 
 ### 3. Mixed Encoding
+
 ```javascript
-"<img src=x on&#101;rror=alert(1)>"  // NOT BLOCKED
+'<img src=x on&#101;rror=alert(1)>'; // NOT BLOCKED
 ```
 
 ### 4. SVG XSS
+
 ```javascript
-"<svg/onload=alert(1)>"  // NOT BLOCKED
+'<svg/onload=alert(1)>'; // NOT BLOCKED
 ```
 
 ### 5. Style-based XSS
+
 ```javascript
-"<div style='background:url(javascript:alert(1))'>test</div>"  // NOT BLOCKED
+"<div style='background:url(javascript:alert(1))'>test</div>"; // NOT BLOCKED
 ```
 
 ## Attack Scenario
@@ -73,6 +80,7 @@ const sanitizedString = z.string().refine(
 **Stored XSS via AI Output Manipulation:**
 
 1. Attacker creates website with malicious page title:
+
    ```html
    <title>Product Page &#60;img src=x onerror=alert(document.cookie)&#62;</title>
    ```
@@ -84,6 +92,7 @@ const sanitizedString = z.string().refine(
 4. Bypasses `sanitizedString` validation
 
 5. Stored in database:
+
    ```json
    {
      "pageType": "Product Page <img src=x onerror=alert(document.cookie)>",
@@ -98,6 +107,7 @@ const sanitizedString = z.string().refine(
 ### Option 1: Use DOMPurify (RECOMMENDED)
 
 Install DOMPurify:
+
 ```bash
 npm install isomorphic-dompurify
 npm install --save-dev @types/dompurify
@@ -109,34 +119,37 @@ Update `/lib/deep-analysis/schemas.ts`:
 import DOMPurify from 'isomorphic-dompurify';
 
 // SAFE: Strips ALL HTML tags
-const sanitizedString = z.string().transform((val) => {
+const sanitizedString = z.string().transform(val => {
   // Remove all HTML tags and entities
   return DOMPurify.sanitize(val, {
-    ALLOWED_TAGS: [],      // No HTML allowed
-    ALLOWED_ATTR: [],      // No attributes allowed
-    KEEP_CONTENT: true,    // Keep text content
+    ALLOWED_TAGS: [], // No HTML allowed
+    ALLOWED_ATTR: [], // No attributes allowed
+    KEEP_CONTENT: true, // Keep text content
   });
 });
 
 // For URLs, use more strict validation
-const sanitizedUrl = z.string().url().refine(
-  (val) => {
-    // Only allow http/https
-    if (!val.startsWith('http://') && !val.startsWith('https://')) {
-      return false;
-    }
+const sanitizedUrl = z
+  .string()
+  .url()
+  .refine(
+    val => {
+      // Only allow http/https
+      if (!val.startsWith('http://') && !val.startsWith('https://')) {
+        return false;
+      }
 
-    // Sanitize and check if URL is still valid
-    const sanitized = DOMPurify.sanitize(val, { ALLOWED_TAGS: [] });
-    try {
-      new URL(sanitized);
-      return true;
-    } catch {
-      return false;
-    }
-  },
-  { message: 'URL must use http or https protocol and cannot contain malicious content' }
-);
+      // Sanitize and check if URL is still valid
+      const sanitized = DOMPurify.sanitize(val, { ALLOWED_TAGS: [] });
+      try {
+        new URL(sanitized);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: 'URL must use http or https protocol and cannot contain malicious content' }
+  );
 ```
 
 ### Option 2: Comprehensive Regex-Based Approach
@@ -145,9 +158,7 @@ const sanitizedUrl = z.string().url().refine(
 function decodeHtmlEntities(text: string): string {
   return text
     .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
-    .replace(/&#x([0-9a-f]+);/gi, (match, hex) =>
-      String.fromCharCode(parseInt(hex, 16))
-    )
+    .replace(/&#x([0-9a-f]+);/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16)))
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
@@ -156,13 +167,11 @@ function decodeHtmlEntities(text: string): string {
 }
 
 function decodeUnicode(text: string): string {
-  return text.replace(/\\u([0-9a-f]{4})/gi, (match, hex) =>
-    String.fromCharCode(parseInt(hex, 16))
-  );
+  return text.replace(/\\u([0-9a-f]{4})/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
 }
 
 const sanitizedString = z.string().refine(
-  (val) => {
+  val => {
     // Decode all entities and escapes
     let decoded = val;
     decoded = decodeHtmlEntities(decoded);
@@ -239,7 +248,7 @@ Replace existing `sanitizedString` in `/lib/deep-analysis/schemas.ts`:
 ```typescript
 import DOMPurify from 'isomorphic-dompurify';
 
-const sanitizedString = z.string().transform((val) => {
+const sanitizedString = z.string().transform(val => {
   return DOMPurify.sanitize(val, {
     ALLOWED_TAGS: [],
     ALLOWED_ATTR: [],
@@ -255,11 +264,13 @@ Update `/lib/deep-analysis/__tests__/xss-validation.test.ts`:
 ```typescript
 it('should sanitize HTML entity encoded XSS', () => {
   const input = {
-    pageTypes: [{
-      type: '&#60;script&#62;alert(1)&#60;/script&#62;',
-      count: 10,
-      sampleUrls: ['https://example.com']
-    }],
+    pageTypes: [
+      {
+        type: '&#60;script&#62;alert(1)&#60;/script&#62;',
+        count: 10,
+        sampleUrls: ['https://example.com'],
+      },
+    ],
     contentTypeMapping: [],
     paragraphEstimate: 5,
     totalPages: 100,
@@ -274,11 +285,13 @@ it('should sanitize HTML entity encoded XSS', () => {
 
 it('should sanitize unicode escaped XSS', () => {
   const input = {
-    pageTypes: [{
-      type: '\\u003cscript\\u003ealert(1)\\u003c/script\\u003e',
-      count: 10,
-      sampleUrls: ['https://example.com']
-    }],
+    pageTypes: [
+      {
+        type: '\\u003cscript\\u003ealert(1)\\u003c/script\\u003e',
+        count: 10,
+        sampleUrls: ['https://example.com'],
+      },
+    ],
     contentTypeMapping: [],
     paragraphEstimate: 5,
     totalPages: 100,
@@ -404,6 +417,7 @@ Test with these payloads:
 ### Protection Coverage
 
 **Now Protected Against:**
+
 - Script tag injection (all encodings)
 - HTML entity encoded payloads
 - Unicode escaped payloads
@@ -415,6 +429,7 @@ Test with these payloads:
 - Data URLs with HTML
 
 **How It Works:**
+
 - DOMPurify decodes ALL entity encodings automatically
 - Strips ALL HTML tags by default (whitelist = empty)
 - Preserves safe text content
@@ -424,6 +439,7 @@ Test with these payloads:
 ### Manual Verification Results
 
 All manual tests passed:
+
 ```
 ✓ Script tag sanitization
 ✓ HTML entity encoded XSS blocked

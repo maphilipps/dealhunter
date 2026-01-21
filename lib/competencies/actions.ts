@@ -33,7 +33,8 @@ export async function createCompetency(data: {
         name: name.trim(),
         category,
         level,
-        certifications: certifications && certifications.length > 0 ? JSON.stringify(certifications) : null,
+        certifications:
+          certifications && certifications.length > 0 ? JSON.stringify(certifications) : null,
         description: description?.trim() || null,
       })
       .returning();
@@ -42,7 +43,7 @@ export async function createCompetency(data: {
 
     return {
       success: true,
-      competencyId: competency.id
+      competencyId: competency.id,
     };
   } catch (error) {
     console.error('Competency creation error:', error);
@@ -65,7 +66,7 @@ export async function getCompetencies() {
 
     return {
       success: true,
-      competencies: allCompetencies
+      competencies: allCompetencies,
     };
   } catch (error) {
     console.error('Get competencies error:', error);

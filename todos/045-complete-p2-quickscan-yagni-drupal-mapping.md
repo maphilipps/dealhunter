@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p2
-issue_id: "045"
+issue_id: '045'
 tags: [code-review, simplicity, quickscan, yagni]
 dependencies: []
 ---
@@ -17,6 +17,7 @@ Der Plan sieht vor, `drupalMapping` und `estimatedDrupalEntities` direkt in das 
 **Source:** code-simplicity-reviewer Agent (Plan Review)
 
 **Geplante Schema-Erweiterung (YAGNI):**
+
 ```typescript
 interface ExtractedComponentsData {
   // ... existing fields ...
@@ -32,7 +33,8 @@ interface ExtractedComponentsData {
 
   summary: {
     // ... existing ...
-    estimatedDrupalEntities: {  // YAGNI!
+    estimatedDrupalEntities: {
+      // YAGNI!
       contentTypes: number;
       paragraphTypes: number;
       taxonomies: number;
@@ -43,6 +45,7 @@ interface ExtractedComponentsData {
 ```
 
 **Probleme:**
+
 1. QuickScan ist CMS-agnostisch - Drupal-spezifische Felder gehören nicht rein
 2. Mapping kann vom Audit Skill on-demand berechnet werden
 3. Schema wird unnötig aufgebläht
@@ -82,10 +85,12 @@ Option A - Plan ändern: `drupalMapping` NICHT in QuickScan Schema aufnehmen. St
 ## Technical Details
 
 **Affected Files:**
+
 - Plan: `/Users/marc.philipps/.claude/plans/composed-percolating-falcon.md`
 - KEINE Code-Änderungen nötig (nur Plan korrigieren)
 
 **Plan-Änderung:**
+
 ```diff
 - // NEU: Drupal-Mapping Hints
 - drupalMapping: {
@@ -105,8 +110,8 @@ Option A - Plan ändern: `drupalMapping` NICHT in QuickScan Schema aufnehmen. St
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                        | Learnings                |
+| ---------- | ----------------------------- | ------------------------ |
 | 2026-01-20 | Todo erstellt aus Plan Review | YAGNI-Verletzung erkannt |
 
 ## Resources

@@ -7,12 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import {
-  Building2,
-  CheckCircle2,
-  RefreshCw,
-  Loader2
-} from 'lucide-react';
+import { Building2, CheckCircle2, RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { QuickScan } from '@/lib/db/schema';
 
@@ -31,15 +26,17 @@ export function BUMatchingTab({
   const [isReassigning, setIsReassigning] = useState(false);
 
   // Parse quick scan data - techStack contains detected technologies
-  const matchData = quickScan ? {
-    recommendedBU: quickScan.recommendedBusinessUnit,
-    confidence: quickScan.confidence,
-    reasoning: quickScan.reasoning,
-    // techStack is the JSON field for detected technologies
-    detectedTechnologies: safeJsonParseOrNull<string[]>(quickScan.techStack) ?? [],
-    cms: quickScan.cms,
-    framework: quickScan.framework,
-  } : null;
+  const matchData = quickScan
+    ? {
+        recommendedBU: quickScan.recommendedBusinessUnit,
+        confidence: quickScan.confidence,
+        reasoning: quickScan.reasoning,
+        // techStack is the JSON field for detected technologies
+        detectedTechnologies: safeJsonParseOrNull<string[]>(quickScan.techStack) ?? [],
+        cms: quickScan.cms,
+        framework: quickScan.framework,
+      }
+    : null;
 
   const handleReassign = async () => {
     setIsReassigning(true);
@@ -59,9 +56,7 @@ export function BUMatchingTab({
       <Card>
         <CardHeader>
           <CardTitle>Business Unit Matching</CardTitle>
-          <CardDescription>
-            Der Quick Scan wurde noch nicht durchgeführt.
-          </CardDescription>
+          <CardDescription>Der Quick Scan wurde noch nicht durchgeführt.</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
@@ -83,9 +78,7 @@ export function BUMatchingTab({
                 <Building2 className="h-5 w-5" />
                 Aktuelle Zuweisung
               </CardTitle>
-              <CardDescription>
-                Der Bid wurde diesem Business Unit zugewiesen
-              </CardDescription>
+              <CardDescription>Der Bid wurde diesem Business Unit zugewiesen</CardDescription>
             </div>
             <Badge variant="default" className="text-lg px-4 py-1">
               {matchData?.recommendedBU || 'Nicht zugewiesen'}
@@ -119,9 +112,7 @@ export function BUMatchingTab({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">CMS & Framework</CardTitle>
-            <CardDescription>
-              Erkannte Systeme aus dem Quick Scan
-            </CardDescription>
+            <CardDescription>Erkannte Systeme aus dem Quick Scan</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {matchData?.cms && (
@@ -137,9 +128,7 @@ export function BUMatchingTab({
               </div>
             )}
             {!matchData?.cms && !matchData?.framework && (
-              <p className="text-sm text-muted-foreground">
-                Keine Systeme erkannt
-              </p>
+              <p className="text-sm text-muted-foreground">Keine Systeme erkannt</p>
             )}
           </CardContent>
         </Card>
@@ -148,12 +137,12 @@ export function BUMatchingTab({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Tech Stack</CardTitle>
-            <CardDescription>
-              Technologien aus dem Quick Scan
-            </CardDescription>
+            <CardDescription>Technologien aus dem Quick Scan</CardDescription>
           </CardHeader>
           <CardContent>
-            {matchData?.detectedTechnologies && Array.isArray(matchData.detectedTechnologies) && matchData.detectedTechnologies.length > 0 ? (
+            {matchData?.detectedTechnologies &&
+            Array.isArray(matchData.detectedTechnologies) &&
+            matchData.detectedTechnologies.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {matchData.detectedTechnologies.map((tech: string, idx: number) => (
                   <Badge key={idx} variant="outline">
@@ -162,9 +151,7 @@ export function BUMatchingTab({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Keine Technologien erkannt
-              </p>
+              <p className="text-sm text-muted-foreground">Keine Technologien erkannt</p>
             )}
           </CardContent>
         </Card>
@@ -174,16 +161,10 @@ export function BUMatchingTab({
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Aktionen</CardTitle>
-          <CardDescription>
-            BU-Zuweisung ändern oder bestätigen
-          </CardDescription>
+          <CardDescription>BU-Zuweisung ändern oder bestätigen</CardDescription>
         </CardHeader>
         <CardContent className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={handleReassign}
-            disabled={isReassigning}
-          >
+          <Button variant="outline" onClick={handleReassign} disabled={isReassigning}>
             {isReassigning ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (

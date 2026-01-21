@@ -55,7 +55,11 @@ export async function suggestTeamForBid(bidId: string): Promise<SuggestTeamResul
     }
 
     // Security: BU ownership validation (IDOR prevention)
-    const [currentUser] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+    const [currentUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1);
     if (currentUser?.role === 'bl' && bid.assignedBusinessUnitId !== currentUser.businessUnitId) {
       return { success: false, error: 'Keine Berechtigung für diesen Bid' };
     }
@@ -63,7 +67,10 @@ export async function suggestTeamForBid(bidId: string): Promise<SuggestTeamResul
     // Validate transition to team assignment is allowed
     const transitionSuggest = canTransitionTo(bid, 'team_assignment');
     if (!transitionSuggest.allowed) {
-      return { success: false, error: transitionSuggest.reason || 'Übergang zum Team Assignment nicht erlaubt' };
+      return {
+        success: false,
+        error: transitionSuggest.reason || 'Übergang zum Team Assignment nicht erlaubt',
+      };
     }
 
     // Validate BL assignment
@@ -86,9 +93,7 @@ export async function suggestTeamForBid(bidId: string): Promise<SuggestTeamResul
     // Generate team suggestion
     const suggestion = await suggestTeam({
       bidId: bid.id,
-      extractedRequirements: bid.extractedRequirements
-        ? JSON.parse(bid.extractedRequirements)
-        : {},
+      extractedRequirements: bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : {},
       quickScanResults,
       assignedBusinessLine: bid.assignedBusinessUnitId,
       availableEmployees,
@@ -135,7 +140,11 @@ export async function assignTeam(
     }
 
     // Security: BU ownership validation (IDOR prevention)
-    const [currentUser] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+    const [currentUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1);
     if (currentUser?.role === 'bl' && bid.assignedBusinessUnitId !== currentUser.businessUnitId) {
       return { success: false, error: 'Keine Berechtigung für diesen Bid' };
     }
@@ -143,20 +152,24 @@ export async function assignTeam(
     // Validate transition to team assignment is allowed
     const transitionAssign = canTransitionTo(bid, 'team_assignment');
     if (!transitionAssign.allowed) {
-      return { success: false, error: transitionAssign.reason || 'Übergang zum Team Assignment nicht erlaubt' };
+      return {
+        success: false,
+        error: transitionAssign.reason || 'Übergang zum Team Assignment nicht erlaubt',
+      };
     }
 
     // Validate team has required roles
-    const hasProjectManager = teamAssignment.members.some((m) => m.role === 'project_manager');
-    const hasDevelopers = teamAssignment.members.filter((m) =>
-      [
-        'developer',
-        'senior_developer',
-        'frontend_developer',
-        'backend_developer',
-        'technical_lead',
-      ].includes(m.role)
-    ).length >= 2;
+    const hasProjectManager = teamAssignment.members.some(m => m.role === 'project_manager');
+    const hasDevelopers =
+      teamAssignment.members.filter(m =>
+        [
+          'developer',
+          'senior_developer',
+          'frontend_developer',
+          'backend_developer',
+          'technical_lead',
+        ].includes(m.role)
+      ).length >= 2;
 
     if (!hasProjectManager) {
       return { success: false, error: 'Team muss einen Project Manager enthalten' };
@@ -178,7 +191,7 @@ export async function assignTeam(
 
     // Revalidate cache for updated views
     revalidatePath(`/bl-review/${parsed.data.bidId}`);
-    revalidatePath("/bl-review");
+    revalidatePath('/bl-review');
 
     return {
       success: true,
@@ -237,7 +250,7 @@ export async function getAvailableEmployees() {
 
     return {
       success: true,
-      employees: employeesList.map((emp) => ({
+      employees: employeesList.map(emp => ({
         ...emp,
         skills: JSON.parse(emp.skills),
         roles: JSON.parse(emp.roles),

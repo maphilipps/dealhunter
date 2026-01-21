@@ -15,10 +15,7 @@ export const dynamic = 'force-dynamic';
  * Best practice: Use native Web Streams for real-time updates
  * Security: Requires authentication and bid ownership verification
  */
-export async function GET(
-  _request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   // 1. Verify authentication
   const session = await auth();
   if (!session?.user?.id) {
@@ -47,7 +44,7 @@ export async function GET(
     // 3. Check if already extracted
     if (bid.extractedRequirements && bid.status !== 'draft' && bid.status !== 'extracting') {
       // Already extracted - return the existing data as replay
-      const stream = createAgentEventStream(async (emit) => {
+      const stream = createAgentEventStream(async emit => {
         emit({ type: AgentEventType.START });
 
         emit({
@@ -79,7 +76,7 @@ export async function GET(
       .where(eq(rfps.id, id));
 
     // 5. Create SSE stream for live updates
-    const stream = createAgentEventStream(async (emit) => {
+    const stream = createAgentEventStream(async emit => {
       emit({ type: AgentEventType.START });
 
       // Parse metadata if available

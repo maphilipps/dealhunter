@@ -14,9 +14,7 @@ export default async function CompetenciesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold mb-2">Kompetenzen</h1>
-          <p className="text-muted-foreground">
-            Verwalten Sie die verfügbaren Kompetenzen
-          </p>
+          <p className="text-muted-foreground">Verwalten Sie die verfügbaren Kompetenzen</p>
         </div>
         <Button asChild>
           <Link href="/competencies/new">
@@ -28,18 +26,14 @@ export default async function CompetenciesPage() {
 
       {competencies.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">
-            Noch keine Kompetenzen erfasst
-          </p>
+          <p className="text-muted-foreground mb-4">Noch keine Kompetenzen erfasst</p>
           <Button asChild variant="link">
-            <Link href="/competencies/new">
-              Erste Kompetenz erstellen
-            </Link>
+            <Link href="/competencies/new">Erste Kompetenz erstellen</Link>
           </Button>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {competencies.map((comp) => (
+          {competencies.map(comp => (
             <Card key={comp.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -49,8 +43,8 @@ export default async function CompetenciesPage() {
                       comp.level === 'expert'
                         ? 'default'
                         : comp.level === 'advanced'
-                        ? 'secondary'
-                        : 'outline'
+                          ? 'secondary'
+                          : 'outline'
                     }
                   >
                     {comp.level}

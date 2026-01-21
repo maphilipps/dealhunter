@@ -48,14 +48,14 @@ function EntityCountsInput({ entityCounts, setEntityCounts }: EntityCountsProps)
         <Input
           placeholder="Entity Name (z.B. content_types)"
           value={entityName}
-          onChange={(e) => setEntityName(e.target.value)}
+          onChange={e => setEntityName(e.target.value)}
           className="flex-1"
         />
         <Input
           type="number"
           placeholder="Anzahl"
           value={entityCount}
-          onChange={(e) => setEntityCount(e.target.value)}
+          onChange={e => setEntityCount(e.target.value)}
           className="w-24"
         />
         <Button type="button" onClick={handleAddEntity} size="icon">
@@ -143,7 +143,7 @@ export function TechnologyForm({ businessUnits }: TechnologyFormProps) {
           <Input
             id="name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={e => setName(e.target.value)}
             placeholder="z.B. Drupal, WordPress, React"
           />
           <p className="text-xs text-muted-foreground">
@@ -156,12 +156,12 @@ export function TechnologyForm({ businessUnits }: TechnologyFormProps) {
           <select
             id="businessLine"
             value={businessUnitId}
-            onChange={(e) => setBusinessUnitId(e.target.value)}
+            onChange={e => setBusinessUnitId(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             required
           >
             <option value="">Business Unit auswählen</option>
-            {(businessUnits || []).map((bl) => (
+            {(businessUnits || []).map(bl => (
               <option key={bl.id} value={bl.id}>
                 {bl.name}
               </option>
@@ -174,7 +174,7 @@ export function TechnologyForm({ businessUnits }: TechnologyFormProps) {
             type="checkbox"
             id="isDefault"
             checked={isDefault}
-            onChange={(e) => setIsDefault(e.target.checked)}
+            onChange={e => setIsDefault(e.target.checked)}
             className="h-4 w-4"
           />
           <Label htmlFor="isDefault" className="cursor-pointer">
@@ -189,15 +189,22 @@ export function TechnologyForm({ businessUnits }: TechnologyFormProps) {
               <span className="flex items-center gap-2">
                 Baseline-Daten (optional)
                 {(baselineHours || baselineName || Object.keys(entityCounts).length > 0) && (
-                  <Badge variant="secondary" className="text-xs">Ausgefüllt</Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    Ausgefüllt
+                  </Badge>
                 )}
               </span>
-              {baselineOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {baselineOpen ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 pt-4">
             <p className="text-sm text-muted-foreground">
-              Baseline-Daten werden für PT-Schätzungen verwendet. Lassen Sie diese leer, wenn Sie keine Baseline für diese Technologie haben.
+              Baseline-Daten werden für PT-Schätzungen verwendet. Lassen Sie diese leer, wenn Sie
+              keine Baseline für diese Technologie haben.
             </p>
 
             <div className="space-y-2">
@@ -206,7 +213,7 @@ export function TechnologyForm({ businessUnits }: TechnologyFormProps) {
                 id="baselineHours"
                 type="number"
                 value={baselineHours}
-                onChange={(e) => setBaselineHours(e.target.value)}
+                onChange={e => setBaselineHours(e.target.value)}
                 placeholder="z.B. 693"
                 min="1"
               />
@@ -217,7 +224,7 @@ export function TechnologyForm({ businessUnits }: TechnologyFormProps) {
               <Input
                 id="baselineName"
                 value={baselineName}
-                onChange={(e) => setBaselineName(e.target.value)}
+                onChange={e => setBaselineName(e.target.value)}
                 placeholder="z.B. adessoCMS"
               />
             </div>
@@ -238,8 +245,8 @@ export function TechnologyForm({ businessUnits }: TechnologyFormProps) {
             <div>
               <p className="text-sm font-medium">AI-Recherche verfügbar</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Nach dem Erstellen können Sie die AI-Recherche starten, um automatisch Logo, Beschreibung,
-                Lizenzinfos, USPs und weitere Metadaten zu sammeln.
+                Nach dem Erstellen können Sie die AI-Recherche starten, um automatisch Logo,
+                Beschreibung, Lizenzinfos, USPs und weitere Metadaten zu sammeln.
               </p>
             </div>
           </div>
@@ -247,11 +254,7 @@ export function TechnologyForm({ businessUnits }: TechnologyFormProps) {
       </div>
 
       <div className="flex justify-end gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.back()}
-        >
+        <Button type="button" variant="outline" onClick={() => router.back()}>
           Abbrechen
         </Button>
         <Button type="submit" disabled={isSubmitting}>

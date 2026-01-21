@@ -62,9 +62,7 @@ export function detectPII(text: string): PIIMatch[] {
     while ((nameMatch = regex.exec(text)) !== null) {
       const idx = nameMatch.index;
       const len = nameMatch[0].length;
-      const alreadyMatched = matches.some(m =>
-        m.start <= idx && m.end >= idx + len
-      );
+      const alreadyMatched = matches.some(m => m.start <= idx && m.end >= idx + len);
       if (!alreadyMatched) {
         matches.push({
           type: 'name',
@@ -91,9 +89,7 @@ export function detectPII(text: string): PIIMatch[] {
     while ((addrMatch = regex.exec(text)) !== null) {
       const idx = addrMatch.index;
       const len = addrMatch[0].length;
-      const alreadyMatched = matches.some(m =>
-        m.start <= idx && m.end >= idx + len
-      );
+      const alreadyMatched = matches.some(m => m.start <= idx && m.end >= idx + len);
       if (!alreadyMatched) {
         matches.push({
           type: 'address',
@@ -114,7 +110,7 @@ export function cleanText(text: string, piiMatches: PIIMatch[]): string {
   let cleanedText = text;
   let offset = 0;
 
-  piiMatches.forEach((match) => {
+  piiMatches.forEach(match => {
     const before = cleanedText.substring(0, match.start + offset);
     const after = cleanedText.substring(match.end + offset);
     cleanedText = before + match.replacement + after;
@@ -124,7 +120,10 @@ export function cleanText(text: string, piiMatches: PIIMatch[]): string {
   return cleanedText;
 }
 
-export function generatePreview(text: string, piiMatches: PIIMatch[]): Array<{
+export function generatePreview(
+  text: string,
+  piiMatches: PIIMatch[]
+): Array<{
   before: string;
   after: string;
   match: PIIMatch;

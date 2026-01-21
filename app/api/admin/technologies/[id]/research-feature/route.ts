@@ -11,10 +11,7 @@ import { researchSingleRequirement } from '@/lib/cms-matching/agent';
  *
  * Body: { featureNames: string[] } oder { featureName: string } (legacy)
  */
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -41,10 +38,7 @@ export async function POST(
     }
 
     // Technologie laden
-    const [tech] = await db
-      .select()
-      .from(technologies)
-      .where(eq(technologies.id, id));
+    const [tech] = await db.select().from(technologies).where(eq(technologies.id, id));
 
     if (!tech) {
       return NextResponse.json({ error: 'Technologie nicht gefunden' }, { status: 404 });
@@ -52,7 +46,7 @@ export async function POST(
 
     // Features parallel recherchieren
     const results = await Promise.all(
-      featureNames.map(async (featureName) => {
+      featureNames.map(async featureName => {
         try {
           const result = await researchSingleRequirement(tech.name, featureName, id);
           return {

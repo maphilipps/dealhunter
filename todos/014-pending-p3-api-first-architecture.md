@@ -18,6 +18,7 @@ The Epic 7 implementation plan follows a UI-first approach (Phases 1-5), with AP
 ## Findings
 
 **Architecture Strategist Report:**
+
 - Current plan: Foundation → UI → API routes (as afterthought)
 - Better pattern: Foundation → API routes → UI (consumes API)
 - Benefits of API-first:
@@ -28,6 +29,7 @@ The Epic 7 implementation plan follows a UI-first approach (Phases 1-5), with AP
   - Better separation of concerns
 
 **Current Plan Phases:**
+
 1. ✅ Phase 1: Database schema + Inngest placeholder
 2. ❌ Phase 2: Content Architecture Agent (directly used by UI)
 3. ❌ Phase 3: Migration Complexity Agent (directly used by UI)
@@ -35,6 +37,7 @@ The Epic 7 implementation plan follows a UI-first approach (Phases 1-5), with AP
 5. ❌ Phase 5: PT Estimation Agent (directly used by UI)
 
 **API-First Would Be:**
+
 1. ✅ Phase 1: Database schema + Inngest placeholder
 2. ✅ Phase 1.5: API routes (ARCH-001)
 3. Phase 2: Implement agents (used by API routes)
@@ -44,13 +47,16 @@ The Epic 7 implementation plan follows a UI-first approach (Phases 1-5), with AP
 ## Proposed Solutions
 
 ### Solution 1: Refactor Plan to API-First (Recommended for Future Features)
+
 **Pros:**
+
 - Better architecture
 - More testable
 - Enables parallel development
 - UI and agents use same API
 
 **Cons:**
+
 - Delays UI visibility
 - Requires API design upfront
 - More planning work
@@ -59,6 +65,7 @@ The Epic 7 implementation plan follows a UI-first approach (Phases 1-5), with AP
 **Risk**: Low (improves architecture)
 
 **Recommended Approach for NEXT Epic:**
+
 ```
 Phase 1: Foundation (database, schemas, types)
 Phase 2: API Design (OpenAPI spec, type definitions)
@@ -68,12 +75,15 @@ Phase 5: UI Implementation (calls API routes)
 ```
 
 ### Solution 2: Keep UI-First for MVP, Refactor Later
+
 **Pros:**
+
 - Faster to show working UI
 - Easier to iterate on UX
 - Less upfront planning
 
 **Cons:**
+
 - API design constrained by UI needs
 - Harder to refactor later
 - More integration test complexity
@@ -82,12 +92,15 @@ Phase 5: UI Implementation (calls API routes)
 **Risk**: Medium (accumulates tech debt)
 
 ### Solution 3: Hybrid Approach
+
 **Pros:**
+
 - Implement API routes first (ARCH-001)
 - Use them in UI from day 1
 - Best of both worlds
 
 **Cons:**
+
 - Requires discipline to not bypass API
 - Need to design API before implementing agents
 
@@ -105,12 +118,14 @@ This is not critical for Epic 7 since we're adding API routes in Phase 1.5 (ARCH
 ## Technical Details
 
 **Affected Files (future epics):**
+
 - `docs/api-design.md` - OpenAPI specification
 - `app/api/*` - API routes implemented first
 - `lib/agents/*` - Agents called by API routes
 - `components/*` - UI consumes API routes
 
 **Design Pattern:**
+
 ```
 ┌─────────────────────────────────────┐
 │             UI Layer                │
@@ -137,6 +152,7 @@ This is not critical for Epic 7 since we're adding API routes in Phase 1.5 (ARCH
 ```
 
 **Benefits:**
+
 - UI can be replaced (mobile app, CLI, etc.) without touching agents
 - Agents can be called by webhooks, cron jobs, etc. without touching UI
 - API routes can be versioned independently
@@ -145,6 +161,7 @@ This is not critical for Epic 7 since we're adding API routes in Phase 1.5 (ARCH
 ## Acceptance Criteria
 
 (For future epics, not Epic 7)
+
 - [ ] OpenAPI specification written before implementation
 - [ ] API routes implemented and tested before UI
 - [ ] UI consumes API routes exclusively (no direct agent calls)

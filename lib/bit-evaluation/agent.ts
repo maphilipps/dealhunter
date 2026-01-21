@@ -98,14 +98,22 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
     // useWebSearch für alle Agents aktivieren
     const useWebSearch = input.useWebSearch ?? true;
 
-    const [capabilityMatch, dealQuality, strategicFit, competitionCheck, legalAssessment, contractAnalysis, referenceMatch]: [
+    const [
+      capabilityMatch,
+      dealQuality,
+      strategicFit,
+      competitionCheck,
+      legalAssessment,
+      contractAnalysis,
+      referenceMatch,
+    ]: [
       CapabilityMatch,
       DealQuality,
       StrategicFit,
       CompetitionCheck,
       LegalAssessment,
       ContractAnalysis,
-      ReferenceMatch
+      ReferenceMatch,
     ] = await Promise.all([
       runCapabilityAgent({
         extractedRequirements: input.extractedRequirements,
@@ -157,11 +165,11 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
       reference: referenceMatch.overallReferenceScore,
       overall:
         capabilityMatch.overallCapabilityScore * 0.25 +
-        dealQuality.overallDealQualityScore * 0.20 +
+        dealQuality.overallDealQualityScore * 0.2 +
         strategicFit.overallStrategicFitScore * 0.15 +
         competitionCheck.estimatedWinProbability * 0.15 +
         legalAssessment.overallLegalScore * 0.15 +
-        referenceMatch.overallReferenceScore * 0.10,
+        referenceMatch.overallReferenceScore * 0.1,
     };
 
     // Collect all critical blockers (including Contract Agent - DEA-7)
@@ -190,7 +198,10 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
       allCriticalBlockers,
     });
 
-    logActivity('Coordinator completed', `Decision: ${coordinatorOutput.recommendation.toUpperCase()}, Confidence: ${coordinatorOutput.confidence.toFixed(1)}%`);
+    logActivity(
+      'Coordinator completed',
+      `Decision: ${coordinatorOutput.recommendation.toUpperCase()}, Confidence: ${coordinatorOutput.confidence.toFixed(1)}%`
+    );
 
     // Build BitDecision from coordinator output
     const decision: BitDecision = {
@@ -317,7 +328,11 @@ Antworte mit JSON:
 - criticalBlockers (array of strings): Alle kritischen Blocker auf Deutsch
 - nextSteps (array of strings): Empfohlene nächste Schritte auf Deutsch`;
 
-  const result = await callAI<Omit<BitDecision, 'scores'>>(systemPrompt, userPrompt, bitDecisionSchema);
+  const result = await callAI<Omit<BitDecision, 'scores'>>(
+    systemPrompt,
+    userPrompt,
+    bitDecisionSchema
+  );
 
   return {
     ...result,
@@ -394,7 +409,8 @@ export async function runBitEvaluationWithStreaming(
       type: AgentEventType.AGENT_PROGRESS,
       data: {
         agent: 'Coordinator',
-        message: 'Running parallel agent evaluation (Capability, Deal Quality, Strategic Fit, Competition, Legal, Contract, Reference)',
+        message:
+          'Running parallel agent evaluation (Capability, Deal Quality, Strategic Fit, Competition, Legal, Contract, Reference)',
       },
     });
 
@@ -408,13 +424,13 @@ export async function runBitEvaluationWithStreaming(
       Promise<CompetitionCheck>,
       Promise<LegalAssessment>,
       Promise<ContractAnalysis>,
-      Promise<ReferenceMatch>
+      Promise<ReferenceMatch>,
     ] = [
       runCapabilityAgent({
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
         useWebSearch, // GitHub + Web Search für Tech-Infos
-      }).then((result) => {
+      }).then(result => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
           data: {
@@ -429,7 +445,7 @@ export async function runBitEvaluationWithStreaming(
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
         useWebSearch, // Markt-Benchmarks + Kunden-News
-      }).then((result) => {
+      }).then(result => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
           data: {
@@ -444,7 +460,7 @@ export async function runBitEvaluationWithStreaming(
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
         useWebSearch, // Kunden- + Branchen-Recherche
-      }).then((result) => {
+      }).then(result => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
           data: {
@@ -459,7 +475,7 @@ export async function runBitEvaluationWithStreaming(
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
         useWebSearch, // Wettbewerber-Recherche
-      }).then((result) => {
+      }).then(result => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
           data: {
@@ -474,7 +490,7 @@ export async function runBitEvaluationWithStreaming(
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
         useWebSearch, // Vertrags- + Compliance-Recherche
-      }).then((result) => {
+      }).then(result => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
           data: {
@@ -489,7 +505,7 @@ export async function runBitEvaluationWithStreaming(
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
         useWebSearch, // Vertragsmodell-Recherche (DEA-7)
-      }).then((result) => {
+      }).then(result => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
           data: {
@@ -504,7 +520,7 @@ export async function runBitEvaluationWithStreaming(
         extractedRequirements: input.extractedRequirements,
         quickScanResults: input.quickScanResults,
         useWebSearch, // adesso Referenz-Recherche
-      }).then((result) => {
+      }).then(result => {
         emit({
           type: AgentEventType.AGENT_COMPLETE,
           data: {
@@ -517,14 +533,22 @@ export async function runBitEvaluationWithStreaming(
       }),
     ];
 
-    const [capabilityMatch, dealQuality, strategicFit, competitionCheck, legalAssessment, contractAnalysis, referenceMatch]: [
+    const [
+      capabilityMatch,
+      dealQuality,
+      strategicFit,
+      competitionCheck,
+      legalAssessment,
+      contractAnalysis,
+      referenceMatch,
+    ]: [
       CapabilityMatch,
       DealQuality,
       StrategicFit,
       CompetitionCheck,
       LegalAssessment,
       ContractAnalysis,
-      ReferenceMatch
+      ReferenceMatch,
     ] = await Promise.all(agentPromises);
 
     emit({
@@ -546,11 +570,11 @@ export async function runBitEvaluationWithStreaming(
       reference: referenceMatch.overallReferenceScore,
       overall:
         capabilityMatch.overallCapabilityScore * 0.25 +
-        dealQuality.overallDealQualityScore * 0.20 +
+        dealQuality.overallDealQualityScore * 0.2 +
         strategicFit.overallStrategicFitScore * 0.15 +
         competitionCheck.estimatedWinProbability * 0.15 +
         legalAssessment.overallLegalScore * 0.15 +
-        referenceMatch.overallReferenceScore * 0.10,
+        referenceMatch.overallReferenceScore * 0.1,
     };
 
     // Collect all critical blockers (including Contract Agent - DEA-7)
@@ -652,7 +676,10 @@ export async function runBitEvaluationWithStreaming(
       data: {
         agent: 'Evaluator',
         message: `Qualitäts-Score: ${quickEval.score}/100`,
-        details: quickEval.issues.length > 0 ? `${quickEval.issues.length} Bereiche prüfen` : 'Alle Kriterien erfüllt',
+        details:
+          quickEval.issues.length > 0
+            ? `${quickEval.issues.length} Bereiche prüfen`
+            : 'Alle Kriterien erfüllt',
       },
     });
 

@@ -101,7 +101,7 @@ export function CompetitorValidationTable({ data }: CompetitorValidationTablePro
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((comp) => {
+            {data.map(comp => {
               const industries = JSON.parse(comp.industry || '[]');
               const strengths = JSON.parse(comp.strengths || '[]');
               const weaknesses = JSON.parse(comp.weaknesses || '[]');
@@ -147,12 +147,8 @@ export function CompetitorValidationTable({ data }: CompetitorValidationTablePro
                   </TableCell>
                   <TableCell>
                     <div className="text-sm space-y-1">
-                      <div className="text-green-600">
-                        ✓ {strengths.length} Stärken
-                      </div>
-                      <div className="text-orange-600">
-                        ⚠ {weaknesses.length} Schwächen
-                      </div>
+                      <div className="text-green-600">✓ {strengths.length} Stärken</div>
+                      <div className="text-orange-600">⚠ {weaknesses.length} Schwächen</div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -170,9 +166,7 @@ export function CompetitorValidationTable({ data }: CompetitorValidationTablePro
                     </div>
                   </TableCell>
                   <TableCell>
-                    {comp.createdAt
-                      ? new Date(comp.createdAt).toLocaleDateString('de-DE')
-                      : 'N/A'}
+                    {comp.createdAt ? new Date(comp.createdAt).toLocaleDateString('de-DE') : 'N/A'}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
@@ -208,7 +202,8 @@ export function CompetitorValidationTable({ data }: CompetitorValidationTablePro
           <DialogHeader>
             <DialogTitle>Wettbewerber ablehnen</DialogTitle>
             <DialogDescription>
-              Bitte geben Sie Feedback für den Nutzer, damit er die Wettbewerberinformationen überarbeiten kann.
+              Bitte geben Sie Feedback für den Nutzer, damit er die Wettbewerberinformationen
+              überarbeiten kann.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -216,7 +211,7 @@ export function CompetitorValidationTable({ data }: CompetitorValidationTablePro
             <Textarea
               id="feedback"
               value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
+              onChange={e => setFeedback(e.target.value)}
               placeholder="z.B. 'Bitte ergänzen Sie konkrete Projekterfahrungen und typische Märkte.'"
               rows={4}
             />
@@ -225,10 +220,7 @@ export function CompetitorValidationTable({ data }: CompetitorValidationTablePro
             <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
               Abbrechen
             </Button>
-            <Button
-              onClick={handleRejectSubmit}
-              disabled={isSubmitting || !feedback.trim()}
-            >
+            <Button onClick={handleRejectSubmit} disabled={isSubmitting || !feedback.trim()}>
               {isSubmitting ? 'Ablehne...' : 'Ablehnen'}
             </Button>
           </DialogFooter>

@@ -124,77 +124,41 @@ const CMS_PATTERNS: Array<{ name: string; patterns: RegExp[]; version?: RegExp }
   },
   {
     name: 'Joomla',
-    patterns: [
-      /joomla/i,
-      /\/media\/jui\//i,
-      /\/components\/com_/i,
-      /Joomla!/i,
-    ],
+    patterns: [/joomla/i, /\/media\/jui\//i, /\/components\/com_/i, /Joomla!/i],
     version: /Joomla!\s*(\d+(\.\d+)?)/i,
   },
   {
     name: 'Contao',
-    patterns: [
-      /contao/i,
-      /\/system\/modules\//i,
-      /data-contao/i,
-    ],
+    patterns: [/contao/i, /\/system\/modules\//i, /data-contao/i],
   },
   {
     name: 'Magento',
-    patterns: [
-      /Magento/i,
-      /Mage\.Cookies/i,
-      /\/skin\/frontend\//i,
-      /\/js\/mage\//i,
-    ],
+    patterns: [/Magento/i, /Mage\.Cookies/i, /\/skin\/frontend\//i, /\/js\/mage\//i],
     version: /Magento\/(\d+(\.\d+)?)/i,
   },
   {
     name: 'Shopify',
-    patterns: [
-      /Shopify\.shop/i,
-      /cdn\.shopify/i,
-      /shopify\.com/i,
-    ],
+    patterns: [/Shopify\.shop/i, /cdn\.shopify/i, /shopify\.com/i],
   },
   {
     name: 'Sitecore',
-    patterns: [
-      /sitecore/i,
-      /sc_mode/i,
-      /\/sitecore\//i,
-    ],
+    patterns: [/sitecore/i, /sc_mode/i, /\/sitecore\//i],
   },
   {
     name: 'Adobe Experience Manager',
-    patterns: [
-      /cq-wcm-edit/i,
-      /\/content\/dam\//i,
-      /AEM/i,
-      /Adobe Experience Manager/i,
-    ],
+    patterns: [/cq-wcm-edit/i, /\/content\/dam\//i, /AEM/i, /Adobe Experience Manager/i],
   },
   {
     name: 'Contentful',
-    patterns: [
-      /contentful/i,
-      /cdn\.contentful\.com/i,
-    ],
+    patterns: [/contentful/i, /cdn\.contentful\.com/i],
   },
   {
     name: 'Strapi',
-    patterns: [
-      /strapi/i,
-      /\/api\/.*\?populate/i,
-    ],
+    patterns: [/strapi/i, /\/api\/.*\?populate/i],
   },
   {
     name: 'Sanity',
-    patterns: [
-      /sanity\.io/i,
-      /cdn\.sanity\.io/i,
-    ],
+    patterns: [/sanity\.io/i, /cdn\.sanity\.io/i],
   },
 ];
 
@@ -219,7 +183,7 @@ export async function fetchPages(
     const batch = urls.slice(i, i + maxConcurrent);
 
     const batchResults = await Promise.all(
-      batch.map(async (url) => {
+      batch.map(async url => {
         try {
           // Validate URL
           const fullUrl = url.startsWith('http') ? url : `https://${url}`;
@@ -332,7 +296,7 @@ export function analyzePageTech(page: PageData): PageTechResult {
 
       // Check for frameworks
       if (
-        tech.categories?.some((c) =>
+        tech.categories?.some(c =>
           ['JavaScript frameworks', 'Frontend frameworks', 'Web frameworks'].includes(c)
         )
       ) {
@@ -438,7 +402,7 @@ export function analyzePageTech(page: PageData): PageTechResult {
  * Aggregate tech results from multiple pages
  */
 export function aggregateTechResults(results: PageTechResult[]): AggregatedTechResult {
-  const validResults = results.filter((r) => r.technologies.length > 0);
+  const validResults = results.filter(r => r.technologies.length > 0);
   const totalPages = results.length;
   const validPages = validResults.length;
 
@@ -607,22 +571,22 @@ export function aggregateTechResults(results: PageTechResult[]): AggregatedTechR
   // Convert maps to arrays with confidence filter (>30%)
   const backend = Array.from(categoryAggregates.backend.entries())
     .map(([name, data]) => ({ name, ...data, detectedOn: data.count }))
-    .filter((t) => t.confidence >= 30)
+    .filter(t => t.confidence >= 30)
     .sort((a, b) => b.confidence - a.confidence);
 
   const libraries = Array.from(categoryAggregates.libraries.entries())
     .map(([name, data]) => ({ name, ...data, detectedOn: data.count }))
-    .filter((t) => t.confidence >= 30)
+    .filter(t => t.confidence >= 30)
     .sort((a, b) => b.confidence - a.confidence);
 
   const analytics = Array.from(categoryAggregates.analytics.entries())
     .map(([name, data]) => ({ name, ...data, detectedOn: data.count }))
-    .filter((t) => t.confidence >= 30)
+    .filter(t => t.confidence >= 30)
     .sort((a, b) => b.confidence - a.confidence);
 
   const marketing = Array.from(categoryAggregates.marketing.entries())
     .map(([name, data]) => ({ name, ...data, detectedOn: data.count }))
-    .filter((t) => t.confidence >= 30)
+    .filter(t => t.confidence >= 30)
     .sort((a, b) => b.confidence - a.confidence);
 
   // Find hosting/CDN from results
@@ -650,7 +614,8 @@ export function aggregateTechResults(results: PageTechResult[]): AggregatedTechR
   ];
 
   const overallConfidence = Math.round(
-    confidenceFactors.reduce((sum, c) => sum + c, 0) / Math.max(confidenceFactors.filter((c) => c > 0).length, 1)
+    confidenceFactors.reduce((sum, c) => sum + c, 0) /
+      Math.max(confidenceFactors.filter(c => c > 0).length, 1)
   );
 
   return {

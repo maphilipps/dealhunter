@@ -11,7 +11,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 
-function TagInput({ items, setItems, placeholder }: { items: string[], setItems: (items: string[]) => void, placeholder: string }) {
+function TagInput({
+  items,
+  setItems,
+  placeholder,
+}: {
+  items: string[];
+  setItems: (items: string[]) => void;
+  placeholder: string;
+}) {
   const [input, setInput] = useState('');
 
   const handleAdd = () => {
@@ -27,8 +35,8 @@ function TagInput({ items, setItems, placeholder }: { items: string[], setItems:
         <Input
           placeholder={placeholder}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAdd())}
+          onChange={e => setInput(e.target.value)}
+          onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), handleAdd())}
           className="flex-1"
         />
         <Button type="button" onClick={handleAdd} size="icon">
@@ -37,10 +45,14 @@ function TagInput({ items, setItems, placeholder }: { items: string[], setItems:
       </div>
       {items.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {items.map((item) => (
+          {items.map(item => (
             <Badge key={item} variant="secondary" className="text-sm">
               {item}
-              <button type="button" onClick={() => setItems(items.filter((i) => i !== item))} className="ml-1">
+              <button
+                type="button"
+                onClick={() => setItems(items.filter(i => i !== item))}
+                className="ml-1"
+              >
                 <X className="h-3 w-3" />
               </button>
             </Badge>
@@ -65,14 +77,13 @@ export default function EditEmployeePage() {
   const [businessUnitId, setBusinessUnitId] = useState('');
   const [skills, setSkills] = useState<string[]>([]);
   const [roles, setRoles] = useState<string[]>([]);
-  const [availability, setAvailability] = useState<'available' | 'on_project' | 'unavailable'>('available');
+  const [availability, setAvailability] = useState<'available' | 'on_project' | 'unavailable'>(
+    'available'
+  );
 
   useEffect(() => {
     async function loadData() {
-      const [empResult, buResult] = await Promise.all([
-        getEmployee(id),
-        getBusinessUnits(),
-      ]);
+      const [empResult, buResult] = await Promise.all([getEmployee(id), getBusinessUnits()]);
 
       if (empResult.success && empResult.employee) {
         const emp = empResult.employee;
@@ -98,7 +109,13 @@ export default function EditEmployeePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !businessUnitId || skills.length === 0 || roles.length === 0) {
+    if (
+      !name.trim() ||
+      !email.trim() ||
+      !businessUnitId ||
+      skills.length === 0 ||
+      roles.length === 0
+    ) {
       toast.error('Bitte alle Pflichtfelder ausfüllen');
       return;
     }
@@ -141,21 +158,30 @@ export default function EditEmployeePage() {
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Mitarbeiter bearbeiten</h1>
-          <p className="text-muted-foreground">
-            Aktualisieren Sie die Mitarbeiterdaten
-          </p>
+          <p className="text-muted-foreground">Aktualisieren Sie die Mitarbeiterdaten</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name *</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Vor- und Nachname" />
+              <Input
+                id="name"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Vor- und Nachname"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">E-Mail *</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="email@example.com"
+              />
             </div>
 
             <div className="space-y-2">
@@ -163,13 +189,15 @@ export default function EditEmployeePage() {
               <select
                 id="businessLine"
                 value={businessUnitId}
-                onChange={(e) => setBusinessUnitId(e.target.value)}
+                onChange={e => setBusinessUnitId(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 required
               >
                 <option value="">Business Unit auswählen</option>
-                {businessUnits.map((bl) => (
-                  <option key={bl.id} value={bl.id}>{bl.name}</option>
+                {businessUnits.map(bl => (
+                  <option key={bl.id} value={bl.id}>
+                    {bl.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -177,12 +205,20 @@ export default function EditEmployeePage() {
             <div className="space-y-2">
               <Label>Skills *</Label>
               <p className="text-xs text-muted-foreground">Skills frei eingeben</p>
-              <TagInput items={skills} setItems={setSkills} placeholder="Skill eingeben (z.B. React)" />
+              <TagInput
+                items={skills}
+                setItems={setSkills}
+                placeholder="Skill eingeben (z.B. React)"
+              />
             </div>
 
             <div className="space-y-2">
               <Label>Rollen *</Label>
-              <TagInput items={roles} setItems={setRoles} placeholder="Rolle eingeben (z.B. developer)" />
+              <TagInput
+                items={roles}
+                setItems={setRoles}
+                placeholder="Rolle eingeben (z.B. developer)"
+              />
             </div>
 
             <div className="space-y-2">
@@ -190,7 +226,7 @@ export default function EditEmployeePage() {
               <select
                 id="availability"
                 value={availability}
-                onChange={(e) => setAvailability(e.target.value as any)}
+                onChange={e => setAvailability(e.target.value as any)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="available">Verfügbar</option>
@@ -201,9 +237,18 @@ export default function EditEmployeePage() {
           </div>
 
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => router.back()}>Abbrechen</Button>
+            <Button type="button" variant="outline" onClick={() => router.back()}>
+              Abbrechen
+            </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Wird gespeichert...</> : 'Speichern'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Wird gespeichert...
+                </>
+              ) : (
+                'Speichern'
+              )}
             </Button>
           </div>
         </form>

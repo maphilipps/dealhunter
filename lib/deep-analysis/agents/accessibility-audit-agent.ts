@@ -40,9 +40,7 @@ export async function auditAccessibility(
         });
 
         // Run axe audit with WCAG 2.1 AA tags
-        const results = await new AxeBuilder({ page })
-          .withTags(['wcag2a', 'wcag2aa'])
-          .analyze();
+        const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
 
         allViolations.push(...results.violations);
 
@@ -59,13 +57,16 @@ export async function auditAccessibility(
   onProgress?.(`Audited ${pagesToAudit.length} pages, processing results...`);
 
   // Aggregate violations by ID and impact
-  const violationMap = new Map<string, {
-    id: string;
-    impact: 'minor' | 'moderate' | 'serious' | 'critical';
-    count: number;
-    description: string;
-    helpUrl: string;
-  }>();
+  const violationMap = new Map<
+    string,
+    {
+      id: string;
+      impact: 'minor' | 'moderate' | 'serious' | 'critical';
+      count: number;
+      description: string;
+      helpUrl: string;
+    }
+  >();
 
   for (const violation of allViolations) {
     const existing = violationMap.get(violation.id);

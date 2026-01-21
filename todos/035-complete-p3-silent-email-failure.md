@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p3
-issue_id: "035"
+issue_id: '035'
 tags: [code-review, ux, error-handling]
 dependencies: []
 ---
@@ -19,6 +19,7 @@ When email notification fails in `lib/routing/actions.ts`, the error is logged b
 **From nextjs-reviewer agent:**
 
 **Silent failure (lines 178-182):**
+
 ```typescript
 if (!emailResult.success) {
   console.error('Failed to send BL assignment email:', emailResult.error);
@@ -30,6 +31,7 @@ if (!emailResult.success) {
 ## Proposed Solutions
 
 ### Solution A: Return warning in result (Recommended)
+
 **Pros:** User knows notification failed, can retry
 **Cons:** Requires UI change to display warnings
 **Effort:** Medium (30 min)
@@ -39,7 +41,7 @@ if (!emailResult.success) {
 interface AssignBusinessUnitResult {
   success: boolean;
   error?: string;
-  warning?: string;  // NEW
+  warning?: string; // NEW
 }
 
 // Return warning:
@@ -56,6 +58,7 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/routing/actions.ts` (lines 27-29 - update type, lines 178-186 - return warning)
 - UI component that calls this action - display warning toast
 
@@ -67,8 +70,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                   | Learnings                                |
+| ---------- | ------------------------ | ---------------------------------------- |
 | 2026-01-18 | Created from code review | Never silently swallow errors from users |
 
 ## Resources

@@ -16,9 +16,7 @@ const EMBEDDING_DIMENSIONS = 3072;
  * Combines customerName, projectTitle, and projectDescription into a single text
  * that represents the semantic essence of the RFP.
  */
-export async function generateRfpEmbedding(
-  requirements: ExtractedRequirements
-): Promise<number[]> {
+export async function generateRfpEmbedding(requirements: ExtractedRequirements): Promise<number[]> {
   // Construct text for embedding
   const textParts: string[] = [];
 

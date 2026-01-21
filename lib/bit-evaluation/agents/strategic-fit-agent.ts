@@ -28,10 +28,12 @@ export async function runStrategicFitAgent(input: StrategicFitAgentInput): Promi
     const intelligentTools = createIntelligentTools({ agentName: 'Strategic Researcher' });
 
     try {
-      const customerName = input.extractedRequirements?.customerName ||
-                           input.quickScanResults?.companyIntelligence?.basicInfo?.name;
-      const industry = input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
-                       input.extractedRequirements?.industry;
+      const customerName =
+        input.extractedRequirements?.customerName ||
+        input.quickScanResults?.companyIntelligence?.basicInfo?.name;
+      const industry =
+        input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
+        input.extractedRequirements?.industry;
 
       // Kunden-Recherche: Größe, Umsatz, digitale Strategie
       if (customerName) {
@@ -87,10 +89,14 @@ WICHTIG: Gib immer eine fundierte Einschätzung ab. Alle Begründungen und Texte
 Extracted Requirements:
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
-${input.quickScanResults ? `
+${
+  input.quickScanResults
+    ? `
 Quick Scan Results:
 ${JSON.stringify(input.quickScanResults, null, 2)}
-` : ''}
+`
+    : ''
+}
 ${customerInsights}
 ${industryInsights}
 

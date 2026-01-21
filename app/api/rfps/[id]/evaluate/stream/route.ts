@@ -15,10 +15,7 @@ export const dynamic = 'force-dynamic';
  * Best practice: Use native Web Streams for real-time updates
  * Security: Requires authentication and bid ownership verification
  */
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   // 1. Verify authentication
   const session = await auth();
   if (!session?.user?.id) {
@@ -45,17 +42,14 @@ export async function GET(
     }
 
     if (!bid.extractedRequirements) {
-      return new Response(
-        JSON.stringify({ error: 'No extracted requirements found' }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      return new Response(JSON.stringify({ error: 'No extracted requirements found' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Create SSE stream
-    const stream = createAgentEventStream(async (emit) => {
+    const stream = createAgentEventStream(async emit => {
       emit({ type: AgentEventType.START });
 
       // Capture version for optimistic locking
@@ -93,7 +87,12 @@ export async function GET(
         .update(rfps)
         .set({
           decisionEvaluation: JSON.stringify(result),
-          decision: result.decision.decision === 'bit' ? 'bid' : result.decision.decision === 'no_bit' ? 'no_bid' : 'pending',
+          decision:
+            result.decision.decision === 'bit'
+              ? 'bid'
+              : result.decision.decision === 'no_bit'
+                ? 'no_bid'
+                : 'pending',
           status: 'decision_made',
           version: currentVersion + 1,
           updatedAt: new Date(),

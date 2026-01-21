@@ -14,10 +14,7 @@ import { auth } from '@/lib/auth';
  *   console.log(data.progress, data.currentStep);
  * };
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -27,11 +24,7 @@ export async function GET(
     const { id } = await params;
 
     // Verify job exists and user has access
-    const [job] = await db
-      .select()
-      .from(backgroundJobs)
-      .where(eq(backgroundJobs.id, id))
-      .limit(1);
+    const [job] = await db.select().from(backgroundJobs).where(eq(backgroundJobs.id, id)).limit(1);
 
     if (!job) {
       return new Response('Job not found', { status: 404 });
@@ -110,7 +103,7 @@ export async function GET(
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        Connection: 'keep-alive',
       },
     });
   } catch (error) {

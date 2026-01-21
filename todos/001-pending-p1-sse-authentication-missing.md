@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p1
-issue_id: "001"
+issue_id: '001'
 tags: [code-review, security, authentication, sse]
 dependencies: []
 ---
@@ -13,6 +13,7 @@ dependencies: []
 The Server-Sent Events (SSE) endpoints for BIT evaluation and Quick Scan are publicly accessible without any authentication or authorization checks. This allows any user to stream agent execution data for any bid by simply knowing the bid ID, creating a critical security vulnerability.
 
 **Why it matters:**
+
 - Unauthorized access to sensitive business intelligence data
 - Potential exposure of proprietary evaluation criteria and agent reasoning
 - GDPR/privacy violations if bids contain personal data
@@ -24,6 +25,7 @@ The Server-Sent Events (SSE) endpoints for BIT evaluation and Quick Scan are pub
 **Location:** `app/api/bids/[id]/quick-scan/stream/route.ts:16-76`
 
 **Evidence:**
+
 ```typescript
 // No auth checks present
 export async function GET(
@@ -47,11 +49,13 @@ export async function GET(
 Add session middleware to verify authenticated user and check bid ownership.
 
 **Pros:**
+
 - Uses existing Next.js auth patterns
 - Simple to implement with middleware
 - Works with existing session infrastructure
 
 **Cons:**
+
 - Requires session management overhead
 - May need CSRF protection
 
@@ -59,6 +63,7 @@ Add session middleware to verify authenticated user and check bid ownership.
 **Risk:** Low
 
 **Implementation:**
+
 ```typescript
 import { auth } from '@/lib/auth/session';
 
@@ -72,12 +77,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const { id } = await context.params;
 
   // 2. Verify bid ownership
-  const [bid] = await db.select()
+  const [bid] = await db
+    .select()
     .from(bidOpportunities)
-    .where(and(
-      eq(bidOpportunities.id, id),
-      eq(bidOpportunities.userId, session.user.id)
-    ));
+    .where(and(eq(bidOpportunities.id, id), eq(bidOpportunities.userId, session.user.id)));
 
   if (!bid) {
     return new Response('Not found', { status: 404 });
@@ -92,11 +95,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 Use short-lived tokens generated when user navigates to bid detail page.
 
 **Pros:**
+
 - Works well with SSE (can't set custom headers in EventSource)
 - More granular control over stream access
 - Can implement token expiry
 
 **Cons:**
+
 - More complex implementation
 - Requires token storage and validation
 - Need token refresh mechanism
@@ -109,10 +114,12 @@ Use short-lived tokens generated when user navigates to bid detail page.
 Use API keys for machine-to-machine access.
 
 **Pros:**
+
 - Simple for automated systems
 - No session management
 
 **Cons:**
+
 - Not suitable for browser clients
 - Key rotation complexity
 - Not appropriate for user-facing SSE streams
@@ -124,15 +131,17 @@ Use API keys for machine-to-machine access.
 
 ## Recommended Action
 
-*(To be filled during triage)*
+_(To be filled during triage)_
 
 ## Technical Details
 
 **Affected Files:**
+
 - `app/api/bids/[id]/evaluate/stream/route.ts`
 - `app/api/bids/[id]/quick-scan/stream/route.ts`
 
 **Affected Components:**
+
 - SSE streaming infrastructure
 - BIT evaluation endpoint
 - Quick Scan endpoint
@@ -141,6 +150,7 @@ Use API keys for machine-to-machine access.
 None required if using existing user/session tables.
 
 **Dependencies:**
+
 - Auth middleware implementation
 - Session management library
 

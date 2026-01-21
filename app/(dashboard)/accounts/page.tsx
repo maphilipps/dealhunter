@@ -13,9 +13,7 @@ export default async function AccountsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">Accounts</h1>
-          <p className="text-muted-foreground">
-            Verwalten Sie Ihre Kunden-Accounts
-          </p>
+          <p className="text-muted-foreground">Verwalten Sie Ihre Kunden-Accounts</p>
         </div>
         <Button asChild>
           <Link href="/accounts/new">
@@ -59,7 +57,9 @@ export default async function AccountsPage() {
                   <div>
                     <span className="text-muted-foreground text-sm">Erstellt am:</span>
                     <p className="font-medium text-sm">
-                      {account.createdAt ? new Date(account.createdAt).toLocaleDateString('de-DE') : 'N/A'}
+                      {account.createdAt
+                        ? new Date(account.createdAt).toLocaleDateString('de-DE')
+                        : 'N/A'}
                     </p>
                   </div>
 

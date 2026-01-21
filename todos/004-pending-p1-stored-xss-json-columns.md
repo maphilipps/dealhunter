@@ -18,6 +18,7 @@ The `deep_migration_analyses` table stores JSON data from AI-generated analysis 
 ## Findings
 
 **Security Agent Report:**
+
 - 4 JSON text columns: `contentArchitecture`, `migrationComplexity`, `accessibilityAudit`, `ptEstimation`
 - No validation at database level
 - No sanitization before storage
@@ -25,12 +26,14 @@ The `deep_migration_analyses` table stores JSON data from AI-generated analysis 
 - AI could be manipulated to generate malicious JSON payloads
 
 **Attack Scenarios:**
+
 1. Attacker manipulates AI prompt to inject `<script>` tags in analysis results
 2. Malicious JSON stored in database: `{"pageType": "<script>alert(1)</script>"}`
 3. When rendered in UI, executes JavaScript in victim's browser
 4. Steals session token, performs actions as victim user
 
 **Evidence:**
+
 ```typescript
 // lib/db/schema.ts
 contentArchitecture: text('content_architecture'), // ❌ No validation
@@ -42,13 +45,16 @@ ptEstimation: text('pt_estimation'),               // ❌ No validation
 ## Proposed Solutions
 
 ### Solution 1: Validate Against Zod Schema Before Storage (Recommended)
+
 **Pros:**
+
 - Uses existing schemas in `lib/deep-analysis/schemas.ts`
 - Rejects malformed/malicious data at write time
 - Type-safe validation
 - Prevents XSS at source
 
 **Cons:**
+
 - Adds validation overhead
 - Need error handling for invalid AI outputs
 
@@ -56,6 +62,7 @@ ptEstimation: text('pt_estimation'),               // ❌ No validation
 **Risk**: Low
 
 **Implementation:**
+
 ```typescript
 // lib/inngest/functions/deep-analysis.ts
 import { ContentArchitectureSchema } from '@/lib/deep-analysis/schemas';
@@ -63,7 +70,8 @@ import { ContentArchitectureSchema } from '@/lib/deep-analysis/schemas';
 // Before saving to database:
 try {
   const validated = ContentArchitectureSchema.parse(contentArchitecture);
-  await db.update(deepMigrationAnalyses)
+  await db
+    .update(deepMigrationAnalyses)
     .set({ contentArchitecture: JSON.stringify(validated) }) // ✅ Validated
     .where(eq(deepMigrationAnalyses.id, analysisId));
 } catch (error) {
@@ -73,11 +81,14 @@ try {
 ```
 
 ### Solution 2: Sanitize on Read with DOMPurify
+
 **Pros:**
+
 - Defense in depth (even if bad data stored)
 - Works with any React rendering
 
 **Cons:**
+
 - Doesn't prevent bad data storage
 - Client-side only
 - Bundle size increase
@@ -86,11 +97,14 @@ try {
 **Risk**: Medium (can be bypassed if server-rendered)
 
 ### Solution 3: Use Prepared Statements with Parameterization
+
 **Pros:**
+
 - Prevents SQL injection (different attack)
 - Standard practice
 
 **Cons:**
+
 - Already using Drizzle ORM (handles this)
 - Doesn't prevent XSS in JSON content
 - Not applicable to this specific issue
@@ -109,11 +123,13 @@ try {
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/inngest/functions/deep-analysis.ts` - Add Zod validation before DB write
 - `components/deep-analysis/*.tsx` - Ensure no dangerouslySetInnerHTML usage
 - `lib/deep-analysis/schemas.ts` - Schemas already exist, just need to use them
 
 **Validation Example:**
+
 ```typescript
 import {
   ContentArchitectureSchema,
@@ -130,14 +146,13 @@ const results = {
   ptEstimation: PTEstimationSchema.parse(rawPTEstimation),
 };
 
-await db.update(deepMigrationAnalyses)
-  .set({
-    contentArchitecture: JSON.stringify(results.contentArchitecture), // ✅ Validated
-    migrationComplexity: JSON.stringify(results.migrationComplexity),
-    accessibilityAudit: JSON.stringify(results.accessibilityAudit),
-    ptEstimation: JSON.stringify(results.ptEstimation),
-    status: 'completed',
-  });
+await db.update(deepMigrationAnalyses).set({
+  contentArchitecture: JSON.stringify(results.contentArchitecture), // ✅ Validated
+  migrationComplexity: JSON.stringify(results.migrationComplexity),
+  accessibilityAudit: JSON.stringify(results.accessibilityAudit),
+  ptEstimation: JSON.stringify(results.ptEstimation),
+  status: 'completed',
+});
 ```
 
 **Database Changes:** None (validation is application-level)

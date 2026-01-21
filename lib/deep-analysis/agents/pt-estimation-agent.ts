@@ -65,9 +65,8 @@ export async function estimatePT(input: PTEstimationInput): Promise<PTEstimation
   const pageCountFactor = input.pageCount > 1000 ? 1.2 : 1.0;
 
   // Step 6: Calculate subtotal
-  const subtotal = (baselineHours + contentTypeHours + paragraphHours)
-    * complexityMultiplier
-    * pageCountFactor;
+  const subtotal =
+    (baselineHours + contentTypeHours + paragraphHours) * complexityMultiplier * pageCountFactor;
 
   // Step 7: Add 20% buffer for unknowns
   const bufferHours = subtotal * 0.2;

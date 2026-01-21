@@ -28,7 +28,8 @@ export async function extractFromImprint(html: string, _url: string): Promise<Im
   const result: ImprintData = {};
 
   // Company name patterns
-  const nameMatch = html.match(/(?:Firma|Company|Firmenname):\s*([^\n<]+)/i) ||
+  const nameMatch =
+    html.match(/(?:Firma|Company|Firmenname):\s*([^\n<]+)/i) ||
     html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
   if (nameMatch) {
     result.companyName = nameMatch[1].trim();
@@ -47,7 +48,9 @@ export async function extractFromImprint(html: string, _url: string): Promise<Im
   }
 
   // CEO/Geschäftsführer pattern
-  const ceoMatch = html.match(/(?:Geschäftsführer|CEO|Vorstand|Managing Director)[:\s]+([^<\n,]+)/i);
+  const ceoMatch = html.match(
+    /(?:Geschäftsführer|CEO|Vorstand|Managing Director)[:\s]+([^<\n,]+)/i
+  );
   if (ceoMatch) {
     result.ceo = ceoMatch[1].trim();
   }
@@ -58,12 +61,14 @@ export async function extractFromImprint(html: string, _url: string): Promise<Im
 /**
  * Search for company news using DuckDuckGo (free, no API key)
  */
-async function searchCompanyNews(companyName: string): Promise<Array<{
-  title: string;
-  source: string;
-  date?: string;
-  url?: string;
-}>> {
+async function searchCompanyNews(companyName: string): Promise<
+  Array<{
+    title: string;
+    source: string;
+    date?: string;
+    url?: string;
+  }>
+> {
   try {
     const results = await searchAndContents(
       `"${companyName}" news OR pressemitteilung OR announcement`,
@@ -92,9 +97,7 @@ async function searchCompanyInfo(companyName: string, _websiteUrl: string): Prom
       { numResults: 3, summary: true }
     );
 
-    return results.results
-      .map((r: any) => `Source: ${r.url}\n${r.text}`)
-      .join('\n\n');
+    return results.results.map((r: any) => `Source: ${r.url}\n${r.text}`).join('\n\n');
   } catch (error) {
     console.error('DuckDuckGo company search failed:', error);
     return '';
@@ -239,7 +242,7 @@ Fülle nur Felder aus, die du aus den Daten belegen kannst. Setze andere auf nul
     if (newsResults.length > 0 && !rawResult.newsAndReputation?.recentNews?.length) {
       rawResult.newsAndReputation = {
         ...rawResult.newsAndReputation,
-        recentNews: newsResults.map((n) => ({
+        recentNews: newsResults.map(n => ({
           ...n,
           sentiment: 'neutral' as const,
         })),
@@ -259,12 +262,15 @@ Fülle nur Felder aus, die du aus den Daten belegen kannst. Setze andere auf nul
         website: websiteUrl,
       },
       leadership: imprintData?.ceo ? { ceo: imprintData.ceo } : undefined,
-      newsAndReputation: newsResults.length > 0 ? {
-        recentNews: newsResults.map((n) => ({
-          ...n,
-          sentiment: 'neutral' as const,
-        })),
-      } : undefined,
+      newsAndReputation:
+        newsResults.length > 0
+          ? {
+              recentNews: newsResults.map(n => ({
+                ...n,
+                sentiment: 'neutral' as const,
+              })),
+            }
+          : undefined,
       dataQuality: {
         confidence: 30,
         sources,

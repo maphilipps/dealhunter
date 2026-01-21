@@ -36,10 +36,10 @@ pnpm add @json-render/core @json-render/react
 
 ## Package Overview
 
-| Package | Purpose |
-|---------|---------|
-| `@json-render/core` | Types, schemas, visibility, actions, validation |
-| `@json-render/react` | React renderer, providers, hooks |
+| Package              | Purpose                                         |
+| -------------------- | ----------------------------------------------- |
+| `@json-render/core`  | Types, schemas, visibility, actions, validation |
+| `@json-render/react` | React renderer, providers, hooks                |
 
 ## Implementation Workflow
 
@@ -86,11 +86,13 @@ export const catalog = createCatalog({
     Table: {
       props: z.object({
         dataPath: z.string(),
-        columns: z.array(z.object({
-          key: z.string(),
-          label: z.string(),
-          format: z.enum(['text', 'currency', 'date', 'badge']).optional(),
-        })),
+        columns: z.array(
+          z.object({
+            key: z.string(),
+            label: z.string(),
+            format: z.enum(['text', 'currency', 'date', 'badge']).optional(),
+          })
+        ),
       }),
       description: 'Data table with configurable columns',
     },
@@ -499,10 +501,7 @@ const element = {
   type: 'Alert',
   props: { message: 'Error occurred' },
   visible: {
-    and: [
-      { path: '/form/hasError' },
-      { not: { path: '/form/errorDismissed' } },
-    ],
+    and: [{ path: '/form/hasError' }, { not: { path: '/form/errorDismissed' } }],
   },
 };
 
@@ -647,7 +646,7 @@ const DEALHUNTER_DATA = {
 ```typescript
 const { tree, error } = useUIStream({
   api: '/api/json-render/generate',
-  onError: (err) => {
+  onError: err => {
     console.error('Generation error:', err);
     console.log('Tree state:', tree);
   },

@@ -1,23 +1,15 @@
-import { AppSidebar } from "@/components/app-sidebar"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
-import { DynamicBreadcrumb } from "@/components/dynamic-breadcrumb"
-import { auth } from "@/lib/auth"
-import { redirect } from "next/navigation"
+import { AppSidebar } from '@/components/app-sidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const session = await auth()
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
 
   if (!session?.user) {
-    redirect('/login')
+    redirect('/login');
   }
 
   const user = {
@@ -25,7 +17,7 @@ export default async function DashboardLayout({
     email: session.user.email || '',
     role: session.user.role as 'bd' | 'bl' | 'admin',
     avatar: '/avatars/user.jpg',
-  }
+  };
 
   return (
     <SidebarProvider>
@@ -36,10 +28,8 @@ export default async function DashboardLayout({
           <Separator orientation="vertical" className="mr-2 h-4" />
           <DynamicBreadcrumb />
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          {children}
-        </div>
+        <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

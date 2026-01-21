@@ -182,7 +182,8 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
             Deep Migration Analysis
           </CardTitle>
           <CardDescription>
-            Detaillierte Analyse der Migration: Content-Architektur, Komplexität, Barrierefreiheit und PT-Schätzung
+            Detaillierte Analyse der Migration: Content-Architektur, Komplexität, Barrierefreiheit
+            und PT-Schätzung
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -231,9 +232,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
             <Loader2 className="h-5 w-5 animate-spin" />
             Deep Analysis läuft
           </CardTitle>
-          <CardDescription>
-            Bitte warten - dies dauert ca. 25-30 Minuten
-          </CardDescription>
+          <CardDescription>Bitte warten - dies dauert ca. 25-30 Minuten</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -322,12 +321,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
           <CheckCircle2 className="h-5 w-5 text-green-600" />
           <h3 className="text-lg font-semibold">Deep Analysis Ergebnisse</h3>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleStartAnalysis}
-          disabled={isStarting}
-        >
+        <Button variant="outline" size="sm" onClick={handleStartAnalysis} disabled={isStarting}>
           {isStarting ? (
             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
           ) : (
@@ -345,9 +339,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
               <Clock className="h-5 w-5" />
               PT-Schätzung
             </CardTitle>
-            <CardDescription>
-              Geschätzte Personentage für die Migration
-            </CardDescription>
+            <CardDescription>Geschätzte Personentage für die Migration</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3">
@@ -358,15 +350,11 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
                 <p className="text-sm text-muted-foreground">Personentage</p>
               </div>
               <div className="text-center">
-                <p className="text-4xl font-bold">
-                  {ptEstimation.totalHours}h
-                </p>
+                <p className="text-4xl font-bold">{ptEstimation.totalHours}h</p>
                 <p className="text-sm text-muted-foreground">Gesamtstunden</p>
               </div>
               <div className="text-center">
-                <p className="text-4xl font-bold">
-                  {ptEstimation.confidence}%
-                </p>
+                <p className="text-4xl font-bold">{ptEstimation.confidence}%</p>
                 <p className="text-sm text-muted-foreground">Konfidenz</p>
               </div>
             </div>
@@ -421,10 +409,18 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
                   <div className="flex items-center gap-4">
                     <div className="flex gap-2">
                       <Badge variant="secondary">{contentArchitecture.totalPages} Seiten</Badge>
-                      <Badge variant="secondary">{contentArchitecture.contentTypeMapping.length} Content Types</Badge>
-                      <Badge variant="secondary">{contentArchitecture.paragraphEstimate} Paragraphs</Badge>
+                      <Badge variant="secondary">
+                        {contentArchitecture.contentTypeMapping.length} Content Types
+                      </Badge>
+                      <Badge variant="secondary">
+                        {contentArchitecture.paragraphEstimate} Paragraphs
+                      </Badge>
                     </div>
-                    {contentOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {contentOpen ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -447,7 +443,10 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
                   <p className="text-sm font-medium mb-2">Content Type Mapping:</p>
                   <div className="space-y-2">
                     {contentArchitecture.contentTypeMapping.map((mapping, i) => (
-                      <div key={i} className="flex items-center justify-between text-sm p-2 rounded bg-muted/50">
+                      <div
+                        key={i}
+                        className="flex items-center justify-between text-sm p-2 rounded bg-muted/50"
+                      >
                         <span>{mapping.pageType}</span>
                         <span className="text-muted-foreground">→</span>
                         <span className="font-medium">{mapping.drupalContentType}</span>
@@ -478,11 +477,23 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Score:</span>
-                      <Badge variant={migrationComplexity.score >= 70 ? 'destructive' : migrationComplexity.score >= 40 ? 'secondary' : 'default'}>
+                      <Badge
+                        variant={
+                          migrationComplexity.score >= 70
+                            ? 'destructive'
+                            : migrationComplexity.score >= 40
+                              ? 'secondary'
+                              : 'default'
+                        }
+                      >
                         {migrationComplexity.score}/100
                       </Badge>
                     </div>
-                    {complexityOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {complexityOpen ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -495,7 +506,9 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Source CMS:</span>
-                        <span className="capitalize">{migrationComplexity.factors.sourceCMSType}</span>
+                        <span className="capitalize">
+                          {migrationComplexity.factors.sourceCMSType}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Content Types:</span>
@@ -517,19 +530,33 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">REST API:</span>
-                        <Badge variant={migrationComplexity.exportCapabilities.restAPI ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={
+                            migrationComplexity.exportCapabilities.restAPI ? 'default' : 'secondary'
+                          }
+                        >
                           {migrationComplexity.exportCapabilities.restAPI ? 'Ja' : 'Nein'}
                         </Badge>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">XML Export:</span>
-                        <Badge variant={migrationComplexity.exportCapabilities.xmlExport ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={
+                            migrationComplexity.exportCapabilities.xmlExport
+                              ? 'default'
+                              : 'secondary'
+                          }
+                        >
                           {migrationComplexity.exportCapabilities.xmlExport ? 'Ja' : 'Nein'}
                         </Badge>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">CLI Tool:</span>
-                        <Badge variant={migrationComplexity.exportCapabilities.cliTool ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={
+                            migrationComplexity.exportCapabilities.cliTool ? 'default' : 'secondary'
+                          }
+                        >
                           {migrationComplexity.exportCapabilities.cliTool ? 'Ja' : 'Nein'}
                         </Badge>
                       </div>
@@ -540,7 +567,13 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
                 <div>
                   <p className="text-sm font-medium mb-2">Datenqualität:</p>
                   <div className="flex gap-2">
-                    <Badge variant={migrationComplexity.dataQuality.brokenLinks > 10 ? 'destructive' : 'secondary'}>
+                    <Badge
+                      variant={
+                        migrationComplexity.dataQuality.brokenLinks > 10
+                          ? 'destructive'
+                          : 'secondary'
+                      }
+                    >
                       {migrationComplexity.dataQuality.brokenLinks} Broken Links
                     </Badge>
                     {migrationComplexity.dataQuality.duplicateContent && (
@@ -571,11 +604,23 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
                   <div className="flex items-center gap-4">
                     <div className="flex gap-2">
                       <Badge variant="secondary">Level {accessibilityAudit.wcagLevel}</Badge>
-                      <Badge variant={accessibilityAudit.overallScore >= 80 ? 'default' : accessibilityAudit.overallScore >= 50 ? 'secondary' : 'destructive'}>
+                      <Badge
+                        variant={
+                          accessibilityAudit.overallScore >= 80
+                            ? 'default'
+                            : accessibilityAudit.overallScore >= 50
+                              ? 'secondary'
+                              : 'destructive'
+                        }
+                      >
                         {accessibilityAudit.overallScore}/100
                       </Badge>
                     </div>
-                    {accessibilityOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {accessibilityOpen ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -600,11 +645,17 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
                           <div className="flex items-center justify-between mb-1">
                             <span className="font-medium">{violation.id}</span>
                             <div className="flex gap-2">
-                              <Badge variant={
-                                violation.impact === 'critical' ? 'destructive' :
-                                violation.impact === 'serious' ? 'destructive' :
-                                violation.impact === 'moderate' ? 'secondary' : 'outline'
-                              }>
+                              <Badge
+                                variant={
+                                  violation.impact === 'critical'
+                                    ? 'destructive'
+                                    : violation.impact === 'serious'
+                                      ? 'destructive'
+                                      : violation.impact === 'moderate'
+                                        ? 'secondary'
+                                        : 'outline'
+                                }
+                              >
                                 {violation.impact}
                               </Badge>
                               <Badge variant="outline">{violation.count}x</Badge>

@@ -78,7 +78,7 @@ export async function createReference(data: {
 
     return {
       success: true,
-      referenceId: reference.id
+      referenceId: reference.id,
     };
   } catch (error) {
     console.error('Reference creation error:', error);
@@ -102,7 +102,7 @@ export async function getReferences() {
 
     return {
       success: true,
-      references: userReferences
+      references: userReferences,
     };
   } catch (error) {
     console.error('Get references error:', error);
@@ -131,7 +131,7 @@ export async function getPendingReferences() {
 
     return {
       success: true,
-      references: pendingReferences
+      references: pendingReferences,
     };
   } catch (error) {
     console.error('Get pending references error:', error);
@@ -172,7 +172,7 @@ export async function validateReference(referenceId: string) {
 
     return {
       success: true,
-      reference: updatedReference
+      reference: updatedReference,
     };
   } catch (error) {
     console.error('Validate reference error:', error);
@@ -200,7 +200,7 @@ export async function getReferenceById(referenceId: string) {
 
     return {
       success: true,
-      reference
+      reference,
     };
   } catch (error) {
     console.error('Get reference error:', error);

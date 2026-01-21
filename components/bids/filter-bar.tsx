@@ -1,16 +1,22 @@
-"use client"
+'use client';
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 interface FilterBarProps {
-  statusFilter: string
-  onStatusFilterChange: (value: string) => void
-  sourceFilter: string
-  onSourceFilterChange: (value: string) => void
-  searchQuery: string
-  onSearchQueryChange: (value: string) => void
+  statusFilter: string;
+  onStatusFilterChange: (value: string) => void;
+  sourceFilter: string;
+  onSourceFilterChange: (value: string) => void;
+  searchQuery: string;
+  onSearchQueryChange: (value: string) => void;
 }
 
 export function FilterBar({
@@ -19,7 +25,7 @@ export function FilterBar({
   sourceFilter,
   onSourceFilterChange,
   searchQuery,
-  onSearchQueryChange
+  onSearchQueryChange,
 }: FilterBarProps) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -28,7 +34,7 @@ export function FilterBar({
         <Input
           placeholder="Search bids by customer or project..."
           value={searchQuery}
-          onChange={(e) => onSearchQueryChange(e.target.value)}
+          onChange={e => onSearchQueryChange(e.target.value)}
           className="pl-9"
         />
       </div>
@@ -69,5 +75,5 @@ export function FilterBar({
         </Select>
       </div>
     </div>
-  )
+  );
 }

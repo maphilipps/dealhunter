@@ -26,7 +26,15 @@ import {
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Loader2, Users, CheckCircle2, AlertTriangle, Sparkles, Mail, Calendar } from 'lucide-react';
+import {
+  Loader2,
+  Users,
+  CheckCircle2,
+  AlertTriangle,
+  Sparkles,
+  Mail,
+  Calendar,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { suggestTeamForBid, assignTeam } from '@/lib/team/actions';
 import { sendTeamNotifications } from '@/lib/notifications/actions';
@@ -73,14 +81,14 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
   };
 
   const handleRemoveMember = (memberId: string) => {
-    setSelectedMembers((prev) => prev.filter((m) => m.employeeId !== memberId));
+    setSelectedMembers(prev => prev.filter(m => m.employeeId !== memberId));
     toast.info('Team-Mitglied entfernt');
   };
 
   const handlePrepareAssignment = () => {
     // Validate minimum requirements
-    const hasProjectManager = selectedMembers.some((m) => m.role === 'project_manager');
-    const developerCount = selectedMembers.filter((m) =>
+    const hasProjectManager = selectedMembers.some(m => m.role === 'project_manager');
+    const developerCount = selectedMembers.filter(m =>
       [
         'developer',
         'senior_developer',
@@ -121,14 +129,14 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
 
     try {
       const teamAssignment: TeamAssignment = {
-        members: selectedMembers.map((m) => ({
+        members: selectedMembers.map(m => ({
           employeeId: m.employeeId,
           name: m.name,
           role: m.role,
         })),
         assignedBy: 'current-user-id', // TODO: Get from session
         assignedAt: new Date().toISOString(),
-        acknowledgedGaps: suggestion?.skillGaps.map((g) => g.skill),
+        acknowledgedGaps: suggestion?.skillGaps.map(g => g.skill),
       };
 
       const result = await assignTeam(bidId, teamAssignment);
@@ -179,9 +187,7 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
         <CardContent className="pt-6">
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm text-muted-foreground">
-              AI generiert Team-Empfehlung...
-            </span>
+            <span className="text-sm text-muted-foreground">AI generiert Team-Empfehlung...</span>
           </div>
         </CardContent>
       </Card>
@@ -206,11 +212,15 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
   return (
     <div className="space-y-6">
       {/* AI Suggestion Header */}
-      <Card className={isLowConfidence ? 'border-amber-200 bg-amber-50' : 'border-blue-200 bg-blue-50'}>
+      <Card
+        className={isLowConfidence ? 'border-amber-200 bg-amber-50' : 'border-blue-200 bg-blue-50'}
+      >
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Sparkles className={isLowConfidence ? 'h-6 w-6 text-amber-600' : 'h-6 w-6 text-blue-600'} />
+              <Sparkles
+                className={isLowConfidence ? 'h-6 w-6 text-amber-600' : 'h-6 w-6 text-blue-600'}
+              />
               <div>
                 <CardTitle className={isLowConfidence ? 'text-amber-900' : 'text-blue-900'}>
                   AI Team-Empfehlung
@@ -272,7 +282,9 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
               <AlertDescription>
                 <ul className="list-disc list-inside space-y-1">
                   {suggestion.warnings.map((warning, idx) => (
-                    <li key={idx} className="text-sm">{warning}</li>
+                    <li key={idx} className="text-sm">
+                      {warning}
+                    </li>
                   ))}
                 </ul>
               </AlertDescription>
@@ -292,7 +304,7 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {selectedMembers.map((member) => (
+          {selectedMembers.map(member => (
             <Card key={member.employeeId} className="border-muted">
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between">
@@ -341,8 +353,8 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
                           member.availabilityStatus === 'available'
                             ? 'default'
                             : member.availabilityStatus === 'on_project'
-                            ? 'secondary'
-                            : 'destructive'
+                              ? 'secondary'
+                              : 'destructive'
                         }
                         className="text-xs"
                       >
@@ -410,8 +422,8 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
                       gap.severity === 'critical'
                         ? 'destructive'
                         : gap.severity === 'important'
-                        ? 'secondary'
-                        : 'outline'
+                          ? 'secondary'
+                          : 'outline'
                     }
                   >
                     {gap.severity}
@@ -434,9 +446,12 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
             <Checkbox
               id="send-notifications"
               checked={sendNotifications}
-              onCheckedChange={(checked) => setSendNotifications(checked as boolean)}
+              onCheckedChange={checked => setSendNotifications(checked as boolean)}
             />
-            <Label htmlFor="send-notifications" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <Label
+              htmlFor="send-notifications"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
               Team sofort per E-Mail benachrichtigen
             </Label>
           </div>
@@ -484,7 +499,7 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
             <div className="space-y-2">
               <h4 className="font-medium">Empfänger:</h4>
               <div className="grid gap-2">
-                {selectedMembers.map((member) => (
+                {selectedMembers.map(member => (
                   <div
                     key={member.employeeId}
                     className="flex items-center justify-between rounded-md border bg-card p-2 text-sm"
@@ -500,12 +515,16 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
               <h4 className="font-medium mb-3">E-Mail-Inhalt:</h4>
               <div className="space-y-2 text-sm text-muted-foreground">
                 <p>Hallo [Name],</p>
-                <p>Du wurdest dem folgenden Projekt als <strong>[Rolle]</strong> zugewiesen:</p>
+                <p>
+                  Du wurdest dem folgenden Projekt als <strong>[Rolle]</strong> zugewiesen:
+                </p>
                 <div className="bg-muted rounded p-3 my-3">
                   <p className="font-medium text-foreground">[Projektname]</p>
                   <p className="text-xs mt-1">Kunde: [Kunde]</p>
                 </div>
-                <p><strong>Nächste Schritte:</strong></p>
+                <p>
+                  <strong>Nächste Schritte:</strong>
+                </p>
                 <ol className="list-decimal list-inside space-y-1 ml-2">
                   <li>Projekt-Details und Anforderungen reviewen</li>
                   <li>Mit BL Lead abstimmen</li>
@@ -524,7 +543,11 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEmailPreview(false)} disabled={isAssigning}>
+            <Button
+              variant="outline"
+              onClick={() => setShowEmailPreview(false)}
+              disabled={isAssigning}
+            >
               Abbrechen
             </Button>
             <Button onClick={handleAssignTeam} disabled={isAssigning}>
@@ -561,9 +584,7 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
                   </li>
                 ))}
               </ul>
-              <p className="text-sm">
-                Möchten Sie das Team trotz dieser Lücken zuweisen?
-              </p>
+              <p className="text-sm">Möchten Sie das Team trotz dieser Lücken zuweisen?</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p2
-issue_id: "038"
+issue_id: '038'
 tags: [performance, react, gemini-analysis]
 dependencies: []
 ---
@@ -21,15 +21,17 @@ dependencies: []
 **File:** `components/bids/bid-detail-client.tsx`
 
 **Line 36 - useState without lazy init:**
+
 ```typescript
 // CURRENT (executes JSON.parse on EVERY render):
-useState(bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null)
+useState(bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null);
 
 // SHOULD BE (lazy initialization - only runs once):
-useState(() => bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null)
+useState(() => (bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null));
 ```
 
 **Lines 318, 321, 324 - Parsing in render without memoization:**
+
 ```typescript
 // These parse on every render:
 baselineComparisonResult = JSON.parse(...)
@@ -38,14 +40,16 @@ teamNotifications = JSON.parse(...)
 ```
 
 **Line 349 - Inline parsing in JSX:**
+
 ```typescript
 // Parsing inside JSX return:
-JSON.parse(bid.assignedTeam)
+JSON.parse(bid.assignedTeam);
 ```
 
 ## Proposed Solutions
 
 ### Solution A: Lazy initialization + useMemo (Recommended)
+
 **Pros:** Prevents unnecessary parsing, React best practice
 **Cons:** Minor refactor
 **Effort:** Small (20 min)
@@ -58,28 +62,29 @@ const [extractedData, setExtractedData] = useState(() =>
 );
 
 // 2. Memoize parsed values
-const baselineComparisonResult = useMemo(() =>
-  bid.baselineComparisonResult ? JSON.parse(bid.baselineComparisonResult) : null,
+const baselineComparisonResult = useMemo(
+  () => (bid.baselineComparisonResult ? JSON.parse(bid.baselineComparisonResult) : null),
   [bid.baselineComparisonResult]
 );
 
-const projectPlanningResult = useMemo(() =>
-  bid.projectPlanningResult ? JSON.parse(bid.projectPlanningResult) : null,
+const projectPlanningResult = useMemo(
+  () => (bid.projectPlanningResult ? JSON.parse(bid.projectPlanningResult) : null),
   [bid.projectPlanningResult]
 );
 
-const teamNotifications = useMemo(() =>
-  bid.teamNotifications ? JSON.parse(bid.teamNotifications) : null,
+const teamNotifications = useMemo(
+  () => (bid.teamNotifications ? JSON.parse(bid.teamNotifications) : null),
   [bid.teamNotifications]
 );
 
-const assignedTeam = useMemo(() =>
-  bid.assignedTeam ? JSON.parse(bid.assignedTeam) : null,
+const assignedTeam = useMemo(
+  () => (bid.assignedTeam ? JSON.parse(bid.assignedTeam) : null),
   [bid.assignedTeam]
 );
 ```
 
 ### Solution B: Parse on server side
+
 **Pros:** No client-side parsing at all
 **Cons:** Larger refactor, changes component props
 **Effort:** Medium (1 hour)
@@ -92,6 +97,7 @@ _To be filled during triage_
 ## Technical Details
 
 **Affected Files:**
+
 - `components/bids/bid-detail-client.tsx` (lines 36, 318, 321, 324, 349)
 
 ## Acceptance Criteria
@@ -103,8 +109,8 @@ _To be filled during triage_
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                           | Learnings                                                |
+| ---------- | -------------------------------- | -------------------------------------------------------- |
 | 2026-01-18 | Created from Gemini CLI analysis | Always use lazy init for expensive useState computations |
 
 ## Resources

@@ -133,7 +133,8 @@ export async function fetchHtmlWithPlaywright(url: string): Promise<{
     });
 
     const context = await browser.newContext({
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       viewport: { width: 1920, height: 1080 },
       locale: 'de-DE',
     });
@@ -209,7 +210,8 @@ export async function runPlaywrightAudit(
 
     const context = await browser.newContext({
       viewport: { width: 1920, height: 1080 },
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     });
 
     const page = await context.newPage();
@@ -229,7 +231,7 @@ export async function runPlaywrightAudit(
     // Track resources
     const resources: Array<{ type: string; size: number }> = [];
 
-    page.on('response', async (response) => {
+    page.on('response', async response => {
       try {
         const headers = response.headers();
         const contentType = headers['content-type'] || '';
@@ -260,10 +262,12 @@ export async function runPlaywrightAudit(
 
     // Get performance timing from browser using modern Navigation Timing API
     const timing = await page.evaluate(() => {
-      const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+      const navEntries = performance.getEntriesByType(
+        'navigation'
+      ) as PerformanceNavigationTiming[];
       const navEntry = navEntries[0];
       const paintEntries = performance.getEntriesByType('paint');
-      const firstPaint = paintEntries.find((e) => e.name === 'first-paint')?.startTime;
+      const firstPaint = paintEntries.find(e => e.name === 'first-paint')?.startTime;
 
       return {
         domContentLoaded: navEntry ? navEntry.domContentLoadedEventEnd - navEntry.startTime : 0,
@@ -363,7 +367,7 @@ export async function runPlaywrightAudit(
           .analyze();
 
         // Map violations
-        result.accessibility.violations = axeResults.violations.map((v) => ({
+        result.accessibility.violations = axeResults.violations.map(v => ({
           id: v.id,
           impact: v.impact as 'critical' | 'serious' | 'moderate' | 'minor',
           description: v.description,
@@ -375,10 +379,16 @@ export async function runPlaywrightAudit(
         result.accessibility.incomplete = axeResults.incomplete.length;
 
         // Calculate score (100 - penalties)
-        const criticalCount = result.accessibility.violations.filter((v) => v.impact === 'critical').length;
-        const seriousCount = result.accessibility.violations.filter((v) => v.impact === 'serious').length;
-        const moderateCount = result.accessibility.violations.filter((v) => v.impact === 'moderate').length;
-        const minorCount = result.accessibility.violations.filter((v) => v.impact === 'minor').length;
+        const criticalCount = result.accessibility.violations.filter(
+          v => v.impact === 'critical'
+        ).length;
+        const seriousCount = result.accessibility.violations.filter(
+          v => v.impact === 'serious'
+        ).length;
+        const moderateCount = result.accessibility.violations.filter(
+          v => v.impact === 'moderate'
+        ).length;
+        const minorCount = result.accessibility.violations.filter(v => v.impact === 'minor').length;
 
         const penalty = criticalCount * 15 + seriousCount * 8 + moderateCount * 3 + minorCount * 1;
         result.accessibility.score = Math.max(0, Math.min(100, 100 - penalty));
@@ -406,10 +416,12 @@ export async function runPlaywrightAudit(
         const footerNavItems: string[] = [];
 
         // Find main navigation
-        const navElements = document.querySelectorAll('nav, [role="navigation"], header nav, .main-nav, .navbar');
-        navElements.forEach((nav) => {
+        const navElements = document.querySelectorAll(
+          'nav, [role="navigation"], header nav, .main-nav, .navbar'
+        );
+        navElements.forEach(nav => {
           const links = nav.querySelectorAll('a');
-          links.forEach((link) => {
+          links.forEach(link => {
             const text = link.textContent?.trim();
             if (text && text.length < 50 && !mainNavItems.includes(text)) {
               mainNavItems.push(text);
@@ -421,7 +433,7 @@ export async function runPlaywrightAudit(
         const footer = document.querySelector('footer');
         if (footer) {
           const links = footer.querySelectorAll('a');
-          links.forEach((link) => {
+          links.forEach(link => {
             const text = link.textContent?.trim();
             if (text && text.length < 50 && !footerNavItems.includes(text)) {
               footerNavItems.push(text);
@@ -517,7 +529,9 @@ export async function takeScreenshot(
 /**
  * Run accessibility audit only (with cookie banner dismissal)
  */
-export async function runAccessibilityAuditOnly(url: string): Promise<PlaywrightAuditResult['accessibility']> {
+export async function runAccessibilityAuditOnly(
+  url: string
+): Promise<PlaywrightAuditResult['accessibility']> {
   let browser: Browser | null = null;
 
   try {
@@ -539,7 +553,7 @@ export async function runAccessibilityAuditOnly(url: string): Promise<Playwright
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'])
       .analyze();
 
-    const violations = axeResults.violations.map((v) => ({
+    const violations = axeResults.violations.map(v => ({
       id: v.id,
       impact: v.impact as 'critical' | 'serious' | 'moderate' | 'minor',
       description: v.description,
@@ -547,10 +561,10 @@ export async function runAccessibilityAuditOnly(url: string): Promise<Playwright
       helpUrl: v.helpUrl,
     }));
 
-    const criticalCount = violations.filter((v) => v.impact === 'critical').length;
-    const seriousCount = violations.filter((v) => v.impact === 'serious').length;
-    const moderateCount = violations.filter((v) => v.impact === 'moderate').length;
-    const minorCount = violations.filter((v) => v.impact === 'minor').length;
+    const criticalCount = violations.filter(v => v.impact === 'critical').length;
+    const seriousCount = violations.filter(v => v.impact === 'serious').length;
+    const moderateCount = violations.filter(v => v.impact === 'moderate').length;
+    const minorCount = violations.filter(v => v.impact === 'minor').length;
 
     const penalty = criticalCount * 15 + seriousCount * 8 + moderateCount * 3 + minorCount * 1;
     const score = Math.max(0, Math.min(100, 100 - penalty));

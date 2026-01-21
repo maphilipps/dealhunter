@@ -30,7 +30,11 @@ export const cleanupFunction = inngest.createFunction(
 
       // SQLite doesn't return rowsAffected, so we count before deletion
       // For now, we just log success
-      console.log('[Cleanup] Deleted old jobs (completed/failed/cancelled before', sevenDaysAgo, ')');
+      console.log(
+        '[Cleanup] Deleted old jobs (completed/failed/cancelled before',
+        sevenDaysAgo,
+        ')'
+      );
 
       return {
         deletedCount: 0, // SQLite doesn't provide count

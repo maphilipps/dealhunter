@@ -167,10 +167,7 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
           complexityMultiplier: 1.2,
           bufferHours: 50,
         },
-        assumptions: [
-          'Using adessoCMS baseline',
-          '<script>alert("XSS")</script>',
-        ],
+        assumptions: ['Using adessoCMS baseline', '<script>alert("XSS")</script>'],
       };
 
       const result = PTEstimationSchema.parse(maliciousData);
@@ -274,9 +271,7 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
           complexityMultiplier: 1.2,
           bufferHours: 50,
         },
-        assumptions: [
-          'Standard migration <iframe src="https://evil.com"></iframe>',
-        ],
+        assumptions: ['Standard migration <iframe src="https://evil.com"></iframe>'],
       };
 
       const result = PTEstimationSchema.parse(attackPayload);
@@ -289,11 +284,13 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
   describe('HTML Entity and Unicode Bypass Tests', () => {
     it('should sanitize HTML entity encoded XSS', () => {
       const input = {
-        pageTypes: [{
-          type: '&#60;script&#62;alert(1)&#60;/script&#62;',
-          count: 10,
-          sampleUrls: ['https://example.com']
-        }],
+        pageTypes: [
+          {
+            type: '&#60;script&#62;alert(1)&#60;/script&#62;',
+            count: 10,
+            sampleUrls: ['https://example.com'],
+          },
+        ],
         contentTypeMapping: [],
         paragraphEstimate: 5,
         totalPages: 100,
@@ -307,11 +304,13 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
 
     it('should sanitize unicode escaped XSS', () => {
       const input = {
-        pageTypes: [{
-          type: '\u003cscript\u003ealert(1)\u003c/script\u003e',
-          count: 10,
-          sampleUrls: ['https://example.com']
-        }],
+        pageTypes: [
+          {
+            type: '\u003cscript\u003ealert(1)\u003c/script\u003e',
+            count: 10,
+            sampleUrls: ['https://example.com'],
+          },
+        ],
         contentTypeMapping: [],
         paragraphEstimate: 5,
         totalPages: 100,
@@ -325,11 +324,13 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
 
     it('should sanitize mixed encoding XSS', () => {
       const input = {
-        pageTypes: [{
-          type: '<img src=x on&#101;rror=alert(1)>',
-          count: 10,
-          sampleUrls: ['https://example.com']
-        }],
+        pageTypes: [
+          {
+            type: '<img src=x on&#101;rror=alert(1)>',
+            count: 10,
+            sampleUrls: ['https://example.com'],
+          },
+        ],
         contentTypeMapping: [],
         paragraphEstimate: 5,
         totalPages: 100,
@@ -343,11 +344,13 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
 
     it('should sanitize SVG XSS', () => {
       const input = {
-        pageTypes: [{
-          type: '<svg/onload=alert(1)>',
-          count: 10,
-          sampleUrls: ['https://example.com']
-        }],
+        pageTypes: [
+          {
+            type: '<svg/onload=alert(1)>',
+            count: 10,
+            sampleUrls: ['https://example.com'],
+          },
+        ],
         contentTypeMapping: [],
         paragraphEstimate: 5,
         totalPages: 100,
@@ -361,11 +364,13 @@ describe('XSS Protection in Deep Analysis Schemas', () => {
 
     it('should sanitize style-based XSS', () => {
       const input = {
-        pageTypes: [{
-          type: "<div style='background:url(javascript:alert(1))'>test</div>",
-          count: 10,
-          sampleUrls: ['https://example.com']
-        }],
+        pageTypes: [
+          {
+            type: "<div style='background:url(javascript:alert(1))'>test</div>",
+            count: 10,
+            sampleUrls: ['https://example.com'],
+          },
+        ],
         contentTypeMapping: [],
         paragraphEstimate: 5,
         totalPages: 100,

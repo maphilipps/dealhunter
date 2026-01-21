@@ -18,6 +18,7 @@ The `deepMigrationAnalyses` table stores complex JSON data in text columns witho
 ## Findings
 
 **Data Integrity Guardian Report:**
+
 - 4 JSON columns: contentArchitecture, migrationComplexity, accessibilityAudit, ptEstimation
 - No validation that text is valid JSON
 - No validation against Zod schemas at DB level
@@ -25,6 +26,7 @@ The `deepMigrationAnalyses` table stores complex JSON data in text columns witho
 - No way to query invalid records
 
 **Evidence:**
+
 ```typescript
 // lib/db/schema.ts (current)
 contentArchitecture: text('content_architecture'), // ❌ No JSON validation
@@ -34,6 +36,7 @@ ptEstimation: text('pt_estimation'),               // ❌ No JSON validation
 ```
 
 **Current Risk:**
+
 ```typescript
 // Inngest function writes data
 await db.update(deepMigrationAnalyses)
@@ -51,13 +54,16 @@ const parsed = JSON.parse(analysis.contentArchitecture); // 💥 Throws error
 ## Proposed Solutions
 
 ### Solution 1: Validate with Zod Before DB Write (Recommended)
+
 **Pros:**
+
 - Uses existing schemas in lib/deep-analysis/schemas.ts
 - Prevents invalid data at source
 - Type-safe validation
 - Consistent with HIGH-002 fix
 
 **Cons:**
+
 - Application-level only (DB doesn't enforce)
 - Need to validate in ALL write paths
 
@@ -65,6 +71,7 @@ const parsed = JSON.parse(analysis.contentArchitecture); // 💥 Throws error
 **Risk**: Low
 
 **Implementation:**
+
 ```typescript
 // lib/inngest/functions/deep-analysis.ts
 import {
@@ -84,7 +91,8 @@ try {
   };
 
   // Store validated JSON
-  await db.update(deepMigrationAnalyses)
+  await db
+    .update(deepMigrationAnalyses)
     .set({
       contentArchitecture: JSON.stringify(validated.contentArchitecture), // ✅ Valid
       migrationComplexity: JSON.stringify(validated.migrationComplexity),
@@ -95,7 +103,8 @@ try {
     .where(eq(deepMigrationAnalyses.id, analysisId));
 } catch (error) {
   // Validation failed → mark as failed
-  await db.update(deepMigrationAnalyses)
+  await db
+    .update(deepMigrationAnalyses)
     .set({
       status: 'failed',
       errorMessage: `Invalid AI output: ${error.message}`,
@@ -107,12 +116,15 @@ try {
 ```
 
 ### Solution 2: SQLite JSON Type + CHECK Constraint
+
 **Pros:**
+
 - Database-level enforcement
 - Can query with JSON functions (json_extract, etc.)
 - Rejects invalid JSON at insert time
 
 **Cons:**
+
 - SQLite has limited JSON support (no schema validation)
 - Can only check if valid JSON, not if matches schema
 - Less flexible than TEXT columns
@@ -121,6 +133,7 @@ try {
 **Risk**: Medium (schema migration complexity)
 
 **Implementation:**
+
 ```sql
 -- Migration
 ALTER TABLE `deep_migration_analyses`
@@ -129,16 +142,20 @@ ALTER TABLE `deep_migration_analyses`
 ```
 
 **Limitations:**
+
 - Only validates JSON syntax, not structure
 - Can't enforce Zod schema at DB level
 - Still need application validation for schema compliance
 
 ### Solution 3: Add JSON Parsing Check on Read
+
 **Pros:**
+
 - Defensive programming
 - Catches errors gracefully
 
 **Cons:**
+
 - Doesn't prevent bad data storage
 - Error handling at every read site
 - Doesn't help with debugging source of bad data
@@ -147,6 +164,7 @@ ALTER TABLE `deep_migration_analyses`
 **Risk**: Medium (can hide underlying issues)
 
 **Implementation:**
+
 ```typescript
 // lib/bids/actions.ts
 function parseAnalysisJSON<T>(json: string | null, schema: ZodSchema<T>): T | null {
@@ -172,6 +190,7 @@ This is the most practical approach for SQLite and aligns with the HIGH-002 fix.
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/inngest/functions/deep-analysis.ts` - Add Zod validation (same as HIGH-002)
 - `lib/deep-analysis/schemas.ts` - Schemas already exist
 
@@ -180,6 +199,7 @@ This is the most practical approach for SQLite and aligns with the HIGH-002 fix.
 **Breaking Changes:** Invalid AI outputs will fail analysis (correct behavior)
 
 **Error Handling:**
+
 ```typescript
 // If validation fails:
 1. Set analysis status to 'failed'

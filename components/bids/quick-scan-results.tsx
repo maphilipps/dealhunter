@@ -26,73 +26,82 @@ interface QuickScanResultsProps {
  * - Completed: Shows 2-tab layout (Fakten, Entscheidungsmatrix)
  * - Failed: Shows error state
  */
-export function QuickScanResults({ quickScan: initialQuickScan, bidId, onRefresh, extractedData }: QuickScanResultsProps) {
+export function QuickScanResults({
+  quickScan: initialQuickScan,
+  bidId,
+  onRefresh,
+  extractedData,
+}: QuickScanResultsProps) {
   const [quickScan, setQuickScan] = useState(initialQuickScan);
   const [isPolling, setIsPolling] = useState(false);
 
   // Poll for QuickScan completion after stream ends
-  const pollForCompletion = useCallback(async (maxAttempts = 20, interval = 2000) => {
-    setIsPolling(true);
-    let attempts = 0;
+  const pollForCompletion = useCallback(
+    async (maxAttempts = 20, interval = 2000) => {
+      setIsPolling(true);
+      let attempts = 0;
 
-    const poll = async () => {
-      try {
-        const result = await getQuickScanResult(bidId);
+      const poll = async () => {
+        try {
+          const result = await getQuickScanResult(bidId);
 
-        if (result.success && result.quickScan) {
-          if (result.quickScan.status === 'completed') {
-            // Update local state with completed scan
-            setQuickScan(result.quickScan);
+          if (result.success && result.quickScan) {
+            if (result.quickScan.status === 'completed') {
+              // Update local state with completed scan
+              setQuickScan(result.quickScan);
+              setIsPolling(false);
+
+              // Show success toast
+              toast.success('Quick Scan abgeschlossen!', {
+                description:
+                  'Die Analyse wurde erfolgreich abgeschlossen. Wechsle zur Entscheidungsmatrix...',
+                duration: 5000,
+              });
+
+              // Auto-navigate to matrix tab after short delay
+              setTimeout(() => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', 'matrix');
+                window.history.pushState({}, '', url.toString());
+                // Trigger tab change
+                window.dispatchEvent(new PopStateEvent('popstate'));
+                // Also call onRefresh to update parent
+                onRefresh?.();
+              }, 1000);
+
+              return; // Stop polling
+            } else if (result.quickScan.status === 'failed') {
+              setQuickScan(result.quickScan);
+              setIsPolling(false);
+              toast.error('Quick Scan fehlgeschlagen');
+              return;
+            }
+          }
+
+          // Still running, continue polling
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, interval);
+          } else {
             setIsPolling(false);
-
-            // Show success toast
-            toast.success('Quick Scan abgeschlossen!', {
-              description: 'Die Analyse wurde erfolgreich abgeschlossen. Wechsle zur Entscheidungsmatrix...',
-              duration: 5000,
-            });
-
-            // Auto-navigate to matrix tab after short delay
-            setTimeout(() => {
-              const url = new URL(window.location.href);
-              url.searchParams.set('tab', 'matrix');
-              window.history.pushState({}, '', url.toString());
-              // Trigger tab change
-              window.dispatchEvent(new PopStateEvent('popstate'));
-              // Also call onRefresh to update parent
-              onRefresh?.();
-            }, 1000);
-
-            return; // Stop polling
-          } else if (result.quickScan.status === 'failed') {
-            setQuickScan(result.quickScan);
+            toast.error('Zeitüberschreitung beim Warten auf Quick Scan Ergebnisse');
+            onRefresh?.();
+          }
+        } catch (error) {
+          console.error('Polling error:', error);
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, interval);
+          } else {
             setIsPolling(false);
-            toast.error('Quick Scan fehlgeschlagen');
-            return;
           }
         }
+      };
 
-        // Still running, continue polling
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, interval);
-        } else {
-          setIsPolling(false);
-          toast.error('Zeitüberschreitung beim Warten auf Quick Scan Ergebnisse');
-          onRefresh?.();
-        }
-      } catch (error) {
-        console.error('Polling error:', error);
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, interval);
-        } else {
-          setIsPolling(false);
-        }
-      }
-    };
-
-    poll();
-  }, [bidId, onRefresh]);
+      poll();
+    },
+    [bidId, onRefresh]
+  );
 
   // Update local state when prop changes
   useEffect(() => {
@@ -190,27 +199,12 @@ export function QuickScanResults({ quickScan: initialQuickScan, bidId, onRefresh
   // Completed state - Show tab-based results
   if (quickScan.status === 'completed') {
     // Facts Tab Content - All audit data with Re-scan button
-    const factsContent = (
-      <FactsTab
-        quickScan={quickScan}
-        bidId={bidId}
-      />
-    );
+    const factsContent = <FactsTab quickScan={quickScan} bidId={bidId} />;
 
     // Decision Matrix Tab Content - CMS Evaluation + BL Forwarding
-    const matrixContent = (
-      <DecisionMatrixTab
-        quickScan={quickScan}
-        bidId={bidId}
-      />
-    );
+    const matrixContent = <DecisionMatrixTab quickScan={quickScan} bidId={bidId} />;
 
-    return (
-      <BidTabs
-        factsContent={factsContent}
-        matrixContent={matrixContent}
-      />
-    );
+    return <BidTabs factsContent={factsContent} matrixContent={matrixContent} />;
   }
 
   return null;

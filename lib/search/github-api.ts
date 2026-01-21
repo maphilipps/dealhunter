@@ -46,14 +46,14 @@ export async function fetchGitHubRepoInfo(githubUrl: string): Promise<GitHubRepo
     const [repoResponse, releaseResponse] = await Promise.all([
       fetch(`https://api.github.com/repos/${owner}/${repo}`, {
         headers: {
-          'Accept': 'application/vnd.github.v3+json',
+          Accept: 'application/vnd.github.v3+json',
           'User-Agent': 'DealHunter/1.0',
         },
         signal: AbortSignal.timeout(10000),
       }),
       fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`, {
         headers: {
-          'Accept': 'application/vnd.github.v3+json',
+          Accept: 'application/vnd.github.v3+json',
           'User-Agent': 'DealHunter/1.0',
         },
         signal: AbortSignal.timeout(10000),
@@ -92,7 +92,7 @@ export async function fetchGitHubRepoInfo(githubUrl: string): Promise<GitHubRepo
           `https://api.github.com/repos/${owner}/${repo}/tags?per_page=1`,
           {
             headers: {
-              'Accept': 'application/vnd.github.v3+json',
+              Accept: 'application/vnd.github.v3+json',
               'User-Agent': 'DealHunter/1.0',
             },
             signal: AbortSignal.timeout(5000),
@@ -110,7 +110,9 @@ export async function fetchGitHubRepoInfo(githubUrl: string): Promise<GitHubRepo
       }
     }
 
-    console.log(`[GitHub API] ${owner}/${repo}: v${result.latestVersion}, ${result.githubStars} stars`);
+    console.log(
+      `[GitHub API] ${owner}/${repo}: v${result.latestVersion}, ${result.githubStars} stars`
+    );
 
     return result;
   } catch (error) {
@@ -124,32 +126,32 @@ export async function fetchGitHubRepoInfo(githubUrl: string): Promise<GitHubRepo
  * Fallback wenn keine githubUrl in der DB
  */
 export const KNOWN_GITHUB_REPOS: Record<string, string> = {
-  'drupal': 'https://github.com/drupal/drupal',
-  'wordpress': 'https://github.com/WordPress/WordPress',
-  'typo3': 'https://github.com/TYPO3/typo3',
-  'joomla': 'https://github.com/joomla/joomla-cms',
-  'contentful': '', // SaaS, kein GitHub
-  'strapi': 'https://github.com/strapi/strapi',
-  'directus': 'https://github.com/directus/directus',
-  'payload': 'https://github.com/payloadcms/payload',
-  'sanity': 'https://github.com/sanity-io/sanity',
-  'ghost': 'https://github.com/TryGhost/Ghost',
-  'keystonejs': 'https://github.com/keystonejs/keystone',
-  'wagtail': 'https://github.com/wagtail/wagtail',
-  'umbraco': 'https://github.com/umbraco/Umbraco-CMS',
-  'sitecore': '', // Proprietary
+  drupal: 'https://github.com/drupal/drupal',
+  wordpress: 'https://github.com/WordPress/WordPress',
+  typo3: 'https://github.com/TYPO3/typo3',
+  joomla: 'https://github.com/joomla/joomla-cms',
+  contentful: '', // SaaS, kein GitHub
+  strapi: 'https://github.com/strapi/strapi',
+  directus: 'https://github.com/directus/directus',
+  payload: 'https://github.com/payloadcms/payload',
+  sanity: 'https://github.com/sanity-io/sanity',
+  ghost: 'https://github.com/TryGhost/Ghost',
+  keystonejs: 'https://github.com/keystonejs/keystone',
+  wagtail: 'https://github.com/wagtail/wagtail',
+  umbraco: 'https://github.com/umbraco/Umbraco-CMS',
+  sitecore: '', // Proprietary
   'adobe experience manager': '', // Proprietary
-  'kentico': '', // Proprietary (Kentico Xperience)
-  'magnolia': 'https://github.com/magnolia-cms/magnolia-cms',
-  'craftcms': 'https://github.com/craftcms/cms',
-  'october': 'https://github.com/octobercms/october',
-  'concrete5': 'https://github.com/concretecms/concretecms',
-  'silverstripe': 'https://github.com/silverstripe/silverstripe-framework',
-  'neos': 'https://github.com/neos/neos',
-  'pimcore': 'https://github.com/pimcore/pimcore',
-  'ibexa': 'https://github.com/ibexa/oss',
-  'contao': 'https://github.com/contao/contao',
-  'processwire': 'https://github.com/processwire/processwire',
+  kentico: '', // Proprietary (Kentico Xperience)
+  magnolia: 'https://github.com/magnolia-cms/magnolia-cms',
+  craftcms: 'https://github.com/craftcms/cms',
+  october: 'https://github.com/octobercms/october',
+  concrete5: 'https://github.com/concretecms/concretecms',
+  silverstripe: 'https://github.com/silverstripe/silverstripe-framework',
+  neos: 'https://github.com/neos/neos',
+  pimcore: 'https://github.com/pimcore/pimcore',
+  ibexa: 'https://github.com/ibexa/oss',
+  contao: 'https://github.com/contao/contao',
+  processwire: 'https://github.com/processwire/processwire',
 };
 
 /**

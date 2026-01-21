@@ -50,7 +50,11 @@ const drupalMappingSchema = z.object({
 /**
  * Helper function to call AI and parse JSON response
  */
-async function callAI<T>(systemPrompt: string, userPrompt: string, schema: z.ZodSchema<T>): Promise<T> {
+async function callAI<T>(
+  systemPrompt: string,
+  userPrompt: string,
+  schema: z.ZodSchema<T>
+): Promise<T> {
   const completion = await openai.chat.completions.create({
     model: 'claude-haiku-4.5',
     messages: [

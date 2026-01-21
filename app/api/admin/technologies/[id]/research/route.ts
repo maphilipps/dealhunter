@@ -14,10 +14,7 @@ export const dynamic = 'force-dynamic';
  * Triggers AI research for a technology
  * Security: Requires admin role
  */
-export async function POST(
-  _request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   // 1. Verify authentication and admin role
   const session = await auth();
   if (!session?.user?.id) {
@@ -32,20 +29,14 @@ export async function POST(
 
   try {
     // 2. Fetch technology data
-    const [technology] = await db
-      .select()
-      .from(technologies)
-      .where(eq(technologies.id, id));
+    const [technology] = await db.select().from(technologies).where(eq(technologies.id, id));
 
     if (!technology) {
       return NextResponse.json({ error: 'Technology not found' }, { status: 404 });
     }
 
     // 3. Mark as pending
-    await db
-      .update(technologies)
-      .set({ researchStatus: 'pending' })
-      .where(eq(technologies.id, id));
+    await db.update(technologies).set({ researchStatus: 'pending' }).where(eq(technologies.id, id));
 
     // 4. Run research agent
     const { result, activityLog } = await runTechnologyResearch({
@@ -96,16 +87,10 @@ export async function POST(
     if (result.useCases) updateData.useCases = JSON.stringify(result.useCases);
     if (result.adessoExpertise) updateData.adessoExpertise = result.adessoExpertise;
 
-    await db
-      .update(technologies)
-      .set(updateData)
-      .where(eq(technologies.id, id));
+    await db.update(technologies).set(updateData).where(eq(technologies.id, id));
 
     // 6. Fetch updated technology
-    const [updatedTechnology] = await db
-      .select()
-      .from(technologies)
-      .where(eq(technologies.id, id));
+    const [updatedTechnology] = await db.select().from(technologies).where(eq(technologies.id, id));
 
     revalidatePath('/admin/technologies');
 
@@ -119,10 +104,7 @@ export async function POST(
     console.error('Research error:', error);
 
     // Mark as failed
-    await db
-      .update(technologies)
-      .set({ researchStatus: 'failed' })
-      .where(eq(technologies.id, id));
+    await db.update(technologies).set({ researchStatus: 'failed' }).where(eq(technologies.id, id));
 
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Research failed' },

@@ -18,27 +18,33 @@ registry.register({
   inputSchema: listCompetenciesInputSchema,
   async execute(input, _context: ToolContext) {
     let query = db.select().from(competencies);
-    
+
     if (input.status && input.category) {
-      const results = await db.select().from(competencies)
+      const results = await db
+        .select()
+        .from(competencies)
         .where(eq(competencies.status, input.status))
         .orderBy(desc(competencies.createdAt))
         .limit(input.limit);
       return { success: true, data: results.filter(c => c.category === input.category) };
     } else if (input.status) {
-      const results = await db.select().from(competencies)
+      const results = await db
+        .select()
+        .from(competencies)
         .where(eq(competencies.status, input.status))
         .orderBy(desc(competencies.createdAt))
         .limit(input.limit);
       return { success: true, data: results };
     } else if (input.category) {
-      const results = await db.select().from(competencies)
+      const results = await db
+        .select()
+        .from(competencies)
         .where(eq(competencies.category, input.category))
         .orderBy(desc(competencies.createdAt))
         .limit(input.limit);
       return { success: true, data: results };
     }
-    
+
     const results = await query.orderBy(desc(competencies.createdAt)).limit(input.limit);
     return { success: true, data: results };
   },
@@ -54,14 +60,16 @@ registry.register({
   category: 'competency',
   inputSchema: getCompetencyInputSchema,
   async execute(input, _context: ToolContext) {
-    const [competency] = await db.select().from(competencies)
+    const [competency] = await db
+      .select()
+      .from(competencies)
       .where(eq(competencies.id, input.id))
       .limit(1);
-    
+
     if (!competency) {
       return { success: false, error: 'Competency not found' };
     }
-    
+
     return { success: true, data: competency };
   },
 });
@@ -80,17 +88,20 @@ registry.register({
   category: 'competency',
   inputSchema: createCompetencyInputSchema,
   async execute(input, context: ToolContext) {
-    const [competency] = await db.insert(competencies).values({
-      userId: context.userId,
-      name: input.name,
-      category: input.category,
-      level: input.level,
-      certifications: input.certifications ? JSON.stringify(input.certifications) : null,
-      description: input.description,
-      status: 'pending',
-      isValidated: false,
-    }).returning();
-    
+    const [competency] = await db
+      .insert(competencies)
+      .values({
+        userId: context.userId,
+        name: input.name,
+        category: input.category,
+        level: input.level,
+        certifications: input.certifications ? JSON.stringify(input.certifications) : null,
+        description: input.description,
+        status: 'pending',
+        isValidated: false,
+      })
+      .returning();
+
     return { success: true, data: competency };
   },
 });
@@ -110,30 +121,33 @@ registry.register({
   category: 'competency',
   inputSchema: updateCompetencyInputSchema,
   async execute(input, context: ToolContext) {
-    const [existing] = await db.select().from(competencies)
+    const [existing] = await db
+      .select()
+      .from(competencies)
       .where(eq(competencies.id, input.id))
       .limit(1);
-    
+
     if (!existing) {
       return { success: false, error: 'Competency not found' };
     }
-    
+
     if (existing.userId !== context.userId && context.userRole !== 'admin') {
       return { success: false, error: 'No access to this competency' };
     }
-    
+
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (input.name) updateData.name = input.name;
     if (input.category) updateData.category = input.category;
     if (input.level) updateData.level = input.level;
     if (input.certifications) updateData.certifications = JSON.stringify(input.certifications);
     if (input.description !== undefined) updateData.description = input.description;
-    
-    const [updated] = await db.update(competencies)
+
+    const [updated] = await db
+      .update(competencies)
       .set(updateData)
       .where(eq(competencies.id, input.id))
       .returning();
-    
+
     return { success: true, data: updated };
   },
 });
@@ -148,20 +162,22 @@ registry.register({
   category: 'competency',
   inputSchema: deleteCompetencyInputSchema,
   async execute(input, context: ToolContext) {
-    const [existing] = await db.select().from(competencies)
+    const [existing] = await db
+      .select()
+      .from(competencies)
       .where(eq(competencies.id, input.id))
       .limit(1);
-    
+
     if (!existing) {
       return { success: false, error: 'Competency not found' };
     }
-    
+
     if (existing.userId !== context.userId && context.userRole !== 'admin') {
       return { success: false, error: 'No access to this competency' };
     }
-    
+
     await db.delete(competencies).where(eq(competencies.id, input.id));
-    
+
     return { success: true, data: { id: input.id, deleted: true } };
   },
 });

@@ -1,10 +1,5 @@
 import { FormSchema } from '@/lib/types';
-import {
-  stepHumanFeedback,
-  stepQualify,
-  stepResearch,
-  stepWriteEmail
-} from './steps';
+import { stepHumanFeedback, stepQualify, stepResearch, stepWriteEmail } from './steps';
 
 /**
  * workflow to handle the inbound lead
@@ -23,10 +18,7 @@ export const workflowInbound = async (data: FormSchema) => {
   const research = await stepResearch(data);
   const qualification = await stepQualify(data, research);
 
-  if (
-    qualification.category === 'QUALIFIED' ||
-    qualification.category === 'FOLLOW_UP'
-  ) {
+  if (qualification.category === 'QUALIFIED' || qualification.category === 'FOLLOW_UP') {
     const email = await stepWriteEmail(research, qualification);
     await stepHumanFeedback(research, email, qualification);
   }

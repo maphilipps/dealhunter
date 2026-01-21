@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { eq, desc } from 'drizzle-orm';
 import { Globe, TrendingUp, Package, FileText, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
@@ -23,6 +24,83 @@ import {
   references,
 } from '@/lib/db/schema';
 
+// Cached function for fetching lead with all related data in parallel
+const getLeadWithDetails = cache(async (id: string) => {
+  // Phase 1: Fetch lead first (dependency root)
+  const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+
+  if (!lead) {
+    return null;
+  }
+
+  // Phase 2: Parallel fetch for all independent queries
+  const [rfp, businessUnit, websiteAudit, cmsMatches, ptEstimation, refMatches] =
+    await Promise.all([
+      // Get related RFP (depends on lead.rfpId)
+      lead.rfpId
+        ? db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1).then((r) => r[0])
+        : Promise.resolve(null),
+
+      // Get business unit (depends on lead.businessUnitId)
+      db
+        .select()
+        .from(businessUnits)
+        .where(eq(businessUnits.id, lead.businessUnitId))
+        .limit(1)
+        .then((r) => r[0]),
+
+      // Get Website Audit data (depends on lead.id)
+      db
+        .select()
+        .from(websiteAudits)
+        .where(eq(websiteAudits.leadId, id))
+        .limit(1)
+        .then((r) => r[0]),
+
+      // Get CMS Match Results (depends on lead.id)
+      db
+        .select({
+          match: cmsMatchResults,
+          technology: technologies,
+        })
+        .from(cmsMatchResults)
+        .leftJoin(technologies, eq(cmsMatchResults.technologyId, technologies.id))
+        .where(eq(cmsMatchResults.leadId, id))
+        .orderBy(desc(cmsMatchResults.rank))
+        .limit(3),
+
+      // Get PT Estimation (depends on lead.id)
+      db
+        .select()
+        .from(ptEstimations)
+        .where(eq(ptEstimations.leadId, id))
+        .limit(1)
+        .then((r) => r[0]),
+
+      // Get Reference Matches (depends on lead.id)
+      db
+        .select({
+          match: referenceMatches,
+          reference: references,
+        })
+        .from(referenceMatches)
+        .leftJoin(references, eq(referenceMatches.referenceId, references.id))
+        .where(eq(referenceMatches.leadId, id))
+        .orderBy(desc(referenceMatches.rank))
+        .limit(5),
+    ]);
+
+  return {
+    lead,
+    rfp,
+    businessUnit,
+    websiteAudit,
+    cmsMatches,
+    ptEstimation,
+    refMatches,
+  };
+});
+
 export default async function LeadOverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
@@ -31,10 +109,10 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
     redirect('/login');
   }
 
-  // Get lead with related data
-  const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+  // Fetch all data in parallel with React.cache() for per-request deduplication
+  const data = await getLeadWithDetails(id);
 
-  if (!lead) {
+  if (!data) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">Lead nicht gefunden</h1>
@@ -43,55 +121,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
     );
   }
 
-  // Get related RFP
-  const [rfp] = lead.rfpId
-    ? await db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1)
-    : [null];
-
-  // Get business unit
-  const [businessUnit] = await db
-    .select()
-    .from(businessUnits)
-    .where(eq(businessUnits.id, lead.businessUnitId))
-    .limit(1);
-
-  // Get Website Audit data
-  const [websiteAudit] = await db
-    .select()
-    .from(websiteAudits)
-    .where(eq(websiteAudits.leadId, id))
-    .limit(1);
-
-  // Get CMS Match Results (top 3)
-  const cmsMatches = await db
-    .select({
-      match: cmsMatchResults,
-      technology: technologies,
-    })
-    .from(cmsMatchResults)
-    .leftJoin(technologies, eq(cmsMatchResults.technologyId, technologies.id))
-    .where(eq(cmsMatchResults.leadId, id))
-    .orderBy(desc(cmsMatchResults.rank))
-    .limit(3);
-
-  // Get PT Estimation
-  const [ptEstimation] = await db
-    .select()
-    .from(ptEstimations)
-    .where(eq(ptEstimations.leadId, id))
-    .limit(1);
-
-  // Get Reference Matches (top 5)
-  const refMatches = await db
-    .select({
-      match: referenceMatches,
-      reference: references,
-    })
-    .from(referenceMatches)
-    .leftJoin(references, eq(referenceMatches.referenceId, references.id))
-    .where(eq(referenceMatches.leadId, id))
-    .orderBy(desc(referenceMatches.rank))
-    .limit(5);
+  const { lead, rfp, businessUnit, websiteAudit, cmsMatches, ptEstimation, refMatches } = data;
 
   return (
     <div className="space-y-6">

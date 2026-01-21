@@ -3061,3 +3061,46 @@ Pre-commit hook was only running Prettier + ESLint, but NO type-checks or tests.
 This fixes the root cause that allowed multiple P1 bugs to be committed. Now all commits are verified before they enter the codebase.
 
 **Commit:** f5121c6
+
+## 2026-01-21 - DEA-81: P0 BLOCKER - Playwright Authentication Fixed
+
+**Issue:** DEA-81 - 🚨 P0 BLOCKER: Authentication in Playwright defekt - ALLE E2E Tests blockiert
+**Status:** ✅ Complete  
+**Priority:** 1 (Urgent)
+**Commit:** 3cc76ee
+
+**Problem:**
+All E2E tests were blocked because authentication in Playwright wasn't working. Login form would submit, but no redirect occurred, leaving browser stuck on login page.
+
+**Root Cause:**
+E2E test user (`e2e@test.com` / `test1234`) was missing from the database. The `auth.setup.ts` was trying to login with credentials that didn't exist.
+
+**Solution Implemented:**
+
+1. **Added E2E User to Seed Script**
+   - Updated `scripts/seed-test-users.ts` to include E2E user
+   - Email: `e2e@test.com`, Password: `test1234`, Role: `bd`
+
+2. **Automated Seed Before Tests**
+   - Updated `package.json` to run `db:seed:test` before all E2E commands
+   - Ensures test user exists before Playwright runs
+
+3. **Infrastructure Setup**
+   - Created `.auth` directory for Playwright storage state
+   - Added test artifacts to `.gitignore` (`/test-results`, `/playwright-report`, `/tests/e2e/.auth`)
+
+**Test Results:**
+- ✅ Auth setup test: PASSING
+- ✅ E2E tests: 34/41 passing
+- ⚠️ 7 failing tests are pre-existing navigation/UI issues (unrelated to auth)
+
+**Impact:**
+- Unblocks DEA-67 through DEA-75 (all E2E test implementation issues)
+- All E2E tests can now authenticate successfully before running
+- CI/CD can now run E2E tests without auth failures
+
+**Files Changed:**
+- `.gitignore` - Added test artifacts
+- `package.json` - Added `db:seed:test` script and pre-test hooks
+- `scripts/seed-test-users.ts` - Added E2E user
+

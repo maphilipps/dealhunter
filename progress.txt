@@ -1,3 +1,63 @@
+## 2026-01-21 - DEA-73: E2E Tests - Accounts Section
+
+**Issue:** DEA-73 - E2E Tests: Accounts Section
+**Status:** ✅ Complete
+**Priority:** 2 (High)
+**Commit:** 495a294
+
+**Implemented:**
+- Comprehensive Playwright E2E tests for Accounts section
+- 20 test cases covering all Account management features
+- Tests follow existing pattern from admin-crud.spec.ts
+- Full CRUD operation coverage with validation and error handling
+
+**Test Coverage:**
+
+1. **TC-1: Accounts List View (3 tests)**
+   - Page load and display verification
+   - Empty state handling
+   - Account card information display
+
+2. **TC-2: Account Creation (4 tests)**
+   - Full flow with required fields only
+   - Full flow with all optional fields
+   - Form validation for required fields
+   - Cancel button functionality
+
+3. **TC-3: Account Detail View (4 tests)**
+   - Navigation and header elements
+   - Account information card display
+   - Statistics card with opportunity count
+   - Opportunities table empty state
+
+4. **TC-4: Account Edit (3 tests)**
+   - Navigation and pre-filled form data
+   - Update all fields functionality
+   - Cancel button behavior
+
+5. **TC-5: Account Deletion (3 tests)**
+   - Confirmation dialog display
+   - Cancel deletion flow
+   - Successful deletion and redirect
+
+6. **TC-6: Account-RFP Linking (3 tests)**
+   - RFP creation with account selection
+   - View linked RFPs in account detail
+   - Cannot delete account with linked opportunities
+
+**Technical Details:**
+- File: `tests/e2e/accounts.spec.ts`
+- Framework: Playwright
+- Installed `@playwright/test` package
+- Updated ESLint config to ignore tests directory
+- Tests validate UI/UX flows, data integrity, and business rules
+
+**Next Steps:**
+- Run tests in CI/CD pipeline
+- Implement remaining E2E test issues (DEA-67 through DEA-74)
+
+---
+
 ## 2026-01-21 - DEA-38: RFP → Lead Conversion - Automatische Lead-Erstellung bei Status 'routed'
 
 **Issue:** DEA-38 - RFP → Lead Conversion

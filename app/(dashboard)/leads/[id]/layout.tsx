@@ -31,8 +31,6 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads } from '@/lib/db/schema';
 
-
-
 export default async function LeadDashboardLayout({
   children,
   params,

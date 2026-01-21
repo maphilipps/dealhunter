@@ -8,7 +8,6 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, leads, businessUnits } from '@/lib/db/schema';
 
-
 export interface ConvertRfpToLeadInput {
   rfpId: string;
 }

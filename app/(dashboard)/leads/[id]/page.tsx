@@ -10,8 +10,6 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads, rfps, businessUnits } from '@/lib/db/schema';
 
-
-
 export default async function LeadOverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();

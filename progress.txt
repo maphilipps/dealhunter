@@ -1,3 +1,55 @@
+## 2026-01-21 - DEA-78: CRITICAL - adesso AI Hub Compliance
+
+**Issue:** DEA-78 - 🔴 CRITICAL: adesso AI Hub muss verwendet werden statt direkter OpenAI Calls
+**Status:** ✅ Complete
+**Priority:** 1 (Urgent)
+**Commit:** 75cccbd
+
+**Problem:**
+Critical compliance and security issue - all AI requests must go through adesso AI Hub, not directly to OpenAI.
+
+**Implemented:**
+
+1. **Centralized AI SDK Provider Configuration**
+   - Created `lib/ai/providers.ts` with `createOpenAI` configuration
+   - Configured custom baseURL for adesso AI Hub
+   - Exported configured provider for reuse across application
+
+2. **Updated Routing Agent**
+   - Changed `lib/routing/routing-agent.ts` to use centralized provider
+   - Removed direct import from `@ai-sdk/openai`
+   - Fixed type issues (removed `as any` assertion)
+
+3. **Test Mocks Alignment**
+   - Updated `tests/mocks/handlers.ts` to mock AI Hub URL
+   - Ensures test mocks match production configuration
+
+4. **Enhanced Documentation**
+   - Added prominent "AI Hub Requirement" section to README
+   - Clarified compliance and security requirements
+   - Documented benefits: centralized cost tracking, compliance, security
+
+**Verification:**
+- ✅ All 15 OpenAI client instances use correct AI Hub baseURL
+- ✅ Vercel AI SDK configured with `createOpenAI` for custom baseURL
+- ✅ No hardcoded external API endpoints found
+- ✅ Test mocks aligned with production configuration
+- ✅ .env.example already had correct AI Hub configuration
+
+**Files Audited:**
+- 15 agent files in `lib/`
+- 1 AI config file
+- 1 routing agent file
+- 2 test files
+- 1 documentation file
+
+**Key Finding:**
+Most of the codebase was already correctly configured\! Only Vercel AI SDK provider needed fixing because default `@ai-sdk/openai` import doesn't respect `OPENAI_BASE_URL` environment variable.
+
+**Compliance Status:** ✅ COMPLIANT - All AI requests now routed through adesso AI Hub
+
+---
+
 ## 2026-01-21 - DEA-73: E2E Tests - Accounts Section
 
 **Issue:** DEA-73 - E2E Tests: Accounts Section

@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
@@ -9,6 +10,19 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 
+/**
+ * Cached user query function for per-request deduplication.
+ *
+ * This ensures that if multiple components in the same request need user data,
+ * the database query is only executed once. Subsequent calls return the cached result.
+ *
+ * @see https://react.dev/reference/react/cache
+ */
+const getUserById = cache(async (userId: string) => {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return user;
+});
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
 
@@ -17,7 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   // Verify user exists in database (handles stale sessions after DB reseed)
-  const [dbUser] = await db.select().from(users).where(eq(users.id, session.user.id!)).limit(1);
+  const dbUser = await getUserById(session.user.id!);
 
   if (!dbUser) {
     // User in JWT but not in DB - clear session via API route and redirect to login

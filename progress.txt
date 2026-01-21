@@ -4696,3 +4696,67 @@ BD Manager needs timeline estimation and risk analysis after Quick Scan to make 
 - Integration with actual Timeline Agent (currently uses existing Quick Scan timeline)
 - Workflow orchestration (DEA-90) to auto-trigger Timeline Agent after Quick Scan
 - Error handling and retry mechanisms (DEA-91)
+
+---
+
+## DEA-90: Phase 1 Agent Workflow Orchestration - Auto-Trigger Implementation
+**Date:** 2026-01-21
+**Issue:** https://linear.app/adessocms/issue/DEA-90
+
+**Implemented:**
+
+✅ **Database Schema Updates:**
+- Added missing RFP status states: `duplicate_checking`, `duplicate_warning`, `timeline_estimating`
+- Updated status enum in `lib/db/schema.ts` to support full workflow state machine
+
+✅ **Workflow Orchestrator (`lib/workflow/orchestrator.ts`):**
+- Trigger rules mapping each status to next agent + conditions
+- `triggerNextAgent()`: Evaluates conditions and updates status
+- `onAgentComplete()`: Callback for agents to signal completion
+- `handleBidDecision()`: Manual BID/NO-BID decision handler
+- `handleDuplicateOverride()`: User override for duplicate warnings
+- `getWorkflowStatus()`: UI-friendly workflow status API
+- Human-readable status and agent labels
+
+✅ **Agent Integration:**
+- **Upload Actions** (`lib/bids/actions.ts`): Auto-trigger Extract after upload
+- **Extraction Route** (`app/api/rfps/[id]/extraction/stream/route.ts`): Sets status to 'reviewing' after completion
+- **Duplicate Check Action** (`lib/bids/duplicate-check-action.ts`): Server action that runs duplicate check and triggers next agent
+- **Quick Scan Route** (`app/api/rfps/[id]/quick-scan/stream/route.ts`): Uses `onAgentComplete()` to transition to 'bit_pending'
+- **BID Decision Action** (`lib/bids/bid-decision-action.ts`): Manual decision action, triggers Timeline for BID or archives for NO-BID
+
+✅ **UI Components:**
+- **Workflow Status Component** (`components/bids/workflow-status.tsx`): Visual workflow progress tracker
+  - Shows current status with badge
+  - Displays step-by-step progress (Extract → Review → Duplicate Check → Quick Scan → BID/NO-BID → Timeline → Routing)
+  - Loading states for running agents
+  - Duplicate warning alert
+
+**Workflow Flow (Corrected):**
+1. **Upload** → **Extract Agent** (auto) - Extracts customer data first
+2. **Extract** → **Review** (user confirms) - User reviews and confirms extraction
+3. **Review + Confirm** → **Duplicate Check** (auto) → **Quick Scan** (auto if no dups + URL)
+4. **Quick Scan** → **BID/NO-BID Decision** (manual)
+5. **BID** → **Timeline Agent** (auto) | **NO-BID** → **Archived**
+6. **Timeline** → **Decision Made** (show BL routing modal)
+
+**Key Design Decisions:**
+- Linear workflow (no parallel execution in Phase 1)
+- Condition-based triggers (e.g., Quick Scan only if website URL exists)
+- User override points: Duplicate Warning, BID/NO-BID decision
+- NO auto-routing to BL - BD Manager always decides manually
+- Status tracking with human-readable labels for UI
+- Audit trail for BID/NO-BID decisions
+
+**Rationale for Flow Change:**
+- Duplicate Check REQUIRES extracted customer name/description
+- Therefore Extract MUST run before Duplicate Check
+- This differs from original issue description but matches code reality
+
+**Next Steps:**
+- Add "Confirm & Continue" button in extraction review UI to trigger Duplicate Check
+- Add duplicate override button in duplicate warning UI
+- Add BID/NO-BID decision buttons in Quick Scan results UI
+- E2E tests for full workflow (DEA-90 acceptance criteria)
+- Error handling & retry mechanisms (DEA-91)
+

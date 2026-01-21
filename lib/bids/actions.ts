@@ -8,6 +8,7 @@ import { detectPII, cleanText } from '@/lib/pii/pii-cleaner';
 import { extractRequirements } from '@/lib/extraction/agent';
 import { suggestWebsiteUrls } from '@/lib/extraction/url-suggestion-agent';
 import { startQuickScan } from '@/lib/quick-scan/actions';
+import { triggerNextAgent } from '@/lib/workflow/orchestrator';
 import { eq, and, desc } from 'drizzle-orm';
 
 /**
@@ -161,6 +162,9 @@ export async function uploadPdfBid(formData: FormData) {
       uploadSource: 'initial_upload',
     });
 
+    // DEA-90: Auto-trigger Duplicate Check after upload
+    await triggerNextAgent(bidOpportunity.id, 'draft');
+
     return {
       success: true,
       bidId: bidOpportunity.id,
@@ -214,6 +218,9 @@ export async function uploadFreetextBid(data: {
         decision: 'pending',
       })
       .returning();
+
+    // DEA-90: Auto-trigger Duplicate Check after upload
+    await triggerNextAgent(bidOpportunity.id, 'draft');
 
     return {
       success: true,

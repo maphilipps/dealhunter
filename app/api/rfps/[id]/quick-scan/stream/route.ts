@@ -7,6 +7,7 @@ import { AgentEventType } from '@/lib/streaming/event-types';
 import { runQuickScanWithStreaming } from '@/lib/quick-scan/agent';
 import { auth } from '@/lib/auth';
 import { generateTimelineFromQuickScan } from '@/lib/timeline/integration';
+import { onAgentComplete } from '@/lib/workflow/orchestrator';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -230,14 +231,9 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         })
         .where(eq(quickScans.id, quickScan.id));
 
-      // Transition RFP to bit_pending status (waiting for manual BIT/NO BIT decision)
-      await db
-        .update(rfps)
-        .set({
-          status: 'bit_pending',
-          updatedAt: new Date(),
-        })
-        .where(eq(rfps.id, id));
+      // DEA-90: Use orchestrator to handle status transition
+      // This will set status to 'bit_pending' (waiting for manual BID/NO-BID decision)
+      await onAgentComplete(id, 'QuickScan');
 
       // Emit completion event
       emit({

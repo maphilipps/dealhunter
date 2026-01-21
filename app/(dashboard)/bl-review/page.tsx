@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { eq, and, inArray, desc } from 'drizzle-orm';
 import {
   ArrowRight,
@@ -19,6 +20,43 @@ import { db } from '@/lib/db';
 import { rfps, businessUnits, users } from '@/lib/db/schema';
 import { safeJsonParseOrNull } from '@/lib/utils/parse';
 
+// Cached data fetching functions for per-request deduplication
+const getUserById = cache(async (id: string) => {
+  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return user;
+});
+
+const getAllBusinessUnitIds = cache(async () => {
+  const allBUs = await db.select({ id: businessUnits.id }).from(businessUnits);
+  return allBUs.map(bu => bu.id);
+});
+
+const getBusinessUnitsByIds = cache(async (ids: string[]) => {
+  if (ids.length === 0) return [];
+  return await db.select().from(businessUnits).where(inArray(businessUnits.id, ids));
+});
+
+const getAssignedRfpsForBusinessUnits = cache(async (businessUnitIds: string[]) => {
+  if (businessUnitIds.length === 0) return [];
+  return await db
+    .select()
+    .from(rfps)
+    .where(
+      and(
+        inArray(rfps.assignedBusinessUnitId, businessUnitIds),
+        inArray(rfps.status, [
+          'routed',
+          'full_scanning',
+          'bl_reviewing',
+          'team_assigned',
+          'notified',
+          'handed_off',
+        ])
+      )
+    )
+    .orderBy(desc(rfps.updatedAt));
+});
+
 export default async function BLReviewPage() {
   const session = await auth();
 
@@ -26,47 +64,27 @@ export default async function BLReviewPage() {
     redirect('/');
   }
 
-  // Get the user's business unit
-  const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+  // Get all data in parallel for better performance
+  const [user, allBusinessUnitIds] = await Promise.all([
+    getUserById(session.user.id),
+    session.user.role === 'admin' ? getAllBusinessUnitIds() : Promise.resolve([]),
+  ]);
 
   // Get all business units for admin, or just the user's for BL
   let businessUnitIds: string[] = [];
 
   if (session.user.role === 'admin') {
-    // Admin sees all
-    const allBUs = await db.select({ id: businessUnits.id }).from(businessUnits);
-    businessUnitIds = allBUs.map(bu => bu.id);
+    // Admin sees all (cached)
+    businessUnitIds = allBusinessUnitIds;
   } else if (user?.businessUnitId) {
     businessUnitIds = [user.businessUnitId];
   }
 
-  // Get bids assigned to the user's business unit(s)
-  const assignedBids =
-    businessUnitIds.length > 0
-      ? await db
-          .select()
-          .from(rfps)
-          .where(
-            and(
-              inArray(rfps.assignedBusinessUnitId, businessUnitIds),
-              inArray(rfps.status, [
-                'routed',
-                'full_scanning',
-                'bl_reviewing',
-                'team_assigned',
-                'notified',
-                'handed_off',
-              ])
-            )
-          )
-          .orderBy(desc(rfps.updatedAt))
-      : [];
-
-  // Get business unit details for display
-  const busUnits =
-    businessUnitIds.length > 0
-      ? await db.select().from(businessUnits).where(inArray(businessUnits.id, businessUnitIds))
-      : [];
+  // Get bids and business units in parallel (both cached)
+  const [assignedBids, busUnits] = await Promise.all([
+    getAssignedRfpsForBusinessUnits(businessUnitIds),
+    getBusinessUnitsByIds(businessUnitIds),
+  ]);
 
   const buMap = new Map(busUnits.map(bu => [bu.id, bu]));
 

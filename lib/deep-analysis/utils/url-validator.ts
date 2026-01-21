@@ -121,7 +121,8 @@ export function isAllowedUrl(url: string): boolean {
 
   // Check for IPv6 localhost and private addresses
   if (hostname.includes(':')) {
-    const ipv6Lower = hostname.toLowerCase();
+    // Remove brackets from IPv6 addresses (e.g., [::1] -> ::1)
+    const ipv6Lower = hostname.replace(/^\[|\]$/g, '').toLowerCase();
 
     // IPv6 localhost
     if (ipv6Lower === '::1' || ipv6Lower === '0:0:0:0:0:0:0:1') {
@@ -143,10 +144,36 @@ export function isAllowedUrl(url: string): boolean {
       return false;
     }
 
-    // IPv4-mapped IPv6 addresses (::ffff:x.x.x.x)
+    // IPv4-mapped IPv6 addresses (::ffff:x.x.x.x or ::ffff:7f00:1 in hex form)
     if (ipv6Lower.includes('::ffff:')) {
-      const ipv4Part = hostname.split('::ffff:')[1];
-      if (ipv4Part && isPrivateIP(ipv4Part)) {
+      const ipv4Part = ipv6Lower.split('::ffff:')[1];
+
+      // Check if it's in dotted notation (e.g., ::ffff:127.0.0.1)
+      if (ipv4Part && ipv4Part.includes('.')) {
+        if (isPrivateIP(ipv4Part)) {
+          return false;
+        }
+      }
+
+      // Check if it's in hex notation (e.g., ::ffff:7f00:1 = 127.0.0.1)
+      // 127.0.0.0/8 = 0x7f00-0x7fff in hex
+      if (ipv4Part && ipv4Part.startsWith('7f')) {
+        return false; // Block 127.x.x.x range
+      }
+
+      // Block other common private IP ranges in hex
+      // 10.0.0.0/8 = 0x0a00-0x0aff
+      if (ipv4Part && ipv4Part.startsWith('0a')) {
+        return false;
+      }
+
+      // 192.168.0.0/16 = 0xc0a8
+      if (ipv4Part && ipv4Part.startsWith('c0a8')) {
+        return false;
+      }
+
+      // 172.16.0.0/12 = 0xac10-0xac1f
+      if (ipv4Part && ipv4Part.match(/^ac1[0-9a-f]/)) {
         return false;
       }
     }
@@ -194,7 +221,7 @@ export async function validateUrlResolution(url: string): Promise<boolean> {
           return false;
         }
       }
-    } catch (error) {
+    } catch {
       // If IPv4 resolution fails, try IPv6
       try {
         const addresses = await dns.resolve6(parsed.hostname);
@@ -221,7 +248,7 @@ export async function validateUrlResolution(url: string): Promise<boolean> {
     }
 
     return true;
-  } catch (error) {
+  } catch {
     // DNS module not available (edge runtime) or other error
     // In this case, fall back to basic URL validation only
     console.warn('DNS resolution not available, using basic URL validation only');

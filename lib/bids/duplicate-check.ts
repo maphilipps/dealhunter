@@ -71,7 +71,7 @@ function levenshteinDistance(str1: string, str2: string): number {
 
   const dp: number[][] = Array(m + 1)
     .fill(null)
-    .map(() => Array(n + 1).fill(0));
+    .map(() => Array(n + 1).fill(0) as number[]) as number[][];
 
   for (let i = 0; i <= m; i++) dp[i][0] = i;
   for (let j = 0; j <= n; j++) dp[0][j] = j;
@@ -95,16 +95,19 @@ function levenshteinDistance(str1: string, str2: string): number {
  * Returns 0-100 (100 = identical)
  */
 function calculateSimilarity(str1: string, str2: string): number {
-  if (!str1 || !str2) return 0;
+  const s1 = (str1 || '').toLowerCase().trim();
+  const s2 = (str2 || '').toLowerCase().trim();
 
-  const s1 = str1.toLowerCase().trim();
-  const s2 = str2.toLowerCase().trim();
+  // Both empty = 100% identical
+  if (s1 === '' && s2 === '') return 100;
 
+  // One empty, one not = 0% similarity
+  if (s1 === '' || s2 === '') return 0;
+
+  // Exact match
   if (s1 === s2) return 100;
 
   const maxLen = Math.max(s1.length, s2.length);
-  if (maxLen === 0) return 100;
-
   const distance = levenshteinDistance(s1, s2);
   return Math.round((1 - distance / maxLen) * 100);
 }
@@ -212,7 +215,7 @@ export async function checkForDuplicates(
 
     let existingReqs: ExtractedRequirements;
     try {
-      existingReqs = JSON.parse(existing.extractedRequirements);
+      existingReqs = JSON.parse(existing.extractedRequirements) as ExtractedRequirements;
     } catch {
       continue;
     }

@@ -16,11 +16,19 @@ for ((i=1; i<=$1; i++)); do
      - Use list_issues with:
        * team: 'Dealhunter'
        * state: 'Backlog' (preferred) or 'Todo'
-       * orderBy: 'updatedAt'
        * limit: 50
-     - From results, select the ONE issue with LOWEST priority number (1=Urgent is highest)
-     - Priority ranking: 1 (Urgent) > 2 (High) > 3 (Normal) > 4 (Low) > 0 (None)
-     - If multiple issues have same priority, take the oldest (earliest createdAt)
+     - **ALWAYS select by HIGHEST PRIORITY FIRST:**
+       * Priority 1 (Urgent) = HIGHEST priority → select these FIRST
+       * Priority 2 (High) = Second highest
+       * Priority 3 (Normal) = Third
+       * Priority 4 (Low) = Fourth
+       * Priority 0 (None) = Lowest → select these LAST
+     - **Selection order:**
+       1. Find ALL priority 1 (Urgent) issues → if any exist, take the oldest (earliest createdAt)
+       2. If no priority 1: find ALL priority 2 (High) issues → take oldest
+       3. If no priority 2: find ALL priority 3 (Normal) issues → take oldest
+       4. If no priority 3: find ALL priority 4 (Low) issues → take oldest
+       5. If no priority 4: find ALL priority 0 (None) issues → take oldest
      - ONLY select ONE issue, not multiple
      - IMPORTANT: Verify issue status is Backlog/Todo before starting
 

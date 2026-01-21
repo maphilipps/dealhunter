@@ -584,7 +584,10 @@ export async function suggestWebsiteUrlsAction(data: {
   }
 
   try {
-    const result = await suggestWebsiteUrls(data);
+    const result = await suggestWebsiteUrls({
+      ...data,
+      useWebSearch: true, // Explicitly enable web search
+    });
 
     return {
       success: true,

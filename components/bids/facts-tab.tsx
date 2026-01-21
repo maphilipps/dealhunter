@@ -50,25 +50,28 @@ interface FactsTabProps {
 export function FactsTab({ quickScan, bidId }: FactsTabProps) {
   const [isRetriggering, setIsRetriggering] = useState(false);
 
+  // Helper to safely parse JSON fields (may already be objects from Drizzle)
+  const safeJsonParse = <T,>(value: string | T | null | undefined): T | null => {
+    if (!value) return null;
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value) as T;
+      } catch {
+        return null;
+      }
+    }
+    return value as T;
+  };
+
   // Parse JSON fields from Quick Scan
-  const techStack: TechStack | null = quickScan.techStack
-    ? (JSON.parse(quickScan.techStack) as TechStack)
-    : null;
-  const performanceIndicators: PerformanceIndicators | null = quickScan.performanceIndicators
-    ? (JSON.parse(quickScan.performanceIndicators) as PerformanceIndicators)
-    : null;
-  const contentVolume: ContentVolume | null = quickScan.contentVolume
-    ? (JSON.parse(quickScan.contentVolume) as ContentVolume)
-    : null;
-  const decisionMakers: DecisionMakersResearch | null = quickScan.decisionMakers
-    ? (JSON.parse(quickScan.decisionMakers) as DecisionMakersResearch)
-    : null;
-  const screenshots: Screenshots | null = quickScan.screenshots
-    ? (JSON.parse(quickScan.screenshots) as Screenshots)
-    : null;
-  const accessibilityAudit: AccessibilityAudit | null = quickScan.accessibilityAudit
-    ? (JSON.parse(quickScan.accessibilityAudit) as AccessibilityAudit)
-    : null;
+  const techStack = safeJsonParse<TechStack>(quickScan.techStack);
+  const performanceIndicators = safeJsonParse<PerformanceIndicators>(
+    quickScan.performanceIndicators
+  );
+  const contentVolume = safeJsonParse<ContentVolume>(quickScan.contentVolume);
+  const decisionMakers = safeJsonParse<DecisionMakersResearch>(quickScan.decisionMakers);
+  const screenshots = safeJsonParse<Screenshots>(quickScan.screenshots);
+  const accessibilityAudit = safeJsonParse<AccessibilityAudit>(quickScan.accessibilityAudit);
 
   const handleRetrigger = async () => {
     setIsRetriggering(true);

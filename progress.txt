@@ -3012,3 +3012,52 @@ All E2E tests (including pre-existing tests) are currently blocked:
 
 **Test Coverage:** 40 tests covering all acceptance criteria from DEA-71.
 
+
+---
+
+## DEA-80: 🚨 ROOT CAUSE BLOCKER - Pre-Commit Hook führt KEINE Tests aus
+
+**Date:** 2026-01-21  
+**Status:** ✅ COMPLETE  
+**Priority:** P1 (Urgent)
+
+### Problem
+
+Pre-commit hook was only running Prettier + ESLint, but NO type-checks or tests. This allowed broken features (DEA-76, DEA-77, DEA-78, DEA-79) to be committed without verification.
+
+### Implementation
+
+**Pre-Commit Hook (Fast, <5s):**
+- Added TypeScript type-check to lint-staged config
+- Now runs: Prettier → ESLint → `tsc --noEmit` on staged `.ts`/`.tsx` files
+- Type errors block commits
+
+**Pre-Push Hook (Comprehensive, <2min):**
+- Created `.husky/pre-push` hook
+- Runs `npm run test:all` (unit + E2E tests)
+- Test failures block pushes
+
+**Documentation:**
+- Added "Git Hooks" section to README.md
+- Documented pre-commit and pre-push behavior
+- Explained bypass options (for emergencies only)
+
+### Files Changed
+
+- `.husky/pre-push` (new file)
+- `package.json` (updated lint-staged config)
+- `README.md` (added Git Hooks documentation)
+
+### Acceptance Criteria
+
+✅ Pre-Commit Hook runs Type-Check  
+✅ Pre-Push Hook runs all tests  
+✅ Commits blocked on Type-Errors  
+✅ Pushes blocked on Test-Failures  
+✅ Hooks documented in README
+
+### Impact
+
+This fixes the root cause that allowed multiple P1 bugs to be committed. Now all commits are verified before they enter the codebase.
+
+**Commit:** f5121c6

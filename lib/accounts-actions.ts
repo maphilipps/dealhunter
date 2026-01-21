@@ -1,12 +1,95 @@
 'use server';
 
 import { eq, desc } from 'drizzle-orm';
+import { LRUCache } from 'lru-cache';
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { accounts, rfps } from '@/lib/db/schema';
 import type { Account } from '@/lib/db/schema';
+
+/**
+ * Cache entry with metadata for stale-while-revalidate
+ */
+interface CacheEntry {
+  data: Account[];
+  fetchTime: number;
+}
+
+/**
+ * LRU cache for accounts data
+ * - max: 500 entries (supports up to 500 users)
+ * - ttl: 5 minutes
+ * - allowStale: Return stale data while revalidating
+ */
+const accountsCache = new LRUCache<string, CacheEntry>({
+  max: 500,
+  ttl: 1000 * 60 * 5, // 5 minutes
+  allowStale: true,
+});
+
+/**
+ * Cache statistics tracking
+ */
+let cacheHits = 0;
+let cacheMisses = 0;
+let backgroundRefreshes = 0;
+
+/**
+ * Get cache statistics for monitoring
+ */
+export function getAccountsCacheStats() {
+  const total = cacheHits + cacheMisses;
+  const hitRate = total > 0 ? (cacheHits / total) * 100 : 0;
+
+  return {
+    hits: cacheHits,
+    misses: cacheMisses,
+    hitRate: `${hitRate.toFixed(2)}%`,
+    backgroundRefreshes,
+    cacheSize: accountsCache.size,
+  };
+}
+
+/**
+ * Helper function to fetch accounts from database
+ */
+async function fetchAccountsFromDB(userId: string, userRole: string): Promise<Account[]> {
+  if (userRole === 'admin') {
+    // Admin sees all accounts
+    return await db.select().from(accounts).orderBy(desc(accounts.createdAt));
+  } else {
+    // Other users see only their own accounts
+    return await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.userId, userId))
+      .orderBy(desc(accounts.createdAt));
+  }
+}
+
+/**
+ * Invalidate cache for a specific user
+ */
+function invalidateUserAccountsCache(userId: string): void {
+  const keysToDelete: string[] = [];
+
+  // Find all cache keys for this user
+  for (const key of accountsCache.keys()) {
+    if (key.startsWith(`accounts:${userId}`)) {
+      keysToDelete.push(key);
+    }
+    // Also invalidate admin cache which includes all accounts
+    if (key.startsWith('accounts:admin:')) {
+      keysToDelete.push(key);
+    }
+  }
+
+  // Delete all matching keys
+  keysToDelete.forEach(key => accountsCache.delete(key));
+}
 
 /**
  * Helper function to check if user has access to an account
@@ -24,21 +107,44 @@ export async function getAccounts() {
   }
 
   try {
-    let userAccounts;
+    // Create cache key based on user ID and role
+    const cacheKey = `accounts:${session.user.id}:${session.user.role}`;
 
-    if (session.user.role === 'admin') {
-      // Admin sees all accounts
-      userAccounts = await db.select().from(accounts).orderBy(desc(accounts.createdAt));
-    } else {
-      // Other users see only their own accounts
-      userAccounts = await db
-        .select()
-        .from(accounts)
-        .where(eq(accounts.userId, session.user.id))
-        .orderBy(desc(accounts.createdAt));
+    // Check cache
+    const cached = accountsCache.get(cacheKey);
+
+    if (cached) {
+      const { data, fetchTime } = cached;
+      const age = Date.now() - fetchTime;
+
+      cacheHits++;
+
+      // Stale-while-revalidate: If data is older than 1 minute, refresh in background
+      if (age > 1000 * 60) {
+        backgroundRefreshes++;
+
+        after(async () => {
+          try {
+            const fresh = await fetchAccountsFromDB(session.user.id, session.user.role);
+            accountsCache.set(cacheKey, { data: fresh, fetchTime: Date.now() });
+          } catch (error) {
+            console.error('Background refresh failed:', error);
+            // Keep stale data on error
+          }
+        });
+      }
+
+      return { success: true, accounts: data };
     }
 
-    return { success: true, accounts: userAccounts };
+    // Cache miss - fetch from database
+    cacheMisses++;
+    const accounts = await fetchAccountsFromDB(session.user.id, session.user.role);
+
+    // Store in cache
+    accountsCache.set(cacheKey, { data: accounts, fetchTime: Date.now() });
+
+    return { success: true, accounts };
   } catch (error) {
     console.error('Error fetching accounts:', error);
     return { success: false, error: 'Fehler beim Laden der Accounts', accounts: [] };
@@ -68,6 +174,9 @@ export async function createAccount(data: {
         notes: data.notes?.trim() || null,
       })
       .returning();
+
+    // Invalidate cache for this user
+    invalidateUserAccountsCache(session.user.id);
 
     revalidatePath('/accounts');
     return { success: true, account };
@@ -191,6 +300,9 @@ export async function updateAccount(
       .where(eq(accounts.id, accountId))
       .returning();
 
+    // Invalidate cache for the account owner
+    invalidateUserAccountsCache(existingAccount.userId);
+
     revalidatePath('/accounts');
     revalidatePath(`/accounts/${accountId}`);
     return { success: true, account: updatedAccount };
@@ -239,6 +351,9 @@ export async function deleteAccount(accountId: string) {
 
     // Delete account
     await db.delete(accounts).where(eq(accounts.id, accountId));
+
+    // Invalidate cache for the account owner
+    invalidateUserAccountsCache(existingAccount.userId);
 
     revalidatePath('/accounts');
     return { success: true };

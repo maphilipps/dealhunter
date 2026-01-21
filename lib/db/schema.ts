@@ -1003,6 +1003,10 @@ export const leads = sqliteTable(
     budget: text('budget'),
     requirements: text('requirements'), // JSON - key requirements
 
+    // Quick Scan Reference (from Phase 1)
+    quickScanId: text('quick_scan_id').references(() => quickScans.id),
+    decisionMakers: text('decision_makers'), // JSON - decision makers from Quick Scan 2.0
+
     // Business Unit Assignment (from Phase 1)
     businessUnitId: text('business_unit_id')
       .notNull()
@@ -1354,6 +1358,10 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   businessUnit: one(businessUnits, {
     fields: [leads.businessUnitId],
     references: [businessUnits.id],
+  }),
+  quickScan: one(quickScans, {
+    fields: [leads.quickScanId],
+    references: [quickScans.id],
   }),
   blVotedBy: one(users, {
     fields: [leads.blVotedByUserId],

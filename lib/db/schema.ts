@@ -37,17 +37,23 @@ export const rfps = sqliteTable(
     metadata: text('metadata'), // JSON - für Email headers (from, subject, date)
     extractedRequirements: text('extracted_requirements'), // JSON
 
-    // Status (WORKFLOW.md compliant + DEA-90 Auto-Trigger States)
+    // Status (WORKFLOW.md compliant + DEA-90 Auto-Trigger States + DEA-91 Error States)
     status: text('status', {
       enum: [
         'draft', // Initial state after upload
         'duplicate_checking', // Duplicate Check Agent running (DEA-90)
+        'duplicate_check_failed', // Duplicate Check failed (DEA-91)
         'duplicate_warning', // Duplicate found, waiting for user override (DEA-90)
         'extracting', // AI is extracting requirements
+        'extraction_failed', // Extract Agent failed after max retries (DEA-91)
+        'manual_extraction', // Manual extraction mode after Extract failure (DEA-91)
         'reviewing', // User is reviewing extracted data
         'quick_scanning', // AI is doing quick scan
+        'quick_scan_failed', // Quick Scan Agent failed (DEA-91, optional - can skip)
         'timeline_estimating', // Timeline Agent running after BID (DEA-90)
+        'timeline_failed', // Timeline Agent failed (DEA-91, optional - can skip)
         'bit_pending', // Quick Scan done, waiting for manual BIT/NO BIT decision
+        'questions_ready', // 10 questions ready, waiting for BID/NO-BID decision (DEA-91 fallback)
         'evaluating', // AI is doing full decision evaluation (after manual trigger)
         'decision_made', // Decision made + Timeline complete, ready for BL routing
         'archived', // NO BID - Archiviert
@@ -103,6 +109,9 @@ export const rfps = sqliteTable(
     // Duplicate Check
     duplicateCheckResult: text('duplicate_check_result'), // JSON - result of duplicate detection
     descriptionEmbedding: text('description_embedding'), // JSON array - text-embedding-3-large (3072 dimensions)
+
+    // Error Handling (DEA-91)
+    agentErrors: text('agent_errors'), // JSON array - AgentError[] for error tracking
 
     // Analysis Results (TODO: move to separate tables)
     quickScanResults: text('quick_scan_results'), // JSON

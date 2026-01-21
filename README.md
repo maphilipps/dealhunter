@@ -85,7 +85,47 @@ npm run start        # Production Server
 npm run db:push      # Schema auf DB anwenden
 npm run db:seed      # Seed-Daten laden
 npm run db:studio    # Drizzle Studio öffnen
+npm run typecheck    # TypeScript Type Check
+npm run test         # Run unit tests (watch mode)
+npm run test:run     # Run unit tests (single run)
+npm run test:e2e     # Run E2E tests
+npm run test:all     # Run all tests (unit + E2E)
 ```
+
+## Git Hooks
+
+This project uses Git hooks to ensure code quality and prevent broken features from being committed or pushed.
+
+### Pre-Commit Hook (Fast, <5s)
+
+Runs automatically before every commit:
+
+- ✅ **Prettier** - Automatic code formatting
+- ✅ **ESLint** - Code quality checks with auto-fix
+- ✅ **Type-Check** - TypeScript type verification (`tsc --noEmit`)
+
+**How it works:** Only staged `.ts`/`.tsx` files are checked. Formatting and linting errors are automatically fixed and staged. Type errors will block the commit.
+
+### Pre-Push Hook (Comprehensive, <2min)
+
+Runs automatically before every push:
+
+- ✅ **Unit Tests** - All Vitest tests must pass
+- ✅ **E2E Tests** - All Playwright tests must pass
+
+**How it works:** Runs `npm run test:all` which executes both unit and E2E tests. Any test failure will block the push.
+
+### Bypassing Hooks (Emergency Only)
+
+```bash
+# Skip pre-commit hook (NOT RECOMMENDED)
+git commit --no-verify -m "message"
+
+# Skip pre-push hook (NOT RECOMMENDED)
+git push --no-verify
+```
+
+**Warning:** Only use `--no-verify` in emergencies. The hooks exist to prevent broken features from entering the codebase.
 
 ## Tech Stack
 

@@ -24,9 +24,10 @@ export interface ConvertRfpToLeadResult {
  *
  * This function:
  * 1. Validates that the RFP exists and has status 'routed'
- * 2. Validates that the RFP has decision='bid'
- * 3. Creates a Lead record with data from the RFP
- * 4. Creates an audit trail entry
+ * 2. Creates a Lead record with data from the RFP
+ * 3. Creates an audit trail entry
+ *
+ * Note: BL (Bereichsleiter) will decide BID/NO-BID in Lead Dashboard (Phase 2)
  *
  * @param input - RFP ID to convert
  * @returns Lead ID if successful
@@ -66,14 +67,6 @@ export async function convertRfpToLead(
       return {
         success: false,
         error: 'RFP muss Status "routed" haben',
-      };
-    }
-
-    // Validate decision - must be 'bid'
-    if (rfp.decision !== 'bid') {
-      return {
-        success: false,
-        error: 'Nur BID-RFPs können zu Leads konvertiert werden',
       };
     }
 

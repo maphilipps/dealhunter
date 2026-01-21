@@ -3556,3 +3556,50 @@ The automatic RFP → Lead conversion was already 90% implemented. I completed t
 - lib/agents/__tests__/content-architecture-agent.test.ts (NEW)
 
 **Commit:** (pending)
+
+
+## DEA-100: Leads List Page (BL-gefiltert)
+**Date:** 2026-01-21
+**Status:** ✅ COMPLETE
+
+**What was implemented:**
+- Created app/(dashboard)/leads/page.tsx - BU-filtered leads list view
+- Created getLeads() server action in lib/leads/actions.ts
+- Business Unit filtering: BL users see only their BU leads, Admins see all
+- Role-based access: BD users redirected to /rfps (they work with RFPs)
+- Stats dashboard: Total, New, In Analysis, BID decided counts
+- Table with columns: Customer, Industry, Status, BL Decision, Routed Date
+- Status badges: routed, full_scanning, bl_reviewing, bid_voted, archived
+- Vote badges: BID (green), NO-BID (red), Pending
+- Empty state for users with no leads
+- Click-to-view links to lead detail pages (/leads/[id])
+- Sorted by createdAt DESC (newest first)
+
+**Technical details:**
+- Server-side data fetching with getLeads() action
+- Authentication check with redirect to /login
+- BU filtering via leads.businessUnitId = user.businessUnitId
+- Role check: BL/Admin only (BD redirected)
+- ShadCN components: Table, Card, Badge, Button
+- Lucide icons: Eye, FileText
+- German UI labels
+
+**Acceptance Criteria (DEA-100):**
+- ✅ Liste zeigt nur Leads für BL's BU
+- ✅ Status Badge funktioniert
+- ✅ Links zu Detail Page funktionieren
+- ✅ Empty State vorhanden
+- ✅ Sortierung nach Datum
+- ✅ Stats Cards
+
+**Dependencies:**
+- ✅ DEA-92 (RFP → Lead conversion) - already implemented
+- 🚀 Unblocks: DEA-101 (Lead Overview Page erweitern)
+
+**Files modified:**
+- app/(dashboard)/leads/page.tsx (NEW)
+- lib/leads/actions.ts (added getLeads function)
+
+**Zero type errors introduced in new code** (pre-existing errors unchanged)
+
+**Commit:** (pending)

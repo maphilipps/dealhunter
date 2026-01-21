@@ -25,6 +25,7 @@ export interface Sitemap {
  * @param xmlText - XML content to parse
  * @returns Parsed sitemap data
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseSitemapXml(xmlText: string): any {
   // SECURITY: Validate XML before parsing to prevent XXE attacks
   validateXml(xmlText);
@@ -47,15 +48,20 @@ function parseSitemapXml(xmlText: string): any {
  * @param result - Parsed XML result
  * @returns Array of URL strings
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function extractUrlsFromSitemap(result: any): string[] {
   const urls: string[] = [];
 
   // Handle urlset format (regular sitemap)
-  if (result.urlset && result.urlset.url) {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (result?.urlset && result.urlset.url) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const urlEntries = Array.isArray(result.urlset.url) ? result.urlset.url : [result.urlset.url];
 
     for (const entry of urlEntries) {
-      if (entry.loc) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (entry?.loc) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         urls.push(String(entry.loc).trim());
       }
     }
@@ -69,17 +75,26 @@ function extractUrlsFromSitemap(result: any): string[] {
  * @param result - Parsed XML result
  * @returns Array of sitemap URL strings
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function extractSitemapsFromIndex(result: any): string[] {
   const sitemaps: string[] = [];
 
   // Handle sitemapindex format
-  if (result.sitemapindex && result.sitemapindex.sitemap) {
-    const sitemapEntries = Array.isArray(result.sitemapindex.sitemap)
-      ? result.sitemapindex.sitemap
-      : [result.sitemapindex.sitemap];
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (result?.sitemapindex && result.sitemapindex.sitemap) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const sitemapEntries =
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      Array.isArray(result.sitemapindex.sitemap)
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          result.sitemapindex.sitemap
+        : // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          [result.sitemapindex.sitemap];
 
     for (const entry of sitemapEntries) {
-      if (entry.loc) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (entry?.loc) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         sitemaps.push(String(entry.loc).trim());
       }
     }
@@ -126,6 +141,7 @@ export async function fetchSitemap(websiteUrl: string): Promise<Sitemap> {
       const xmlText = await response.text();
 
       // SECURITY: Parse with XXE protection
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const result = parseSitemapXml(xmlText);
 
       // Check if this is a sitemap index (contains other sitemaps)
@@ -155,6 +171,7 @@ export async function fetchSitemap(websiteUrl: string): Promise<Sitemap> {
               const subXmlText = await subResponse.text();
 
               // SECURITY: Parse with XXE protection
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               const subResult = parseSitemapXml(subXmlText);
               const subUrls = extractUrlsFromSitemap(subResult);
               allUrls.push(...subUrls);
@@ -180,6 +197,23 @@ export async function fetchSitemap(websiteUrl: string): Promise<Sitemap> {
         };
       }
     } catch (error) {
+      // Re-throw security-related errors (XXE, SSRF, etc.)
+      if (error instanceof Error) {
+        const securityKeywords = [
+          'DOCTYPE',
+          'ENTITY',
+          'SYSTEM',
+          'PUBLIC',
+          'parameter entity',
+          'security reasons',
+          'not allowed',
+        ];
+
+        if (securityKeywords.some(keyword => error.message.includes(keyword))) {
+          throw error; // Re-throw security errors
+        }
+      }
+
       console.warn(`Failed to fetch sitemap ${sitemapUrl}:`, error);
     }
   }

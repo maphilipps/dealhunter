@@ -9,7 +9,7 @@
  * 5. Ranking by similarity
  */
 
-import { eq, and, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 import { generateQueryEmbedding } from './embedding-service';
 
@@ -79,6 +79,11 @@ export async function queryRAG(query: RAGQuery): Promise<RAGResult[]> {
   try {
     // 1. Generate query embedding
     const queryEmbedding = await generateQueryEmbedding(query.question);
+
+    // Early return if embeddings are disabled or query embedding failed
+    if (!queryEmbedding) {
+      return [];
+    }
 
     // 2. Fetch all chunks for this RFP
     const chunks = await db

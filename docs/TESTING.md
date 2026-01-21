@@ -1,333 +1,346 @@
-# Testing Guide
-
-Comprehensive testing setup for Dealhunter with unit, integration, and E2E tests.
+# Testing Strategy
 
 ## Overview
 
-The testing stack includes:
+**Minimum 80% Test Coverage ist REQUIRED für alle Features.**
 
-- **Vitest** - Fast unit and integration testing framework
-- **Playwright** - Reliable E2E testing for real user journeys
-- **Testing Library** - React component testing utilities
-- **MSW (Mock Service Worker)** - API mocking for integration tests
+Das Projekt nutzt:
+- **Vitest** - Unit & Integration Tests
+- **Playwright** - E2E Browser Tests  
+- **Testing Library** - React Component Testing
+- **MSW** - API Mocking
+- **Axe** - Accessibility Testing
 
-## Test Structure
+---
 
-```
-tests/
-├── unit/              # Unit tests for pure logic
-├── integration/       # Integration tests for flows
-├── e2e/              # End-to-end tests with Playwright
-├── fixtures/         # Test data and fixtures
-├── mocks/            # MSW handlers and mock responses
-├── utils/            # Test utilities and factories
-└── setup.ts          # Global test setup
-```
+## Unit & Integration Tests (Vitest)
 
-## Running Tests
-
-### Unit & Integration Tests
+### Commands
 
 ```bash
-# Run tests in watch mode (development)
-npm test
-
-# Run tests once (CI)
-npm run test:run
-
-# Run tests with UI
-npm run test:ui
-
-# Generate coverage report
-npm run test:coverage
+npm test                  # Watch mode (development)
+npm run test:ui           # Interactive UI
+npm run test:run          # Single run (CI)
+npm run test:coverage     # Generate coverage report
 ```
 
-### E2E Tests
+### Configuration
 
-```bash
-# Run E2E tests
-npm run test:e2e
+- **Config:** `vitest.config.ts`
+- **Environment:** happy-dom (faster als jsdom)
+- **Coverage:** v8 provider (80% minimum)
 
-# Run E2E tests with UI (visual debugging)
-npm run test:e2e:ui
-
-# Run E2E tests in debug mode (step-by-step)
-npm run test:e2e:debug
-```
-
-### All Tests
-
-```bash
-# Run all tests (unit + integration + E2E)
-npm run test:all
-```
-
-## Writing Tests
-
-### Unit Tests
-
-Test pure logic and utility functions without external dependencies:
+### Writing Tests
 
 ```typescript
-import { describe, it, expect } from 'vitest';
-import { normalizeUrl } from '@/lib/bids/duplicate-check';
+// src/lib/extraction/__tests__/agent.test.ts
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { extractionAgent } from '../agent';
 
-describe('normalizeUrl', () => {
-  it('should remove protocol and www', () => {
-    expect(normalizeUrl('https://www.example.com')).toBe('example.com');
+describe('Extraction Agent', () => {
+  it('should extract tender data from PDF', async () => {
+    const mockPdf = Buffer.from('...');
+    const result = await extractionAgent(mockPdf);
+    
+    expect(result.title).toBeDefined();
+    expect(result.deadline).toMatch(/\d{4}-\d{2}-\d{2}/);
   });
 });
 ```
 
-### Integration Tests
-
-Test complete workflows using factories and mocks:
+### React Component Tests
 
 ```typescript
-import { describe, it, expect } from 'vitest';
-import { factories } from '../utils/factories';
+// src/components/bids/__tests__/bid-card.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { BidCard } from '../bid-card';
 
-describe('RFP Extraction Flow', () => {
-  it('should extract requirements from RFP', () => {
-    const requirements = factories.extractedRequirements();
+describe('BidCard', () => {
+  it('should render bid information', () => {
+    render(<BidCard bid={mockBid} />);
+    
+    expect(screen.getByText('Project Alpha')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /evaluate/i })).toBeVisible();
+  });
 
-    expect(requirements).toHaveProperty('clientName');
-    expect(requirements.techStack).toBeInstanceOf(Array);
+  it('should handle click events', async () => {
+    const user = userEvent.setup();
+    const onEvaluate = vi.fn();
+    
+    render(<BidCard bid={mockBid} onEvaluate={onEvaluate} />);
+    
+    await user.click(screen.getByRole('button', { name: /evaluate/i }));
+    expect(onEvaluate).toHaveBeenCalledWith(mockBid.id);
   });
 });
 ```
 
-### E2E Tests
-
-Test real user journeys in the browser:
+### Mocking API Calls (MSW)
 
 ```typescript
-import { test, expect } from '@playwright/test';
-
-test('should complete full bid workflow', async ({ page }) => {
-  await page.goto('/');
-  await page.click('text=New Bid');
-
-  // Fill form, submit, and verify results
-  await page.fill('textarea[name="rawInput"]', 'Test RFP');
-  await page.click('button[type="submit"]');
-
-  await expect(page).toHaveURL(/\/bids\/[a-z0-9]+/);
-});
-```
-
-## Test Utilities
-
-### Factories
-
-Use factories to create consistent test data:
-
-```typescript
-import { factories } from '../utils/factories';
-
-// Create test user
-const user = factories.user({ role: 'admin' });
-
-// Create test RFP
-const rfp = factories.rfp({
-  status: 'draft',
-  decision: 'pending',
-});
-
-// Create extracted requirements
-const requirements = factories.extractedRequirements();
-```
-
-### Mock Responses
-
-Use pre-defined mock AI responses:
-
-```typescript
-import { mockAIResponses } from '../mocks/ai-responses';
-
-// Use mock extraction response
-const extraction = mockAIResponses.extraction;
-
-// Use mock quick scan response
-const quickScan = mockAIResponses.quickScan;
-```
-
-### MSW Handlers
-
-Mock API endpoints for integration tests:
-
-```typescript
-import { server } from '../mocks/server';
+// src/lib/__tests__/mocks/handlers.ts
 import { http, HttpResponse } from 'msw';
 
-// Add custom handler
-server.use(
-  http.post('/api/custom-endpoint', () => {
-    return HttpResponse.json({ success: true });
+export const handlers = [
+  http.post('/api/bids/evaluate', async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json({
+      recommendation: 'BID',
+      confidence: 0.85
+    });
   })
-);
+];
 ```
 
-## Coverage Goals
+### Testing Server Actions
 
-Target coverage metrics per DEA-28:
+```typescript
+// src/lib/bids/__tests__/actions.test.ts
+import { evaluateBid } from '../actions';
 
-- **Unit Tests**: > 80% coverage for critical logic
-- **Integration Tests**: All major workflows covered
-- **E2E Tests**: All user journeys and happy paths covered
+describe('evaluateBid Server Action', () => {
+  it('should validate input with Zod', async () => {
+    const result = await evaluateBid({ bidId: 'invalid' });
+    
+    expect(result.error).toBeDefined();
+  });
+});
+```
 
-### Checking Coverage
+---
+
+## E2E Tests (Playwright)
+
+### Commands
 
 ```bash
-# Generate coverage report
+npm run test:e2e          # Run all E2E tests (headless)
+npm run test:e2e:ui       # Interactive UI mode
+npm run test:e2e:debug    # Debug mode with browser
+```
+
+### Writing E2E Tests
+
+```typescript
+// e2e/bid-workflow.spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('Bid Evaluation Workflow', () => {
+  test('should upload and evaluate tender', async ({ page }) => {
+    await page.goto('/bids/new');
+    
+    // Upload PDF
+    await page.setInputFiles('input[type="file"]', 'fixtures/tender.pdf');
+    await page.getByRole('button', { name: /upload/i }).click();
+    
+    // Wait for extraction
+    await expect(page.getByText(/preview/i)).toBeVisible({ timeout: 10000 });
+    
+    // Check result
+    const recommendation = page.getByTestId('quick-scan-result');
+    await expect(recommendation).toContainText(/BID|NO-BID/);
+  });
+});
+```
+
+### Accessibility Testing
+
+```typescript
+// e2e/accessibility.spec.ts
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+test('should not have accessibility violations', async ({ page }) => {
+  await page.goto('/dashboard');
+  
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
+```
+
+---
+
+## Browser Testing (agent-browser CLI)
+
+**WICHTIG:** Nutze `agent-browser` CLI für manuelle Browser-Tests!
+
+```bash
+# Dev Server starten
+d3k
+
+# Browser öffnen
+agent-browser open http://localhost:3000
+
+# Snapshot mit Interactive Elements
+agent-browser snapshot -i
+# Output: textbox "Email" [ref=e1], button "Login" [ref=e2]
+
+# Element Interaktionen
+agent-browser fill @e1 "test@adesso.de"
+agent-browser click @e2
+
+# Screenshot
+agent-browser screenshot screenshots/dashboard.png
+
+# Console Errors prüfen
+agent-browser console
+agent-browser errors
+```
+
+**Workflow für UI Verification:**
+1. Feature implementieren
+2. `agent-browser open http://localhost:3000/feature`
+3. `agent-browser snapshot -i` → Elements prüfen
+4. `agent-browser screenshot` → Visual verification
+5. `agent-browser console` → Console errors prüfen
+
+---
+
+## Coverage Requirements
+
+### Minimum Thresholds
+
+- **Statements:** 80%
+- **Branches:** 80%  
+- **Functions:** 80%
+- **Lines:** 80%
+
+### Enforcement
+
+**Wenn Coverage < 80%:**
+1. Feature nicht mergen
+2. Linear Sub-Issue erstellen: "Add test coverage for [Feature]"
+3. Issue als Blocker markieren
+4. Coverage erhöhen, dann merge
+
+### Coverage Report
+
+```bash
 npm run test:coverage
 
-# Open coverage report in browser
+# HTML Report öffnen
 open coverage/index.html
 ```
 
-## CI/CD Integration
+---
 
-Tests run automatically on:
+## Test Organization
 
-- Push to `main` branch
-- Pull requests to `main`
-
-GitHub Actions workflow includes:
-
-1. Unit & Integration Tests
-2. E2E Tests
-3. TypeScript Type Check
-4. Linting
-
-See `.github/workflows/test.yml` for configuration.
-
-## Debugging Tests
-
-### Vitest Debugging
-
-```bash
-# Run specific test file
-npx vitest run tests/unit/duplicate-check.test.ts
-
-# Run tests matching pattern
-npx vitest run -t "normalizeUrl"
-
-# Run with UI for visual debugging
-npm run test:ui
+```
+src/
+├── lib/
+│   ├── extraction/
+│   │   ├── agent.ts
+│   │   └── __tests__/
+│   │       └── agent.test.ts
+│   └── bids/
+│       ├── actions.ts
+│       └── __tests__/
+│           └── actions.test.ts
+├── components/
+│   └── bids/
+│       ├── bid-card.tsx
+│       └── __tests__/
+│           └── bid-card.test.tsx
+e2e/
+├── bid-workflow.spec.ts
+├── authentication.spec.ts
+└── fixtures/
+    └── tender.pdf
 ```
 
-### Playwright Debugging
+**Naming Convention:**
+- Unit Tests: `*.test.ts`
+- E2E Tests: `*.spec.ts`
+- Test Fixtures: `fixtures/`
 
-```bash
-# Run with headed browser (see what's happening)
-npx playwright test --headed
+---
 
-# Debug specific test
-npx playwright test --debug tests/e2e/happy-path.spec.ts
+## Testing Agents (AI SDK)
 
-# Generate trace for failed tests
-npx playwright test --trace on
-npx playwright show-trace trace.zip
+### Mocking AI Responses
+
+```typescript
+import { streamText } from 'ai';
+
+vi.mock('ai', () => ({
+  streamText: vi.fn(() => ({
+    textStream: async function* () {
+      yield 'Mocked AI response';
+    }
+  }))
+}));
+
+test('should handle agent response', async () => {
+  const result = await extractionAgent(mockPdf);
+  expect(result.title).toBe('Mocked AI response');
+});
 ```
+
+---
 
 ## Best Practices
 
-### General
+### DO ✅
 
-1. **Test behavior, not implementation** - Focus on what code does, not how
-2. **Use descriptive test names** - Should read like documentation
-3. **Arrange-Act-Assert pattern** - Structure tests clearly
-4. **Keep tests independent** - No shared state between tests
-5. **Use factories** - Consistent, maintainable test data
+- Test user flows, nicht implementation details
+- Mock externe APIs (Slack, Resend, OpenAI)
+- Nutze `@testing-library/react` für User-centric Tests
+- Accessibility als first-class concern
+- Integration Tests > Unit Tests für Business Logic
 
-### Unit Tests
+### DON'T ❌
 
-1. Test pure functions separately from side effects
-2. Mock external dependencies (DB, API calls)
-3. Test edge cases and error conditions
-4. Keep tests fast (< 100ms each)
+- Private functions direkt testen
+- Über-mocken (mock nur external dependencies)
+- Flaky tests committen
+- Tests ohne Assertions
+- `@ts-ignore` in Tests
 
-### Integration Tests
+---
 
-1. Test complete user workflows
-2. Use realistic test data
-3. Mock external services (AI APIs, email)
-4. Verify state changes and side effects
+## Debugging Tests
 
-### E2E Tests
+### Vitest
 
-1. Test critical user journeys only
-2. Use stable selectors (test IDs, semantic text)
-3. Avoid testing implementation details
-4. Keep tests resilient to UI changes
-5. Use fixtures for complex setup
+```bash
+# Single test file
+npm test -- extraction.test.ts
 
-## Common Patterns
-
-### Testing AI Agent Outputs
-
-```typescript
-import { mockAIResponses } from '../mocks/ai-responses';
-
-it('should extract requirements from RFP', async () => {
-  const result = mockAIResponses.extraction;
-
-  expect(result).toHaveProperty('clientName');
-  expect(result).toHaveProperty('techStack');
-  expect(result.techStack).toBeInstanceOf(Array);
-});
+# Specific test
+npm test -- extraction.test.ts -t "should extract title"
 ```
 
-### Testing Status Transitions
+### Playwright
 
-```typescript
-it('should transition from draft to extracting', () => {
-  const rfp = factories.rfp({ status: 'draft' });
+```bash
+# Debug mode
+npm run test:e2e:debug
 
-  const updated = { ...rfp, status: 'extracting' as const };
-
-  expect(updated.status).toBe('extracting');
-});
+# Headed mode
+npm run test:e2e -- --headed
 ```
 
-### Testing Decision Logic
-
-```typescript
-it('should make bid decision based on scores', () => {
-  const decisionData = factories.decisionData();
-
-  expect(decisionData.decision).toBe('bid');
-  expect(decisionData.confidence).toBeGreaterThan(0.8);
-  expect(decisionData.scores.tech).toBeGreaterThan(0.7);
-});
-```
+---
 
 ## Troubleshooting
 
-### Tests Failing in CI but Passing Locally
+**Problem:** Tests timeout
+```typescript
+test('slow test', { timeout: 30000 }, async () => { ... });
+```
 
-- Check for environment-specific issues (file paths, env vars)
-- Ensure deterministic test data (avoid `Date.now()`, use factories)
-- Check for race conditions in async tests
+**Problem:** Flaky E2E tests
+```typescript
+// Use auto-wait
+await expect(page.getByText(/loading/i)).toBeVisible();
+await expect(page.getByText(/loading/i)).not.toBeVisible();
+```
 
-### Flaky E2E Tests
-
-- Add proper `waitFor` conditions
-- Increase timeouts for slow operations
-- Use `networkidle` state for page loads
-- Avoid hardcoded delays (`setTimeout`)
-
-### Coverage Not Meeting Goals
-
-- Add tests for edge cases
-- Test error handling paths
-- Cover conditional branches
-- Test async error scenarios
-
-## Resources
-
-- [Vitest Documentation](https://vitest.dev/)
-- [Playwright Documentation](https://playwright.dev/)
-- [Testing Library Best Practices](https://testing-library.com/docs/guiding-principles)
-- [MSW Documentation](https://mswjs.io/)
+**Problem:** Coverage nicht 80%
+```bash
+npm run test:coverage
+open coverage/index.html
+```

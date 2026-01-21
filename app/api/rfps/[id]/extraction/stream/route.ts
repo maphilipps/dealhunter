@@ -83,9 +83,10 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       // Parse metadata if available
       const metadata = bid.metadata ? JSON.parse(bid.metadata) : {};
 
-      // Run extraction with streaming callbacks
+      // Run extraction with streaming callbacks (rfpId enables RAG-based extraction)
       const result = await runExtractionWithStreaming(
         {
+          rfpId: id,
           rawText: bid.rawInput,
           inputType: bid.inputType as 'pdf' | 'email' | 'freetext',
           metadata,

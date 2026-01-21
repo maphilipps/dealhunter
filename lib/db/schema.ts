@@ -52,7 +52,7 @@ export const rfps = sqliteTable(
         'quick_scan_failed', // Quick Scan Agent failed (DEA-91, optional - can skip)
         'timeline_estimating', // Timeline Agent running after BID (DEA-90)
         'timeline_failed', // Timeline Agent failed (DEA-91, optional - can skip)
-        'bit_pending', // Quick Scan done, waiting for manual BIT/NO BIT decision
+        'bit_pending', // Quick Scan done, waiting for BL routing (BID/NO-BID by BL, not BD)
         'questions_ready', // 10 questions ready, waiting for BID/NO-BID decision (DEA-91 fallback)
         'evaluating', // AI is doing full decision evaluation (after manual trigger)
         'decision_made', // Decision made + Timeline complete, ready for BL routing
@@ -1441,6 +1441,39 @@ export const rfpEmbeddings = sqliteTable(
 
 export type RfpEmbedding = typeof rfpEmbeddings.$inferSelect;
 export type NewRfpEmbedding = typeof rfpEmbeddings.$inferInsert;
+
+// RAW PDF Chunks - Original document text for RAG-based extraction (DEA-108)
+export const rawChunks = sqliteTable(
+  'raw_chunks',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    rfpId: text('rfp_id')
+      .notNull()
+      .references(() => rfps.id, { onDelete: 'cascade' }),
+
+    // Chunk Metadata
+    chunkIndex: integer('chunk_index').notNull(), // 0, 1, 2... for ordering
+    content: text('content').notNull(), // The raw text chunk
+    tokenCount: integer('token_count').notNull(), // Estimated token count
+
+    // Vector
+    embedding: text('embedding').notNull(), // JSON array - 3072 dimensions (text-embedding-3-large)
+
+    // Additional Metadata
+    metadata: text('metadata'), // JSON - position, type, etc.
+
+    // Timestamps
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    rfpIdx: index('raw_chunks_rfp_idx').on(table.rfpId),
+  })
+);
+
+export type RawChunk = typeof rawChunks.$inferSelect;
+export type NewRawChunk = typeof rawChunks.$inferInsert;
 
 export const baselineComparisonsRelations = relations(baselineComparisons, ({ one }) => ({
   lead: one(leads, {

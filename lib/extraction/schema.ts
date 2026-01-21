@@ -138,12 +138,18 @@ export const extractedRequirementsSchema = z.object({
   // Additional Context
   keyRequirements: z
     .array(z.string())
+    .default([])
     .describe('List of key functional or non-functional requirements'),
   constraints: z.array(z.string()).optional().describe('Any constraints or limitations mentioned'),
 
   // Metadata
-  confidenceScore: z.number().min(0).max(1).describe('AI confidence in the extraction (0-1)'),
-  extractedAt: z.string().describe('ISO timestamp of extraction'),
+  confidenceScore: z
+    .number()
+    .min(0)
+    .max(1)
+    .default(0.5)
+    .describe('AI confidence in the extraction (0-1)'),
+  extractedAt: z.string().optional().describe('ISO timestamp of extraction (set by system)'),
 });
 
 export type ExtractedRequirements = z.infer<typeof extractedRequirementsSchema>;

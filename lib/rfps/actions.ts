@@ -41,11 +41,12 @@ export async function routeRfpToBusinessLine(params: RouteRfpParams): Promise<Ro
       return { success: false, error: 'Keine Berechtigung' };
     }
 
-    // Check status - should be in bit_pending or decision_made
-    if (rfp.status !== 'bit_pending' && rfp.status !== 'decision_made') {
+    // Check status - should be in bit_pending (waiting for BL routing)
+    // Note: BID/NO-BID decision is now made by BL AFTER routing, not by BD before routing
+    if (rfp.status !== 'bit_pending') {
       return {
         success: false,
-        error: `RFP Status ungültig: ${rfp.status}. Erwartet: bit_pending oder decision_made`,
+        error: `RFP Status ungültig: ${rfp.status}. Erwartet: bit_pending (BL-Routing bereit)`,
       };
     }
 

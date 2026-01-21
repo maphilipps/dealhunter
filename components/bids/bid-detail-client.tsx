@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { updateExtractedRequirements } from '@/lib/bids/actions';
-import { calculateAnsweredQuestionsCount } from '@/lib/bids/ten-questions';
+import { calculateAnsweredQuestionsCount, buildQuestionsWithStatus } from '@/lib/bids/ten-questions';
 import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
 import {
   startBitEvaluation,
@@ -32,6 +32,8 @@ import { ProjectPlanningCard } from './project-planning-card';
 import { NotificationCard } from './notification-card';
 import { BitDecisionActions } from './bit-decision-actions';
 import { DuplicateWarning } from './duplicate-warning';
+import { TenQuestionsCard } from './ten-questions-card';
+import { DecisionConfidenceBanner } from './decision-confidence-banner';
 import type { DuplicateCheckResult } from '@/lib/bids/duplicate-check';
 
 interface BidDetailClientProps {
@@ -541,13 +543,40 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             quickScan &&
             (() => {
               const questionsCount = calculateAnsweredQuestionsCount(quickScan, extractedData);
+              const questionsWithStatus = buildQuestionsWithStatus(quickScan, extractedData);
+              const isIbexa = quickScan.cms?.toLowerCase().includes('ibexa');
+
               return (
-                <BitDecisionActions
-                  bidId={bid.id}
-                  answeredQuestionsCount={questionsCount.answered}
-                  totalQuestionsCount={questionsCount.total}
-                  overallScore={quickScan.confidence || undefined}
-                />
+                <>
+                  {/* Decision Confidence Banner (if <70% answered) */}
+                  <DecisionConfidenceBanner
+                    answeredCount={questionsCount.answered}
+                    totalCount={questionsCount.total}
+                  />
+
+                  {/* 10 Questions Review Card */}
+                  <TenQuestionsCard
+                    questions={questionsWithStatus.questions}
+                    projectType={questionsWithStatus.projectType}
+                    answeredCount={questionsWithStatus.summary.answered}
+                    totalCount={questionsWithStatus.summary.total}
+                  />
+
+                  {/* BIT/NO-BIT Decision Actions */}
+                  <BitDecisionActions
+                    bidId={bid.id}
+                    answeredQuestionsCount={questionsCount.answered}
+                    totalQuestionsCount={questionsCount.total}
+                    overallScore={quickScan.confidence || undefined}
+                    blRecommendation={{
+                      primaryBusinessLine: quickScan.recommendedBusinessUnit || 'Technology & Innovation',
+                      confidence: quickScan.confidence || 0,
+                      reasoning: quickScan.reasoning || '',
+                      alternativeBusinessLines: [],
+                    }}
+                    isIbexa={isIbexa}
+                  />
+                </>
               );
             })()}
 

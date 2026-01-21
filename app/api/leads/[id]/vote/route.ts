@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { z } from 'zod';
 
 import { createAuditLog } from '@/lib/admin/audit-actions';
@@ -138,26 +139,33 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .where(eq(leads.id, parsedId.data.id))
       .returning();
 
-    // 8. Create Audit Trail
-    await createAuditLog({
-      action: 'update',
-      entityType: 'rfp',
-      entityId: lead.rfpId,
-      previousValue: JSON.stringify({
-        blVote: null,
-        status: lead.status,
-      }),
-      newValue: JSON.stringify({
-        blVote: vote,
-        blVotedAt: updatedLead.blVotedAt,
-        blVotedBy: session.user.id,
-        blReasoning: reasoning,
-        blConfidenceScore: confidence,
-      }),
-      reason: `BL Vote: ${vote} (Confidence: ${confidence}%)`,
+    // 8. Create Audit Trail in Background (Non-Blocking)
+    after(async () => {
+      try {
+        await createAuditLog({
+          action: 'update',
+          entityType: 'rfp',
+          entityId: lead.rfpId,
+          previousValue: JSON.stringify({
+            blVote: null,
+            status: lead.status,
+          }),
+          newValue: JSON.stringify({
+            blVote: vote,
+            blVotedAt: updatedLead.blVotedAt,
+            blVotedBy: session.user.id,
+            blReasoning: reasoning,
+            blConfidenceScore: confidence,
+          }),
+          reason: `BL Vote: ${vote} (Confidence: ${confidence}%)`,
+        });
+      } catch (error) {
+        console.error('Failed to create audit log:', error);
+        // Log error but don't fail request - audit log is not critical
+      }
     });
 
-    // 9. Return Updated Lead
+    // 9. Return Updated Lead (Immediate Response)
     return NextResponse.json(
       {
         success: true,

@@ -259,7 +259,13 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         setIsLoadingQuickScan(true);
         const result = await getQuickScanResult(bid.id);
         if (result.success && result.quickScan) {
-          setQuickScan(result.quickScan);
+          setQuickScan(prevQuickScan => {
+            // Only update if status changed to prevent unnecessary re-renders
+            if (!prevQuickScan || prevQuickScan.status !== result.quickScan.status) {
+              return result.quickScan;
+            }
+            return prevQuickScan;
+          });
           setNeedsWebsiteUrl(false);
         } else if (bid.status === 'quick_scanning') {
           const hasUrl =
@@ -293,7 +299,20 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
       setIsLoadingBitEvaluation(true);
       getBitEvaluationResult(bid.id).then(result => {
         if (result.success && result.result) {
-          setBitEvaluationResult(result.result);
+          setBitEvaluationResult(prevResult => {
+            // Only update if result actually changed
+            if (!prevResult) {
+              return result.result;
+            }
+
+            // Compare decision field to prevent unnecessary updates
+            if (prevResult.decision.decision !== result.result.decision.decision ||
+                prevResult.decision.overallConfidence !== result.result.decision.overallConfidence) {
+              return result.result;
+            }
+
+            return prevResult;
+          });
 
           // Show low confidence dialog if confidence < 70% and not yet confirmed
           if (result.result.decision.overallConfidence < 70 && bid.status === 'decision_made') {

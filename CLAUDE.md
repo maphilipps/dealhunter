@@ -149,7 +149,7 @@ Preview & Edit ← User confirms/edits
      ↓
 QUICK SCAN Agent ← AI SDK generateObject
      ↓              (Tech stack, BL recommendation)
-BIT/NO BIT Evaluation
+BID/NO-BID Evaluation
      ↓
 ├─ TECH Agent ← Multi-agent parallel execution
 ├─ COMMERCIAL Agent
@@ -236,7 +236,7 @@ lib/
 ├── agents/                  # AI SDK Agents
 │   ├── extraction-agent.ts
 │   ├── quick-scan-agent.ts
-│   ├── bit-evaluation-agent.ts
+│   ├── bid-evaluation-agent.ts
 │   └── coordinator-agent.ts
 ├── db/
 │   ├── schema.ts           # Drizzle schema
@@ -397,17 +397,44 @@ Plan Mode trennt Research von Execution - Claude analysiert und plant, ohne Änd
 
 ## Feature Implementation Workflow
 
+**WICHTIG:** Nutze Linear Issues für Tracking. Dokumentiere jeden Schritt, hohe Testabdeckung (80%+) erforderlich.
+
 ```
-1. /plan → Plan Mode für komplexe Features
-2. TodoWrite → Tasks aus Plan erstellen
-3. ShadCN MCP → Komponenten finden
-4. Context7 MCP → AI SDK Docs lesen (bei Agents)
-5. Implementieren
-6. Chrome DevTools MCP → Visual Testing
-7. Next.js DevTools MCP → Error Check
-8. Git Commit: feat(FEATURE-ID): description
-9. progress.txt + FEATURES.json updaten
+1. Linear Issue → Stelle Linear Issue ID bereit (z.B. DEA-123)
+
+2. /plan "Feature description"
+   → Übergebe an workflows:plan:
+     - Linear Issue ID: DEA-123
+     - Hinweis: "Brauchen min. 80% Test Coverage (Vitest)"
+     - Hinweis: "Pflege Linear Issue mit jedem Schritt"
+
+3. TodoWrite → Tasks aus Plan erstellen
+
+4. /work → Development mit Tests
+   → workflows:work updatet Linear Issue kontinuierlich
+   → Jeder completed Task → Linear Comment
+
+5. /review → Multi-agent Review
+   → Ergebnisse in Linear dokumentiert
+
+6. /test-browser → Browser Testing
+   → Screenshots in Linear
+
+7. Git Commit: feat(DEA-123): description
+
+8. PR erstellen → Link in Linear Issue
+
+9. progress.txt updaten → BLEIBT bestehen
 ```
+
+**Linear MCP Tools:**
+- `mcp__linear-server__create_comment(issueId, body)` - Step dokumentieren
+- `mcp__linear-server__update_issue(id, state)` - Status updaten
+- `mcp__linear-server__get_issue(id)` - Issue Details abrufen
+
+**Test Coverage Enforcement:**
+- Minimum 80% Vitest coverage REQUIRED
+- Falls <80%: Sub-Issue erstellen, blockieren bis erreicht
 
 ## Environment Variables
 
@@ -487,9 +514,9 @@ fix_my_app(focusArea: 'all')
 3. Erneut `fix_my_app` aufrufen um zu verifizieren
 4. Wiederholen bis keine Fehler mehr
 
-### Browser Testing mit agent-browser (BEVORZUGT)
+### Browser Testing mit agent-browser (IMMER NUTZEN!)
 
-**Nutze `mcp__dev3000__agent_browser_action` statt Chrome DevTools!**
+**WICHTIG: Nutze IMMER `mcp__dev3000__agent_browser_action` statt Chrome DevTools MCP!**
 
 ```typescript
 // Seite öffnen

@@ -7,6 +7,7 @@ import {
   Database,
   FileText,
   Home,
+  ListTodo,
   PlusCircle,
   Settings,
   Target,
@@ -81,6 +82,26 @@ const allNavItems: Array<{
       {
         title: 'Genehmigt',
         url: '/rfps?status=approved',
+      },
+    ],
+  },
+  {
+    title: 'Leads',
+    url: '/leads',
+    icon: ListTodo,
+    roles: ['bl', 'admin'],
+    items: [
+      {
+        title: 'Meine Leads',
+        url: '/leads',
+      },
+      {
+        title: 'Alle Leads',
+        url: '/leads?filter=all',
+      },
+      {
+        title: 'Deep Scan',
+        url: '/leads?view=deep-scan',
       },
     ],
   },

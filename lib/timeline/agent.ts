@@ -43,7 +43,7 @@ export interface TimelineAgentInput {
  * Formula: Base = (Pages * 0.5) + (ContentTypes * 5) + (Integrations * 10) + 30
  * This gives a rough working days estimate
  */
-function calculateBaseDays(input: TimelineAgentInput): number {
+export function calculateBaseDays(input: TimelineAgentInput): number {
   const pages = input.estimatedPageCount || 50; // Default assumption
   const contentTypes = input.contentTypes || 5;
   const integrations = input.detectedIntegrations?.length || 0;
@@ -56,7 +56,7 @@ function calculateBaseDays(input: TimelineAgentInput): number {
 /**
  * Determine complexity level based on input signals
  */
-function assessComplexity(input: TimelineAgentInput): 'low' | 'medium' | 'high' | 'very_high' {
+export function assessComplexity(input: TimelineAgentInput): 'low' | 'medium' | 'high' | 'very_high' {
   const pages = input.estimatedPageCount || 50;
   const contentTypes = input.contentTypes || 5;
   const integrations = input.detectedIntegrations?.length || 0;

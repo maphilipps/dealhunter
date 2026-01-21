@@ -143,7 +143,7 @@ export const extractedRequirementsSchema = z.object({
 
   // Metadata
   confidenceScore: z.number().min(0).max(1).describe('AI confidence in the extraction (0-1)'),
-  extractedAt: z.string().describe('ISO timestamp of extraction'),
+  extractedAt: z.string().optional().describe('ISO timestamp of extraction'),
 });
 
 export type ExtractedRequirements = z.infer<typeof extractedRequirementsSchema>;

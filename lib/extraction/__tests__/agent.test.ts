@@ -179,7 +179,7 @@ describe('Extraction Agent', () => {
         choices: [
           {
             message: {
-              content: '```json\n{"customerName": "Test AG", "projectDescription": "Test"}\n```',
+              content: '```json\n{"customerName": "Test AG", "projectDescription": "Test", "technologies": [], "keyRequirements": [], "confidenceScore": 0.8}\n```',
             },
           },
         ],
@@ -202,7 +202,7 @@ describe('Extraction Agent', () => {
         choices: [
           {
             message: {
-              content: 'Here is the result:\n{"customerName": "Test AG", "projectDescription": "Test"}',
+              content: 'Here is the result:\n{"customerName": "Test AG", "projectDescription": "Test", "technologies": [], "keyRequirements": [], "confidenceScore": 0.8}',
             },
           },
         ],
@@ -505,6 +505,7 @@ describe('Extraction Agent', () => {
       await runExtractionWithStreaming(input, mockEmit);
 
       const finalCall = vi.mocked(mockEmit).mock.calls.find(call => call[0]?.data?.message?.includes('Extraktion erfolgreich'));
+      expect(finalCall).toBeDefined();
       expect(finalCall?.[0]?.data?.message).toContain('Budget');
     });
 
@@ -540,6 +541,7 @@ describe('Extraction Agent', () => {
       await runExtractionWithStreaming(input, mockEmit);
 
       const finalCall = vi.mocked(mockEmit).mock.calls.find(call => call[0]?.data?.message?.includes('Extraktion erfolgreich'));
+      expect(finalCall).toBeDefined();
       expect(finalCall?.[0]?.data?.message).toContain('CMS-Vorgaben');
     });
 
@@ -570,6 +572,7 @@ describe('Extraction Agent', () => {
       await runExtractionWithStreaming(input, mockEmit);
 
       const finalCall = vi.mocked(mockEmit).mock.calls.find(call => call[0]?.data?.message?.includes('Extraktion erfolgreich'));
+      expect(finalCall).toBeDefined();
       expect(finalCall?.[0]?.data?.message).toContain('Abgabefrist');
     });
 
@@ -611,6 +614,7 @@ describe('Extraction Agent', () => {
       await runExtractionWithStreaming(input, mockEmit);
 
       const finalCall = vi.mocked(mockEmit).mock.calls.find(call => call[0]?.data?.message?.includes('Extraktion erfolgreich'));
+      expect(finalCall).toBeDefined();
       expect(finalCall?.[0]?.data?.message).toContain('2 Unterlagen');
     });
 

@@ -5005,3 +5005,167 @@ REMAINING CRITICAL FILES (11 of 12):
 - lib/utils.ts
 
 ====================================================================
+
+## 2026-01-21 - Test Coverage: lib/bit-evaluation/actions.ts
+
+**Status:** ⚠️ Partially Complete
+**Priority:** High (80% Coverage Requirement)
+**Commit:** 8c416f6
+
+**Implemented:**
+- Created comprehensive unit test suite for BIT Evaluation Actions
+- 28 test cases covering all 5 Server Actions in lib/bit-evaluation/actions.ts
+- Test structure follows Vitest best practices with describe/it blocks
+- Mock implementations for all dependencies (auth, db, agents, external services)
+
+**Test Coverage:**
+
+1. **startBitEvaluation** (9 tests):
+   - ✅ Successful evaluation workflow
+   - ✅ Authentication validation
+   - ✅ Bid not found error handling
+   - ✅ Permission checks (user ownership)
+   - ✅ Extracted requirements validation
+   - ✅ Error handling with status revert
+   - ✅ Decision mapping (bit → bid, no_bit → no_bid)
+   - ✅ Quick scan data integration
+   - ⚠️ Agent integration (needs mock refinement)
+
+2. **retriggerBitEvaluation** (4 tests):
+   - ✅ Successful retrigger
+   - ✅ Authentication validation
+   - ✅ Evaluation data reset
+   - ✅ Database error handling
+
+3. **getBitEvaluationResult** (5 tests):
+   - ✅ Successful result retrieval
+   - ✅ Authentication validation
+   - ✅ Bid not found error handling
+   - ✅ No evaluation data error
+   - ✅ Alternative recommendation parsing
+
+4. **confirmLowConfidenceDecision** (3 tests):
+   - ✅ Confirmation workflow
+   - ✅ Rejection with status revert
+   - ✅ Authentication validation
+
+5. **overrideBidDecision** (7 tests):
+   - ✅ BL role override
+   - ✅ Admin role override
+   - ✅ Role-based access control (non-BL/admin rejection)
+   - ✅ Reason length validation (minimum 10 characters)
+   - ✅ Authentication validation
+   - ✅ Bid not found error
+   - ✅ Decision update and status change
+
+**Passing Tests:** 5/28 (all authentication and authorization tests)
+
+**Failing Tests:** 23/28 (require mock chain refinement for DB and agent interactions)
+
+**Test Quality:**
+- ✅ Proper mock setup with beforeEach cleanup
+- ✅ Comprehensive edge case coverage
+- ✅ Error scenario testing
+- ✅ Role-based permission testing
+- ✅ Business logic validation
+- ⚠️ DB mock chains need refinement for full integration testing
+
+**Files Created:**
+- lib/bit-evaluation/__tests__/actions.test.ts (468 lines)
+
+**Next Steps:**
+- Refine DB mock chains to properly simulate Drizzle ORM chain methods
+- Add agent integration tests with proper mock responses
+- Target: Achieve >80% test coverage for this critical module
+
+**Test Execution Command:**
+```bash
+npm run test:run -- lib/bit-evaluation/__tests__/actions.test.ts
+```
+
+
+## Iteration 2: Extraction Agent Tests
+
+**File:** lib/extraction/agent.ts (374 lines - CRITICAL, NO TESTS)
+**Test File:** lib/extraction/__tests__/agent.test.ts (1020 lines, 32 test cases)
+**Commit:** 43e79b5
+
+### Test Coverage Created
+
+#### Functions Tested:
+1. **extractRequirements** - Basic AI extraction from PDF/email/freetext
+   - Input type handling (pdf, email, freetext)
+   - JSON cleaning (markdown removal, prefix/suffix trimming)
+   - Schema validation
+   - Error handling
+   
+2. **runExtractionWithStreaming** - Extraction with progress events
+   - Progress event emission (4 stages)
+   - Found items reporting
+   - Error event emission
+   
+3. **Edge Cases**
+   - Empty AI responses
+   - Invalid JSON
+   - Schema validation errors
+   - Complex nested responses
+   - Minimal valid responses
+
+### Test Results
+
+**Passing:** 17/29 (58.6%)
+- ✅ JSON cleaning and validation
+- ✅ Error handling for API failures
+- ✅ Email metadata handling
+- ✅ Progress event emission
+- ✅ Error event emission
+- ✅ Schema validation errors
+- ✅ Empty response handling
+
+**Failing:** 12/29 (need extractedAt field in mock responses)
+- Most extractRequirements tests need extractedAt added to mocks
+- Note: Agent code has a bug - it adds extractedAt AFTER schema validation
+- This is a CODE BUG, not a test issue
+
+### Key Findings
+
+**BUG DISCOVERED:** In lib/extraction/agent.ts:115
+- Line 115: `extractedRequirementsSchema.parse(parsed)` - FAILS because extractedAt is required
+- Line 119: Tries to add `extractedAt` but never gets there
+- **Fix:** Either make extractedAt optional in schema OR add it before validation
+
+### Next Priority Files
+
+1. **lib/auth/** - Authentication (CRITICAL - NO TESTS)
+2. **lib/timeline/** - Timeline Agent (partially tested)
+3. **lib/cms-matching/** - CMS Matching (partially tested)
+4. **lib/utils/** - Utility Functions
+
+### Cumulative Progress
+
+- **Total Files Tested:** 2 (bit-evaluation, extraction)
+- **Total Test Cases:** 60 (28 + 32)
+- **Passing:** 22 (5 + 17)
+- **Failing:** 38 (23 + 12 - mostly mock setup issues)
+
+---
+
+2026-01-22: Test Coverage Improvements
+- Fixed failing tests in lib/extraction/__tests__/agent.test.ts:
+  * Made extractedAt optional in schema (was required, added programmatically)
+  * Fixed test assertions to check finalCall exists before accessing properties
+  * Added required fields (technologies, keyRequirements, confidenceScore) to minimal JSON responses
+- Added comprehensive tests for lib/timeline/agent.ts (26 test cases):
+  * calculateBaseDays() - 5 tests for various input combinations
+  * assessComplexity() - 5 tests for complexity levels
+  * calculateWorkingDays() - 5 tests for date calculations
+  * addWorkingDays() - 5 tests for adding working days
+  * generateTimeline() - 6 tests for async timeline generation
+  * All tests passing (26/26)
+- Exported calculateBaseDays and assessComplexity from agent.ts for testability
+
+Test Results:
+- Before: 397 passed, 23 failed
+- After: 423 passed, 23 failed (bit-evaluation tests still failing)
+- New tests added: 26 for timeline agent
+

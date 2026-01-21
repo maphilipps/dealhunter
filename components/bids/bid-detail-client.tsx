@@ -25,7 +25,6 @@ import { WebsiteUrlInput } from './website-url-input';
 import { ActivityStream } from '@/components/ai-elements/activity-stream';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
 import { updateExtractedRequirements } from '@/lib/bids/actions';
 import type { DuplicateCheckResult } from '@/lib/bids/duplicate-check';
 import {
@@ -37,10 +36,10 @@ import {
   getBitEvaluationResult,
   retriggerBitEvaluation,
 } from '@/lib/bit-evaluation/actions';
-import type { BidOpportunity, QuickScan } from '@/lib/db/schema';
-import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
-import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
+import type { BidOpportunity, QuickScan } from '@/lib/db/schema';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
+import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
 
 
 

@@ -167,22 +167,33 @@ interface RFP {
 
 ---
 
-## Phase 2: BID/NO-BID DECISION (Bereichsleiter) ❌ FEHLT KOMPLETT
+## Phase 2: BID/NO-BID DECISION (Bereichsleiter) 🟡 TEILWEISE IMPLEMENTIERT
 
 **Ziel:** Fundierte BID/NO-BID Entscheidung basierend auf vollständigem Report
 **User:** Bereichsleiter (BL)
 **Dauer:** Stunden bis Tage (ausführliche Review)
 **Benchmark:** Locarno Festival Audit (`audits/audit_lucarnofestival.ch/`)
+**Status:** 🟡 Lead Dashboard Grundstruktur vorhanden, Deep Scan Agents fehlen
 
 ### Workflow
 
 | Status          | Beschreibung             | View                             | Implementiert |
 | --------------- | ------------------------ | -------------------------------- | ------------- |
-| `routed`        | Lead Dashboard verfügbar | `/leads/[id]`                    | ❌ FEHLT      |
+| `routed`        | Lead Dashboard verfügbar | `/leads/[id]`                    | ✅ PARTIAL    |
 | `full_scanning` | Deep Analysis läuft      | `/leads/[id]` - ActivityStream   | ❌ FEHLT      |
 | `bl_reviewing`  | BL prüft Report          | `/leads/[id]` - Review Interface | ❌ FEHLT      |
 
 **WICHTIG:** Phase 2 endet mit BL Vote (BID/NO-BID) - **KEIN Team Assignment!**
+
+### Was bereits existiert (Lead Dashboard)
+
+✅ **Navigation:** Leads-Menü in Sidebar (BL + Admin Rollen)
+✅ **Routen:** `/leads/[id]` - Lead Detail Page
+✅ **Layout:** `/leads/[id]/layout.tsx` - Dashboard-Layout
+✅ **Actions:** `lib/leads/actions.ts` - Lead Server Actions
+✅ **Components:** `components/lead-form.tsx` - Lead Form Component
+
+### Was noch fehlt (Deep Analysis)
 
 ### Lead Dashboard Struktur (wie Locarno Audit)
 

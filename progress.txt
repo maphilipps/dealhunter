@@ -3767,3 +3767,105 @@ Implemented Accessibility Audit Agent with WCAG 2.1 AA compliance checks using P
 **Commit:** 6112752
 **Linear:** https://linear.app/adessocms/issue/DEA-95
 
+
+
+## DEA-96: Agent Orchestrator & Background Jobs - 2026-01-21
+
+**Status:** ✅ COMPLETED
+
+**What was implemented:**
+
+Created the Agent Orchestrator that manages Deep-Scan Agents for Phase 2 Lead Analysis with full background job tracking, progress updates, error handling, and lead status management.
+
+**Implementation Details:**
+
+### Core Orchestration Flow:
+
+1. **Background Job Creation:**
+   - Creates backgroundJobs record with jobType='deep-analysis'
+   - Initializes with status='running', progress=0
+   - Tracks userId for audit trail
+
+2. **Agent Sequencing:**
+   - Full-Scan Agent runs first (tech stack detection) - currently placeholder
+   - After Full-Scan: Content Architecture, Migration Complexity, and Accessibility run in parallel
+   - Uses Promise.allSettled for graceful degradation
+
+3. **Lead Status Transitions:**
+   - routed → full_scanning (at start of orchestration)
+   - full_scanning → bl_reviewing (after all agents complete)
+   - Status updates tracked in leads table
+
+4. **Progress Tracking:**
+   - Progress updated at each stage (0-100%)
+   - Stages: 10% (init), 40% (full-scan), 50-70% (parallel agents), 90% (finalizing), 100% (done)
+   - currentStep field shows human-readable progress description
+
+5. **Error Handling & Retry:**
+   - Graceful degradation: Individual agent failures don't stop workflow
+   - Errors collected in errors array
+   - Partial success possible (some agents succeed, others fail)
+   - Background job status set to 'failed' only on fatal orchestrator errors
+   - All errors logged to console.error for debugging
+
+6. **Parallel Agent Execution:**
+   - Content Architecture Agent
+   - Migration Complexity Agent (depends on Content Architecture)
+   - Accessibility Agent
+   - All run concurrently using Promise.allSettled
+   - Failed agents return fallback error results
+
+### Database Operations:
+
+1. **createBackgroundJob():** Inserts new backgroundJobs record
+2. **updateJobProgress():** Updates progress and currentStep
+3. **completeBackgroundJob():** Marks job as completed/failed with results
+4. **updateLeadStatus():** Updates lead status field
+
+### Agent Integration:
+
+- **Content Architecture Agent:** Already implemented (DEA-93)
+- **Migration Complexity Agent:** Already implemented (DEA-94)  
+- **Accessibility Agent:** Already implemented (DEA-95)
+- **Full-Scan Agent:** Placeholder (returns mock data) - to be implemented separately
+
+**Files Created:**
+- `lib/agents/orchestrator.ts` (554 lines)
+
+**Key Functions:**
+- `runDeepScanAgents(input)` - Main orchestrator entry point
+- `runFullScanAgent()` - Placeholder for tech stack detection
+- `runParallelAgents()` - Executes Content/Migration/A11y in parallel
+- `createBackgroundJob()` - Creates job tracking record
+- `updateJobProgress()` - Updates progress percentage
+- `completeBackgroundJob()` - Finalizes job with results/errors
+- `updateLeadStatus()` - Transitions lead through workflow states
+
+**Error Handling Strategy:**
+- Individual agent failures don't block others
+- Errors collected in errors array
+- success=true only if ALL agents succeed
+- success=false if ANY fatal error or orchestrator failure
+- Partial results returned even with some failures
+
+**Dependencies:**
+- DEA-92: RFP → Lead Conversion ✅
+- DEA-93: Content Architecture Agent ✅
+- DEA-94: Migration Complexity Agent ✅
+- DEA-95: Accessibility Audit Agent ✅
+
+**Blocks (now unblocked):**
+- DEA-97: PT Estimation Module
+- DEA-98: CMS Matching Module
+- DEA-99: Reference Project Matching
+- DEA-101: Lead Overview Page
+- DEA-105: Background Job UI Indicators
+
+**Type Safety:**
+- All functions fully typed
+- No TypeScript errors in orchestrator.ts
+- Uses existing schema types (Lead, BackgroundJob, WebsiteAudit)
+
+**Commit:** Pending
+**Linear:** https://linear.app/adessocms/issue/DEA-96
+

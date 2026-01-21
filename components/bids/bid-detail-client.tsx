@@ -204,8 +204,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         toast.success('BIT Evaluierung gestartet - bitte warten...');
         // Clear current result so the ActivityStream is shown
         setBitEvaluationResult(null);
-        // Force page reload to show ActivityStream
-        window.location.reload();
+        // Refresh server components to show updated state
+        router.refresh();
       } else {
         toast.error(result.error || 'BIT Re-Evaluierung fehlgeschlagen');
         setIsRetriggeringBit(false);
@@ -226,8 +226,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
 
       if (result.success) {
         toast.success('Quick Scan gestartet - bitte warten...');
-        // Force page reload to show ActivityStream
-        window.location.reload();
+        // Refresh server components to show updated state
+        router.refresh();
       } else {
         toast.error(result.error || 'Quick Scan Re-Trigger fehlgeschlagen');
         setIsRetriggeringQuickScan(false);

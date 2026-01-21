@@ -19,10 +19,7 @@ export const techStackSchema = z.object({
   database: z.string().nullable().describe('Database (e.g., MySQL, PostgreSQL, etc.)'),
   hosting: z.string().nullable().describe('Hosting provider (e.g., AWS, Azure, etc.)'),
   server: z.string().nullable().describe('Web server (e.g., Apache, Nginx, etc.)'),
-  technologies: z
-    .array(z.string())
-    .describe('List of all detected technologies')
-    .default([]),
+  technologies: z.array(z.string()).describe('List of all detected technologies').default([]),
   confidence: z.enum(['high', 'medium', 'low']).describe('Detection confidence level'),
 });
 
@@ -340,9 +337,8 @@ function matchesPattern(pattern: DetectionPattern, analysis: PageAnalysis): bool
   if (pattern.patterns.meta && pattern.patterns.meta.length > 0) {
     totalChecks++;
     if (
-      pattern.patterns.meta.some(
-        (m) =>
-          Object.values(analysis.metas).some((val) => val.toLowerCase().includes(m.toLowerCase()))
+      pattern.patterns.meta.some(m =>
+        Object.values(analysis.metas).some(val => val.toLowerCase().includes(m.toLowerCase()))
       )
     ) {
       score++;
@@ -353,8 +349,8 @@ function matchesPattern(pattern: DetectionPattern, analysis: PageAnalysis): bool
   if (pattern.patterns.script && pattern.patterns.script.length > 0) {
     totalChecks++;
     if (
-      pattern.patterns.script.some((s) =>
-        analysis.scripts.some((script) => script.toLowerCase().includes(s.toLowerCase()))
+      pattern.patterns.script.some(s =>
+        analysis.scripts.some(script => script.toLowerCase().includes(s.toLowerCase()))
       )
     ) {
       score++;
@@ -364,9 +360,7 @@ function matchesPattern(pattern: DetectionPattern, analysis: PageAnalysis): bool
   // Check HTML content
   if (pattern.patterns.html && pattern.patterns.html.length > 0) {
     totalChecks++;
-    if (
-      pattern.patterns.html.some((h) => analysis.html.toLowerCase().includes(h.toLowerCase()))
-    ) {
+    if (pattern.patterns.html.some(h => analysis.html.toLowerCase().includes(h.toLowerCase()))) {
       score++;
     }
   }
@@ -375,7 +369,7 @@ function matchesPattern(pattern: DetectionPattern, analysis: PageAnalysis): bool
   if (pattern.patterns.headers && pattern.patterns.headers.length > 0) {
     totalChecks++;
     if (
-      pattern.patterns.headers.some((h) =>
+      pattern.patterns.headers.some(h =>
         Object.entries(analysis.headers).some(
           ([key, val]) =>
             `${key}: ${val}`.toLowerCase().includes(h.toLowerCase()) ||
@@ -391,8 +385,8 @@ function matchesPattern(pattern: DetectionPattern, analysis: PageAnalysis): bool
   if (pattern.patterns.cookies && pattern.patterns.cookies.length > 0) {
     totalChecks++;
     if (
-      pattern.patterns.cookies.some((c) =>
-        analysis.cookies.some((cookie) => cookie.toLowerCase().includes(c.toLowerCase()))
+      pattern.patterns.cookies.some(c =>
+        analysis.cookies.some(cookie => cookie.toLowerCase().includes(c.toLowerCase()))
       )
     ) {
       score++;
@@ -473,13 +467,10 @@ function determineConfidence(
 /**
  * Extract page analysis from HTML and headers
  */
-export function analyzePageContent(
-  html: string,
-  headers: Record<string, string>
-): PageAnalysis {
+export function analyzePageContent(html: string, headers: Record<string, string>): PageAnalysis {
   // Extract scripts
   const scriptMatches = Array.from(html.matchAll(/<script[^>]*src=["']([^"']+)["']/gi));
-  const scripts = scriptMatches.map((m) => m[1]);
+  const scripts = scriptMatches.map(m => m[1]);
 
   // Extract meta tags
   const metas: Record<string, string> = {};

@@ -15,7 +15,7 @@ async function seedTestUser() {
   const existingUser = await db
     .select()
     .from(users)
-    .where((users) => users.email === testEmail)
+    .where(users => users.email === testEmail)
     .get();
 
   if (existingUser) {
@@ -42,7 +42,7 @@ seedTestUser()
     console.log('✅ Seeding complete');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Error seeding test user:', error);
     process.exit(1);
   });

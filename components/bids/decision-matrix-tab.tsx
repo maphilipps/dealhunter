@@ -90,8 +90,17 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
       if (result.success && result.businessUnits) {
         setBusinessUnits(result.businessUnits as BusinessUnit[]);
 
-        // Pre-select recommended BU if available
-        if (quickScan?.recommendedBusinessUnit) {
+        // Check if Ibexa - auto-select PHP Business Unit
+        const isIbexa = quickScan?.cms?.toLowerCase().includes('ibexa');
+        if (isIbexa) {
+          const phpBU = result.businessUnits.find((bu: BusinessUnit) =>
+            bu.name.toLowerCase().includes('php')
+          );
+          if (phpBU) {
+            setSelectedBU(phpBU.id);
+          }
+        } else if (quickScan?.recommendedBusinessUnit) {
+          // Pre-select recommended BU if available (non-Ibexa)
           const recommended = result.businessUnits.find(
             (bu: BusinessUnit) => bu.name === quickScan.recommendedBusinessUnit
           );
@@ -105,7 +114,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
     if (quickScan?.status === 'completed') {
       loadBusinessUnits();
     }
-  }, [quickScan?.status, quickScan?.recommendedBusinessUnit]);
+  }, [quickScan?.status, quickScan?.recommendedBusinessUnit, quickScan?.cms]);
 
   // Handle single requirement research
   const [researchingCell, setResearchingCell] = useState<string | null>(null);
@@ -201,10 +210,69 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
     );
   }
 
+  // Check if CMS is Ibexa - special handling
+  const isIbexa = quickScan.cms?.toLowerCase().includes('ibexa');
+
   return (
     <div className="space-y-6">
-      {/* Header Card with BL Recommendation */}
-      {quickScan.recommendedBusinessUnit && (
+      {/* Special handling for Ibexa CMS - Direct routing to Francesco Rapos */}
+      {isIbexa ? (
+        <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Building2 className="h-6 w-6 text-blue-600" />
+              <div>
+                <CardTitle className="text-xl text-blue-900">Ibexa CMS erkannt</CardTitle>
+                <CardDescription className="text-blue-700">
+                  Automatische Weiterleitung an PHP-Spezialist
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg bg-white p-4 border border-blue-200">
+              <p className="text-sm text-muted-foreground mb-2">Weiterleitung an</p>
+              <p className="text-2xl font-bold text-blue-900">Francesco Rapos</p>
+              <p className="text-sm text-blue-700 mt-1">Bereichsleiter PHP</p>
+            </div>
+            <div className="rounded-lg bg-blue-100 border border-blue-200 p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Ibexa</strong> ist ein PHP-basiertes Enterprise CMS. Dieses Projekt wird
+                automatisch an den PHP-Bereich weitergeleitet.
+              </p>
+            </div>
+            {quickScan.reasoning && (
+              <div className="rounded-lg bg-white p-4 border border-blue-200">
+                <p className="text-sm font-medium text-muted-foreground mb-2">
+                  Quick Scan Analyse
+                </p>
+                <p className="text-sm text-foreground">{quickScan.reasoning}</p>
+              </div>
+            )}
+            <Button
+              onClick={handleForward}
+              disabled={isForwarding}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              size="lg"
+            >
+              {isForwarding ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Weiterleiten...
+                </>
+              ) : (
+                <>
+                  An Francesco Rapos weiterleiten
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Header Card with BL Recommendation */}
+          {quickScan.recommendedBusinessUnit && (
         <Card className="border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -433,6 +501,8 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
           </Card>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

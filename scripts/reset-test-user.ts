@@ -34,7 +34,7 @@ resetTestUser()
     console.log('✅ Reset complete');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Error resetting test user:', error);
     process.exit(1);
   });

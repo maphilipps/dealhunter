@@ -230,7 +230,9 @@ export default async function QuickScanResultsPage({
                   return (
                     <Badge key={idx} variant="outline">
                       {isString ? (type as string) : (typeObj?.type ?? 'Unknown')}
-                      {!isString && typeObj?.count && <span className="ml-1 text-xs">({typeObj.count})</span>}
+                      {!isString && typeObj?.count && (
+                        <span className="ml-1 text-xs">({typeObj.count})</span>
+                      )}
                     </Badge>
                   );
                 })}
@@ -244,21 +246,36 @@ export default async function QuickScanResultsPage({
               <div className="text-sm mt-1">
                 {Array.isArray(navigationStructure) ? (
                   <ul className="list-disc list-inside space-y-1">
-                    {(navigationStructure as (string | NavigationItem)[]).slice(0, 10).map((item, idx: number) => {
-                      const isString = typeof item === 'string';
-                      const navObj = isString ? null : (item as NavigationItem);
-                      return (
-                        <li key={idx}>{isString ? (item as string) : (navObj?.label ?? navObj?.name ?? JSON.stringify(item))}</li>
-                      );
-                    })}
+                    {(navigationStructure as (string | NavigationItem)[])
+                      .slice(0, 10)
+                      .map((item, idx: number) => {
+                        const isString = typeof item === 'string';
+                        const navObj = isString ? null : (item as NavigationItem);
+                        return (
+                          <li key={idx}>
+                            {isString
+                              ? (item as string)
+                              : (navObj?.label ?? navObj?.name ?? JSON.stringify(item))}
+                          </li>
+                        );
+                      })}
                     {navigationStructure.length > 10 && (
-                      <li className="text-muted-foreground">... und {navigationStructure.length - 10} weitere</li>
+                      <li className="text-muted-foreground">
+                        ... und {navigationStructure.length - 10} weitere
+                      </li>
                     )}
                   </ul>
-                ) : typeof navigationStructure === 'object' && navigationStructure !== null && (navigationStructure as NavigationStructure).levels !== undefined ? (
-                  <p>Ebenen: {(navigationStructure as NavigationStructure).levels}, Hauptnavigation: {(navigationStructure as NavigationStructure).mainMenuItems ?? 'N/A'}</p>
+                ) : typeof navigationStructure === 'object' &&
+                  navigationStructure !== null &&
+                  (navigationStructure as NavigationStructure).levels !== undefined ? (
+                  <p>
+                    Ebenen: {(navigationStructure as NavigationStructure).levels}, Hauptnavigation:{' '}
+                    {(navigationStructure as NavigationStructure).mainMenuItems ?? 'N/A'}
+                  </p>
                 ) : (
-                  <p>{navigationStructure !== null ? JSON.stringify(navigationStructure) : 'N/A'}</p>
+                  <p>
+                    {navigationStructure !== null ? JSON.stringify(navigationStructure) : 'N/A'}
+                  </p>
                 )}
               </div>
             </div>
@@ -319,13 +336,9 @@ export default async function QuickScanResultsPage({
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="font-medium">{dm.name || 'N/A'}</p>
-                      {dm.role && (
-                        <p className="text-sm text-muted-foreground">{dm.role}</p>
-                      )}
+                      {dm.role && <p className="text-sm text-muted-foreground">{dm.role}</p>}
                     </div>
-                    {dm.department && (
-                      <Badge variant="secondary">{dm.department}</Badge>
-                    )}
+                    {dm.department && <Badge variant="secondary">{dm.department}</Badge>}
                   </div>
 
                   <div className="flex flex-col gap-1">
@@ -351,7 +364,8 @@ export default async function QuickScanResultsPage({
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Keine Ansprechpartner-Informationen verfügbar. Diese werden während der RFP-Extraktion ermittelt.
+              Keine Ansprechpartner-Informationen verfügbar. Diese werden während der RFP-Extraktion
+              ermittelt.
             </p>
           )}
         </CardContent>

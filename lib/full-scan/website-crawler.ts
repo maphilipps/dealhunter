@@ -152,8 +152,7 @@ async function fetchPageWithFallback(
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (compatible; DealhunterBot/1.0; +https://dealhunter.adesso.de)',
+        'User-Agent': 'Mozilla/5.0 (compatible; DealhunterBot/1.0; +https://dealhunter.adesso.de)',
       },
     });
 
@@ -258,8 +257,6 @@ function extractTitle(html: string): string {
  * Extract description from meta tags
  */
 function extractDescription(html: string): string {
-  const match = html.match(
-    /<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i
-  );
+  const match = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
   return match ? match[1].trim() : '';
 }

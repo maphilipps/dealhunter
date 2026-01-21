@@ -14,6 +14,9 @@ import { openai } from '@/lib/ai/providers';
  * Gathered during Quick Scan phase
  */
 export interface TimelineAgentInput {
+  // RAG Context (DEA-107)
+  rfpId?: string; // Enable RAG tool for cross-agent context
+
   // From extracted requirements
   projectName: string;
   projectDescription: string;
@@ -132,6 +135,49 @@ ${input.rfpTimeline ? `## RFP Timeline Info\n${input.rfpTimeline}` : ''}
 ${input.specialRequirements?.length ? `## Special Requirements\n${input.specialRequirements.join('\n')}` : ''}
 `.trim();
 
+  // DEA-107: Optional RAG context retrieval
+  // Note: generateObject doesn't support tools, so we pre-fetch RAG context
+  let ragContext = '';
+  if (input.rfpId) {
+    try {
+      const { queryRAG } = await import('@/lib/rag/retrieval-service');
+
+      // Query for relevant performance and complexity data
+      const [performanceResults, contentResults] = await Promise.all([
+        queryRAG({
+          rfpId: input.rfpId,
+          question: 'What are the website performance indicators and issues?',
+          maxResults: 3,
+        }),
+        queryRAG({
+          rfpId: input.rfpId,
+          question: 'What is the content architecture and complexity?',
+          maxResults: 3,
+        }),
+      ]);
+
+      if (performanceResults.length > 0 || contentResults.length > 0) {
+        ragContext = '\n\n## Additional Context from Knowledge Base\n\n';
+        if (performanceResults.length > 0) {
+          ragContext += '### Performance Data:\n';
+          ragContext += performanceResults
+            .map(r => `- ${r.agentName}: ${r.content.slice(0, 200)}...`)
+            .join('\n');
+          ragContext += '\n\n';
+        }
+        if (contentResults.length > 0) {
+          ragContext += '### Content Architecture:\n';
+          ragContext += contentResults
+            .map(r => `- ${r.agentName}: ${r.content.slice(0, 200)}...`)
+            .join('\n');
+        }
+      }
+    } catch (error) {
+      console.warn('[Timeline Agent] RAG query failed:', error);
+      // Continue without RAG context
+    }
+  }
+
   const { object } = await generateObject({
     model: openai('claude-haiku-4.5') as unknown as LanguageModel,
     schema: projectTimelineSchema,
@@ -141,7 +187,7 @@ Erstelle einen **realistischen Projekt-Timeline** für die initiale Bewertung (P
 
 **WICHTIG:** Dies ist eine FRÜHE SCHÄTZUNG basierend auf Quick-Scan-Daten. Sei realistisch, nicht optimistisch.
 
-${contextDescription}
+${contextDescription}${ragContext}
 
 ## Standard-Phasen (anpassbar)
 

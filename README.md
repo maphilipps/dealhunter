@@ -91,11 +91,22 @@ npm run db:studio    # Drizzle Studio öffnen
 
 - **Framework:** Next.js 16 (App Router)
 - **UI:** ShadCN UI + Tailwind CSS v4
-- **AI:** Vercel AI SDK v5
+- **AI:** Vercel AI SDK v5 + adesso AI Hub
 - **Database:** Drizzle ORM (SQLite)
 - **Auth:** NextAuth.js v5
 - **Embeddings:** text-embedding-3-large via adesso AI Hub (3072 dimensions)
 - **Vector Search:** SQLite vec0 extension (planned for future implementation)
+
+## AI Hub Requirement
+
+**IMPORTANT:** This application uses the adesso AI Hub for all AI requests. External API calls to OpenAI or other providers are **not allowed** due to compliance and security requirements.
+
+All AI requests are routed through:
+
+- **Base URL:** `https://adesso-ai-hub.3asabc.de/v1`
+- **Benefits:** Centralized cost tracking, compliance, and security
+
+The application is configured to automatically use the AI Hub via environment variables. See the Configuration section below.
 
 ## Database Schema
 

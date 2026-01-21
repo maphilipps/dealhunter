@@ -1,11 +1,8 @@
-import { generateObject, type LanguageModel } from 'ai';
 import { extractedRequirementsSchema, type ExtractedRequirements } from './schema';
+
+import { openai } from '@/lib/ai/config';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
-import { openai } from '@/lib/ai/providers';
-
-// Use Claude Haiku 4.5 via adesso AI Hub (OpenAI-compatible endpoint)
-const model = openai('claude-haiku-4.5') as unknown as LanguageModel;
 
 export interface ExtractionInput {
   rawText: string;
@@ -31,26 +28,72 @@ export async function extractRequirements(input: ExtractionInput): Promise<Extra
   try {
     const prompt = buildExtractionPrompt(input);
 
-    const result = await generateObject({
-      model,
-      schema: extractedRequirementsSchema,
-      system: `You are a business development analyst at adesso SE, a leading IT consulting company.
+    const completion = await openai.chat.completions.create({
+      model: 'claude-haiku-4.5',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a business development analyst at adesso SE, a leading IT consulting company.
 Extract structured requirements from bid/project inquiries with high accuracy.
 
-IMPORTANT: Actively search for website URLs in the document!
-- Look for any URLs mentioned (http/https links, www. domains)
-- Look for domain names even without http (e.g., "customer.com", "example.de")
-- Consider the customer name and try to identify their likely website
-- For sports organizations, look for official league/team websites
-- For companies, look for corporate websites, product sites, regional sites
+CRITICAL: Extract ALL of the following data with confidence scores:
 
-Provide accurate extractions and a confidence score (0-1) based on how complete and clear the information is.`,
-      prompt,
+1. BUDGET RANGE:
+   - Parse budget from text (e.g., "50-100k EUR", "bis 200.000€", "ca. 75k")
+   - Extract min/max as numbers (50000, 100000)
+   - Identify currency (EUR, USD, GBP, CHF)
+   - If range unclear, estimate from context
+   - Single values: add ±10% buffer (e.g., "75k" → min: 67500, max: 82500)
+   - Upper bound only ("bis 200k"): min: 0, max: 200000
+   - Lower bound only ("ab 50k"): min: 50000, max: null
+   - "ca./ungefähr": add ±20% buffer
+   - Confidence: 0-100 based on clarity
+
+2. CMS CONSTRAINTS:
+   - Identify REQUIRED CMS: "Drupal only", "muss Typo3 sein" → required: ["Drupal"], flexibility: "rigid"
+   - Identify PREFERRED CMS: "WordPress bevorzugt", "idealerweise Drupal" → preferred: ["WordPress"], flexibility: "preferred"
+   - Identify EXCLUDED CMS: "kein WordPress", "nicht Joomla" → excluded: ["Joomla"]
+   - No mention: flexibility: "unknown"
+   - Confidence: 0-100 based on clarity
+
+3. DELIVERABLES TIMELINE:
+   - Extract submission deadlines per deliverable
+   - Parse dates to ISO format YYYY-MM-DD
+   - Parse exact times if mentioned (HH:MM)
+   - Mark mandatory vs. optional deliverables
+   - Confidence: 0-100 per deliverable
+
+4. CONTACT CATEGORIZATION:
+   - Decision Makers: CTO, IT-Leiter, Geschäftsführer, Vorstand, CEO, Director
+   - Influencers: Projektleiter, Fachbereichsleiter, Team Lead, Manager
+   - Coordinators: Sachbearbeiter, Assistenz, Einkauf, Administrator
+   - Unknown: Role unclear
+   - Confidence: 0-100 per contact
+
+5. WEBSITE URLs:
+   - Look for any URLs mentioned (http/https links, www. domains)
+   - Look for domain names even without http (e.g., "customer.com", "example.de")
+   - Consider the customer name and try to identify their likely website
+   - For sports organizations, look for official league/team websites
+   - For companies, look for corporate websites, product sites, regional sites
+
+Provide accurate extractions and a confidence score (0-1) based on how complete and clear the information is.
+
+Return a valid JSON object that matches this schema.`,
+        },
+        { role: 'user', content: prompt },
+      ],
       temperature: 0.3,
+      max_tokens: 6000,
     });
 
+    const responseText = completion.choices[0]?.message?.content || '{}';
+    const cleanedResponse = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const parsed = JSON.parse(cleanedResponse) as unknown;
+    const validated = extractedRequirementsSchema.parse(parsed);
+
     const requirements: ExtractedRequirements = {
-      ...result.object,
+      ...validated,
       extractedAt: new Date().toISOString(),
     };
 
@@ -157,29 +200,69 @@ export async function runExtractionWithStreaming(
       },
     });
 
-    const result = await generateObject({
-      model,
-      schema: extractedRequirementsSchema,
-      system: `You are a business development analyst at adesso SE, a leading IT consulting company.
+    const completion = await openai.chat.completions.create({
+      model: 'claude-haiku-4.5',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a business development analyst at adesso SE, a leading IT consulting company.
 Extract structured requirements from bid/project inquiries with high accuracy.
 
-IMPORTANT: Actively search for website URLs in the document!
-- Look for any URLs mentioned (http/https links, www. domains)
-- Look for domain names even without http (e.g., "customer.com", "example.de")
-- Consider the customer name and try to identify their likely website
-- For sports organizations, look for official league/team websites
-- For companies, look for corporate websites, product sites, regional sites
+CRITICAL: Extract ALL of the following data with confidence scores:
 
-IMPORTANT: Look for submission deadlines and required deliverables!
-- Search for submission deadlines (Abgabefrist, Einreichungsfrist, deadline)
-- Look for exact times for submission
-- Find required documents/deliverables that must be submitted
-- Note any format requirements (PDF, hardcopy, number of copies)
+1. BUDGET RANGE:
+   - Parse budget from text (e.g., "50-100k EUR", "bis 200.000€", "ca. 75k")
+   - Extract min/max as numbers (50000, 100000)
+   - Identify currency (EUR, USD, GBP, CHF)
+   - If range unclear, estimate from context
+   - Single values: add ±10% buffer (e.g., "75k" → min: 67500, max: 82500)
+   - Upper bound only ("bis 200k"): min: 0, max: 200000
+   - Lower bound only ("ab 50k"): min: 50000, max: null
+   - "ca./ungefähr": add ±20% buffer
+   - Confidence: 0-100 based on clarity
 
-Provide accurate extractions and a confidence score (0-1) based on how complete and clear the information is.`,
-      prompt,
+2. CMS CONSTRAINTS:
+   - Identify REQUIRED CMS: "Drupal only", "muss Typo3 sein" → required: ["Drupal"], flexibility: "rigid"
+   - Identify PREFERRED CMS: "WordPress bevorzugt", "idealerweise Drupal" → preferred: ["WordPress"], flexibility: "preferred"
+   - Identify EXCLUDED CMS: "kein WordPress", "nicht Joomla" → excluded: ["Joomla"]
+   - No mention: flexibility: "unknown"
+   - Confidence: 0-100 based on clarity
+
+3. DELIVERABLES TIMELINE:
+   - Extract submission deadlines per deliverable
+   - Parse dates to ISO format YYYY-MM-DD
+   - Parse exact times if mentioned (HH:MM)
+   - Mark mandatory vs. optional deliverables
+   - Confidence: 0-100 per deliverable
+
+4. CONTACT CATEGORIZATION:
+   - Decision Makers: CTO, IT-Leiter, Geschäftsführer, Vorstand, CEO, Director
+   - Influencers: Projektleiter, Fachbereichsleiter, Team Lead, Manager
+   - Coordinators: Sachbearbeiter, Assistenz, Einkauf, Administrator
+   - Unknown: Role unclear
+   - Confidence: 0-100 per contact
+
+5. WEBSITE URLs:
+   - Look for any URLs mentioned (http/https links, www. domains)
+   - Look for domain names even without http (e.g., "customer.com", "example.de")
+   - Consider the customer name and try to identify their likely website
+   - For sports organizations, look for official league/team websites
+   - For companies, look for corporate websites, product sites, regional sites
+
+Provide accurate extractions and a confidence score (0-1) based on how complete and clear the information is.
+
+Return a valid JSON object that matches this schema.`,
+        },
+        { role: 'user', content: prompt },
+      ],
       temperature: 0.3,
+      max_tokens: 6000,
     });
+
+    const responseText = completion.choices[0]?.message?.content || '{}';
+    const cleanedResponse = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const parsed = JSON.parse(cleanedResponse) as unknown;
+    const result = { object: extractedRequirementsSchema.parse(parsed) };
 
     // Step 3: Validating extracted data
     emit({
@@ -202,6 +285,11 @@ Provide accurate extractions and a confidence score (0-1) based on how complete 
       foundItems.push(`${parsedResult.technologies.length} Technologien`);
     if (parsedResult.keyRequirements.length > 0)
       foundItems.push(`${parsedResult.keyRequirements.length} Anforderungen`);
+    if (parsedResult.budgetRange) foundItems.push('Budget');
+    if (parsedResult.cmsConstraints) foundItems.push('CMS-Vorgaben');
+    if (parsedResult.contacts && parsedResult.contacts.length > 0) {
+      foundItems.push(`${parsedResult.contacts.length} Kontakte`);
+    }
     if (parsedResult.submissionDeadline) foundItems.push('Abgabefrist');
     if (parsedResult.requiredDeliverables && parsedResult.requiredDeliverables.length > 0) {
       foundItems.push(`${parsedResult.requiredDeliverables.length} Unterlagen`);

@@ -3691,3 +3691,79 @@ The automatic RFP → Lead conversion was already 90% implemented. I completed t
 **Commit:** (pending)
 **Linear:** https://linear.app/adessocms/issue/DEA-94
 
+---
+
+## 2026-01-21 | DEA-95: Accessibility Audit Agent Implementation
+
+**Status:** ✅ Complete
+
+**What was implemented:**
+
+Implemented Accessibility Audit Agent with WCAG 2.1 AA compliance checks using Playwright + Axe-core. This agent is a critical dependency for the Agent Orchestrator (DEA-96).
+
+**Key Features:**
+
+1. **WCAG 2.1 AA Compliance Checks:**
+   - Playwright + Axe-core integration
+   - Audits up to 10 sample pages per website
+   - 30-second timeout per page with graceful error handling
+   - Headless browser with custom user agent
+
+2. **Accessibility Scoring:**
+   - Weighted scoring system (0-100, where 100 = perfect)
+   - Critical violations: -20 points each
+   - Serious violations: -10 points each
+   - Moderate violations: -5 points each
+   - Minor violations: -2 points each
+
+3. **Violation Categorization:**
+   - Groups violations by ID (deduplicates across pages)
+   - Tracks count per violation type
+   - Sorts by impact severity (critical first)
+   - Includes description and help URL from Axe
+
+4. **Fix Hours Estimation:**
+   - Industry-standard hourly rates:
+     - Critical: 4 hours per violation type
+     - Serious: 2 hours per violation type
+     - Moderate: 1 hour per violation type
+     - Minor: 0.5 hours per violation type
+   - Adds 20% buffer for QA/testing
+   - Rounded up to whole hours
+
+5. **Database Integration:**
+   - Auto-creates or updates `websiteAudits` records
+   - Persists: accessibilityScore, wcagLevel, a11yViolations (JSON), a11yIssueCount, estimatedFixHours
+   - Error states saved to DB for debugging
+   - Graceful degradation if DB save fails
+
+**Technical Implementation:**
+
+1. **Agent Function:** `analyzeAccessibility(input)`
+   - Input: leadId, websiteUrl, sampleUrls
+   - Uses Playwright browser automation
+   - Returns: AccessibilityAuditResult with score, violations, fix hours
+
+2. **Helper Function:** `calculateFixHours(violations)`
+   - Implements industry-standard hourly rates
+   - Applies 20% QA buffer
+   - Rounds up to whole hours
+
+3. **Database Function:** `saveToDatabase(leadId, result, websiteUrl)`
+   - Upserts websiteAudits record
+   - Handles both success and error states
+   - Never throws (fails gracefully)
+
+**Files Created:**
+- `lib/agents/accessibility-audit-agent.ts` (333 lines)
+
+**Dependencies:**
+- Relies on existing Playwright and @axe-core/playwright packages (already installed)
+- Integrates with websiteAudits schema (already exists)
+
+**Unblocks:**
+- DEA-96: Agent Orchestrator (can now orchestrate all Deep-Scan Agents)
+
+**Commit:** 6112752
+**Linear:** https://linear.app/adessocms/issue/DEA-95
+

@@ -1,3 +1,90 @@
+## 2026-01-21 - DEA-97: PT Estimation Module (Baseline-basiert)
+
+**Issue:** DEA-97 - PT Estimation Module (Baseline-basiert)
+**Status:** ✅ Complete
+**Priority:** P2 - High (Business Logic)
+**Commit:** (pending)
+
+**Problem:**
+Implement Person-Tage (PT) estimation calculator based on baseline projects with delta analysis.
+
+**Implemented:**
+
+1. **PT Calculator Module (`lib/estimations/pt-calculator.ts`)**
+   - Baseline matching via `technologies` table
+   - Delta calculation between customer and baseline entity counts
+   - Total PT = Baseline + Additional + Risk Buffer
+   - Phase Breakdown (5 phases: Foundation, Custom Dev, Integrations, Migration, Testing)
+   - Discipline Matrix (6 roles: Architect, Backend, Frontend, QA, PM, DevOps)
+   - Risk buffer calculation based on complexity score (10-40%)
+   - Confidence level assignment (high/medium/low)
+   - Assumptions generation with contextual insights
+
+2. **Entity Extraction Logic**
+   - Extracts customer entity counts from Content Architecture results
+   - Heuristics: 3 paragraphs per content type, 1 taxonomy per 2 content types, etc.
+   - Flexible mapping to support different CMS baseline structures
+
+3. **PT Multipliers**
+   - Content Types: 15h per additional entity
+   - Paragraphs/Components: 6h per additional entity
+   - Taxonomies: 4h per additional entity
+   - Views: 8h per additional entity
+   - Blocks: 5h per additional entity
+   - Templates, Apps, Modules: 10-20h per additional entity
+
+4. **Phase Distribution**
+   - Foundation Setup: 30%
+   - Custom Development: 35%
+   - Integrations: 10%
+   - Content Migration: 15%
+   - Testing & QA: 10%
+
+5. **Discipline Distribution**
+   - Backend Developer: 40%
+   - Frontend Developer: 25%
+   - Solution Architect: 10%
+   - QA Engineer: 10%
+   - Project Manager: 10%
+   - DevOps Engineer: 5%
+
+6. **Risk Buffer Logic**
+   - Low complexity (0-25): 10% buffer, high confidence
+   - Medium complexity (26-50): 20% buffer, medium confidence
+   - High complexity (51-75): 30% buffer, medium confidence
+   - Very high complexity (76-100): 40% buffer, low confidence
+
+7. **Comprehensive Unit Tests**
+   - 25 tests covering all calculation scenarios
+   - Test coverage: 98.27% statements, 98.18% lines (exceeds 80% requirement)
+   - Tests for baseline matching, delta calculation, PT calculation, risk buffer, phase breakdown, discipline matrix, assumptions, and error handling
+   - Integration tests for realistic end-to-end scenarios
+
+**Verification:**
+- ✅ All 25 unit tests passing
+- ✅ Test coverage >98% (requirement: >80%)
+- ✅ Type checks passing
+- ✅ Baseline matching works correctly with technologies table
+- ✅ Delta calculation handles edge cases (no negative deltas)
+- ✅ Phase and discipline breakdowns sum to 100%
+- ✅ Risk buffer scales with complexity score
+- ✅ Assumptions adapt to project characteristics
+
+**Files Created:**
+- `lib/estimations/pt-calculator.ts` (370 lines)
+- `lib/estimations/__tests__/pt-calculator.test.ts` (795 lines)
+
+**Dependencies:**
+- ✅ Content Architecture Agent (DEA-93) - provides page count and content types
+- ✅ Migration Complexity Agent (DEA-94) - provides complexity score for risk buffer
+- ✅ Technologies table with baseline data - already seeded in database
+
+**Next Steps:**
+- DEA-101: Create PT Estimation Detail Page to display results in UI
+- Integration with Agent Orchestrator for automatic calculation after deep scan
+
+---
+
 ## 2026-01-21 - DEA-78: CRITICAL - adesso AI Hub Compliance
 
 **Issue:** DEA-78 - 🔴 CRITICAL: adesso AI Hub muss verwendet werden statt direkter OpenAI Calls

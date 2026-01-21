@@ -1,3 +1,93 @@
+## 2026-01-21 - DEA-107: RAG Knowledge Base für Cross-Agent Context Sharing
+
+**Issue:** DEA-107 - RAG Knowledge Base für Cross-Agent Context Sharing
+**Status:** ✅ Complete (Foundation - RAG Infrastructure)
+**Priority:** P1 - High (Core Feature)
+**Commit:** feat(DEA-107): Implement RAG Knowledge Base for Cross-Agent Context Sharing
+
+**Problem:**
+Agents in the Dealhunter pipeline work in isolation with manually passed fields. This leads to missing cross-agent communication, manual data passing, missed insights, inflexibility, and duplicated logic. Agents cannot dynamically access all RFP data via semantic search.
+
+**Implemented:**
+
+1. **Database Schema (`lib/db/schema.ts`)**
+   - rfpEmbeddings table with vector storage (JSON format)
+   - Fields: rfpId, agentName, chunkType, chunkIndex, content, metadata, embedding (3072 dimensions)
+   - Composite indexes for fast rfpId + chunkType/agentName queries
+   - Cascade delete on RFP deletion
+   - sqlite-vec extension already configured in lib/db/index.ts
+
+2. **Chunking Service (`lib/rag/chunk-service.ts`)**
+   - Granular chunking strategy per agent type
+   - Quick Scan: tech_stack, performance, content_volume, accessibility, seo, navigation, screenshots
+   - Extract: customer, project, technologies, budget_timeline
+   - Deep Analysis Agents: full_analysis chunks
+   - Generic fallback for unknown agents
+   - Metadata extraction for filtering
+
+3. **Embedding Service (`lib/rag/embedding-service.ts`)**
+   - Reuses existing OpenAI infrastructure (text-embedding-3-large, 3072 dimensions)
+   - Batch embedding generation for efficiency
+   - embedAgentOutput() - Main function to chunk and embed agent outputs
+   - embedBatchAgentOutputs() - Batch processing for orchestrators
+   - generateQueryEmbedding() - For retrieval queries
+   - Error handling with graceful degradation
+
+4. **Retrieval Service (`lib/rag/retrieval-service.ts`)**
+   - Hybrid retrieval: Cosine similarity + optional tech stack filter
+   - Similarity threshold >0.7 (strict filtering)
+   - queryRAG() - Main retrieval function
+   - getEmbeddingStatus() - Debug utility to check which agents have embedded data
+   - Fallback to all results if tech stack filter yields nothing
+   - Top N results ranking by similarity
+
+5. **RAG Tool for AI SDK (`lib/agent-tools/tools/rag-tool.ts`)**
+   - createRagTool(rfpId) - Creates AI SDK tool scoped to RFP
+   - Zod schema validation for inputs
+   - Natural language queries with examples
+   - Optional tech stack filtering
+   - Formatted output with similarity scores
+
+6. **Quick Scan Integration (`app/api/rfps/[id]/quick-scan/stream/route.ts`)**
+   - embedAgentOutput() called after Quick Scan completion (line 236-243)
+   - Non-blocking embedding (errors don't block agent execution)
+   - Logs embedding success/failure
+
+7. **Timeline Agent RAG Integration (`lib/timeline/agent.ts`)**
+   - Optional rfpId parameter in TimelineAgentInput
+   - Pre-fetches RAG context for performance and content data
+   - Queries: "What are the website performance indicators?" and "What is the content architecture?"
+   - Appends RAG context to prompt for better timeline estimates
+   - Graceful degradation if RAG fails
+
+**Key Features:**
+- ✅ Single-RFP Knowledge Base (rfpId-scoped)
+- ✅ Semantic search via OpenAI embeddings
+- ✅ Granular chunking per agent type
+- ✅ Hybrid retrieval (similarity + filters)
+- ✅ Non-blocking embedding (failures don't stop agents)
+- ✅ Tool-based retrieval for AI SDK agents
+- ✅ Already integrated in Quick Scan agent
+- ✅ Pilot integration in Timeline Agent
+
+**Testing:**
+- Type checks pass (only pre-existing test error in lib/errors/__tests__)
+- All RAG services implemented and ready for use
+- Chunking service handles Quick Scan, Extract, and Deep Analysis agents
+- Retrieval service ready for cross-agent queries
+
+**Next Steps (DEA-108, DEA-109):**
+- DEA-108: RAG-based PDF Extraction (extend Extract Agent with RAG context)
+- DEA-109: Full RAG integration for all Phase 2 agents (TECH, COMMERCIAL, RISK, LEGAL, TEAM)
+- Dashboard Synthese with RAG-powered insights
+
+**References:**
+- AI SDK RAG Guide: https://ai-sdk.dev/cookbook/guides/rag-chatbot
+- sqlite-vec: Already installed and configured
+- Existing Embedding Service: lib/bids/embedding-service.ts (reused)
+
+---
+
 ## 2026-01-21 - DEA-91: Error Handling & Retry Mechanisms für Phase 1 Agents
 
 **Issue:** DEA-91 - Error Handling & Retry Mechanisms für Phase 1 Agents

@@ -1116,13 +1116,12 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
           { id: 'strapi', name: 'Strapi', isBaseline: false },
         ];
 
-  // 4. Für jede Anforderung: Scores pro CMS berechnen
+  // 4. Für jede Anforderung: Scores pro CMS berechnen (PARALLEL für alle CMS)
   // AUTO-RESEARCH: Wenn useWebSearch=true oder Confidence niedrig, automatisch recherchieren
   const requirementsWithScores: RequirementMatch[] = await Promise.all(
     detectedRequirements.map(async req => {
-      const cmsScores: RequirementMatch['cmsScores'] = {};
-
-      for (const cms of cmsOptions) {
+      // Alle CMS-Optionen parallel verarbeiten (statt sequentiell mit for-loop)
+      const cmsPromises = cmsOptions.map(async cms => {
         // Basis-Score (kann durch Web Search ergänzt werden)
         let score = 50;
         let confidence = 40;
@@ -1150,8 +1149,21 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
           await saveTechnologyFeature(cms.id, req.requirement, research);
         }
 
-        cmsScores[cms.id] = { score, confidence, notes, webSearchUsed };
-      }
+        return { cmsId: cms.id, score, confidence, notes, webSearchUsed };
+      });
+
+      // Warte auf alle parallelen CMS-Bewertungen
+      const cmsResults = await Promise.all(cmsPromises);
+
+      // Baue cmsScores Object aus parallelen Ergebnissen
+      const cmsScores: RequirementMatch['cmsScores'] = Object.fromEntries(
+        cmsResults.map(result => [result.cmsId, {
+          score: result.score,
+          confidence: result.confidence,
+          notes: result.notes,
+          webSearchUsed: result.webSearchUsed,
+        }])
+      );
 
       return {
         ...req,

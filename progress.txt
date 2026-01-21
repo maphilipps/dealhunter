@@ -2629,3 +2629,40 @@ npx playwright test tests/e2e/admin-crud.spec.ts
 - Tests create their own data for deletion tests to ensure isolation
 - Used --no-verify for commit due to lint-staged ESLint config excluding test files
 
+
+## 2026-01-21 - DEA-63: API Lead Vote Persistence (BID/NO-BID)
+
+**Issue:** DEA-63 - API: Lead Vote Persistence (BID/NO-BID)
+**Status:** ✅ Complete
+**Priority:** 1 (Urgent)
+**Commit:** 8c25181
+
+**Implemented:**
+- POST `/api/leads/[id]/vote` endpoint for BL vote persistence
+- Zod validation for vote, confidence (0-100), and reasoning
+- Authorization: Only BL assigned to lead's Business Unit can vote
+- Prevents double voting (returns 409 if vote exists)
+- Updates Lead table: blVote, blVotedAt, blVotedByUserId, blReasoning, blConfidenceScore
+- Creates audit trail entry
+- Returns updated Lead object
+
+**Security Features:**
+- Authentication required
+- Role-based access control (bl or admin)
+- Business Unit assignment check
+- Prevents unauthorized voting
+- Comprehensive error handling
+
+**Technical Details:**
+- File: `app/api/leads/[id]/vote/route.ts`
+- Request Schema: Zod validation
+- Response: JSON with updated Lead object
+- Status Codes: 200 (success), 400 (validation error), 401 (unauthorized), 403 (forbidden), 404 (not found), 409 (conflict), 500 (server error)
+
+**Dependencies:**
+- DEA-38: Lead Table (required field structure)
+
+**Notes:**
+- Ready for frontend integration
+- Audit trail created for all vote actions
+- Admin override capability included for emergency situations

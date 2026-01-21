@@ -72,10 +72,6 @@ for ((i=1; i<=$1; i++)); do
 
   echo "$result"
 
-  if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
-    echo "All Backlog issues complete after $i iterations."
-    exit 0
-  fi
 
   # Short pause between iterations to avoid rate limits
   sleep 2

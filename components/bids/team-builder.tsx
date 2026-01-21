@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import {
+  Loader2,
+  Users,
+  CheckCircle2,
+  AlertTriangle,
+  Sparkles,
+  Mail,
+  Calendar,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -16,6 +24,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -24,20 +36,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import {
-  Loader2,
-  Users,
-  CheckCircle2,
-  AlertTriangle,
-  Sparkles,
-  Mail,
-  Calendar,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { suggestTeamForBid, assignTeam } from '@/lib/team/actions';
 import { sendTeamNotifications } from '@/lib/notifications/actions';
+import { suggestTeamForBid, assignTeam } from '@/lib/team/actions';
 import type { TeamSuggestion, TeamMemberSuggestion, TeamAssignment } from '@/lib/team/schema';
 
 interface TeamBuilderProps {

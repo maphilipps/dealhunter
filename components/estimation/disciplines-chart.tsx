@@ -1,6 +1,7 @@
 'use client';
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import type { DisciplineAllocation } from '@/lib/estimations/pt-calculator';
 
@@ -36,7 +37,10 @@ export function DisciplinesChart({ disciplines }: { disciplines: DisciplineAlloc
             labelLine={true}
           >
             {disciplines.map((_, index) => (
-              <Cell key={`cell-${index}`} fill={DISCIPLINE_COLORS[index % DISCIPLINE_COLORS.length]} />
+              <Cell
+                key={`cell-${index}`}
+                fill={DISCIPLINE_COLORS[index % DISCIPLINE_COLORS.length]}
+              />
             ))}
           </Pie>
           <ChartTooltip

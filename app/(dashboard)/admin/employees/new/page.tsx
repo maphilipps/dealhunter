@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getBusinessUnitsForSelect } from '@/lib/admin/technologies-actions';
-import { getCompetenciesForSelect } from '@/lib/admin/employees-actions';
+
 import { EmployeeForm } from '@/components/admin/employee-form';
+import { getCompetenciesForSelect } from '@/lib/admin/employees-actions';
+import { getBusinessUnitsForSelect } from '@/lib/admin/technologies-actions';
 
 export default function NewEmployeePage() {
   const [businessUnits, setBusinessUnits] = useState<{ id: string; name: string }[]>([]);

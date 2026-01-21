@@ -1,11 +1,12 @@
+import { eq } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
+
+import { BidDetailClient } from '@/components/bids/bid-detail-client';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { redirect } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { BidDetailClient } from '@/components/bids/bid-detail-client';
 
 export default async function BidDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

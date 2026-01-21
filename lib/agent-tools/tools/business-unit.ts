@@ -1,9 +1,11 @@
-import { z } from 'zod';
-import { db } from '@/lib/db';
-import { businessUnits } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { z } from 'zod';
+
 import { registry } from '../registry';
 import type { ToolContext } from '../types';
+
+import { db } from '@/lib/db';
+import { businessUnits } from '@/lib/db/schema';
 
 const listBusinessUnitsInputSchema = z.object({
   limit: z.number().min(1).max(100).default(50),

@@ -1,9 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   CheckCircle2,
   Circle,
@@ -14,11 +10,17 @@ import {
   ChevronRight,
   Loader2,
 } from 'lucide-react';
+import { useState } from 'react';
+
+import { BLDecisionPhase } from './phases/bl-decision-phase';
+import { BUComparisonPhase } from './phases/bu-comparison-phase';
+import { ScrapedFactsPhase } from './phases/scraped-facts-phase';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import type { QuickScan, Rfp } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
-import { ScrapedFactsPhase } from './phases/scraped-facts-phase';
-import { BUComparisonPhase } from './phases/bu-comparison-phase';
-import { BLDecisionPhase } from './phases/bl-decision-phase';
 
 interface WorkflowStepperProps {
   rfp: Rfp;

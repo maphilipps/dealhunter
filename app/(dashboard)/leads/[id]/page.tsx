@@ -1,12 +1,5 @@
 import { eq, desc } from 'drizzle-orm';
-import {
-  Globe,
-  TrendingUp,
-  Package,
-  FileText,
-  AlertTriangle,
-  CheckCircle2,
-} from 'lucide-react';
+import { Globe, TrendingUp, Package, FileText, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 

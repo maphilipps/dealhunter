@@ -1,6 +1,7 @@
 import { createHandler } from '@vercel/slack-bolt';
-import { slackApp, receiver } from '@/lib/slack';
+
 import { sendEmail } from '@/lib/services';
+import { slackApp, receiver } from '@/lib/slack';
 
 // Only set up event handlers if Slack is initialized
 if (slackApp && receiver) {

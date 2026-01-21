@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { deleteAccount } from '@/lib/accounts-actions';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { toast } from 'sonner';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,8 +16,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { deleteAccount } from '@/lib/accounts-actions';
 
 type Props = {
   accountId: string;

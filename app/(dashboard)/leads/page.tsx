@@ -1,10 +1,10 @@
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import { getLeads } from '@/lib/leads/actions';
+import { Eye, FileText } from 'lucide-react';
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { redirect } from 'next/navigation';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -13,7 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Eye, FileText } from 'lucide-react';
+import { auth } from '@/lib/auth';
+import { getLeads } from '@/lib/leads/actions';
 
 export default async function LeadsPage() {
   const session = await auth();

@@ -1,8 +1,9 @@
-import Link from 'next/link';
-import { getAccounts } from '@/lib/accounts-actions';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import Link from 'next/link';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getAccounts } from '@/lib/accounts-actions';
 
 export default async function AccountsPage() {
   const result = await getAccounts();

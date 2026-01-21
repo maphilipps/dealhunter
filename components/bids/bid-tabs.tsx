@@ -1,8 +1,9 @@
 'use client';
 
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, LayoutGrid } from 'lucide-react';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface BidTabsProps {
   factsContent: React.ReactNode;

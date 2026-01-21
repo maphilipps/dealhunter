@@ -15,8 +15,9 @@
  */
 
 import { eq } from 'drizzle-orm';
+
 import { db } from '../db';
-import { leads, backgroundJobs } from '../db/schema';
+import { analyzeAccessibility, type AccessibilityAuditResult } from './accessibility-audit-agent';
 import {
   analyzeContentArchitecture,
   type ContentArchitectureResult,
@@ -25,7 +26,7 @@ import {
   analyzeMigrationComplexity,
   type MigrationComplexityResult,
 } from './migration-complexity-agent';
-import { analyzeAccessibility, type AccessibilityAuditResult } from './accessibility-audit-agent';
+import { leads, backgroundJobs } from '../db/schema';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES

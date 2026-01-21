@@ -1,8 +1,9 @@
 import { Experimental_Agent as Agent, stepCountIs, tool, generateObject, generateText } from 'ai';
-import { FormSchema, QualificationSchema, qualificationSchema } from '@/lib/types';
-import { sendSlackMessageWithButtons } from '@/lib/slack';
 import { z } from 'zod';
+
 import { searchAndContents, getContents } from '@/lib/search/web-search';
+import { sendSlackMessageWithButtons } from '@/lib/slack';
+import { FormSchema, QualificationSchema, qualificationSchema } from '@/lib/types';
 
 /**
  * Qualify the lead

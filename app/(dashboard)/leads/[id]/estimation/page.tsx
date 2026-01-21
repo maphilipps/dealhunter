@@ -13,6 +13,8 @@ import {
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { DisciplinesChart, DISCIPLINE_COLORS } from '@/components/estimation/disciplines-chart';
+import { PhasesChart } from '@/components/estimation/phases-chart';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,8 +32,6 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads, ptEstimations } from '@/lib/db/schema';
 import type { Phase, DisciplineAllocation } from '@/lib/estimations/pt-calculator';
-import { PhasesChart } from '@/components/estimation/phases-chart';
-import { DisciplinesChart, DISCIPLINE_COLORS } from '@/components/estimation/disciplines-chart';
 
 export default async function PTEstimationDetailPage({
   params,
@@ -99,7 +99,9 @@ export default async function PTEstimationDetailPage({
   const disciplines = estimation.disciplines
     ? (JSON.parse(estimation.disciplines) as DisciplineAllocation[])
     : [];
-  const assumptions = estimation.assumptions ? (JSON.parse(estimation.assumptions) as string[]) : [];
+  const assumptions = estimation.assumptions
+    ? (JSON.parse(estimation.assumptions) as string[])
+    : [];
 
   return (
     <div className="space-y-6">
@@ -294,7 +296,9 @@ export default async function PTEstimationDetailPage({
                           <div className="flex items-center gap-2">
                             <div
                               className="h-3 w-3 rounded-full"
-                              style={{ backgroundColor: DISCIPLINE_COLORS[idx % DISCIPLINE_COLORS.length] }}
+                              style={{
+                                backgroundColor: DISCIPLINE_COLORS[idx % DISCIPLINE_COLORS.length],
+                              }}
                             />
                             {discipline.role}
                           </div>
@@ -425,5 +429,7 @@ function ConfidenceBadge({
   const selectedConfig = level ? config[level] : config.medium;
   const sizeClass = size === 'large' ? 'text-base px-4 py-2' : '';
 
-  return <Badge className={`${selectedConfig.className} ${sizeClass}`}>{selectedConfig.label}</Badge>;
+  return (
+    <Badge className={`${selectedConfig.className} ${sizeClass}`}>{selectedConfig.label}</Badge>
+  );
 }

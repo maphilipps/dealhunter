@@ -36,6 +36,9 @@ export async function extractRequirements(input: ExtractionInput): Promise<Extra
           content: `You are a business development analyst at adesso SE, a leading IT consulting company.
 Extract structured requirements from bid/project inquiries with high accuracy.
 
+CRITICAL OUTPUT FORMAT: You MUST respond with ONLY a valid JSON object. Do NOT include markdown, explanations, or any text before or after the JSON.
+Start your response with { and end with }. No markdown code blocks, no comments, just pure JSON.
+
 CRITICAL: Extract ALL of the following data with confidence scores:
 
 1. BUDGET RANGE:
@@ -88,10 +91,26 @@ Return a valid JSON object that matches this schema.`,
     });
 
     const responseText = completion.choices[0]?.message?.content || '{}';
-    const cleanedResponse = responseText
+
+    // Clean markdown code blocks and unwanted prefixes
+    let cleanedResponse = responseText
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
       .trim();
+
+    // Remove leading markdown headers or other non-JSON content
+    // Find the first '{' which should be the start of JSON
+    const jsonStartIndex = cleanedResponse.indexOf('{');
+    if (jsonStartIndex > 0) {
+      cleanedResponse = cleanedResponse.substring(jsonStartIndex);
+    }
+
+    // Find the last '}' which should be the end of JSON
+    const jsonEndIndex = cleanedResponse.lastIndexOf('}');
+    if (jsonEndIndex > 0 && jsonEndIndex < cleanedResponse.length - 1) {
+      cleanedResponse = cleanedResponse.substring(0, jsonEndIndex + 1);
+    }
+
     const parsed = JSON.parse(cleanedResponse) as unknown;
     const validated = extractedRequirementsSchema.parse(parsed);
 
@@ -211,6 +230,9 @@ export async function runExtractionWithStreaming(
           content: `You are a business development analyst at adesso SE, a leading IT consulting company.
 Extract structured requirements from bid/project inquiries with high accuracy.
 
+CRITICAL OUTPUT FORMAT: You MUST respond with ONLY a valid JSON object. Do NOT include markdown, explanations, or any text before or after the JSON.
+Start your response with { and end with }. No markdown code blocks, no comments, just pure JSON.
+
 CRITICAL: Extract ALL of the following data with confidence scores:
 
 1. BUDGET RANGE:
@@ -263,10 +285,26 @@ Return a valid JSON object that matches this schema.`,
     });
 
     const responseText = completion.choices[0]?.message?.content || '{}';
-    const cleanedResponse = responseText
+
+    // Clean markdown code blocks and unwanted prefixes
+    let cleanedResponse = responseText
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
       .trim();
+
+    // Remove leading markdown headers or other non-JSON content
+    // Find the first '{' which should be the start of JSON
+    const jsonStartIndex = cleanedResponse.indexOf('{');
+    if (jsonStartIndex > 0) {
+      cleanedResponse = cleanedResponse.substring(jsonStartIndex);
+    }
+
+    // Find the last '}' which should be the end of JSON
+    const jsonEndIndex = cleanedResponse.lastIndexOf('}');
+    if (jsonEndIndex > 0 && jsonEndIndex < cleanedResponse.length - 1) {
+      cleanedResponse = cleanedResponse.substring(0, jsonEndIndex + 1);
+    }
+
     const parsed = JSON.parse(cleanedResponse) as unknown;
     const result = { object: extractedRequirementsSchema.parse(parsed) };
 

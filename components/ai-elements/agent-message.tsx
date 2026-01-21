@@ -1,12 +1,14 @@
 'use client';
 
+import { Copy, ChevronDown, Check } from 'lucide-react';
 import { useState } from 'react';
+
+import { ConfidenceIndicator } from './confidence-indicator';
+import { Sources } from './sources';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Copy, ChevronDown, Check } from 'lucide-react';
-import { ConfidenceIndicator } from './confidence-indicator';
-import { Sources } from './sources';
 import type { AgentEvent } from '@/lib/streaming/event-types';
 import { AgentEventType } from '@/lib/streaming/event-types';
 

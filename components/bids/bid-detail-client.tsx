@@ -1,40 +1,48 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Loader2, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
+
+import { BaselineComparisonCard } from './baseline-comparison-card';
+import { BitDecisionActions } from './bit-decision-actions';
+import { BLRoutingCard } from './bl-routing-card';
+import { DecisionCard } from './decision-card';
+import { DecisionConfidenceBanner } from './decision-confidence-banner';
+import { DeepAnalysisCard } from './deep-analysis-card';
+import { ExtractionPreview } from './extraction-preview';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react';
-import { toast } from 'sonner';
+
 import { updateExtractedRequirements } from '@/lib/bids/actions';
-import { calculateAnsweredQuestionsCount, buildQuestionsWithStatus } from '@/lib/bids/ten-questions';
-import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
+import type { DuplicateCheckResult } from '@/lib/bids/duplicate-check';
+import {
+  calculateAnsweredQuestionsCount,
+  buildQuestionsWithStatus,
+} from '@/lib/bids/ten-questions';
 import {
   startBitEvaluation,
   getBitEvaluationResult,
   retriggerBitEvaluation,
 } from '@/lib/bit-evaluation/actions';
 import type { BidOpportunity, QuickScan } from '@/lib/db/schema';
+import { startQuickScan, getQuickScanResult } from '@/lib/quick-scan/actions';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
-import { ExtractionPreview } from './extraction-preview';
+
 import { QuickScanResults } from './quick-scan-results';
 import { WebsiteUrlInput } from './website-url-input';
+
 import { ActivityStream } from '@/components/ai-elements/activity-stream';
-import { DecisionCard } from './decision-card';
+
 import { LowConfidenceDialog } from './low-confidence-dialog';
-import { BLRoutingCard } from './bl-routing-card';
 import { TeamBuilder } from './team-builder';
-import { DeepAnalysisCard } from './deep-analysis-card';
 import { DocumentsSidebar } from './documents-sidebar';
-import { BaselineComparisonCard } from './baseline-comparison-card';
 import { ProjectPlanningCard } from './project-planning-card';
 import { NotificationCard } from './notification-card';
-import { BitDecisionActions } from './bit-decision-actions';
 import { DuplicateWarning } from './duplicate-warning';
 import { TenQuestionsCard } from './ten-questions-card';
-import { DecisionConfidenceBanner } from './decision-confidence-banner';
-import type { DuplicateCheckResult } from '@/lib/bids/duplicate-check';
 
 interface BidDetailClientProps {
   bid: BidOpportunity;
@@ -569,7 +577,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
                     totalQuestionsCount={questionsCount.total}
                     overallScore={quickScan.confidence || undefined}
                     blRecommendation={{
-                      primaryBusinessLine: quickScan.recommendedBusinessUnit || 'Technology & Innovation',
+                      primaryBusinessLine:
+                        quickScan.recommendedBusinessUnit || 'Technology & Innovation',
                       confidence: quickScan.confidence || 0,
                       reasoning: quickScan.reasoning || '',
                       alternativeBusinessLines: [],

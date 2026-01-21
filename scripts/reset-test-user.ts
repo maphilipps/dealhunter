@@ -1,7 +1,8 @@
-import { db } from '../lib/db';
-import { users } from '../lib/db/schema';
 import { hash } from 'bcryptjs';
 import { eq } from 'drizzle-orm';
+
+import { db } from '../lib/db';
+import { users } from '../lib/db/schema';
 
 async function resetTestUser() {
   console.log('🔄 Resetting test user...');

@@ -1,22 +1,23 @@
 import { z } from 'zod';
+
 import { registry } from './registry';
 import type { ToolContext } from './types';
 
 // Import primitive tools
-import { crawlNavigation, quickNavigationScan } from '@/lib/quick-scan/tools/navigation-crawler';
-import { countPages, quickPageCount } from '@/lib/quick-scan/tools/page-counter';
 import {
   classifyContentTypes,
   estimateContentTypesFromUrls,
 } from '@/lib/quick-scan/tools/content-classifier';
 import {
-  analyzeMigrationComplexity,
-  analyzeWithAI as analyzeMigrationWithAI,
-} from '@/lib/quick-scan/tools/migration-analyzer';
-import {
   searchDecisionMakers,
   quickContactSearch,
 } from '@/lib/quick-scan/tools/decision-maker-research';
+import {
+  analyzeMigrationComplexity,
+  analyzeWithAI as analyzeMigrationWithAI,
+} from '@/lib/quick-scan/tools/migration-analyzer';
+import { crawlNavigation, quickNavigationScan } from '@/lib/quick-scan/tools/navigation-crawler';
+import { countPages, quickPageCount } from '@/lib/quick-scan/tools/page-counter';
 import { runPlaywrightAudit } from '@/lib/quick-scan/tools/playwright';
 
 /**

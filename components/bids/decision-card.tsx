@@ -1,9 +1,5 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   CheckCircle2,
   XCircle,
@@ -12,13 +8,19 @@ import {
   ThumbsDown,
   GitBranch,
 } from 'lucide-react';
-import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
-import { DecisionTree } from './decision-tree';
-import { ConfidenceIndicator, ConfidenceBreakdown } from './confidence-indicator';
-import { RedFlagAlert } from './red-flag-alert';
+
 import { CompetitorWarning } from './competitor-warning';
+import { ConfidenceIndicator, ConfidenceBreakdown } from './confidence-indicator';
+import { DecisionTree } from './decision-tree';
+import { RedFlagAlert } from './red-flag-alert';
 import { ReferenceMatchCard } from './reference-match-card';
 import type { RedFlag, Competitor, ReferenceMatch } from './types';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 
 interface DecisionCardProps {
   result: BitEvaluationResult;

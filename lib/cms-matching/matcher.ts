@@ -13,14 +13,15 @@
  * Returns top 3 ranked CMS options with reasoning.
  */
 
-import { db } from '../db';
-import { technologies, cmsMatchResults, type Technology } from '../db/schema';
+import { generateObject, type LanguageModel } from 'ai';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
+
 import type { ContentArchitectureResult } from '../agents/content-architecture-agent';
 import type { MigrationComplexityResult } from '../agents/migration-complexity-agent';
-import { generateObject, type LanguageModel } from 'ai';
-import { z } from 'zod';
 import { openai } from '../ai/providers';
+import { db } from '../db';
+import { technologies, cmsMatchResults, type Technology } from '../db/schema';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -405,7 +406,10 @@ function calculateIndustryScore(cmsName: string, industry?: string | null): numb
 function calculateSizeScore(cmsName: string, pageCount: number): number {
   for (const sizeCategory of Object.values(SIZE_AFFINITY)) {
     if (pageCount >= sizeCategory.min && pageCount < sizeCategory.max) {
-      return (sizeCategory.cms[cmsName] as number | undefined) || 70;
+      if (cmsName in sizeCategory.cms) {
+        return sizeCategory.cms[cmsName as keyof typeof sizeCategory.cms];
+      }
+      return 70;
     }
   }
 

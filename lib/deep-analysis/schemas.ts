@@ -1,11 +1,11 @@
-import { z } from 'zod';
 import DOMPurify from 'isomorphic-dompurify';
+import { z } from 'zod';
 
 // Sanitized string schema (XSS prevention)
 // Strips ALL HTML tags, entities, and malicious content
 const sanitizedString = z.string().transform(val => {
   // Step 1: Decode HTML entities FIRST (&lt; → <, &#60; → <, etc.)
-  let decoded = val
+  const decoded = val
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>')
     .replace(/&amp;/gi, '&')

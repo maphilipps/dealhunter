@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getUsers, updateUserRole, deleteUser } from '@/lib/admin/users-actions';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getUsers, updateUserRole, deleteUser } from '@/lib/admin/users-actions';
 
 export default function UsersPage() {
   const router = useRouter();

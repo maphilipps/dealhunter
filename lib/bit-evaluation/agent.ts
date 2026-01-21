@@ -1,4 +1,13 @@
 import OpenAI from 'openai';
+
+import { runCapabilityAgent } from './agents/capability-agent';
+import { runCompetitionAgent } from './agents/competition-agent';
+import { runContractAgent } from './agents/contract-agent';
+import { runDealQualityAgent } from './agents/deal-quality-agent';
+import { runLegalAgent } from './agents/legal-agent';
+import { runReferenceAgent } from './agents/reference-agent';
+import { runStrategicFitAgent } from './agents/strategic-fit-agent';
+import { runCoordinatorAgent } from './coordinator-agent';
 import {
   bitDecisionSchema,
   alternativeRecSchema,
@@ -14,18 +23,11 @@ import {
   type ReferenceMatch,
   type CoordinatorOutput,
 } from './schema';
-import { runCoordinatorAgent } from './coordinator-agent';
-import { runCapabilityAgent } from './agents/capability-agent';
-import { runDealQualityAgent } from './agents/deal-quality-agent';
-import { runStrategicFitAgent } from './agents/strategic-fit-agent';
-import { runCompetitionAgent } from './agents/competition-agent';
-import { runLegalAgent } from './agents/legal-agent';
-import { runContractAgent } from './agents/contract-agent';
-import { runReferenceAgent } from './agents/reference-agent';
-import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import { AgentEventType } from '@/lib/streaming/event-types';
+
 // Intelligent Agent Framework - NEW
 import { quickEvaluate, BIT_EVALUATION_SCHEMA } from '@/lib/agent-tools/evaluator';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import { AgentEventType } from '@/lib/streaming/event-types';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({

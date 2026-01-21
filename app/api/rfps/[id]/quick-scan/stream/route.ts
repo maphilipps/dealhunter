@@ -1,13 +1,15 @@
+import { eq, and } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
+
+import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, quickScans } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { runQuickScanWithStreaming } from '@/lib/quick-scan/agent';
 import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
-import { runQuickScanWithStreaming } from '@/lib/quick-scan/agent';
-import { auth } from '@/lib/auth';
 import { generateTimelineFromQuickScan } from '@/lib/timeline/integration';
 import { onAgentComplete } from '@/lib/workflow/orchestrator';
+import { embedAgentOutput } from '@/lib/rag/embedding-service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -230,6 +232,15 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
           completedAt: new Date(),
         })
         .where(eq(quickScans.id, quickScan.id));
+
+      // DEA-107: Embed Quick Scan result for RAG knowledge base
+      try {
+        await embedAgentOutput(id, 'quick_scan', result as unknown as Record<string, unknown>);
+        console.log('[QuickScan Stream] Embedded Quick Scan result for RAG');
+      } catch (error) {
+        console.error('[QuickScan Stream] Failed to embed Quick Scan result:', error);
+        // Don't block on embedding failure
+      }
 
       // DEA-90: Use orchestrator to handle status transition
       // This will set status to 'bit_pending' (waiting for manual BID/NO-BID decision)

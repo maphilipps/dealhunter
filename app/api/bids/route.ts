@@ -1,8 +1,9 @@
+import { eq, and, desc } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, accounts } from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {

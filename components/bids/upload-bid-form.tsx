@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { Upload, FileText, Loader2, Globe, Type } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
+
 import { uploadCombinedBid } from '@/lib/bids/actions';
 
 interface UploadBidFormProps {
@@ -11,7 +12,7 @@ interface UploadBidFormProps {
   accounts: Array<{ id: string; name: string; industry: string }>;
 }
 
-export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
+export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps) {
   const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -114,6 +115,24 @@ export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
 
   return (
     <div className="space-y-6">
+      {/* Info Banner */}
+      <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
+        <h3 className="font-semibold text-primary mb-2">
+          RFP Eingabe - Wählen Sie mindestens eine Methode:
+        </h3>
+        <ul className="text-sm space-y-1 text-muted-foreground">
+          <li>
+            ✓ <strong>PDF Upload</strong> - RFP-Dokument hochladen (empfohlen)
+          </li>
+          <li>
+            ✓ <strong>Freitext/E-Mail</strong> - Text direkt eingeben oder E-Mail einfügen
+          </li>
+          <li>
+            ✓ <strong>Website-URL</strong> - Für automatische Tech-Stack-Analyse (empfohlen)
+          </li>
+        </ul>
+      </div>
+
       {/* Account Selection */}
       <div className="rounded-lg border bg-card p-4">
         <label htmlFor="account-select" className="block text-sm font-medium mb-2">
@@ -136,11 +155,10 @@ export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
       </div>
 
       {/* Section 1: PDF Upload */}
-      <div className="rounded-lg border bg-card p-6">
+      <div className="rounded-lg border-2 border-primary/50 bg-card p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Upload className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-lg font-semibold">PDF Upload</h2>
-          <span className="text-sm text-muted-foreground">(optional)</span>
+          <Upload className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">Option 1: PDF Upload</h2>
         </div>
 
         <div
@@ -218,11 +236,11 @@ export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
       </div>
 
       {/* Section 2: Website URL */}
-      <div className="rounded-lg border bg-card p-6">
+      <div className="rounded-lg border-2 border-primary/50 bg-card p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Globe className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-lg font-semibold">Website-URL</h2>
-          <span className="text-sm text-muted-foreground">(optional, aber empfohlen)</span>
+          <Globe className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">Option 2: Website-URL</h2>
+          <span className="text-xs text-muted-foreground">(empfohlen für Tech-Stack-Analyse)</span>
         </div>
 
         <div>
@@ -244,23 +262,22 @@ export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
         </div>
       </div>
 
-      {/* Section 3: Additional Text */}
-      <div className="rounded-lg border bg-card p-6">
+      {/* Section 3: Freitext/E-Mail Input */}
+      <div className="rounded-lg border-2 border-primary/50 bg-card p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Type className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-lg font-semibold">Zusätzliche Informationen</h2>
-          <span className="text-sm text-muted-foreground">(optional)</span>
+          <Type className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">Option 3: Freitext / E-Mail</h2>
         </div>
 
         <div>
           <label htmlFor="additional-text" className="block text-sm font-medium mb-2">
-            Weitere Details oder Projektbeschreibung
+            RFP-Text direkt eingeben oder E-Mail-Inhalt einfügen
           </label>
           <textarea
             id="additional-text"
             value={additionalText}
             onChange={e => setAdditionalText(e.target.value)}
-            placeholder="Ergänzende Informationen, die nicht im PDF stehen oder zusätzlichen Kontext bieten..."
+            placeholder="Kopieren Sie hier den RFP-Text oder E-Mail-Inhalt ein. Kann auch als Ergänzung zum PDF verwendet werden..."
             rows={8}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
             disabled={isUploading}
@@ -286,7 +303,9 @@ export function UploadBidForm({ userId, accounts }: UploadBidFormProps) {
 
           <button
             type="button"
-            onClick={handleSubmit}
+            onClick={() => {
+              void handleSubmit();
+            }}
             disabled={isUploading || !hasAnyInput}
             className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >

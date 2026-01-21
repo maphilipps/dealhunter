@@ -38,22 +38,6 @@ let cacheMisses = 0;
 let backgroundRefreshes = 0;
 
 /**
- * Get cache statistics for monitoring
- */
-export function getAccountsCacheStats() {
-  const total = cacheHits + cacheMisses;
-  const hitRate = total > 0 ? (cacheHits / total) * 100 : 0;
-
-  return {
-    hits: cacheHits,
-    misses: cacheMisses,
-    hitRate: `${hitRate.toFixed(2)}%`,
-    backgroundRefreshes,
-    cacheSize: accountsCache.size,
-  };
-}
-
-/**
  * Helper function to fetch accounts from database
  */
 async function fetchAccountsFromDB(userId: string, userRole: string): Promise<Account[]> {

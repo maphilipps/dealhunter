@@ -16,7 +16,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     name: session.user.name || 'Unknown',
     email: session.user.email || '',
     role: session.user.role as 'bd' | 'bl' | 'admin',
-    avatar: '/avatars/user.jpg',
+    avatar: '', // Empty avatar triggers AvatarFallback with initials
   };
 
   return (

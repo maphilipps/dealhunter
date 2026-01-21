@@ -3,14 +3,14 @@
  * Ensures that XML parsing is protected against XML External Entity (XXE) attacks
  */
 
-import { describe, it, expect, beforeEach, jest } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { fetchSitemap } from '../utils/crawler';
 import { validateXml } from '../utils/xml-validator';
 
 describe('XXE Protection', () => {
   beforeEach(() => {
     // Reset fetch mock before each test
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   describe('validateXml', () => {
@@ -109,12 +109,12 @@ describe('XXE Protection', () => {
 </urlset>`;
 
       // Mock fetch to return malicious XML
-      global.fetch = jest.fn(() =>
+      global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(maliciousXml),
         } as Response)
-      ) as jest.Mock;
+      ) as Mock;
 
       await expect(fetchSitemap('https://evil.com')).rejects.toThrow(
         'XML contains DOCTYPE declaration'
@@ -130,12 +130,12 @@ describe('XXE Protection', () => {
   <url><loc>&xxe;</loc></url>
 </urlset>`;
 
-      global.fetch = jest.fn(() =>
+      global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(maliciousXml),
         } as Response)
-      ) as jest.Mock;
+      ) as Mock;
 
       await expect(fetchSitemap('https://evil.com')).rejects.toThrow(
         'XML contains DOCTYPE declaration'
@@ -154,12 +154,12 @@ describe('XXE Protection', () => {
   <url><loc>&lol3;</loc></url>
 </urlset>`;
 
-      global.fetch = jest.fn(() =>
+      global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(maliciousXml),
         } as Response)
-      ) as jest.Mock;
+      ) as Mock;
 
       await expect(fetchSitemap('https://evil.com')).rejects.toThrow();
     });
@@ -178,12 +178,12 @@ describe('XXE Protection', () => {
   </url>
 </urlset>`;
 
-      global.fetch = jest.fn(() =>
+      global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(validXml),
         } as Response)
-      ) as jest.Mock;
+      ) as Mock;
 
       const result = await fetchSitemap('https://example.com');
 
@@ -215,7 +215,7 @@ describe('XXE Protection', () => {
 </urlset>`;
 
       // Mock fetch to return different XML based on URL
-      global.fetch = jest.fn((url: string) => {
+      global.fetch = vi.fn((url: string) => {
         if (url.includes('sitemap.xml')) {
           return Promise.resolve({
             ok: true,
@@ -233,7 +233,7 @@ describe('XXE Protection', () => {
           } as Response);
         }
         return Promise.resolve({ ok: false } as Response);
-      }) as jest.Mock;
+      }) as Mock;
 
       const result = await fetchSitemap('https://example.com');
 
@@ -250,12 +250,12 @@ describe('XXE Protection', () => {
   </url>
 </urlset>`;
 
-      global.fetch = jest.fn(() =>
+      global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(validXml),
         } as Response)
-      ) as jest.Mock;
+      ) as Mock;
 
       const result = await fetchSitemap('https://example.com');
 
@@ -271,12 +271,12 @@ describe('XXE Protection', () => {
   </sitemap>
 </sitemapindex>`;
 
-      global.fetch = jest.fn(() =>
+      global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(maliciousSitemapIndex),
         } as Response)
-      ) as jest.Mock;
+      ) as Mock;
 
       const result = await fetchSitemap('https://example.com');
 
@@ -292,12 +292,12 @@ describe('XXE Protection', () => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </urlset>`;
 
-      global.fetch = jest.fn(() =>
+      global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(emptyXml),
         } as Response)
-      ) as jest.Mock;
+      ) as Mock;
 
       await expect(fetchSitemap('https://example.com')).rejects.toThrow('No sitemap found');
     });
@@ -309,12 +309,12 @@ describe('XXE Protection', () => {
   <!-- missing closing tag -->
 </urlset>`;
 
-      global.fetch = jest.fn(() =>
+      global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(malformedXml),
         } as Response)
-      ) as jest.Mock;
+      ) as Mock;
 
       // fast-xml-parser should handle this gracefully
       const result = await fetchSitemap('https://example.com');
@@ -331,12 +331,12 @@ describe('XXE Protection', () => {
   </url>
 </urlset>`;
 
-      global.fetch = jest.fn(() =>
+      global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
           text: () => Promise.resolve(xmlWithWhitespace),
         } as Response)
-      ) as jest.Mock;
+      ) as Mock;
 
       const result = await fetchSitemap('https://example.com');
 

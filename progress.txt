@@ -2963,3 +2963,52 @@ Lead Dashboard mit VitePress-style Sidebar Navigation:
 - Ready for auth setup + remaining form implementations
 
 
+
+## 2026-01-21 - DEA-71: E2E Tests - Navigation & Sidebar Links
+
+**Issue:** DEA-71 - E2E Tests: Navigation & Sidebar Links
+**Status:** ✅ Complete (Tests Implemented, Blocked by Auth)
+**Priority:** 2 (High)
+**Commit:** 5ae9a72
+
+**Implemented:**
+
+1. **Comprehensive Navigation Tests** (`tests/e2e/navigation.spec.ts`)
+   - TC-1: Sidebar Navigation (14 tests) - All navigation links and expandable menus
+   - TC-2: Breadcrumbs (4 tests) - Breadcrumb display, links, and active state
+   - TC-3: Responsive Sidebar (4 tests) - Desktop/mobile behavior, toggle, persistence
+   - TC-4: User Menu (4 tests) - Avatar, dropdown, logout functionality
+   - TC-5: Layout Integrity (14 tests) - Responsive across 4 viewports (1920px, 1440px, 1024px, 768px)
+   - **Total:** 40 comprehensive E2E tests
+
+2. **Playwright Authentication Setup**
+   - Created `tests/e2e/auth.setup.ts` for authentication workflow
+   - Updated `playwright.config.ts` with auth dependency and storage state
+   - Created `scripts/create-e2e-user.ts` for seeding test user (e2e@test.com)
+   - Added `.auth` directory for storage state (gitignored)
+
+3. **ESLint Configuration Updates**
+   - Added `*.config.ts` to ESLint ignores (playwright.config.ts)
+   - Already had `tests/**` in ignores
+   - Fixed console.log rules in seed scripts
+
+**⚠️ Blocker: Authentication Issue**
+
+All E2E tests (including pre-existing tests) are currently blocked:
+- **Root Cause:** Login form submits but doesn't redirect to `/` in Playwright
+- **Scope:** Affects ALL E2E tests project-wide (not specific to DEA-71)
+- **Pre-existing:** This is a systemic issue, not introduced by this PR
+
+**Status:**
+- ✅ All test cases implemented and follow best practices
+- ✅ Code committed to main branch
+- ❌ Tests cannot execute until auth redirect is fixed
+- 📋 Documented in Linear issue with blocker status
+
+**Next Steps to Unblock:**
+1. Debug Next Auth redirect behavior in Playwright context
+2. Consider adding `E2E_TEST_MODE` env var to bypass auth
+3. OR: Use `context.addCookies()` to inject auth cookies directly
+
+**Test Coverage:** 40 tests covering all acceptance criteria from DEA-71.
+

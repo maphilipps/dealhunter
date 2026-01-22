@@ -5497,3 +5497,32 @@ Implemented hybrid approach combining database-level and in-memory filtering:
 - After: Database filters by accountName → Filter JSON fields in memory (O(m) where m << n)
 - Expected: 50-70% reduction in records needing in-memory filtering
 
+
+
+## 2026-01-22 - DEA-121: Missing Preload for Critical Resources
+
+### Implemented
+- ✅ Added DNS prefetch and preconnect hints for external API domain (https://adesso-ai-hub.3asabc.de) in root layout
+- ✅ Implemented hover/focus prefetch for all navigation links in NavMain component
+- ✅ Checked for above-fold images - none found that need priority attribute
+
+### Technical Details
+**Files Modified:**
+- `app/layout.tsx`: Added DNS prefetch and preconnect link tags
+- `components/nav-main.tsx`: Added useRouter hook and prefetch handlers for mouseenter/focus events
+
+### Performance Impact
+- DNS prefetch: Resolves DNS for external API before requests are made
+- Preconnect: Establishes early TCP/TLS handshake with external API
+- Hover prefetch: Preloads routes when users hover over navigation links
+- Expected improvement: 100-300ms faster perceived load times
+
+### Notes
+- No custom fonts to preload (using Next.js font optimization with Geist)
+- No above-fold images found in current implementation
+- All navigation links now prefetch on hover for faster transitions
+
+### Links
+- Issue: https://linear.app/adessocms/issue/DEA-121
+- Commit: 2adfa00
+

@@ -5577,3 +5577,31 @@ COVERAGE GOAL: 80%+ (current: unknown due to v8 provider issue)
 - Security coverage: SSRF attack prevention, protocol validation, private network blocking
 - All tests passing ✅
 
+
+
+[2025-01-22] Test Coverage Update
+- Added comprehensive unit tests for lib/bit-evaluation/schema.ts (64 tests)
+- Test coverage includes:
+  * capabilityMatchSchema - 6 tests for technology and scale capability validation
+  * dealQualitySchema - 5 tests for budget, timeline, and commercial viability
+  * strategicFitSchema - 3 tests for customer and industry alignment
+  * competitionCheckSchema - 2 tests for competitive analysis
+  * legalRedFlagSchema - 4 tests for legal red flag validation
+  * legalQuickCheckSchema - 3 tests for BD-level legal quick checks
+  * complianceCheckSchema - 2 tests for procurement law and compliance
+  * legalAssessmentSchema - 3 tests for full legal assessments
+  * contractAnalysisSchema - 2 tests for contract type and risk analysis
+  * referenceMatchSchema - 2 tests for reference project matching
+  * bitDecisionSchema - 4 tests for final BIT/NO-BIT decisions
+  * alternativeRecSchema - 2 tests for alternative recommendations
+  * decisionNodeSchema - 4 tests for decision tree nodes
+  * coordinatorOutputSchema - 2 tests for coordinator output
+  * bitEvaluationResultSchema - 3 tests for complete evaluation results
+  * Type Inference - 3 tests for TypeScript type inference
+  * Edge Cases and Error Handling - 10 tests for boundary conditions
+- Schema validation: Enum values, number ranges (0-100, 1-10), required fields
+- Complex nested objects: Decision trees, legal assessments, compliance checks
+- All tests passing ✅
+- Total test count: 874 tests (64 new)
+
+✓ lib/bids/embedding-service.ts - 37 tests (generateRfpEmbedding, cosineSimilarity, similarityToPercentage, parseEmbedding)

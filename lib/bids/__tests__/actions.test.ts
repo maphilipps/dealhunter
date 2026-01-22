@@ -40,7 +40,7 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
-vi.mock('./pdf-extractor', () => ({
+vi.mock('../pdf-extractor', () => ({
   extractTextFromPdf: vi.fn(),
 }));
 
@@ -56,6 +56,66 @@ vi.mock('@/lib/pii/pii-cleaner', () => ({
   detectPII: vi.fn(),
   cleanText: vi.fn(),
 }));
+
+// Mock File API to provide arrayBuffer method
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-base-to-string */
+Object.defineProperty(global, 'File', {
+  value: class File {
+    public readonly name: string;
+    public readonly lastModified: number;
+    public readonly size: number;
+    public readonly type: string;
+
+    constructor(
+      public readonly bits: BlobPart[],
+      filename: string,
+      options: FilePropertyBag = {}
+    ) {
+      this.name = filename;
+      this.lastModified = options.lastModified || Date.now();
+      this.type = options.type || '';
+      // Simplified size calculation - just count string characters
+      this.size = bits.reduce((acc, part) => {
+        if (typeof part === 'string') {
+          return acc + part.length;
+        }
+        if (part instanceof ArrayBuffer) {
+          return acc + part.byteLength;
+        }
+        return acc;
+      }, 0);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/require-await
+    async arrayBuffer(): Promise<ArrayBuffer> {
+      // Convert bits to ArrayBuffer
+      const text = this.bits.map(String).join('');
+      const encoder = new TextEncoder();
+      return encoder.encode(text).buffer;
+    }
+
+    stream(): ReadableStream {
+      const text = this.bits.map(String).join('');
+      return new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(text));
+          controller.close();
+        },
+      });
+    }
+
+    text(): Promise<string> {
+      return Promise.resolve(this.bits.map(String).join(''));
+    }
+
+    slice(): Blob {
+      return new Blob(this.bits);
+    }
+  },
+  writable: true,
+  configurable: true,
+});
 
 vi.mock('@/lib/quick-scan/actions', () => ({
   startQuickScan: vi.fn(),

@@ -14,6 +14,7 @@ import {
   employees,
   ptEstimations,
 } from '@/lib/db/schema';
+import { calculateInternalDeadlines } from '@/lib/pitchdeck/timeline-calculator';
 import { suggestTeam } from '@/lib/team/agent';
 import type { TeamSuggestion } from '@/lib/team/schema';
 
@@ -96,8 +97,9 @@ export async function createPitchdeck(leadId: string): Promise<CreatePitchdeckRe
       })
       .returning();
 
-    // Parse extracted requirements to get deliverables
+    // Parse extracted requirements to get deliverables and deadline
     let requiredDeliverables: { name: string; format?: string; mandatory?: boolean }[] = [];
+    let rfpDeadline: Date | null = null;
 
     if (rfp.extractedRequirements) {
       try {
@@ -109,18 +111,39 @@ export async function createPitchdeck(leadId: string): Promise<CreatePitchdeckRe
             mandatory?: boolean;
           }[];
         }
+
+        // Extract RFP deadline if available
+        if (extractedReqs.deadline) {
+          if (typeof extractedReqs.deadline === 'string') {
+            rfpDeadline = new Date(extractedReqs.deadline);
+          } else if (extractedReqs.deadline instanceof Date) {
+            rfpDeadline = extractedReqs.deadline;
+          }
+        }
       } catch (error) {
         console.error('Error parsing RFP extractedRequirements:', error);
         // Continue without deliverables if parsing fails
       }
     }
 
-    // Create deliverable entries
+    // Calculate internal deadlines if RFP deadline exists
+    let internalDeadlines: Date[] = [];
+    if (rfpDeadline && requiredDeliverables.length > 0) {
+      try {
+        internalDeadlines = calculateInternalDeadlines(rfpDeadline, requiredDeliverables.length);
+      } catch (error) {
+        console.error('Error calculating internal deadlines:', error);
+        // Continue without internal deadlines if calculation fails
+      }
+    }
+
+    // Create deliverable entries with internal deadlines
     if (requiredDeliverables.length > 0) {
-      const deliverableValues = requiredDeliverables.map(deliverable => ({
+      const deliverableValues = requiredDeliverables.map((deliverable, index) => ({
         pitchdeckId: newPitchdeck.id,
         deliverableName: deliverable.name,
         status: 'open' as const,
+        internalDeadline: internalDeadlines[index] || null,
       }));
 
       await db.insert(pitchdeckDeliverables).values(deliverableValues);

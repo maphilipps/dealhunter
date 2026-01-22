@@ -6184,3 +6184,66 @@ Ready for API implementation (PA-023, PA-024)
 - Email sending is non-blocking (runs in `after()` callback)
 - In development mode without RESEND_API_KEY, emails are logged to console
 
+
+---
+
+## DEA-168: PA-009 - Deliverables Gesamtfortschritt als Prozent-Anzeige
+
+**Completed:** 2026-01-22
+**Commit:** d1cbb27
+
+### Summary:
+
+Implemented progress tracking display for Pitchdeck deliverables with visual progress bar and status breakdown.
+
+### Implementation Details:
+
+1. **Created pitchdeck page** (`app/(dashboard)/leads/[id]/pitchdeck/page.tsx`):
+   - Server component fetching pitchdeck and deliverables data
+   - Protected route (only accessible for leads with blVote='BID')
+   - Automatic redirect if pitchdeck doesn't exist
+   - Deliverables list with color-coded status badges
+   - Integration with existing lead navigation via LeadSidebarRight
+
+2. **PitchdeckProgress component** (`components/pitchdeck/pitchdeck-progress.tsx`):
+   - Client component using ShadCN Progress component
+   - Progress calculation function: `(done / total) * 100`
+   - Large, prominent percentage display
+   - Visual progress bar (h-3 height for visibility)
+   - Status breakdown with 4 cards showing counts:
+     * Open (gray)
+     * In Progress (yellow)
+     * Review (blue)
+     * Done (green)
+
+3. **Color conventions** (following existing patterns):
+   - Green: done status
+   - Blue: review status
+   - Yellow: in_progress status
+   - Gray: open status
+
+### Files created:
+
+- `app/(dashboard)/leads/[id]/pitchdeck/page.tsx`
+- `components/pitchdeck/pitchdeck-progress.tsx`
+
+### Testing:
+
+- TypeScript type checks: ✅ Passed
+- ESLint: ✅ No errors (fixed import order)
+- Follows Ralph Wiggum Principle: checked existing Progress component and color patterns
+
+### Acceptance Criteria:
+
+✅ Berechnung: (done / total) * 100
+✅ Visueller Fortschrittsbalken
+✅ Prozent-Anzeige als Zahl
+
+### Notes:
+
+- Used existing ShadCN Progress component (components/ui/progress.tsx)
+- Color scheme matches existing patterns (evaluated evaluation-progress.tsx)
+- Progress bar height (h-3) provides good visibility
+- Status breakdown provides quick overview of deliverable distribution
+- Component is client-side only for Progress animation
+- Page is server-side for optimal data fetching

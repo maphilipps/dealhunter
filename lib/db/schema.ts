@@ -1045,6 +1045,9 @@ export const leads = sqliteTable(
     deepScanStartedAt: integer('deep_scan_started_at', { mode: 'timestamp' }),
     deepScanCompletedAt: integer('deep_scan_completed_at', { mode: 'timestamp' }),
 
+    // CMS Selection (DEA-151)
+    selectedCmsId: text('selected_cms_id').references(() => technologies.id),
+
     // Timestamps
     routedAt: integer('routed_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),

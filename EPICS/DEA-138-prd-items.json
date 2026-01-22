@@ -341,7 +341,7 @@
         "Prüfe: Niedrige Scores (< 50%) werden hervorgehoben",
         "Prüfe: Tooltip erklärt Score-Berechnung"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "PRD-028",
@@ -401,7 +401,7 @@
         "Prüfe: Cache wird genutzt wenn vorhanden",
         "Prüfe: Fresh Query wenn kein Cache"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "PRD-033",
@@ -413,7 +413,7 @@
         "Prüfe: Returns 202 Accepted",
         "Prüfe: Speichert Ergebnisse in RAG"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "PRD-034",

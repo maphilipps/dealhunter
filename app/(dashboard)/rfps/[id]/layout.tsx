@@ -3,7 +3,12 @@ import { notFound, redirect } from 'next/navigation';
 import { RfpSidebarRight } from '@/components/bids/rfp-sidebar-right';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { auth } from '@/lib/auth';
-import { getCachedRfp, getCachedUser, getRfpTitle } from '@/lib/rfps/cached-queries';
+import {
+  getCachedRfpWithRelations,
+  getCachedUser,
+  getRfpTitle,
+} from '@/lib/rfps/cached-queries';
+import { getQuickScanDataAvailability } from '@/lib/rfps/navigation';
 
 export default async function RfpDashboardLayout({
   children,
@@ -19,9 +24,9 @@ export default async function RfpDashboardLayout({
     redirect('/login');
   }
 
-  // Parallel fetch of RFP and user data
-  const [rfp, dbUser, rfpTitle] = await Promise.all([
-    getCachedRfp(id),
+  // Parallel fetch of RFP with relations and user data
+  const [{ rfp, quickScan }, dbUser, rfpTitle] = await Promise.all([
+    getCachedRfpWithRelations(id),
     getCachedUser(session.user.id),
     getRfpTitle(id),
   ]);
@@ -34,6 +39,9 @@ export default async function RfpDashboardLayout({
     redirect('/api/auth/clear-session');
   }
 
+  // Calculate data availability from quickScan
+  const dataAvailability = getQuickScanDataAvailability(quickScan);
+
   return (
     <SidebarProvider>
       <SidebarInset>
@@ -41,7 +49,12 @@ export default async function RfpDashboardLayout({
       </SidebarInset>
 
       {/* Right Sidebar: RFP-specific Navigation */}
-      <RfpSidebarRight rfpId={id} title={rfpTitle} status={rfp.status} />
+      <RfpSidebarRight
+        rfpId={id}
+        title={rfpTitle}
+        status={rfp.status}
+        dataAvailability={dataAvailability}
+      />
     </SidebarProvider>
   );
 }

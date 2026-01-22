@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/unbound-method */
+ 
+ 
+ 
+ 
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -69,6 +69,7 @@ import {
 } from '../services';
 
 import { generateObject, generateText } from 'ai';
+
 import { searchAndContents, getContents } from '@/lib/search/web-search';
 import { sendSlackMessageWithButtons } from '@/lib/slack';
 

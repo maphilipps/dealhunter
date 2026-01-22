@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { detectPII, cleanText, generatePreview, type PIIMatch } from '../pii-cleaner';
 
 describe('PII Cleaner', () => {

@@ -1,0 +1,504 @@
+{
+  "feature": "DEA-138: Lead Detail Page Redesign - Deep Scan Navigation & RAG Integration",
+  "version": "1.0.0",
+  "linearIssue": "https://linear.app/adessocms/issue/DEA-138",
+  "testUrl": "http://localhost:3000/leads/[id]",
+  "items": [
+    {
+      "id": "PRD-001",
+      "category": "Layout",
+      "description": "Beide Sidebars permanent offen - Links App-Nav, Rechts Lead-Nav, KEIN SidebarTrigger im Content",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]",
+        "Prüfe: AppSidebar ist links permanent sichtbar",
+        "Prüfe: LeadSidebarRight ist rechts permanent sichtbar",
+        "Prüfe: KEIN SidebarTrigger Button im Content-Bereich",
+        "Prüfe: Beide Sidebars können NICHT collapsed werden"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-002",
+      "category": "Navigation",
+      "description": "LeadSidebarRight zeigt 13 Haupt-Sektionen mit hierarchischer Struktur wie Locarno Audit",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]",
+        "Prüfe: 13 Hauptsektionen sind sichtbar (Übersicht bis BID/NO-BID)",
+        "Prüfe: Sektionen haben Subsections (Collapsible)",
+        "Prüfe: Icons für jede Sektion",
+        "Prüfe: Status-Badges pro Sektion (loading, ready, warning, error)"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-003",
+      "category": "Navigation",
+      "description": "BID/NO-BID ist LETZTER Navigationspunkt - Workflow wird logisch abgeschlossen",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]",
+        "Prüfe: BID/NO-BID Entscheidung ist Position 13 (letzter Eintrag)",
+        "Prüfe: Alle anderen Sektionen kommen davor",
+        "Prüfe: Visual Separator vor Decision Section"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-004",
+      "category": "Navigation",
+      "description": "Alle 13 Sektionen von Anfang an sichtbar mit Lade-Status",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]",
+        "Prüfe: Alle Sektionen sind sofort sichtbar (auch wenn leer)",
+        "Prüfe: Loading State für Sektionen ohne Daten",
+        "Prüfe: Ready State für Sektionen mit Daten",
+        "Prüfe: Warning/Error State für problematische Sektionen"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-005",
+      "category": "Deep Scan",
+      "description": "Deep Scan triggert automatisch wenn RFP zu Lead wird (Status-Übergang zu 'routed')",
+      "stepsToVerify": [
+        "Prüfe: Workflow startet Deep Scan bei Lead-Erstellung",
+        "Prüfe: Trigger bei Status-Übergang zu 'routed'",
+        "Prüfe: deepScanStatus wird auf 'running' gesetzt",
+        "Prüfe: deepScanStartedAt Timestamp wird gespeichert"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-006",
+      "category": "Deep Scan",
+      "description": "13+ Agents laufen parallel via Promise.all mit Error Isolation",
+      "stepsToVerify": [
+        "Prüfe: Agents werden parallel gestartet (nicht sequenziell)",
+        "Prüfe: Ein Agent-Fehler stoppt nicht andere Agents",
+        "Prüfe: Alle Agent-Ergebnisse werden gesammelt",
+        "Prüfe: deepScanCompletedAt wird gesetzt wenn alle fertig"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-007",
+      "category": "Deep Scan",
+      "description": "Agent-Outputs werden als Chunks ins RAG gespeichert (rfpEmbeddings)",
+      "stepsToVerify": [
+        "Prüfe: Jeder Agent speichert Output in rfpEmbeddings",
+        "Prüfe: Chunks sind nach agentName filterbar",
+        "Prüfe: Embeddings werden generiert",
+        "Prüfe: Metadata enthält Source-Informationen"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-008",
+      "category": "Section: Übersicht",
+      "description": "Executive Summary und Detaillierte Zusammenfassung",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id] (Übersicht)",
+        "Prüfe: Executive Summary Card ist sichtbar",
+        "Prüfe: Detaillierte Zusammenfassung ist expandierbar",
+        "Prüfe: Daten kommen aus RAG Query"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-009",
+      "category": "Section: Aktuelle Technologie",
+      "description": "Tech-Stack Überblick und Aktuelles CMS Details",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]/tech-stack",
+        "Prüfe: Tech-Stack Liste zeigt ALLE Technologien (kein Limit)",
+        "Prüfe: Aktuelles CMS wird detailliert angezeigt",
+        "Prüfe: Performance Indicators sind sichtbar",
+        "Prüfe: HTTPX Details werden angezeigt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-010",
+      "category": "Section: Website-Analyse",
+      "description": "Seitentypen, Components (Screenshots + Datenstruktur), Performance & Accessibility Audit",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]/website-analysis",
+        "Prüfe: Seitentypen werden aufgelistet",
+        "Prüfe: Components mit Screenshots und Datenstruktur",
+        "Prüfe: Performance-Audit Ergebnisse",
+        "Prüfe: Accessibility-Audit Ergebnisse"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-011",
+      "category": "Section: CMS-Architektur",
+      "description": "Ziel-Architektur mit Content Types, Paragraphs, Views & Listings",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]/cms-architecture",
+        "Prüfe: Architektur-Übersicht ist sichtbar",
+        "Prüfe: Content Types werden aufgelistet",
+        "Prüfe: Paragraphs/Components Section",
+        "Prüfe: Views & Listings Section"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-012",
+      "category": "Section: CMS-Vergleich",
+      "description": "Nur BU-verfügbare CMS mit Vergleichsübersicht und Empfehlung",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]/cms-comparison",
+        "Prüfe: NUR CMS der Business Unit werden angezeigt",
+        "Prüfe: CMS-Liste kommt aus DB Konfiguration",
+        "Prüfe: Vergleichsübersicht (Matrix/Tabelle)",
+        "Prüfe: Finale CMS-Empfehlung mit Begründung"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-013",
+      "category": "Section: Hosting & Infrastruktur",
+      "description": "Aktuelle Infrastruktur und Empfohlene Architektur",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]/hosting",
+        "Prüfe: Aktuelle Infrastruktur wird analysiert",
+        "Prüfe: Empfohlene Architektur wird vorgeschlagen",
+        "Prüfe: Diagramm oder Visualisierung vorhanden"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-014",
+      "category": "Section: Integrationen",
+      "description": "Systemlandschaft Übersicht und Details pro Integration",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]/integrations",
+        "Prüfe: Übersicht der erkannten Integrationen",
+        "Prüfe: Systemlandschaft-Diagramm",
+        "Prüfe: Details pro Integration expandierbar",
+        "Prüfe: API-Dokumentation Links (falls verfügbar)"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-015",
+      "category": "Section: Migration & Projekt",
+      "description": "Migrations-Strategie und Risiken mit Mitigation",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]/migration",
+        "Prüfe: Migrations-Strategie wird dargestellt",
+        "Prüfe: Risiken werden aufgelistet",
+        "Prüfe: Mitigation-Maßnahmen pro Risiko",
+        "Prüfe: Priorisierung nach Schweregrad"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-016",
+      "category": "Section: Staffing & Timeline",
+      "description": "Gantt-ähnliche Timeline mit Ressourcen-Planung (Rollen x Monate)",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]/staffing",
+        "Prüfe: Gantt-Chart ist sichtbar (Recharts)",
+        "Prüfe: Rollen werden angezeigt",
+        "Prüfe: PT-Schätzung pro Rolle/Phase",
+        "Prüfe: Hover zeigt Details"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-017",
+      "category": "Section: Referenzen",
+      "description": "Agent-empfohlene Referenzprojekte mit Begründung pro Referenz",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]/references",
+        "Prüfe: Referenz-Anforderungen aus RFP",
+        "Prüfe: Agent-Empfehlungen werden angezeigt",
+        "Prüfe: Begründung pro Referenz",
+        "Prüfe: Matching Score pro Referenz"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-018",
+      "category": "Section: Legal-Prüfung",
+      "description": "DSGVO, Branchenspezifische Regularien, Lizenz-Compliance",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]/legal",
+        "Prüfe: DSGVO Basis-Check (Impressum, Cookies, Datenschutz)",
+        "Prüfe: Branchenspezifische Regeln (basierend auf Branche)",
+        "Prüfe: Lizenz-Scanning für erkannte Technologien",
+        "Prüfe: Risk Level pro Anforderung"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-019",
+      "category": "Section: Kosten & Budget",
+      "description": "Feature-Liste mit PT, Budget-Analyse, ROI Projektion",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]/budget",
+        "Prüfe: Feature-Liste mit PT-Schätzung",
+        "Prüfe: Budget-Analyse wird angezeigt",
+        "Prüfe: ROI Projektion (falls Daten verfügbar)"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-020",
+      "category": "Section: BID/NO-BID",
+      "description": "Executive Summary, Pros/Cons Übersicht, Confidence Score, Finale Empfehlung",
+      "stepsToVerify": [
+        "Navigiere zu /leads/[id]/decision",
+        "Prüfe: Executive Summary Card",
+        "Prüfe: PROS Liste (grün markiert)",
+        "Prüfe: CONS Liste (rot markiert)",
+        "Prüfe: Confidence Score wird angezeigt",
+        "Prüfe: BID/NO-BID Buttons sind sichtbar",
+        "Prüfe: Finale Empfehlung des Systems"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-021",
+      "category": "RAG Integration",
+      "description": "Jede Sektion lädt Daten via RAG Query (queryRagForLead)",
+      "stepsToVerify": [
+        "Prüfe: Funktion queryRagForLead(leadId, sectionId, question) existiert",
+        "Prüfe: Support für Multi-Agent Queries",
+        "Prüfe: Batch Queries für Section-Loading",
+        "Prüfe: Confidence Score basiert auf RAG Similarity"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-022",
+      "category": "RAG Integration",
+      "description": "Synthesizer-Agent formatiert Rohdaten zu strukturiertem Content",
+      "stepsToVerify": [
+        "Prüfe: Synthesizer-Agent pro Sektion existiert",
+        "Prüfe: Rohdaten → lesbarer Content Transformation",
+        "Prüfe: Markdown-Formatierung in Output",
+        "Prüfe: Strukturierte JSON Ausgabe für json-render"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-023",
+      "category": "Web Research",
+      "description": "Exa API Integration (primär) mit nativem Web Search Fallback",
+      "stepsToVerify": [
+        "Prüfe: Exa API wird als primäre Quelle genutzt",
+        "Prüfe: Natives Web Search Tool als Fallback",
+        "Prüfe: Automatischer Fallback bei Exa-Fehler",
+        "Prüfe: Source-Tracking in Ergebnissen"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-024",
+      "category": "Web Research",
+      "description": "Web Search Ergebnisse werden ins RAG gespeichert (mit Quellen)",
+      "stepsToVerify": [
+        "Prüfe: Ergebnisse werden chunked",
+        "Prüfe: Embeddings werden generiert",
+        "Prüfe: Speicherung in rfpEmbeddings",
+        "Prüfe: Source URL wird in Metadata gespeichert"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-025",
+      "category": "Web Research",
+      "description": "Bei niedriger Confidence automatische Web Search Anreicherung",
+      "stepsToVerify": [
+        "Prüfe: Confidence Threshold ist definiert (z.B. < 50%)",
+        "Prüfe: Automatischer Web Search Trigger",
+        "Prüfe: Neue Daten → RAG → Re-Query",
+        "Prüfe: UI Update nach Anreicherung"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-026",
+      "category": "Component Library",
+      "description": "Screenshots via Puppeteer/Playwright für Component-Erkennung",
+      "stepsToVerify": [
+        "Prüfe: Puppeteer/Playwright Integration",
+        "Prüfe: Screenshot-Capture funktioniert",
+        "Prüfe: Vision Model erkennt Components",
+        "Prüfe: Strukturierte Ausgabe: Name, Screenshot, Props, Datenstruktur"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-027",
+      "category": "Confidence Score",
+      "description": "Jede Sektion zeigt Confidence Score basierend auf Datenqualität",
+      "stepsToVerify": [
+        "Prüfe: Confidence Score (0-100%) wird angezeigt",
+        "Prüfe: Score basiert auf RAG Similarity Average",
+        "Prüfe: Niedrige Scores (< 50%) werden hervorgehoben",
+        "Prüfe: Tooltip erklärt Score-Berechnung"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-028",
+      "category": "Hybrid Rendering",
+      "description": "Feste Seitenstruktur + json-render Slots für dynamische Widgets",
+      "stepsToVerify": [
+        "Prüfe: Grundstruktur ist fest (ShadCN Components)",
+        "Prüfe: json-render Slots sind definiert",
+        "Prüfe: AI generiert json-render Specs",
+        "Prüfe: Widgets werden korrekt gerendert"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-029",
+      "category": "Schema",
+      "description": "Neue DB Felder: deepScanStatus, deepScanStartedAt, deepScanCompletedAt",
+      "stepsToVerify": [
+        "Prüfe: leads.deepScanStatus enum existiert",
+        "Prüfe: leads.deepScanStartedAt timestamp",
+        "Prüfe: leads.deepScanCompletedAt timestamp",
+        "Prüfe: Migration läuft ohne Fehler"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-030",
+      "category": "Schema",
+      "description": "Neue Tabelle leadSectionData für gecachte Section-Outputs",
+      "stepsToVerify": [
+        "Prüfe: Tabelle leadSectionData existiert",
+        "Prüfe: Felder: leadId, sectionId, data, confidence, updatedAt",
+        "Prüfe: Index auf leadId + sectionId",
+        "Prüfe: TTL/Expiry Mechanismus"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-031",
+      "category": "API",
+      "description": "POST /api/leads/[id]/deep-scan - Manueller Trigger",
+      "stepsToVerify": [
+        "Prüfe: Endpoint existiert",
+        "Prüfe: Startet Deep Scan Workflow",
+        "Prüfe: Returns 202 Accepted",
+        "Prüfe: Auth Required"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-032",
+      "category": "API",
+      "description": "GET /api/leads/[id]/sections/[sectionId] - Section Data mit RAG Query",
+      "stepsToVerify": [
+        "Prüfe: Endpoint existiert",
+        "Prüfe: Returns Section Data + Confidence",
+        "Prüfe: Cache wird genutzt wenn vorhanden",
+        "Prüfe: Fresh Query wenn kein Cache"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-033",
+      "category": "API",
+      "description": "POST /api/leads/[id]/sections/[sectionId]/research - Web Research Trigger",
+      "stepsToVerify": [
+        "Prüfe: Endpoint existiert",
+        "Prüfe: Triggert Web Research",
+        "Prüfe: Returns 202 Accepted",
+        "Prüfe: Speichert Ergebnisse in RAG"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-034",
+      "category": "CMS Config",
+      "description": "Admin kann CMS pro Business Unit konfigurieren",
+      "stepsToVerify": [
+        "Prüfe: Admin UI für CMS Konfiguration",
+        "Prüfe: CMS → Business Unit Mapping in DB",
+        "Prüfe: Lead zeigt nur BU-relevante CMS",
+        "Prüfe: Änderungen wirken sofort"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-035",
+      "category": "Code Quality",
+      "description": "Build läuft ohne TypeScript und ESLint Errors",
+      "stepsToVerify": [
+        "Führe 'npm run build' aus",
+        "Prüfe: Build completes successfully",
+        "Prüfe: Keine TypeScript Errors",
+        "Prüfe: Keine ESLint Errors (Warnings OK)"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-036",
+      "category": "Code Quality",
+      "description": "Keine Console Errors beim Navigieren durch alle Sektionen",
+      "stepsToVerify": [
+        "Öffne Browser DevTools Console",
+        "Navigiere durch alle 13 Sektionen",
+        "Prüfe: Keine JavaScript Errors",
+        "Prüfe: Keine React Warnings",
+        "Prüfe: Keine Network Errors"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-037",
+      "category": "Testing",
+      "description": "Deep Scan Orchestrator Tests (parallel execution, error isolation)",
+      "stepsToVerify": [
+        "Prüfe: Test für parallele Agent-Ausführung",
+        "Prüfe: Test für Error Isolation",
+        "Prüfe: Test für Status-Tracking",
+        "Prüfe: Tests passen (npm test)"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-038",
+      "category": "Testing",
+      "description": "RAG Query Service Tests (query execution, confidence, multi-agent)",
+      "stepsToVerify": [
+        "Prüfe: Test für Query Execution",
+        "Prüfe: Test für Confidence Calculation",
+        "Prüfe: Test für Multi-Agent Queries",
+        "Prüfe: Tests passen (npm test)"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-039",
+      "category": "Testing",
+      "description": "Web Research Service Tests (Exa API mocked, fallback logic)",
+      "stepsToVerify": [
+        "Prüfe: Test mit Exa API Mock",
+        "Prüfe: Test für Fallback Logic",
+        "Prüfe: Test für RAG Storage",
+        "Prüfe: Tests passen (npm test)"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PRD-040",
+      "category": "Testing",
+      "description": "Navigation Configuration Tests (section mapping, routes, status)",
+      "stepsToVerify": [
+        "Prüfe: Test für Section Mapping",
+        "Prüfe: Test für Route Generation",
+        "Prüfe: Test für Status Aggregation",
+        "Prüfe: Tests passen (npm test)"
+      ],
+      "passes": false
+    }
+  ]
+}

@@ -18,7 +18,7 @@ vi.mock('ai', () => ({
   generateObject: vi.fn(),
 }));
 
-vi.mock('../ai/providers', () => ({
+vi.mock('@/lib/ai/providers', () => ({
   openai: vi.fn(() => 'mock-model'),
 }));
 

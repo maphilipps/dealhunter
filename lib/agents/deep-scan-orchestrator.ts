@@ -14,6 +14,7 @@
 
 import { eq } from 'drizzle-orm';
 
+import { analyzeComponents } from '@/lib/agents/component-library-agent';
 import { db } from '@/lib/db';
 import { leads, leadSectionData, rfpEmbeddings } from '@/lib/db/schema';
 import { LEAD_NAVIGATION_SECTIONS } from '@/lib/leads/navigation-config';
@@ -91,12 +92,46 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
   },
 
   'website-analysis': async (leadId, rfpId) => {
-    // TODO: Implement WebsiteAnalysisAgent
-    return Promise.resolve({
-      content: { performance: null, seo: null, accessibility: null, leadId, rfpId },
-      confidence: 50,
-      sources: [],
+    // Fetch lead data to get website URL
+    const leadData = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+
+    if (!leadData[0]?.websiteUrl) {
+      return {
+        content: {
+          error: 'No website URL available for analysis',
+          leadId,
+          rfpId,
+        },
+        confidence: 0,
+        sources: [],
+      };
+    }
+
+    const websiteUrl = leadData[0].websiteUrl;
+
+    // Run component library analysis
+    const componentAnalysis = await analyzeComponents({
+      leadId,
+      rfpId,
+      websiteUrl,
+      maxDepth: 2,
+      maxPages: 10,
     });
+
+    // TODO: Add other website analysis agents (performance, SEO, etc.)
+    // For now, component library is the main analysis
+
+    return {
+      content: {
+        components: componentAnalysis.components,
+        totalComponents: componentAnalysis.totalComponents,
+        pagesAnalyzed: componentAnalysis.pagesAnalyzed,
+        leadId,
+        rfpId,
+      },
+      confidence: componentAnalysis.confidence,
+      sources: componentAnalysis.sources,
+    };
   },
 
   'cms-architecture': async (leadId, rfpId) => {

@@ -17,9 +17,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 
 import { describe, it, expect, vi } from 'vitest';
+
 import {
   generateRfpEmbedding,
   cosineSimilarity,

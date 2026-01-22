@@ -5605,3 +5605,41 @@ COVERAGE GOAL: 80%+ (current: unknown due to v8 provider issue)
 - Total test count: 874 tests (64 new)
 
 ✓ lib/bids/embedding-service.ts - 37 tests (generateRfpEmbedding, cosineSimilarity, similarityToPercentage, parseEmbedding)
+Test Coverage Progress - 2026-01-22 07:45:07
+====================================
+
+Completed:
+- lib/agent-tools/evaluator.ts: 36 test cases
+
+Files tested: 1
+Total test cases added: 36
+Coverage target: 80%
+
+
+[2025-01-22] Test Coverage Update
+- Added comprehensive unit tests for lib/auth/actions.ts (19 tests)
+- Test coverage includes:
+  * login() - 6 tests for authentication flow
+    * Successful sign in with valid credentials
+    * CredentialsSignin error handling
+    * Generic AuthError handling
+    * NEXT_REDIRECT error re-throwing
+    * Missing email/password edge cases
+  * register() - 10 tests for user registration
+    * Missing field validation (email, password, name)
+    * Duplicate email detection
+    * Successful registration with bcrypt hashing
+    * Default BD role assignment
+    * Registration success but login failure
+    * Non-AuthError handling
+    * bcrypt hash failure
+    * Database insertion failure
+  * logout() - 3 tests for sign out
+    * Successful logout and redirect
+    * Error handling
+    * Redirect to /login verification
+- Security coverage: AuthError handling, bcrypt password hashing, duplicate user prevention
+- Mock coverage: next-auth, bcryptjs, drizzle-orm, database operations
+- All tests passing ✅
+- Total test count: 966 tests (19 new)
+

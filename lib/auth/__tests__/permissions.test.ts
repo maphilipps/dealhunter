@@ -11,7 +11,6 @@ vi.mock('@/lib/auth', () => ({
   auth: vi.fn(),
 }));
 
-import { auth } from '@/lib/auth';
 import {
   hasRole,
   isBDManager,
@@ -23,6 +22,8 @@ import {
   getCurrentSession,
   type UserRole,
 } from '../permissions';
+
+import { auth } from '@/lib/auth';
 
 describe('Permission System', () => {
   beforeEach(() => {

@@ -23,7 +23,7 @@ import {
   decisionNodeSchema,
   coordinatorOutputSchema,
   bitEvaluationResultSchema,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   type CapabilityMatch,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   type DealQuality,
@@ -1986,16 +1986,20 @@ describe('BIT Evaluation Schemas', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         budgetAdequacy: 'invalid' as any,
         estimatedMargin: 20,
-        budgetRisks: [],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        budgetRisks: [] as any,
         timelineRealism: 'realistic' as const,
-        timelineRisks: [],
-        expectedRevenueRange: '€100k', // eslint-disable-line @typescript-eslint/no-unsafe-assignment
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        timelineRisks: [] as any,
+        expectedRevenueRange: '€100k',
         profitabilityRating: 'medium' as const,
-        commercialRisks: [],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        commercialRisks: [] as any,
         overallDealQualityScore: 70,
         confidence: 75,
         reasoning: 'Test',
-        criticalBlockers: [],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        criticalBlockers: [] as any,
       };
 
       expect(() => dealQualitySchema.parse(data)).toThrow();
@@ -2067,7 +2071,7 @@ describe('BIT Evaluation Schemas', () => {
     });
 
     it('should accept data with only required fields in bitDecisionSchema', () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+       
       const data = {
         decision: 'bit' as const,
         scores: {
@@ -2098,9 +2102,9 @@ describe('BIT Evaluation Schemas', () => {
       expect(() => decisionNodeSchema.parse(data)).toThrow();
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     it('should accept decision node with only id, type, and label', () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+       
       const data = {
         id: 'test',
         type: 'decision' as const,

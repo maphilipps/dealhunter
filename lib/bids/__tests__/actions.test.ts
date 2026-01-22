@@ -59,7 +59,7 @@ vi.mock('@/lib/pii/pii-cleaner', () => ({
 
 // Mock File API to provide arrayBuffer method
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-base-to-string */
+ 
 Object.defineProperty(global, 'File', {
   value: class File {
     public readonly name: string;

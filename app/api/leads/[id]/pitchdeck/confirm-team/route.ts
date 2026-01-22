@@ -213,14 +213,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           roleLabel: roleLabels[member.role] || member.role,
         }));
 
-        // Send emails
+        // Send emails with Pitchdeck-specific link
+        const pitchdeckUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/leads/${lead.id}/pitchdeck`;
+
         await sendTeamNotificationEmails({
-          bidId: rfp.id,
+          bidId: rfp.id, // Keep for consistency, not used when projectUrl is provided
           projectName: `${customerName} - Pitchdeck`,
           customerName,
           projectDescription,
           teamMembers: teamNotifications,
           blLeaderName: currentUser.name,
+          projectUrl: pitchdeckUrl, // Override URL to point to Pitchdeck tab
         });
 
         console.log(

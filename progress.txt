@@ -6122,3 +6122,65 @@ Ready for API implementation (PA-023, PA-024)
 - Clean implementation with TypeScript strict type checking
 - No breaking changes to existing navigation
 
+
+
+---
+
+## DEA-163: PA-004 - Team - E-Mail-Benachrichtigung an Team-Mitglieder
+
+**Issue:** https://linear.app/adessocms/issue/DEA-163
+**Parent Issue:** DEA-155 (Pitchdeck-Assembly nach BID-Entscheidung)
+**Date:** 2026-01-22
+**Status:** ✅ Complete
+
+### What was implemented:
+
+1. **Email notification improvements**:
+   - Email sending already implemented in confirm-team API route (PA-003)
+   - Updated email link to point to Pitchdeck tab instead of RFP page
+   - Added optional `projectUrl` parameter to `sendTeamNotificationEmails` function
+   - Maintains backward compatibility with existing bid flow
+
+2. **Updated components:**
+   - `lib/notifications/email.ts`:
+     - Added `projectUrl?: string` to `SendTeamNotificationInput` interface
+     - Modified email function to use custom URL when provided
+     - Falls back to `/rfps/${bidId}` for existing bid functionality
+   - `app/api/leads/[id]/pitchdeck/confirm-team/route.ts`:
+     - Constructs Pitchdeck-specific URL: `/leads/${leadId}/pitchdeck`
+     - Passes custom URL to email function
+     - Non-blocking email sending using `after()` from Next.js
+
+3. **Email content includes:**
+   - Project name (Customer - Pitchdeck)
+   - Customer name and description
+   - Team member's role
+   - Direct link to `/leads/${leadId}/pitchdeck` tab
+   - BL leader name for contact
+
+### Files modified:
+
+- `lib/notifications/email.ts`
+- `app/api/leads/[id]/pitchdeck/confirm-team/route.ts`
+
+### Testing:
+
+- TypeScript type checks: ✅ Passed
+- All existing tests: ✅ Passed (402 tests)
+- No breaking changes to existing bid email functionality
+
+### Acceptance Criteria:
+
+✅ E-Mail nur nach BL-Bestätigung, nicht bei Vorschlag
+✅ Template enthält alle relevanten Projekt-Details
+✅ Link führt direkt zum Pitchdeck-Tab
+
+### Notes:
+
+- Email infrastructure (Resend) already existed
+- Implementation reuses existing `sendTeamNotificationEmails` function
+- Backward compatible: existing bid flow still uses `/rfps/` URL
+- Pitchdeck flow uses `/leads/${leadId}/pitchdeck` URL
+- Email sending is non-blocking (runs in `after()` callback)
+- In development mode without RESEND_API_KEY, emails are logged to console
+

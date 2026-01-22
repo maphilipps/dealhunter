@@ -5329,3 +5329,174 @@ NEXT PRIORITIES:
 3. lib/references-actions.ts - Core feature for reference management
 
 COVERAGE GOAL: 80%+ (current: unknown due to v8 provider issue)
+
+## Test Coverage Work - 2026-01-22
+
+### Completed: lib/bids/duplicate-check.ts
+- **Test Cases:** 36 tests, all passing
+- **Coverage:**
+  - normalizeUrl: URL normalization logic
+  - levenshteinDistance: String distance calculation
+  - calculateSimilarity: String similarity percentage (0-100)
+  - isWithinDateRange: Date range comparison
+  - checkForDuplicates: Main duplicate detection function
+  - Edge cases and error handling
+
+### Test Categories:
+1. URL Normalization (7 tests)
+   - Protocol removal (http/https)
+   - www. prefix removal
+   - Trailing slash removal
+   - Query string and fragment removal
+   - Case conversion
+   - Empty string handling
+   - Complex URL handling
+
+2. String Similarity (6 tests)
+   - Identical strings (100%)
+   - Empty strings
+   - Case insensitivity
+   - Whitespace trimming
+   - Levenshtein-based similarity
+   - Unicode character handling
+
+3. Date Range Comparison (6 tests)
+   - Same date matching
+   - Within range detection
+   - Outside range detection
+   - Edge cases (exact range limits)
+   - Empty/invalid date handling
+   - Different date formats
+
+4. Duplicate Detection (17 tests)
+   - No duplicates scenario
+   - Exact URL match detection
+   - Same account match detection
+   - Very similar customer names (90%+)
+   - Similar customer names with deadline (80%+)
+   - Embedding generation handling
+   - Embedding failure graceful handling
+   - RFP exclusion (excludeRfpId)
+   - Sorting by relevance (date, similarity)
+   - URL match priority (skip other checks)
+   - Malformed data handling
+   - Empty data handling
+   - websiteUrls array extraction
+   - Timestamp validation
+
+### Next Priority Files (from bids module):
+- lib/bids/duplicate-check-agent.ts
+- lib/bids/bid-decision-action.ts
+- lib/bids/duplicate-check-action.ts
+- lib/bids/embedding-service.ts
+- lib/bids/pdf-extractor.ts
+- lib/bids/ten-questions.ts
+
+### Progress Summary:
+- **Total Test Files:** 19 → 20
+- **Priority Module Coverage:** 1/8 files in bids module
+- **Next Target:** lib/bids/duplicate-check-agent.ts
+
+
+
+## Test Coverage Work - 2026-01-22
+
+### Completed: lib/pii/pii-cleaner.ts
+- **Test Cases:** 47 tests, all passing
+- **Coverage:**
+  - Email detection (5 tests)
+  - Phone detection (6 tests)
+  - Name detection (6 tests)
+  - Address detection (6 tests)
+  - Mixed PII types (5 tests)
+  - Text cleaning (6 tests)
+  - Preview generation (4 tests)
+  - Integration tests (5 tests)
+  - Edge cases (6 tests)
+
+### Test Categories:
+1. **Email Detection** (5 tests)
+   - Standard email addresses
+   - Multiple emails
+   - Subdomains
+   - Special characters
+   - Text without emails
+
+2. **Phone Detection** (6 tests)
+   - German phone with dashes/spaces
+   - International format (+49)
+   - Parentheses format
+   - Duplicate avoidance
+   - Email-like pattern exclusion
+
+3. **Name Detection** (6 tests)
+   - German salutations (Herr/Frau)
+   - Academic titles (Dr./Prof.)
+   - Simple two-part names
+   - Overlap prevention
+
+4. **Address Detection** (6 tests)
+   - German street addresses (straße/str.)
+   - Plaza addresses
+   - Postal codes with cities
+   - Case-insensitive matching
+
+5. **Mixed PII Types** (5 tests)
+   - Multiple PII types in one text
+   - Position sorting
+   - Empty/missing PII handling
+
+6. **Text Cleaning** (6 tests)
+   - Single/multiple replacements
+   - Length changes
+   - Consecutive matches
+   - Empty string handling
+
+7. **Preview Generation** (4 tests)
+   - Single/multiple matches
+   - Empty array handling
+   - Match object preservation
+
+8. **Integration Tests** (5 tests)
+   - Complete RFP text with PII
+   - Real-world German business scenarios
+   - Business information preservation
+   - Boundary cases
+   - Multiple emails in proximity
+
+9. **Edge Cases** (6 tests)
+   - Very long text
+   - Unicode characters
+   - Overlapping patterns
+   - Numbers vs phone
+   - Invalid email patterns
+
+### Security Impact:
+- PII data protection (GDPR compliance)
+- Email, phone, name, address detection
+- German-specific patterns
+- False positive handling
+- Business information preservation
+
+TOTAL STATS:
+- Test Files: 25 → 26 passing
+- Total Tests: 590 → 637 passing (+47)
+- New Tests Added: 47 (PII cleaner)
+- All tests passing: ✅
+
+NEXT PRIORITIES:
+- lib/utils.ts - Core utility functions
+- lib/auth/actions.ts - Authentication actions
+- lib/auth/permissions.ts - Permission checks
+- lib/references-actions.ts - References management
+- lib/slack.ts - Slack integration
+- lib/business-units/matching.ts - Business unit logic
+
+CRITICAL MODULES REMAINING:
+- lib/utils.ts - Utilities (formatting, validation, helpers)
+- lib/auth/ - Auth actions and permissions (security critical)
+- lib/references-actions.ts - Core feature for reference management
+- lib/slack.ts - Notification system
+
+COVERAGE GOAL: 80%+ (current: unknown due to v8 provider issue)
+

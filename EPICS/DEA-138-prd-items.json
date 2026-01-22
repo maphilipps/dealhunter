@@ -365,7 +365,7 @@
         "Prüfe: leads.deepScanCompletedAt timestamp",
         "Prüfe: Migration läuft ohne Fehler"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "PRD-030",
@@ -377,7 +377,7 @@
         "Prüfe: Index auf leadId + sectionId",
         "Prüfe: TTL/Expiry Mechanismus"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "PRD-031",

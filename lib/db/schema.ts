@@ -419,6 +419,7 @@ export const auditTrails = sqliteTable(
         'competency',
         'competitor',
         'team_assignment',
+        'pitchdeck',
       ],
     }).notNull(),
     entityId: text('entity_id').notNull(),

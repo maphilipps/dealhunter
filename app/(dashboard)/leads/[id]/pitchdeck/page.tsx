@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
+import { DeliverableCard } from '@/components/pitchdeck/deliverable-card';
 import { PitchdeckProgress } from '@/components/pitchdeck/pitchdeck-progress';
 import { PitchdeckTeam } from '@/components/pitchdeck/pitchdeck-team';
 import { PitchdeckTimeline } from '@/components/pitchdeck/pitchdeck-timeline';
@@ -113,7 +114,7 @@ export default async function PitchdeckPage({
   let rfpDeadline: Date | null = null;
   if (rfp?.extractedRequirements) {
     try {
-      const requirements = JSON.parse(rfp.extractedRequirements as string);
+      const requirements = JSON.parse(rfp.extractedRequirements) as { deadline?: string };
       if (requirements.deadline) {
         rfpDeadline = new Date(requirements.deadline);
       }
@@ -151,71 +152,13 @@ export default async function PitchdeckPage({
             <p className="text-sm text-muted-foreground">Keine Deliverables vorhanden.</p>
           ) : (
             <div className="space-y-2">
-              {deliverables.map(deliverable => {
-                // Calculate days until deadline
-                let deadlineInfo: { text: string; className: string } | null = null;
-                if (deliverable.internalDeadline) {
-                  const deadline = new Date(deliverable.internalDeadline);
-                  const now = new Date();
-                  const diffMs = deadline.getTime() - now.getTime();
-                  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-                  if (diffDays < 0) {
-                    deadlineInfo = {
-                      text: `${Math.abs(diffDays)} Tage überfällig`,
-                      className: 'text-red-600',
-                    };
-                  } else if (diffDays === 0) {
-                    deadlineInfo = {
-                      text: 'Heute fällig',
-                      className: 'text-orange-600',
-                    };
-                  } else if (diffDays < 3) {
-                    deadlineInfo = {
-                      text: `${diffDays} ${diffDays === 1 ? 'Tag' : 'Tage'} verbleibend`,
-                      className: 'text-yellow-600',
-                    };
-                  } else {
-                    deadlineInfo = {
-                      text: `Fällig: ${deadline.toLocaleDateString('de-DE')}`,
-                      className: 'text-muted-foreground',
-                    };
-                  }
-                }
-
-                return (
-                  <div
-                    key={deliverable.id}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">{deliverable.deliverableName}</p>
-                      <div className="mt-1 flex items-center gap-3 text-xs">
-                        <span className="text-muted-foreground">Status: {deliverable.status}</span>
-                        {deadlineInfo && (
-                          <>
-                            <span className="text-muted-foreground">•</span>
-                            <span className={deadlineInfo.className}>{deadlineInfo.text}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        deliverable.status === 'done'
-                          ? 'bg-green-100 text-green-700'
-                          : deliverable.status === 'review'
-                            ? 'bg-blue-100 text-blue-700'
-                            : deliverable.status === 'in_progress'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {deliverable.status}
-                    </div>
-                  </div>
-                );
-              })}
+              {deliverables.map(deliverable => (
+                <DeliverableCard
+                  key={deliverable.id}
+                  deliverable={deliverable}
+                  leadId={id}
+                />
+              ))}
             </div>
           )}
         </CardContent>

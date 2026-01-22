@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  chunkRawText,
-  estimateTokens,
-  getChunkStats,
-  type RawChunk,
-} from '../raw-chunk-service';
+import { chunkRawText, estimateTokens, getChunkStats, type RawChunk } from '../raw-chunk-service';
 
 describe('raw-chunk-service', () => {
   describe('estimateTokens', () => {

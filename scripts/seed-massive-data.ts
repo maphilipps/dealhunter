@@ -3,14 +3,7 @@ import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 
 import { db } from '../lib/db';
-import {
-  users,
-  businessUnits,
-  accounts,
-  rfps,
-  leads,
-  quickScans,
-} from '../lib/db/schema';
+import { users, businessUnits, accounts, rfps, leads, quickScans } from '../lib/db/schema';
 import { embedAgentOutput } from '../lib/rag/embedding-service';
 
 // Erweiterte DAX + MDAX Konzerne
@@ -18,17 +11,33 @@ const companies = [
   // DAX
   { name: 'BMW AG', industry: 'Automotive', website: 'https://www.bmw.de' },
   { name: 'Volkswagen AG', industry: 'Automotive', website: 'https://www.volkswagen.de' },
-  { name: 'Mercedes-Benz Group AG', industry: 'Automotive', website: 'https://www.mercedes-benz.de' },
+  {
+    name: 'Mercedes-Benz Group AG',
+    industry: 'Automotive',
+    website: 'https://www.mercedes-benz.de',
+  },
   { name: 'Siemens AG', industry: 'Industrial Technology', website: 'https://www.siemens.de' },
   { name: 'Allianz SE', industry: 'Insurance & Finance', website: 'https://www.allianz.de' },
-  { name: 'Deutsche Bank AG', industry: 'Banking & Finance', website: 'https://www.deutsche-bank.de' },
+  {
+    name: 'Deutsche Bank AG',
+    industry: 'Banking & Finance',
+    website: 'https://www.deutsche-bank.de',
+  },
   { name: 'SAP SE', industry: 'Software & Technology', website: 'https://www.sap.com' },
   { name: 'Bayer AG', industry: 'Pharmaceuticals', website: 'https://www.bayer.de' },
   { name: 'BASF SE', industry: 'Chemicals', website: 'https://www.basf.de' },
-  { name: 'Deutsche Telekom AG', industry: 'Telecommunications', website: 'https://www.telekom.de' },
+  {
+    name: 'Deutsche Telekom AG',
+    industry: 'Telecommunications',
+    website: 'https://www.telekom.de',
+  },
   { name: 'adidas AG', industry: 'Sporting Goods', website: 'https://www.adidas.de' },
   { name: 'Deutsche Post DHL Group', industry: 'Logistics', website: 'https://www.dhl.de' },
-  { name: 'Infineon Technologies AG', industry: 'Semiconductors', website: 'https://www.infineon.com' },
+  {
+    name: 'Infineon Technologies AG',
+    industry: 'Semiconductors',
+    website: 'https://www.infineon.com',
+  },
   { name: 'Henkel AG', industry: 'Consumer Goods', website: 'https://www.henkel.de' },
   { name: 'Continental AG', industry: 'Automotive', website: 'https://www.continental.com' },
   // MDAX
@@ -36,10 +45,22 @@ const companies = [
   { name: 'Hugo Boss AG', industry: 'Fashion', website: 'https://www.hugoboss.com' },
   { name: 'Fresenius SE', industry: 'Healthcare', website: 'https://www.fresenius.de' },
   { name: 'Zalando SE', industry: 'E-Commerce', website: 'https://www.zalando.de' },
-  { name: 'Deutsche Börse AG', industry: 'Financial Services', website: 'https://www.deutsche-boerse.com' },
+  {
+    name: 'Deutsche Börse AG',
+    industry: 'Financial Services',
+    website: 'https://www.deutsche-boerse.com',
+  },
   { name: 'Delivery Hero SE', industry: 'Food Delivery', website: 'https://www.deliveryhero.com' },
-  { name: 'Rational AG', industry: 'Commercial Kitchen Equipment', website: 'https://www.rational-online.com' },
-  { name: 'Knorr-Bremse AG', industry: 'Rail & Commercial Vehicles', website: 'https://www.knorr-bremse.com' },
+  {
+    name: 'Rational AG',
+    industry: 'Commercial Kitchen Equipment',
+    website: 'https://www.rational-online.com',
+  },
+  {
+    name: 'Knorr-Bremse AG',
+    industry: 'Rail & Commercial Vehicles',
+    website: 'https://www.knorr-bremse.com',
+  },
   { name: 'Brenntag SE', industry: 'Chemical Distribution', website: 'https://www.brenntag.com' },
   { name: 'Fraport AG', industry: 'Airport Operations', website: 'https://www.fraport.com' },
 ];
@@ -203,8 +224,7 @@ async function seedMassiveData() {
     for (let i = 0; i < numRFPs; i++) {
       const template = projectTemplates[Math.floor(Math.random() * projectTemplates.length)];
       const tech = techStacks[Math.floor(Math.random() * techStacks.length)];
-      const budget =
-        template.budgetRange[Math.floor(Math.random() * template.budgetRange.length)];
+      const budget = template.budgetRange[Math.floor(Math.random() * template.budgetRange.length)];
 
       const projectName = `${account.name.replace(' AG', '').replace(' SE', '')} ${template.title}`;
 
@@ -213,8 +233,7 @@ async function seedMassiveData() {
       const inputType = ['pdf', 'email', 'crm', 'freetext'][Math.floor(Math.random() * 4)];
 
       const confidence = tech.confidence + Math.floor((Math.random() - 0.5) * 20);
-      const decision =
-        confidence > 75 ? 'bid' : confidence < 60 ? 'no_bid' : 'pending';
+      const decision = confidence > 75 ? 'bid' : confidence < 60 ? 'no_bid' : 'pending';
 
       const quickScanData = {
         cms: tech.cms,
@@ -229,7 +248,11 @@ async function seedMassiveData() {
           estimatedDuration: Math.floor(Math.random() * 12) + 6,
           phases: [
             { name: 'Discovery', duration: 2, confidence: 'high' },
-            { name: 'Development', duration: Math.floor(Math.random() * 6) + 3, confidence: 'medium' },
+            {
+              name: 'Development',
+              duration: Math.floor(Math.random() * 6) + 3,
+              confidence: 'medium',
+            },
             { name: 'Launch', duration: 1, confidence: 'high' },
           ],
           risks: ['Integration complexity', 'Timeline constraints'],
@@ -342,7 +365,10 @@ async function seedMassiveData() {
         blVote: blVote as any,
         blVotedAt: new Date(),
         blVotedByUserId: blUser.id,
-        blReasoning: blVote === 'BID' ? 'Strong technical fit, good budget, strategic account' : 'Timeline too tight, resource conflicts',
+        blReasoning:
+          blVote === 'BID'
+            ? 'Strong technical fit, good budget, strategic account'
+            : 'Timeline too tight, resource conflicts',
         blConfidenceScore: Math.floor(Math.random() * 30) + 70,
         routedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
       })

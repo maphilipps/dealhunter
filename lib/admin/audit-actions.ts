@@ -85,7 +85,8 @@ export type AuditEntityType =
   | 'reference'
   | 'competency'
   | 'competitor'
-  | 'team_assignment';
+  | 'team_assignment'
+  | 'pitchdeck';
 
 export async function createAuditLog(data: {
   action: AuditAction;

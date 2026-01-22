@@ -8,6 +8,7 @@ import {
   Users,
   Trophy,
   AlertTriangle,
+  FileText,
   Layers,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -27,9 +28,10 @@ interface LeadSidebarRightProps {
   leadId: string;
   customerName: string;
   status: string;
+  blVote: 'BID' | 'NO-BID' | null;
 }
 
-export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRightProps) {
+export function LeadSidebarRight({ leadId, customerName, status, blVote }: LeadSidebarRightProps) {
   const navigationSections = [
     {
       label: 'Overview',
@@ -81,6 +83,21 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
         },
       ],
     },
+    // Conditionally show Pitchdeck section only for BID decisions
+    ...(blVote === 'BID'
+      ? [
+          {
+            label: 'Pitchdeck',
+            items: [
+              {
+                title: 'Pitchdeck Assembly',
+                icon: FileText,
+                url: `/leads/${leadId}/pitchdeck`,
+              },
+            ],
+          },
+        ]
+      : []),
     {
       label: 'Intelligence',
       items: [

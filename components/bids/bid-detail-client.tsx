@@ -2,7 +2,7 @@
 
 import { Loader2, Sparkles, CheckCircle2, RotateCcw, ArrowRight, Building2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
@@ -51,6 +51,8 @@ interface BidDetailClientProps {
 
 export function BidDetailClient({ bid }: BidDetailClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isOverviewPage = pathname === `/rfps/${bid.id}`;
   const [isExtracting, setIsExtracting] = useState(bid.status === 'extracting');
   const [extractedData, setExtractedData] = useState(
     bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null
@@ -699,23 +701,25 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
                   </div>
                   <DecisionCard result={bitEvaluationResult} />
 
-                  {/* Show BL Routing Card for BIT decisions */}
-                  {bitEvaluationResult.decision.decision === 'bit' && quickScan && (
-                    <BLRoutingCard
-                      bidId={bid.id}
-                      recommendation={{
-                        primaryBusinessLine:
-                          quickScan.recommendedBusinessUnit || 'Technology & Innovation',
-                        confidence: quickScan.confidence || 0,
-                        reasoning: quickScan.reasoning || '',
-                        alternativeBusinessLines: [],
-                        requiredSkills: [],
-                      }}
-                    />
-                  )}
+                  {/* Show BL Routing Card for BIT decisions - only on overview page */}
+                  {isOverviewPage &&
+                    bitEvaluationResult.decision.decision === 'bit' &&
+                    quickScan && (
+                      <BLRoutingCard
+                        bidId={bid.id}
+                        recommendation={{
+                          primaryBusinessLine:
+                            quickScan.recommendedBusinessUnit || 'Technology & Innovation',
+                          confidence: quickScan.confidence || 0,
+                          reasoning: quickScan.reasoning || '',
+                          alternativeBusinessLines: [],
+                          requiredSkills: [],
+                        }}
+                      />
+                    )}
 
-                  {/* Show Deep Analysis Card for BIT decisions */}
-                  {bitEvaluationResult.decision.decision === 'bit' && (
+                  {/* Show Deep Analysis Card for BIT decisions - only on dedicated subpages */}
+                  {!isOverviewPage && bitEvaluationResult.decision.decision === 'bit' && (
                     <DeepAnalysisCard
                       bidId={bid.id}
                       websiteUrl={bid.websiteUrl}
@@ -773,91 +777,111 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
 
               return (
                 <>
-                  {/* Deep Analysis */}
-                  <DeepAnalysisCard
-                    bidId={bid.id}
-                    websiteUrl={bid.websiteUrl}
-                    existingAnalysis={null}
-                  />
-
-                  {/* Phase 6: Baseline-Vergleich */}
-                  <BaselineComparisonCard
-                    bidId={bid.id}
-                    initialResult={baselineResult}
-                    hasDeepAnalysis={hasDeepAnalysis}
-                  />
-
-                  {/* Phase 7: Projekt-Planung */}
-                  <ProjectPlanningCard
-                    bidId={bid.id}
-                    initialPlan={projectPlan}
-                    hasDeepAnalysis={hasDeepAnalysis}
-                  />
-
-                  {/* Team Builder */}
-                  {bid.status === 'routed' && <TeamBuilder bidId={bid.id} />}
-
-                  {/* Team Assignment Summary (if team_assigned or later) */}
-                  {['team_assigned', 'notified', 'handed_off'].includes(bid.status) &&
-                    bid.assignedTeam && (
-                      <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
-                        <CardHeader>
-                          <CardTitle className="text-green-900 dark:text-green-100">
-                            Team zugewiesen
-                          </CardTitle>
-                          <CardDescription className="text-green-700 dark:text-green-300">
-                            Das Team wurde erfolgreich zugewiesen
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <pre className="text-sm overflow-auto">
-                            {JSON.stringify(JSON.parse(bid.assignedTeam), null, 2)}
-                          </pre>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                  {/* Phase 9: Team-Benachrichtigung */}
-                  <NotificationCard
-                    bidId={bid.id}
-                    hasTeam={hasTeam}
-                    initialResults={notificationResults}
-                    notifiedAt={bid.teamNotifiedAt}
-                  />
-
-                  {/* Workflow Complete Badge */}
-                  {bid.status === 'handed_off' && (
-                    <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
-                          <CheckCircle2 className="h-5 w-5" />
-                          Workflow abgeschlossen
-                        </CardTitle>
-                        <CardDescription className="text-blue-700 dark:text-blue-300">
-                          Alle Phasen wurden erfolgreich durchlaufen. Das Projekt wurde übergeben.
-                        </CardDescription>
-                      </CardHeader>
-                    </Card>
+                  {/* Show BL Routing Card when routed - only on overview page */}
+                  {isOverviewPage && bid.status === 'routed' && quickScan && (
+                    <BLRoutingCard
+                      bidId={bid.id}
+                      recommendation={{
+                        primaryBusinessLine:
+                          quickScan.recommendedBusinessUnit || 'Technology & Innovation',
+                        confidence: quickScan.confidence || 0,
+                        reasoning: quickScan.reasoning || '',
+                        alternativeBusinessLines: [],
+                        requiredSkills: [],
+                      }}
+                    />
                   )}
 
-                  {/* Archived (NO BIT) Status */}
-                  {bid.status === 'archived' && (
-                    <Card className="border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/20">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                          <CheckCircle2 className="h-5 w-5" />
-                          Opportunity archiviert (NO BIT)
-                        </CardTitle>
-                        <CardDescription className="text-gray-600 dark:text-gray-400">
-                          Diese Opportunity wurde als NO BIT markiert und archiviert.
-                          {bid.alternativeRecommendation && (
-                            <span className="block mt-2">
-                              <strong>Begründung:</strong> {bid.alternativeRecommendation}
-                            </span>
-                          )}
-                        </CardDescription>
-                      </CardHeader>
-                    </Card>
+                  {/* Cards that should NOT appear on overview page - only on dedicated subpages */}
+                  {!isOverviewPage && (
+                    <>
+                      {/* Deep Analysis */}
+                      <DeepAnalysisCard
+                        bidId={bid.id}
+                        websiteUrl={bid.websiteUrl}
+                        existingAnalysis={null}
+                      />
+
+                      {/* Phase 6: Baseline-Vergleich */}
+                      <BaselineComparisonCard
+                        bidId={bid.id}
+                        initialResult={baselineResult}
+                        hasDeepAnalysis={hasDeepAnalysis}
+                      />
+
+                      {/* Phase 7: Projekt-Planung */}
+                      <ProjectPlanningCard
+                        bidId={bid.id}
+                        initialPlan={projectPlan}
+                        hasDeepAnalysis={hasDeepAnalysis}
+                      />
+
+                      {/* Team Builder */}
+                      {bid.status === 'routed' && <TeamBuilder bidId={bid.id} />}
+
+                      {/* Team Assignment Summary (if team_assigned or later) */}
+                      {['team_assigned', 'notified', 'handed_off'].includes(bid.status) &&
+                        bid.assignedTeam && (
+                          <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
+                            <CardHeader>
+                              <CardTitle className="text-green-900 dark:text-green-100">
+                                Team zugewiesen
+                              </CardTitle>
+                              <CardDescription className="text-green-700 dark:text-green-300">
+                                Das Team wurde erfolgreich zugewiesen
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <pre className="text-sm overflow-auto">
+                                {JSON.stringify(JSON.parse(bid.assignedTeam), null, 2)}
+                              </pre>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                      {/* Phase 9: Team-Benachrichtigung */}
+                      <NotificationCard
+                        bidId={bid.id}
+                        hasTeam={hasTeam}
+                        initialResults={notificationResults}
+                        notifiedAt={bid.teamNotifiedAt}
+                      />
+
+                      {/* Workflow Complete Badge */}
+                      {bid.status === 'handed_off' && (
+                        <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                              <CheckCircle2 className="h-5 w-5" />
+                              Workflow abgeschlossen
+                            </CardTitle>
+                            <CardDescription className="text-blue-700 dark:text-blue-300">
+                              Alle Phasen wurden erfolgreich durchlaufen. Das Projekt wurde übergeben.
+                            </CardDescription>
+                          </CardHeader>
+                        </Card>
+                      )}
+
+                      {/* Archived (NO BIT) Status */}
+                      {bid.status === 'archived' && (
+                        <Card className="border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/20">
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                              <CheckCircle2 className="h-5 w-5" />
+                              Opportunity archiviert (NO BIT)
+                            </CardTitle>
+                            <CardDescription className="text-gray-600 dark:text-gray-400">
+                              Diese Opportunity wurde als NO BIT markiert und archiviert.
+                              {bid.alternativeRecommendation && (
+                                <span className="block mt-2">
+                                  <strong>Begründung:</strong> {bid.alternativeRecommendation}
+                                </span>
+                              )}
+                            </CardDescription>
+                          </CardHeader>
+                        </Card>
+                      )}
+                    </>
                   )}
                 </>
               );

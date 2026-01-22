@@ -5771,3 +5771,47 @@ All issues in the Dealhunter Linear team have been completed. This represents a 
 
 **Commit:** (pending - will be included in next commit)
 
+
+---
+
+## DEA-156: PA-021 - Schema: Neue Tabelle 'pitchdecks'
+
+**Status:** ✅ COMPLETED
+
+**What was implemented:**
+- Created new `pitchdecks` table with all required fields:
+  - `id`: UUID Primary Key (using createId())
+  - `leadId`: UUID FK → leads (with proper relation)
+  - `status`: enum('draft', 'team_proposed', 'team_confirmed', 'in_progress', 'submitted') with default 'draft'
+  - `teamConfirmedAt`: nullable timestamp
+  - `teamConfirmedByUserId`: UUID FK → users (nullable)
+  - `submittedAt`: nullable timestamp
+  - `createdAt`, `updatedAt`: timestamps with auto-defaults
+- Added proper indexes:
+  - `leadIdx` on `leadId` for fast lookups
+  - `statusIdx` on `status` for filtering
+- Implemented Drizzle relations:
+  - `pitchdecksRelations`: lead (many-to-one), teamConfirmedBy (many-to-one)
+  - `leadsRelations`: added pitchdeck (one-to-one)
+- Generated TypeScript types:
+  - `Pitchdeck` (select type)
+  - `NewPitchdeck` (insert type)
+
+**Verification:**
+- ✅ Schema pushed successfully to database (drizzle-kit push)
+- ✅ Type checks pass (npm run typecheck)
+- ✅ All tests pass (176 tests across test suite)
+- ✅ Foreign key constraints working
+- ✅ Default values applied correctly
+- ✅ Indexes created successfully
+
+**Notes:**
+- This is the first schema table for the Pitchdeck Assembly workflow (DEA-155)
+- Follows existing codebase patterns (consistent with leads, rfps, etc.)
+- Ready for PA-022 (pitchdeckDeliverables table)
+- No breaking changes - purely additive schema
+
+**Parent Issue:** DEA-155 (Pitchdeck-Assembly nach BID-Entscheidung)
+**Implementation Order:** Schema first, then API routes, then workflow trigger
+
+**Commit:** (pending)

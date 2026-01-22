@@ -1428,6 +1428,7 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   referenceMatches: many(referenceMatches),
   competitorMatches: many(competitorMatches),
   sectionData: many(leadSectionData),
+  pitchdeck: one(pitchdecks),
 }));
 
 export const websiteAuditsRelations = relations(websiteAudits, ({ one }) => ({
@@ -1562,5 +1563,57 @@ export const competitorMatchesRelations = relations(competitorMatches, ({ one })
   competitor: one(competitors, {
     fields: [competitorMatches.competitorId],
     references: [competitors.id],
+  }),
+}));
+
+// ===== Pitchdeck Assembly (DEA-155) =====
+
+export const pitchdecks = sqliteTable(
+  'pitchdecks',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // Lead Reference
+    leadId: text('lead_id')
+      .notNull()
+      .references(() => leads.id),
+
+    // Pitchdeck Status
+    status: text('status', {
+      enum: ['draft', 'team_proposed', 'team_confirmed', 'in_progress', 'submitted'],
+    })
+      .notNull()
+      .default('draft'),
+
+    // Team Confirmation
+    teamConfirmedAt: integer('team_confirmed_at', { mode: 'timestamp' }),
+    teamConfirmedByUserId: text('team_confirmed_by_user_id').references(() => users.id),
+
+    // Submission
+    submittedAt: integer('submitted_at', { mode: 'timestamp' }),
+
+    // Timestamps
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    leadIdx: index('pitchdecks_lead_idx').on(table.leadId),
+    statusIdx: index('pitchdecks_status_idx').on(table.status),
+  })
+);
+
+export type Pitchdeck = typeof pitchdecks.$inferSelect;
+export type NewPitchdeck = typeof pitchdecks.$inferInsert;
+
+export const pitchdecksRelations = relations(pitchdecks, ({ one }) => ({
+  lead: one(leads, {
+    fields: [pitchdecks.leadId],
+    references: [leads.id],
+  }),
+  teamConfirmedBy: one(users, {
+    fields: [pitchdecks.teamConfirmedByUserId],
+    references: [users.id],
   }),
 }));

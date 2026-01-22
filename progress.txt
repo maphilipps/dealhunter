@@ -5815,3 +5815,40 @@ All issues in the Dealhunter Linear team have been completed. This represents a 
 **Implementation Order:** Schema first, then API routes, then workflow trigger
 
 **Commit:** (pending)
+
+## DEA-157: PA-022 Schema - pitchdeckDeliverables Table
+
+**Implemented:** 2026-01-22
+
+### What Was Done
+- Added new `pitchdeckDeliverables` table to `lib/db/schema.ts`
+- Includes all required fields from acceptance criteria:
+  - id: UUID Primary Key
+  - pitchdeckId: FK to pitchdecks
+  - deliverableName: string (from RFP)
+  - status: enum('open', 'in_progress', 'review', 'done')
+  - internalDeadline: timestamp
+  - assignedToEmployeeId: FK to employees (nullable)
+  - outline, draft, talkingPoints, visualIdeas: text fields
+  - generatedAt: timestamp for AI-generated content
+- Added TypeScript types: `PitchdeckDeliverable` and `NewPitchdeckDeliverable`
+- Added Drizzle relations:
+  - pitchdecks → many deliverables
+  - pitchdeckDeliverables → one pitchdeck
+  - pitchdeckDeliverables → one employee (assignedTo)
+- Added performance indexes:
+  - pitchdeck_deliverables_pitchdeck_idx
+  - pitchdeck_deliverables_status_idx
+- Schema pushed to database successfully
+- TypeScript type check passed
+
+### Verification
+✅ Table exists in database (drizzle-kit push successful)
+✅ All foreign keys correctly defined
+✅ All status enum values present
+✅ Timestamps and defaults configured
+✅ Relations properly configured
+
+### Next Steps
+Ready for API implementation (PA-023, PA-024)
+

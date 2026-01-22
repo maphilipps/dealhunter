@@ -1607,7 +1607,55 @@ export const pitchdecks = sqliteTable(
 export type Pitchdeck = typeof pitchdecks.$inferSelect;
 export type NewPitchdeck = typeof pitchdecks.$inferInsert;
 
-export const pitchdecksRelations = relations(pitchdecks, ({ one }) => ({
+export const pitchdeckDeliverables = sqliteTable(
+  'pitchdeck_deliverables',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // Pitchdeck Reference
+    pitchdeckId: text('pitchdeck_id')
+      .notNull()
+      .references(() => pitchdecks.id),
+
+    // Deliverable Details
+    deliverableName: text('deliverable_name').notNull(),
+
+    // Status Tracking
+    status: text('status', { enum: ['open', 'in_progress', 'review', 'done'] })
+      .notNull()
+      .default('open'),
+
+    // Timeline
+    internalDeadline: integer('internal_deadline', { mode: 'timestamp' }),
+
+    // Assignment
+    assignedToEmployeeId: text('assigned_to_employee_id').references(() => employees.id),
+
+    // AI-Generated Solution Sketches
+    outline: text('outline'), // Structured outline
+    draft: text('draft'), // Full-text draft
+    talkingPoints: text('talking_points'), // Presentation talking points
+    visualIdeas: text('visual_ideas'), // Visualization ideas
+
+    // Generation Timestamp
+    generatedAt: integer('generated_at', { mode: 'timestamp' }),
+
+    // Timestamps
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    pitchdeckIdx: index('pitchdeck_deliverables_pitchdeck_idx').on(table.pitchdeckId),
+    statusIdx: index('pitchdeck_deliverables_status_idx').on(table.status),
+  })
+);
+
+export type PitchdeckDeliverable = typeof pitchdeckDeliverables.$inferSelect;
+export type NewPitchdeckDeliverable = typeof pitchdeckDeliverables.$inferInsert;
+
+export const pitchdecksRelations = relations(pitchdecks, ({ one, many }) => ({
   lead: one(leads, {
     fields: [pitchdecks.leadId],
     references: [leads.id],
@@ -1615,5 +1663,17 @@ export const pitchdecksRelations = relations(pitchdecks, ({ one }) => ({
   teamConfirmedBy: one(users, {
     fields: [pitchdecks.teamConfirmedByUserId],
     references: [users.id],
+  }),
+  deliverables: many(pitchdeckDeliverables),
+}));
+
+export const pitchdeckDeliverablesRelations = relations(pitchdeckDeliverables, ({ one }) => ({
+  pitchdeck: one(pitchdecks, {
+    fields: [pitchdeckDeliverables.pitchdeckId],
+    references: [pitchdecks.id],
+  }),
+  assignedToEmployee: one(employees, {
+    fields: [pitchdeckDeliverables.assignedToEmployeeId],
+    references: [employees.id],
   }),
 }));

@@ -1,6 +1,7 @@
 'use client';
 
 import { useReducer, useRef, useCallback, useEffect } from 'react';
+
 import type { AgentEvent, StreamState, UrlSuggestionData } from '@/lib/streaming/event-types';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
@@ -81,7 +82,7 @@ function streamReducer(state: StreamState, action: Action): StreamState {
     case 'ADD_EVENTS_BATCH': {
       if (action.events.length === 0) return state;
 
-      let allEvents = [...state.events];
+      const allEvents = [...state.events];
       let currentAgentStates = { ...state.agentStates };
       let decision = state.decision;
       let error = state.error;

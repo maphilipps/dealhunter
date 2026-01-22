@@ -3,6 +3,7 @@
 import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +20,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { logout } from '@/lib/auth/actions';
-import { Badge } from '@/components/ui/badge';
 
 export function NavUser({
   user,

@@ -7,16 +7,18 @@
  * Workflow 1: Quick Scan -> CMS Evaluation -> BL Entscheidung
  */
 
+import { eq } from 'drizzle-orm';
+
+import { type CMSMatchingResult, type RequirementMatch, cmsMatchingResultSchema } from './schema';
+
+// Intelligent Agent Framework - NEW
+import { quickEvaluate, CMS_MATCHING_EVALUATION_SCHEMA } from '@/lib/agent-tools/evaluator';
+import { createIntelligentTools, KNOWN_GITHUB_REPOS } from '@/lib/agent-tools/intelligent-tools';
+import { optimizeCMSMatchingResults } from '@/lib/agent-tools/optimizer';
+import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
 import { technologies } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { generateStructuredOutput } from '@/lib/ai/config';
 import { searchAndContents } from '@/lib/search/web-search';
-import { type CMSMatchingResult, type RequirementMatch, cmsMatchingResultSchema } from './schema';
-// Intelligent Agent Framework - NEW
-import { createIntelligentTools, KNOWN_GITHUB_REPOS } from '@/lib/agent-tools/intelligent-tools';
-import { quickEvaluate, CMS_MATCHING_EVALUATION_SCHEMA } from '@/lib/agent-tools/evaluator';
-import { optimizeCMSMatchingResults } from '@/lib/agent-tools/optimizer';
 
 interface QuickScanData {
   techStack?: {
@@ -1114,13 +1116,12 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
           { id: 'strapi', name: 'Strapi', isBaseline: false },
         ];
 
-  // 4. Für jede Anforderung: Scores pro CMS berechnen
+  // 4. Für jede Anforderung: Scores pro CMS berechnen (PARALLEL für alle CMS)
   // AUTO-RESEARCH: Wenn useWebSearch=true oder Confidence niedrig, automatisch recherchieren
   const requirementsWithScores: RequirementMatch[] = await Promise.all(
     detectedRequirements.map(async req => {
-      const cmsScores: RequirementMatch['cmsScores'] = {};
-
-      for (const cms of cmsOptions) {
+      // Alle CMS-Optionen parallel verarbeiten (statt sequentiell mit for-loop)
+      const cmsPromises = cmsOptions.map(async cms => {
         // Basis-Score (kann durch Web Search ergänzt werden)
         let score = 50;
         let confidence = 40;
@@ -1148,8 +1149,21 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
           await saveTechnologyFeature(cms.id, req.requirement, research);
         }
 
-        cmsScores[cms.id] = { score, confidence, notes, webSearchUsed };
-      }
+        return { cmsId: cms.id, score, confidence, notes, webSearchUsed };
+      });
+
+      // Warte auf alle parallelen CMS-Bewertungen
+      const cmsResults = await Promise.all(cmsPromises);
+
+      // Baue cmsScores Object aus parallelen Ergebnissen
+      const cmsScores: RequirementMatch['cmsScores'] = Object.fromEntries(
+        cmsResults.map(result => [result.cmsId, {
+          score: result.score,
+          confidence: result.confidence,
+          notes: result.notes,
+          webSearchUsed: result.webSearchUsed,
+        }])
+      );
 
       return {
         ...req,
@@ -1192,7 +1206,7 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
   // Füge GitHub-Versionen für bekannte CMS hinzu
   for (const tech of comparedTechnologies) {
     const techLower = tech.name.toLowerCase();
-    const knownRepoUrl = KNOWN_GITHUB_REPOS[techLower as keyof typeof KNOWN_GITHUB_REPOS];
+    const knownRepoUrl = KNOWN_GITHUB_REPOS[techLower];
 
     if (knownRepoUrl) {
       try {

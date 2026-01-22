@@ -1,13 +1,14 @@
 'use client';
 
-import { register } from '@/lib/auth/actions';
+import { AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useActionState } from 'react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import Link from 'next/link';
-import { useActionState } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { register } from '@/lib/auth/actions';
 
 export default function RegisterPage() {
   const [state, formAction, isPending] = useActionState(register, null);

@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Search, Loader2, CheckCircle2, Send, ArrowRight, Building2, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+
+import { CMSEvaluationMatrix } from '@/components/bids/cms-evaluation-matrix';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import {
   Select,
@@ -13,8 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Loader2, CheckCircle2, Send, ArrowRight, Building2, Sparkles } from 'lucide-react';
-import type { QuickScan } from '@/lib/db/schema';
 import { getBusinessUnits } from '@/lib/admin/business-units-actions';
 import { forwardToBusinessLeader } from '@/lib/bids/actions';
 import {
@@ -23,8 +24,8 @@ import {
   refreshCMSEvaluation,
   researchRequirement,
 } from '@/lib/cms-matching/actions';
-import { CMSEvaluationMatrix } from '@/components/bids/cms-evaluation-matrix';
 import type { CMSMatchingResult } from '@/lib/cms-matching/schema';
+import type { QuickScan } from '@/lib/db/schema';
 
 interface BusinessUnit {
   id: string;
@@ -90,8 +91,17 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
       if (result.success && result.businessUnits) {
         setBusinessUnits(result.businessUnits as BusinessUnit[]);
 
-        // Pre-select recommended BU if available
-        if (quickScan?.recommendedBusinessUnit) {
+        // Check if Ibexa - auto-select PHP Business Unit
+        const isIbexa = quickScan?.cms?.toLowerCase().includes('ibexa');
+        if (isIbexa) {
+          const phpBU = result.businessUnits.find((bu: BusinessUnit) =>
+            bu.name.toLowerCase().includes('php')
+          );
+          if (phpBU) {
+            setSelectedBU(phpBU.id);
+          }
+        } else if (quickScan?.recommendedBusinessUnit) {
+          // Pre-select recommended BU if available (non-Ibexa)
           const recommended = result.businessUnits.find(
             (bu: BusinessUnit) => bu.name === quickScan.recommendedBusinessUnit
           );
@@ -105,7 +115,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
     if (quickScan?.status === 'completed') {
       loadBusinessUnits();
     }
-  }, [quickScan?.status, quickScan?.recommendedBusinessUnit]);
+  }, [quickScan?.status, quickScan?.recommendedBusinessUnit, quickScan?.cms]);
 
   // Handle single requirement research
   const [researchingCell, setResearchingCell] = useState<string | null>(null);
@@ -201,238 +211,314 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
     );
   }
 
+  // Check if CMS is Ibexa - special handling
+  const isIbexa = quickScan.cms?.toLowerCase().includes('ibexa');
+
   return (
     <div className="space-y-6">
-      {/* Header Card with BL Recommendation */}
-      {quickScan.recommendedBusinessUnit && (
-        <Card className="border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-violet-600" />
-                <CardTitle className="text-lg text-violet-900">AI-Empfehlung</CardTitle>
+      {/* Special handling for Ibexa CMS - Direct routing to Francesco Rapos */}
+      {isIbexa ? (
+        <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Building2 className="h-6 w-6 text-blue-600" />
+              <div>
+                <CardTitle className="text-xl text-blue-900">Ibexa CMS erkannt</CardTitle>
+                <CardDescription className="text-blue-700">
+                  Automatische Weiterleitung an PHP-Spezialist
+                </CardDescription>
               </div>
-              <Badge className="bg-violet-600">{quickScan.recommendedBusinessUnit}</Badge>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-6">
-              <div className="flex-1">
-                <p className="text-sm text-violet-700 mb-1">Empfohlene Business Unit</p>
-                <p className="text-xl font-bold text-violet-900">
-                  {quickScan.recommendedBusinessUnit}
-                </p>
-              </div>
-              {quickScan.confidence && (
-                <div className="w-32">
-                  <p className="text-xs text-violet-600 mb-1">Confidence</p>
-                  <div className="flex items-center gap-2">
-                    <Progress value={quickScan.confidence} className="h-2" />
-                    <span className="text-sm font-medium text-violet-900">
-                      {quickScan.confidence}%
-                    </span>
-                  </div>
-                </div>
-              )}
+          <CardContent className="space-y-4">
+            <div className="rounded-lg bg-white p-4 border border-blue-200">
+              <p className="text-sm text-muted-foreground mb-2">Weiterleitung an</p>
+              <p className="text-2xl font-bold text-blue-900">Francesco Rapos</p>
+              <p className="text-sm text-blue-700 mt-1">Bereichsleiter PHP</p>
+            </div>
+            <div className="rounded-lg bg-blue-100 border border-blue-200 p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Ibexa</strong> ist ein PHP-basiertes Enterprise CMS. Dieses Projekt wird
+                automatisch an den PHP-Bereich weitergeleitet.
+              </p>
             </div>
             {quickScan.reasoning && (
-              <div className="mt-3 pt-3 border-t border-violet-200">
-                <p className="text-xs text-violet-600 mb-1">Begründung</p>
-                <p className="text-sm text-violet-800">{quickScan.reasoning}</p>
+              <div className="rounded-lg bg-white p-4 border border-blue-200">
+                <p className="text-sm font-medium text-muted-foreground mb-2">Quick Scan Analyse</p>
+                <p className="text-sm text-foreground">{quickScan.reasoning}</p>
               </div>
             )}
+            <Button
+              onClick={handleForward}
+              disabled={isForwarding}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              size="lg"
+            >
+              {isForwarding ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Weiterleiten...
+                </>
+              ) : (
+                <>
+                  An Francesco Rapos weiterleiten
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
-      )}
-
-      {/* CMS Evaluation Section */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Search className="h-5 w-5 text-blue-600" />
-          CMS-Evaluation
-        </h3>
-
-        {isLoadingEvaluation && (
-          <Card className="border-slate-200">
-            <CardContent className="py-8 text-center">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-400 mb-2" />
-              <p className="text-sm text-muted-foreground">Lade gespeicherte Evaluation...</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {!cmsEvaluation && !isEvaluating && !isLoadingEvaluation && (
-          <Card className="border-slate-200">
-            <CardContent className="py-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl font-semibold text-muted-foreground">n/a</span>
-                  <span className="text-sm text-muted-foreground">
-                    Noch keine Evaluation durchgeführt
-                  </span>
+      ) : (
+        <>
+          {/* Header Card with BL Recommendation */}
+          {quickScan.recommendedBusinessUnit && (
+            <Card className="border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-violet-600" />
+                    <CardTitle className="text-lg text-violet-900">AI-Empfehlung</CardTitle>
+                  </div>
+                  <Badge className="bg-violet-600">{quickScan.recommendedBusinessUnit}</Badge>
                 </div>
-                <Button
-                  onClick={() => {
-                    handleStartEvaluation(false);
-                  }}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Search className="h-4 w-4 mr-2" />
-                  Evaluation starten
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {isEvaluating && (
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="py-8 text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600 mb-4" />
-              <p className="text-blue-700 font-medium">CMS-Evaluation läuft...</p>
-              <p className="text-sm text-blue-600">
-                Anforderungen werden gegen CMS-Systeme gematched (mit Web Search)
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {cmsEvaluation && (
-          <div className="space-y-3">
-            {/* Metadata Info */}
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
-                Zuletzt evaluiert:{' '}
-                {new Date(cmsEvaluation.metadata.matchedAt).toLocaleString('de-DE')}
-                {cmsEvaluation.metadata.webSearchUsed && ' (mit Web Search)'}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  handleStartEvaluation(true);
-                }}
-                disabled={isEvaluating}
-              >
-                {isEvaluating ? (
-                  <>
-                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    Recherchiere...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-3 w-3 mr-1" />
-                    Neu recherchieren
-                  </>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-6">
+                  <div className="flex-1">
+                    <p className="text-sm text-violet-700 mb-1">Empfohlene Business Unit</p>
+                    <p className="text-xl font-bold text-violet-900">
+                      {quickScan.recommendedBusinessUnit}
+                    </p>
+                  </div>
+                  {quickScan.confidence && (
+                    <div className="w-32">
+                      <p className="text-xs text-violet-600 mb-1">Confidence</p>
+                      <div className="flex items-center gap-2">
+                        <Progress value={quickScan.confidence} className="h-2" />
+                        <span className="text-sm font-medium text-violet-900">
+                          {quickScan.confidence}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {quickScan.reasoning && (
+                  <div className="mt-3 pt-3 border-t border-violet-200">
+                    <p className="text-xs text-violet-600 mb-1">Begründung</p>
+                    <p className="text-sm text-violet-800">{quickScan.reasoning}</p>
+                  </div>
                 )}
-              </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* CMS Evaluation Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Search className="h-5 w-5 text-blue-600" />
+              CMS-Evaluation
+            </h3>
+
+            {isLoadingEvaluation && (
+              <Card className="border-slate-200">
+                <CardContent className="py-8 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-400 mb-2" />
+                  <p className="text-sm text-muted-foreground">Lade gespeicherte Evaluation...</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {!cmsEvaluation && !isEvaluating && !isLoadingEvaluation && (
+              <Card className="border-slate-200">
+                <CardContent className="py-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl font-semibold text-muted-foreground">n/a</span>
+                      <span className="text-sm text-muted-foreground">
+                        Noch keine Evaluation durchgeführt
+                      </span>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        handleStartEvaluation(false);
+                      }}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Search className="h-4 w-4 mr-2" />
+                      Evaluation starten
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {isEvaluating && (
+              <Card className="border-blue-200 bg-blue-50">
+                <CardContent className="py-8 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600 mb-4" />
+                  <p className="text-blue-700 font-medium">CMS-Evaluation läuft...</p>
+                  <p className="text-sm text-blue-600">
+                    Anforderungen werden gegen CMS-Systeme gematched (mit Web Search)
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {cmsEvaluation && (
+              <div className="space-y-3">
+                {/* Metadata Info */}
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Zuletzt evaluiert:{' '}
+                    {new Date(cmsEvaluation.metadata.matchedAt).toLocaleString('de-DE')}
+                    {cmsEvaluation.metadata.webSearchUsed && ' (mit Web Search)'}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      handleStartEvaluation(true);
+                    }}
+                    disabled={isEvaluating}
+                  >
+                    {isEvaluating ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        Recherchiere...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-3 w-3 mr-1" />
+                        Neu recherchieren
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                <CMSEvaluationMatrix
+                  result={cmsEvaluation}
+                  onSelectCMS={setSelectedCMS}
+                  selectedCMS={selectedCMS}
+                  isLoading={isEvaluating}
+                  onResearchRequirement={handleResearchRequirement}
+                  researchingCell={researchingCell}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Forward to Business Leader Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-orange-600" />
+                Weiterleitung an Bereichsleiter
+              </h3>
             </div>
 
-            <CMSEvaluationMatrix
-              result={cmsEvaluation}
-              onSelectCMS={setSelectedCMS}
-              selectedCMS={selectedCMS}
-              isLoading={isEvaluating}
-              onResearchRequirement={handleResearchRequirement}
-              researchingCell={researchingCell}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Forward to Business Leader Section */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-orange-600" />
-          Weiterleitung an Bereichsleiter
-        </h3>
-
-        {forwarded ? (
-          <Card className="border-green-500 bg-green-50">
-            <CardContent className="py-8 text-center">
-              <CheckCircle2 className="h-12 w-12 mx-auto text-green-600 mb-4" />
-              <h3 className="text-xl font-bold text-green-800 mb-2">Weiterleitung erfolgreich!</h3>
-              <p className="text-green-700">
-                Die Anfrage wurde an <strong>{forwardResult?.leaderName}</strong> (
-                {forwardResult?.businessUnit}) weitergeleitet.
-              </p>
-              <p className="text-sm text-green-600 mt-2">
-                Sie werden in Kürze zur BL-Übersicht weitergeleitet...
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="border-orange-200 bg-orange-50">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Send className="h-5 w-5 text-orange-600" />
-                <CardTitle className="text-lg text-orange-900">
-                  An Bereichsleiter weiterleiten
-                </CardTitle>
-              </div>
-              <CardDescription className="text-orange-700">
-                Wählen Sie die Business Unit aus und leiten Sie die Anfrage an den zuständigen
-                Bereichsleiter weiter.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <Select value={selectedBU} onValueChange={setSelectedBU}>
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Business Unit auswählen..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {businessUnits.map(bu => (
-                        <SelectItem key={bu.id} value={bu.id}>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{bu.name}</span>
-                            {bu.name === quickScan.recommendedBusinessUnit && (
-                              <Badge variant="secondary" className="text-xs">
-                                Empfohlen
-                              </Badge>
-                            )}
-                            <span className="text-muted-foreground text-xs">({bu.leaderName})</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  onClick={handleForward}
-                  disabled={!selectedBU || isForwarding}
-                  className="bg-orange-600 hover:bg-orange-700"
-                >
-                  {isForwarding ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Weiterleiten...
-                    </>
-                  ) : (
-                    <>
-                      Weiterleiten
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {quickScan.recommendedBusinessUnit && selectedBU && (
-                <p className="text-xs text-orange-600 mt-3 flex items-center gap-1">
-                  <Sparkles className="h-3 w-3" />
-                  AI empfiehlt: {quickScan.recommendedBusinessUnit}
-                  {businessUnits.find(bu => bu.id === selectedBU)?.name ===
-                  quickScan.recommendedBusinessUnit
-                    ? ' (ausgewählt)'
-                    : ''}
+            {/* Info Banner: BL-Routing moved to Decision Flow */}
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="py-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Hinweis:</strong> Die BL-Routing Funktion erfolgt jetzt im BID/NO-BID
+                  Entscheidungs-Workflow. Nach der BID-Entscheidung wird automatisch ein Dialog zur
+                  Auswahl der Business Line angezeigt.
                 </p>
-              )}
-            </CardContent>
-          </Card>
-        )}
-      </div>
+              </CardContent>
+            </Card>
+
+            {forwarded ? (
+              <Card className="border-green-500 bg-green-50">
+                <CardContent className="py-8 text-center">
+                  <CheckCircle2 className="h-12 w-12 mx-auto text-green-600 mb-4" />
+                  <h3 className="text-xl font-bold text-green-800 mb-2">
+                    Weiterleitung erfolgreich!
+                  </h3>
+                  <p className="text-green-700">
+                    Die Anfrage wurde an <strong>{forwardResult?.leaderName}</strong> (
+                    {forwardResult?.businessUnit}) weitergeleitet.
+                  </p>
+                  <p className="text-sm text-green-600 mt-2">
+                    Sie werden in Kürze zur BL-Übersicht weitergeleitet...
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-orange-200 bg-orange-50">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Send className="h-5 w-5 text-orange-600" />
+                    <CardTitle className="text-lg text-orange-900">
+                      An Bereichsleiter weiterleiten
+                    </CardTitle>
+                  </div>
+                  <CardDescription className="text-orange-700">
+                    Wählen Sie die Business Unit aus und leiten Sie die Anfrage an den zuständigen
+                    Bereichsleiter weiter.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <Select value={selectedBU} onValueChange={setSelectedBU}>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Business Unit auswählen..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {businessUnits.map(bu => (
+                            <SelectItem key={bu.id} value={bu.id}>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{bu.name}</span>
+                                {bu.name === quickScan.recommendedBusinessUnit && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Empfohlen
+                                  </Badge>
+                                )}
+                                <span className="text-muted-foreground text-xs">
+                                  ({bu.leaderName})
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      onClick={handleForward}
+                      disabled={!selectedBU || isForwarding}
+                      className="bg-orange-600 hover:bg-orange-700"
+                    >
+                      {isForwarding ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Weiterleiten...
+                        </>
+                      ) : (
+                        <>
+                          Weiterleiten
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {quickScan.recommendedBusinessUnit && selectedBU && (
+                    <p className="text-xs text-orange-600 mt-3 flex items-center gap-1">
+                      <Sparkles className="h-3 w-3" />
+                      AI empfiehlt: {quickScan.recommendedBusinessUnit}
+                      {businessUnits.find(bu => bu.id === selectedBU)?.name ===
+                      quickScan.recommendedBusinessUnit
+                        ? ' (ausgewählt)'
+                        : ''}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

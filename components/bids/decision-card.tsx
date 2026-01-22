@@ -1,9 +1,5 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   CheckCircle2,
   XCircle,
@@ -12,13 +8,20 @@ import {
   ThumbsDown,
   GitBranch,
 } from 'lucide-react';
-import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
-import { DecisionTree } from './decision-tree';
-import { ConfidenceIndicator, ConfidenceBreakdown } from './confidence-indicator';
-import { RedFlagAlert } from './red-flag-alert';
+import { useMemo } from 'react';
+
 import { CompetitorWarning } from './competitor-warning';
+import { ConfidenceIndicator, ConfidenceBreakdown } from './confidence-indicator';
+import { DecisionTree } from './decision-tree';
+import { RedFlagAlert } from './red-flag-alert';
 import { ReferenceMatchCard } from './reference-match-card';
 import type { RedFlag, Competitor, ReferenceMatch } from './types';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 
 interface DecisionCardProps {
   result: BitEvaluationResult;
@@ -28,63 +31,82 @@ export function DecisionCard({ result }: DecisionCardProps) {
   const isBit = result.decision.decision === 'bit';
   const isLowConfidence = result.decision.overallConfidence < 70;
 
-  // Extract red flags from legal and other agents
-  const redFlags: RedFlag[] = [];
-  // TODO: Re-enable legal red flags once legal agent is implemented
-  // if (result.legal?.risks) {
-  //   result.legal.risks.forEach((risk) => {
-  //     if (risk.severity === 'critical' || risk.severity === 'high') {
-  //       redFlags.push({
-  //         category: 'legal',
-  //         severity: risk.severity as 'critical' | 'high' | 'medium',
-  //         title: risk.type,
-  //         description: risk.description,
-  //       });
-  //     }
-  //   });
-  // }
+  // Extract red flags from legal and other agents (memoized)
+  const redFlags: RedFlag[] = useMemo(() => {
+    const flags: RedFlag[] = [];
+    // TODO: Re-enable legal red flags once legal agent is implemented
+    // if (result.legalAssessment?.fullCheck?.allRedFlags) {
+    //   result.legalAssessment.fullCheck.allRedFlags.forEach((flag) => {
+    //     if (flag.severity === 'critical' || flag.severity === 'warning') {
+    //       flags.push({
+    //         category: flag.category,
+    //         severity: flag.severity as 'critical' | 'high' | 'medium',
+    //         title: flag.category,
+    //         description: flag.description,
+    //       });
+    //     }
+    //   });
+    // }
+    return flags;
+  }, [result.legalAssessment?.fullCheck?.allRedFlags]);
 
-  // Extract competitors
-  const competitors: Competitor[] = [];
-  // TODO: Re-enable competition analysis once competition agent is implemented
-  // if (result.competition?.competitors) {
-  //   result.competition.competitors.forEach((comp) => {
-  //     competitors.push({
-  //       name: comp.name,
-  //       strength: comp.strength,
-  //       advantages: comp.advantages,
-  //       disadvantages: comp.disadvantages,
-  //     });
-  //   });
-  // }
+  // Extract competitors (memoized)
+  const competitors: Competitor[] = useMemo(() => {
+    const comps: Competitor[] = [];
+    // TODO: Re-enable competition analysis once competition agent is implemented
+    // if (result.competitionCheck?.competitiveAnalysis?.knownCompetitors) {
+    //   result.competitionCheck.competitiveAnalysis.knownCompetitors.forEach((compName) => {
+    //     comps.push({
+    //       name: compName,
+    //       strength: 'medium', // Would be calculated from competition agent
+    //       advantages: [], // Would be populated from competition agent
+    //       disadvantages: [], // Would be populated from competition agent
+    //     });
+    //   });
+    // }
+    return comps;
+  }, [result.competitionCheck?.competitiveAnalysis?.knownCompetitors]);
 
-  // Extract reference matches
-  const referenceMatches: ReferenceMatch[] = [];
-  // TODO: Re-enable reference matching once reference agent is implemented
-  // if (result.reference?.matches) {
-  //   result.reference.matches.forEach((match) => {
-  //     referenceMatches.push({
-  //       projectName: match.projectName,
-  //       customerName: match.customerName,
-  //       year: match.year,
-  //       matchScore: match.matchScore,
-  //       matchingCriteria: match.matchingCriteria,
-  //       technologies: match.technologies || [],
-  //       teamSize: match.teamSize,
-  //       summary: match.summary,
-  //     });
-  //   });
-  // }
+  // Extract reference matches (memoized)
+  const referenceMatches: ReferenceMatch[] = useMemo(() => {
+    const matches: ReferenceMatch[] = [];
+    // TODO: Re-enable reference matching once reference agent is implemented
+    // if (result.referenceMatch?.similarProjectsAnalysis?.similarProjects) {
+    //   result.referenceMatch.similarProjectsAnalysis.similarProjects.forEach((proj) => {
+    //     matches.push({
+    //       projectName: proj.projectType,
+    //       customerName: 'Unknown', // Would be populated from reference agent
+    //       year: new Date().getFullYear().toString(),
+    //       matchScore: proj.relevanceScore,
+    //       matchingCriteria: proj.keyLearnings,
+    //       technologies: [], // Would be populated from reference agent
+    //       teamSize: 0, // Would be calculated from reference agent
+    //       summary: proj.keyLearnings,
+    //     });
+    //   });
+    // }
+    return matches;
+  }, [result.referenceMatch?.similarProjectsAnalysis?.similarProjects]);
 
-  // Confidence breakdown
-  const confidenceBreakdown = [
-    { label: 'Capability', confidence: result.capabilityMatch?.confidence || 0, weight: 0.25 },
-    { label: 'Deal Quality', confidence: result.dealQuality?.confidence || 0, weight: 0.2 },
-    { label: 'Strategic Fit', confidence: result.strategicFit?.confidence || 0, weight: 0.15 },
-    { label: 'Competition', confidence: result.competitionCheck?.confidence || 0, weight: 0.15 },
-    { label: 'Legal', confidence: result.legalAssessment?.confidence || 0, weight: 0.15 },
-    { label: 'References', confidence: result.referenceMatch?.confidence || 0, weight: 0.1 },
-  ];
+  // Confidence breakdown (memoized)
+  const confidenceBreakdown = useMemo(
+    () => [
+      { label: 'Capability', confidence: result.capabilityMatch?.confidence || 0, weight: 0.25 },
+      { label: 'Deal Quality', confidence: result.dealQuality?.confidence || 0, weight: 0.2 },
+      { label: 'Strategic Fit', confidence: result.strategicFit?.confidence || 0, weight: 0.15 },
+      { label: 'Competition', confidence: result.competitionCheck?.confidence || 0, weight: 0.15 },
+      { label: 'Legal', confidence: result.legalAssessment?.confidence || 0, weight: 0.15 },
+      { label: 'References', confidence: result.referenceMatch?.confidence || 0, weight: 0.1 },
+    ],
+    [
+      result.capabilityMatch?.confidence,
+      result.dealQuality?.confidence,
+      result.strategicFit?.confidence,
+      result.competitionCheck?.confidence,
+      result.legalAssessment?.confidence,
+      result.referenceMatch?.confidence,
+    ]
+  );
 
   return (
     <div className="space-y-6">

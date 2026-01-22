@@ -1,11 +1,12 @@
 'use client';
 
+import { AlertCircle } from 'lucide-react';
 import { useEffect } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
 
-export default function BidDetailError({
+export default function RfpDetailError({
   error,
   reset,
 }: {
@@ -13,7 +14,7 @@ export default function BidDetailError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Bid detail error:', error);
+    console.error('RFP detail error:', error);
   }, [error]);
 
   return (
@@ -26,7 +27,7 @@ export default function BidDetailError({
             <AlertCircle className="h-5 w-5 text-red-600" />
             <CardTitle className="text-red-600">Ein Fehler ist aufgetreten</CardTitle>
           </div>
-          <CardDescription>{error.message || 'Bid konnte nicht geladen werden'}</CardDescription>
+          <CardDescription>{error.message || 'RFP konnte nicht geladen werden'}</CardDescription>
         </CardHeader>
         <CardContent>
           <Button onClick={reset}>Erneut versuchen</Button>

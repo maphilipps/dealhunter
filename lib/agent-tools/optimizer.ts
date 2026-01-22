@@ -13,10 +13,11 @@
  * ```
  */
 
+import type { EvaluationResult, EvaluationIssue } from './evaluator';
+import type { IntelligentTools } from './intelligent-tools';
+
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
-import type { IntelligentTools } from './intelligent-tools';
-import type { EvaluationResult, EvaluationIssue } from './evaluator';
 
 // ========================================
 // Types

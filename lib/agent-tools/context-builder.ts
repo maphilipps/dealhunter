@@ -1,3 +1,6 @@
+import { eq, desc, and, count } from 'drizzle-orm';
+
+import { listToolsForAgent, getToolsByCategory } from '@/lib/agent-tools';
 import { db } from '@/lib/db';
 import {
   rfps,
@@ -8,8 +11,6 @@ import {
   employees,
   technologies,
 } from '@/lib/db/schema';
-import { eq, desc, and, count } from 'drizzle-orm';
-import { listToolsForAgent, getToolsByCategory } from '@/lib/agent-tools';
 
 export interface AgentContext {
   user: {
@@ -105,14 +106,14 @@ export async function buildAgentContext(userId: string): Promise<AgentContext> {
     employeeCount = empCount.count;
   }
 
-  const permissions = getPermissionsForRole(user.role as 'bd' | 'bl' | 'admin');
+  const permissions = getPermissionsForRole(user.role);
 
   return {
     user: {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role as 'bd' | 'bl' | 'admin',
+      role: user.role,
       businessUnitId: user.businessUnitId ?? undefined,
       businessUnitName,
     },

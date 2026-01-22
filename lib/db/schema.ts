@@ -1,6 +1,6 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-import { relations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
+import { relations } from 'drizzle-orm';
+import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id')
@@ -37,16 +37,25 @@ export const rfps = sqliteTable(
     metadata: text('metadata'), // JSON - für Email headers (from, subject, date)
     extractedRequirements: text('extracted_requirements'), // JSON
 
-    // Status (WORKFLOW.md compliant)
+    // Status (WORKFLOW.md compliant + DEA-90 Auto-Trigger States + DEA-91 Error States)
     status: text('status', {
       enum: [
         'draft', // Initial state after upload
+        'duplicate_checking', // Duplicate Check Agent running (DEA-90)
+        'duplicate_check_failed', // Duplicate Check failed (DEA-91)
+        'duplicate_warning', // Duplicate found, waiting for user override (DEA-90)
         'extracting', // AI is extracting requirements
+        'extraction_failed', // Extract Agent failed after max retries (DEA-91)
+        'manual_extraction', // Manual extraction mode after Extract failure (DEA-91)
         'reviewing', // User is reviewing extracted data
         'quick_scanning', // AI is doing quick scan
-        'bit_pending', // Quick Scan done, waiting for manual BIT/NO BIT decision
+        'quick_scan_failed', // Quick Scan Agent failed (DEA-91, optional - can skip)
+        'timeline_estimating', // Timeline Agent running after BID (DEA-90)
+        'timeline_failed', // Timeline Agent failed (DEA-91, optional - can skip)
+        'bit_pending', // Quick Scan done, waiting for BL routing (BID/NO-BID by BL, not BD)
+        'questions_ready', // 10 questions ready, waiting for BID/NO-BID decision (DEA-91 fallback)
         'evaluating', // AI is doing full decision evaluation (after manual trigger)
-        'decision_made', // Decision made (Bid/No-Bid)
+        'decision_made', // Decision made + Timeline complete, ready for BL routing
         'archived', // NO BID - Archiviert
         'routed', // Routed to BL
         'full_scanning', // Deep Analysis läuft
@@ -100,6 +109,9 @@ export const rfps = sqliteTable(
     // Duplicate Check
     duplicateCheckResult: text('duplicate_check_result'), // JSON - result of duplicate detection
     descriptionEmbedding: text('description_embedding'), // JSON array - text-embedding-3-large (3072 dimensions)
+
+    // Error Handling (DEA-91)
+    agentErrors: text('agent_errors'), // JSON array - AgentError[] for error tracking
 
     // Analysis Results (TODO: move to separate tables)
     quickScanResults: text('quick_scan_results'), // JSON
@@ -1003,6 +1015,10 @@ export const leads = sqliteTable(
     budget: text('budget'),
     requirements: text('requirements'), // JSON - key requirements
 
+    // Quick Scan Reference (from Phase 1)
+    quickScanId: text('quick_scan_id').references(() => quickScans.id),
+    decisionMakers: text('decision_makers'), // JSON - decision makers from Quick Scan 2.0
+
     // Business Unit Assignment (from Phase 1)
     businessUnitId: text('business_unit_id')
       .notNull()
@@ -1020,6 +1036,15 @@ export const leads = sqliteTable(
     moreInfoRequestedAt: integer('more_info_requested_at', { mode: 'timestamp' }),
     moreInfoNotes: text('more_info_notes'),
 
+    // Deep Scan Status (DEA-139)
+    deepScanStatus: text('deep_scan_status', {
+      enum: ['pending', 'running', 'completed', 'failed'],
+    })
+      .notNull()
+      .default('pending'),
+    deepScanStartedAt: integer('deep_scan_started_at', { mode: 'timestamp' }),
+    deepScanCompletedAt: integer('deep_scan_completed_at', { mode: 'timestamp' }),
+
     // Timestamps
     routedAt: integer('routed_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
@@ -1035,6 +1060,39 @@ export const leads = sqliteTable(
 
 export type Lead = typeof leads.$inferSelect;
 export type NewLead = typeof leads.$inferInsert;
+
+export const leadSectionData = sqliteTable(
+  'lead_section_data',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // Lead Reference
+    leadId: text('lead_id')
+      .notNull()
+      .references(() => leads.id, { onDelete: 'cascade' }),
+
+    // Section Identification
+    sectionId: text('section_id').notNull(), // e.g., 'technology', 'website-analysis', 'cms-comparison'
+
+    // Section Content
+    content: text('content').notNull(), // JSON - section-specific data structure
+    confidence: integer('confidence'), // 0-100
+    sources: text('sources'), // JSON - array of source references
+
+    // Timestamps
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    leadSectionIdx: index('lead_section_data_lead_section_idx').on(table.leadId, table.sectionId),
+    leadIdx: index('lead_section_data_lead_idx').on(table.leadId),
+  })
+);
+
+export type LeadSectionData = typeof leadSectionData.$inferSelect;
+export type NewLeadSectionData = typeof leadSectionData.$inferInsert;
 
 export const websiteAudits = sqliteTable(
   'website_audits',
@@ -1355,6 +1413,10 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
     fields: [leads.businessUnitId],
     references: [businessUnits.id],
   }),
+  quickScan: one(quickScans, {
+    fields: [leads.quickScanId],
+    references: [quickScans.id],
+  }),
   blVotedBy: one(users, {
     fields: [leads.blVotedByUserId],
     references: [users.id],
@@ -1365,11 +1427,19 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   ptEstimations: many(ptEstimations),
   referenceMatches: many(referenceMatches),
   competitorMatches: many(competitorMatches),
+  sectionData: many(leadSectionData),
 }));
 
 export const websiteAuditsRelations = relations(websiteAudits, ({ one }) => ({
   lead: one(leads, {
     fields: [websiteAudits.leadId],
+    references: [leads.id],
+  }),
+}));
+
+export const leadSectionDataRelations = relations(leadSectionData, ({ one }) => ({
+  lead: one(leads, {
+    fields: [leadSectionData.leadId],
     references: [leads.id],
   }),
 }));
@@ -1384,6 +1454,76 @@ export const cmsMatchResultsRelations = relations(cmsMatchResults, ({ one }) => 
     references: [technologies.id],
   }),
 }));
+
+// RAG Knowledge Base - Embeddings for Cross-Agent Context Sharing (DEA-107)
+export const rfpEmbeddings = sqliteTable(
+  'rfp_embeddings',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    rfpId: text('rfp_id')
+      .notNull()
+      .references(() => rfps.id, { onDelete: 'cascade' }),
+
+    // Chunk Metadata
+    agentName: text('agent_name').notNull(), // 'extract', 'quick_scan', 'tech_agent', etc.
+    chunkType: text('chunk_type').notNull(), // 'tech_stack', 'performance', 'content_volume', etc.
+    chunkIndex: integer('chunk_index').notNull(), // 0, 1, 2... for ordering
+
+    // Content
+    content: text('content').notNull(), // The text chunk
+    metadata: text('metadata'), // JSON - additional chunk metadata
+
+    // Vector
+    embedding: text('embedding').notNull(), // JSON array - 3072 dimensions (text-embedding-3-large)
+
+    // Timestamps
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    // Composite index for fast rfpId + chunkType queries
+    rfpChunkIdx: index('rfp_chunk_idx').on(table.rfpId, table.chunkType),
+    // Index for agent-based queries
+    rfpAgentIdx: index('rfp_agent_idx').on(table.rfpId, table.agentName),
+  })
+);
+
+export type RfpEmbedding = typeof rfpEmbeddings.$inferSelect;
+export type NewRfpEmbedding = typeof rfpEmbeddings.$inferInsert;
+
+// RAW PDF Chunks - Original document text for RAG-based extraction (DEA-108)
+export const rawChunks = sqliteTable(
+  'raw_chunks',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    rfpId: text('rfp_id')
+      .notNull()
+      .references(() => rfps.id, { onDelete: 'cascade' }),
+
+    // Chunk Metadata
+    chunkIndex: integer('chunk_index').notNull(), // 0, 1, 2... for ordering
+    content: text('content').notNull(), // The raw text chunk
+    tokenCount: integer('token_count').notNull(), // Estimated token count
+
+    // Vector
+    embedding: text('embedding').notNull(), // JSON array - 3072 dimensions (text-embedding-3-large)
+
+    // Additional Metadata
+    metadata: text('metadata'), // JSON - position, type, etc.
+
+    // Timestamps
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    rfpIdx: index('raw_chunks_rfp_idx').on(table.rfpId),
+  })
+);
+
+export type RawChunk = typeof rawChunks.$inferSelect;
+export type NewRawChunk = typeof rawChunks.$inferInsert;
 
 export const baselineComparisonsRelations = relations(baselineComparisons, ({ one }) => ({
   lead: one(leads, {

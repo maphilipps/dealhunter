@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getBusinessUnits } from '@/lib/admin/business-units-actions';
+import { useState, useEffect } from 'react';
+
 import { BusinessUnitList } from '@/components/admin/business-unit-list';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { getBusinessUnits } from '@/lib/admin/business-units-actions';
 
 export default function BusinessUnitsPage() {
   const router = useRouter();

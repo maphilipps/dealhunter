@@ -1,11 +1,13 @@
 'use client';
 
+import { AlertTriangle, TrendingDown, TrendingUp, Minus } from 'lucide-react';
+
+import type { Competitor } from './types';
+
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { AlertTriangle, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Competitor } from './types';
 
 interface CompetitorWarningProps {
   competitors: Competitor[];

@@ -9,9 +9,8 @@
  * Orchestrator Pattern: Zentrale Steuerung aller Research-Agents
  */
 
-import { db } from '@/lib/db';
-import { technologies } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+
 import { researchSingleRequirement, type FeatureResearchResult } from './agent';
 import {
   reviewFeatureResearch,
@@ -19,6 +18,9 @@ import {
   type FeatureReview,
   type ReviewResult,
 } from './review-agent';
+
+import { db } from '@/lib/db';
+import { technologies } from '@/lib/db/schema';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
 
 /**

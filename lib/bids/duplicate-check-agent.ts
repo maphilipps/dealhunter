@@ -1,8 +1,10 @@
 import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
+
 import { checkForDuplicates, type DuplicateCheckResult } from './duplicate-check';
-import type { ExtractedRequirements } from '@/lib/extraction/schema';
+
 import { openai } from '@/lib/ai/providers';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 /**
  * Duplicate Check Agent

@@ -1,12 +1,13 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
 import type { ChatStatus } from 'ai';
 import { CornerDownLeftIcon, Loader2Icon, SquareIcon, XIcon } from 'lucide-react';
 import type { ComponentProps, FormEventHandler, KeyboardEventHandler } from 'react';
 import { useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 export type PromptInputProps = ComponentProps<'form'> & {
   onSubmit: FormEventHandler<HTMLFormElement>;

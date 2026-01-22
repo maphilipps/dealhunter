@@ -1,7 +1,8 @@
-import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+
 import { UploadBidForm } from '@/components/bids/upload-bid-form';
 import { getAccounts } from '@/lib/accounts-actions';
+import { auth } from '@/lib/auth';
 
 export default async function NewBidPage() {
   const session = await auth();

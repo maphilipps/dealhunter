@@ -1,10 +1,5 @@
 'use client';
 
-import { DecisionNode } from '@/lib/bit-evaluation/schema';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   ChevronDown,
   ChevronRight,
@@ -14,6 +9,12 @@ import {
   Info,
 } from 'lucide-react';
 import { useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Progress } from '@/components/ui/progress';
+import { DecisionNode } from '@/lib/bit-evaluation/schema';
 import { cn } from '@/lib/utils';
 
 interface DecisionTreeProps {

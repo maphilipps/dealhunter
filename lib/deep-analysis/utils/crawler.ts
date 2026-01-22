@@ -3,8 +3,9 @@
  * Fetches sitemaps, samples pages, and extracts HTML content
  */
 
-import { XMLParser } from 'fast-xml-parser';
 import * as cheerio from 'cheerio';
+import { XMLParser } from 'fast-xml-parser';
+
 import { isAllowedUrl, validateUrlResolution } from './url-validator';
 import { validateXml } from './xml-validator';
 
@@ -82,7 +83,7 @@ function extractSitemapsFromIndex(result: any): string[] {
   // Handle sitemapindex format
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   if (result?.sitemapindex && result.sitemapindex.sitemap) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const sitemapEntries =
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       Array.isArray(result.sitemapindex.sitemap)

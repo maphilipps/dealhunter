@@ -1,19 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { Check, X, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { approveCompetitor, rejectCompetitor } from '@/lib/admin/validation-actions';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -22,8 +14,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { approveCompetitor, rejectCompetitor } from '@/lib/admin/validation-actions';
 import type { Competitor } from '@/lib/db/schema';
 
 interface CompetitorValidationTableProps {

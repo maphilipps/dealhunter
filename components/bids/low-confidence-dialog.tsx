@@ -1,6 +1,10 @@
 'use client';
 
+import { AlertTriangle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,10 +16,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle } from 'lucide-react';
 import { confirmLowConfidenceDecision } from '@/lib/bit-evaluation/actions';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
 
 interface LowConfidenceDialogProps {
   open: boolean;

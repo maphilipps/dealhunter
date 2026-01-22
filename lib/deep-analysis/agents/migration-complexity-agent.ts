@@ -27,15 +27,13 @@ export async function scoreMigrationComplexity(
   onProgress?.('Calculating complexity score...');
 
   // Step 3: Calculate complexity factors
-  const sourceCMSType = (
-    sourceCMS.toLowerCase().includes('wordpress')
-      ? 'wordpress'
-      : sourceCMS.toLowerCase().includes('drupal')
-        ? 'drupal'
-        : sourceCMS.toLowerCase().includes('typo3')
-          ? 'typo3'
-          : 'custom'
-  ) as 'wordpress' | 'drupal' | 'typo3' | 'custom';
+  const sourceCMSType = sourceCMS.toLowerCase().includes('wordpress')
+    ? 'wordpress'
+    : sourceCMS.toLowerCase().includes('drupal')
+      ? 'drupal'
+      : sourceCMS.toLowerCase().includes('typo3')
+        ? 'typo3'
+        : 'custom';
 
   const factors = {
     sourceCMSType,

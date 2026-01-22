@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, FileText, Loader2 } from 'lucide-react';
-import { getBidDocuments } from '@/lib/bids/actions';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { Download, FileText, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { getBidDocuments } from '@/lib/bids/actions';
 
 interface DocumentsSidebarProps {
   bidId: string;

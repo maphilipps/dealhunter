@@ -1,4 +1,5 @@
 import { chromium, type Browser, type Page } from 'playwright';
+
 import type { SiteTree, SiteTreeNode } from '../schema';
 
 /**
@@ -352,7 +353,7 @@ export async function crawlNavigation(
     const maxTreeDepth = calculateMaxDepth(sections);
 
     // Count sources
-    let sitemapCount = 0;
+    const sitemapCount = 0;
     let navigationCount = 0;
 
     navigation.mainNav.forEach(item => {

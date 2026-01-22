@@ -1,9 +1,12 @@
-import { App, LogLevel } from '@slack/bolt';
-import { VercelReceiver } from '@vercel/slack-bolt';
+import type { App } from '@slack/bolt';
+import type { VercelReceiver } from '@vercel/slack-bolt';
 
-const logLevel = process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO;
+// Dynamic imports for Slack SDK to avoid bundling when not configured
+let slackApp: App | null = null;
+let receiver: VercelReceiver | null = null;
+let slackInitialized = false;
 
-const hasSlackCredentials = process.env.SLACK_BOT_TOKEN && process.env.SLACK_SIGNING_SECRET;
+export const hasSlackCredentials = process.env.SLACK_BOT_TOKEN && process.env.SLACK_SIGNING_SECRET;
 
 if (!hasSlackCredentials) {
   console.warn(
@@ -11,26 +14,65 @@ if (!hasSlackCredentials) {
   );
 }
 
-// Only initialize Slack if credentials are available
-export const receiver = hasSlackCredentials
-  ? new VercelReceiver({
-      signingSecret: process.env.SLACK_SIGNING_SECRET!,
-      logLevel,
-    })
-  : null;
+/**
+ * Initialize Slack SDK dynamically (only when needed)
+ */
+async function initializeSlack(): Promise<void> {
+  if (slackInitialized || !hasSlackCredentials) {
+    return;
+  }
+
+  // Dynamic import to avoid bundling Slack SDK when not configured
+  const { App, LogLevel } = await import('@slack/bolt');
+  const { VercelReceiver } = await import('@vercel/slack-bolt');
+
+  const logLevel = process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO;
+
+  receiver = new VercelReceiver({
+    signingSecret: process.env.SLACK_SIGNING_SECRET!,
+    logLevel,
+  });
+
+  slackApp = new App({
+    token: process.env.SLACK_BOT_TOKEN!,
+    signingSecret: process.env.SLACK_SIGNING_SECRET!,
+    receiver,
+    deferInitialization: true,
+    logLevel,
+  });
+
+  slackInitialized = true;
+}
 
 /**
- * Slack App instance
+ * Get Slack App instance (lazy loaded)
  */
-export const slackApp = hasSlackCredentials
-  ? new App({
-      token: process.env.SLACK_BOT_TOKEN!,
-      signingSecret: process.env.SLACK_SIGNING_SECRET!,
-      receiver: receiver!,
-      deferInitialization: true,
-      logLevel,
-    })
-  : null;
+export async function getSlackApp() {
+  if (!hasSlackCredentials) {
+    return null;
+  }
+
+  if (!slackInitialized) {
+    await initializeSlack();
+  }
+
+  return slackApp;
+}
+
+/**
+ * Get Slack Receiver instance (lazy loaded)
+ */
+export async function getReceiver() {
+  if (!hasSlackCredentials) {
+    return null;
+  }
+
+  if (!slackInitialized) {
+    await initializeSlack();
+  }
+
+  return receiver;
+}
 
 /**
  * Send the research and qualification to the human for approval in slack
@@ -39,17 +81,19 @@ export async function sendSlackMessageWithButtons(
   channel: string,
   text: string
 ): Promise<{ messageTs: string; channel: string }> {
-  if (!slackApp) {
+  const app = await getSlackApp();
+
+  if (!app) {
     throw new Error(
       'Slack app is not initialized. Please set SLACK_BOT_TOKEN and SLACK_SIGNING_SECRET environment variables.'
     );
   }
 
   // Ensure the app is initialized
-  await slackApp.client.auth.test();
+  await app.client.auth.test();
 
   // Send message with blocks including action buttons
-  const result = await slackApp.client.chat.postMessage({
+  const result = await app.client.chat.postMessage({
     channel,
     text,
     blocks: [

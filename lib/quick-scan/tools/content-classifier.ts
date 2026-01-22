@@ -1,7 +1,9 @@
 import { chromium, type Browser } from 'playwright';
-import { generateStructuredOutput } from '@/lib/ai/config';
 import { z } from 'zod';
+
 import type { ContentTypeDistribution } from '../schema';
+
+import { generateStructuredOutput } from '@/lib/ai/config';
 
 /**
  * Content Classifier Tool

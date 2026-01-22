@@ -1,7 +1,8 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
 import type { TechStack } from '@/lib/quick-scan/schema';
 
 // Dynamic import for Recharts (saves ~155KB bundle)

@@ -1,9 +1,11 @@
 import OpenAI from 'openai';
+
 import { QUICK_SCAN_VISUALIZATION_SYSTEM_PROMPT } from './quick-scan-catalog';
-import type { QuickScanResult } from '@/lib/quick-scan/agent';
+
+import { buildQuestionsWithStatus } from '@/lib/bids/ten-questions';
 import type { QuickScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
-import { buildQuestionsWithStatus } from '@/lib/bids/ten-questions';
+import type { QuickScanResult } from '@/lib/quick-scan/agent';
 import { parseJsonField } from '@/lib/quick-scan/utils';
 
 // Initialize OpenAI client with adesso AI Hub

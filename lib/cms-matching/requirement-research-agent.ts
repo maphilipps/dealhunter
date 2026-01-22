@@ -7,12 +7,14 @@
  * Wird parallel für alle Requirements x CMS Kombinationen ausgeführt.
  */
 
+import { eq } from 'drizzle-orm';
+
+import type { RequirementMatch } from './schema';
+
 import { db } from '@/lib/db';
 import { technologies } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 // Intelligent tools available for future enhancements
 import { searchAndContents } from '@/lib/search/web-search';
-import type { RequirementMatch } from './schema';
 
 /**
  * Research Result für ein einzelnes Requirement

@@ -1,7 +1,9 @@
-import { auth } from '@/lib/auth';
-import Link from 'next/link';
-import { UserMenu } from './user-menu';
 import { Bot } from 'lucide-react';
+import Link from 'next/link';
+
+import { UserMenu } from './user-menu';
+
+import { auth } from '@/lib/auth';
 
 export async function Header() {
   const session = await auth();

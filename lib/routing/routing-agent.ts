@@ -2,14 +2,15 @@
 
 import { generateObject, type LanguageModel } from 'ai';
 
-import { openai } from '@/lib/ai/providers';
-import { db } from '@/lib/db';
-import { businessUnits, technologies } from '@/lib/db/schema';
 import {
   BusinessLineRoutingSchema,
   type BusinessLineRoutingResult,
   type RouteBusinessUnitInput,
 } from './schemas';
+
+import { openai } from '@/lib/ai/providers';
+import { db } from '@/lib/db';
+import { businessUnits, technologies } from '@/lib/db/schema';
 
 /**
  * Deterministic Technology → Business Unit Mapping

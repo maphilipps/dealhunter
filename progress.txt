@@ -5830,3 +5830,50 @@ All issues in the Dealhunter Linear team have been completed. This represents a 
 **Commit:** feat(DEA-143): add Lead-specific RAG retrieval service with multi-agent support
 
 2026-01-22 11:02:00 - DEA-143 - RAG Query Service - Branch: feature-dea-138-lead-detail
+
+---
+
+## DEA-141: Lead Sidebar Right - Hierarchische Navigation
+
+**Date:** 2026-01-22
+**Issue:** https://linear.app/adessocms/issue/DEA-141/3-lead-sidebar-right-hierarchische-navigation
+**Status:** COMPLETE ✅
+
+**Implementation:**
+
+The LeadSidebarRight component was already fully implemented with all required features:
+
+1. **Hierarchical Navigation** - All 13 sections rendered from LEAD_NAVIGATION_SECTIONS
+2. **Status Badges** - loading, ready, warning, error states with color-coded badges
+3. **Collapsible Sections** - ShadCN Collapsible for sections with subsections
+4. **Active State Highlighting** - Current route highlighted using usePathname()
+5. **BID/NO-BID Emphasis** - Separator line before decision section
+
+**Files:**
+- components/leads/lead-sidebar-right.tsx (already complete)
+- app/(dashboard)/leads/[id]/layout.tsx (integration confirmed)
+- lib/leads/navigation-config.ts (dependency satisfied)
+
+**Verification:**
+- Type checks pass: npm run typecheck ✅
+- All 13 sections visible from navigation config ✅
+- Collapsible functionality implemented ✅
+- Status badges reactive (getSectionStatus function) ✅
+- Active state highlighting working ✅
+- Decision section highlighted with separator ✅
+
+**Acceptance Criteria Met:**
+✅ Alle 13 Sektionen sichtbar
+✅ Collapsible funktioniert
+✅ Status-Badges reaktiv
+✅ Responsive im Sidebar-Kontext
+
+**Dependencies Satisfied:**
+- ✅ DEA-140 (Navigation Configuration) - LEAD_NAVIGATION_SECTIONS used
+
+**Next Steps:**
+- DEA-142: Layout - Beide Sidebars permanent offen (depends on DEA-141)
+
+**Commit:** feat(DEA-141): verify LeadSidebarRight hierarchical navigation implementation
+
+2026-01-22 - DEA-141 - Lead Sidebar Right - Branch: feature-dea-138-lead-detail

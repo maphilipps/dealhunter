@@ -31,13 +31,14 @@ interface RoutingFormProps {
   allBusinessUnits: BusinessUnit[];
 }
 
-export function RoutingForm({
-  rfpId,
-  blRecommendation,
-  allBusinessUnits,
-}: RoutingFormProps) {
+export function RoutingForm({ rfpId, blRecommendation, allBusinessUnits }: RoutingFormProps) {
   const router = useRouter();
-  const [selectedBL, setSelectedBL] = useState<string>(blRecommendation?.primaryBusinessLine || '');
+
+  // Find the ID of the recommended business unit by matching the name
+  const recommendedBuId =
+    allBusinessUnits.find(bu => bu.name === blRecommendation?.primaryBusinessLine)?.id || '';
+
+  const [selectedBL, setSelectedBL] = useState<string>(recommendedBuId);
   const [reason, setReason] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +60,7 @@ export function RoutingForm({
           rfpId,
           businessLineId: selectedBL,
           reason: reason.trim() || undefined,
-          overrideRecommendation: selectedBL !== blRecommendation?.primaryBusinessLine,
+          overrideRecommendation: selectedBL !== recommendedBuId,
         });
 
         if (result.success) {
@@ -77,7 +78,7 @@ export function RoutingForm({
     })();
   };
 
-  const isOverride = selectedBL !== '' && selectedBL !== blRecommendation?.primaryBusinessLine;
+  const isOverride = selectedBL !== '' && selectedBL !== recommendedBuId;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -121,7 +122,7 @@ export function RoutingForm({
             {allBusinessUnits.map(bu => (
               <SelectItem key={bu.id} value={bu.id}>
                 {bu.name}
-                {bu.id === blRecommendation?.primaryBusinessLine && (
+                {bu.id === recommendedBuId && (
                   <span className="ml-2 text-xs text-muted-foreground">(Empfohlen)</span>
                 )}
               </SelectItem>

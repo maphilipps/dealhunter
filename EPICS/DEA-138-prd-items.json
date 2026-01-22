@@ -28,7 +28,7 @@
         "Prüfe: Icons für jede Sektion",
         "Prüfe: Status-Badges pro Sektion (loading, ready, warning, error)"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "PRD-003",

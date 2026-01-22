@@ -187,7 +187,11 @@ describe('raw-retrieval-service', () => {
           content: `Content ${i}`,
           tokenCount: 50,
           embedding: JSON.stringify(similarEmbedding),
-          metadata: JSON.stringify({ startPosition: i * 100, endPosition: (i + 1) * 100, type: 'paragraph' }),
+          metadata: JSON.stringify({
+            startPosition: i * 100,
+            endPosition: (i + 1) * 100,
+            type: 'paragraph',
+          }),
           createdAt: new Date(),
         }));
 

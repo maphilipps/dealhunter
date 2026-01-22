@@ -23,21 +23,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     CredentialsProvider({
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         // Validate credentials
         const user = await db.query.users.findFirst({
-          where: (users, { eq }) => eq(users.email, credentials.email)
+          where: (users, { eq }) => eq(users.email, credentials.email),
         });
 
         if (!user) return null;
 
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
+        const isValid = await bcrypt.compare(credentials.password, user.password);
 
         if (!isValid) return null;
 
@@ -45,15 +42,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role
+          role: user.role,
         };
-      }
-    })
+      },
+    }),
   ],
   pages: {
     signIn: '/auth/login',
     signOut: '/auth/logout',
-    error: '/auth/error'
+    error: '/auth/error',
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -67,8 +64,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role;
       }
       return session;
-    }
-  }
+    },
+  },
 });
 
 export { handlers as GET, handlers as POST };
@@ -85,7 +82,7 @@ export { handlers as GET, handlers as POST };
 import { auth } from '@/app/api/auth/[...nextauth]/route';
 import { NextResponse } from 'next/server';
 
-export default auth((req) => {
+export default auth(req => {
   const isLoggedIn = !!req.auth;
   const isAuthPage = req.nextUrl.pathname.startsWith('/auth');
 
@@ -104,7 +101,7 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
 ```
 
@@ -216,10 +213,10 @@ export const users = sqliteTable('users', {
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
   name: text('name'),
-  role: text('role', { 
-    enum: ['admin', 'bd_manager', 'analyst', 'viewer'] 
+  role: text('role', {
+    enum: ['admin', 'bd_manager', 'analyst', 'viewer'],
   }).default('viewer'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 ```
 
@@ -246,7 +243,7 @@ export async function requireRole(roles: string[]) {
 // Usage in Server Action:
 export async function deleteAccount(id: string) {
   await requireRole(['admin']);
-  
+
   // Admin-only logic...
 }
 ```
@@ -263,10 +260,7 @@ export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
 }
 
-export async function verifyPassword(
-  password: string,
-  hash: string
-): Promise<boolean> {
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   return bcrypt.compare(password, hash);
 }
 ```
@@ -353,6 +347,7 @@ test('should login and access dashboard', async ({ page }) => {
 ## Migration von NextAuth v4
 
 **Breaking Changes:**
+
 - `useSession()` braucht jetzt `SessionProvider`
 - `getSession()` → `auth()`
 - Config in `route.ts` statt `pages/api/auth/[...nextauth].ts`
@@ -362,6 +357,7 @@ test('should login and access dashboard', async ({ page }) => {
 ## Troubleshooting
 
 **Problem:** "Invalid session token"
+
 ```bash
 # AUTH_SECRET fehlt oder falsch
 echo $AUTH_SECRET
@@ -369,14 +365,16 @@ openssl rand -base64 32
 ```
 
 **Problem:** Redirect Loop
+
 ```typescript
 // Middleware: Überprüfe matcher config
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
 ```
 
 **Problem:** Session nicht verfügbar in Server Components
+
 ```typescript
 // Importiere auth aus richtigem Pfad
 import { auth } from '@/app/api/auth/[...nextauth]/route';

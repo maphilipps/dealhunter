@@ -8,6 +8,7 @@ import {
   Users,
   Trophy,
   AlertTriangle,
+  Layers,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -92,6 +93,11 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
           title: 'Risiken & Mitigation',
           icon: AlertTriangle,
           url: `/leads/${leadId}/risks`,
+        },
+        {
+          title: 'RAG Data',
+          icon: Layers,
+          url: `/leads/${leadId}/rag-data`,
         },
       ],
     },

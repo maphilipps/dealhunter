@@ -319,3 +319,140 @@ export async function suggestPitchdeckTeam(
     };
   }
 }
+
+export interface ConfirmPitchdeckTeamResult {
+  success: boolean;
+  pitchdeckId?: string;
+  error?: string;
+}
+
+/**
+ * DEA-162 (PA-003): BL Confirms Team Suggestions
+ *
+ * This function:
+ * 1. Validates BL role and business unit assignment
+ * 2. Updates pitchdeck status to 'team_confirmed'
+ * 3. Records teamConfirmedAt and teamConfirmedByUserId
+ * 4. Creates audit trail
+ *
+ * @param pitchdeckId - The pitchdeck ID to confirm team for
+ * @returns Pitchdeck ID if successful
+ */
+export async function confirmPitchdeckTeam(
+  pitchdeckId: string
+): Promise<ConfirmPitchdeckTeamResult> {
+  // Security: Authentication check
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Get pitchdeck
+    const [pitchdeck] = await db
+      .select()
+      .from(pitchdecks)
+      .where(eq(pitchdecks.id, pitchdeckId))
+      .limit(1);
+
+    if (!pitchdeck) {
+      return {
+        success: false,
+        error: 'Pitchdeck nicht gefunden',
+      };
+    }
+
+    // Get lead
+    const [lead] = await db.select().from(leads).where(eq(leads.id, pitchdeck.leadId)).limit(1);
+
+    if (!lead) {
+      return {
+        success: false,
+        error: 'Lead nicht gefunden',
+      };
+    }
+
+    // Get current user
+    const { users } = await import('@/lib/db/schema');
+    const [currentUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1);
+
+    if (!currentUser) {
+      return {
+        success: false,
+        error: 'Benutzer nicht gefunden',
+      };
+    }
+
+    // Authorization: User must be 'bl' role AND assigned to this business unit, OR admin
+    if (currentUser.role !== 'bl' && currentUser.role !== 'admin') {
+      return {
+        success: false,
+        error: 'Nur Business Line Leads können Teams bestätigen',
+      };
+    }
+
+    // BL must be assigned to the same business unit as the lead
+    if (currentUser.role === 'bl' && currentUser.businessUnitId !== lead.businessUnitId) {
+      return {
+        success: false,
+        error: 'Sie können nur Teams für Leads in Ihrer Business Unit bestätigen',
+      };
+    }
+
+    // Validate pitchdeck status
+    if (pitchdeck.status !== 'team_proposed' && pitchdeck.status !== 'draft') {
+      return {
+        success: false,
+        error: `Team kann nur bestätigt werden, wenn Pitchdeck im Status "team_proposed" oder "draft" ist. Aktueller Status: ${pitchdeck.status}`,
+      };
+    }
+
+    // Update pitchdeck with team confirmation
+    const [updatedPitchdeck] = await db
+      .update(pitchdecks)
+      .set({
+        status: 'team_confirmed',
+        teamConfirmedAt: new Date(),
+        teamConfirmedByUserId: session.user.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(pitchdecks.id, pitchdeckId))
+      .returning();
+
+    // Create audit trail
+    await createAuditLog({
+      action: 'update',
+      entityType: 'rfp',
+      entityId: lead.rfpId,
+      previousValue: JSON.stringify({
+        pitchdeckStatus: pitchdeck.status,
+        teamConfirmed: false,
+      }),
+      newValue: JSON.stringify({
+        pitchdeckStatus: 'team_confirmed',
+        teamConfirmedAt: updatedPitchdeck.teamConfirmedAt,
+        teamConfirmedBy: session.user.id,
+      }),
+      reason: 'BL hat Pitchdeck-Team bestätigt',
+    });
+
+    // Revalidate cache
+    revalidatePath(`/leads/${lead.id}/pitchdeck`);
+    revalidatePath(`/leads/${lead.id}`);
+
+    return {
+      success: true,
+      pitchdeckId: updatedPitchdeck.id,
+    };
+  } catch (error) {
+    console.error('Error confirming pitchdeck team:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
+}

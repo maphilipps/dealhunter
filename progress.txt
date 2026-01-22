@@ -5934,3 +5934,32 @@ Ready for API implementation (PA-023, PA-024)
 - DEA-162 (PA-003): BL Team Confirmation
 - DEA-163 (PA-004): Team E-Mail Notifications
 
+
+## DEA-162: PA-003 Team Confirmation Implementation
+
+**Date:** 2026-01-22 11:22:01
+**Issue:** DEA-162 - PA-003: Team - BL muss Team-Vorschläge bestätigen
+
+### Implementation:
+
+1. **API Route:** Created `POST /api/leads/[id]/pitchdeck/confirm-team`
+   - Role-based access control (BL + Admin only)
+   - Business unit validation
+   - Status transition: team_proposed → team_confirmed
+   - Sets teamConfirmedAt and teamConfirmedByUserId
+   - Creates audit trail
+
+2. **Server Action:** Added `confirmPitchdeckTeam()` to `lib/pitchdeck/actions.ts`
+   - Same authorization and validation logic
+   - Revalidates cache after confirmation
+
+### Status:
+- ✅ API implementation complete
+- ✅ Type checks passing
+- ⏸️ UI components pending (not required for API-only subtask)
+
+### Notes:
+- Followed existing patterns from `/api/leads/[id]/vote/route.ts`
+- Uses same role-based access pattern as BID voting
+- Team editing before confirmation: BL can modify team suggestions via separate endpoints (PA-004 scope)
+

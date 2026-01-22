@@ -14,15 +14,20 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { getRfpNavigationSections } from '@/lib/rfps/navigation';
+import {
+  getRfpNavigationSections,
+  isNavigationItemEnabled,
+  type QuickScanDataAvailability,
+} from '@/lib/rfps/navigation';
 
 interface RfpMobileNavProps {
   rfpId: string;
   title?: string;
   status: string;
+  dataAvailability: QuickScanDataAvailability;
 }
 
-export function RfpMobileNav({ rfpId, title, status }: RfpMobileNavProps) {
+export function RfpMobileNav({ rfpId, title, status, dataAvailability }: RfpMobileNavProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const navigationSections = getRfpNavigationSections(rfpId);
@@ -48,27 +53,41 @@ export function RfpMobileNav({ rfpId, title, status }: RfpMobileNavProps) {
           </SheetDescription>
         </SheetHeader>
         <nav className="mt-6 flex flex-col gap-6">
-          {navigationSections.map(section => (
+          {navigationSections.map((section) => (
             <div key={section.label}>
-              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">{section.label}</h3>
+              <h3 className="text-muted-foreground mb-2 text-sm font-semibold">{section.label}</h3>
               <div className="flex flex-col gap-1">
-                {section.items.map(item => {
+                {section.items.map((item) => {
                   const isActive = pathname === item.url;
+                  const isEnabled = isNavigationItemEnabled(item, dataAvailability);
                   const Icon = item.icon;
+
+                  if (isEnabled) {
+                    return (
+                      <Link
+                        key={item.title}
+                        href={item.url}
+                        onClick={() => setOpen(false)}
+                        className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+                          isActive ? 'bg-accent text-accent-foreground font-medium' : 'hover:bg-accent/50'
+                        }`}
+                      >
+                        <Icon className="size-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    );
+                  }
+
+                  // Disabled item
                   return (
-                    <Link
+                    <div
                       key={item.title}
-                      href={item.url}
-                      onClick={() => setOpen(false)}
-                      className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                        isActive
-                          ? 'bg-accent text-accent-foreground font-medium'
-                          : 'hover:bg-accent/50'
-                      }`}
+                      className="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm opacity-50"
+                      title="Quick Scan Daten fehlen"
                     >
                       <Icon className="size-4" />
                       <span>{item.title}</span>
-                    </Link>
+                    </div>
                   );
                 })}
               </div>

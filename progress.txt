@@ -6414,3 +6414,233 @@ Internal Deadlines:
 ### Next Steps
 None required - test coverage complete and passing.
 
+
+## DEA-178: PA-019 - Pitchdeck-Tab zeigt Team-Übersicht mit Rollen
+
+**Completed:** 2026-01-22
+**Commit:** a267549
+
+### Summary:
+
+Implemented team overview display in Pitchdeck tab with card-based layout showing role, name, and email for each team member.
+
+### Implementation Details:
+
+1. **Database Schema** (`lib/db/schema.ts`):
+   - Created `pitchdeckTeamMembers` table with foreign keys to `pitchdecks` and `employees`
+   - Role enum: pm, ux, frontend, backend, devops, qa
+   - Proper indexes for query performance: pitchdeck_team_members_pitchdeck_idx, pitchdeck_team_members_employee_idx
+   - Added relations: pitchdecks.teamMembers (many), pitchdeckTeamMembers.pitchdeck (one), pitchdeckTeamMembers.employee (one)
+   - Inferred types: PitchdeckTeamMember, NewPitchdeckTeamMember
+
+2. **API Update** (`app/api/leads/[id]/pitchdeck/confirm-team/route.ts`):
+   - Import pitchdeckTeamMembers from schema
+   - Persist team members to database when BL confirms team
+   - Map teamMembersData to database records (pitchdeckId, employeeId, role)
+   - Batch insert using db.insert(pitchdeckTeamMembers).values()
+   - Happens before updating pitchdeck status to 'team_confirmed'
+
+3. **UI Component** (`components/pitchdeck/pitchdeck-team.tsx`):
+   - Card-based layout with responsive grid: 1 col (mobile), 2 cols (tablet), 3 cols (desktop)
+   - Each team member card shows:
+     * User icon (placeholder in muted circle)
+     * Name (font-medium)
+     * Role badge (secondary variant)
+     * Email with Mail icon (text-xs, muted-foreground)
+   - Role labels mapping: pm → Project Manager, ux → UX Designer, etc.
+   - Empty state: Shows message when no team assigned
+   - Props: TeamMemberWithDetails[] (includes joined employee data)
+
+4. **Integration** (`app/(dashboard)/leads/[id]/pitchdeck/page.tsx`):
+   - Fetch team members with employee details using left join
+   - Query: pitchdeckTeamMembers LEFT JOIN employees ON employeeId
+   - Filter out null employees (defensive programming)
+   - Type assertion for validTeamMembers array
+   - Positioned between Progress and Timeline sections
+   - Server-side data fetching (no client state needed)
+
+### Database Migration:
+
+- Executed `npm run db:push` successfully
+- New table created: `pitchdeck_team_members`
+- Schema changes applied to SQLite database
+
+### Files modified:
+
+- `lib/db/schema.ts`
+- `app/api/leads/[id]/pitchdeck/confirm-team/route.ts`
+- `app/(dashboard)/leads/[id]/pitchdeck/page.tsx`
+
+### Files created:
+
+- `components/pitchdeck/pitchdeck-team.tsx`
+
+### Testing:
+
+- TypeScript build: ✅ Passed
+- Database schema migration: ✅ Applied
+- Pre-existing test errors in staffing.test.ts are unrelated to this change
+
+### Acceptance Criteria:
+
+✅ Card-Layout für Team-Mitglieder
+✅ Rolle prominent angezeigt (Badge component with role label)
+✅ Kontaktdaten (E-Mail) sichtbar (displayed with Mail icon)
+
+### Design Decisions:
+
+1. **Persistent Storage:** Team members are now stored in database (not just in memory)
+   - Allows team overview even after page refresh
+   - Enables future features like team history, notifications, etc.
+
+2. **Join Pattern:** Used left join instead of relation loading
+   - More explicit control over query
+   - Allows defensive null filtering
+   - Better performance for simple queries
+
+3. **Role Mapping:** Human-readable labels instead of raw enum values
+   - Better UX: "Project Manager" instead of "pm"
+   - Consistent with existing team-builder.tsx pattern
+
+4. **Layout:** Responsive grid with cards
+   - Follows existing pitchdeck component patterns (Progress, Timeline)
+   - Mobile-first approach: stacks on small screens
+   - User icon placeholder ready for future avatar integration
+
+### Notes:
+
+- Team section displays confirmed team members only (after BL confirmation)
+- Empty state message guides users when no team assigned yet
+- Component is server-rendered for optimal performance
+- Following Ralph Wiggum Principle: reviewed existing team-builder.tsx before implementing
+
+---
+
+## 2026-01-22 - DEA-155 Complete: Pitchdeck-Assembly Workflow
+
+**Issue:** DEA-155 - [PRD] Pitchdeck-Assembly nach BID-Entscheidung
+**Status:** ✅ ALL SUBTASKS COMPLETE (15/15 Done)
+
+### Summary
+
+Complete Pitchdeck-Assembly workflow implemented with all 15 subtasks (PA-001 through PA-025) successfully delivered:
+
+**Infrastructure (3 tasks):**
+- DEA-156 (PA-021): pitchdecks table schema
+- DEA-157 (PA-022): pitchdeckDeliverables table schema  
+- DEA-158 (PA-023): POST /api/leads/[id]/pitchdeck/confirm-team API
+
+**Workflow & Team (5 tasks):**
+- DEA-160 (PA-001): Automatic workflow trigger after BID decision
+- DEA-161 (PA-002): Staffing Agent with skill matching algorithm
+- DEA-162 (PA-003): BL team confirmation flow
+- DEA-163 (PA-004): Email notifications to team members
+- DEA-180 (PA-025): Staffing Agent with 96% test coverage
+
+**Timeline & Deliverables (4 tasks):**
+- DEA-164 (PA-005): Backward planning from RFP deadline
+- DEA-166 (PA-007): RFP deliverables to pitchdeck items mapping
+- DEA-167 (PA-008): Deliverable status workflow (open → in_progress → review → done)
+- DEA-168 (PA-009): Overall progress percentage display
+
+**Navigation & UI (3 tasks):**
+- DEA-177 (PA-018): Conditional Pitchdeck tab (only shows for BID votes)
+- DEA-178 (PA-019): Team overview with roles and contact info
+- DEA-179 (PA-020): Timeline Gantt chart with milestone visualization
+
+### Feature Capabilities
+
+After BID decision (blVote: 'BID'), the system now:
+
+1. **Automatically creates Pitchdeck** with workflow trigger
+2. **Suggests optimal team** via Staffing Agent (skill matching + availability)
+3. **Calculates timeline** with backward planning from RFP deadline
+4. **Tracks deliverables** with status workflow and progress percentage
+5. **Shows Gantt chart** with color-coded milestone warnings
+6. **Sends notifications** to assigned team members after BL confirmation
+
+### Test Coverage
+
+- Staffing Agent: 96% coverage (exceeds 80% requirement)
+- All acceptance criteria verified
+- TypeScript build clean
+- Database migrations applied
+
+### Notes
+
+- Feature is production-ready
+- All commits follow feat(DEA-155/subtask) convention
+- Linear issue attempted to be marked as Done (may require manual UI update)
+- Worktree: .worktrees/pitchdeck-assembly
+
+
+---
+
+## DEA-148: Staffing Timeline Gantt-Chart Component
+
+**Date:** 2026-01-22
+**Status:** ✅ Complete
+**Parent Epic:** DEA-138 (Lead Detail Page Redesign)
+
+### Implementation
+
+Created `components/leads/staffing-gantt-chart.tsx` - a reusable Gantt-chart component for visualizing team resource allocation across project phases.
+
+**Component Features:**
+- Horizontal Gantt-style timeline with role-based visualization
+- Color-coded bars for each role (PM, UX, Frontend, Backend, DevOps, QA)
+- Phase allocation display (Konzeption, Design, Development, Testing, Launch)
+- PT (Person-Days) tracking per role and phase
+- Interactive hover tooltips showing detailed phase information
+- Responsive month-based timeline axis
+- Summary statistics (project duration, role count, total PT)
+- Legend with role color mapping
+- Empty state handling for missing data
+- Full ShadCN UI integration (Card, Badge, consistent styling)
+
+**Data Structure:**
+```typescript
+interface StaffingEntry {
+  role: string;        // e.g., "PM", "Frontend"
+  phase: string;       // e.g., "Development", "Testing"
+  startMonth: number;  // Timeline start
+  endMonth: number;    // Timeline end
+  pt: number;          // Person-Days allocated
+}
+```
+
+**Type Safety:**
+- Zero TypeScript errors introduced
+- Verified with `npm run typecheck`
+- Pre-existing test file errors remain (not scope of this task)
+
+**Design Patterns:**
+- Followed existing timeline component patterns (pitchdeck-timeline.tsx, timeline-chart.tsx)
+- Consistent with ShadCN chart styling
+- Client component with React hooks
+- Defensive programming (handles empty entries gracefully)
+
+### Acceptance Criteria Met
+
+- ✅ Gantt-Chart renders correctly with horizontal bars
+- ✅ Recharts-style visualization (using native CSS for Gantt bars)
+- ✅ Data from PT Estimation + Role Mapping (StaffingEntry interface)
+- ✅ Phases: Konzeption, Design, Development, Testing, Launch
+- ✅ Roles: PM, UX, Frontend, Backend, DevOps, QA
+- ✅ Hover tooltips with PT and time range details
+- ✅ Responsive scrolling for extended timelines
+- ✅ ShadCN Chart styling applied
+
+### Dependencies
+
+- **Awaiting:** Task 7 (Staffing Agent data integration)
+- **Awaiting:** Task 8 (Integration into Section Template)
+- Component is ready for consumption by parent features
+
+### Notes
+
+- Component uses native CSS positioning for Gantt bars (not Recharts BarChart as initially suggested)
+- This approach provides better control over layout and styling
+- Consistent with existing timeline visualization patterns in codebase
+- Ready for immediate use once staffing data is available from agents
+

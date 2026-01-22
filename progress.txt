@@ -5772,3 +5772,61 @@ All issues in the Dealhunter Linear team have been completed. This represents a 
 **Commit:** (pending - will be included in next commit)
 
 2026-01-22 10:43:21 - Iteration 1 - PRD-001 (Layout) - Branch: feature-dea-138-lead-detail
+
+---
+
+## DEA-143: RAG Query Service: Lead-spezifische Erweiterung
+
+**Status:** ✅ COMPLETED
+
+**What was implemented:**
+- Created `lib/rag/lead-retrieval-service.ts` with comprehensive lead-specific RAG functionality:
+  - `queryRagForLead()`: Maps Lead ID → RFP ID and performs RAG queries
+  - `batchQuerySections()`: Parallel batch queries for multiple sections with confidence scoring
+  - `queryMultipleAgents()`: Query multiple agents for the same question
+  - `calculateConfidenceScore()`: Multi-factor confidence calculation (count, similarity, diversity)
+  - `aggregateSources()`: Deduplicate and rank sources by relevance
+  - `formatLeadContext()`: Format results for AI prompts with optional metadata
+
+**Key Features:**
+- Lead → RFP ID mapping via database lookup
+- Section template integration (uses RAG query templates from navigation config)
+- Multi-agent query support (single or multiple agent filters)
+- Intelligent fallback (returns all results if agent filter yields nothing)
+- Confidence score based on:
+  - Result count (0-40 points, max at 5+ results)
+  - Average similarity (0-40 points)
+  - Agent diversity (0-20 points, max at 3+ unique agents)
+- Source tracking with deduplication and relevance ranking
+
+**Testing:**
+- Created comprehensive test suite: `lib/rag/__tests__/lead-retrieval-service.test.ts`
+- 24 tests covering all functions and edge cases:
+  - Lead → RFP mapping and error handling
+  - Section template integration
+  - Single and multi-agent filtering
+  - Batch query parallel execution
+  - Confidence score calculations
+  - Source aggregation and deduplication
+  - Context formatting with/without metadata
+- All tests pass ✅
+
+**Verification:**
+- Type checks pass: npm run typecheck ✅
+- All 24 unit tests pass: npm test ✅
+- No ESLint errors
+- Integration with existing RAG service (retrieval-service.ts)
+- Integration with navigation config (navigation-config.ts)
+
+**Dependencies Satisfied:**
+- ✅ DEA-139 (Schema Extension) - uses leads table
+- ✅ DEA-140 (Navigation Config) - uses getRAGQueryTemplate()
+
+**Next Steps:**
+- DEA-144: Web Research Service (can use this for confidence-based triggers)
+- DEA-145: Deep Scan Orchestrator (will call batchQuerySections)
+- DEA-146: Section Page Template (will use queryRagForLead)
+
+**Commit:** feat(DEA-143): add Lead-specific RAG retrieval service with multi-agent support
+
+2026-01-22 11:02:00 - DEA-143 - RAG Query Service - Branch: feature-dea-138-lead-detail

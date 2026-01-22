@@ -15,6 +15,8 @@
 import { eq } from 'drizzle-orm';
 
 import { analyzeComponents } from '@/lib/agents/component-library-agent';
+import { runLegalCheckAgent } from '@/lib/agents/legal-check-agent';
+import { runReferencesAgent } from '@/lib/agents/references-agent';
 import { db } from '@/lib/db';
 import { leads, leadSectionData, rfpEmbeddings } from '@/lib/db/schema';
 import { LEAD_NAVIGATION_SECTIONS } from '@/lib/leads/navigation-config';
@@ -189,21 +191,42 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
   },
 
   references: async (leadId, rfpId) => {
-    // TODO: Implement ReferencesAgent
-    return Promise.resolve({
-      content: { recommendations: [], reasoning: [], leadId, rfpId },
-      confidence: 50,
+    // DEA-150: References Agent with 2-factor scoring
+    const result = await runReferencesAgent(leadId, rfpId);
+    return {
+      content: {
+        recommendations: result.recommendations,
+        summary: result.summary,
+        selectionCriteria: result.selectionCriteria,
+        totalReferencesScanned: result.totalReferencesScanned,
+        topMatchesCount: result.topMatchesCount,
+        avgMatchScore: result.avgMatchScore,
+        leadId,
+        rfpId,
+      },
+      confidence: result.avgMatchScore,
       sources: [],
-    });
+    };
   },
 
   legal: async (leadId, rfpId) => {
-    // TODO: Implement LegalAgent
-    return Promise.resolve({
-      content: { compliance: [], risks: [], leadId, rfpId },
-      confidence: 50,
+    // DEA-149: Legal Check Agent with industry-specific compliance
+    const result = await runLegalCheckAgent(leadId, rfpId);
+    return {
+      content: {
+        gdprCompliance: result.gdprCompliance,
+        germanLaw: result.germanLaw,
+        industrySpecific: result.industrySpecific,
+        overallRiskLevel: result.overallRiskLevel,
+        complianceScore: result.complianceScore,
+        criticalIssues: result.criticalIssues,
+        recommendations: result.recommendations,
+        leadId,
+        rfpId,
+      },
+      confidence: result.complianceScore,
       sources: [],
-    });
+    };
   },
 
   costs: async (leadId, rfpId) => {

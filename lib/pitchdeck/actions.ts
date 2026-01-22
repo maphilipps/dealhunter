@@ -481,6 +481,7 @@ export async function confirmPitchdeckTeam(
 }
 
 import { generateCompleteSolution, type SolutionInput } from '@/lib/agents/solution-agent';
+import pLimit from 'p-limit';
 
 export interface UpdateDeliverableStatusResult {
   success: boolean;
@@ -779,6 +780,177 @@ export async function generateSolutionSketches(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
+}
+
+export interface GenerateAllSolutionSketchesResult {
+  success: boolean;
+  results: {
+    deliverableId: string;
+    deliverableName: string;
+    success: boolean;
+    error?: string;
+  }[];
+  totalProcessed: number;
+  successCount: number;
+  failureCount: number;
+}
+
+/**
+ * DEA-185 (PA-030): Generate Solution Sketches for ALL Deliverables in Parallel
+ *
+ * This function:
+ * 1. Fetches all deliverables for a pitchdeck
+ * 2. Generates solution sketches in parallel (max 3 concurrent)
+ * 3. Uses Promise.allSettled for error isolation
+ * 4. Returns detailed results for each deliverable
+ *
+ * Performance optimization:
+ * - Parallel execution speeds up multi-deliverable pitchdecks
+ * - Rate limiting (max 3 concurrent) prevents API overload
+ * - Error isolation ensures one failure doesn't block others
+ *
+ * @param pitchdeckId - The pitchdeck ID to generate sketches for all deliverables
+ * @returns Detailed results for each deliverable
+ */
+export async function generateAllSolutionSketches(
+  pitchdeckId: string
+): Promise<GenerateAllSolutionSketchesResult> {
+  // Security: Authentication check
+  const session = await auth();
+  if (!session?.user?.id) {
+    return {
+      success: false,
+      results: [],
+      totalProcessed: 0,
+      successCount: 0,
+      failureCount: 0,
+    };
+  }
+
+  try {
+    // Get pitchdeck
+    const [pitchdeck] = await db
+      .select()
+      .from(pitchdecks)
+      .where(eq(pitchdecks.id, pitchdeckId))
+      .limit(1);
+
+    if (!pitchdeck) {
+      return {
+        success: false,
+        results: [],
+        totalProcessed: 0,
+        successCount: 0,
+        failureCount: 0,
+      };
+    }
+
+    // Get all deliverables for this pitchdeck
+    const deliverables = await db
+      .select()
+      .from(pitchdeckDeliverables)
+      .where(eq(pitchdeckDeliverables.pitchdeckId, pitchdeckId));
+
+    if (deliverables.length === 0) {
+      return {
+        success: true,
+        results: [],
+        totalProcessed: 0,
+        successCount: 0,
+        failureCount: 0,
+      };
+    }
+
+    console.error(
+      `[Generate All Solution Sketches] Processing ${deliverables.length} deliverables in parallel (max 3 concurrent)`
+    );
+
+    // Create rate limiter: max 3 concurrent executions
+    const limit = pLimit(3);
+
+    // Process all deliverables in parallel with rate limiting
+    const results = await Promise.allSettled(
+      deliverables.map(deliverable =>
+        limit(async () => {
+          try {
+            console.error(
+              `[Parallel Solution Generation] Starting: ${deliverable.deliverableName}`
+            );
+
+            const result = await generateSolutionSketches(deliverable.id);
+
+            if (result.success) {
+              console.error(
+                `[Parallel Solution Generation] ✓ Success: ${deliverable.deliverableName}`
+              );
+            } else {
+              console.error(
+                `[Parallel Solution Generation] ✗ Failed: ${deliverable.deliverableName} - ${result.error}`
+              );
+            }
+
+            return {
+              deliverableId: deliverable.id,
+              deliverableName: deliverable.deliverableName,
+              success: result.success,
+              error: result.error,
+            };
+          } catch (error) {
+            console.error(
+              `[Parallel Solution Generation] ✗ Exception: ${deliverable.deliverableName}`,
+              error
+            );
+            return {
+              deliverableId: deliverable.id,
+              deliverableName: deliverable.deliverableName,
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            };
+          }
+        })
+      )
+    );
+
+    // Extract results from Promise.allSettled
+    const processedResults = results.map(result => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      } else {
+        // This should rarely happen as we catch errors inside the limit() callback
+        return {
+          deliverableId: 'unknown',
+          deliverableName: 'Unknown',
+          success: false,
+          error: String(result.reason),
+        };
+      }
+    });
+
+    // Calculate success/failure counts
+    const successCount = processedResults.filter(r => r.success).length;
+    const failureCount = processedResults.filter(r => !r.success).length;
+
+    console.error(
+      `[Generate All Solution Sketches] Completed: ${successCount} success, ${failureCount} failures out of ${deliverables.length}`
+    );
+
+    return {
+      success: failureCount === 0, // Overall success only if all succeeded
+      results: processedResults,
+      totalProcessed: deliverables.length,
+      successCount,
+      failureCount,
+    };
+  } catch (error) {
+    console.error('[Generate All Solution Sketches] Fatal error:', error);
+    return {
+      success: false,
+      results: [],
+      totalProcessed: 0,
+      successCount: 0,
+      failureCount: 0,
     };
   }
 }

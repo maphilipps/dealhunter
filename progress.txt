@@ -5892,3 +5892,45 @@ Ready for API implementation (PA-023, PA-024)
 - DEA-162 (PA-003): BL Team Confirmation
 - DEA-163 (PA-004): Team E-Mail Notifications
 
+
+## DEA-161 (PA-002): Team - Staffing Agent generiert automatische Team-Vorschläge
+
+**Date:** 2026-01-22
+**Status:** ✅ Completed
+
+### Implementation
+
+1. **Created `suggestPitchdeckTeam()` function in `lib/pitchdeck/actions.ts`:**
+   - Retrieves pitchdeck, lead, RFP, and PT-Estimation data
+   - Queries employees from lead's business unit (BU-Priorisierung)
+   - Extracts Quick Scan results for tech stack matching
+   - Passes PT-Estimation disciplines to AI agent for role requirements
+   - Uses existing `suggestTeam()` AI agent for skill matching
+   - Updates pitchdeck status to 'team_proposed'
+   - Creates audit trail
+
+2. **Reuses existing Team AI Agent (`lib/team/agent.ts`):**
+   - Enhanced skill-matching algorithm already in place
+   - CMS/Framework exact match (+30 points)
+   - Component framework match (+20 points)
+   - Integration experience (+15 points each)
+   - Complexity skills (animations, i18n) (+10 points each)
+   - Availability modifiers (available: +10, on_project: +5, unavailable: -10)
+
+3. **Validation:**
+   - TypeScript type checking: ✅ Passed
+   - All acceptance criteria met:
+     - ✅ Rollen basierend auf PT-Estimation
+     - ✅ Skill-Matching-Algorithmus berücksichtigt Employee.skills
+     - ✅ Verfügbarkeit aus Employee.availabilityStatus
+     - ✅ BU-Priorisierung: eigene BU zuerst (via WHERE clause)
+
+### Files Changed
+
+- `lib/pitchdeck/actions.ts` (added suggestPitchdeckTeam function, 141 lines)
+
+### Next Steps
+
+- DEA-162 (PA-003): BL Team Confirmation
+- DEA-163 (PA-004): Team E-Mail Notifications
+

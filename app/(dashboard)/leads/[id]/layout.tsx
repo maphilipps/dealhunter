@@ -80,7 +80,12 @@ export default async function LeadDashboardLayout({
       </SidebarInset>
 
       {/* Right Sidebar: Lead-specific Navigation */}
-      <LeadSidebarRight leadId={id} customerName={lead.customerName} status={lead.status} />
+      <LeadSidebarRight
+        leadId={id}
+        customerName={lead.customerName}
+        status={lead.status}
+        blVote={lead.blVote}
+      />
     </SidebarProvider>
   );
 }

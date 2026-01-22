@@ -419,6 +419,7 @@ export const auditTrails = sqliteTable(
         'competency',
         'competitor',
         'team_assignment',
+        'pitchdeck',
       ],
     }).notNull(),
     entityId: text('entity_id').notNull(),
@@ -1428,6 +1429,7 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   referenceMatches: many(referenceMatches),
   competitorMatches: many(competitorMatches),
   sectionData: many(leadSectionData),
+  pitchdeck: one(pitchdecks),
 }));
 
 export const websiteAuditsRelations = relations(websiteAudits, ({ one }) => ({
@@ -1562,5 +1564,163 @@ export const competitorMatchesRelations = relations(competitorMatches, ({ one })
   competitor: one(competitors, {
     fields: [competitorMatches.competitorId],
     references: [competitors.id],
+  }),
+}));
+
+// ===== Pitchdeck Assembly (DEA-155) =====
+
+export const pitchdecks = sqliteTable(
+  'pitchdecks',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // Lead Reference
+    leadId: text('lead_id')
+      .notNull()
+      .references(() => leads.id),
+
+    // Pitchdeck Status
+    status: text('status', {
+      enum: ['draft', 'team_proposed', 'team_confirmed', 'in_progress', 'submitted'],
+    })
+      .notNull()
+      .default('draft'),
+
+    // Team Confirmation
+    teamConfirmedAt: integer('team_confirmed_at', { mode: 'timestamp' }),
+    teamConfirmedByUserId: text('team_confirmed_by_user_id').references(() => users.id),
+
+    // Submission
+    submittedAt: integer('submitted_at', { mode: 'timestamp' }),
+
+    // Timestamps
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    leadIdx: index('pitchdecks_lead_idx').on(table.leadId),
+    statusIdx: index('pitchdecks_status_idx').on(table.status),
+  })
+);
+
+export type Pitchdeck = typeof pitchdecks.$inferSelect;
+export type NewPitchdeck = typeof pitchdecks.$inferInsert;
+
+export const pitchdeckDeliverables = sqliteTable(
+  'pitchdeck_deliverables',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // Pitchdeck Reference
+    pitchdeckId: text('pitchdeck_id')
+      .notNull()
+      .references(() => pitchdecks.id),
+
+    // Deliverable Details
+    deliverableName: text('deliverable_name').notNull(),
+
+    // Status Tracking
+    status: text('status', { enum: ['open', 'in_progress', 'review', 'done'] })
+      .notNull()
+      .default('open'),
+
+    // Timeline
+    internalDeadline: integer('internal_deadline', { mode: 'timestamp' }),
+
+    // Assignment
+    assignedToEmployeeId: text('assigned_to_employee_id').references(() => employees.id),
+
+    // AI-Generated Solution Sketches
+    outline: text('outline'), // Structured outline
+    draft: text('draft'), // Full-text draft
+    talkingPoints: text('talking_points'), // Presentation talking points
+    visualIdeas: text('visual_ideas'), // Visualization ideas
+
+    // Generation Timestamp
+    generatedAt: integer('generated_at', { mode: 'timestamp' }),
+
+    // Timestamps
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    pitchdeckIdx: index('pitchdeck_deliverables_pitchdeck_idx').on(table.pitchdeckId),
+    statusIdx: index('pitchdeck_deliverables_status_idx').on(table.status),
+  })
+);
+
+export type PitchdeckDeliverable = typeof pitchdeckDeliverables.$inferSelect;
+export type NewPitchdeckDeliverable = typeof pitchdeckDeliverables.$inferInsert;
+
+export const pitchdeckTeamMembers = sqliteTable(
+  'pitchdeck_team_members',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // Pitchdeck Reference
+    pitchdeckId: text('pitchdeck_id')
+      .notNull()
+      .references(() => pitchdecks.id),
+
+    // Employee Reference
+    employeeId: text('employee_id')
+      .notNull()
+      .references(() => employees.id),
+
+    // Role in Pitchdeck Team
+    role: text('role', {
+      enum: ['pm', 'ux', 'frontend', 'backend', 'devops', 'qa'],
+    }).notNull(),
+
+    // Timestamps
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    pitchdeckIdx: index('pitchdeck_team_members_pitchdeck_idx').on(table.pitchdeckId),
+    employeeIdx: index('pitchdeck_team_members_employee_idx').on(table.employeeId),
+  })
+);
+
+export type PitchdeckTeamMember = typeof pitchdeckTeamMembers.$inferSelect;
+export type NewPitchdeckTeamMember = typeof pitchdeckTeamMembers.$inferInsert;
+
+export const pitchdecksRelations = relations(pitchdecks, ({ one, many }) => ({
+  lead: one(leads, {
+    fields: [pitchdecks.leadId],
+    references: [leads.id],
+  }),
+  teamConfirmedBy: one(users, {
+    fields: [pitchdecks.teamConfirmedByUserId],
+    references: [users.id],
+  }),
+  deliverables: many(pitchdeckDeliverables),
+  teamMembers: many(pitchdeckTeamMembers),
+}));
+
+export const pitchdeckDeliverablesRelations = relations(pitchdeckDeliverables, ({ one }) => ({
+  pitchdeck: one(pitchdecks, {
+    fields: [pitchdeckDeliverables.pitchdeckId],
+    references: [pitchdecks.id],
+  }),
+  assignedToEmployee: one(employees, {
+    fields: [pitchdeckDeliverables.assignedToEmployeeId],
+    references: [employees.id],
+  }),
+}));
+
+export const pitchdeckTeamMembersRelations = relations(pitchdeckTeamMembers, ({ one }) => ({
+  pitchdeck: one(pitchdecks, {
+    fields: [pitchdeckTeamMembers.pitchdeckId],
+    references: [pitchdecks.id],
+  }),
+  employee: one(employees, {
+    fields: [pitchdeckTeamMembers.employeeId],
+    references: [employees.id],
   }),
 }));

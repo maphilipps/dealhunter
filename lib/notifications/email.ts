@@ -142,6 +142,7 @@ export interface SendTeamNotificationInput {
     startPhase: string;
   };
   blLeaderName: string;
+  projectUrl?: string; // Optional: override default URL construction
 }
 
 export interface TeamNotificationResult {
@@ -166,10 +167,13 @@ export async function sendTeamNotificationEmails(
     teamMembers,
     projectPlanSummary,
     blLeaderName,
+    projectUrl: customProjectUrl,
   } = input;
 
   const results: TeamNotificationResult[] = [];
-  const projectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/rfps/${bidId}`;
+  // Use custom URL if provided, otherwise fallback to default /rfps/ URL
+  const projectUrl =
+    customProjectUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/rfps/${bidId}`;
 
   for (const member of teamMembers) {
     try {

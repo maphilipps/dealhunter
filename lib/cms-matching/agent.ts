@@ -1157,12 +1157,15 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
 
       // Baue cmsScores Object aus parallelen Ergebnissen
       const cmsScores: RequirementMatch['cmsScores'] = Object.fromEntries(
-        cmsResults.map(result => [result.cmsId, {
-          score: result.score,
-          confidence: result.confidence,
-          notes: result.notes,
-          webSearchUsed: result.webSearchUsed,
-        }])
+        cmsResults.map(result => [
+          result.cmsId,
+          {
+            score: result.score,
+            confidence: result.confidence,
+            notes: result.notes,
+            webSearchUsed: result.webSearchUsed,
+          },
+        ])
       );
 
       return {

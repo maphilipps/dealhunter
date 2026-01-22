@@ -9,12 +9,7 @@
  */
 
 import { type ClassifiedError } from './classification';
-import {
-  withRetry,
-  type RetryConfig,
-  type AgentResult,
-  DEFAULT_RETRY_CONFIGS,
-} from './retry';
+import { withRetry, type RetryConfig, type AgentResult, DEFAULT_RETRY_CONFIGS } from './retry';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -166,9 +161,7 @@ export function resolveAgentError(
 /**
  * Map AgentName to retry config key
  */
-function agentNameToConfigKey(
-  agentName: AgentName
-): keyof typeof DEFAULT_RETRY_CONFIGS {
+function agentNameToConfigKey(agentName: AgentName): keyof typeof DEFAULT_RETRY_CONFIGS {
   const mapping: Record<AgentName, keyof typeof DEFAULT_RETRY_CONFIGS> = {
     DuplicateCheck: 'duplicateCheck',
     Extract: 'extract',
@@ -234,10 +227,7 @@ export function formatErrorForUser(error: ClassifiedError): string {
  * @param currentStatus - Current RFP status
  * @returns Next status for failed state
  */
-export function getFailedStatus(
-  agentName: AgentName,
-  currentStatus: string
-): string {
+export function getFailedStatus(agentName: AgentName, currentStatus: string): string {
   const statusMap: Record<AgentName, string> = {
     DuplicateCheck: 'duplicate_check_failed',
     Extract: 'extraction_failed',

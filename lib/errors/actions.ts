@@ -48,16 +48,14 @@ export async function retryAgent(
       : [];
 
     // Find error for this agent
-    const agentError = agentErrors.find(
-      (e) => e.agentName === agentName && !e.isResolved
-    );
+    const agentError = agentErrors.find(e => e.agentName === agentName && !e.isResolved);
 
     if (!agentError) {
       return { success: false, error: `Agent ${agentName} is not in failed state` };
     }
 
     // Remove error from list (will be re-added if fails again)
-    const updatedErrors = agentErrors.filter((e) => e.id !== agentError.id);
+    const updatedErrors = agentErrors.filter(e => e.id !== agentError.id);
 
     // Determine new status based on agent
     const newStatus = getRetryStatus(agentName, rfp.status) as typeof rfp.status;
@@ -117,9 +115,7 @@ export async function skipAgent(
       : [];
 
     // Find error for this agent
-    const agentErrorIndex = agentErrors.findIndex(
-      (e) => e.agentName === agentName && !e.isResolved
-    );
+    const agentErrorIndex = agentErrors.findIndex(e => e.agentName === agentName && !e.isResolved);
 
     if (agentErrorIndex === -1) {
       return { success: false, error: `No unresolved error found for agent ${agentName}` };
@@ -236,7 +232,7 @@ export async function resolveAgentError(
       : [];
 
     // Find error
-    const errorIndex = agentErrors.findIndex((e) => e.id === errorId);
+    const errorIndex = agentErrors.findIndex(e => e.id === errorId);
 
     if (errorIndex === -1) {
       return { success: false, error: 'Error not found' };

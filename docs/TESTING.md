@@ -5,8 +5,9 @@
 **Minimum 80% Test Coverage ist REQUIRED für alle Features.**
 
 Das Projekt nutzt:
+
 - **Vitest** - Unit & Integration Tests
-- **Playwright** - E2E Browser Tests  
+- **Playwright** - E2E Browser Tests
 - **Testing Library** - React Component Testing
 - **MSW** - API Mocking
 - **Axe** - Accessibility Testing
@@ -42,7 +43,7 @@ describe('Extraction Agent', () => {
   it('should extract tender data from PDF', async () => {
     const mockPdf = Buffer.from('...');
     const result = await extractionAgent(mockPdf);
-    
+
     expect(result.title).toBeDefined();
     expect(result.deadline).toMatch(/\d{4}-\d{2}-\d{2}/);
   });
@@ -60,7 +61,7 @@ import { BidCard } from '../bid-card';
 describe('BidCard', () => {
   it('should render bid information', () => {
     render(<BidCard bid={mockBid} />);
-    
+
     expect(screen.getByText('Project Alpha')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /evaluate/i })).toBeVisible();
   });
@@ -68,9 +69,9 @@ describe('BidCard', () => {
   it('should handle click events', async () => {
     const user = userEvent.setup();
     const onEvaluate = vi.fn();
-    
+
     render(<BidCard bid={mockBid} onEvaluate={onEvaluate} />);
-    
+
     await user.click(screen.getByRole('button', { name: /evaluate/i }));
     expect(onEvaluate).toHaveBeenCalledWith(mockBid.id);
   });
@@ -88,9 +89,9 @@ export const handlers = [
     const body = await request.json();
     return HttpResponse.json({
       recommendation: 'BID',
-      confidence: 0.85
+      confidence: 0.85,
     });
-  })
+  }),
 ];
 ```
 
@@ -103,7 +104,7 @@ import { evaluateBid } from '../actions';
 describe('evaluateBid Server Action', () => {
   it('should validate input with Zod', async () => {
     const result = await evaluateBid({ bidId: 'invalid' });
-    
+
     expect(result.error).toBeDefined();
   });
 });
@@ -130,14 +131,14 @@ import { test, expect } from '@playwright/test';
 test.describe('Bid Evaluation Workflow', () => {
   test('should upload and evaluate tender', async ({ page }) => {
     await page.goto('/bids/new');
-    
+
     // Upload PDF
     await page.setInputFiles('input[type="file"]', 'fixtures/tender.pdf');
     await page.getByRole('button', { name: /upload/i }).click();
-    
+
     // Wait for extraction
     await expect(page.getByText(/preview/i)).toBeVisible({ timeout: 10000 });
-    
+
     // Check result
     const recommendation = page.getByTestId('quick-scan-result');
     await expect(recommendation).toContainText(/BID|NO-BID/);
@@ -154,7 +155,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 test('should not have accessibility violations', async ({ page }) => {
   await page.goto('/dashboard');
-  
+
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 });
@@ -190,6 +191,7 @@ agent-browser errors
 ```
 
 **Workflow für UI Verification:**
+
 1. Feature implementieren
 2. `agent-browser open http://localhost:3000/feature`
 3. `agent-browser snapshot -i` → Elements prüfen
@@ -203,13 +205,14 @@ agent-browser errors
 ### Minimum Thresholds
 
 - **Statements:** 80%
-- **Branches:** 80%  
+- **Branches:** 80%
 - **Functions:** 80%
 - **Lines:** 80%
 
 ### Enforcement
 
 **Wenn Coverage < 80%:**
+
 1. Feature nicht mergen
 2. Linear Sub-Issue erstellen: "Add test coverage for [Feature]"
 3. Issue als Blocker markieren
@@ -252,6 +255,7 @@ e2e/
 ```
 
 **Naming Convention:**
+
 - Unit Tests: `*.test.ts`
 - E2E Tests: `*.spec.ts`
 - Test Fixtures: `fixtures/`
@@ -269,8 +273,8 @@ vi.mock('ai', () => ({
   streamText: vi.fn(() => ({
     textStream: async function* () {
       yield 'Mocked AI response';
-    }
-  }))
+    },
+  })),
 }));
 
 test('should handle agent response', async () => {
@@ -328,11 +332,13 @@ npm run test:e2e -- --headed
 ## Troubleshooting
 
 **Problem:** Tests timeout
+
 ```typescript
 test('slow test', { timeout: 30000 }, async () => { ... });
 ```
 
 **Problem:** Flaky E2E tests
+
 ```typescript
 // Use auto-wait
 await expect(page.getByText(/loading/i)).toBeVisible();
@@ -340,6 +346,7 @@ await expect(page.getByText(/loading/i)).not.toBeVisible();
 ```
 
 **Problem:** Coverage nicht 80%
+
 ```bash
 npm run test:coverage
 open coverage/index.html

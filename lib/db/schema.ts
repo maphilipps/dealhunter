@@ -1655,6 +1655,40 @@ export const pitchdeckDeliverables = sqliteTable(
 export type PitchdeckDeliverable = typeof pitchdeckDeliverables.$inferSelect;
 export type NewPitchdeckDeliverable = typeof pitchdeckDeliverables.$inferInsert;
 
+export const pitchdeckTeamMembers = sqliteTable(
+  'pitchdeck_team_members',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // Pitchdeck Reference
+    pitchdeckId: text('pitchdeck_id')
+      .notNull()
+      .references(() => pitchdecks.id),
+
+    // Employee Reference
+    employeeId: text('employee_id')
+      .notNull()
+      .references(() => employees.id),
+
+    // Role in Pitchdeck Team
+    role: text('role', {
+      enum: ['pm', 'ux', 'frontend', 'backend', 'devops', 'qa'],
+    }).notNull(),
+
+    // Timestamps
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    pitchdeckIdx: index('pitchdeck_team_members_pitchdeck_idx').on(table.pitchdeckId),
+    employeeIdx: index('pitchdeck_team_members_employee_idx').on(table.employeeId),
+  })
+);
+
+export type PitchdeckTeamMember = typeof pitchdeckTeamMembers.$inferSelect;
+export type NewPitchdeckTeamMember = typeof pitchdeckTeamMembers.$inferInsert;
+
 export const pitchdecksRelations = relations(pitchdecks, ({ one, many }) => ({
   lead: one(leads, {
     fields: [pitchdecks.leadId],
@@ -1665,6 +1699,7 @@ export const pitchdecksRelations = relations(pitchdecks, ({ one, many }) => ({
     references: [users.id],
   }),
   deliverables: many(pitchdeckDeliverables),
+  teamMembers: many(pitchdeckTeamMembers),
 }));
 
 export const pitchdeckDeliverablesRelations = relations(pitchdeckDeliverables, ({ one }) => ({
@@ -1674,6 +1709,17 @@ export const pitchdeckDeliverablesRelations = relations(pitchdeckDeliverables, (
   }),
   assignedToEmployee: one(employees, {
     fields: [pitchdeckDeliverables.assignedToEmployeeId],
+    references: [employees.id],
+  }),
+}));
+
+export const pitchdeckTeamMembersRelations = relations(pitchdeckTeamMembers, ({ one }) => ({
+  pitchdeck: one(pitchdecks, {
+    fields: [pitchdeckTeamMembers.pitchdeckId],
+    references: [pitchdecks.id],
+  }),
+  employee: one(employees, {
+    fields: [pitchdeckTeamMembers.employeeId],
     references: [employees.id],
   }),
 }));

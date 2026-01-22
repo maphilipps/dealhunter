@@ -2,11 +2,19 @@ import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
 import { PitchdeckProgress } from '@/components/pitchdeck/pitchdeck-progress';
+import { PitchdeckTeam } from '@/components/pitchdeck/pitchdeck-team';
 import { PitchdeckTimeline } from '@/components/pitchdeck/pitchdeck-timeline';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, pitchdecks, pitchdeckDeliverables, rfps } from '@/lib/db/schema';
+import {
+  leads,
+  pitchdecks,
+  pitchdeckDeliverables,
+  pitchdeckTeamMembers,
+  employees,
+  rfps,
+} from '@/lib/db/schema';
 
 export default async function PitchdeckPage({
   params,
@@ -74,6 +82,30 @@ export default async function PitchdeckPage({
     .from(pitchdeckDeliverables)
     .where(eq(pitchdeckDeliverables.pitchdeckId, pitchdeck.id));
 
+  // Get team members with employee details
+  const teamMembers = await db
+    .select({
+      id: pitchdeckTeamMembers.id,
+      pitchdeckId: pitchdeckTeamMembers.pitchdeckId,
+      employeeId: pitchdeckTeamMembers.employeeId,
+      role: pitchdeckTeamMembers.role,
+      createdAt: pitchdeckTeamMembers.createdAt,
+      employee: employees,
+    })
+    .from(pitchdeckTeamMembers)
+    .leftJoin(employees, eq(pitchdeckTeamMembers.employeeId, employees.id))
+    .where(eq(pitchdeckTeamMembers.pitchdeckId, pitchdeck.id));
+
+  // Filter out team members without employee data (defensive programming)
+  const validTeamMembers = teamMembers.filter(member => member.employee !== null) as Array<{
+    id: string;
+    pitchdeckId: string;
+    employeeId: string;
+    role: 'pm' | 'ux' | 'frontend' | 'backend' | 'devops' | 'qa';
+    createdAt: Date | null;
+    employee: NonNullable<(typeof teamMembers)[number]['employee']>;
+  }>;
+
   // Get RFP to extract deadline
   const [rfp] = await db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1);
 
@@ -99,6 +131,9 @@ export default async function PitchdeckPage({
 
       {/* Progress Section */}
       <PitchdeckProgress deliverables={deliverables} />
+
+      {/* Team Section */}
+      <PitchdeckTeam teamMembers={validTeamMembers} />
 
       {/* Timeline Section */}
       <PitchdeckTimeline deliverables={deliverables} rfpDeadline={rfpDeadline} />

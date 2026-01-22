@@ -6,7 +6,14 @@ import { z } from 'zod';
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, pitchdecks, users, employees, rfps } from '@/lib/db/schema';
+import {
+  leads,
+  pitchdecks,
+  pitchdeckTeamMembers,
+  users,
+  employees,
+  rfps,
+} from '@/lib/db/schema';
 import { sendTeamNotificationEmails, TeamMemberNotification } from '@/lib/notifications/email';
 
 // ============================================================================
@@ -165,7 +172,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       })
     );
 
-    // 10. Update Pitchdeck with Team Confirmation
+    // 10. Persist Team Members to Database
+    const teamMembersToInsert = teamMembersData.map(member => ({
+      pitchdeckId: pitchdeck.id,
+      employeeId: member.employeeId,
+      role: member.role,
+    }));
+
+    await db.insert(pitchdeckTeamMembers).values(teamMembersToInsert);
+
+    // 11. Update Pitchdeck with Team Confirmation
     const [updatedPitchdeck] = await db
       .update(pitchdecks)
       .set({
@@ -177,7 +193,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .where(eq(pitchdecks.id, pitchdeck.id))
       .returning();
 
-    // 11. Send Team Notification Emails in Background (Non-Blocking)
+    // 12. Send Team Notification Emails in Background (Non-Blocking)
     after(async () => {
       try {
         // Extract customer info from RFP
@@ -235,7 +251,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     });
 
-    // 12. Create Audit Trail in Background (Non-Blocking)
+    // 13. Create Audit Trail in Background (Non-Blocking)
     after(async () => {
       try {
         await createAuditLog({
@@ -259,7 +275,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     });
 
-    // 13. Return Updated Pitchdeck (Immediate Response)
+    // 14. Return Updated Pitchdeck (Immediate Response)
     return NextResponse.json(
       {
         success: true,

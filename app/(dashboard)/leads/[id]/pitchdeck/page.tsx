@@ -2,10 +2,11 @@ import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
 import { PitchdeckProgress } from '@/components/pitchdeck/pitchdeck-progress';
+import { PitchdeckTimeline } from '@/components/pitchdeck/pitchdeck-timeline';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, pitchdecks, pitchdeckDeliverables } from '@/lib/db/schema';
+import { leads, pitchdecks, pitchdeckDeliverables, rfps } from '@/lib/db/schema';
 
 export default async function PitchdeckPage({
   params,
@@ -73,6 +74,23 @@ export default async function PitchdeckPage({
     .from(pitchdeckDeliverables)
     .where(eq(pitchdeckDeliverables.pitchdeckId, pitchdeck.id));
 
+  // Get RFP to extract deadline
+  const [rfp] = await db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1);
+
+  // Extract RFP deadline from RFP
+  let rfpDeadline: Date | null = null;
+  if (rfp?.extractedRequirements) {
+    try {
+      const requirements = JSON.parse(rfp.extractedRequirements as string);
+      if (requirements.deadline) {
+        rfpDeadline = new Date(requirements.deadline);
+      }
+    } catch (e) {
+      // Invalid JSON or missing deadline - rfpDeadline stays null
+      console.error('Failed to parse extractedRequirements:', e);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -81,6 +99,9 @@ export default async function PitchdeckPage({
 
       {/* Progress Section */}
       <PitchdeckProgress deliverables={deliverables} />
+
+      {/* Timeline Section */}
+      <PitchdeckTimeline deliverables={deliverables} rfpDeadline={rfpDeadline} />
 
       {/* Deliverables List */}
       <Card>

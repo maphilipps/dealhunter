@@ -6247,3 +6247,109 @@ Implemented progress tracking display for Pitchdeck deliverables with visual pro
 - Status breakdown provides quick overview of deliverable distribution
 - Component is client-side only for Progress animation
 - Page is server-side for optimal data fetching
+
+---
+
+## DEA-164: PA-005 - Timeline: Interne Meilensteine rückwärts von RFP-Deadline
+
+**Completed:** 2026-01-22
+**Commit:** a3d4ff4
+
+### Summary:
+
+Implemented timeline calculator that works backwards from RFP deadline to set internal milestones for each deliverable with configurable buffers.
+
+### Implementation Details:
+
+1. **Timeline Calculator Utility** (`lib/pitchdeck/timeline-calculator.ts`):
+   - Pure function with no side effects
+   - Configurable buffers: Review (2 days) + QA (1 day) = 3 total buffer days
+   - Safety margin (10% of available time) to prevent overly tight deadlines
+   - Equal distribution algorithm: divides remaining time evenly across deliverables
+   - Edge case handling: Too close deadlines → all set to work deadline
+   - Helper function `getDeadlineStatus` for visual warnings
+
+2. **Integration with Pitchdeck Creation** (`lib/pitchdeck/actions.ts`):
+   - Extract RFP deadline from `extractedRequirements.deadline`
+   - Support both string and Date formats
+   - Call timeline calculator during deliverable creation
+   - Store calculated deadlines in `internalDeadline` field
+   - Graceful fallback: missing deadline → null (no deadlines set)
+   - Error handling: calculation failures logged, don't block creation
+
+3. **UI Display** (`app/(dashboard)/leads/[id]/pitchdeck/page.tsx`):
+   - Calculate days remaining for each deliverable
+   - Color-coded deadline warnings:
+     * Red: Overdue (negative days) - "X Tage überfällig"
+     * Orange: Due today - "Heute fällig"
+     * Yellow: <3 days - "X Tage verbleibend" (warning threshold)
+     * Gray: Normal - "Fällig: DD.MM.YYYY"
+   - German date formatting with `toLocaleDateString('de-DE')`
+   - Deadline info shown inline with status
+
+### Algorithm Example:
+
+```
+RFP Deadline: 2026-02-15
+Deliverables: 3
+Buffers: 2 days (review) + 1 day (QA) = 3 days total
+
+Step 1: Work deadline = 2026-02-15 - 3 days = 2026-02-12
+Step 2: Available days = Feb 12 - Today = 21 days
+Step 3: Effective days = 21 * 0.9 (safety margin) = 18.9 days
+Step 4: Days per deliverable = 18 / 3 = 6 days
+
+Internal Deadlines:
+- Deliverable 1: Today + 6 days
+- Deliverable 2: Today + 12 days
+- Deliverable 3: Today + 18 days (≤ work deadline)
+```
+
+### Files modified:
+
+- `lib/pitchdeck/timeline-calculator.ts` (new)
+- `lib/pitchdeck/actions.ts`
+- `app/(dashboard)/leads/[id]/pitchdeck/page.tsx`
+
+### Testing:
+
+- TypeScript type checks: ✅ Passed
+- ESLint: ✅ Clean (no errors in new code)
+- Pre-existing linting errors in actions.ts (lines 267-269) are unrelated to this change
+
+### Acceptance Criteria:
+
+✓ Rückwärtsplanung mit konfigurierbaren Standard-Puffern
+✓ Review-Puffer: 2 Tage, finale QA: 1 Tag
+✓ Bei fehlendem RFP-Deadline: Warnung anzeigen (console.warn + graceful fallback)
+
+### Notes:
+
+- Timeline calculator is stateless and testable
+- No database migrations needed (internalDeadline column already exists)
+- Visual warnings implementation (DEA-165) can build on this foundation
+- Timeline UI (DEA-179) will use same deadline data for Gantt chart
+- Algorithm prioritizes realistic deadlines over aggressive scheduling
+
+## DEA-179: PA-020 - Pitchdeck-Tab zeigt Timeline mit Meilensteinen
+
+**Implementiert:**
+- Neue Komponente `components/pitchdeck/pitchdeck-timeline.tsx` erstellt
+- Gantt-Chart mit horizontalen Balken für Deliverables
+- Farbcodierung basierend auf Deadline-Status:
+  - Grün: On Track (>3 Tage bis Deadline)
+  - Gelb: Bald fällig (<3 Tage bis Deadline)
+  - Rot: Überfällig
+- RFP-Deadline als vertikale Linie (lila)
+- "Heute"-Marker als vertikale Linie (blau)
+- Warning-Alert bei fehlender RFP-Deadline
+- Integration in Pitchdeck-Tab (`app/(dashboard)/leads/[id]/pitchdeck/page.tsx`)
+- Wiederverwendung der `getDeadlineStatus`-Funktion aus `lib/pitchdeck/timeline-calculator.ts`
+
+**Acceptance Criteria erfüllt:**
+✅ Gantt-Chart (horizontal Bars)
+✅ Farbcodierung: grün (on track), gelb (bald fällig), rot (überfällig)
+✅ RFP-Deadline als vertikale Linie
+
+**Tests:**
+✅ TypeScript Typecheck erfolgreich

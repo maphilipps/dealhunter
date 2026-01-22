@@ -486,7 +486,6 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
             rfpId={rfp.id}
             blRecommendation={blRecommendation}
             allBusinessUnits={allBusinessUnits}
-            userId={session.user.id}
           />
         </CardContent>
       </Card>

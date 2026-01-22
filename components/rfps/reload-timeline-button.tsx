@@ -3,6 +3,7 @@
 import { RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { reloadTimeline } from '@/lib/rfps/actions';
@@ -19,7 +20,10 @@ export function ReloadTimelineButton({ rfpId }: ReloadTimelineButtonProps) {
     startTransition(async () => {
       const result = await reloadTimeline(rfpId);
       if (result.success) {
+        toast.success('Timeline erfolgreich aktualisiert');
         router.refresh();
+      } else {
+        toast.error(result.error || 'Timeline konnte nicht geladen werden');
       }
     });
   };

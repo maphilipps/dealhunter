@@ -11,7 +11,6 @@ interface RouteRfpParams {
   rfpId: string;
   businessLineId: string;
   reason?: string;
-  userId: string;
   overrideRecommendation: boolean;
 }
 
@@ -28,7 +27,13 @@ interface RouteRfpResult {
  */
 export async function routeRfpToBusinessLine(params: RouteRfpParams): Promise<RouteRfpResult> {
   try {
-    const { rfpId, businessLineId, reason, userId, overrideRecommendation } = params;
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return { success: false, error: 'Nicht authentifiziert' };
+    }
+
+    const { rfpId, businessLineId, reason, overrideRecommendation } = params;
 
     // Get current RFP
     const [rfp] = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);
@@ -38,7 +43,7 @@ export async function routeRfpToBusinessLine(params: RouteRfpParams): Promise<Ro
     }
 
     // Check ownership
-    if (rfp.userId !== userId) {
+    if (rfp.userId !== session.user.id) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 
@@ -64,7 +69,7 @@ export async function routeRfpToBusinessLine(params: RouteRfpParams): Promise<Ro
 
     // Create audit trail
     await db.insert(auditTrails).values({
-      userId,
+      userId: session.user.id,
       action: 'bl_override',
       entityType: 'rfp',
       entityId: rfpId,

@@ -269,7 +269,7 @@
         "Prüfe: Batch Queries für Section-Loading",
         "Prüfe: Confidence Score basiert auf RAG Similarity"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "PRD-022",
@@ -293,7 +293,7 @@
         "Prüfe: Automatischer Fallback bei Exa-Fehler",
         "Prüfe: Source-Tracking in Ergebnissen"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "PRD-024",
@@ -305,7 +305,7 @@
         "Prüfe: Speicherung in rfpEmbeddings",
         "Prüfe: Source URL wird in Metadata gespeichert"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "PRD-025",

@@ -35,7 +35,7 @@ export default async function LeadDashboardLayout({
   return (
     <>
       {children}
-      {/* Right Sidebar: Lead-specific Navigation (appended to parent's SidebarProvider) */}
+      {/* Right Sidebar: Lead-specific Navigation (rendered as sibling to AppSidebar via parent SidebarProvider) */}
       <LeadSidebarRight leadId={id} customerName={lead.customerName} status={lead.status} />
     </>
   );

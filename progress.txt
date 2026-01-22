@@ -5877,3 +5877,54 @@ The LeadSidebarRight component was already fully implemented with all required f
 **Commit:** feat(DEA-141): verify LeadSidebarRight hierarchical navigation implementation
 
 2026-01-22 - DEA-141 - Lead Sidebar Right - Branch: feature-dea-138-lead-detail
+
+---
+
+## DEA-142: Layout - Beide Sidebars permanent offen
+
+**Date:** 2026-01-22
+**Issue:** https://linear.app/adessocms/issue/DEA-142/4-layout-beide-sidebars-permanent-offen
+**Status:** COMPLETE ✅
+
+**Implementation:**
+
+The dual-sidebar layout was already fully implemented with both sidebars permanently open:
+
+1. **Left Sidebar (AppSidebar)** - App-wide navigation, `collapsible="none"`
+2. **Right Sidebar (LeadSidebarRight)** - Lead-specific navigation, `collapsible="none"`
+3. **No Toggle Buttons** - No `SidebarTrigger` in content area
+4. **Proper Layout** - Content area between sidebars via `SidebarInset`
+
+**Architecture:**
+- Parent `(dashboard)/layout.tsx` provides `SidebarProvider` with `AppSidebar`
+- Lead `/leads/[id]/layout.tsx` renders `LeadSidebarRight` as sibling
+- Both sidebars share the same `SidebarProvider` context
+- Content rendered in `SidebarInset` between the two sidebars
+
+**Files:**
+- app/(dashboard)/layout.tsx (SidebarProvider + AppSidebar)
+- app/(dashboard)/leads/[id]/layout.tsx (LeadSidebarRight integration)
+
+**Verification:**
+- Type checks pass: npm run typecheck ✅
+- Both sidebars have `collapsible="none"` ✅
+- No SidebarTrigger in content ✅
+- Proper SidebarProvider structure ✅
+
+**Acceptance Criteria Met:**
+✅ Beide Sidebars permanent sichtbar
+✅ Kein Toggle-Button im Content
+✅ Content-Bereich hat ausreichend Platz
+✅ Keine Layout-Shifts
+
+**Dependencies Satisfied:**
+- ✅ DEA-141 (Lead Sidebar Right) - LeadSidebarRight component ready
+
+**Next Steps:**
+- DEA-144: Web Research Service
+- DEA-145: Deep Scan Orchestrator
+- DEA-146: Section Page Template
+
+**Commit:** feat(DEA-142): verify dual-sidebar layout with both sidebars permanently open
+
+2026-01-22 - DEA-142 - Layout Beide Sidebars - Branch: feature-dea-138-lead-detail

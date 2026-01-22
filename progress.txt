@@ -5472,3 +5472,28 @@ After DEA-123 implemented React.cache() for per-request user data deduplication,
 - Documented alternative patterns considered and why they were not applicable
 - Referenced related issues (DEA-123, DEA-113)
 
+
+## 2026-01-22 - DEA-114: PERF - Bids API In-Memory Search Instead of Database Query
+
+**Issue:** DEA-114 - PERF: Bids API In-Memory Search Instead of Database Query
+**Status:** ✅ Complete (Hybrid Optimization)
+**Priority:** P4 - Low (Database Optimization)
+**Commit:** b52785d
+
+**Implementation:**
+Implemented hybrid approach combining database-level and in-memory filtering:
+- Added 'or' and 'like' imports from drizzle-orm
+- Moved accountName search to database WHERE clause (uses LIKE operator)
+- Kept JSON field search in-memory (customerName, projectDescription)
+- Added documentation explaining hybrid approach
+
+**Why Hybrid Approach:**
+- SQLite doesn't efficiently search JSON fields in WHERE clause
+- accountName is indexed field in accounts table → database search efficient
+- JSON fields require parsing → in-memory filter is practical
+
+**Performance Impact:**
+- Before: Fetch all → Filter all fields in memory (O(n))
+- After: Database filters by accountName → Filter JSON fields in memory (O(m) where m << n)
+- Expected: 50-70% reduction in records needing in-memory filtering
+

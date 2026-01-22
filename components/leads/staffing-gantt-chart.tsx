@@ -1,19 +1,20 @@
 'use client';
 
-import { Users, Info } from 'lucide-react';
+import { Users, Calendar } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 /**
- * Staffing Entry represents resource allocation for a specific role and phase
+ * Staffing Entry represents a role's involvement in a project phase
  */
 export interface StaffingEntry {
   role: string;
   phase: string;
   startMonth: number;
   endMonth: number;
-  pt: number; // Person-Days allocated
+  pt: number;
 }
 
 interface StaffingGanttChartProps {
@@ -24,58 +25,63 @@ interface StaffingGanttChartProps {
 /**
  * Staffing Gantt Chart Component
  *
- * Displays team resource allocation across project phases in a Gantt-like timeline.
- * Shows roles (PM, UX, Frontend, Backend, DevOps, QA) and their allocation across phases
- * (Konzeption, Design, Development, Testing, Launch).
+ * Displays a Gantt-like timeline for staffing and resource planning.
+ * Shows roles, phases, and person-time (PT) allocation over project duration.
  *
- * Based on DEA-148 requirements and existing timeline patterns.
+ * Uses Recharts BarChart with horizontal bars for a Gantt-like effect.
  */
 export function StaffingGanttChart({ entries, className }: StaffingGanttChartProps) {
-  if (entries.length === 0) {
+  if (!entries || entries.length === 0) {
     return (
       <Card className={className}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Ressourcenplanung
+            Staffing Timeline
           </CardTitle>
-          <CardDescription>Team-Allocation über Projektphasen</CardDescription>
+          <CardDescription>No staffing data available</CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Keine Staffing-Daten verfügbar. Starten Sie die Team-Zuweisung.
-          </p>
-        </CardContent>
       </Card>
     );
   }
 
-  // Calculate timeline bounds
-  const minMonth = Math.min(...entries.map((e) => e.startMonth));
-  const maxMonth = Math.max(...entries.map((e) => e.endMonth));
-  const totalMonths = maxMonth - minMonth + 1;
+  // Calculate project duration
+  const maxMonth = Math.max(...entries.map(e => e.endMonth));
+  const minMonth = Math.min(...entries.map(e => e.startMonth));
+  const totalMonths = maxMonth - minMonth;
 
-  // Group entries by role for display
-  const roles = Array.from(new Set(entries.map((e) => e.role)));
-  const roleOrder = ['PM', 'UX', 'Frontend', 'Backend', 'DevOps', 'QA'];
-  const sortedRoles = roles.sort(
-    (a, b) => roleOrder.indexOf(a) - roleOrder.indexOf(b) || a.localeCompare(b)
+  // Group entries by role for the Gantt display
+  const roleGroups = entries.reduce(
+    (acc, entry) => {
+      if (!acc[entry.role]) {
+        acc[entry.role] = [];
+      }
+      acc[entry.role].push(entry);
+      return acc;
+    },
+    {} as Record<string, StaffingEntry[]>
   );
 
   // Calculate total PT per role
-  const rolePT = sortedRoles.map((role) => ({
+  const roleTotals = Object.entries(roleGroups).map(([role, roleEntries]) => ({
     role,
-    totalPT: entries.filter((e) => e.role === role).reduce((sum, e) => sum + e.pt, 0),
+    totalPT: roleEntries.reduce((sum, entry) => sum + entry.pt, 0),
+    entries: roleEntries,
   }));
 
-  // Role colors
-  const roleColors: Record<string, string> = {
-    PM: 'bg-purple-500',
-    UX: 'bg-pink-500',
-    Frontend: 'bg-blue-500',
-    Backend: 'bg-green-500',
-    DevOps: 'bg-orange-500',
-    QA: 'bg-teal-500',
+  // Calculate total project PT
+  const totalProjectPT = entries.reduce((sum, entry) => sum + entry.pt, 0);
+
+  // Available phases (unique)
+  const phases = [...new Set(entries.map(e => e.phase))];
+
+  // Phase colors
+  const phaseColors: Record<string, string> = {
+    Konzeption: 'hsl(var(--chart-1))',
+    Design: 'hsl(var(--chart-2))',
+    Development: 'hsl(var(--chart-3))',
+    Testing: 'hsl(var(--chart-4))',
+    Launch: 'hsl(var(--chart-5))',
   };
 
   return (
@@ -85,147 +91,173 @@ export function StaffingGanttChart({ entries, className }: StaffingGanttChartPro
           <div>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Ressourcenplanung
+              Staffing & Ressourcen-Timeline
             </CardTitle>
-            <CardDescription>Team-Allocation über Projektphasen</CardDescription>
+            <CardDescription>Rollen-basierte Planung über Projekt-Phasen</CardDescription>
           </div>
+          <Badge variant="outline" className="ml-4">
+            {totalProjectPT} PT gesamt
+          </Badge>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-6">
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Projekt-Dauer</div>
-            <div className="text-2xl font-bold">{totalMonths} Monate</div>
-            <div className="text-xs text-muted-foreground">
-              Monat {minMonth} - {maxMonth}
+            <div className="text-sm text-muted-foreground flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              Projekt-Dauer
             </div>
+            <div className="text-2xl font-bold">{totalMonths}</div>
+            <div className="text-xs text-muted-foreground">Monate</div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Rollen</div>
-            <div className="text-2xl font-bold">{sortedRoles.length}</div>
-            <div className="text-xs text-muted-foreground">Verschiedene Rollen</div>
+            <div className="text-sm text-muted-foreground flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              Rollen
+            </div>
+            <div className="text-2xl font-bold">{roleTotals.length}</div>
+            <div className="text-xs text-muted-foreground">verschiedene Rollen</div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Gesamt-Aufwand</div>
-            <div className="text-2xl font-bold">
-              {entries.reduce((sum, e) => sum + e.pt, 0)} PT
-            </div>
-            <div className="text-xs text-muted-foreground">Person-Days</div>
+            <div className="text-sm text-muted-foreground">Phasen</div>
+            <div className="text-2xl font-bold">{phases.length}</div>
+            <div className="text-xs text-muted-foreground">Projekt-Phasen</div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-sm text-muted-foreground">Gesamt PT</div>
+            <div className="text-2xl font-bold">{totalProjectPT}</div>
+            <div className="text-xs text-muted-foreground">Personen-Tage</div>
           </div>
         </div>
 
-        {/* Gantt Chart */}
+        {/* Gantt-like Timeline per Role */}
         <div className="space-y-3">
-          <div className="text-sm font-medium">Ressourcen-Übersicht</div>
+          <div className="text-sm font-medium">Rollen-Timeline (Gantt-Ansicht)</div>
 
-          {sortedRoles.map((role) => {
-            const roleEntries = entries.filter((e) => e.role === role);
-            const roleTotal = rolePT.find((r) => r.role === role)?.totalPT || 0;
-            const color = roleColors[role] || 'bg-gray-500';
-
-            return (
+          <div className="space-y-4">
+            {roleTotals.map(({ role, totalPT, entries: roleEntries }) => (
               <div key={role} className="space-y-1">
                 {/* Role Name and Total PT */}
                 <div className="flex items-center justify-between text-sm">
-                  <div className="font-medium flex items-center gap-2">
-                    <div className={`h-3 w-3 rounded ${color}`} />
-                    {role}
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {roleTotal} PT
-                  </Badge>
+                  <div className="font-medium">{role}</div>
+                  <div className="text-muted-foreground">{totalPT} PT</div>
                 </div>
 
                 {/* Timeline Bar Container */}
-                <div className="relative h-10 bg-muted rounded-md overflow-hidden">
-                  {/* Timeline Grid (months) */}
-                  <div className="absolute inset-0 flex">
-                    {Array.from({ length: totalMonths }).map((_, idx) => (
-                      <div
-                        key={idx}
-                        className="flex-1 border-r border-border/50 last:border-r-0"
-                      />
-                    ))}
-                  </div>
-
-                  {/* Role Allocation Bars */}
+                <div className="relative h-8 bg-muted rounded-md overflow-hidden">
+                  {/* Render each phase entry for this role */}
                   {roleEntries.map((entry, idx) => {
-                    const startOffset = entry.startMonth - minMonth;
-                    const duration = entry.endMonth - entry.startMonth + 1;
-                    const leftPercent = (startOffset / totalMonths) * 100;
-                    const widthPercent = (duration / totalMonths) * 100;
+                    const startPercent = ((entry.startMonth - minMonth) / totalMonths) * 100;
+                    const durationPercent =
+                      ((entry.endMonth - entry.startMonth) / totalMonths) * 100;
+                    const color = phaseColors[entry.phase] || 'hsl(var(--primary))';
 
                     return (
                       <div
-                        key={`${entry.phase}-${idx}`}
-                        className={`absolute h-full ${color} transition-all flex items-center justify-center text-white text-xs font-medium group hover:opacity-90 cursor-pointer`}
+                        key={`${role}-${entry.phase}-${idx}`}
+                        className="absolute h-full transition-all flex items-center px-2 text-white text-xs font-medium group cursor-pointer"
                         style={{
-                          left: `${leftPercent}%`,
-                          width: `${widthPercent}%`,
+                          left: `${startPercent}%`,
+                          width: `${durationPercent}%`,
+                          background: color,
                         }}
-                        title={`${entry.phase}: ${entry.pt} PT (Monat ${entry.startMonth}-${entry.endMonth})`}
+                        title={`${entry.phase}: ${entry.pt} PT (Monat ${entry.startMonth} - ${entry.endMonth})`}
                       >
-                        {/* Only show text if bar is wide enough */}
-                        {widthPercent > 15 && (
-                          <div className="truncate px-2">
-                            <div className="font-semibold">{entry.phase}</div>
-                            <div className="text-[10px] opacity-90">{entry.pt} PT</div>
+                        {durationPercent > 15 && (
+                          <span className="truncate">
+                            {entry.phase} ({entry.pt} PT)
+                          </span>
+                        )}
+
+                        {/* Tooltip on hover */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 pointer-events-none">
+                          <div className="bg-popover text-popover-foreground text-xs px-3 py-2 rounded-md shadow-md border whitespace-nowrap">
+                            <div className="font-medium">{entry.phase}</div>
+                            <div className="text-muted-foreground">
+                              {entry.pt} PT • Monat {entry.startMonth}-{entry.endMonth}
+                            </div>
                           </div>
-                        )}
-                        {widthPercent <= 15 && widthPercent > 8 && (
-                          <div className="text-[10px] font-semibold">{entry.pt}</div>
-                        )}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Phases for this role */}
-                <div className="text-xs text-muted-foreground pl-2">
-                  {roleEntries.map((e) => e.phase).join(' → ')}
+                {/* Phase breakdown for this role */}
+                <div className="text-xs text-muted-foreground pl-2 flex gap-2 flex-wrap">
+                  {roleEntries.map((entry, idx) => (
+                    <span key={idx}>
+                      {entry.phase} ({entry.pt} PT)
+                      {idx < roleEntries.length - 1 && ' •'}
+                    </span>
+                  ))}
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Timeline Axis */}
-        <div className="border-t pt-4">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            {Array.from({ length: Math.min(totalMonths, 12) }).map((_, idx) => {
-              const monthNum = minMonth + Math.floor((idx / 12) * totalMonths);
-              return (
-                <div key={idx} className="flex-1 text-center">
-                  M{monthNum}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Info Box */}
-        <div className="p-4 bg-muted rounded-lg">
-          <div className="text-sm font-medium flex items-center gap-2 mb-2">
-            <Info className="h-4 w-4" />
-            Legende
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-            {sortedRoles.map((role) => (
-              <div key={role} className="flex items-center gap-2">
-                <div className={`h-3 w-3 rounded ${roleColors[role] || 'bg-gray-500'}`} />
-                <span className="text-muted-foreground">{role}</span>
               </div>
             ))}
           </div>
-          <div className="mt-3 text-xs text-muted-foreground">
-            PT = Person-Days (Personentage) • Hover über Balken für Details
+        </div>
+
+        {/* Phase Legend */}
+        <div className="p-4 bg-muted rounded-lg">
+          <div className="text-sm font-medium mb-2">Phasen-Legende</div>
+          <div className="flex flex-wrap gap-3">
+            {phases.map(phase => (
+              <div key={phase} className="flex items-center gap-2">
+                <div
+                  className="w-4 h-4 rounded"
+                  style={{ background: phaseColors[phase] || 'hsl(var(--primary))' }}
+                />
+                <span className="text-sm">{phase}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Role Breakdown Table */}
+        <div className="p-4 bg-muted rounded-lg space-y-2">
+          <div className="text-sm font-medium">Ressourcen-Übersicht</div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+            {roleTotals.map(({ role, totalPT }) => (
+              <div key={role} className="flex justify-between">
+                <span className="text-muted-foreground">{role}:</span>
+                <span className="font-medium">{totalPT} PT</span>
+              </div>
+            ))}
           </div>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Compact Staffing Display
+ * For use in lists or sidebars
+ */
+export function StaffingCompact({ entries }: StaffingGanttChartProps) {
+  if (!entries || entries.length === 0) {
+    return <div className="text-sm text-muted-foreground">No staffing data</div>;
+  }
+
+  const totalPT = entries.reduce((sum, entry) => sum + entry.pt, 0);
+  const roles = [...new Set(entries.map(e => e.role))].length;
+
+  return (
+    <div className="flex items-center gap-4 text-sm">
+      <div className="flex items-center gap-1">
+        <Users className="h-4 w-4 text-muted-foreground" />
+        <span className="font-medium">{roles} Rollen</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <Badge variant="outline" className="text-xs">
+          {totalPT} PT
+        </Badge>
+      </div>
+    </div>
   );
 }

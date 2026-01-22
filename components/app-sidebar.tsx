@@ -203,7 +203,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const projects = allProjects.filter(project => project.roles.includes(user.role));
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar {...props} collapsible="icon">
       <SidebarHeader>
         <TeamSwitcher teams={teams} />
       </SidebarHeader>
@@ -214,7 +214,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       <SidebarFooter>
         <NavUser user={user} />
       </SidebarFooter>
-      <SidebarRail />
+      {props.collapsible !== 'none' && <SidebarRail />}
     </Sidebar>
   );
 }

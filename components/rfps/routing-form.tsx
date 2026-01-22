@@ -29,14 +29,12 @@ interface RoutingFormProps {
   rfpId: string;
   blRecommendation: BLRecommendation | null;
   allBusinessUnits: BusinessUnit[];
-  userId: string;
 }
 
 export function RoutingForm({
   rfpId,
   blRecommendation,
   allBusinessUnits,
-  userId,
 }: RoutingFormProps) {
   const router = useRouter();
   const [selectedBL, setSelectedBL] = useState<string>(blRecommendation?.primaryBusinessLine || '');
@@ -61,7 +59,6 @@ export function RoutingForm({
           rfpId,
           businessLineId: selectedBL,
           reason: reason.trim() || undefined,
-          userId,
           overrideRecommendation: selectedBL !== blRecommendation?.primaryBusinessLine,
         });
 

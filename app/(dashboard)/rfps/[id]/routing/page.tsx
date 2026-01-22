@@ -1,7 +1,8 @@
-import { eq } from 'drizzle-orm';
-import { AlertCircle, AlertTriangle, Calendar, Clock } from 'lucide-react';
-import { redirect } from 'next/navigation';
+import { AlertCircle, AlertTriangle, Calendar, Clock, Sparkles } from 'lucide-react';
+import { notFound, redirect } from 'next/navigation';
 
+import { BLRoutingCard } from '@/components/bids/bl-routing-card';
+import { TenQuestionsCard } from '@/components/bids/ten-questions-card';
 import { RoutingForm } from '@/components/rfps/routing-form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -15,10 +16,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { auth } from '@/lib/auth';
+import { buildQuestionsWithStatus } from '@/lib/bids/ten-questions';
 import { db } from '@/lib/db';
-import { rfps, quickScans, businessUnits } from '@/lib/db/schema';
+import { businessUnits } from '@/lib/db/schema';
+import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
 import { analyzeTimelineRisk, getRiskIcon } from '@/lib/timeline/risk-analyzer';
 import type { ProjectTimeline, RiskAnalysis } from '@/lib/timeline/schema';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 export default async function RoutingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,34 +32,17 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
     redirect('/login');
   }
 
-  // Get RFP
-  const [rfp] = await db.select().from(rfps).where(eq(rfps.id, id)).limit(1);
+  // Get RFP with relations (cached and parallelized)
+  const { rfp, quickScan } = await getCachedRfpWithRelations(id);
 
   if (!rfp) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">RFP nicht gefunden</h1>
-        <p className="text-muted-foreground">Der angeforderte RFP konnte nicht gefunden werden.</p>
-      </div>
-    );
+    notFound();
   }
 
   // Check ownership
   if (rfp.userId !== session.user.id) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Keine Berechtigung</h1>
-        <p className="text-muted-foreground">
-          Sie haben keine Berechtigung, diesen RFP anzuzeigen.
-        </p>
-      </div>
-    );
+    notFound();
   }
-
-  // Get Quick Scan with Timeline
-  const [quickScan] = rfp.quickScanId
-    ? await db.select().from(quickScans).where(eq(quickScans.id, rfp.quickScanId)).limit(1)
-    : [null];
 
   if (!quickScan || !quickScan.timeline) {
     return (
@@ -83,11 +70,11 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
       }
     : null;
 
-  // Get extracted requirements for deadline
+  // Get extracted requirements
   const extractedReqs = rfp.extractedRequirements
-    ? (JSON.parse(rfp.extractedRequirements) as { targetDeadline?: string; deadline?: string })
+    ? (JSON.parse(rfp.extractedRequirements) as ExtractedRequirements)
     : null;
-  const rfpDeadline: string | undefined = extractedReqs?.targetDeadline || extractedReqs?.deadline;
+  const rfpDeadline: string | undefined = extractedReqs?.submissionDeadline;
 
   // Analyze risk
   const riskAnalysis: RiskAnalysis = analyzeTimelineRisk(rfpDeadline, timeline);
@@ -95,13 +82,99 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
   // Get all business units for dropdown
   const allBusinessUnits = await db.select().from(businessUnits);
 
+  // Get 10 Questions from Quick Scan
+  const tenQuestionsData = quickScan.tenQuestions
+    ? JSON.parse(quickScan.tenQuestions)
+    : null;
+  const result = tenQuestionsData
+    ? { questions: tenQuestionsData.questions, summary: { answered: tenQuestionsData.answeredCount, total: tenQuestionsData.totalCount }, projectType: tenQuestionsData.projectType || 'migration' }
+    : buildQuestionsWithStatus(quickScan, extractedReqs);
+
+  const { questions, summary, projectType } = result;
+  const answeredCount = summary.answered;
+  const totalCount = summary.total;
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Timeline & BL-Routing</h1>
-        <p className="text-muted-foreground">AI-generierte Timeline-Schätzung und BL-Empfehlung</p>
+        <h1 className="text-3xl font-bold tracking-tight">BL Routing & Evaluation</h1>
+        <p className="text-muted-foreground">AI-Empfehlung, 10-Fragen-Review und Timeline-Analyse</p>
       </div>
+
+      {/* Quick Scan Summary Card */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-6 w-6 text-blue-600" />
+              <div>
+                <CardTitle className="text-blue-900">Quick Scan Zusammenfassung</CardTitle>
+                <CardDescription className="text-blue-700">
+                  Ergebnisse der Website-Analyse
+                </CardDescription>
+              </div>
+            </div>
+            <Badge variant="secondary" className="bg-blue-100 text-blue-900">
+              Analysiert
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg bg-white p-4">
+              <p className="text-sm font-medium text-muted-foreground mb-2">Empfohlene Business Unit</p>
+              <p className="text-lg font-bold text-foreground">
+                {quickScan.recommendedBusinessUnit || 'Technology & Innovation'}
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant={quickScan.confidence && quickScan.confidence >= 70 ? 'default' : 'destructive'}>
+                  {quickScan.confidence || 0}% Konfidenz
+                </Badge>
+              </div>
+            </div>
+            <div className="rounded-lg bg-white p-4">
+              <p className="text-sm font-medium text-muted-foreground mb-2">BID/NO-BID Bewertung</p>
+              <p className="text-lg font-bold text-foreground">
+                {rfp.status === 'routed' || rfp.status === 'full_scanning' || rfp.status === 'bl_reviewing'
+                  ? 'BID'
+                  : 'Ausstehend'}
+              </p>
+              {quickScan.confidence && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Gesamt-Konfidenz: {quickScan.confidence}%
+                </p>
+              )}
+            </div>
+          </div>
+          {quickScan.reasoning && (
+            <div className="rounded-lg bg-white p-4">
+              <p className="text-sm font-medium text-muted-foreground mb-2">Begründung</p>
+              <p className="text-sm text-foreground">{quickScan.reasoning}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* BL Routing Card */}
+      <BLRoutingCard
+        bidId={rfp.id}
+        recommendation={{
+          primaryBusinessLine: quickScan.recommendedBusinessUnit || 'Technology & Innovation',
+          confidence: quickScan.confidence || 0,
+          reasoning: quickScan.reasoning || '',
+          alternativeBusinessLines: [],
+          requiredSkills: [],
+        }}
+      />
+
+      {/* 10 Questions Card */}
+      <TenQuestionsCard
+        questions={questions}
+        projectType={projectType}
+        answeredCount={answeredCount}
+        totalCount={totalCount}
+      />
 
       {/* Risk Warning Banner */}
       {riskAnalysis.risk === 'HIGH' && (
@@ -206,7 +279,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {timeline.phases.map((phase, idx) => (
+                {timeline.phases.map((phase: { name: string; durationDays: number; startDay: number; endDay: number }, idx: number) => (
                   <TableRow key={idx}>
                     <TableCell className="font-medium">{phase.name}</TableCell>
                     <TableCell className="text-right">{phase.durationDays}</TableCell>
@@ -245,7 +318,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
             <div>
               <h4 className="font-semibold mb-2">Annahmen</h4>
               <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                {timeline.assumptions.map((assumption, idx) => (
+                {timeline.assumptions.map((assumption: string, idx: number) => (
                   <li key={idx}>{assumption}</li>
                 ))}
               </ul>
@@ -257,7 +330,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
             <div>
               <h4 className="font-semibold mb-2">Identifizierte Risiken</h4>
               <div className="space-y-2">
-                {timeline.risks.map((risk, idx) => (
+                {timeline.risks.map((risk: { factor: string; impact: string; likelihood: string }, idx: number) => (
                   <div key={idx} className="flex items-start gap-2 rounded-lg border p-3">
                     <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
                     <div className="flex-1">

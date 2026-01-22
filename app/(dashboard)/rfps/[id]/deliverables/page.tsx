@@ -61,8 +61,9 @@ export default async function DeliverablesPage({ params }: { params: Promise<{ i
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Keine Deliverables gefunden</AlertTitle>
           <AlertDescription>
-            Die Anforderungsextraktion hat keine spezifischen Deliverables identifiziert. Dies
-            könnte bedeuten, dass das Dokument keine expliziten Unterlagen-Anforderungen enthält.
+            Die automatische Extraktion hat keine spezifischen Deliverables mit ausreichender
+            Konfidenz identifiziert. <strong>Bitte manuell prüfen:</strong> Kontrollieren Sie die
+            Originaldokumente auf Anforderungen zu einzureichenden Unterlagen.
           </AlertDescription>
         </Alert>
       )}

@@ -6,7 +6,8 @@ import { z } from 'zod';
  */
 export const extractedRequirementsSchema = z.object({
   // Customer Information
-  customerName: z.string().describe('Name of the customer company or organization'),
+  // CHANGED: Made optional - better empty than "Unbekannt"
+  customerName: z.string().optional().describe('Name of the customer company or organization'),
   industry: z.string().optional().describe('Industry sector of the customer'),
 
   // Company Details (for Quick Scan and Company Intelligence)
@@ -40,7 +41,8 @@ export const extractedRequirementsSchema = z.object({
   websiteUrl: z.string().optional().describe('Customer website URL (deprecated, use websiteUrls)'),
 
   // Project Details
-  projectDescription: z.string().describe('Detailed description of the project requirements'),
+  // CHANGED: Made optional - better empty than placeholder text
+  projectDescription: z.string().optional().describe('Detailed description of the project requirements'),
   projectName: z.string().optional().describe('Name or title of the project if mentioned'),
 
   // Technical Requirements

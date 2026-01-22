@@ -90,17 +90,20 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {LEAD_NAVIGATION_SECTIONS.map(section => {
-                const IconComponent = (Icons as Record<string, Icons.LucideIcon>)[section.icon];
+              {LEAD_NAVIGATION_SECTIONS.map((section, index) => {
+                const IconComponent = (Icons as unknown as Record<string, Icons.LucideIcon>)[
+                  section.icon
+                ];
                 const sectionRoute = `/leads/${leadId}${section.route ? `/${section.route}` : ''}`;
                 const isActive = pathname === sectionRoute;
                 const sectionStatus = getSectionStatus(section.id);
                 const hasSubsections = section.subsections && section.subsections.length > 0;
                 const isOpen = openSections.has(section.id);
+                const isDecisionSection = section.id === 'decision';
 
-                if (hasSubsections && section.collapsed) {
-                  // Render as collapsible with subsections
-                  return (
+                // Content to render (collapsible or single item)
+                const content =
+                  hasSubsections && section.collapsed ? (
                     <Collapsible
                       key={section.id}
                       open={isOpen}
@@ -133,21 +136,29 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
                         </CollapsibleContent>
                       </SidebarMenuItem>
                     </Collapsible>
+                  ) : (
+                    <SidebarMenuItem key={section.id}>
+                      <SidebarMenuButton asChild isActive={isActive}>
+                        <Link href={sectionRoute}>
+                          {IconComponent && <IconComponent className="h-4 w-4" />}
+                          <span>{section.label}</span>
+                          {getStatusBadge(sectionStatus)}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+
+                // Add separator before Decision section
+                if (isDecisionSection) {
+                  return (
+                    <div key={section.id}>
+                      <div className="my-4 border-t border-border" />
+                      {content}
+                    </div>
                   );
                 }
 
-                // Render as single menu item
-                return (
-                  <SidebarMenuItem key={section.id}>
-                    <SidebarMenuButton asChild isActive={isActive}>
-                      <Link href={sectionRoute}>
-                        {IconComponent && <IconComponent className="h-4 w-4" />}
-                        <span>{section.label}</span>
-                        {getStatusBadge(sectionStatus)}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
+                return content;
               })}
             </SidebarMenu>
           </SidebarGroupContent>

@@ -6011,3 +6011,114 @@ Ready for API implementation (PA-023, PA-024)
 
 (Next step)
 
+
+
+---
+
+## DEA-167: PA-008 Deliverables - Status-Änderung implementieren
+
+**Date:** 2026-01-22
+**Status:** ✅ Complete
+
+### What was implemented:
+
+1. **Server action `updateDeliverableStatus`** in `lib/pitchdeck/actions.ts`:
+   - 4 status levels: `open`, `in_progress`, `review`, `done`
+   - Authentication check (all team members can update)
+   - Complete audit trail with previous/new status
+   - Records userId and timestamp for "who changed when"
+   - Automatic cache revalidation for affected pages
+
+2. **Key Features:**
+   - Uses existing Drizzle ORM patterns
+   - Audit log creation with detailed change tracking
+   - Path revalidation for `/leads/[id]` and `/leads/[id]/pitchdeck`
+   - Error handling with user-friendly messages
+
+3. **Audit trail includes:**
+   - Deliverable ID and name
+   - Previous status → New status transition
+   - User ID who made the change
+   - Timestamp via `updatedAt` field
+   - Reason text for clarity
+
+### Files modified:
+
+- `lib/pitchdeck/actions.ts` (added `updateDeliverableStatus` function)
+
+### Testing:
+
+- TypeScript type checks: ✅ Passed
+
+### Acceptance Criteria:
+
+✅ 4 Status-Stufen: open, in_progress, review, done
+✅ Status-Änderung für alle Team-Mitglieder möglich
+✅ Audit-Trail: wer hat wann geändert (userId in audit log)
+
+### Notes:
+
+- This implements the server action only
+- UI component for status selection will be added when pitchdeck page/component is created
+- Follows existing pattern from `confirmPitchdeckTeam`
+
+### Commit:
+
+27a33f4 - feat(DEA-167): implement deliverable status updates
+
+
+
+---
+
+## DEA-177: PA-018 - Pitchdeck-Tab erscheint nur bei BID-Entscheidung
+
+**Issue:** https://linear.app/adessocms/issue/DEA-177
+**Parent Issue:** DEA-155 (Pitchdeck-Assembly nach BID-Entscheidung)
+**Date:** 2026-01-22
+**Status:** ✅ Complete
+
+### What was implemented:
+
+1. **Conditional Pitchdeck tab in Lead navigation**:
+   - Added `blVote` prop to `LeadSidebarRight` component
+   - Pitchdeck section only visible when `blVote === 'BID'`
+   - Hidden for `NO-BID` or null values
+   - Added FileText icon from lucide-react
+
+2. **Updated components:**
+   - `components/leads/lead-sidebar-right.tsx`:
+     - Added `blVote: 'BID' | 'NO-BID' | null` to props interface
+     - Conditional rendering using spread operator for clean code
+     - New "Pitchdeck" section with "Pitchdeck Assembly" link
+   - `app/(dashboard)/leads/[id]/layout.tsx`:
+     - Passed `blVote` from lead data to sidebar component
+
+3. **Navigation structure:**
+   - Pitchdeck section appears between "Matching & Estimation" and "Intelligence"
+   - Links to `/leads/${leadId}/pitchdeck` (page will be created in PA-019)
+   - Maintains clean navigation hierarchy
+
+### Files modified:
+
+- `components/leads/lead-sidebar-right.tsx`
+- `app/(dashboard)/leads/[id]/layout.tsx`
+
+### Testing:
+
+- TypeScript type checks: ✅ Passed
+- All existing tests: ✅ Passed (402 tests)
+
+### Acceptance Criteria:
+
+✅ Conditional Rendering basierend auf blVote
+✅ Tab nur bei 'BID', nicht bei 'NO-BID' oder null
+✅ Navigation bleibt übersichtlich
+
+### Notes:
+
+- Implementation follows Ralph Wiggum Principle - examined existing code first
+- Used existing sidebar patterns for consistency
+- Pitchdeck page itself will be created in subsequent issues (PA-019, PA-020)
+- Clean implementation with TypeScript strict type checking
+- No breaking changes to existing navigation
+

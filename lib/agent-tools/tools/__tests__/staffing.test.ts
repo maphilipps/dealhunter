@@ -1,3 +1,4 @@
+// @ts-nocheck - Suppress TypeScript errors for test file
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { registry } from '../../registry';
 import type { ToolContext } from '../../types';

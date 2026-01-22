@@ -40,7 +40,7 @@
         "Prüfe: Alle anderen Sektionen kommen davor",
         "Prüfe: Visual Separator vor Decision Section"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "PRD-004",

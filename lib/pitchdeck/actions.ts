@@ -480,6 +480,8 @@ export async function confirmPitchdeckTeam(
   }
 }
 
+import { generateCompleteSolution, type SolutionInput } from '@/lib/agents/solution-agent';
+
 export interface UpdateDeliverableStatusResult {
   success: boolean;
   deliverableId?: string;
@@ -596,4 +598,189 @@ export async function updateDeliverableStatus(
     };
   }
 }
+
+export interface GenerateSolutionSketchesResult {
+  success: boolean;
+  deliverableId?: string;
+  error?: string;
+}
+
+/**
+ * DEA-170 (PA-011), DEA-171 (PA-012), DEA-172 (PA-013), DEA-173 (PA-014):
+ * Generate Solution Sketches for Deliverable
+ *
+ * This function:
+ * 1. Generates all solution sketches (outline, draft, talking points, visual ideas)
+ * 2. Stores them in the pitchdeck_deliverables table
+ * 3. Sets generatedAt timestamp
+ * 4. Creates audit trail
+ * 5. Accessible by all team members
+ *
+ * @param deliverableId - The deliverable ID to generate sketches for
+ * @returns Deliverable ID if successful
+ */
+export async function generateSolutionSketches(
+  deliverableId: string
+): Promise<GenerateSolutionSketchesResult> {
+  // Security: Authentication check
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Get deliverable
+    const [deliverable] = await db
+      .select()
+      .from(pitchdeckDeliverables)
+      .where(eq(pitchdeckDeliverables.id, deliverableId))
+      .limit(1);
+
+    if (!deliverable) {
+      return {
+        success: false,
+        error: 'Deliverable nicht gefunden',
+      };
+    }
+
+    // Get pitchdeck
+    const [pitchdeck] = await db
+      .select()
+      .from(pitchdecks)
+      .where(eq(pitchdecks.id, deliverable.pitchdeckId))
+      .limit(1);
+
+    if (!pitchdeck) {
+      return {
+        success: false,
+        error: 'Pitchdeck nicht gefunden',
+      };
+    }
+
+    // Get lead
+    const [lead] = await db.select().from(leads).where(eq(leads.id, pitchdeck.leadId)).limit(1);
+
+    if (!lead) {
+      return {
+        success: false,
+        error: 'Lead nicht gefunden',
+      };
+    }
+
+    // Get RFP for context
+    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1);
+
+    if (!rfp) {
+      return {
+        success: false,
+        error: 'RFP nicht gefunden',
+      };
+    }
+
+    // Parse extracted requirements
+    let customerName: string | undefined;
+    let projectDescription: string | undefined;
+    let requirements: string[] = [];
+
+    if (rfp.extractedRequirements) {
+      try {
+        const extractedReqs = JSON.parse(rfp.extractedRequirements) as Record<string, unknown>;
+        customerName = extractedReqs.customerName as string | undefined;
+        projectDescription = extractedReqs.projectDescription as string | undefined;
+
+        // Extract key requirements
+        if (Array.isArray(extractedReqs.keyRequirements)) {
+          requirements = extractedReqs.keyRequirements as string[];
+        } else if (typeof extractedReqs.requirements === 'string') {
+          requirements = [extractedReqs.requirements];
+        }
+      } catch (error) {
+        console.error('Error parsing RFP extractedRequirements:', error);
+      }
+    }
+
+    // Prepare input for Solution Agent
+    const solutionInput: SolutionInput = {
+      deliverableName: deliverable.deliverableName,
+      rfpId: rfp.id,
+      leadId: lead.id,
+      customerName: customerName || lead.customerName,
+      projectDescription: projectDescription || lead.projectDescription || undefined,
+      requirements,
+    };
+
+    console.error(
+      `[Generate Solution Sketches] Generating for deliverable: ${deliverable.deliverableName}`
+    );
+
+    // Generate all solution sketches
+    const solution = await generateCompleteSolution(solutionInput);
+
+    // Convert to JSON strings for storage
+    const outlineJson = JSON.stringify(solution.outline);
+    const draftText = solution.draft.draft; // Store as plain text/markdown
+    const talkingPointsJson = JSON.stringify(solution.talkingPoints);
+    const visualIdeasJson = JSON.stringify(solution.visualIdeas);
+
+    // Update deliverable with generated sketches
+    const [updatedDeliverable] = await db
+      .update(pitchdeckDeliverables)
+      .set({
+        outline: outlineJson,
+        draft: draftText,
+        talkingPoints: talkingPointsJson,
+        visualIdeas: visualIdeasJson,
+        generatedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(pitchdeckDeliverables.id, deliverableId))
+      .returning();
+
+    // Create audit trail
+    await createAuditLog({
+      action: 'update',
+      entityType: 'rfp',
+      entityId: lead.rfpId,
+      previousValue: JSON.stringify({
+        deliverableId,
+        deliverableName: deliverable.deliverableName,
+        hadSketches: !!deliverable.outline,
+      }),
+      newValue: JSON.stringify({
+        deliverableId,
+        deliverableName: deliverable.deliverableName,
+        generatedAt: updatedDeliverable.generatedAt,
+        outlineSections: solution.outline.outline.length,
+        draftWords: solution.draft.wordCount,
+        talkingPointsTopics: solution.talkingPoints.talkingPoints.length,
+        visualIdeas: solution.visualIdeas.visualIdeas.length,
+      }),
+      reason: 'Lösungs-Skizzen durch Solution Agent generiert',
+    });
+
+    // Revalidate cache
+    revalidatePath(`/leads/${lead.id}/pitchdeck`);
+    revalidatePath(`/leads/${lead.id}`);
+
+    console.error(
+      `[Generate Solution Sketches] Success for deliverable: ${deliverable.deliverableName}`,
+      {
+        outlineSections: solution.outline.outline.length,
+        draftWords: solution.draft.wordCount,
+      }
+    );
+
+    return {
+      success: true,
+      deliverableId: updatedDeliverable.id,
+    };
+  } catch (error) {
+    console.error('Error generating solution sketches:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
+}
+
 

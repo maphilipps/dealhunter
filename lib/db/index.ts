@@ -10,6 +10,9 @@ import * as schema from './schema';
 const dbPath = path.join(process.cwd(), 'local.db');
 const sqlite = new Database(dbPath);
 
+// CRITICAL: Enable FK enforcement for data integrity (DEA-151)
+sqlite.pragma('foreign_keys = ON');
+
 // Load sqlite-vec extension for vector similarity search (DEA-107)
 sqliteVec.load(sqlite);
 

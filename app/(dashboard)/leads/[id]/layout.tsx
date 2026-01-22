@@ -1,13 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
-import { AppSidebar } from '@/components/app-sidebar';
 import { LeadSidebarRight } from '@/components/leads/lead-sidebar-right';
-import { Separator } from '@/components/ui/separator';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, users } from '@/lib/db/schema';
+import { leads } from '@/lib/db/schema';
 
 export default async function LeadDashboardLayout({
   children,
@@ -35,57 +32,11 @@ export default async function LeadDashboardLayout({
     );
   }
 
-  // Get user for main sidebar (same as parent dashboard layout)
-  const dbUser = session.user.id
-    ? await db
-        .select({
-          name: users.name,
-          email: users.email,
-          role: users.role,
-        })
-        .from(users)
-        .where(eq(users.id, session.user.id))
-        .limit(1)
-        .then(r => r[0])
-    : null;
-
-  if (!dbUser) {
-    redirect('/api/auth/clear-session');
-  }
-
-  const user = {
-    name: dbUser.name || session.user?.name || 'Unknown',
-    email: dbUser.email || session.user?.email || '',
-    role: dbUser.role,
-    avatar: '',
-  };
-
   return (
-    <SidebarProvider>
-      {/* Left Sidebar: Main Navigation (preserved from dashboard) */}
-      <AppSidebar user={user} />
-
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <div className="flex flex-1 items-center gap-2">
-            <div>
-              <h2 className="text-sm font-semibold">{lead.customerName}</h2>
-              <p className="text-xs text-muted-foreground">Lead Dashboard</p>
-            </div>
-          </div>
-        </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
-      </SidebarInset>
-
-      {/* Right Sidebar: Lead-specific Navigation */}
-      <LeadSidebarRight
-        leadId={id}
-        customerName={lead.customerName}
-        status={lead.status}
-        blVote={lead.blVote}
-      />
-    </SidebarProvider>
+    <>
+      {children}
+      {/* Right Sidebar: Lead-specific Navigation (rendered as sibling to AppSidebar via parent SidebarProvider) */}
+      <LeadSidebarRight leadId={id} customerName={lead.customerName} status={lead.status} />
+    </>
   );
 }

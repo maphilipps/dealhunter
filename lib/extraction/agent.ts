@@ -108,10 +108,8 @@ const EXTRACTION_FIELDS: FieldDefinition[] = [
       de: 'Auftraggeber Vergabestelle Kunde Unternehmen Organisation Firma Name des Auftraggebers',
       en: 'client customer contracting authority organization company issuing party RFP issued by',
     },
-    extractPrompt: `Extrahiere den Namen des Kunden/Auftraggebers.
-Suche nach: "issued by", "contracting authority", "client", "Auftraggeber", "Vergabestelle".
-Antworte NUR mit dem Namen, nichts anderes.
-Falls nicht gefunden: antworte mit "nicht gefunden".`,
+    extractPrompt:
+      'Extrahiere den Namen des Kunden/Auftraggebers. Antworte NUR mit dem Namen, nichts anderes.',
   },
   {
     name: 'projectName',
@@ -120,10 +118,8 @@ Falls nicht gefunden: antworte mit "nicht gefunden".`,
       de: 'Projekt Name Titel Bezeichnung Vorhaben Ausschreibung Gegenstand',
       en: 'RFP project title name subject matter scope platform website mobile app',
     },
-    extractPrompt: `Extrahiere den Projektnamen oder -titel aus dem RFP-Dokument.
-Suche nach: "RFP", "Request for Proposal", "Project", "Projekt", Dokumenttitel.
-Antworte NUR mit dem Namen, nichts anderes.
-Falls nicht gefunden: antworte mit "nicht gefunden".`,
+    extractPrompt:
+      'Extrahiere den Projektnamen oder -titel aus dem RFP-Dokument. Antworte NUR mit dem Namen, nichts anderes.',
   },
   {
     name: 'projectDescription',
@@ -143,9 +139,8 @@ Falls nicht gefunden: antworte mit "nicht gefunden".`,
       de: 'Branche Industrie Sektor Bereich Markt Geschäftsfeld Tätigkeitsbereich',
       en: 'industry sector market business domain vertical sports finance healthcare retail entertainment media',
     },
-    extractPrompt: `Extrahiere die Branche des Kunden (z.B. Sport, Finanzen, Gesundheit, Entertainment, Medien).
-Antworte NUR mit der Branche.
-Falls nicht gefunden: antworte mit "nicht gefunden".`,
+    extractPrompt:
+      'Extrahiere die Branche des Kunden (z.B. Sport, Finanzen, Gesundheit). Antworte NUR mit der Branche.',
   },
   {
     name: 'technologies',
@@ -154,10 +149,8 @@ Falls nicht gefunden: antworte mit "nicht gefunden".`,
       de: 'Technologie Framework CMS System Plattform Software Tool Integration API',
       en: 'technology stack platform software tools API integration SSO CMS framework cloud AWS Azure GCP',
     },
-    extractPrompt: `Liste alle genannten Technologien, Frameworks, Plattformen und Systeme auf.
-Suche nach: konkreten Produktnamen, Frameworks, Plattformen, APIs, Integrationen.
-Format: kommagetrennte Liste.
-Falls keine Technologien genannt: antworte mit "nicht gefunden".`,
+    extractPrompt:
+      'Liste alle genannten Technologien, Frameworks und Systeme auf. Format: kommagetrennte Liste.',
     isArray: true,
   },
   {
@@ -182,10 +175,8 @@ Falls kein Budget explizit genannt wird, antworte mit:
       de: 'Deadline Abgabe Frist Termin Einreichung bis spätestens Abgabetermin Einreichungsfrist',
       en: 'submission deadline due date response timeline RFP deadline closing date proposal due by',
     },
-    extractPrompt: `Extrahiere das Abgabedatum für die Angebotseinreichung.
-Suche nach: "submission deadline", "due date", "closing date", "Abgabefrist", "Einreichung bis".
-Antworte NUR im Format YYYY-MM-DD.
-Falls nicht gefunden: antworte mit "nicht gefunden".`,
+    extractPrompt:
+      'Extrahiere das Abgabedatum. Antworte NUR im Format YYYY-MM-DD oder "nicht genannt".',
   },
   {
     name: 'timeline',
@@ -194,10 +185,8 @@ Falls nicht gefunden: antworte mit "nicht gefunden".`,
       de: 'Zeitplan Laufzeit Dauer Monate Start Ende Projektplan Meilensteine Phase',
       en: 'timeline schedule duration months project milestones phases delivery go-live launch start end',
     },
-    extractPrompt: `Beschreibe den Zeitplan/die Projektlaufzeit kurz.
-Suche nach: "timeline", "schedule", "phases", "milestones", "go-live", "launch date".
-Z.B. "6 Monate ab Q2 2024" oder "Phase 1: Mai 2026, Phase 2: Q3 2026".
-Falls nicht gefunden: antworte mit "nicht gefunden".`,
+    extractPrompt:
+      'Beschreibe den Zeitplan/die Laufzeit kurz. Z.B. "6 Monate ab Q2 2024" oder "nicht genannt".',
   },
   {
     name: 'contacts',
@@ -269,10 +258,8 @@ Falls keine spezifischen Unterlagen genannt werden: antworte mit []`,
       de: 'Anforderung muss soll Pflicht Kriterium Bedingung funktional nicht-funktional',
       en: 'requirements must shall mandatory functional non-functional scope features criteria specifications',
     },
-    extractPrompt: `Liste die wichtigsten funktionalen und nicht-funktionalen Anforderungen auf.
-Suche nach: "must", "shall", "required", "mandatory", "functional requirements", "technical requirements".
-Format: kommagetrennte Liste der Kernanforderungen.
-Falls keine klaren Anforderungen: antworte mit "nicht gefunden".`,
+    extractPrompt:
+      'Liste die wichtigsten Anforderungen auf. Format: kommagetrennte Liste der Kernanforderungen.',
     isArray: true,
   },
   {

@@ -1036,6 +1036,15 @@ export const leads = sqliteTable(
     moreInfoRequestedAt: integer('more_info_requested_at', { mode: 'timestamp' }),
     moreInfoNotes: text('more_info_notes'),
 
+    // Deep Scan Status (DEA-139)
+    deepScanStatus: text('deep_scan_status', {
+      enum: ['pending', 'running', 'completed', 'failed'],
+    })
+      .notNull()
+      .default('pending'),
+    deepScanStartedAt: integer('deep_scan_started_at', { mode: 'timestamp' }),
+    deepScanCompletedAt: integer('deep_scan_completed_at', { mode: 'timestamp' }),
+
     // Timestamps
     routedAt: integer('routed_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
@@ -1051,6 +1060,39 @@ export const leads = sqliteTable(
 
 export type Lead = typeof leads.$inferSelect;
 export type NewLead = typeof leads.$inferInsert;
+
+export const leadSectionData = sqliteTable(
+  'lead_section_data',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // Lead Reference
+    leadId: text('lead_id')
+      .notNull()
+      .references(() => leads.id, { onDelete: 'cascade' }),
+
+    // Section Identification
+    sectionId: text('section_id').notNull(), // e.g., 'technology', 'website-analysis', 'cms-comparison'
+
+    // Section Content
+    content: text('content').notNull(), // JSON - section-specific data structure
+    confidence: integer('confidence'), // 0-100
+    sources: text('sources'), // JSON - array of source references
+
+    // Timestamps
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  table => ({
+    leadSectionIdx: index('lead_section_data_lead_section_idx').on(table.leadId, table.sectionId),
+    leadIdx: index('lead_section_data_lead_idx').on(table.leadId),
+  })
+);
+
+export type LeadSectionData = typeof leadSectionData.$inferSelect;
+export type NewLeadSectionData = typeof leadSectionData.$inferInsert;
 
 export const websiteAudits = sqliteTable(
   'website_audits',
@@ -1385,11 +1427,19 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   ptEstimations: many(ptEstimations),
   referenceMatches: many(referenceMatches),
   competitorMatches: many(competitorMatches),
+  sectionData: many(leadSectionData),
 }));
 
 export const websiteAuditsRelations = relations(websiteAudits, ({ one }) => ({
   lead: one(leads, {
     fields: [websiteAudits.leadId],
+    references: [leads.id],
+  }),
+}));
+
+export const leadSectionDataRelations = relations(leadSectionData, ({ one }) => ({
+  lead: one(leads, {
+    fields: [leadSectionData.leadId],
     references: [leads.id],
   }),
 }));

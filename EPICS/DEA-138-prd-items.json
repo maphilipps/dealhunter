@@ -53,7 +53,7 @@
         "Prüfe: Ready State für Sektionen mit Daten",
         "Prüfe: Warning/Error State für problematische Sektionen"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "PRD-005",

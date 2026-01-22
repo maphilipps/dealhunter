@@ -4,8 +4,8 @@
  * Tests for session validation and user authentication security.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { redirect } from 'next/navigation';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock dependencies
 vi.mock('next/navigation', () => ({
@@ -34,6 +34,7 @@ vi.mock('@/lib/db/schema', () => ({
 }));
 
 import { requireValidUser, validateUserForAction } from '../session-validator';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { eq } from '@/lib/db/schema';

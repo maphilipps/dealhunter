@@ -9,8 +9,8 @@
  * - generateTimeline (main async function)
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateObject } from 'ai';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock AI SDK
 vi.mock('ai', () => ({

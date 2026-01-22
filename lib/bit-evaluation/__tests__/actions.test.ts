@@ -35,12 +35,6 @@ vi.mock('../agent', () => ({
   runBitEvaluation: vi.fn(),
 }));
 
-import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { getQuickScanResult } from '@/lib/quick-scan/actions';
-import { createAuditLog } from '@/lib/admin/audit-actions';
-import { runBitEvaluation } from '../agent';
-
 import {
   startBitEvaluation,
   retriggerBitEvaluation,
@@ -48,6 +42,12 @@ import {
   confirmLowConfidenceDecision,
   overrideBidDecision,
 } from '../actions';
+import { runBitEvaluation } from '../agent';
+
+import { createAuditLog } from '@/lib/admin/audit-actions';
+import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { getQuickScanResult } from '@/lib/quick-scan/actions';
 
 describe('BIT Evaluation Actions', () => {
   const mockUser = {

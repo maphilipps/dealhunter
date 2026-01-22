@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { safeJsonParse, safeJsonParseOrNull } from '../parse';
 
 describe('Parse Utilities', () => {

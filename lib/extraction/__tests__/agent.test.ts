@@ -29,14 +29,15 @@ vi.mock('@/lib/streaming/event-types', () => ({
   },
 }));
 
-import { openai } from '@/lib/ai/config';
-import { AgentEventType } from '@/lib/streaming/event-types';
 import {
   extractRequirements,
   runExtractionWithStreaming,
   type ExtractionInput,
   type ExtractionOutput,
 } from '../agent';
+
+import { openai } from '@/lib/ai/config';
+import { AgentEventType } from '@/lib/streaming/event-types';
 
 describe('Extraction Agent', () => {
   const mockEmit = vi.fn();

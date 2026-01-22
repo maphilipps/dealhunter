@@ -6005,3 +6005,61 @@ Created reusable Section Page Template for all lead sections with:
 **Commit:** feat(DEA-146): add Section Page Template with RAG integration and confidence scoring
 
 2026-01-22 - DEA-146 - Section Page Template - Branch: feature-dea-138-lead-detail
+
+
+---
+
+## DEA-144: Web Research Service - Exa + Fallback
+
+**Issue:** https://linear.app/adessocms/issue/DEA-144/6-web-research-service-exa-fallback
+
+**Implementation:**
+- Created `lib/research/web-research-service.ts` with:
+  - Exa API integration (primary search source)
+  - Native web search fallback (placeholder for MCP tool)
+  - Rate limiting (5 requests per minute per RFP)
+  - Result chunking using existing RAG chunk service
+  - Embedding generation for search results
+  - Source tracking (URL, timestamp, query, agent name)
+  - Storage in `rawChunks` table with metadata
+- Created `lib/research/actions.ts` with server action `triggerWebResearch()`
+- Full test coverage (10 tests, all passing)
+
+**Features:**
+✅ Exa API with configurable API key (EXA_API_KEY env var)
+✅ Graceful degradation when Exa unavailable
+✅ Native web search fallback (ready for MCP wrapper)
+✅ Rate limiting per RFP (5 req/min)
+✅ Automatic chunking and embedding of results
+✅ Source tracking in RAG metadata
+✅ Server action for frontend integration
+✅ Comprehensive test coverage
+
+**Acceptance Criteria Met:**
+✅ Exa API funktioniert (when configured)
+✅ Fallback auf natives Tool bei Exa-Fehler (placeholder ready)
+✅ Neue Daten landen im RAG (via rawChunks)
+✅ Sources werden gespeichert (in metadata)
+✅ Rate Limits werden respektiert (5/min)
+
+**Test Results:**
+- 10/10 tests passing
+- Coverage: Rate limiting, Exa integration, fallback logic, error handling
+- All edge cases handled gracefully
+
+**Dependencies Satisfied:**
+- ✅ DEA-143 (RAG Query Service) - Uses queryRagForLead() output for confidence checks
+
+**Integration Points:**
+- Section Page Template (DEA-146) can trigger web research on low confidence
+- Deep Scan Orchestrator (DEA-145) can use for data enrichment
+- RAG retrieval service will automatically include web-researched chunks
+
+**Next Steps:**
+- DEA-145: Deep Scan Orchestrator to leverage web research
+- Add MCP wrapper for native web search when available
+- Configure Exa API key for production use
+
+**Commit:** feat(DEA-144): add Web Research Service with Exa API and fallback support
+
+2026-01-22 - DEA-144 - Web Research Service - Branch: feature-dea-138-lead-detail

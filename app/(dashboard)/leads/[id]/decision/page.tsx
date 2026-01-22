@@ -1,12 +1,22 @@
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
-import DecisionForm from './decision-form';
+import { DecisionPageClient } from './decision-page-client';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads } from '@/lib/db/schema';
 
+/**
+ * DEA-152: Decision Page - BID/NO-BID Final Decision
+ *
+ * This page aggregates all section analyses into a final decision page:
+ * - Executive Summary (AI-generated from all agents)
+ * - Pros/Cons categorized by domain (Tech, Commercial, Risk, Legal, etc.)
+ * - Weighted Confidence Score
+ * - Final BID/NO-BID recommendation
+ * - Action buttons with confirmation dialog
+ */
 export default async function DecisionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
@@ -27,5 +37,5 @@ export default async function DecisionPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  return <DecisionForm lead={lead} />;
+  return <DecisionPageClient lead={lead} />;
 }

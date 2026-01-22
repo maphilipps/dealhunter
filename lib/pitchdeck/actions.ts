@@ -456,3 +456,121 @@ export async function confirmPitchdeckTeam(
     };
   }
 }
+
+export interface UpdateDeliverableStatusResult {
+  success: boolean;
+  deliverableId?: string;
+  error?: string;
+}
+
+/**
+ * DEA-167 (PA-008): Update Deliverable Status
+ *
+ * This function:
+ * 1. Updates the status of a pitchdeck deliverable
+ * 2. Records updatedAt timestamp for audit trail
+ * 3. Creates audit log entry
+ * 4. Accessible by all team members
+ *
+ * @param deliverableId - The deliverable ID to update
+ * @param status - The new status ('open' | 'in_progress' | 'review' | 'done')
+ * @returns Deliverable ID if successful
+ */
+export async function updateDeliverableStatus(
+  deliverableId: string,
+  status: 'open' | 'in_progress' | 'review' | 'done'
+): Promise<UpdateDeliverableStatusResult> {
+  // Security: Authentication check
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Get deliverable
+    const [deliverable] = await db
+      .select()
+      .from(pitchdeckDeliverables)
+      .where(eq(pitchdeckDeliverables.id, deliverableId))
+      .limit(1);
+
+    if (!deliverable) {
+      return {
+        success: false,
+        error: 'Deliverable nicht gefunden',
+      };
+    }
+
+    // Store previous status for audit trail
+    const previousStatus = deliverable.status;
+
+    // Update deliverable status
+    const [updatedDeliverable] = await db
+      .update(pitchdeckDeliverables)
+      .set({
+        status,
+        updatedAt: new Date(),
+      })
+      .where(eq(pitchdeckDeliverables.id, deliverableId))
+      .returning();
+
+    // Get pitchdeck for audit trail and revalidation
+    const [pitchdeck] = await db
+      .select()
+      .from(pitchdecks)
+      .where(eq(pitchdecks.id, deliverable.pitchdeckId))
+      .limit(1);
+
+    if (!pitchdeck) {
+      return {
+        success: false,
+        error: 'Pitchdeck nicht gefunden',
+      };
+    }
+
+    // Get lead for audit trail
+    const [lead] = await db.select().from(leads).where(eq(leads.id, pitchdeck.leadId)).limit(1);
+
+    if (!lead) {
+      return {
+        success: false,
+        error: 'Lead nicht gefunden',
+      };
+    }
+
+    // Create audit trail (who changed what and when)
+    await createAuditLog({
+      action: 'update',
+      entityType: 'rfp',
+      entityId: lead.rfpId,
+      previousValue: JSON.stringify({
+        deliverableId,
+        deliverableName: deliverable.deliverableName,
+        status: previousStatus,
+      }),
+      newValue: JSON.stringify({
+        deliverableId,
+        deliverableName: deliverable.deliverableName,
+        status,
+        updatedBy: session.user.id,
+      }),
+      reason: `Deliverable Status-Änderung: ${previousStatus} → ${status}`,
+    });
+
+    // Revalidate cache
+    revalidatePath(`/leads/${lead.id}/pitchdeck`);
+    revalidatePath(`/leads/${lead.id}`);
+
+    return {
+      success: true,
+      deliverableId: updatedDeliverable.id,
+    };
+  } catch (error) {
+    console.error('Error updating deliverable status:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
+}
+

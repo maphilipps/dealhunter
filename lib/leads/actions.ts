@@ -351,6 +351,17 @@ export async function submitBLDecision(input: BLDecisionInput): Promise<BLDecisi
       reason: `BL Decision: ${vote} (Confidence: ${confidenceScore}%) - ${reasoning}`,
     });
 
+    // DEA-160 (PA-001): Trigger Pitchdeck Assembly on BID vote
+    if (vote === 'BID') {
+      const { createPitchdeck } = await import('@/lib/pitchdeck/actions');
+      const pitchdeckResult = await createPitchdeck(leadId);
+
+      if (!pitchdeckResult.success) {
+        console.error('Failed to create pitchdeck:', pitchdeckResult.error);
+        // Log error but don't fail the BL decision - pitchdeck can be created manually if needed
+      }
+    }
+
     // Revalidate cache
     revalidatePath(`/leads/${leadId}`);
     revalidatePath(`/leads/${leadId}/decision`);

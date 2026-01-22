@@ -5852,3 +5852,43 @@ All issues in the Dealhunter Linear team have been completed. This represents a 
 ### Next Steps
 Ready for API implementation (PA-023, PA-024)
 
+
+## DEA-160 (PA-001): Workflow - Pitchdeck-Assembly startet automatisch nach BID
+
+**Date:** 2026-01-22
+**Status:** ✅ Completed
+
+### Implementation
+
+1. **Created `lib/pitchdeck/actions.ts`:**
+   - `createPitchdeck(leadId)` function
+   - Validates lead has BID vote
+   - Creates pitchdeck record with status 'draft'
+   - Parses RFP `extractedRequirements.requiredDeliverables`
+   - Creates deliverable entries automatically
+   - Prevents duplicate pitchdeck creation
+   - Creates audit trail
+
+2. **Updated `lib/leads/actions.ts`:**
+   - `submitBLDecision()` now triggers pitchdeck creation on BID vote
+   - Dynamic import to avoid circular dependencies
+   - Graceful error handling (logs but doesn't fail BL decision)
+
+3. **Validation:**
+   - TypeScript type checking: ✅ Passed
+   - All acceptance criteria met:
+     - ✅ Automatic trigger without manual action
+     - ✅ Pitchdeck only created for BID votes
+     - ✅ Status transition logged in audit trail
+
+### Files Changed
+
+- `lib/pitchdeck/actions.ts` (new file, 143 lines)
+- `lib/leads/actions.ts` (modified submitBLDecision function)
+
+### Next Steps
+
+- DEA-161 (PA-002): Staffing Agent for Team Suggestions
+- DEA-162 (PA-003): BL Team Confirmation
+- DEA-163 (PA-004): Team E-Mail Notifications
+

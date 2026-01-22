@@ -1,14 +1,16 @@
 'use server';
 
-import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { rfps, businessUnits, employees } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+
 import {
   sendTeamNotificationEmails,
   type TeamMemberNotification,
   type TeamNotificationResult,
 } from './email';
+
+import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { rfps, businessUnits, employees } from '@/lib/db/schema';
 import type { ProjectPlan } from '@/lib/project-planning/schema';
 
 export interface SendTeamNotificationsResult {

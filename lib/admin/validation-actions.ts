@@ -1,11 +1,12 @@
 'use server';
 
-import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { references, competencies, competitors } from '@/lib/db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+
+import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { references, competencies, competitors } from '@/lib/db/schema';
 
 // ============================================================================
 // Authorization Middleware

@@ -1,16 +1,23 @@
 'use client';
 
-import { login } from '@/lib/auth/actions';
+import { AlertCircle, Info } from 'lucide-react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useActionState, Suspense } from 'react';
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import Link from 'next/link';
-import { useActionState } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { login } from '@/lib/auth/actions';
 
-export default function LoginPage() {
+function LoginForm() {
   const [state, formAction, isPending] = useActionState(login, null);
+  const searchParams = useSearchParams();
+  const errorParam = searchParams.get('error');
+
+  // Show session expired message if user was redirected due to missing DB user
+  const sessionExpired = errorParam === 'user_not_found';
 
   return (
     <div className="flex min-h-screen items-center justify-center">
@@ -19,6 +26,17 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold">Login</h1>
           <p className="mt-2 text-sm text-muted-foreground">Sign in to your account</p>
         </div>
+
+        {sessionExpired && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Sitzung abgelaufen</AlertTitle>
+            <AlertDescription>
+              Ihre Sitzung ist abgelaufen oder Ihr Benutzerkonto wurde zurückgesetzt. Bitte melden
+              Sie sich erneut an.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {state?.error && (
           <Alert variant="destructive">
@@ -67,5 +85,15 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

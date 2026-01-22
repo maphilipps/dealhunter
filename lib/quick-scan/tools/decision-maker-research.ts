@@ -1,7 +1,9 @@
-import { searchAndContents, getContents } from '@/lib/search/web-search';
-import { generateStructuredOutput } from '@/lib/ai/config';
 import { z } from 'zod';
+
 import type { DecisionMakersResearch, DecisionMaker } from '../schema';
+
+import { generateStructuredOutput } from '@/lib/ai/config';
+import { searchAndContents, getContents } from '@/lib/search/web-search';
 
 // Valid source types for DecisionMaker
 type DecisionMakerSource =

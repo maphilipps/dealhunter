@@ -1,12 +1,13 @@
+import { eq } from 'drizzle-orm';
+import { Plus } from 'lucide-react';
+import Link from 'next/link';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { references } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Plus } from 'lucide-react';
 
 export default async function ReferencesPage() {
   const session = await auth();
@@ -14,7 +15,7 @@ export default async function ReferencesPage() {
   const userReferences = await db
     .select()
     .from(references)
-    .where(eq(references.userId, session!.user!.id))
+    .where(eq(references.userId, session!.user.id))
     .orderBy(references.createdAt);
 
   return (

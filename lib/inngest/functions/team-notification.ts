@@ -1,7 +1,9 @@
+import { eq, and } from 'drizzle-orm';
+
 import { inngest } from '../client';
+
 import { db } from '@/lib/db';
 import { backgroundJobs, rfps, teamAssignments, employees } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
 import { sendTeamNotificationEmails, TeamMemberNotification } from '@/lib/notifications/email';
 
 interface ProjectPlanSummary {

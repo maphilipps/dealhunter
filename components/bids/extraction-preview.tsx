@@ -1,12 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   X,
   Plus,
@@ -20,9 +13,17 @@ import {
   FileText,
   AlertTriangle,
 } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import type { ExtractedRequirements } from '@/lib/extraction/schema';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { suggestWebsiteUrlsAction } from '@/lib/bids/actions';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 interface ExtractionPreviewProps {
   initialData: ExtractedRequirements;
@@ -588,13 +589,37 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
       {/* Budget Range */}
       {data.budgetRange !== undefined && (
         <div className="space-y-2">
-          <Label htmlFor="budgetRange">Budgetbereich</Label>
-          <Input
-            id="budgetRange"
-            value={data.budgetRange || ''}
-            onChange={e => setData({ ...data, budgetRange: e.target.value })}
-            placeholder="z.B. 100.000 - 500.000 EUR"
-          />
+          <Label>Budgetbereich</Label>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="space-y-2">
+                {data.budgetRange.min || data.budgetRange.max ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-semibold">
+                      {data.budgetRange.min
+                        ? new Intl.NumberFormat('de-DE').format(data.budgetRange.min)
+                        : '0'}{' '}
+                      -{' '}
+                      {data.budgetRange.max
+                        ? new Intl.NumberFormat('de-DE').format(data.budgetRange.max)
+                        : '∞'}{' '}
+                      {data.budgetRange.currency}
+                    </span>
+                    <Badge variant={data.budgetRange.confidence >= 70 ? 'default' : 'secondary'}>
+                      {data.budgetRange.confidence}% sicher
+                    </Badge>
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Kein Budget angegeben</span>
+                )}
+                {data.budgetRange.rawText && (
+                  <p className="text-sm text-muted-foreground">
+                    Originaltext: "{data.budgetRange.rawText}"
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -702,7 +727,7 @@ function SubmissionDeadlineCard({
                 <p
                   className={`text-3xl font-bold ${isExpired ? 'text-red-700' : isUrgent ? 'text-orange-700' : 'text-blue-700'}`}
                 >
-                  {isExpired ? Math.abs(daysUntilDeadline!) : daysUntilDeadline}
+                  {isExpired ? Math.abs(daysUntilDeadline) : daysUntilDeadline}
                 </p>
                 <p
                   className={`text-xs font-medium ${isExpired ? 'text-red-600' : isUrgent ? 'text-orange-600' : 'text-blue-600'}`}
@@ -801,9 +826,12 @@ function SubmissionDeadlineCard({
 type Deliverable = {
   name: string;
   description?: string;
+  deadline?: string;
+  deadlineTime?: string;
   format?: string;
   copies?: number;
   mandatory: boolean;
+  confidence: number;
 };
 
 /**
@@ -825,6 +853,7 @@ function RequiredDeliverablesCard({
         {
           name: newDeliverable.trim(),
           mandatory: true,
+          confidence: 100,
         },
       ]);
       setNewDeliverable('');
@@ -961,7 +990,9 @@ function RequiredDeliverablesCard({
               variant="outline"
               size="sm"
               className="text-xs"
-              onClick={() => onChange([...deliverables, { name: suggestion, mandatory: true }])}
+              onClick={() =>
+                onChange([...deliverables, { name: suggestion, mandatory: true, confidence: 80 }])
+              }
             >
               <Plus className="h-3 w-3 mr-1" />
               {suggestion}

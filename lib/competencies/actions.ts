@@ -1,10 +1,11 @@
 'use server';
 
+import { eq, desc } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { competencies } from '@/lib/db/schema';
-import { revalidatePath } from 'next/cache';
-import { eq, desc } from 'drizzle-orm';
 
 export async function createCompetency(data: {
   name: string;

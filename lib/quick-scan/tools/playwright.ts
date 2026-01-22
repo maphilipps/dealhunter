@@ -1,7 +1,8 @@
-import { chromium, type Browser, type Page } from 'playwright';
-import AxeBuilder from '@axe-core/playwright';
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
+
+import AxeBuilder from '@axe-core/playwright';
+import { chromium, type Browser, type Page } from 'playwright';
 
 /**
  * Common cookie consent selectors for auto-dismissal
@@ -62,6 +63,7 @@ async function dismissCookieBanner(page: Page): Promise<boolean> {
         await button.click();
         // Wait for banner to disappear
         await page.waitForTimeout(500);
+        // eslint-disable-next-line no-console
         console.log(`Cookie banner dismissed using selector: ${selector}`);
         return true;
       }
@@ -71,6 +73,29 @@ async function dismissCookieBanner(page: Page): Promise<boolean> {
   }
 
   return false;
+}
+
+/**
+ * Rate a Core Web Vital metric based on Google's thresholds
+ */
+function rateWebVital(
+  metric: 'lcp' | 'cls' | 'fid' | 'inp' | 'ttfb',
+  value: number | undefined
+): 'good' | 'needs-improvement' | 'poor' | null {
+  if (value === undefined) return null;
+
+  const thresholds = {
+    lcp: { good: 2500, poor: 4000 }, // milliseconds
+    cls: { good: 0.1, poor: 0.25 }, // dimensionless
+    fid: { good: 100, poor: 300 }, // milliseconds (deprecated)
+    inp: { good: 200, poor: 500 }, // milliseconds
+    ttfb: { good: 800, poor: 1800 }, // milliseconds
+  };
+
+  const threshold = thresholds[metric];
+  if (value <= threshold.good) return 'good';
+  if (value <= threshold.poor) return 'needs-improvement';
+  return 'poor';
 }
 
 export interface PlaywrightAuditResult {
@@ -96,6 +121,14 @@ export interface PlaywrightAuditResult {
     loadTime: number;
     domContentLoaded: number;
     firstPaint?: number;
+    // Core Web Vitals
+    lcp?: number; // Largest Contentful Paint
+    fid?: number; // First Input Delay (deprecated, use INP)
+    cls?: number; // Cumulative Layout Shift
+    ttfb?: number; // Time to First Byte
+    inp?: number; // Interaction to Next Paint (new FID replacement)
+    fcp?: number; // First Contentful Paint
+    // Resource counts
     resourceCount: {
       scripts: number;
       stylesheets: number;
@@ -104,6 +137,14 @@ export interface PlaywrightAuditResult {
       total: number;
     };
     totalSize: number;
+    // Web Vitals ratings
+    ratings?: {
+      lcp: 'good' | 'needs-improvement' | 'poor' | null;
+      cls: 'good' | 'needs-improvement' | 'poor' | null;
+      fid: 'good' | 'needs-improvement' | 'poor' | null;
+      inp: 'good' | 'needs-improvement' | 'poor' | null;
+      ttfb: 'good' | 'needs-improvement' | 'poor' | null;
+    };
   };
   navigation: {
     mainNav: string[];
@@ -224,14 +265,27 @@ export async function runPlaywrightAudit(
       loadTime: 0,
       domContentLoaded: 0,
       firstPaint: undefined as number | undefined,
+      lcp: undefined as number | undefined,
+      fid: undefined as number | undefined,
+      cls: undefined as number | undefined,
+      ttfb: undefined as number | undefined,
+      inp: undefined as number | undefined,
+      fcp: undefined as number | undefined,
       resourceCount: { scripts: 0, stylesheets: 0, images: 0, fonts: 0, total: 0 },
       totalSize: 0,
+      ratings: {
+        lcp: null as 'good' | 'needs-improvement' | 'poor' | null,
+        cls: null as 'good' | 'needs-improvement' | 'poor' | null,
+        fid: null as 'good' | 'needs-improvement' | 'poor' | null,
+        inp: null as 'good' | 'needs-improvement' | 'poor' | null,
+        ttfb: null as 'good' | 'needs-improvement' | 'poor' | null,
+      },
     };
 
     // Track resources
     const resources: Array<{ type: string; size: number }> = [];
 
-    page.on('response', async response => {
+    page.on('response', response => {
       try {
         const headers = response.headers();
         const contentType = headers['content-type'] || '';
@@ -260,7 +314,7 @@ export async function runPlaywrightAudit(
     // Try to dismiss cookie consent banner
     await dismissCookieBanner(page);
 
-    // Get performance timing from browser using modern Navigation Timing API
+    // Get Core Web Vitals and performance timing from browser
     const timing = await page.evaluate(() => {
       const navEntries = performance.getEntriesByType(
         'navigation'
@@ -268,14 +322,52 @@ export async function runPlaywrightAudit(
       const navEntry = navEntries[0];
       const paintEntries = performance.getEntriesByType('paint');
       const firstPaint = paintEntries.find(e => e.name === 'first-paint')?.startTime;
+      const firstContentfulPaint = paintEntries.find(
+        e => e.name === 'first-contentful-paint'
+      )?.startTime;
+
+      // Get LCP from PerformanceObserver (if available)
+      let lcp: number | undefined;
+      const lcpEntries = performance.getEntriesByType('largest-contentful-paint');
+      if (lcpEntries.length > 0) {
+        lcp = lcpEntries[lcpEntries.length - 1].startTime;
+      }
+
+      // Get CLS (Cumulative Layout Shift)
+      let cls = 0;
+      const layoutShiftEntries = performance.getEntriesByType('layout-shift');
+      for (const entry of layoutShiftEntries) {
+        // @ts-expect-error - hadRecentInput is part of LayoutShift but not fully typed
+        if (!entry.hadRecentInput) {
+          // @ts-expect-error - value is part of LayoutShift but not fully typed
+          cls += entry.value || 0;
+        }
+      }
+
+      // Calculate TTFB (Time to First Byte)
+      const ttfb = navEntry ? navEntry.responseStart - navEntry.requestStart : undefined;
 
       return {
         domContentLoaded: navEntry ? navEntry.domContentLoadedEventEnd - navEntry.startTime : 0,
         firstPaint,
+        fcp: firstContentfulPaint,
+        lcp,
+        cls: cls > 0 ? cls : undefined,
+        ttfb,
       };
     });
+
     performanceMetrics.domContentLoaded = timing.domContentLoaded;
     performanceMetrics.firstPaint = timing.firstPaint;
+    performanceMetrics.fcp = timing.fcp;
+    performanceMetrics.lcp = timing.lcp;
+    performanceMetrics.cls = timing.cls;
+    performanceMetrics.ttfb = timing.ttfb;
+
+    // Rate Core Web Vitals
+    performanceMetrics.ratings.lcp = rateWebVital('lcp', timing.lcp);
+    performanceMetrics.ratings.cls = rateWebVital('cls', timing.cls);
+    performanceMetrics.ratings.ttfb = rateWebVital('ttfb', timing.ttfb);
 
     // Calculate resource counts
     for (const resource of resources) {
@@ -609,13 +701,13 @@ export interface HttpxTechResult {
  * Run httpx-based tech detection (stub - returns minimal result)
  * TODO: Implement actual httpx integration
  */
-export async function runHttpxTechDetection(url: string): Promise<HttpxTechResult> {
+export function runHttpxTechDetection(_url: string): Promise<HttpxTechResult> {
   // Stub implementation - returns empty result
-  return {
+  return Promise.resolve({
     technologies: [],
     headers: {},
     statusCode: 200,
-  };
+  });
 }
 
 // ========================================
@@ -648,16 +740,16 @@ export interface EnhancedTechStackResult {
  * Enhanced tech stack detection combining multiple sources
  * TODO: Implement actual detection logic
  */
-export async function detectEnhancedTechStack(url: string): Promise<EnhancedTechStackResult> {
+export function detectEnhancedTechStack(_url: string): Promise<EnhancedTechStackResult> {
   // Stub implementation - returns empty result
   // Actual implementation would combine:
   // - Wappalyzer signatures
   // - HTTP headers analysis
   // - HTML/JS analysis
   // - Cookie analysis
-  return {
+  return Promise.resolve({
     analytics: [],
     marketing: [],
     libraries: [],
-  };
+  });
 }

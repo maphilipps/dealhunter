@@ -1,8 +1,9 @@
+import { eq, and, desc, or, like } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, accounts } from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,15 +23,28 @@ export async function GET(request: NextRequest) {
     const conditions = [];
 
     if (status && status !== 'all') {
-      conditions.push(eq(rfps.status, status as any));
+      conditions.push(eq(rfps.status, status as (typeof rfps.status.enumValues)[0]));
     }
 
     if (source && source !== 'all') {
-      conditions.push(eq(rfps.source, source as any));
+      conditions.push(eq(rfps.source, source as (typeof rfps.source.enumValues)[0]));
     }
 
     if (accountId) {
       conditions.push(eq(rfps.accountId, accountId));
+    }
+
+    // Add account name search to database query (DEA-114)
+    // Note: JSON field search (customerName, projectDescription) still done in-memory
+    // since SQLite doesn't efficiently search JSON fields in WHERE clause
+    if (search && search.trim() !== '') {
+      const searchTerm = `%${search.trim()}%`;
+      conditions.push(
+        or(
+          like(accounts.name, searchTerm)
+          // JSON fields (customerName, projectDescription) filtered in-memory below
+        )
+      );
     }
 
     // Execute query with filters
@@ -57,17 +71,20 @@ export async function GET(request: NextRequest) {
 
     let results = await query.orderBy(desc(rfps.createdAt));
 
-    // Apply search filter in memory (since it can search across JSON fields)
+    // Apply additional search filter in-memory for JSON fields (DEA-114)
+    // Note: accountName search is already done at database level above
     if (search && search.trim() !== '') {
       const searchLower = search.toLowerCase().trim();
       results = results.filter(item => {
-        const accountName = item.accountName || '';
         let customerName = '';
         let projectDescription = '';
 
         if (item.extractedRequirements) {
           try {
-            const parsed = JSON.parse(item.extractedRequirements);
+            const parsed = JSON.parse(item.extractedRequirements) as {
+              customerName?: string;
+              projectDescription?: string;
+            };
             customerName = parsed.customerName || '';
             projectDescription = parsed.projectDescription || '';
           } catch {
@@ -75,8 +92,8 @@ export async function GET(request: NextRequest) {
           }
         }
 
+        // Only search JSON fields (accountName already filtered by DB)
         return (
-          accountName.toLowerCase().includes(searchLower) ||
           customerName.toLowerCase().includes(searchLower) ||
           projectDescription.toLowerCase().includes(searchLower)
         );

@@ -1,9 +1,10 @@
+import { eq, and, like, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { references, competencies, competitors } from '@/lib/db/schema';
-import { eq, and, like, sql } from 'drizzle-orm';
-import { z } from 'zod';
 
 // ============================================================================
 // Auto-Matching API for Bid Evaluation
@@ -139,7 +140,7 @@ async function matchReferences(params: {
     conditions.push(eq(references.industry, industry));
   }
 
-  let allReferences = await db
+  const allReferences = await db
     .select()
     .from(references)
     .where(and(...conditions))

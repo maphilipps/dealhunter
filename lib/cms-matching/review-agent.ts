@@ -6,8 +6,9 @@
  * bei Bedarf gezielte Nachrecherche durchzuführen.
  */
 
-import { generateStructuredOutput } from '@/lib/ai/config';
 import { z } from 'zod';
+
+import { generateStructuredOutput } from '@/lib/ai/config';
 import { searchAndContents } from '@/lib/search/web-search';
 
 // Schema für ein einzelnes Feature-Review
@@ -150,7 +151,7 @@ export async function reviewFeatureResearch(input: ReviewInput): Promise<ReviewR
     const corrections: string[] = [];
     const sources: string[] = [...(data.sourceUrls || [])];
 
-    let reviewedScore = data.score;
+    const reviewedScore = data.score;
     let reviewedSupportType = (data.supportType ||
       'unknown') as FeatureReview['reviewedSupportType'];
     let reviewedModuleName = data.moduleName;

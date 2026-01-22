@@ -1,6 +1,7 @@
 // Server-Sent Events (SSE) stream utilities
 
-import type { AgentEvent, AgentEventType } from './event-types';
+import { AgentEventType } from './event-types';
+import type { AgentEvent } from './event-types';
 
 export type EventEmitter = (event: Omit<AgentEvent, 'id' | 'timestamp'>) => void;
 
@@ -55,11 +56,11 @@ export function createAgentEventStream(
         await handler(emit);
 
         // Send final completion event
-        emit({ type: 'complete' as AgentEventType });
+        emit({ type: AgentEventType.COMPLETE });
       } catch (error) {
         // Send error event
         emit({
-          type: 'error' as AgentEventType,
+          type: AgentEventType.ERROR,
           data: {
             message: error instanceof Error ? error.message : 'Unknown error',
             code: 'STREAM_ERROR',

@@ -1,9 +1,10 @@
 'use client';
 
+import { TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ConfidenceIndicatorProps {

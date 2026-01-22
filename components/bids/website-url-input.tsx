@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, Globe, Sparkles, Plus, X, ExternalLink, Check } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { suggestWebsiteUrlsAction } from '@/lib/bids/actions';
 
 interface WebsiteUrl {
@@ -59,7 +60,7 @@ export function WebsiteUrlInput({
       if (result.success && result.suggestions.length > 0) {
         const newSuggestions: WebsiteUrl[] = result.suggestions.map(s => ({
           url: s.url,
-          type: s.type as WebsiteUrl['type'],
+          type: s.type,
           description: s.description,
           confidence: s.confidence,
           selected: false,

@@ -5,11 +5,12 @@
  * If not, redirects to login to force re-authentication.
  */
 
+import { eq } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { redirect } from 'next/navigation';
 
 export async function requireValidUser() {
   const session = await auth();

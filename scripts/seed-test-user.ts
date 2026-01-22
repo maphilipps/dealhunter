@@ -1,6 +1,8 @@
+import { hash } from 'bcryptjs';
+import { eq } from 'drizzle-orm';
+
 import { db } from '../lib/db';
 import { users } from '../lib/db/schema';
-import { hash } from 'bcryptjs';
 
 async function seedTestUser() {
   console.log('🌱 Seeding test user...');
@@ -12,11 +14,7 @@ async function seedTestUser() {
   const hashedPassword = await hash(testPassword, 10);
 
   // Check if user already exists
-  const existingUser = await db
-    .select()
-    .from(users)
-    .where((users) => users.email === testEmail)
-    .get();
+  const [existingUser] = await db.select().from(users).where(eq(users.email, testEmail)).limit(1);
 
   if (existingUser) {
     console.log('✓ Test user already exists:', testEmail);
@@ -42,7 +40,7 @@ seedTestUser()
     console.log('✅ Seeding complete');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Error seeding test user:', error);
     process.exit(1);
   });

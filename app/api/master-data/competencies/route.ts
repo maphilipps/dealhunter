@@ -1,9 +1,10 @@
+import { eq, and, or, like, desc, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { competencies, type NewCompetency } from '@/lib/db/schema';
-import { eq, and, or, like, desc, sql } from 'drizzle-orm';
-import { z } from 'zod';
 
 // ============================================================================
 // Zod Schemas

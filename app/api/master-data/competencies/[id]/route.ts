@@ -1,9 +1,10 @@
+import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { competencies } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { z } from 'zod';
 
 const idSchema = z.object({
   id: z.string().min(1).max(50),

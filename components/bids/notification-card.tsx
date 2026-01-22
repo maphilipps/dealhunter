@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, Send, CheckCircle2, XCircle, Mail, Clock, AlertCircle } from 'lucide-react';
+import { useState, useTransition } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { sendTeamNotifications } from '@/lib/notifications/actions';
 import type { TeamNotificationResult } from '@/lib/notifications/email';
 

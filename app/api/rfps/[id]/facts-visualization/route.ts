@@ -1,10 +1,11 @@
+import { eq, and } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, quickScans } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { generateFactsVisualizationWithAI } from '@/lib/json-render/visualization-agent';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
+import { generateFactsVisualizationWithAI } from '@/lib/json-render/visualization-agent';
 
 export const runtime = 'nodejs';
 

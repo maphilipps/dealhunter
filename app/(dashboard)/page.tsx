@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import Link from 'next/link';
-import { QuickStats } from '@/components/bids/quick-stats';
-import { FilterBar } from '@/components/bids/filter-bar';
+import { useState } from 'react';
+import useSWR from 'swr';
+
 import { AccountGroupedList } from '@/components/bids/account-grouped-list';
+import { FilterBar } from '@/components/bids/filter-bar';
 import { PipelineOverview } from '@/components/bids/pipeline-overview';
+import { QuickStats } from '@/components/bids/quick-stats';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface BidOpportunity {
@@ -30,46 +32,55 @@ interface Stats {
   pendingEvaluations: number;
 }
 
-export default function DashboardPage() {
-  const [opportunities, setOpportunities] = useState<BidOpportunity[]>([]);
-  const [stats, setStats] = useState<Stats>({
-    totalBids: 0,
-    activeBids: 0,
-    bidRate: 0,
-    pendingEvaluations: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
+interface DashboardData {
+  opportunities: BidOpportunity[];
+  stats: Stats;
+}
 
+// Fetcher function for SWR
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+export default function DashboardPage() {
   // Filter state
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch data
-  useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      try {
-        const params = new URLSearchParams();
-        if (statusFilter !== 'all') params.set('status', statusFilter);
-        if (sourceFilter !== 'all') params.set('source', sourceFilter);
-        if (searchQuery.trim()) params.set('search', searchQuery);
+  // Build cache key from filters
+  const params = new URLSearchParams();
+  if (statusFilter !== 'all') params.set('status', statusFilter);
+  if (sourceFilter !== 'all') params.set('source', sourceFilter);
+  if (searchQuery.trim()) params.set('search', searchQuery);
+  const cacheKey = `/api/bids?${params.toString()}`;
 
-        const response = await fetch(`/api/bids?${params.toString()}`);
-        if (!response.ok) throw new Error('Failed to fetch bids');
-
-        const data = await response.json();
-        setOpportunities(data.opportunities);
-        setStats(data.stats);
-      } catch (error) {
-        console.error('Error fetching bids:', error);
-      } finally {
-        setIsLoading(false);
-      }
+  // Fetch data with SWR
+  const { data, error, isLoading } = useSWR<DashboardData>(
+    cacheKey,
+    fetcher,
+    {
+      dedupingInterval: 2000, // Deduplicate requests within 2 seconds
+      refreshInterval: 0, // Don't auto-refresh
+      revalidateOnFocus: false, // Don't refresh on window focus
+      revalidateOnReconnect: false, // Don't refresh on reconnect
     }
+  );
 
-    fetchData();
-  }, [statusFilter, sourceFilter, searchQuery]);
+  // Handle error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-red-500">Error loading dashboard: {error.message}</p>
+      </div>
+    );
+  }
+
+  const opportunities = data?.opportunities || [];
+  const stats = data?.stats || {
+    totalBids: 0,
+    activeBids: 0,
+    bidRate: 0,
+    pendingEvaluations: 0,
+  };
 
   return (
     <div className="space-y-6">

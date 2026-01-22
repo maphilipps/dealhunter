@@ -1,10 +1,11 @@
 'use server';
 
+import { eq } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { employees, businessUnits, competencies } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
 
 export async function getEmployees() {
   try {

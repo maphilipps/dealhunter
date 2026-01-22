@@ -1,7 +1,8 @@
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Badge } from '@/components/ui/badge';
 import { ChevronDown, FileText, Building2, Code } from 'lucide-react';
 import { useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Source {
   type: 'reference' | 'competitor' | 'technology';

@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
+
 import { technologyResearchResultSchema, type TechnologyResearchResult } from './schema';
+
 import { createIntelligentTools, KNOWN_GITHUB_REPOS } from '@/lib/agent-tools/intelligent-tools';
 
 // Initialize OpenAI client with adesso AI Hub
@@ -98,7 +100,7 @@ export async function runTechnologyResearch(
       try {
         // GitHub API: Prüfe bekannte Repos
         const techLower = input.name.toLowerCase();
-        const knownRepoUrl = KNOWN_GITHUB_REPOS[techLower as keyof typeof KNOWN_GITHUB_REPOS];
+        const knownRepoUrl = KNOWN_GITHUB_REPOS[techLower];
 
         if (knownRepoUrl) {
           logActivity('GitHub Research', `Fetching data from ${knownRepoUrl}`);

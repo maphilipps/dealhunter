@@ -25,6 +25,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* DNS prefetch and preconnect for external API domain */}
+        <link rel="dns-prefetch" href="https://adesso-ai-hub.3asabc.de" />
+        <link rel="preconnect" href="https://adesso-ai-hub.3asabc.de" />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
         <Toaster />

@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { ThumbsUp, ThumbsDown, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { toast } from 'sonner';
+
+import { BLRoutingModal } from './bl-routing-modal';
+
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -14,8 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ThumbsUp, ThumbsDown, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
 import { makeBitDecision } from '@/lib/bids/actions';
 
 interface BitDecisionActionsProps {
@@ -24,6 +27,13 @@ interface BitDecisionActionsProps {
   totalQuestionsCount: number;
   overallScore?: number;
   recommendation?: 'strong_bid' | 'conditional_bid' | 'no_bid' | 'needs_review';
+  blRecommendation?: {
+    primaryBusinessLine: string;
+    confidence: number;
+    reasoning: string;
+    alternativeBusinessLines?: string[];
+  };
+  isIbexa?: boolean;
 }
 
 export function BitDecisionActions({
@@ -32,10 +42,13 @@ export function BitDecisionActions({
   totalQuestionsCount,
   overallScore,
   recommendation,
+  blRecommendation,
+  isIbexa = false,
 }: BitDecisionActionsProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showNoBitDialog, setShowNoBitDialog] = useState(false);
+  const [showBLRoutingModal, setShowBLRoutingModal] = useState(false);
   const [noBitReason, setNoBitReason] = useState('');
 
   const completionPercentage = Math.round((answeredQuestionsCount / totalQuestionsCount) * 100);
@@ -48,14 +61,16 @@ export function BitDecisionActions({
       const result = await makeBitDecision(bidId, 'bid');
 
       if (result.success) {
-        toast.success('BIT-Entscheidung gespeichert! Weiterleitung an BL...');
-        router.refresh();
+        toast.success('BIT-Entscheidung gespeichert!');
+        setIsSubmitting(false);
+        // Open BL-Routing Modal instead of direct routing
+        setShowBLRoutingModal(true);
       } else {
         toast.error(result.error || 'Fehler bei der BIT-Entscheidung');
+        setIsSubmitting(false);
       }
     } catch {
       toast.error('Ein Fehler ist aufgetreten');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -74,7 +89,8 @@ export function BitDecisionActions({
       if (result.success) {
         toast.success('NO BIT-Entscheidung gespeichert. Opportunity archiviert.');
         setShowNoBitDialog(false);
-        router.refresh();
+        // Redirect to dashboard after NO-BID
+        router.push('/dashboard');
       } else {
         toast.error(result.error || 'Fehler bei der NO BIT-Entscheidung');
       }
@@ -167,7 +183,7 @@ export function BitDecisionActions({
             <Button
               size="lg"
               className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-              onClick={handleBitDecision}
+              onClick={() => void handleBitDecision()}
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -213,7 +229,7 @@ export function BitDecisionActions({
             </Button>
             <Button
               variant="destructive"
-              onClick={handleNoBitDecision}
+              onClick={() => void handleNoBitDecision()}
               disabled={isSubmitting || !noBitReason.trim()}
             >
               {isSubmitting ? (
@@ -226,6 +242,17 @@ export function BitDecisionActions({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* BL-Routing Modal */}
+      {blRecommendation && (
+        <BLRoutingModal
+          bidId={bidId}
+          open={showBLRoutingModal}
+          onOpenChange={setShowBLRoutingModal}
+          recommendation={blRecommendation}
+          isIbexa={isIbexa}
+        />
+      )}
     </>
   );
 }

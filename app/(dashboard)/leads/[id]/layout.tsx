@@ -21,17 +21,7 @@ export default async function LeadDashboardLayout({
   }
 
   // Get lead for right sidebar metadata
-  const leadResult = await db
-    .select({
-      id: leads.id,
-      customerName: leads.customer_name,
-      status: leads.status,
-    })
-    .from(leads)
-    .where(eq(leads.id, id))
-    .limit(1);
-
-  const lead = leadResult[0];
+  const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
 
   if (!lead) {
     return (

@@ -42,9 +42,6 @@ import type { BidOpportunity, QuickScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { startQuickScan, getQuickScanResult, retriggerQuickScan } from '@/lib/quick-scan/actions';
 
-
-
-
 interface BidDetailClientProps {
   bid: BidOpportunity;
 }
@@ -305,8 +302,10 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             }
 
             // Compare decision field to prevent unnecessary updates
-            if (prevResult.decision.decision !== result.result.decision.decision ||
-                prevResult.decision.overallConfidence !== result.result.decision.overallConfidence) {
+            if (
+              prevResult.decision.decision !== result.result.decision.decision ||
+              prevResult.decision.overallConfidence !== result.result.decision.overallConfidence
+            ) {
               return result.result;
             }
 
@@ -629,7 +628,9 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
                     <CardHeader>
                       <div className="flex items-center gap-2">
                         <Building2 className="h-5 w-5 text-indigo-600" />
-                        <CardTitle className="text-indigo-900">An Business Line weiterleiten</CardTitle>
+                        <CardTitle className="text-indigo-900">
+                          An Business Line weiterleiten
+                        </CardTitle>
                       </div>
                       <CardDescription className="text-indigo-700">
                         Weiterleitung an {quickScan.recommendedBusinessUnit || 'empfohlene BL'}
@@ -638,7 +639,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <p className="text-sm text-muted-foreground">
-                        Die BID/NO-BID Entscheidung wird vom Bereichsleiter nach dem Routing getroffen.
+                        Die BID/NO-BID Entscheidung wird vom Bereichsleiter nach dem Routing
+                        getroffen.
                       </p>
                       <Link href={`/rfps/${bid.id}/routing`}>
                         <Button className="w-full bg-indigo-600 hover:bg-indigo-700">

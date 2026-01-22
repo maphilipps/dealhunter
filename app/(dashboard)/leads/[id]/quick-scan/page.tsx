@@ -271,10 +271,10 @@ export default async function QuickScanResultsPage({
                   </ul>
                 ) : typeof navigationStructure === 'object' &&
                   navigationStructure !== null &&
-                  (navigationStructure).levels !== undefined ? (
+                  navigationStructure.levels !== undefined ? (
                   <p>
-                    Ebenen: {(navigationStructure).levels}, Hauptnavigation:{' '}
-                    {(navigationStructure).mainMenuItems ?? 'N/A'}
+                    Ebenen: {navigationStructure.levels}, Hauptnavigation:{' '}
+                    {navigationStructure.mainMenuItems ?? 'N/A'}
                   </p>
                 ) : (
                   <p>
@@ -335,7 +335,7 @@ export default async function QuickScanResultsPage({
         <CardContent>
           {decisionMakers && Array.isArray(decisionMakers) && decisionMakers.length > 0 ? (
             <div className="space-y-4">
-              {(decisionMakers).map((dm, idx: number) => (
+              {decisionMakers.map((dm, idx: number) => (
                 <div key={idx} className="border rounded-lg p-4 space-y-2">
                   <div className="flex items-start justify-between">
                     <div>

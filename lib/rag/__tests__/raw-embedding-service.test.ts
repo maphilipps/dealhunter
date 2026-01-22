@@ -103,7 +103,9 @@ describe('raw-embedding-service', () => {
           }),
         },
       };
-      vi.mocked(getEmbeddingClient).mockReturnValue(mockClient as unknown as ReturnType<typeof getEmbeddingClient>);
+      vi.mocked(getEmbeddingClient).mockReturnValue(
+        mockClient as unknown as ReturnType<typeof getEmbeddingClient>
+      );
 
       const result = await generateRawChunkEmbeddings(mockChunks);
 
@@ -126,7 +128,11 @@ describe('raw-embedding-service', () => {
           chunkIndex: i,
           content: `Chunk ${i}`,
           tokenCount: 100,
-          metadata: { startPosition: i * 100, endPosition: (i + 1) * 100, type: 'paragraph' as const },
+          metadata: {
+            startPosition: i * 100,
+            endPosition: (i + 1) * 100,
+            type: 'paragraph' as const,
+          },
         }));
 
       const mockEmbedding = Array(3072).fill(0.1);
@@ -142,7 +148,9 @@ describe('raw-embedding-service', () => {
           }),
         },
       };
-      vi.mocked(getEmbeddingClient).mockReturnValue(mockClient as unknown as ReturnType<typeof getEmbeddingClient>);
+      vi.mocked(getEmbeddingClient).mockReturnValue(
+        mockClient as unknown as ReturnType<typeof getEmbeddingClient>
+      );
 
       const result = await generateRawChunkEmbeddings(mockChunks);
 
@@ -172,8 +180,7 @@ describe('raw-embedding-service', () => {
     });
 
     it('should embed text and store in database', async () => {
-      const longText =
-        'Dies ist ein ausführlicher Projekttext mit allen Details. '.repeat(20);
+      const longText = 'Dies ist ein ausführlicher Projekttext mit allen Details. '.repeat(20);
 
       const mockEmbedding = Array(3072).fill(0.1);
       const mockClient = {
@@ -186,7 +193,9 @@ describe('raw-embedding-service', () => {
           }),
         },
       };
-      vi.mocked(getEmbeddingClient).mockReturnValue(mockClient as unknown as ReturnType<typeof getEmbeddingClient>);
+      vi.mocked(getEmbeddingClient).mockReturnValue(
+        mockClient as unknown as ReturnType<typeof getEmbeddingClient>
+      );
 
       const mockInsert = vi.fn(() => ({ values: vi.fn() }));
       const mockDelete = vi.fn(() => ({ where: vi.fn() }));
@@ -203,7 +212,6 @@ describe('raw-embedding-service', () => {
     });
 
     it('should handle errors gracefully', async () => {
-       
       vi.mocked(db.delete).mockImplementation((() => {
         throw new Error('Database error');
       }) as any);

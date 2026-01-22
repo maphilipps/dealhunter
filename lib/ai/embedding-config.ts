@@ -46,9 +46,7 @@ export function getEmbeddingClient(): OpenAI | null {
  * Generate embeddings for texts
  * Returns null if embeddings are not enabled
  */
-export async function generateEmbeddings(
-  texts: string[]
-): Promise<number[][] | null> {
+export async function generateEmbeddings(texts: string[]): Promise<number[][] | null> {
   const client = getEmbeddingClient();
 
   if (!client || texts.length === 0) {
@@ -73,9 +71,7 @@ export async function generateEmbeddings(
  * Generate embedding for a single query
  * Returns null if embeddings are not enabled
  */
-export async function generateQueryEmbedding(
-  query: string
-): Promise<number[] | null> {
+export async function generateQueryEmbedding(query: string): Promise<number[] | null> {
   const embeddings = await generateEmbeddings([query]);
   return embeddings?.[0] ?? null;
 }

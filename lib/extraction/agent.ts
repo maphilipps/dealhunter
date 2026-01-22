@@ -94,7 +94,8 @@ const EXTRACTION_FIELDS: FieldDefinition[] = [
       de: 'Kunde Auftraggeber Firma Unternehmen Organisation Name Antragsteller',
       en: 'client customer company organization name contracting party issuer',
     },
-    extractPrompt: 'Extrahiere den Namen des Kunden/Auftraggebers. Antworte NUR mit dem Namen, nichts anderes.',
+    extractPrompt:
+      'Extrahiere den Namen des Kunden/Auftraggebers. Antworte NUR mit dem Namen, nichts anderes.',
   },
   {
     name: 'projectName',
@@ -103,7 +104,8 @@ const EXTRACTION_FIELDS: FieldDefinition[] = [
       de: 'Projekt Name Titel Bezeichnung Vorhaben Ausschreibung',
       en: 'RFP project title name scope platform website app mobile',
     },
-    extractPrompt: 'Extrahiere den Projektnamen oder -titel aus dem RFP-Dokument. Antworte NUR mit dem Namen, nichts anderes.',
+    extractPrompt:
+      'Extrahiere den Projektnamen oder -titel aus dem RFP-Dokument. Antworte NUR mit dem Namen, nichts anderes.',
   },
   {
     name: 'projectDescription',
@@ -121,7 +123,8 @@ const EXTRACTION_FIELDS: FieldDefinition[] = [
       de: 'Branche Industrie Sektor Bereich Markt Geschäftsfeld',
       en: 'industry sector market business domain sports finance healthcare retail',
     },
-    extractPrompt: 'Extrahiere die Branche des Kunden (z.B. Sport, Finanzen, Gesundheit). Antworte NUR mit der Branche.',
+    extractPrompt:
+      'Extrahiere die Branche des Kunden (z.B. Sport, Finanzen, Gesundheit). Antworte NUR mit der Branche.',
   },
   {
     name: 'technologies',
@@ -130,7 +133,8 @@ const EXTRACTION_FIELDS: FieldDefinition[] = [
       de: 'Technologie Framework CMS System Plattform Software Tool',
       en: 'technology stack platform software tools API integration SSO CMS framework',
     },
-    extractPrompt: 'Liste alle genannten Technologien, Frameworks und Systeme auf. Format: kommagetrennte Liste.',
+    extractPrompt:
+      'Liste alle genannten Technologien, Frameworks und Systeme auf. Format: kommagetrennte Liste.',
     isArray: true,
   },
   {
@@ -152,7 +156,8 @@ Falls kein Budget genannt: {"min": null, "max": null, "currency": "EUR", "confid
       de: 'Deadline Abgabe Frist Termin Einreichung bis spätestens',
       en: 'submission deadline due date response timeline RFP deadline closing date',
     },
-    extractPrompt: 'Extrahiere das Abgabedatum. Antworte NUR im Format YYYY-MM-DD oder "nicht genannt".',
+    extractPrompt:
+      'Extrahiere das Abgabedatum. Antworte NUR im Format YYYY-MM-DD oder "nicht genannt".',
   },
   {
     name: 'timeline',
@@ -161,7 +166,8 @@ Falls kein Budget genannt: {"min": null, "max": null, "currency": "EUR", "confid
       de: 'Zeitplan Laufzeit Dauer Monate Start Ende Projektplan',
       en: 'timeline schedule duration months project milestones phases delivery go-live',
     },
-    extractPrompt: 'Beschreibe den Zeitplan/die Laufzeit kurz. Z.B. "6 Monate ab Q2 2024" oder "nicht genannt".',
+    extractPrompt:
+      'Beschreibe den Zeitplan/die Laufzeit kurz. Z.B. "6 Monate ab Q2 2024" oder "nicht genannt".',
   },
   {
     name: 'contacts',
@@ -208,7 +214,8 @@ Falls keine spezifischen Unterlagen genannt werden, antworte mit: []`,
       de: 'Anforderung muss soll Pflicht Kriterium Bedingung funktional',
       en: 'requirements must shall mandatory functional non-functional scope features criteria',
     },
-    extractPrompt: 'Liste die wichtigsten Anforderungen auf. Format: kommagetrennte Liste der Kernanforderungen.',
+    extractPrompt:
+      'Liste die wichtigsten Anforderungen auf. Format: kommagetrennte Liste der Kernanforderungen.',
     isArray: true,
   },
   {

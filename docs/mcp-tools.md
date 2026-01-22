@@ -12,19 +12,19 @@ Claude Code hat Zugriff auf mehrere MCP (Model Context Protocol) Servers für er
 
 ### Available Tools
 
-| Tool                             | Use For                                    |
-| -------------------------------- | ------------------------------------------ |
-| `search_items_in_registries`     | Suche nach Komponenten (z.B. "sidebar")   |
-| `view_items_in_registries`       | Details zu spezifischen Komponenten abrufen |
-| `get_item_examples_from_registries` | Usage Examples & Demos holen            |
-| `get_add_command_for_items`      | Install Command generieren                 |
+| Tool                                | Use For                                     |
+| ----------------------------------- | ------------------------------------------- |
+| `search_items_in_registries`        | Suche nach Komponenten (z.B. "sidebar")     |
+| `view_items_in_registries`          | Details zu spezifischen Komponenten abrufen |
+| `get_item_examples_from_registries` | Usage Examples & Demos holen                |
+| `get_add_command_for_items`         | Install Command generieren                  |
 
 ### Workflow: Component Installation
 
 ```typescript
 // 1. Komponente suchen
 search_items_in_registries({
-  registries: ['@shadcn'], 
+  registries: ['@shadcn'],
   query: 'data table'
 });
 // Returns: @shadcn/table, @shadcn/data-table-demo
@@ -66,26 +66,29 @@ npx shadcn@latest add data-table
 
 ### Available Tools
 
-| Tool                  | Use For                                         |
-| --------------------- | ----------------------------------------------- |
-| `resolve-library-id`  | Library ID aus Package-Namen ermitteln          |
-| `query-docs`          | Dokumentation abfragen mit Query                |
+| Tool                 | Use For                                |
+| -------------------- | -------------------------------------- |
+| `resolve-library-id` | Library ID aus Package-Namen ermitteln |
+| `query-docs`         | Dokumentation abfragen mit Query       |
 
 ### Workflow: Docs Lookup
 
 ```typescript
 // 1. Library ID resolven
-resolve-library-id({
-  libraryName: 'ai',
-  query: 'How to use useChat hook with streaming'
-});
+resolve -
+  library -
+  id({
+    libraryName: 'ai',
+    query: 'How to use useChat hook with streaming',
+  });
 // Returns: '/vercel/ai'
 
 // 2. Docs abrufen
-query-docs({
-  libraryId: '/vercel/ai',
-  query: 'useChat hook streaming responses with tool calls'
-});
+query -
+  docs({
+    libraryId: '/vercel/ai',
+    query: 'useChat hook streaming responses with tool calls',
+  });
 // Returns: Documentation, code examples, API reference
 ```
 
@@ -113,13 +116,13 @@ query-docs({
 
 ### Available Tools
 
-| Tool                      | Use For                            |
-| ------------------------- | ---------------------------------- |
-| `take_screenshot`         | Screenshots (page oder element)    |
-| `take_snapshot`           | A11y tree snapshot                 |
-| `list_console_messages`   | Console logs/errors/warnings       |
-| `list_network_requests`   | HTTP requests (XHR, Fetch)         |
-| `navigate_page`           | Page navigation                    |
+| Tool                    | Use For                         |
+| ----------------------- | ------------------------------- |
+| `take_screenshot`       | Screenshots (page oder element) |
+| `take_snapshot`         | A11y tree snapshot              |
+| `list_console_messages` | Console logs/errors/warnings    |
+| `list_network_requests` | HTTP requests (XHR, Fetch)      |
+| `navigate_page`         | Page navigation                 |
 
 ### Example: Visual Testing
 
@@ -127,14 +130,14 @@ query-docs({
 // Screenshot der gesamten Seite
 take_screenshot({
   filePath: 'screenshots/dashboard.png',
-  fullPage: true
+  fullPage: true,
 });
 
 // Screenshot eines Elements
 take_snapshot(); // Erst snapshot um Element UID zu bekommen
 take_screenshot({
   filePath: 'screenshots/sidebar.png',
-  uid: 'e42' // Element UID aus snapshot
+  uid: 'e42', // Element UID aus snapshot
 });
 ```
 
@@ -143,13 +146,13 @@ take_screenshot({
 ```typescript
 // Alle Errors
 list_console_messages({
-  types: ['error']
+  types: ['error'],
 });
 
 // Errors + Warnings
 list_console_messages({
   types: ['error', 'warn'],
-  pageSize: 50
+  pageSize: 50,
 });
 ```
 
@@ -159,7 +162,7 @@ list_console_messages({
 // Failed requests finden
 list_network_requests({
   resourceTypes: ['fetch'],
-  pageIdx: 0
+  pageIdx: 0,
 });
 
 // Request Details
@@ -174,10 +177,10 @@ get_network_request({ reqid: 123 });
 
 ### Available Tools
 
-| Tool                  | Use For                                   |
-| --------------------- | ----------------------------------------- |
-| `nextjs_index`        | Discover running Next.js dev servers      |
-| `nextjs_call`         | Execute specific Next.js MCP tools        |
+| Tool           | Use For                              |
+| -------------- | ------------------------------------ |
+| `nextjs_index` | Discover running Next.js dev servers |
+| `nextjs_call`  | Execute specific Next.js MCP tools   |
 
 ### Workflow: Error Diagnostics
 
@@ -189,14 +192,14 @@ nextjs_index({ port: '3000' });
 // 2. Get compilation/runtime errors
 nextjs_call({
   port: '3000',
-  toolName: 'get_errors'
+  toolName: 'get_errors',
 });
 // Returns: TypeScript errors, build errors, runtime errors
 
 // 3. Get all routes
 nextjs_call({
   port: '3000',
-  toolName: 'get_routes'
+  toolName: 'get_routes',
 });
 // Returns: List of all app routes
 ```
@@ -215,13 +218,13 @@ nextjs_call({
 
 ### Available Tools
 
-| Tool                 | Use For                              |
-| -------------------- | ------------------------------------ |
-| `list_issues`        | Issues abrufen (filtered)            |
-| `get_issue`          | Issue Details + Relations            |
-| `create_issue`       | Neues Issue erstellen                |
-| `update_issue`       | Issue updaten (state, assignee, etc) |
-| `create_comment`     | Kommentar zu Issue hinzufügen        |
+| Tool             | Use For                              |
+| ---------------- | ------------------------------------ |
+| `list_issues`    | Issues abrufen (filtered)            |
+| `get_issue`      | Issue Details + Relations            |
+| `create_issue`   | Neues Issue erstellen                |
+| `update_issue`   | Issue updaten (state, assignee, etc) |
+| `create_comment` | Kommentar zu Issue hinzufügen        |
 
 ### Example: Feature Development Workflow
 
@@ -232,13 +235,13 @@ get_issue({ id: 'DEA-123', includeRelations: true });
 // 2. Status updaten
 update_issue({
   id: 'DEA-123',
-  state: 'In Progress'
+  state: 'In Progress',
 });
 
 // 3. Progress dokumentieren
 create_comment({
   issueId: 'DEA-123',
-  body: '✅ Extraction Agent implementiert\n- PDF parsing functional\n- Tests added (85% coverage)'
+  body: '✅ Extraction Agent implementiert\n- PDF parsing functional\n- Tests added (85% coverage)',
 });
 
 // 4. Sub-Issue erstellen
@@ -246,7 +249,7 @@ create_issue({
   title: 'Add test coverage for Quick Scan Agent',
   team: 'Dealhunter',
   parentId: 'DEA-123',
-  state: 'Todo'
+  state: 'Todo',
 });
 ```
 
@@ -356,7 +359,7 @@ agent-browser open http://localhost:3000/dashboard
 # Session 1: Admin user
 agent-browser --session admin open localhost:3000
 
-# Session 2: Viewer user  
+# Session 2: Viewer user
 agent-browser --session viewer open localhost:3000
 
 # List active sessions
@@ -404,9 +407,9 @@ agent-browser find label "Email" fill "user@test.com"
 search_items_in_registries({ registries: ['@shadcn'], query: 'chart pie' });
 
 // 2. ShadCN: Get example
-get_item_examples_from_registries({ 
-  registries: ['@shadcn'], 
-  query: 'chart-pie-donut-text' 
+get_item_examples_from_registries({
+  registries: ['@shadcn'],
+  query: 'chart-pie-donut-text'
 });
 
 // 3. ShadCN: Install
@@ -429,9 +432,9 @@ nextjs_call({ port: '3000', toolName: 'get_errors' });
 ```typescript
 // 1. Context7: Get AI SDK docs
 resolve-library-id({ libraryName: 'ai', query: 'streaming with tools' });
-query-docs({ 
-  libraryId: '/vercel/ai', 
-  query: 'streamText with tools and structured output' 
+query-docs({
+  libraryId: '/vercel/ai',
+  query: 'streamText with tools and structured output'
 });
 
 // 2. Implement agent
@@ -480,15 +483,15 @@ create_comment({
 
 ### When to use which tool?
 
-| Task                        | Tool                              |
-| --------------------------- | --------------------------------- |
-| UI Component finden         | **ShadCN MCP** → search_items     |
-| AI SDK Dokumentation        | **Context7 MCP** → query-docs     |
-| Visual Testing              | **agent-browser CLI**             |
-| Console Debugging           | **agent-browser console**         |
-| Build Errors                | **Next.js DevTools MCP**          |
-| Network Debugging           | **Chrome DevTools MCP** (Backup)  |
-| Issue Tracking              | **Linear MCP**                    |
+| Task                 | Tool                             |
+| -------------------- | -------------------------------- |
+| UI Component finden  | **ShadCN MCP** → search_items    |
+| AI SDK Dokumentation | **Context7 MCP** → query-docs    |
+| Visual Testing       | **agent-browser CLI**            |
+| Console Debugging    | **agent-browser console**        |
+| Build Errors         | **Next.js DevTools MCP**         |
+| Network Debugging    | **Chrome DevTools MCP** (Backup) |
+| Issue Tracking       | **Linear MCP**                   |
 
 ### DO ✅
 
@@ -509,6 +512,7 @@ create_comment({
 ## Troubleshooting
 
 **Problem:** agent-browser not found
+
 ```bash
 # Install agent-browser CLI
 npm install -g @vercel/agent-browser
@@ -518,6 +522,7 @@ agent-browser --version
 ```
 
 **Problem:** Next.js MCP keine Verbindung
+
 ```bash
 # Stelle sicher, dass d3k läuft
 d3k
@@ -527,7 +532,8 @@ nextjs_index({ port: '3000' })
 ```
 
 **Problem:** Context7 Library nicht gefunden
+
 ```typescript
 // Nutze resolve-library-id FIRST
-resolve-library-id({ libraryName: 'package-name', query: 'your question' });
+resolve - library - id({ libraryName: 'package-name', query: 'your question' });
 ```

@@ -1,16 +1,12 @@
-import {
-  LayoutDashboard,
-  Zap,
-  Target,
-  Globe,
-  Database,
-  PieChart,
-  Users,
-  Trophy,
-  AlertTriangle,
-} from 'lucide-react';
-import Link from 'next/link';
+'use client';
 
+import * as Icons from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Sidebar,
   SidebarContent,
@@ -20,7 +16,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
+import { LEAD_NAVIGATION_SECTIONS } from '@/lib/leads/navigation-config';
 
 interface LeadSidebarRightProps {
   leadId: string;
@@ -28,81 +28,56 @@ interface LeadSidebarRightProps {
   status: string;
 }
 
+type SectionStatus = 'loading' | 'ready' | 'warning' | 'error';
+
+// Mock status data - in real implementation, this would come from the DB or API
+function getSectionStatus(sectionId: string): SectionStatus {
+  // For now, mark all sections as 'loading' except 'overview' which is 'ready'
+  if (sectionId === 'overview') return 'ready';
+  return 'loading';
+}
+
+function getStatusBadge(status: SectionStatus) {
+  const variants: Record<
+    SectionStatus,
+    { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }
+  > = {
+    loading: { variant: 'outline', label: 'Loading' },
+    ready: { variant: 'default', label: 'Ready' },
+    warning: { variant: 'secondary', label: 'Warning' },
+    error: { variant: 'destructive', label: 'Error' },
+  };
+
+  const config = variants[status];
+  return (
+    <Badge variant={config.variant} className="ml-auto text-xs">
+      {config.label}
+    </Badge>
+  );
+}
+
 export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRightProps) {
-  const navigationSections = [
-    {
-      label: 'Overview',
-      items: [
-        {
-          title: 'Übersicht',
-          icon: LayoutDashboard,
-          url: `/leads/${leadId}`,
-        },
-      ],
-    },
-    {
-      label: 'Analysis',
-      items: [
-        {
-          title: 'Quick Scan',
-          icon: Zap,
-          url: `/leads/${leadId}/quick-scan`,
-        },
-        {
-          title: 'BID Decision',
-          icon: Target,
-          url: `/leads/${leadId}/decision`,
-        },
-        {
-          title: 'Website Audit',
-          icon: Globe,
-          url: `/leads/${leadId}/website-audit`,
-        },
-      ],
-    },
-    {
-      label: 'Matching & Estimation',
-      items: [
-        {
-          title: 'CMS Matching',
-          icon: Database,
-          url: `/leads/${leadId}/cms-matching`,
-        },
-        {
-          title: 'Baseline Comparison',
-          icon: PieChart,
-          url: `/leads/${leadId}/baseline`,
-        },
-        {
-          title: 'PT Estimation',
-          icon: Users,
-          url: `/leads/${leadId}/estimation`,
-        },
-      ],
-    },
-    {
-      label: 'Intelligence',
-      items: [
-        {
-          title: 'References',
-          icon: Trophy,
-          url: `/leads/${leadId}/references`,
-        },
-        {
-          title: 'Risiken & Mitigation',
-          icon: AlertTriangle,
-          url: `/leads/${leadId}/risks`,
-        },
-      ],
-    },
-  ];
+  const pathname = usePathname();
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['overview']));
+
+  const toggleSection = (sectionId: string) => {
+    setOpenSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
+  };
 
   return (
     <Sidebar collapsible="none" variant="sidebar" side="right">
       <SidebarContent>
         {/* Lead Metadata */}
         <SidebarGroup>
-          <SidebarGroupLabel>Lead Details</SidebarGroupLabel>
+          <SidebarGroupLabel>Lead Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <div className="px-2 py-1">
               <p className="text-sm font-medium truncate">{customerName}</p>
@@ -111,26 +86,72 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Navigation Sections */}
-        {navigationSections.map(section => (
-          <SidebarGroup key={section.label}>
-            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {section.items.map(item => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <Link href={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+        {/* Navigation Sections - All 13 sections */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {LEAD_NAVIGATION_SECTIONS.map(section => {
+                const IconComponent = (Icons as Record<string, Icons.LucideIcon>)[section.icon];
+                const sectionRoute = `/leads/${leadId}${section.route ? `/${section.route}` : ''}`;
+                const isActive = pathname === sectionRoute;
+                const sectionStatus = getSectionStatus(section.id);
+                const hasSubsections = section.subsections && section.subsections.length > 0;
+                const isOpen = openSections.has(section.id);
+
+                if (hasSubsections && section.collapsed) {
+                  // Render as collapsible with subsections
+                  return (
+                    <Collapsible
+                      key={section.id}
+                      open={isOpen}
+                      onOpenChange={() => toggleSection(section.id)}
+                    >
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton>
+                            {IconComponent && <IconComponent className="h-4 w-4" />}
+                            <span>{section.label}</span>
+                            {getStatusBadge(sectionStatus)}
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {section.subsections?.map(subsection => {
+                              const subsectionRoute = `/leads/${leadId}/${subsection.route}`;
+                              const isSubActive = pathname === subsectionRoute;
+                              return (
+                                <SidebarMenuSubItem key={subsection.id}>
+                                  <SidebarMenuSubButton asChild isActive={isSubActive}>
+                                    <Link href={subsectionRoute}>
+                                      <span>{subsection.label}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              );
+                            })}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  );
+                }
+
+                // Render as single menu item
+                return (
+                  <SidebarMenuItem key={section.id}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link href={sectionRoute}>
+                        {IconComponent && <IconComponent className="h-4 w-4" />}
+                        <span>{section.label}</span>
+                        {getStatusBadge(sectionStatus)}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   );

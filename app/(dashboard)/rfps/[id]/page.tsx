@@ -1,12 +1,10 @@
-import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
 import { BidDetailClient } from '@/components/bids/bid-detail-client';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
+import { getCachedRfp } from '@/lib/rfps/cached-queries';
 
 export default async function BidDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,8 +14,8 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
     redirect('/login');
   }
 
-  // Get bid opportunity
-  const [bid] = await db.select().from(rfps).where(eq(rfps.id, id)).limit(1);
+  // Get bid opportunity (cached - shares query with layout)
+  const bid = await getCachedRfp(id);
 
   if (!bid) {
     return (

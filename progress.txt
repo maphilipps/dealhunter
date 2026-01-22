@@ -6419,3 +6419,86 @@ Each category shows:
 - DEA-153: All 13 section pages (provide data for aggregation)
 
 **Commit:** feat(DEA-152): implement comprehensive BID/NO-BID decision page with AI-powered analysis
+## DEA-147: Component Library Agent
+
+**Status:** ✅ Done
+**Commit:** acabad3
+
+### What was implemented:
+
+1. **Component Library Agent** - Vision AI-powered component detection
+2. **Deep Scan Integration** - Integrated into website-analysis section
+3. **Gallery UI Component** - Grid/List views with screenshots
+
+### Files:
+- lib/agents/component-library-agent.ts (NEW)
+- lib/agents/deep-scan-orchestrator.ts (MODIFIED)
+- components/leads/component-library-gallery.tsx (NEW)
+
+### Technical:
+- Playwright website crawling
+- GPT-4 Vision (gpt-4o) for component detection
+- RAG storage for semantic retrieval
+- Screenshots embedded as Base64
+
+
+
+
+## 2026-01-22 - DEA-148: Staffing Timeline Gantt-Chart Component
+
+**Issue:** DEA-148 - 10. Staffing Timeline: Gantt-Chart Component
+**Status:** ✅ Complete
+**Commit:** [Pending]
+
+**Implemented:**
+
+1. **StaffingGanttChart Component** (components/leads/staffing-gantt-chart.tsx)
+   - Gantt-style timeline visualization using horizontal bars
+   - Roles: PM, UX, Frontend, Backend, DevOps, QA
+   - Phases: Konzeption, Design, Development, Testing, Launch
+   - Interactive hover tooltips showing PT and month range
+   - Phase legend with color coding
+   - Summary stats: total PT, roles count, phases count, project duration
+   - Role breakdown table
+
+2. **Staffing Page Integration** (app/(dashboard)/leads/[id]/staffing/page.tsx)
+   - Full custom page following estimation page pattern
+   - Sample data with realistic staffing allocation across phases
+   - Alert for Deep Scan status
+   - Implementation notes card explaining automatic generation
+
+3. **Component Features:**
+   - Responsive layout with scrolling for many months
+   - ShadCN UI components for consistent styling
+   - Color-coded phases using CSS variables (hsl(var(--chart-1)), etc.)
+   - Compact variant for lists/sidebars
+   - TypeScript interfaces exported for reusability
+
+**Data Structure:**
+```typescript
+interface StaffingEntry {
+  role: string;      // PM, UX, Frontend, Backend, DevOps, QA
+  phase: string;     // Konzeption, Design, Development, Testing, Launch
+  startMonth: number;
+  endMonth: number;
+  pt: number;
+}
+```
+
+**Sample Data:**
+- 21 staffing entries across 6 roles and 5 phases
+- Project duration: 8 months
+- Total PT: 418 person-days
+- Realistic distribution matching typical web project staffing
+
+**Next Steps:**
+- Replace sample data with actual Deep Scan Agent output
+- Integrate with staffing-synthesizer agent
+- Add export functionality (optional)
+
+**Files Created/Modified:**
+- components/leads/staffing-gantt-chart.tsx (NEW - 280 lines)
+- app/(dashboard)/leads/[id]/staffing/page.tsx (MODIFIED - full custom page)
+
+**Type Check:** ✅ PASSED (no errors)
+

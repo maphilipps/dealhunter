@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table';
 import { auth } from '@/lib/auth';
 import { getCachedRfp } from '@/lib/rfps/cached-queries';
-import type { ExtractedRequirements } from '@/lib/extraction/schema';
+import { extractedRequirementsSchema, type ExtractedRequirements } from '@/lib/extraction/schema';
 
 export default async function DeliverablesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -36,10 +36,16 @@ export default async function DeliverablesPage({ params }: { params: Promise<{ i
     notFound();
   }
 
-  // Parse extracted requirements
-  const extractedReqs: ExtractedRequirements | null = rfp.extractedRequirements
-    ? (JSON.parse(rfp.extractedRequirements) as ExtractedRequirements)
+  // Parse extracted requirements with Zod validation for runtime safety
+  const parseResult = rfp.extractedRequirements
+    ? extractedRequirementsSchema.safeParse(JSON.parse(rfp.extractedRequirements))
     : null;
+
+  if (parseResult && !parseResult.success) {
+    console.error('Invalid extracted requirements:', parseResult.error);
+  }
+
+  const extractedReqs = parseResult?.success ? parseResult.data : null;
 
   const deliverables = extractedReqs?.requiredDeliverables || [];
   const mandatoryDeliverables = deliverables.filter(d => d.mandatory);

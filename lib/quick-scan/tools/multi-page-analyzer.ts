@@ -4,6 +4,7 @@
  */
 
 import wappalyzer from 'simple-wappalyzer';
+
 import { validateUrlForFetch } from '@/lib/utils/url-validation';
 
 export interface PageData {

@@ -1,9 +1,11 @@
-import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { StatusBadge } from './status-badge';
-import { Badge } from '@/components/ui/badge';
 import { Building2, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+
+import { StatusBadge } from './status-badge';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export interface BidOpportunity {
   id: string;

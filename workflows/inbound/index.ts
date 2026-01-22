@@ -1,5 +1,6 @@
-import { FormSchema } from '@/lib/types';
 import { stepHumanFeedback, stepQualify, stepResearch, stepWriteEmail } from './steps';
+
+import { FormSchema } from '@/lib/types';
 
 /**
  * workflow to handle the inbound lead

@@ -1,8 +1,9 @@
+import { eq, desc, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+
+import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { backgroundJobs, rfps } from '@/lib/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
 
 /**
  * GET /api/jobs - List background jobs for current user

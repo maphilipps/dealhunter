@@ -1,11 +1,13 @@
 'use server';
 
+import { eq } from 'drizzle-orm';
+
+import { runBaselineComparison, type BaselineComparisonInput } from './agent';
+import type { BaselineComparisonResult } from './schema';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, deepMigrationAnalyses, technologies } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { runBaselineComparison, type BaselineComparisonInput } from './agent';
-import type { BaselineComparisonResult } from './schema';
 import type { ContentArchitecture } from '@/lib/deep-analysis/schemas';
 
 export interface TriggerBaselineComparisonResult {

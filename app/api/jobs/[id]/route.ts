@@ -1,8 +1,9 @@
+import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+
+import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { backgroundJobs } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
 
 /**
  * GET /api/jobs/:id - Get job status and progress

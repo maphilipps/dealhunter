@@ -1,10 +1,11 @@
 'use server';
 
+import bcrypt from 'bcryptjs';
+import { AuthError } from 'next-auth';
+
 import { signIn, signOut } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import bcrypt from 'bcryptjs';
-import { AuthError } from 'next-auth';
 
 export async function login(_prevState: { error: string } | null, formData: FormData) {
   const email = formData.get('email') as string;
@@ -77,4 +78,12 @@ export async function register(_prevState: { error: string } | null, formData: F
 
 export async function logout() {
   await signOut({ redirectTo: '/login' });
+}
+
+/**
+ * Clear invalid session (e.g., when user no longer exists in DB)
+ * Called from login page when error=user_not_found
+ */
+export async function clearInvalidSession() {
+  await signOut({ redirect: false });
 }

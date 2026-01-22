@@ -1,7 +1,8 @@
-import { db } from '../lib/db';
-import { users } from '../lib/db/schema';
 import { hash } from 'bcryptjs';
 import { eq } from 'drizzle-orm';
+
+import { db } from '../lib/db';
+import { users } from '../lib/db/schema';
 
 async function resetTestUser() {
   console.log('🔄 Resetting test user...');
@@ -34,7 +35,7 @@ resetTestUser()
     console.log('✅ Reset complete');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Error resetting test user:', error);
     process.exit(1);
   });

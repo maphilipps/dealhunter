@@ -1,13 +1,15 @@
 'use client';
 
+import { Loader2, AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { useRef, useEffect } from 'react';
+
+import { AbortButton } from './abort-button';
+import { AgentActivityView } from './agent-activity-view';
+import { AgentMessage } from './agent-message';
+
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { Loader2, AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react';
-import { AgentMessage } from './agent-message';
-import { AgentActivityView } from './agent-activity-view';
-import { AbortButton } from './abort-button';
 import { useAgentStream } from '@/hooks/use-agent-stream';
 import type { AgentEvent } from '@/lib/streaming/event-types';
 import { AgentEventType } from '@/lib/streaming/event-types';

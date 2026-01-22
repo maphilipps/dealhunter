@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
-import { getTechnology } from '@/lib/admin/technologies-actions';
-import { TechnologyDetail } from '@/components/admin/technology-detail';
-import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+
+import { TechnologyDetail } from '@/components/admin/technology-detail';
+import { getTechnology } from '@/lib/admin/technologies-actions';
+import { auth } from '@/lib/auth';
 
 export default async function TechnologyDetailPage({
   params,

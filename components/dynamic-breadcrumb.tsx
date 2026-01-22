@@ -1,6 +1,8 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { Fragment } from 'react';
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,7 +11,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { Fragment } from 'react';
 
 const routeLabels: Record<string, string> = {
   '': 'Dashboard',

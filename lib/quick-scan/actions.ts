@@ -1,9 +1,10 @@
 'use server';
 
+import { eq } from 'drizzle-orm';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, quickScans } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 
 /**
  * Start Quick Scan for a bid opportunity
@@ -92,7 +93,8 @@ export async function startQuickScan(bidId: string) {
 
 /**
  * Re-trigger Quick Scan for a bid
- * Deletes existing Quick Scan and creates a new one in 'running' status
+ * IMPORTANT: Preserves existing data and supplements it with new findings (nicht ersetzen!)
+ * Resets status to 'running' but keeps existing data for merging
  * The actual scan is executed via the streaming endpoint
  */
 export async function retriggerQuickScan(bidId: string) {
@@ -114,11 +116,6 @@ export async function retriggerQuickScan(bidId: string) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 
-    // Delete existing Quick Scan if present
-    if (bid.quickScanId) {
-      await db.delete(quickScans).where(eq(quickScans.id, bid.quickScanId));
-    }
-
     // Parse extracted requirements
     const extractedReqs = bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null;
 
@@ -137,24 +134,44 @@ export async function retriggerQuickScan(bidId: string) {
       };
     }
 
-    // Create new QuickScan record with 'running' status
-    // The actual scan will be executed via the streaming endpoint
-    const [quickScan] = await db
-      .insert(quickScans)
-      .values({
-        rfpId: bidId,
-        websiteUrl,
-        status: 'running',
-        startedAt: new Date(),
-      })
-      .returning();
+    let quickScanId: string;
+
+    // If existing QuickScan exists, reset status but KEEP existing data
+    // This allows Research Agents to supplement (ergänzen) data, not replace (ersetzen)
+    if (bid.quickScanId) {
+      await db
+        .update(quickScans)
+        .set({
+          status: 'running',
+          websiteUrl, // May have changed
+          startedAt: new Date(),
+          completedAt: null,
+          // Keep all other fields - they will be merged with new results in stream route
+        })
+        .where(eq(quickScans.id, bid.quickScanId));
+
+      quickScanId = bid.quickScanId;
+    } else {
+      // Create new QuickScan record if none exists
+      const [quickScan] = await db
+        .insert(quickScans)
+        .values({
+          rfpId: bidId,
+          websiteUrl,
+          status: 'running',
+          startedAt: new Date(),
+        })
+        .returning();
+
+      quickScanId = quickScan.id;
+    }
 
     // Update bid status and reset BIT evaluation data
     await db
       .update(rfps)
       .set({
         status: 'quick_scanning',
-        quickScanId: quickScan.id,
+        quickScanId: quickScanId,
         decision: 'pending',
         decisionData: null,
         alternativeRecommendation: null,
@@ -163,7 +180,7 @@ export async function retriggerQuickScan(bidId: string) {
 
     return {
       success: true,
-      quickScanId: quickScan.id,
+      quickScanId: quickScanId,
       status: 'running',
     };
   } catch (error) {

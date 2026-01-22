@@ -1,10 +1,12 @@
-import PDFParser from 'pdf2json';
-
 /**
  * Extract text content from a PDF buffer
  * Uses pdf2json to parse PDF and extract text
+ * NOTE: pdf2json is dynamically imported to avoid loading 500KB in main bundle
  */
 export async function extractTextFromPdf(buffer: Buffer): Promise<string> {
+  // Dynamic import - only loads pdf2json when PDF is uploaded
+  const { default: PDFParser } = await import('pdf2json');
+
   return new Promise((resolve, reject) => {
     const pdfParser = new PDFParser(null, true); // null = no owner password, true = don't combine text
 

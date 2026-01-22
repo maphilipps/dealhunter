@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+
 import { AuditTrailTable } from '@/components/admin/audit-trail-table';
 import { Skeleton } from '@/components/ui/skeleton';
 

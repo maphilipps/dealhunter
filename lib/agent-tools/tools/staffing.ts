@@ -1,9 +1,11 @@
-import { z } from 'zod';
-import { db } from '@/lib/db';
-import { employees, businessUnits } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
+
 import { registry } from '../registry';
 import type { ToolContext } from '../types';
+
+import { db } from '@/lib/db';
+import { employees, businessUnits } from '@/lib/db/schema';
 
 /**
  * Calculate skill match score for an employee against required skills

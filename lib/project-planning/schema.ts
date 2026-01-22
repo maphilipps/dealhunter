@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import DOMPurify from 'isomorphic-dompurify';
+import { z } from 'zod';
 
 const sanitizedString = z.string().transform(val => {
   return DOMPurify.sanitize(val, {

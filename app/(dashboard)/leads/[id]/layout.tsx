@@ -1,37 +1,13 @@
 import { eq } from 'drizzle-orm';
-import {
-  LayoutDashboard,
-  Zap,
-  Target,
-  Globe,
-  Database,
-  PieChart,
-  Users,
-  Trophy,
-  AlertTriangle,
-} from 'lucide-react';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { AppSidebar } from '@/components/app-sidebar';
+import { LeadSidebarRight } from '@/components/leads/lead-sidebar-right';
 import { Separator } from '@/components/ui/separator';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads } from '@/lib/db/schema';
-
-
+import { leads, users } from '@/lib/db/schema';
 
 export default async function LeadDashboardLayout({
   children,
@@ -47,7 +23,7 @@ export default async function LeadDashboardLayout({
     redirect('/login');
   }
 
-  // Get lead
+  // Get lead for right sidebar metadata
   const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
 
   if (!lead) {
@@ -59,100 +35,35 @@ export default async function LeadDashboardLayout({
     );
   }
 
-  // Navigation sections for the lead dashboard
-  const navigationSections = [
-    {
-      label: 'Overview',
-      items: [
-        {
-          title: 'Übersicht',
-          icon: LayoutDashboard,
-          url: `/leads/${id}`,
-        },
-      ],
-    },
-    {
-      label: 'Analysis',
-      items: [
-        {
-          title: 'Quick Scan',
-          icon: Zap,
-          url: `/leads/${id}/quick-scan`,
-        },
-        {
-          title: 'BIT Decision',
-          icon: Target,
-          url: `/leads/${id}/decision`,
-        },
-        {
-          title: 'Website Audit',
-          icon: Globe,
-          url: `/leads/${id}/website-audit`,
-        },
-      ],
-    },
-    {
-      label: 'Matching & Estimation',
-      items: [
-        {
-          title: 'CMS Matching',
-          icon: Database,
-          url: `/leads/${id}/cms-matching`,
-        },
-        {
-          title: 'Baseline Comparison',
-          icon: PieChart,
-          url: `/leads/${id}/baseline`,
-        },
-        {
-          title: 'PT Estimation',
-          icon: Users,
-          url: `/leads/${id}/estimation`,
-        },
-      ],
-    },
-    {
-      label: 'Intelligence',
-      items: [
-        {
-          title: 'References',
-          icon: Trophy,
-          url: `/leads/${id}/references`,
-        },
-        {
-          title: 'Risiken & Mitigation',
-          icon: AlertTriangle,
-          url: `/leads/${id}/risks`,
-        },
-      ],
-    },
-  ];
+  // Get user for main sidebar (same as parent dashboard layout)
+  const dbUser = session.user.id
+    ? await db
+        .select({
+          name: users.name,
+          email: users.email,
+          role: users.role,
+        })
+        .from(users)
+        .where(eq(users.id, session.user.id))
+        .limit(1)
+        .then(r => r[0])
+    : null;
+
+  if (!dbUser) {
+    redirect('/api/auth/clear-session');
+  }
+
+  const user = {
+    name: dbUser.name || session.user?.name || 'Unknown',
+    email: dbUser.email || session.user?.email || '',
+    role: dbUser.role,
+    avatar: '',
+  };
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon" variant="sidebar">
-        <SidebarContent>
-          {navigationSections.map(section => (
-            <SidebarGroup key={section.label}>
-              <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {section.items.map(item => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <Link href={item.url}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ))}
-        </SidebarContent>
-      </Sidebar>
+      {/* Left Sidebar: Main Navigation (preserved from dashboard) */}
+      <AppSidebar user={user} />
 
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
@@ -167,6 +78,9 @@ export default async function LeadDashboardLayout({
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
       </SidebarInset>
+
+      {/* Right Sidebar: Lead-specific Navigation */}
+      <LeadSidebarRight leadId={id} customerName={lead.customerName} status={lead.status} />
     </SidebarProvider>
   );
 }

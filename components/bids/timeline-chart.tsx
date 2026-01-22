@@ -1,12 +1,13 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Calendar, Clock, Users, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
-import type { ProjectTimeline } from '@/lib/timeline/schema';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { Calendar, Clock, Users, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import type { ProjectTimeline } from '@/lib/timeline/schema';
 
 interface TimelineChartProps {
   timeline: ProjectTimeline;

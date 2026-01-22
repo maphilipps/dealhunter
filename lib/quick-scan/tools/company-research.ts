@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
+
 import { companyIntelligenceSchema, type CompanyIntelligence } from '../schema';
+
 import { searchAndContents } from '@/lib/search/web-search';
 
 // Initialize clients

@@ -409,7 +409,11 @@ async function seedDAXData() {
       website: 'https://www.capgemini.com',
       industry: ['Technology', 'Consulting'],
       description: 'Global leader in consulting, technology services and digital transformation',
-      strengths: ['Strong European presence', 'Digital transformation expertise', 'Industry knowledge'],
+      strengths: [
+        'Strong European presence',
+        'Digital transformation expertise',
+        'Industry knowledge',
+      ],
       weaknesses: ['Medium pricing', 'Generic solutions'],
       typicalMarkets: ['Enterprise', 'Mid-market', 'Government'],
       encounterNotes: ['Deutsche Telekom project 2023 - competitive bid'],
@@ -491,7 +495,8 @@ async function seedDAXData() {
       websiteUrl: 'https://www.telekom.de',
       extractedRequirements: {
         projectName: 'Telekom Business Customer Portal',
-        description: 'New B2B customer portal for business customers with self-service capabilities',
+        description:
+          'New B2B customer portal for business customers with self-service capabilities',
         budget: '1.2M-1.5M EUR',
         timeline: 'Q3 2024 - Q2 2025',
         technologies: ['Enterprise CMS', 'Integration Platform', 'Customer Portal'],
@@ -568,7 +573,11 @@ async function seedDAXData() {
             { name: 'Development', duration: 6, confidence: 'medium' },
             { name: 'Testing & Launch', duration: 2, confidence: 'medium' },
           ],
-          risks: ['Complex PIM integration', 'Multi-country rollout coordination', 'Data migration volume'],
+          risks: [
+            'Complex PIM integration',
+            'Multi-country rollout coordination',
+            'Data migration volume',
+          ],
         },
       },
       decision: 'bid',
@@ -581,7 +590,8 @@ async function seedDAXData() {
       websiteUrl: 'https://www.adidas.de',
       extractedRequirements: {
         projectName: 'adidas Community Platform',
-        description: 'Sports community platform with user-generated content and e-commerce integration',
+        description:
+          'Sports community platform with user-generated content and e-commerce integration',
         budget: '600k-800k EUR',
         timeline: 'Q2 2024 - Q4 2024',
         technologies: ['CMS', 'Community Platform', 'E-Commerce Integration'],
@@ -710,7 +720,9 @@ async function seedDAXData() {
     // Update RFP with Quick Scan ID
     await db.update(rfps).set({ quickScanId: quickScan.id }).where(eq(rfps.id, rfp.id));
 
-    console.log(`  ✓ ${rfpTemplate.extractedRequirements.projectName} (${rfpTemplate.account.name})`);
+    console.log(
+      `  ✓ ${rfpTemplate.extractedRequirements.projectName} (${rfpTemplate.account.name})`
+    );
   }
 
   console.log('\n✨ DAX Mock Data Seed completed!');

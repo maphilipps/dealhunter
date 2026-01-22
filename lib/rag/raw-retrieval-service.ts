@@ -96,10 +96,7 @@ export async function queryRawChunks(query: RawRAGQuery): Promise<RawRAGResult[]
     }
 
     // 2. Fetch all raw chunks for this RFP
-    const chunks = await db
-      .select()
-      .from(rawChunks)
-      .where(eq(rawChunks.rfpId, query.rfpId));
+    const chunks = await db.select().from(rawChunks).where(eq(rawChunks.rfpId, query.rfpId));
 
     if (chunks.length === 0) {
       return [];

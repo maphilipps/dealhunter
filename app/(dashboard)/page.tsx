@@ -54,16 +54,12 @@ export default function DashboardPage() {
   const cacheKey = `/api/bids?${params.toString()}`;
 
   // Fetch data with SWR
-  const { data, error, isLoading } = useSWR<DashboardData>(
-    cacheKey,
-    fetcher,
-    {
-      dedupingInterval: 2000, // Deduplicate requests within 2 seconds
-      refreshInterval: 0, // Don't auto-refresh
-      revalidateOnFocus: false, // Don't refresh on window focus
-      revalidateOnReconnect: false, // Don't refresh on reconnect
-    }
-  );
+  const { data, error, isLoading } = useSWR<DashboardData>(cacheKey, fetcher, {
+    dedupingInterval: 2000, // Deduplicate requests within 2 seconds
+    refreshInterval: 0, // Don't auto-refresh
+    revalidateOnFocus: false, // Don't refresh on window focus
+    revalidateOnReconnect: false, // Don't refresh on reconnect
+  });
 
   // Handle error state
   if (error) {

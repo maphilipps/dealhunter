@@ -113,19 +113,19 @@ Siehe [Testing](./testing.md) für vollständige Testing-Tools Dokumentation.
 
 ## Dependencies Version Matrix
 
-| Package       | Version       | Notes                              |
-| ------------- | ------------- | ---------------------------------- |
-| Next.js       | ^16.1.2       | Stable release                     |
-| React         | 19.2.1        | Latest stable                      |
-| AI SDK        | ^5.0.121      | Major version 5                    |
-| Drizzle ORM   | ^0.45.1       | Latest features                    |
-| NextAuth      | ^5.0.0-beta.30| Beta - production ready            |
-| Zod           | ^4.3.5        | Major version 4                    |
-| Tailwind CSS  | ^4            | Major version 4                    |
-| TypeScript    | ^5            | Latest stable                      |
-| Inngest       | ^3.49.3       | Stable                             |
-| Playwright    | ^1.57.0       | E2E testing                        |
-| Vitest        | ^4.0.17       | Unit testing                       |
+| Package      | Version        | Notes                   |
+| ------------ | -------------- | ----------------------- |
+| Next.js      | ^16.1.2        | Stable release          |
+| React        | 19.2.1         | Latest stable           |
+| AI SDK       | ^5.0.121       | Major version 5         |
+| Drizzle ORM  | ^0.45.1        | Latest features         |
+| NextAuth     | ^5.0.0-beta.30 | Beta - production ready |
+| Zod          | ^4.3.5         | Major version 4         |
+| Tailwind CSS | ^4             | Major version 4         |
+| TypeScript   | ^5             | Latest stable           |
+| Inngest      | ^3.49.3        | Stable                  |
+| Playwright   | ^1.57.0        | E2E testing             |
+| Vitest       | ^4.0.17        | Unit testing            |
 
 ## Environment Variables
 

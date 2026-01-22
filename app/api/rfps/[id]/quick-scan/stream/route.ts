@@ -175,7 +175,9 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       let mergedDecisionMakers = result.decisionMakers;
       if (existingDecisionMakers?.decisionMakers && result.decisionMakers?.decisionMakers) {
         const existingEmails = new Set(
-          existingDecisionMakers.decisionMakers.map((d: { email?: string }) => d.email).filter(Boolean)
+          existingDecisionMakers.decisionMakers
+            .map((d: { email?: string }) => d.email)
+            .filter(Boolean)
         );
         const newContacts = result.decisionMakers.decisionMakers.filter(
           (d: { email?: string }) => !d.email || !existingEmails.has(d.email)

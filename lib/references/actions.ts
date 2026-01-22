@@ -1,10 +1,11 @@
 'use server';
 
+import { eq, desc } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { references } from '@/lib/db/schema';
-import { revalidatePath } from 'next/cache';
-import { eq, desc } from 'drizzle-orm';
 
 export async function createReference(data: {
   projectName: string;
@@ -94,11 +95,19 @@ export async function getReferences() {
   }
 
   try {
-    const userReferences = await db
-      .select()
-      .from(references)
-      .where(eq(references.userId, session.user.id))
-      .orderBy(desc(references.createdAt));
+    let userReferences;
+
+    if (session.user.role === 'admin') {
+      // Admin sees all references
+      userReferences = await db.select().from(references).orderBy(desc(references.createdAt));
+    } else {
+      // Other users see only their own references
+      userReferences = await db
+        .select()
+        .from(references)
+        .where(eq(references.userId, session.user.id))
+        .orderBy(desc(references.createdAt));
+    }
 
     return {
       success: true,

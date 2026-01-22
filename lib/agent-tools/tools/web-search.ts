@@ -16,8 +16,9 @@
  * ```
  */
 
-import { z } from 'zod';
 import { tool } from 'ai';
+import { z } from 'zod';
+
 import { searchAndContents, getContents } from '@/lib/search/web-search';
 
 /**

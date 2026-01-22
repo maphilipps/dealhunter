@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
+
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
 // Initialize OpenAI client with adesso AI Hub
@@ -61,7 +62,7 @@ export async function suggestWebsiteUrls(input: UrlSuggestionInput): Promise<Url
           webSearchResults = searchResults
             .filter(r => r.url && r.title)
             .map(r => ({
-              url: r.url!,
+              url: r.url,
               title: r.title || 'Untitled',
               snippet: r.snippet || '',
             }));

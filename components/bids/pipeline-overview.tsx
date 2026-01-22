@@ -1,5 +1,10 @@
-import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
+import Link from 'next/link';
+
+import { StatusBadge } from './status-badge';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -8,9 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { StatusBadge } from './status-badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 
 export interface BidOpportunity {
   id: string;

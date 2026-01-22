@@ -1,9 +1,10 @@
+import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+
 import { auth } from '@/lib/auth';
+import { researchSingleRequirement } from '@/lib/cms-matching/agent';
 import { db } from '@/lib/db';
 import { technologies } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { researchSingleRequirement } from '@/lib/cms-matching/agent';
 
 /**
  * POST /api/admin/technologies/[id]/research-feature

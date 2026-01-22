@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Plus, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getEmployees, importEmployeesFromCSV } from '@/lib/admin/employees-actions';
+import { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
+
 import { EmployeeList } from '@/components/admin/employee-list';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload } from 'lucide-react';
-import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { getEmployees, importEmployeesFromCSV } from '@/lib/admin/employees-actions';
 
 export default function EmployeesPage() {
   const router = useRouter();

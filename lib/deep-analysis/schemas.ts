@@ -1,11 +1,11 @@
-import { z } from 'zod';
 import DOMPurify from 'isomorphic-dompurify';
+import { z } from 'zod';
 
 // Sanitized string schema (XSS prevention)
 // Strips ALL HTML tags, entities, and malicious content
 const sanitizedString = z.string().transform(val => {
   // Step 1: Decode HTML entities FIRST (&lt; → <, &#60; → <, etc.)
-  let decoded = val
+  const decoded = val
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>')
     .replace(/&amp;/gi, '&')
@@ -44,28 +44,26 @@ const sanitizedString = z.string().transform(val => {
 });
 
 // URL schema with DOMPurify sanitization and protocol validation
-const sanitizedUrl = z
-  .string()
-  .refine(
-    val => {
-      // Check if it's a valid URL
-      try {
-        const url = new URL(val);
-        // Only allow http/https protocols
-        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-          return false;
-        }
-
-        // Sanitize and check if URL is still valid after sanitization
-        const sanitized = DOMPurify.sanitize(val, { ALLOWED_TAGS: [] });
-        new URL(sanitized);
-        return true;
-      } catch {
+const sanitizedUrl = z.string().refine(
+  val => {
+    // Check if it's a valid URL
+    try {
+      const url = new URL(val);
+      // Only allow http/https protocols
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
         return false;
       }
-    },
-    { message: 'URL must use http or https protocol and cannot contain malicious content' }
-  );
+
+      // Sanitize and check if URL is still valid after sanitization
+      const sanitized = DOMPurify.sanitize(val, { ALLOWED_TAGS: [] });
+      new URL(sanitized);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  { message: 'URL must use http or https protocol and cannot contain malicious content' }
+);
 
 export const ContentArchitectureSchema = z.object({
   pageTypes: z.array(

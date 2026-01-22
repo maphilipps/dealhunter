@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+
 import { isAllowedUrl } from '../utils/url-validator';
 
 describe('SSRF Protection - URL Validation', () => {

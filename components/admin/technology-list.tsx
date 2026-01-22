@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import { Trash2, RefreshCw, ExternalLink, Github, Star, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { deleteTechnology } from '@/lib/admin/technologies-actions';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { deleteTechnology } from '@/lib/admin/technologies-actions';
 
 interface Technology {
   id: string;

@@ -1,5 +1,6 @@
-import { generateStructuredOutput } from '@/lib/ai/config';
 import { z } from 'zod';
+
+import { generateStructuredOutput } from '@/lib/ai/config';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
@@ -140,7 +141,7 @@ export async function runFullScan(
   const startTime = Date.now();
 
   const logProgress = (phase: string, message: string) => {
-    console.log(`[FullScan] ${phase}: ${message}`);
+    console.error(`[FullScan] ${phase}: ${message}`);
     emit?.({
       type: AgentEventType.AGENT_PROGRESS,
       data: {
@@ -215,23 +216,27 @@ export async function runFullScan(
 /**
  * Analyze UI components and patterns
  *
- * In production, this would:
- * 1. Use Chrome DevTools MCP to navigate pages
- * 2. Take screenshots of key pages
- * 3. Analyze DOM structure for component patterns
- * 4. Use AI vision to identify UI patterns
- *
- * For now, this is a placeholder that returns structured data.
+ * Uses actual website crawling to analyze components.
  */
 async function analyzeComponents(
   websiteUrl: string,
   logProgress: (phase: string, message: string) => void
 ): Promise<ComponentAnalysis> {
-  logProgress('component-analysis', 'Fetching website content');
+  logProgress('component-analysis', 'Crawling website for component analysis');
 
-  // TODO: Implement actual component analysis using MCP chrome-devtools
-  // For now, return simulated data structure
+  // Import crawler dynamically to avoid circular dependencies
+  const { crawlWebsite } = await import('./website-crawler');
 
+  // Crawl website
+  const crawlResult = await crawlWebsite(websiteUrl, { maxPages: 10 });
+
+  if (!crawlResult.success) {
+    throw new Error(`Failed to crawl website: ${crawlResult.error}`);
+  }
+
+  logProgress('component-analysis', 'Analyzing UI patterns with AI');
+
+  // Use AI to analyze component patterns based on crawled data
   const result = await generateStructuredOutput({
     model: 'default',
     schema: componentAnalysisSchema,
@@ -239,12 +244,19 @@ async function analyzeComponents(
       'You are an expert website analyst specializing in UI component identification and complexity assessment.',
     prompt: `Analyze the website at ${websiteUrl} and identify common UI component patterns.
 
-Based on typical website structures, estimate:
+Homepage Title: ${crawlResult.homepage?.title || 'Unknown'}
+Homepage Description: ${crawlResult.homepage?.description || 'Unknown'}
+Sample Pages Found: ${crawlResult.samplePages?.length || 0}
+Detected CMS: ${crawlResult.techStack?.cms || 'Unknown'}
+Detected Framework: ${crawlResult.techStack?.framework || 'Unknown'}
+
+Based on this information and typical website structures, estimate:
 - Common component patterns (headers, footers, cards, grids, forms, etc.)
 - Complexity levels
 - Frequency of use
+- Typical variants for each component
 
-Provide a realistic component analysis for a ${websiteUrl} website.`,
+Provide a realistic component analysis.`,
   });
 
   return result;

@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
+
 import { teamSuggestionSchema, type TeamSuggestion } from './schema';
+
 import type { Employee } from '@/lib/db/schema';
 
 // Initialize OpenAI client with adesso AI Hub

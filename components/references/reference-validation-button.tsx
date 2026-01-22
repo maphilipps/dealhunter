@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Loader2, Check } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { toast } from 'sonner';
+
 import { validateReference } from '@/lib/references/actions';
 
 interface ReferenceValidationButtonProps {

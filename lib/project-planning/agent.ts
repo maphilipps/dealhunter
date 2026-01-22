@@ -1,7 +1,9 @@
 import { generateObject } from 'ai';
+
 import { projectPlanSchema, type ProjectPlan } from './schema';
-import type { PTEstimation } from '@/lib/deep-analysis/schemas';
+
 import type { BaselineComparisonResult } from '@/lib/baseline-comparison/schema';
+import type { PTEstimation } from '@/lib/deep-analysis/schemas';
 
 /**
  * Input für den Project-Planning Agent

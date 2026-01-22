@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Loader2, Plus, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { toast } from 'sonner';
+
 import { createBusinessUnit } from '@/lib/admin/business-units-actions';
 
 interface KeywordInputProps {

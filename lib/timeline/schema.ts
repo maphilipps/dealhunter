@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import DOMPurify from 'isomorphic-dompurify';
+import { z } from 'zod';
 
 const sanitizedString = z.string().transform(val => {
   return DOMPurify.sanitize(val, {
@@ -153,3 +153,46 @@ export const TEAM_SIZE_FACTORS = {
   large: { size: 6, factor: 0.85 }, // 5-6 people - faster but coordination overhead
   very_large: { size: 10, factor: 0.75 }, // 10+ people - fastest but high overhead
 } as const;
+
+/**
+ * Risk Analysis Schema
+ *
+ * Compares RFP deadline with AI-generated timeline estimate
+ * to identify unrealistic timelines and provide risk warnings.
+ */
+export const riskAnalysisSchema = z.object({
+  risk: z.enum(['HIGH', 'MEDIUM', 'LOW']).describe('Risk level based on timeline delta'),
+  deltaDays: z.number().describe('Difference in working days (RFP - AI estimate)'),
+  warning: sanitizedString.describe('Human-readable warning message'),
+  rfpDeadline: z
+    .string()
+    .nullable()
+    .describe('RFP deadline in ISO format, or null if not specified'),
+  aiEstimatedCompletion: z
+    .string()
+    .nullable()
+    .describe('AI estimated completion date in ISO format'),
+  isRealistic: z.boolean().describe('Whether the RFP deadline is realistic'),
+});
+
+export type RiskAnalysis = z.infer<typeof riskAnalysisSchema>;
+
+/**
+ * Routing Decision Schema
+ *
+ * Captures the BD Manager's manual BL selection decision
+ * including reasoning and whether they overrode the AI recommendation.
+ */
+export const routingDecisionSchema = z.object({
+  selectedBusinessLineId: sanitizedString.describe('ID of the selected business line'),
+  selectedBusinessLineName: sanitizedString
+    .optional()
+    .describe('Name of the selected business line'),
+  reason: sanitizedString.optional().describe('Optional reasoning for BL selection'),
+  overrideRecommendation: z.boolean().describe('Whether BD Manager overrode AI recommendation'),
+  decidedAt: z.string().datetime().describe('When the decision was made'),
+  decidedByUserId: sanitizedString.describe('User ID of the BD Manager who decided'),
+  decidedByUserName: sanitizedString.optional().describe('Name of the BD Manager'),
+});
+
+export type RoutingDecision = z.infer<typeof routingDecisionSchema>;

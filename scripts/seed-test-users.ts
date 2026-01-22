@@ -1,6 +1,7 @@
+import bcrypt from 'bcryptjs';
+
 import { db } from '../lib/db';
 import { users } from '../lib/db/schema';
-import bcrypt from 'bcryptjs';
 
 async function seedTestUsers() {
   console.log('Seeding test users...');

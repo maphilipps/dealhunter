@@ -4,8 +4,9 @@
  * Expected duration: 10-14 minutes
  */
 
-import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
+import { chromium } from 'playwright';
+
 import { AccessibilityAuditSchema, type AccessibilityAudit } from '../schemas';
 
 export async function auditAccessibility(

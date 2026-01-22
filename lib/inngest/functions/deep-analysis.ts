@@ -1,12 +1,13 @@
+import { createId } from '@paralleldrive/cuid2';
+import { eq, desc } from 'drizzle-orm';
+
 import { inngest } from '../client';
+
 import { db } from '@/lib/db';
 import { deepMigrationAnalyses, rfps, quickScans, backgroundJobs } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
-import { createId } from '@paralleldrive/cuid2';
-import { runFullScan } from '@/lib/full-scan/agent';
+import { auditAccessibility } from '@/lib/deep-analysis/agents/accessibility-audit-agent';
 import { analyzeContentArchitecture } from '@/lib/deep-analysis/agents/content-architecture-agent';
 import { scoreMigrationComplexity } from '@/lib/deep-analysis/agents/migration-complexity-agent';
-import { auditAccessibility } from '@/lib/deep-analysis/agents/accessibility-audit-agent';
 import { estimatePT } from '@/lib/deep-analysis/agents/pt-estimation-agent';
 import {
   ContentArchitectureSchema,
@@ -14,6 +15,7 @@ import {
   AccessibilityAuditSchema,
   PTEstimationSchema,
 } from '@/lib/deep-analysis/schemas';
+import { runFullScan } from '@/lib/full-scan/agent';
 import { fullScanResultSchema } from '@/lib/full-scan/agent';
 import {
   saveCheckpoint,
@@ -78,7 +80,7 @@ export const deepAnalysisFunction = inngest.createFunction(
             jobId: event.id || 'manual-trigger',
             status: 'running' as const,
             startedAt: new Date(),
-            websiteUrl: bidData.websiteUrl!,
+            websiteUrl: bidData.websiteUrl,
             sourceCMS: quickScanData?.cms || 'Unknown',
             targetCMS: 'Drupal',
             version: 1,
@@ -116,7 +118,7 @@ export const deepAnalysisFunction = inngest.createFunction(
           progress: 0,
           data: {
             analysisId: analysisRecord.id,
-            websiteUrl: bidData.websiteUrl!,
+            websiteUrl: bidData.websiteUrl,
             sourceCMS: quickScanData?.cms || 'Unknown',
             targetCMS: 'Drupal',
           },

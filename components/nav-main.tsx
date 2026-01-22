@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronRight, type LucideIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
@@ -28,6 +29,8 @@ export function NavMain({
     }[];
   }[];
 }) {
+  const router = useRouter();
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
@@ -41,7 +44,11 @@ export function NavMain({
           >
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
-                <SidebarMenuButton tooltip={item.title}>
+                <SidebarMenuButton
+                  tooltip={item.title}
+                  onMouseEnter={() => router.prefetch(item.url)}
+                  onFocus={() => router.prefetch(item.url)}
+                >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
                   <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -52,7 +59,11 @@ export function NavMain({
                   {item.items?.map(subItem => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <a href={subItem.url}>
+                        <a
+                          href={subItem.url}
+                          onMouseEnter={() => router.prefetch(subItem.url)}
+                          onFocus={() => router.prefetch(subItem.url)}
+                        >
                           <span>{subItem.title}</span>
                         </a>
                       </SidebarMenuSubButton>

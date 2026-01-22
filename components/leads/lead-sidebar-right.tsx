@@ -98,7 +98,7 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
   ];
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar" side="right">
+    <Sidebar collapsible="none" variant="sidebar" side="right">
       <SidebarContent>
         {/* Lead Metadata */}
         <SidebarGroup>

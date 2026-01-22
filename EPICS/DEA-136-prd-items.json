@@ -1,0 +1,278 @@
+{
+  "feature": "DEA-136: RFP Detail - Sidebar Right Navigation",
+  "version": "1.0.0",
+  "testUrl": "http://localhost:3000/rfps/xztqrqoudardauod4yfr6a3e",
+  "items": [
+    {
+      "id": "PRD-001",
+      "category": "Layout",
+      "description": "3-Sidebar Layout mit AppSidebar (links), Content (mitte), RfpSidebarRight (rechts)",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id]",
+        "Prüfe: AppSidebar ist links sichtbar mit Hauptnavigation",
+        "Prüfe: Content-Bereich ist in der Mitte",
+        "Prüfe: RfpSidebarRight ist rechts sichtbar mit RFP-Navigation",
+        "Prüfe: Alle drei Bereiche sind korrekt ausgerichtet ohne Überlappung"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-002",
+      "category": "Layout",
+      "description": "RFP Header zeigt Titel und Status im oberen Bereich",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id]",
+        "Prüfe: Header enthält RFP-Titel",
+        "Prüfe: Header enthält 'RFP Dashboard' Untertitel",
+        "Prüfe: SidebarTrigger Button ist vorhanden",
+        "Prüfe: Separator zwischen Trigger und Titel ist sichtbar"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-003",
+      "category": "Navigation",
+      "description": "RfpSidebarRight zeigt 9 Navigation-Links in 4 Gruppen",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id]",
+        "Prüfe Gruppe 'Overview': Übersicht Link vorhanden",
+        "Prüfe Gruppe 'Details': Timing, Deliverables, Referenzen, Legal Links vorhanden",
+        "Prüfe Gruppe 'Analysis': Tech Stack, Facts, Kontakte Links vorhanden",
+        "Prüfe Gruppe 'Routing': BL Routing Link vorhanden",
+        "Prüfe: Jeder Link hat ein passendes Icon"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-004",
+      "category": "Navigation",
+      "description": "Active Link Highlighting basierend auf aktueller Route",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id] - 'Übersicht' ist hervorgehoben",
+        "Navigiere zu /rfps/[id]/timing - 'Timing' ist hervorgehoben",
+        "Navigiere zu /rfps/[id]/tech - 'Tech Stack' ist hervorgehoben",
+        "Prüfe: Nur der aktuelle Link ist hervorgehoben, nicht mehrere",
+        "Prüfe: Hervorhebung ist visuell deutlich erkennbar (Farbe/Hintergrund)"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-005",
+      "category": "Navigation",
+      "description": "Alle 9 Unterseiten sind erreichbar ohne 404-Fehler",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id] - Seite lädt ohne Fehler",
+        "Navigiere zu /rfps/[id]/timing - Seite lädt ohne Fehler",
+        "Navigiere zu /rfps/[id]/deliverables - Seite lädt ohne Fehler",
+        "Navigiere zu /rfps/[id]/references - Seite lädt ohne Fehler",
+        "Navigiere zu /rfps/[id]/legal - Seite lädt ohne Fehler",
+        "Navigiere zu /rfps/[id]/tech - Seite lädt ohne Fehler",
+        "Navigiere zu /rfps/[id]/facts - Seite lädt ohne Fehler",
+        "Navigiere zu /rfps/[id]/contacts - Seite lädt ohne Fehler",
+        "Navigiere zu /rfps/[id]/routing - Seite lädt ohne Fehler"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-006",
+      "category": "Unterseite: Übersicht",
+      "description": "Übersicht zeigt Quick Scan Ergebnisse und BL Routing, keine unerwünschten Cards",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id]",
+        "Prüfe: Quick Scan Results sind sichtbar (wenn status >= 'scanned')",
+        "Prüfe: BL Routing Card ist sichtbar (wenn status >= 'routed')",
+        "Prüfe: DeepAnalysisCard ist NICHT vorhanden",
+        "Prüfe: BaselineComparisonCard ist NICHT vorhanden",
+        "Prüfe: ProjectPlanningCard ist NICHT vorhanden",
+        "Prüfe: TeamBuilder ist NICHT vorhanden",
+        "Prüfe: NotificationCard ist NICHT vorhanden"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-007",
+      "category": "Unterseite: Timing",
+      "description": "Timing-Seite zeigt Timeline Card mit Deadlines und Meilensteinen",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id]/timing",
+        "Prüfe: Timeline Card ist sichtbar",
+        "Prüfe: Submission Deadline wird angezeigt (falls vorhanden)",
+        "Prüfe: Projekt-Phasen werden angezeigt (falls im Dokument)",
+        "Prüfe: Wichtige Meilensteine sind aufgelistet"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-008",
+      "category": "Unterseite: Deliverables",
+      "description": "Deliverables-Seite zeigt einzureichende Unterlagen und Lieferumfang",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id]/deliverables",
+        "Prüfe: Einzureichende Unterlagen Tabelle/Liste ist sichtbar",
+        "Prüfe: Jedes Deliverable zeigt Name, Deadline, Format",
+        "Prüfe: Mandatory-Kennzeichnung ist vorhanden",
+        "Prüfe: Lieferumfang Section zeigt Projekt-Deliverables"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-009",
+      "category": "Unterseite: References",
+      "description": "References-Seite zeigt geforderte Referenzen und Kriterien",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id]/references",
+        "Prüfe: Referenz-Anforderungen Card ist sichtbar",
+        "Prüfe: Anzahl geforderter Referenzen wird angezeigt",
+        "Prüfe: Art der Referenzen (Branche, Größe) wird angezeigt",
+        "Prüfe: Zeitraum-Anforderungen werden angezeigt"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-010",
+      "category": "Unterseite: Legal",
+      "description": "Legal-Seite zeigt rechtliche Anforderungen und Compliance-Vorgaben",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id]/legal",
+        "Prüfe: Legal Requirements Card ist sichtbar",
+        "Prüfe: Rechtliche Anforderungen werden aufgelistet",
+        "Prüfe: Compliance-Vorgaben werden angezeigt",
+        "Prüfe: Vertragsklauseln-Hinweise (falls vorhanden)"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-011",
+      "category": "Unterseite: Tech Stack",
+      "description": "Tech Stack-Seite zeigt ALLE gefundenen Technologien ohne Limit",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id]/tech",
+        "Prüfe: Tech Stack Liste ist sichtbar",
+        "Prüfe: ALLE Technologien werden angezeigt (KEIN '+13 mehr' Button)",
+        "Prüfe: Performance Indicators sind sichtbar",
+        "Prüfe: HTTPX Details werden angezeigt (falls vorhanden)",
+        "Prüfe: Accessibility Audit Ergebnisse sind sichtbar"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-012",
+      "category": "Unterseite: Facts",
+      "description": "Facts-Seite zeigt Website Facts und Screenshots mit Carousel Modal",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id]/facts",
+        "Prüfe: Website URL wird angezeigt",
+        "Prüfe: Content Volume Statistiken sind sichtbar",
+        "Prüfe: Screenshot Thumbnails werden angezeigt (max 200px Breite)",
+        "Prüfe: Klick auf Thumbnail öffnet Dialog",
+        "Prüfe: Dialog enthält Carousel mit allen Screenshots",
+        "Prüfe: CarouselPrevious und CarouselNext Buttons funktionieren"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-013",
+      "category": "Unterseite: Contacts",
+      "description": "Contacts-Seite zeigt Entscheider mit Web Search Integration",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id]/contacts",
+        "Prüfe: Enhanced Decision Makers Card ist sichtbar",
+        "Prüfe: Entscheider-Namen werden angezeigt",
+        "Prüfe: Position/Rolle wird angezeigt",
+        "Prüfe: Web Search Ergebnisse (LinkedIn, Xing) werden angezeigt",
+        "Prüfe: Kontakt-Details (Email, Telefon) werden angezeigt (falls verfügbar)"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-014",
+      "category": "Unterseite: Routing",
+      "description": "Routing-Seite zeigt BL Routing Card und 10 Questions",
+      "stepsToVerify": [
+        "Navigiere zu /rfps/[id]/routing",
+        "Prüfe: BL Routing Card ist sichtbar",
+        "Prüfe: 10 Questions Card ist sichtbar",
+        "Prüfe: Quick Scan Summary ist sichtbar",
+        "Prüfe: BID/NO-BID Confidence wird angezeigt"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-015",
+      "category": "Responsive",
+      "description": "Layout ist responsive und funktioniert auf Desktop, Tablet und Mobile",
+      "stepsToVerify": [
+        "Desktop (1920x1080): Alle 3 Sidebars sind sichtbar",
+        "Tablet (768x1024): Sidebars sind collapsible",
+        "Mobile (375x667): Sidebars werden als Drawer angezeigt",
+        "Prüfe: Content bleibt lesbar auf allen Viewports",
+        "Prüfe: Navigation bleibt nutzbar auf allen Viewports"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-016",
+      "category": "Code Quality",
+      "description": "Keine Console Errors beim Navigieren durch alle Unterseiten",
+      "stepsToVerify": [
+        "Öffne Browser DevTools Console",
+        "Navigiere durch alle 9 Unterseiten",
+        "Prüfe: Keine JavaScript Errors in der Console",
+        "Prüfe: Keine React Warnings in der Console",
+        "Prüfe: Keine Network Errors (außer 404 für fehlende Assets)"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-017",
+      "category": "Code Quality",
+      "description": "Build läuft ohne Fehler durch",
+      "stepsToVerify": [
+        "Führe 'npm run build' aus",
+        "Prüfe: Build completes successfully",
+        "Prüfe: Keine TypeScript Errors",
+        "Prüfe: Keine ESLint Errors (Warnings OK)"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-018",
+      "category": "Performance",
+      "description": "Seitenladezeit unter 3 Sekunden für alle Unterseiten",
+      "stepsToVerify": [
+        "Öffne Browser DevTools Network Tab",
+        "Navigiere zu jeder der 9 Unterseiten",
+        "Prüfe: DOMContentLoaded < 3s für jede Seite",
+        "Prüfe: Keine Blocking Requests > 2s",
+        "Prüfe: Gesamte Page Load < 5s"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-019",
+      "category": "Component",
+      "description": "RfpSidebarRight Component existiert und verwendet ShadCN Sidebar",
+      "stepsToVerify": [
+        "Prüfe: Datei /components/bids/rfp-sidebar-right.tsx existiert",
+        "Prüfe: Component verwendet Sidebar mit side='right'",
+        "Prüfe: Component verwendet SidebarContent, SidebarGroup, SidebarMenu",
+        "Prüfe: Component akzeptiert Props: rfpId, title, status",
+        "Prüfe: Component verwendet usePathname für Active State"
+      ],
+      "passes": true
+    },
+    {
+      "id": "PRD-020",
+      "category": "Component",
+      "description": "RFP Layout existiert und bindet beide Sidebars ein",
+      "stepsToVerify": [
+        "Prüfe: Datei /app/(dashboard)/rfps/[id]/layout.tsx existiert",
+        "Prüfe: Layout verwendet SidebarProvider",
+        "Prüfe: Layout bindet AppSidebar (links) ein",
+        "Prüfe: Layout bindet RfpSidebarRight (rechts) ein",
+        "Prüfe: Layout rendert children im Content-Bereich"
+      ],
+      "passes": true
+    }
+  ]
+}

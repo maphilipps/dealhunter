@@ -1,12 +1,10 @@
-import { eq } from 'drizzle-orm';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { BidDetailClient } from '@/components/bids/bid-detail-client';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
+import { getCachedRfp } from '@/lib/rfps/cached-queries';
 
 export default async function BidDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,28 +14,16 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
     redirect('/login');
   }
 
-  // Get bid opportunity
-  const [bid] = await db.select().from(rfps).where(eq(rfps.id, id)).limit(1);
+  // Get bid opportunity (cached - shares query with layout)
+  const bid = await getCachedRfp(id);
 
   if (!bid) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">RFP nicht gefunden</h1>
-        <p className="text-muted-foreground">Der angeforderte RFP konnte nicht gefunden werden.</p>
-      </div>
-    );
+    notFound();
   }
 
   // Check ownership
   if (bid.userId !== session.user.id) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Keine Berechtigung</h1>
-        <p className="text-muted-foreground">
-          Sie haben keine Berechtigung, diesen RFP anzuzeigen.
-        </p>
-      </div>
-    );
+    notFound();
   }
 
   return (
@@ -79,7 +65,7 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
               <p className="font-medium">
                 {bid.inputType === 'pdf' && 'PDF Upload'}
                 {bid.inputType === 'email' && 'E-Mail'}
-                {bid.inputType === 'freetext' && 'Texteing abe'}
+                {bid.inputType === 'freetext' && 'Texteingabe'}
               </p>
             </div>
           </div>

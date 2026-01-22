@@ -1,0 +1,1563 @@
+
+> lead-agent@0.1.0 test:coverage
+> vitest run --coverage
+
+
+[1m[46m RUN [49m[22m [36mv4.0.17 [39m[90m/Users/marc.philipps/Sites/dealhunter-tests[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m tests/unit/embedding-service.test.ts [2m([22m[2m38 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mwithRetry - Success Cases[2m > [22m[2mretries transient errors and succeeds on second attempt
+[22m[39m[Retry] Attempt 1/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Waiting 100ms before retry 2...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mwithRetry - Success Cases[2m > [22m[2mretries transient errors and succeeds on third attempt
+[22m[39m[Retry] Attempt 1/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Waiting 100ms before retry 2...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mwithRetry - Success Cases[2m > [22m[2mretries transient errors and succeeds on third attempt
+[22m[39m[Retry] Attempt 2/3 failed: TIMEOUT Request timed out. Retrying with increased timeout...
+[Retry] Waiting 200ms before retry 3...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mwithRetry - Failure Cases[2m > [22m[2mdoes not retry permanent errors
+[22m[39m[Retry] Attempt 1/3 failed: AUTHENTICATION_ERROR Authentication failed. Please check API credentials.
+[Retry] Non-retryable error, stopping retries
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mwithRetry - Failure Cases[2m > [22m[2mstops after max attempts for transient errors
+[22m[39m[Retry] Attempt 1/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Waiting 100ms before retry 2...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mwithRetry - Failure Cases[2m > [22m[2mstops after max attempts for transient errors
+[22m[39m[Retry] Attempt 2/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Waiting 200ms before retry 3...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mwithRetry - Failure Cases[2m > [22m[2mstops after max attempts for transient errors
+[22m[39m[Retry] Attempt 3/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Max attempts reached, stopping retries
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mwithRetry - Failure Cases[2m > [22m[2mreturns error details on failure
+[22m[39m[Retry] Attempt 1/2 failed: RATE_LIMIT Rate limit exceeded. Waiting before retry...
+[Retry] Waiting 100ms before retry 2...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mwithRetry - Failure Cases[2m > [22m[2mreturns error details on failure
+[22m[39m[Retry] Attempt 2/2 failed: RATE_LIMIT Rate limit exceeded. Waiting before retry...
+[Retry] Max attempts reached, stopping retries
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mExponential Backoff[2m > [22m[2muses exponential backoff between retries
+[22m[39m[Retry] Attempt 1/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Waiting 100ms before retry 2...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mExponential Backoff[2m > [22m[2muses exponential backoff between retries
+[22m[39m[Retry] Attempt 2/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Waiting 200ms before retry 3...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mExponential Backoff[2m > [22m[2muses exponential backoff between retries
+[22m[39m[Retry] Attempt 3/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Max attempts reached, stopping retries
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mExponential Backoff[2m > [22m[2mdoes not delay after last attempt
+[22m[39m[Retry] Attempt 1/2 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Waiting 100ms before retry 2...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mExponential Backoff[2m > [22m[2mdoes not delay after last attempt
+[22m[39m[Retry] Attempt 2/2 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Max attempts reached, stopping retries
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mRetry Progress Callback[2m > [22m[2mcalls onRetryProgress on each retry
+[22m[39m[Retry] Attempt 1/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Waiting 100ms before retry 2...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mRetry Progress Callback[2m > [22m[2mcalls onRetryProgress on each retry
+[22m[39m[Retry] Attempt 2/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Waiting 200ms before retry 3...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mRetry Progress Callback[2m > [22m[2mcalls onRetryProgress on each retry
+[22m[39m[Retry] Attempt 3/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Max attempts reached, stopping retries
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mRetry Progress Callback[2m > [22m[2mdoes not call onRetryProgress if not provided
+[22m[39m[Retry] Attempt 1/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Waiting 100ms before retry 2...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mRetry Progress Callback[2m > [22m[2mdoes not call onRetryProgress if not provided
+[22m[39m[Retry] Attempt 2/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Waiting 200ms before retry 3...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mRetry Progress Callback[2m > [22m[2mdoes not call onRetryProgress if not provided
+[22m[39m[Retry] Attempt 3/3 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Max attempts reached, stopping retries
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mcreateRetryWrapper[2m > [22m[2muses correct config for duplicateCheck
+[22m[39m[Retry] Attempt 1/2 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Waiting 1000ms before retry 2...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mcreateRetryWrapper[2m > [22m[2muses correct config for duplicateCheck
+[22m[39m[Retry] Attempt 2/2 failed: NETWORK_ERROR Network connection failed. Retrying...
+[Retry] Max attempts reached, stopping retries
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mcreateRetryWrapper[2m > [22m[2muses correct config for quickScan
+[22m[39m[Retry] Attempt 1/2 failed: TIMEOUT Request timed out. Retrying with increased timeout...
+[Retry] Waiting 5000ms before retry 2...
+
+[90mstderr[2m | lib/errors/__tests__/retry.test.ts[2m > [22m[2mRetry Logic[2m > [22m[2mcreateRetryWrapper[2m > [22m[2muses correct config for quickScan
+[22m[39m[Retry] Attempt 2/2 failed: TIMEOUT Request timed out. Retrying with increased timeout...
+[Retry] Max attempts reached, stopping retries
+
+ [32m✓[39m lib/errors/__tests__/retry.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould return error when crawl data is missing
+[22m[39m[Content Architecture Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould return error when sample pages array is empty
+[22m[39m[Content Architecture Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould analyze content architecture with valid crawl data
+[22m[39m[Content Architecture Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould analyze content architecture with valid crawl data
+[22m[39m[Content Architecture Agent] AI analysis completed { pageCount: [33m150[39m, contentTypes: [33m2[39m }
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould generate site tree with homepage
+[22m[39m[Content Architecture Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould generate site tree with homepage
+[22m[39m[Content Architecture Agent] AI analysis completed { pageCount: [33m50[39m, contentTypes: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould handle AI errors gracefully
+[22m[39m[Content Architecture Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould handle AI errors gracefully
+[22m[39m[Content Architecture Agent] Error: Error: AI service unavailable
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/agents/__tests__/content-architecture-agent.test.ts:170:51
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:20
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould handle different confidence levels correctly
+[22m[39m[Content Architecture Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould handle different confidence levels correctly
+[22m[39m[Content Architecture Agent] AI analysis completed { pageCount: [33m100[39m, contentTypes: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould handle different confidence levels correctly
+[22m[39m[Content Architecture Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould handle different confidence levels correctly
+[22m[39m[Content Architecture Agent] AI analysis completed { pageCount: [33m100[39m, contentTypes: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould handle different confidence levels correctly
+[22m[39m[Content Architecture Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould handle different confidence levels correctly
+[22m[39m[Content Architecture Agent] AI analysis completed { pageCount: [33m100[39m, contentTypes: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould include analyzed timestamp
+[22m[39m[Content Architecture Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/content-architecture-agent.test.ts[2m > [22m[2mContent Architecture Agent[2m > [22m[2manalyzeContentArchitecture[2m > [22m[2mshould include analyzed timestamp
+[22m[39m[Content Architecture Agent] AI analysis completed { pageCount: [33m100[39m, contentTypes: [33m0[39m }
+
+[90mstderr[2m | lib/extraction/__tests__/agent.test.ts[2m > [22m[2mExtraction Agent[2m > [22m[2mextractRequirements[2m > [22m[2mshould handle empty AI response
+[22m[39mExtraction error: ZodError: [
+  {
+    "expected": "string",
+    "code": "invalid_type",
+    "path": [
+      "customerName"
+    ],
+    "message": "Invalid input: expected string, received undefined"
+  },
+  {
+    "expected": "string",
+    "code": "invalid_type",
+    "path": [
+      "projectDescription"
+    ],
+    "message": "Invalid input: expected string, received undefined"
+  },
+  {
+    "expected": "array",
+    "code": "invalid_type",
+    "path": [
+      "technologies"
+    ],
+    "message": "Invalid input: expected array, received undefined"
+  },
+  {
+    "expected": "array",
+    "code": "invalid_type",
+    "path": [
+      "keyRequirements"
+    ],
+    "message": "Invalid input: expected array, received undefined"
+  },
+  {
+    "expected": "number",
+    "code": "invalid_type",
+    "path": [
+      "confidenceScore"
+    ],
+    "message": "Invalid input: expected number, received undefined"
+  }
+]
+    at Module.extractRequirements [90m(/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/extraction/agent.ts:115:51[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/extraction/__tests__/agent.test.ts:235:22
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:20
+
+[90mstderr[2m | lib/extraction/__tests__/agent.test.ts[2m > [22m[2mExtraction Agent[2m > [22m[2mextractRequirements[2m > [22m[2mshould handle AI API errors gracefully
+[22m[39mExtraction error: Error: API rate limit
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/extraction/__tests__/agent.test.ts:244:71
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:145:11
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:26
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1209:10[90m)[39m
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:37
+    at Traces.$ [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/traces.CCmnQaNT.js:142:27[90m)[39m
+    at trace [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/test.B8ej_ZHS.js:239:21[90m)[39m
+    at runTest [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:12[90m)[39m
+
+[90mstderr[2m | lib/extraction/__tests__/agent.test.ts[2m > [22m[2mExtraction Agent[2m > [22m[2mextractRequirements[2m > [22m[2mshould handle invalid JSON response
+[22m[39mExtraction error: SyntaxError: Unexpected token 'T', "This is no"... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at Module.extractRequirements [90m(/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/extraction/agent.ts:114:25[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/extraction/__tests__/agent.test.ts:275:22
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:20
+
+[90mstderr[2m | lib/extraction/__tests__/agent.test.ts[2m > [22m[2mExtraction Agent[2m > [22m[2mextractRequirements[2m > [22m[2mshould handle schema validation errors
+[22m[39mExtraction error: ZodError: [
+  {
+    "expected": "string",
+    "code": "invalid_type",
+    "path": [
+      "customerName"
+    ],
+    "message": "Invalid input: expected string, received number"
+  },
+  {
+    "expected": "string",
+    "code": "invalid_type",
+    "path": [
+      "projectDescription"
+    ],
+    "message": "Invalid input: expected string, received undefined"
+  },
+  {
+    "expected": "array",
+    "code": "invalid_type",
+    "path": [
+      "technologies"
+    ],
+    "message": "Invalid input: expected array, received undefined"
+  },
+  {
+    "expected": "array",
+    "code": "invalid_type",
+    "path": [
+      "keyRequirements"
+    ],
+    "message": "Invalid input: expected array, received undefined"
+  },
+  {
+    "expected": "number",
+    "code": "invalid_type",
+    "path": [
+      "confidenceScore"
+    ],
+    "message": "Invalid input: expected number, received string"
+  }
+]
+    at Module.extractRequirements [90m(/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/extraction/agent.ts:115:51[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/extraction/__tests__/agent.test.ts:298:22
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:20
+
+[90mstderr[2m | lib/extraction/__tests__/agent.test.ts[2m > [22m[2mExtraction Agent[2m > [22m[2mrunExtractionWithStreaming[2m > [22m[2mshould handle extraction errors and emit error event
+[22m[39mExtraction error: Error: Network error
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/extraction/__tests__/agent.test.ts:454:71
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:145:11
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:26
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1209:10[90m)[39m
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:37
+    at Traces.$ [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/traces.CCmnQaNT.js:142:27[90m)[39m
+    at trace [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/test.B8ej_ZHS.js:239:21[90m)[39m
+    at runTest [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:12[90m)[39m
+
+ [32m✓[39m lib/agents/__tests__/content-architecture-agent.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+[90mstderr[2m | lib/extraction/__tests__/agent.test.ts[2m > [22m[2mExtraction Agent[2m > [22m[2medge cases and error handling[2m > [22m[2mshould return empty requirements on extraction error
+[22m[39mExtraction error: Error: Service unavailable
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/extraction/__tests__/agent.test.ts:1007:71
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:145:11
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:26
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1209:10[90m)[39m
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:37
+    at Traces.$ [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/traces.CCmnQaNT.js:142:27[90m)[39m
+    at trace [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/test.B8ej_ZHS.js:239:21[90m)[39m
+    at runTest [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:12[90m)[39m
+
+ [32m✓[39m lib/extraction/__tests__/agent.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+[90mstderr[2m | lib/timeline/__tests__/agent.test.ts[2m > [22m[2mTimeline Agent - generateTimeline[2m > [22m[2mshould handle RAG query errors gracefully
+[22m[39m[Timeline Agent] RAG query failed: Error: RAG service unavailable
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/timeline/__tests__/agent.test.ts:395:43
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:20
+
+ [32m✓[39m lib/timeline/__tests__/agent.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mComplexity Score Calculation[2m > [22m[2mshould calculate LOW complexity (score 0-25) for simple sites
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mComplexity Score Calculation[2m > [22m[2mshould calculate LOW complexity (score 0-25) for simple sites
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m2[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mComplexity Score Calculation[2m > [22m[2mshould calculate MEDIUM complexity (score 26-50) for average sites
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mComplexity Score Calculation[2m > [22m[2mshould calculate MEDIUM complexity (score 26-50) for average sites
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m2[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mComplexity Score Calculation[2m > [22m[2mshould calculate HIGH complexity (score 51-75) for complex sites
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mComplexity Score Calculation[2m > [22m[2mshould calculate HIGH complexity (score 51-75) for complex sites
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m3[39m, risksCount: [33m1[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mComplexity Score Calculation[2m > [22m[2mshould calculate VERY HIGH complexity (score 76-100) for extremely complex sites
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mComplexity Score Calculation[2m > [22m[2mshould calculate VERY HIGH complexity (score 76-100) for extremely complex sites
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m4[39m, risksCount: [33m2[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mPage Count Multiplier[2m > [22m[2mshould add +5 complexity for sites with 5000-10000 pages
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mPage Count Multiplier[2m > [22m[2mshould add +5 complexity for sites with 5000-10000 pages
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mPage Count Multiplier[2m > [22m[2mshould add +10 complexity for sites with >10000 pages
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mPage Count Multiplier[2m > [22m[2mshould add +10 complexity for sites with >10000 pages
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mPage Count Multiplier[2m > [22m[2mshould NOT add page multiplier for sites with <5000 pages
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mPage Count Multiplier[2m > [22m[2mshould NOT add page multiplier for sites with <5000 pages
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 0 as low
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 0 as low
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 12 as low
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 12 as low
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 25 as low
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 25 as low
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 26 as medium
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 26 as medium
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 38 as medium
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 38 as medium
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 50 as medium
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 50 as medium
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 51 as high
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 51 as high
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 63 as high
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 63 as high
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 75 as high
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 75 as high
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 76 as very_high
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 76 as very_high
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 88 as very_high
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 88 as very_high
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 100 as very_high
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mCategory Assignment[2m > [22m[2mshould categorize score 100 as very_high
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m1[39m, risksCount: [33m0[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mError Handling[2m > [22m[2mshould return error result if content architecture failed
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mError Handling[2m > [22m[2mshould return error result if AI call fails
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mError Handling[2m > [22m[2mshould return error result if AI call fails
+[22m[39m[Migration Complexity Agent] Error: Error: AI API Error
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/agents/__tests__/migration-complexity-agent.test.ts:490:51
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:145:11
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:26
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1209:10[90m)[39m
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:37
+    at Traces.$ [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/traces.CCmnQaNT.js:142:27[90m)[39m
+    at trace [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/test.B8ej_ZHS.js:239:21[90m)[39m
+    at runTest [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:12[90m)[39m
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mRisks and Recommendations[2m > [22m[2mshould return risks identified by AI
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mRisks and Recommendations[2m > [22m[2mshould return risks identified by AI
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m0[39m, risksCount: [33m2[39m }
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mRisks and Recommendations[2m > [22m[2mshould return all risk categories
+[22m[39m[Migration Complexity Agent] Starting analysis for https://example.com
+
+[90mstderr[2m | lib/agents/__tests__/migration-complexity-agent.test.ts[2m > [22m[2mMigration Complexity Agent[2m > [22m[2mRisks and Recommendations[2m > [22m[2mshould return all risk categories
+[22m[39m[Migration Complexity Agent] AI analysis completed { factorsCount: [33m0[39m, risksCount: [33m5[39m }
+
+ [32m✓[39m lib/agents/__tests__/migration-complexity-agent.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mBaseline Matching[2m > [22m[2mshould load baseline data from technology table
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mBaseline Matching[2m > [22m[2mshould load baseline data from technology table
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m693[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m20[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m693[39m, bufferHours: [33m139[39m, totalPT: [33m832[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mBaseline Matching[2m > [22m[2mshould fail if technology not found
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mBaseline Matching[2m > [22m[2mshould fail if technology not found
+[22m[39m[PT Calculator] Error: Error: Technology tech-123 not found
+    at Module.calculatePTEstimation [90m(/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/estimations/pt-calculator.ts:191:13[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/estimations/__tests__/pt-calculator.test.ts:162:22
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:20
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mBaseline Matching[2m > [22m[2mshould fail if technology has no baseline data
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mBaseline Matching[2m > [22m[2mshould fail if technology has no baseline data
+[22m[39m[PT Calculator] Error: Error: Technology Drupal has no baseline data
+    at Module.calculatePTEstimation [90m(/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/estimations/pt-calculator.ts:195:13[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/estimations/__tests__/pt-calculator.test.ts:176:22
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:20
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mCustomer Entity Extraction[2m > [22m[2mshould extract entity counts from content architecture
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mCustomer Entity Extraction[2m > [22m[2mshould extract entity counts from content architecture
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m693[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m20[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m693[39m, bufferHours: [33m139[39m, totalPT: [33m832[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mCustomer Entity Extraction[2m > [22m[2mshould scale entity counts with more content types
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mCustomer Entity Extraction[2m > [22m[2mshould scale entity counts with more content types
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m693[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted {
+  contentTypes: [33m20[39m,
+  paragraphs: [33m60[39m,
+  taxonomies: [33m10[39m,
+  views: [33m7[39m,
+  blocks: [33m5[39m
+}
+[PT Calculator] Delta calculated {
+  contentTypes: [33m5[39m,
+  paragraphs: [33m40[39m,
+  taxonomies: [33m2[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m323[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m20[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1016[39m, bufferHours: [33m203[39m, totalPT: [33m1219[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mDelta Calculation[2m > [22m[2mshould calculate delta when customer > baseline
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mDelta Calculation[2m > [22m[2mshould calculate delta when customer > baseline
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m693[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted {
+  contentTypes: [33m20[39m,
+  paragraphs: [33m60[39m,
+  taxonomies: [33m10[39m,
+  views: [33m7[39m,
+  blocks: [33m5[39m
+}
+[PT Calculator] Delta calculated {
+  contentTypes: [33m5[39m,
+  paragraphs: [33m40[39m,
+  taxonomies: [33m2[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m323[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m20[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1016[39m, bufferHours: [33m203[39m, totalPT: [33m1219[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mDelta Calculation[2m > [22m[2mshould NOT calculate negative delta (use 0 instead)
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mDelta Calculation[2m > [22m[2mshould NOT calculate negative delta (use 0 instead)
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m693[39m,
+  entities: {
+    contentTypes: [33m30[39m,
+    paragraphs: [33m50[39m,
+    taxonomies: [33m20[39m,
+    views: [33m20[39m,
+    blocks: [33m20[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m1[39m, paragraphs: [33m3[39m, taxonomies: [33m1[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m20[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m693[39m, bufferHours: [33m139[39m, totalPT: [33m832[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mPT Calculation[2m > [22m[2mshould calculate additional PT from delta using multipliers
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mPT Calculation[2m > [22m[2mshould calculate additional PT from delta using multipliers
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m693[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted {
+  contentTypes: [33m20[39m,
+  paragraphs: [33m60[39m,
+  taxonomies: [33m10[39m,
+  views: [33m7[39m,
+  blocks: [33m5[39m
+}
+[PT Calculator] Delta calculated {
+  contentTypes: [33m5[39m,
+  paragraphs: [33m40[39m,
+  taxonomies: [33m2[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m323[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m10[39m, confidenceLevel: [32m'high'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1016[39m, bufferHours: [33m102[39m, totalPT: [33m1118[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mPT Calculation[2m > [22m[2mshould calculate total PT = baseline + additional + buffer
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mPT Calculation[2m > [22m[2mshould calculate total PT = baseline + additional + buffer
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m500[39m,
+  entities: {
+    contentTypes: [33m10[39m,
+    paragraphs: [33m10[39m,
+    taxonomies: [33m5[39m,
+    views: [33m5[39m,
+    blocks: [33m5[39m
+  }
+}
+[PT Calculator] Customer entities extracted {
+  contentTypes: [33m10[39m,
+  paragraphs: [33m30[39m,
+  taxonomies: [33m5[39m,
+  views: [33m4[39m,
+  blocks: [33m5[39m
+}
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m20[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m120[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m20[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m620[39m, bufferHours: [33m124[39m, totalPT: [33m744[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mRisk Buffer Calculation[2m > [22m[2mshould apply 10% buffer for LOW complexity (0-25)
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mRisk Buffer Calculation[2m > [22m[2mshould apply 10% buffer for LOW complexity (0-25)
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m1000[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m10[39m, confidenceLevel: [32m'high'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1000[39m, bufferHours: [33m100[39m, totalPT: [33m1100[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mRisk Buffer Calculation[2m > [22m[2mshould apply 20% buffer for MEDIUM complexity (26-50)
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mRisk Buffer Calculation[2m > [22m[2mshould apply 20% buffer for MEDIUM complexity (26-50)
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m1000[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m20[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1000[39m, bufferHours: [33m200[39m, totalPT: [33m1200[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mRisk Buffer Calculation[2m > [22m[2mshould apply 30% buffer for HIGH complexity (51-75)
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mRisk Buffer Calculation[2m > [22m[2mshould apply 30% buffer for HIGH complexity (51-75)
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m1000[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m30[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1000[39m, bufferHours: [33m300[39m, totalPT: [33m1300[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mRisk Buffer Calculation[2m > [22m[2mshould apply 40% buffer for VERY HIGH complexity (76-100)
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mRisk Buffer Calculation[2m > [22m[2mshould apply 40% buffer for VERY HIGH complexity (76-100)
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m1000[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m40[39m, confidenceLevel: [32m'low'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1000[39m, bufferHours: [33m400[39m, totalPT: [33m1400[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mPhase Breakdown[2m > [22m[2mshould generate 5 phases with correct percentages
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mPhase Breakdown[2m > [22m[2mshould generate 5 phases with correct percentages
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m1000[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m10[39m, confidenceLevel: [32m'high'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1000[39m, bufferHours: [33m100[39m, totalPT: [33m1100[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mPhase Breakdown[2m > [22m[2mshould distribute hours according to phase percentages
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mPhase Breakdown[2m > [22m[2mshould distribute hours according to phase percentages
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m1000[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m10[39m, confidenceLevel: [32m'high'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1000[39m, bufferHours: [33m100[39m, totalPT: [33m1100[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mDiscipline Matrix[2m > [22m[2mshould generate 6 disciplines with correct percentages
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mDiscipline Matrix[2m > [22m[2mshould generate 6 disciplines with correct percentages
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m1000[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m10[39m, confidenceLevel: [32m'high'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1000[39m, bufferHours: [33m100[39m, totalPT: [33m1100[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mDiscipline Matrix[2m > [22m[2mshould allocate most hours to Backend Developer (40%)
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mDiscipline Matrix[2m > [22m[2mshould allocate most hours to Backend Developer (40%)
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m1000[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m10[39m, confidenceLevel: [32m'high'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1000[39m, bufferHours: [33m100[39m, totalPT: [33m1100[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mAssumptions Generation[2m > [22m[2mshould generate baseline assumption
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mAssumptions Generation[2m > [22m[2mshould generate baseline assumption
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m693[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m20[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m693[39m, bufferHours: [33m139[39m, totalPT: [33m832[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mAssumptions Generation[2m > [22m[2mshould add high complexity assumption for score > 50
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mAssumptions Generation[2m > [22m[2mshould add high complexity assumption for score > 50
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m693[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m30[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m693[39m, bufferHours: [33m208[39m, totalPT: [33m901[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mAssumptions Generation[2m > [22m[2mshould add large content assumption for >1000 pages
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mAssumptions Generation[2m > [22m[2mshould add large content assumption for >1000 pages
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m693[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted { contentTypes: [33m3[39m, paragraphs: [33m9[39m, taxonomies: [33m2[39m, views: [33m1[39m, blocks: [33m5[39m }
+[PT Calculator] Delta calculated {
+  contentTypes: [33m0[39m,
+  paragraphs: [33m0[39m,
+  taxonomies: [33m0[39m,
+  views: [33m0[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m0[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m20[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m693[39m, bufferHours: [33m139[39m, totalPT: [33m832[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mAssumptions Generation[2m > [22m[2mshould add many content types assumption for delta > 10
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mAssumptions Generation[2m > [22m[2mshould add many content types assumption for delta > 10
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m693[39m,
+  entities: {
+    contentTypes: [33m5[39m,
+    paragraphs: [33m10[39m,
+    taxonomies: [33m5[39m,
+    views: [33m5[39m,
+    blocks: [33m5[39m
+  }
+}
+[PT Calculator] Customer entities extracted {
+  contentTypes: [33m20[39m,
+  paragraphs: [33m60[39m,
+  taxonomies: [33m10[39m,
+  views: [33m7[39m,
+  blocks: [33m5[39m
+}
+[PT Calculator] Delta calculated {
+  contentTypes: [33m15[39m,
+  paragraphs: [33m50[39m,
+  taxonomies: [33m5[39m,
+  views: [33m2[39m,
+  blocks: [33m0[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m561[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m20[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1254[39m, bufferHours: [33m251[39m, totalPT: [33m1505[39m }
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mError Handling[2m > [22m[2mshould handle database errors gracefully
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mError Handling[2m > [22m[2mshould handle database errors gracefully
+[22m[39m[PT Calculator] Error: Error: DB Connection Failed
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/estimations/__tests__/pt-calculator.test.ts:693:39
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:145:11
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:26
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1209:10[90m)[39m
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:37
+    at Traces.$ [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/traces.CCmnQaNT.js:142:27[90m)[39m
+    at trace [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/test.B8ej_ZHS.js:239:21[90m)[39m
+    at runTest [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:12[90m)[39m
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mError Handling[2m > [22m[2mshould handle missing baseline entity counts
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mError Handling[2m > [22m[2mshould handle missing baseline entity counts
+[22m[39m[PT Calculator] Error: Error: Technology Drupal has no baseline data
+    at Module.calculatePTEstimation [90m(/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/estimations/pt-calculator.ts:195:13[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/estimations/__tests__/pt-calculator.test.ts:710:22
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:20
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mError Handling[2m > [22m[2mshould handle invalid JSON in baseline entity counts
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mError Handling[2m > [22m[2mshould handle invalid JSON in baseline entity counts
+[22m[39m[PT Calculator] Error: SyntaxError: Unexpected token 'i', "invalid-json" is not valid JSON
+    at JSON.parse (<anonymous>)
+    at Module.calculatePTEstimation [90m(/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/estimations/pt-calculator.ts:198:39[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/estimations/__tests__/pt-calculator.test.ts:723:22
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:20
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mEnd-to-End Integration[2m > [22m[2mshould calculate complete estimation for realistic scenario
+[22m[39m[PT Calculator] Starting calculation for lead lead-123
+
+[90mstderr[2m | lib/estimations/__tests__/pt-calculator.test.ts[2m > [22m[2mPT Estimation Calculator[2m > [22m[2mEnd-to-End Integration[2m > [22m[2mshould calculate complete estimation for realistic scenario
+[22m[39m[PT Calculator] Baseline loaded {
+  name: [32m'adessoCMS Drupal'[39m,
+  hours: [33m693[39m,
+  entities: {
+    contentTypes: [33m15[39m,
+    paragraphs: [33m20[39m,
+    taxonomies: [33m8[39m,
+    views: [33m12[39m,
+    blocks: [33m10[39m
+  }
+}
+[PT Calculator] Customer entities extracted {
+  contentTypes: [33m25[39m,
+  paragraphs: [33m75[39m,
+  taxonomies: [33m13[39m,
+  views: [33m9[39m,
+  blocks: [33m15[39m
+}
+[PT Calculator] Delta calculated {
+  contentTypes: [33m10[39m,
+  paragraphs: [33m55[39m,
+  taxonomies: [33m5[39m,
+  views: [33m0[39m,
+  blocks: [33m5[39m,
+  other: [33m0[39m
+}
+[PT Calculator] Additional PT calculated { additionalPT: [33m525[39m }
+[PT Calculator] Risk buffer calculated { riskBuffer: [33m30[39m, confidenceLevel: [32m'medium'[39m }
+[PT Calculator] Total PT calculated { basePT: [33m1218[39m, bufferHours: [33m365[39m, totalPT: [33m1583[39m }
+
+ [32m✓[39m lib/estimations/__tests__/pt-calculator.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+[90mstderr[2m | lib/bit-evaluation/__tests__/actions.test.ts[2m > [22m[2mBIT Evaluation Actions[2m > [22m[2mstartBitEvaluation[2m > [22m[2mshould handle evaluation errors and revert status
+[22m[39mBIT evaluation error: Error: AI failed
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/bit-evaluation/__tests__/actions.test.ts:166:75
+    at Mock [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:285:34[90m)[39m
+    at Module.startBitEvaluation [90m(/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/bit-evaluation/actions.ts:61:36[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/bit-evaluation/__tests__/actions.test.ts:168:22
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:20
+
+[90mstderr[2m | lib/bit-evaluation/__tests__/actions.test.ts[2m > [22m[2mBIT Evaluation Actions[2m > [22m[2mretriggerBitEvaluation[2m > [22m[2mshould handle database errors gracefully
+[22m[39mBIT evaluation re-trigger error: Error: DB error
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/bit-evaluation/__tests__/actions.test.ts:265:46
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:145:11
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:26
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1209:10[90m)[39m
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:37
+    at Traces.$ [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/traces.CCmnQaNT.js:142:27[90m)[39m
+    at trace [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/test.B8ej_ZHS.js:239:21[90m)[39m
+    at runTest [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:12[90m)[39m
+
+ [32m✓[39m lib/bit-evaluation/__tests__/actions.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mmatchCMS[2m > [22m[2mshould match CMS and return top 3 ranked results
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mmatchCMS[2m > [22m[2mshould match CMS and return top 3 ranked results
+[22m[39m[CMS Matcher] Found 5 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mmatchCMS[2m > [22m[2mshould match CMS and return top 3 ranked results
+[22m[39m[CMS Matcher] Top 3 matches: {
+  matches: [
+    { name: [32m'Drupal'[39m, score: [33m80[39m },
+    { name: [32m'Ibexa'[39m, score: [33m74[39m },
+    { name: [32m'Sulu'[39m, score: [33m73[39m }
+  ]
+}
+[CMS Matcher] Saving 3 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mmatchCMS[2m > [22m[2mshould match CMS and return top 3 ranked results
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mmatchCMS[2m > [22m[2mshould handle no technologies found
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mmatchCMS[2m > [22m[2mshould handle no technologies found
+[22m[39m[CMS Matcher] Error: Error: No CMS technologies found in database
+    at Module.matchCMS [90m(/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/cms-matching/matcher.ts:215:13[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/cms-matching/__tests__/matcher.test.ts:172:22
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:20
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mmatchCMS[2m > [22m[2mshould filter by businessUnitId if provided
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mmatchCMS[2m > [22m[2mshould filter by businessUnitId if provided
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mmatchCMS[2m > [22m[2mshould filter by businessUnitId if provided
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m80[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mmatchCMS[2m > [22m[2mshould filter by businessUnitId if provided
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mIndustry Scoring[2m > [22m[2mshould score Drupal high for Public Sector
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mIndustry Scoring[2m > [22m[2mshould score Drupal high for Public Sector
+[22m[39m[CMS Matcher] Found 2 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mIndustry Scoring[2m > [22m[2mshould score Drupal high for Public Sector
+[22m[39m[CMS Matcher] Top 3 matches: {
+  matches: [ { name: [32m'Drupal'[39m, score: [33m80[39m }, { name: [32m'Sulu'[39m, score: [33m73[39m } ]
+}
+[CMS Matcher] Saving 2 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mIndustry Scoring[2m > [22m[2mshould score Drupal high for Public Sector
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mIndustry Scoring[2m > [22m[2mshould return neutral score for unknown industry
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mIndustry Scoring[2m > [22m[2mshould return neutral score for unknown industry
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mIndustry Scoring[2m > [22m[2mshould return neutral score for unknown industry
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m76[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mIndustry Scoring[2m > [22m[2mshould return neutral score for unknown industry
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mSize Scoring[2m > [22m[2mshould score Sulu high for small sites (<100 pages)
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mSize Scoring[2m > [22m[2mshould score Sulu high for small sites (<100 pages)
+[22m[39m[CMS Matcher] Found 2 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mSize Scoring[2m > [22m[2mshould score Sulu high for small sites (<100 pages)
+[22m[39m[CMS Matcher] Top 3 matches: {
+  matches: [ { name: [32m'Sulu'[39m, score: [33m74[39m }, { name: [32m'Magnolia'[39m, score: [33m65[39m } ]
+}
+[CMS Matcher] Saving 2 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mSize Scoring[2m > [22m[2mshould score Sulu high for small sites (<100 pages)
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mSize Scoring[2m > [22m[2mshould score Magnolia high for enterprise sites (>10k pages)
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mSize Scoring[2m > [22m[2mshould score Magnolia high for enterprise sites (>10k pages)
+[22m[39m[CMS Matcher] Found 2 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mSize Scoring[2m > [22m[2mshould score Magnolia high for enterprise sites (>10k pages)
+[22m[39m[CMS Matcher] Top 3 matches: {
+  matches: [ { name: [32m'Magnolia'[39m, score: [33m70[39m }, { name: [32m'Sulu'[39m, score: [33m66[39m } ]
+}
+[CMS Matcher] Saving 2 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mSize Scoring[2m > [22m[2mshould score Magnolia high for enterprise sites (>10k pages)
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould score Sulu high for low budget (20-50k)
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould score Sulu high for low budget (20-50k)
+[22m[39m[CMS Matcher] Found 2 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould score Sulu high for low budget (20-50k)
+[22m[39m[CMS Matcher] Top 3 matches: {
+  matches: [ { name: [32m'Sulu'[39m, score: [33m73[39m }, { name: [32m'FirstSpirit'[39m, score: [33m60[39m } ]
+}
+[CMS Matcher] Saving 2 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould score Sulu high for low budget (20-50k)
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould score FirstSpirit high for high budget (200k+)
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould score FirstSpirit high for high budget (200k+)
+[22m[39m[CMS Matcher] Found 2 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould score FirstSpirit high for high budget (200k+)
+[22m[39m[CMS Matcher] Top 3 matches: {
+  matches: [ { name: [32m'Sulu'[39m, score: [33m72[39m }, { name: [32m'FirstSpirit'[39m, score: [33m67[39m } ]
+}
+[CMS Matcher] Saving 2 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould score FirstSpirit high for high budget (200k+)
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould return neutral score for missing budget
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould return neutral score for missing budget
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould return neutral score for missing budget
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m77[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould return neutral score for missing budget
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould parse budget range (50-100k)
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould parse budget range (50-100k)
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould parse budget range (50-100k)
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m80[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mBudget Scoring[2m > [22m[2mshould parse budget range (50-100k)
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mMigration Scoring[2m > [22m[2mshould score high for low migration complexity
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mMigration Scoring[2m > [22m[2mshould score high for low migration complexity
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mMigration Scoring[2m > [22m[2mshould score high for low migration complexity
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m82[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mMigration Scoring[2m > [22m[2mshould score high for low migration complexity
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mMigration Scoring[2m > [22m[2mshould score low for high migration complexity
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mMigration Scoring[2m > [22m[2mshould score low for high migration complexity
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mMigration Scoring[2m > [22m[2mshould score low for high migration complexity
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m77[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mMigration Scoring[2m > [22m[2mshould score low for high migration complexity
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mMigration Scoring[2m > [22m[2mshould return neutral score if migration analysis failed
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mMigration Scoring[2m > [22m[2mshould return neutral score if migration analysis failed
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mMigration Scoring[2m > [22m[2mshould return neutral score if migration analysis failed
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m80[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mMigration Scoring[2m > [22m[2mshould return neutral score if migration analysis failed
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould score high when all must-have features are supported
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould score high when all must-have features are supported
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould score high when all must-have features are supported
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m88[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould score high when all must-have features are supported
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould score low when must-have features are missing
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould score low when must-have features are missing
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould score low when must-have features are missing
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m70[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould score low when must-have features are missing
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould return neutral score when no features are specified
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould return neutral score when no features are specified
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould return neutral score when no features are specified
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m80[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould return neutral score when no features are specified
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould handle CMS with no feature data
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould handle CMS with no feature data
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould handle CMS with no feature data
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m52[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mFeature Scoring[2m > [22m[2mshould handle CMS with no feature data
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mWeighted Total Score[2m > [22m[2mshould calculate weighted total score correctly
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mWeighted Total Score[2m > [22m[2mshould calculate weighted total score correctly
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mWeighted Total Score[2m > [22m[2mshould calculate weighted total score correctly
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m80[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mWeighted Total Score[2m > [22m[2mshould calculate weighted total score correctly
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mReasoning Generation[2m > [22m[2mshould generate reasoning for each match
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mReasoning Generation[2m > [22m[2mshould generate reasoning for each match
+[22m[39m[CMS Matcher] Found 2 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mReasoning Generation[2m > [22m[2mshould generate reasoning for each match
+[22m[39m[CMS Matcher] Top 3 matches: {
+  matches: [ { name: [32m'Drupal'[39m, score: [33m80[39m }, { name: [32m'Sulu'[39m, score: [33m73[39m } ]
+}
+[CMS Matcher] Saving 2 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mReasoning Generation[2m > [22m[2mshould generate reasoning for each match
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mReasoning Generation[2m > [22m[2mshould include CMS name in reasoning
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mReasoning Generation[2m > [22m[2mshould include CMS name in reasoning
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mReasoning Generation[2m > [22m[2mshould include CMS name in reasoning
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m80[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mReasoning Generation[2m > [22m[2mshould include CMS name in reasoning
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mDatabase Persistence[2m > [22m[2mshould save match results to database
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-999
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mDatabase Persistence[2m > [22m[2mshould save match results to database
+[22m[39m[CMS Matcher] Found 2 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mDatabase Persistence[2m > [22m[2mshould save match results to database
+[22m[39m[CMS Matcher] Top 3 matches: {
+  matches: [ { name: [32m'Drupal'[39m, score: [33m80[39m }, { name: [32m'Sulu'[39m, score: [33m73[39m } ]
+}
+[CMS Matcher] Saving 2 match results for lead lead-999
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mDatabase Persistence[2m > [22m[2mshould save match results to database
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mError Handling[2m > [22m[2mshould handle database errors gracefully
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mError Handling[2m > [22m[2mshould handle database errors gracefully
+[22m[39m[CMS Matcher] Error: Error: Database connection failed
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/cms-matching/__tests__/matcher.test.ts:517:42
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:145:11
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:26
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1209:10[90m)[39m
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:37
+    at Traces.$ [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/traces.CCmnQaNT.js:142:27[90m)[39m
+    at trace [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/test.B8ej_ZHS.js:239:21[90m)[39m
+    at runTest [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:12[90m)[39m
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mError Handling[2m > [22m[2mshould handle AI reasoning generation failure
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mError Handling[2m > [22m[2mshould handle AI reasoning generation failure
+[22m[39m[CMS Matcher] Found 1 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mError Handling[2m > [22m[2mshould handle AI reasoning generation failure
+[22m[39m[CMS Matcher] Failed to generate reasoning: Error: AI service unavailable
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/cms-matching/__tests__/matcher.test.ts:530:42
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:20
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mError Handling[2m > [22m[2mshould handle AI reasoning generation failure
+[22m[39m[CMS Matcher] Top 3 matches: { matches: [ { name: [32m'Drupal'[39m, score: [33m80[39m } ] }
+[CMS Matcher] Saving 1 match results for lead lead-123
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mError Handling[2m > [22m[2mshould handle AI reasoning generation failure
+[22m[39m[CMS Matcher] Match results saved successfully
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mIntegration Test[2m > [22m[2mshould perform complete CMS matching workflow
+[22m[39m[CMS Matcher] Starting CMS matching for lead lead-integration
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mIntegration Test[2m > [22m[2mshould perform complete CMS matching workflow
+[22m[39m[CMS Matcher] Found 3 CMS technologies
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mIntegration Test[2m > [22m[2mshould perform complete CMS matching workflow
+[22m[39m[CMS Matcher] Top 3 matches: {
+  matches: [
+    { name: [32m'Drupal'[39m, score: [33m90[39m },
+    { name: [32m'Sulu'[39m, score: [33m79[39m },
+    { name: [32m'Magnolia'[39m, score: [33m52[39m }
+  ]
+}
+[CMS Matcher] Saving 3 match results for lead lead-integration
+
+[90mstderr[2m | lib/cms-matching/__tests__/matcher.test.ts[2m > [22m[2mCMS Matcher[2m > [22m[2mIntegration Test[2m > [22m[2mshould perform complete CMS matching workflow
+[22m[39m[CMS Matcher] Match results saved successfully
+
+ [32m✓[39m tests/integration/rfp-extraction-flow.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m lib/cms-matching/__tests__/matcher.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+[90mstderr[2m | lib/deep-analysis/__tests__/xxe-protection.test.ts[2m > [22m[2mXXE Protection[2m > [22m[2mfetchSitemap XXE protection[2m > [22m[2mshould reject malicious sub-sitemap URLs in sitemap index
+[22m[39mSkipping invalid sub-sitemap URL: file:///etc/passwd
+
+ [32m✓[39m lib/deep-analysis/__tests__/xxe-protection.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 76[2mms[22m[39m
+[2m1:11:28 AM[22m [33m[1m[vite][22m[39m (client) warning: Duplicate key "technologies" in object literal
+532 |          keyRequirements: ['Req 1'],
+533 |          confidenceScore: 0.8,
+534 |          technologies: manyTechnologies,
+    |          ^
+535 |        };
+536 |  
+
+  Plugin: vite:esbuild
+  File: /Users/marc.philipps/Sites/dealhunter-tests/lib/extraction/__tests__/schema.test.ts
+[2m1:11:28 AM[22m [33m[1m[vite][22m[39m (client) warning: Duplicate key "technologies" in object literal
+550 |          keyRequirements: ['Req 1'],
+551 |          confidenceScore: 0.8,
+552 |          technologies: [],
+    |          ^
+553 |          keyRequirements: [],
+554 |          websiteUrls: [],
+
+  Plugin: vite:esbuild
+  File: /Users/marc.philipps/Sites/dealhunter-tests/lib/extraction/__tests__/schema.test.ts
+[2m1:11:28 AM[22m [33m[1m[vite][22m[39m (client) warning: Duplicate key "keyRequirements" in object literal
+551 |          confidenceScore: 0.8,
+552 |          technologies: [],
+553 |          keyRequirements: [],
+    |          ^
+554 |          websiteUrls: [],
+555 |          requiredDeliverables: [],
+
+  Plugin: vite:esbuild
+  File: /Users/marc.philipps/Sites/dealhunter-tests/lib/extraction/__tests__/schema.test.ts
+ [32m✓[39m lib/utils/__tests__/parse.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/extraction-schema.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m lib/deep-analysis/__tests__/xss-validation.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m lib/extraction/__tests__/schema.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m lib/bit-evaluation/__tests__/agent.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m lib/deep-analysis/__tests__/ssrf-protection.test.ts [2m([22m[2m38 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m lib/errors/__tests__/classification.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+[90mstderr[2m | lib/bids/__tests__/actions.test.ts[2m > [22m[2mBid Management Actions[2m > [22m[2mgetBids[2m > [22m[2mshould handle database errors gracefully
+[22m[39mGet bids error: Error: DB Error
+    at [90m/Users/marc.philipps/Sites/dealhunter-tests/[39mlib/bids/__tests__/actions.test.ts:144:48
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:145:11
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:26
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1209:10[90m)[39m
+    at [90mfile:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:37
+    at Traces.$ [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/traces.CCmnQaNT.js:142:27[90m)[39m
+    at trace [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4mvitest[24m/dist/chunks/test.B8ej_ZHS.js:239:21[90m)[39m
+    at runTest [90m(file:///Users/marc.philipps/Sites/dealhunter-tests/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:12[90m)[39m
+
+ [32m✓[39m lib/extraction/__tests__/url-suggestion-agent.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m lib/bids/__tests__/actions.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m lib/timeline/__tests__/risk-analyzer.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m lib/auth/__tests__/session-validator.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/duplicate-check.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/quick-scan/playwright.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m24 passed[39m[22m[90m (24)[39m
+[2m      Tests [22m [1m[32m554 passed[39m[22m[90m (554)[39m
+[2m   Start at [22m 01:11:25
+[2m   Duration [22m 5.09s[2m (transform 2.87s, setup 7.68s, import 7.88s, tests 367ms, environment 26.07s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+----------|---------|----------|---------|---------|-------------------
+File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+----------|---------|----------|---------|---------|-------------------
+All files |       0 |        0 |       0 |       0 |                   
+----------|---------|----------|---------|---------|-------------------

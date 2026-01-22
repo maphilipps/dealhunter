@@ -40,7 +40,7 @@ export interface DuplicateCheckResult {
  * - Removes trailing slashes
  * - Converts to lowercase
  */
-function normalizeUrl(url: string): string {
+export function normalizeUrl(url: string): string {
   if (!url) return '';
 
   let normalized = url.toLowerCase().trim();
@@ -64,7 +64,7 @@ function normalizeUrl(url: string): string {
  * Calculate Levenshtein distance between two strings
  * Used for fuzzy customer name matching
  */
-function levenshteinDistance(str1: string, str2: string): number {
+export function levenshteinDistance(str1: string, str2: string): number {
   const m = str1.length;
   const n = str2.length;
 
@@ -96,7 +96,7 @@ function levenshteinDistance(str1: string, str2: string): number {
  * Calculate similarity percentage between two strings
  * Returns 0-100 (100 = identical)
  */
-function calculateSimilarity(str1: string, str2: string): number {
+export function calculateSimilarity(str1: string, str2: string): number {
   const s1 = (str1 || '').toLowerCase().trim();
   const s2 = (str2 || '').toLowerCase().trim();
 
@@ -117,7 +117,7 @@ function calculateSimilarity(str1: string, str2: string): number {
 /**
  * Check if two dates are within a range of days
  */
-function isWithinDateRange(date1: string, date2: string, rangeDays: number): boolean {
+export function isWithinDateRange(date1: string, date2: string, rangeDays: number): boolean {
   if (!date1 || !date2) return false;
 
   try {

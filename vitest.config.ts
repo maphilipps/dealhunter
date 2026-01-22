@@ -16,8 +16,14 @@ export default defineConfig({
     exclude: ['node_modules', '.next', 'dist', 'tests/e2e/**/*', '**/e2e/**/*', '**/*.spec.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'tests/', '**/*.d.ts', '**/*.config.*', '**/mockData', 'drizzle/'],
+      reporter: ['text', 'json', 'html', 'lcov'],
+      include: ['lib/**/*.ts', 'app/**/*.ts', 'components/**/*.ts'],
+      exclude: ['node_modules/', 'tests/', '**/*.d.ts', '**/*.config.*', '**/mockData', 'drizzle/', '**/__tests__/**'],
+      all: true,
+      lines: 80,
+      functions: 80,
+      branches: 80,
+      statements: 80,
     },
   },
   resolve: {

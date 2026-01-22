@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table';
 import { auth } from '@/lib/auth';
 import { getCachedRfp } from '@/lib/rfps/cached-queries';
-import type { ExtractedRequirements } from '@/lib/extraction/schema';
+import { extractedRequirementsSchema, type ExtractedRequirements } from '@/lib/extraction/schema';
 
 export default async function DeliverablesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -36,10 +36,16 @@ export default async function DeliverablesPage({ params }: { params: Promise<{ i
     notFound();
   }
 
-  // Parse extracted requirements
-  const extractedReqs: ExtractedRequirements | null = rfp.extractedRequirements
-    ? (JSON.parse(rfp.extractedRequirements) as ExtractedRequirements)
+  // Parse extracted requirements with Zod validation for runtime safety
+  const parseResult = rfp.extractedRequirements
+    ? extractedRequirementsSchema.safeParse(JSON.parse(rfp.extractedRequirements))
     : null;
+
+  if (parseResult && !parseResult.success) {
+    console.error('Invalid extracted requirements:', parseResult.error);
+  }
+
+  const extractedReqs = parseResult?.success ? parseResult.data : null;
 
   const deliverables = extractedReqs?.requiredDeliverables || [];
   const mandatoryDeliverables = deliverables.filter(d => d.mandatory);
@@ -61,8 +67,9 @@ export default async function DeliverablesPage({ params }: { params: Promise<{ i
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Keine Deliverables gefunden</AlertTitle>
           <AlertDescription>
-            Die Anforderungsextraktion hat keine spezifischen Deliverables identifiziert. Dies
-            könnte bedeuten, dass das Dokument keine expliziten Unterlagen-Anforderungen enthält.
+            Die automatische Extraktion hat keine spezifischen Deliverables mit ausreichender
+            Konfidenz identifiziert. <strong>Bitte manuell prüfen:</strong> Kontrollieren Sie die
+            Originaldokumente auf Anforderungen zu einzureichenden Unterlagen.
           </AlertDescription>
         </Alert>
       )}

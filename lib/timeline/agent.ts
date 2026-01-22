@@ -1,10 +1,6 @@
 import { generateObject, type LanguageModel } from 'ai';
 
-import {
-  projectTimelineSchema,
-  COMPLEXITY_MULTIPLIERS,
-  type ProjectTimeline,
-} from './schema';
+import { projectTimelineSchema, COMPLEXITY_MULTIPLIERS, type ProjectTimeline } from './schema';
 
 import { openai } from '@/lib/ai/providers';
 

@@ -5963,3 +5963,51 @@ Ready for API implementation (PA-023, PA-024)
 - Uses same role-based access pattern as BID voting
 - Team editing before confirmation: BL can modify team suggestions via separate endpoints (PA-004 scope)
 
+
+---
+
+## DEA-158: PA-023 API - POST /api/leads/[id]/pitchdeck/confirm-team
+
+**Date:** 2026-01-22
+**Status:** ✅ Complete
+
+### What was implemented:
+
+1. **Enhanced existing API route** with email notifications:
+   - Added team completeness validation (at least 1 team member required)
+   - Integrated email notifications to team members after confirmation
+   - Fetches employee details from database for email sending
+   - Uses existing `sendTeamNotificationEmails()` function from lib/notifications/email.ts
+
+2. **Key Features:**
+   - Auth check: Only BL role (or Admin) can confirm team
+   - Validation: Team must have at least one member before confirmation
+   - Email side-effect: Non-blocking email notifications sent via `after()` in background
+   - Audit trail: Changes logged for compliance
+   - Role mapping: Maps role enums (pm, ux, frontend, etc.) to readable labels
+
+3. **Email content includes:**
+   - Customer name and project description (from RFP)
+   - Team member's assigned role
+   - Link to pitchdeck details
+   - BL leader name for contact
+
+### Files modified:
+
+- `app/api/leads/[id]/pitchdeck/confirm-team/route.ts` (enhanced with email notifications)
+
+### Testing:
+
+- TypeScript type checks: ✅ Passed
+- Code formatting: ✅ Passed (Prettier)
+
+### Notes:
+
+- Email notifications are non-blocking (via `after()`) to ensure API response is fast
+- If email sending fails, it logs error but doesn't fail the request
+- Works in development mode (logs to console if RESEND_API_KEY not set)
+
+### Commit:
+
+(Next step)
+

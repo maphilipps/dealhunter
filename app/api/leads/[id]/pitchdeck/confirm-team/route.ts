@@ -6,7 +6,8 @@ import { z } from 'zod';
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, pitchdecks, users } from '@/lib/db/schema';
+import { leads, pitchdecks, users, employees, rfps } from '@/lib/db/schema';
+import { sendTeamNotificationEmails, TeamMemberNotification } from '@/lib/notifications/email';
 
 // ============================================================================
 // Zod Schema for Team Confirmation Request
@@ -77,10 +78,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .limit(1);
 
     if (!pitchdeck) {
-      return NextResponse.json(
-        { error: 'Pitchdeck not found for this lead' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Pitchdeck not found for this lead' }, { status: 404 });
     }
 
     // 6. Authorization Check - Only BL or Admin can confirm team
@@ -123,7 +121,51 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
 
-    // 8. Update Pitchdeck with Team Confirmation
+    // 8. Validate Team Completeness
+    // Parse team data from pitchdeck (stored in a JSON field like teamSuggestion)
+    // For now, we'll allow confirmation if teamMembers are provided in request body
+    const teamMembersData = parsedBody.data.teamMembers;
+
+    if (!teamMembersData || teamMembersData.length === 0) {
+      return NextResponse.json(
+        {
+          error: 'Team is incomplete',
+          message: 'At least one team member must be assigned before confirmation',
+        },
+        { status: 400 }
+      );
+    }
+
+    // 9. Get RFP and Employee data for email notifications
+    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1);
+
+    if (!rfp) {
+      return NextResponse.json({ error: 'RFP not found' }, { status: 404 });
+    }
+
+    // Get employee details for all team members
+    const teamMembersWithDetails = await Promise.all(
+      teamMembersData.map(async member => {
+        const [employee] = await db
+          .select()
+          .from(employees)
+          .where(eq(employees.id, member.employeeId))
+          .limit(1);
+
+        if (!employee) {
+          throw new Error(`Employee ${member.employeeId} not found`);
+        }
+
+        return {
+          employeeId: employee.id,
+          name: employee.name,
+          email: employee.email,
+          role: member.role,
+        };
+      })
+    );
+
+    // 10. Update Pitchdeck with Team Confirmation
     const [updatedPitchdeck] = await db
       .update(pitchdecks)
       .set({
@@ -135,7 +177,62 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .where(eq(pitchdecks.id, pitchdeck.id))
       .returning();
 
-    // 9. Create Audit Trail in Background (Non-Blocking)
+    // 11. Send Team Notification Emails in Background (Non-Blocking)
+    after(async () => {
+      try {
+        // Extract customer info from RFP
+        let customerName = 'Customer';
+        let projectDescription = lead.projectDescription || 'Projekt-Details werden noch ergänzt';
+
+        if (rfp.extractedRequirements) {
+          try {
+            const requirements = JSON.parse(rfp.extractedRequirements) as Record<string, unknown>;
+            customerName = (requirements.customerName as string) || customerName;
+            projectDescription = (requirements.projectDescription as string) || projectDescription;
+          } catch (e) {
+            console.error('Could not parse RFP extractedRequirements');
+          }
+        }
+
+        // Map role enums to readable labels
+        const roleLabels: Record<string, string> = {
+          pm: 'Project Manager',
+          ux: 'UX Designer',
+          frontend: 'Frontend Developer',
+          backend: 'Backend Developer',
+          devops: 'DevOps Engineer',
+          qa: 'QA Engineer',
+        };
+
+        // Prepare team notifications
+        const teamNotifications: TeamMemberNotification[] = teamMembersWithDetails.map(member => ({
+          employeeId: member.employeeId,
+          employeeName: member.name,
+          employeeEmail: member.email,
+          role: member.role,
+          roleLabel: roleLabels[member.role] || member.role,
+        }));
+
+        // Send emails
+        await sendTeamNotificationEmails({
+          bidId: rfp.id,
+          projectName: `${customerName} - Pitchdeck`,
+          customerName,
+          projectDescription,
+          teamMembers: teamNotifications,
+          blLeaderName: currentUser.name,
+        });
+
+        console.log(
+          `✅ Team notification emails sent to ${teamNotifications.length} members for pitchdeck ${pitchdeck.id}`
+        );
+      } catch (error) {
+        console.error('Failed to send team notification emails:', error);
+        // Log error but don't fail request - email notification is not critical
+      }
+    });
+
+    // 12. Create Audit Trail in Background (Non-Blocking)
     after(async () => {
       try {
         await createAuditLog({
@@ -159,7 +256,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     });
 
-    // 10. Return Updated Pitchdeck (Immediate Response)
+    // 13. Return Updated Pitchdeck (Immediate Response)
     return NextResponse.json(
       {
         success: true,

@@ -52,7 +52,7 @@ export function classifyError(error: unknown): ClassifiedError {
     return {
       type: 'VALIDATION_ERROR',
       category: 'permanent',
-      message: 'Validation failed: ' + error.issues.map((e) => e.message).join(', '),
+      message: 'Validation failed: ' + error.issues.map(e => e.message).join(', '),
       details: error.issues,
       isRetryable: false,
     };
@@ -140,11 +140,7 @@ export function classifyError(error: unknown): ClassifiedError {
     }
 
     // PDF parsing errors → permanent (but can try manual input)
-    if (
-      message.includes('pdf') ||
-      message.includes('parsing') ||
-      message.includes('parse error')
-    ) {
+    if (message.includes('pdf') || message.includes('parsing') || message.includes('parse error')) {
       return {
         type: 'PDF_PARSING_ERROR',
         category: 'permanent',

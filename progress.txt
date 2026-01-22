@@ -6353,3 +6353,64 @@ Internal Deadlines:
 
 **Tests:**
 ✅ TypeScript Typecheck erfolgreich
+
+## DEA-180: PA-025 - Staffing Agent Test Coverage (80%+)
+**Status:** ✅ Completed
+**Date:** 2026-01-22
+**Coverage:** 96.03% (Target: 80%+)
+
+### Implementation
+- Created comprehensive unit tests for staffing tool at `lib/agent-tools/tools/__tests__/staffing.test.ts`
+- 24 test cases covering all three tools:
+  1. `staffing.calculateSkillMatch` - 12 tests
+  2. `staffing.findEmployeesBySkills` - 6 tests
+  3. `staffing.checkAvailability` - 6 tests
+
+### Test Coverage Breakdown
+**File:** lib/agent-tools/tools/staffing.ts
+- **Statements:** 96.03%
+- **Branches:** 88.73%
+- **Functions:** 100%
+- **Lines:** 95.95%
+- **Uncovered Lines:** 102, 119, 135, 151 (edge cases in skill matching)
+
+### Test Categories
+1. **Skill-Matching Tests:**
+   - CMS exact match (+30 points)
+   - Framework match (+20 points)
+   - Integration skills (+15 each)
+   - Complexity skills (animations, i18n, complex components +10 each)
+   - Tech stack match (+5 each)
+   - Missing skills tracking
+   - Score capping at 0-100 range
+   - Duplicate skill deduplication
+
+2. **Availability Tests:**
+   - Available (+10 modifier)
+   - On project (+5 modifier)
+   - Unavailable (-10 modifier)
+
+3. **BU Priority & Permissions:**
+   - Only BL/Admin can search employees
+   - Only BL/Admin can check availability
+   - Employees sorted by match score
+   - Minimum match score filtering
+   - Limit parameter respected
+
+4. **Edge Cases:**
+   - Employee not found
+   - Empty employee list
+   - No matches above threshold
+   - Multiple employees with different availability
+   - Non-existent employee IDs
+
+### Key Insights
+- All acceptance criteria met (skill-matching, availability, BU priority, edge cases)
+- Tests follow existing pattern from content-architecture-agent tests
+- Comprehensive mocking of database layer
+- All 24 tests passing
+- Coverage exceeds 80% requirement by 16 percentage points
+
+### Next Steps
+None required - test coverage complete and passing.
+

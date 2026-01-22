@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, FileText, Scale, Shield, XCircle } from 'lucide-react';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { auth } from '@/lib/auth';
 import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
+import { parseJsonField } from '@/lib/utils/json';
 
 interface LegalCompliance {
   score: number;
@@ -49,35 +50,25 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
   const { rfp, quickScan } = await getCachedRfpWithRelations(id);
 
   if (!rfp) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">RFP nicht gefunden</h1>
-        <p className="text-muted-foreground">Der angeforderte RFP konnte nicht gefunden werden.</p>
-      </div>
-    );
+    notFound();
   }
 
   // Check ownership
   if (rfp.userId !== session.user.id) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Keine Berechtigung</h1>
-        <p className="text-muted-foreground">
-          Sie haben keine Berechtigung, diesen RFP anzuzeigen.
-        </p>
-      </div>
-    );
+    notFound();
   }
 
   // Parse legal compliance
-  const legalCompliance: LegalCompliance | null = quickScan?.legalCompliance
-    ? (JSON.parse(quickScan.legalCompliance) as LegalCompliance)
-    : null;
+  const legalCompliance = parseJsonField<LegalCompliance | null>(
+    quickScan?.legalCompliance,
+    null
+  );
 
   // Parse extracted requirements
-  const extractedReqs: ExtractedRequirements | null = rfp.extractedRequirements
-    ? (JSON.parse(rfp.extractedRequirements) as ExtractedRequirements)
-    : null;
+  const extractedReqs = parseJsonField<ExtractedRequirements | null>(
+    rfp.extractedRequirements,
+    null
+  );
 
   return (
     <div className="space-y-6">

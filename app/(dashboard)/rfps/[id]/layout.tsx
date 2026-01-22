@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { AppSidebar } from '@/components/app-sidebar';
 import { RfpMobileNav } from '@/components/bids/rfp-mobile-nav';
@@ -30,12 +30,7 @@ export default async function RfpDashboardLayout({
   ]);
 
   if (!rfp) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">RFP nicht gefunden</h1>
-        <p className="text-muted-foreground">Der angeforderte RFP konnte nicht gefunden werden.</p>
-      </div>
-    );
+    notFound();
   }
 
   if (!dbUser) {

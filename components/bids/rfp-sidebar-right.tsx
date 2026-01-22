@@ -1,16 +1,5 @@
 'use client';
 
-import {
-  LayoutDashboard,
-  Clock,
-  FileText,
-  Trophy,
-  Scale,
-  Code,
-  Info,
-  Users,
-  GitBranch,
-} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -24,6 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { getRfpNavigationSections } from '@/lib/rfps/navigation';
 
 interface RfpSidebarRightProps {
   rfpId: string;
@@ -33,74 +23,7 @@ interface RfpSidebarRightProps {
 
 export function RfpSidebarRight({ rfpId, title, status }: RfpSidebarRightProps) {
   const pathname = usePathname();
-
-  const navigationSections = [
-    {
-      label: 'Overview',
-      items: [
-        {
-          title: 'Übersicht',
-          icon: LayoutDashboard,
-          url: `/rfps/${rfpId}`,
-        },
-      ],
-    },
-    {
-      label: 'Details',
-      items: [
-        {
-          title: 'Timing',
-          icon: Clock,
-          url: `/rfps/${rfpId}/timing`,
-        },
-        {
-          title: 'Deliverables',
-          icon: FileText,
-          url: `/rfps/${rfpId}/deliverables`,
-        },
-        {
-          title: 'Referenzen',
-          icon: Trophy,
-          url: `/rfps/${rfpId}/references`,
-        },
-        {
-          title: 'Legal',
-          icon: Scale,
-          url: `/rfps/${rfpId}/legal`,
-        },
-      ],
-    },
-    {
-      label: 'Analysis',
-      items: [
-        {
-          title: 'Tech Stack',
-          icon: Code,
-          url: `/rfps/${rfpId}/tech`,
-        },
-        {
-          title: 'Facts',
-          icon: Info,
-          url: `/rfps/${rfpId}/facts`,
-        },
-        {
-          title: 'Kontakte',
-          icon: Users,
-          url: `/rfps/${rfpId}/contacts`,
-        },
-      ],
-    },
-    {
-      label: 'Routing',
-      items: [
-        {
-          title: 'BL Routing',
-          icon: GitBranch,
-          url: `/rfps/${rfpId}/routing`,
-        },
-      ],
-    },
-  ];
+  const navigationSections = getRfpNavigationSections(rfpId);
 
   return (
     <Sidebar collapsible="icon" variant="sidebar" side="right" className="hidden md:flex">

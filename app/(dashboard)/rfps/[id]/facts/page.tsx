@@ -1,5 +1,5 @@
 import { Globe, FileText, Camera, ExternalLink } from 'lucide-react';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { ScreenshotGallery } from './screenshot-gallery';
 
@@ -47,24 +47,12 @@ export default async function FactsPage({ params }: { params: Promise<{ id: stri
   const { rfp, quickScan } = await getCachedRfpWithRelations(id);
 
   if (!rfp) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">RFP nicht gefunden</h1>
-        <p className="text-muted-foreground">Der angeforderte RFP konnte nicht gefunden werden.</p>
-      </div>
-    );
+    notFound();
   }
 
   // Check ownership
   if (rfp.userId !== session.user.id) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Keine Berechtigung</h1>
-        <p className="text-muted-foreground">
-          Sie haben keine Berechtigung, diesen RFP anzuzeigen.
-        </p>
-      </div>
-    );
+    notFound();
   }
 
   // Parse content volume and screenshots

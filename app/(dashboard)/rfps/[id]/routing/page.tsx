@@ -1,6 +1,5 @@
 import { AlertCircle, AlertTriangle, Calendar, Clock, Sparkles } from 'lucide-react';
-import { redirect } from 'next/navigation';
-import { eq } from 'drizzle-orm';
+import { notFound, redirect } from 'next/navigation';
 
 import { BLRoutingCard } from '@/components/bids/bl-routing-card';
 import { TenQuestionsCard } from '@/components/bids/ten-questions-card';
@@ -37,24 +36,12 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
   const { rfp, quickScan } = await getCachedRfpWithRelations(id);
 
   if (!rfp) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">RFP nicht gefunden</h1>
-        <p className="text-muted-foreground">Der angeforderte RFP konnte nicht gefunden werden.</p>
-      </div>
-    );
+    notFound();
   }
 
   // Check ownership
   if (rfp.userId !== session.user.id) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Keine Berechtigung</h1>
-        <p className="text-muted-foreground">
-          Sie haben keine Berechtigung, diesen RFP anzuzeigen.
-        </p>
-      </div>
-    );
+    notFound();
   }
 
   if (!quickScan || !quickScan.timeline) {

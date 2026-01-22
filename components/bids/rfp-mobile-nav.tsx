@@ -1,17 +1,6 @@
 'use client';
 
-import {
-  LayoutDashboard,
-  Clock,
-  FileText,
-  Trophy,
-  Scale,
-  Code,
-  Info,
-  Users,
-  GitBranch,
-  Menu,
-} from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
@@ -25,6 +14,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { getRfpNavigationSections } from '@/lib/rfps/navigation';
 
 interface RfpMobileNavProps {
   rfpId: string;
@@ -35,74 +25,7 @@ interface RfpMobileNavProps {
 export function RfpMobileNav({ rfpId, title, status }: RfpMobileNavProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-
-  const navigationSections = [
-    {
-      label: 'Overview',
-      items: [
-        {
-          title: 'Übersicht',
-          icon: LayoutDashboard,
-          url: `/rfps/${rfpId}`,
-        },
-      ],
-    },
-    {
-      label: 'Details',
-      items: [
-        {
-          title: 'Timing',
-          icon: Clock,
-          url: `/rfps/${rfpId}/timing`,
-        },
-        {
-          title: 'Deliverables',
-          icon: FileText,
-          url: `/rfps/${rfpId}/deliverables`,
-        },
-        {
-          title: 'Referenzen',
-          icon: Trophy,
-          url: `/rfps/${rfpId}/references`,
-        },
-        {
-          title: 'Legal',
-          icon: Scale,
-          url: `/rfps/${rfpId}/legal`,
-        },
-      ],
-    },
-    {
-      label: 'Analysis',
-      items: [
-        {
-          title: 'Tech Stack',
-          icon: Code,
-          url: `/rfps/${rfpId}/tech`,
-        },
-        {
-          title: 'Facts',
-          icon: Info,
-          url: `/rfps/${rfpId}/facts`,
-        },
-        {
-          title: 'Kontakte',
-          icon: Users,
-          url: `/rfps/${rfpId}/contacts`,
-        },
-      ],
-    },
-    {
-      label: 'Routing',
-      items: [
-        {
-          title: 'BL Routing',
-          icon: GitBranch,
-          url: `/rfps/${rfpId}/routing`,
-        },
-      ],
-    },
-  ];
+  const navigationSections = getRfpNavigationSections(rfpId);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

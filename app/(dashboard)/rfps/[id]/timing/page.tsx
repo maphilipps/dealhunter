@@ -1,5 +1,5 @@
 import { AlertCircle, Calendar, Clock } from 'lucide-react';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import { auth } from '@/lib/auth';
 import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
+import { parseJsonField } from '@/lib/utils/json';
 import type { ProjectTimeline } from '@/lib/timeline/schema';
 
 export default async function TimingPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,39 +29,23 @@ export default async function TimingPage({ params }: { params: Promise<{ id: str
   const { rfp, quickScan } = await getCachedRfpWithRelations(id);
 
   if (!rfp) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">RFP nicht gefunden</h1>
-        <p className="text-muted-foreground">Der angeforderte RFP konnte nicht gefunden werden.</p>
-      </div>
-    );
+    notFound();
   }
 
   // Check ownership
   if (rfp.userId !== session.user.id) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Keine Berechtigung</h1>
-        <p className="text-muted-foreground">
-          Sie haben keine Berechtigung, diesen RFP anzuzeigen.
-        </p>
-      </div>
-    );
+    notFound();
   }
 
   // Parse timeline
-  const timeline: ProjectTimeline | null = quickScan?.timeline
-    ? (JSON.parse(quickScan.timeline) as ProjectTimeline)
-    : null;
+  const timeline = parseJsonField<ProjectTimeline | null>(quickScan?.timeline, null);
 
   // Get extracted requirements for deadline
-  const extractedReqs = rfp.extractedRequirements
-    ? (JSON.parse(rfp.extractedRequirements) as {
-        targetDeadline?: string;
-        deadline?: string;
-        submissionDeadline?: string;
-      })
-    : null;
+  const extractedReqs = parseJsonField<{
+    targetDeadline?: string;
+    deadline?: string;
+    submissionDeadline?: string;
+  } | null>(rfp.extractedRequirements, null);
   const submissionDeadline: string | undefined =
     extractedReqs?.submissionDeadline || extractedReqs?.targetDeadline || extractedReqs?.deadline;
 

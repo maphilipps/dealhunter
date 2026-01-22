@@ -1,11 +1,12 @@
 import { AlertCircle, Award, Building2, Calendar, CheckCircle2, Briefcase } from 'lucide-react';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { getCachedRfp } from '@/lib/rfps/cached-queries';
+import { parseJsonField } from '@/lib/utils/json';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 export default async function ReferencesPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,30 +21,19 @@ export default async function ReferencesPage({ params }: { params: Promise<{ id:
   const rfp = await getCachedRfp(id);
 
   if (!rfp) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">RFP nicht gefunden</h1>
-        <p className="text-muted-foreground">Der angeforderte RFP konnte nicht gefunden werden.</p>
-      </div>
-    );
+    notFound();
   }
 
   // Check ownership
   if (rfp.userId !== session.user.id) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Keine Berechtigung</h1>
-        <p className="text-muted-foreground">
-          Sie haben keine Berechtigung, diesen RFP anzuzeigen.
-        </p>
-      </div>
-    );
+    notFound();
   }
 
   // Parse extracted requirements
-  const extractedReqs: ExtractedRequirements | null = rfp.extractedRequirements
-    ? (JSON.parse(rfp.extractedRequirements) as ExtractedRequirements)
-    : null;
+  const extractedReqs = parseJsonField<ExtractedRequirements | null>(
+    rfp.extractedRequirements,
+    null
+  );
 
   // Extract reference-related information from key requirements
   const keyRequirements = extractedReqs?.keyRequirements || [];

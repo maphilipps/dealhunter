@@ -1,5 +1,5 @@
 import { Users, Mail, Phone, Linkedin, ExternalLink } from 'lucide-react';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,21 +8,7 @@ import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
 import type { DecisionMaker, DecisionMakersResearch } from '@/lib/quick-scan/schema';
 import { cn } from '@/lib/utils';
 
-// Helper to parse JSON fields safely
-function parseJsonField<T>(value: unknown): T | null {
-  if (!value) return null;
-  if (typeof value === 'object') {
-    return value as T;
-  }
-  if (typeof value === 'string') {
-    try {
-      return JSON.parse(value) as T;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
+import { parseJsonValue } from '@/lib/utils/json';
 
 export default async function ContactsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -36,29 +22,17 @@ export default async function ContactsPage({ params }: { params: Promise<{ id: s
   const { rfp, quickScan } = await getCachedRfpWithRelations(id);
 
   if (!rfp) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">RFP nicht gefunden</h1>
-        <p className="text-muted-foreground">Der angeforderte RFP konnte nicht gefunden werden.</p>
-      </div>
-    );
+    notFound();
   }
 
   // Check ownership
   if (rfp.userId !== session.user.id) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Keine Berechtigung</h1>
-        <p className="text-muted-foreground">
-          Sie haben keine Berechtigung, diesen RFP anzuzeigen.
-        </p>
-      </div>
-    );
+    notFound();
   }
 
   // Parse decision makers research
   const decisionMakersData = quickScan
-    ? parseJsonField<DecisionMakersResearch>(quickScan.decisionMakers)
+    ? parseJsonValue<DecisionMakersResearch>(quickScan.decisionMakers)
     : null;
 
   const decisionMakers = decisionMakersData?.decisionMakers || [];

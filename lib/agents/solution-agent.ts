@@ -79,6 +79,68 @@ export interface SolutionVisualIdeas {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
+ * Query all Deep Scan agents for comprehensive context
+ * PA-016: Enhanced RAG integration with all agent outputs
+ */
+async function queryAllAgents(rfpId: string, deliverableName: string) {
+  // Define targeted queries for each agent type
+  const agentQueries = [
+    {
+      name: 'TECH',
+      query: `Technical details, architecture, and technology stack relevant to "${deliverableName}"`,
+    },
+    {
+      name: 'COMMERCIAL',
+      query: `Budget, cost estimates, and commercial considerations for "${deliverableName}"`,
+    },
+    {
+      name: 'RISK',
+      query: `Potential risks, challenges, and mitigation strategies for "${deliverableName}"`,
+    },
+    {
+      name: 'LEGAL',
+      query: `Legal requirements, compliance needs, and regulatory considerations for "${deliverableName}"`,
+    },
+    {
+      name: 'TEAM',
+      query: `Team composition, roles, and resource requirements for "${deliverableName}"`,
+    },
+    {
+      name: 'GENERAL',
+      query: `Overall project requirements and key details for "${deliverableName}"`,
+    },
+  ];
+
+  // Query each agent type in parallel
+  const results = await Promise.all(
+    agentQueries.map(async ({ name, query }) => {
+      const chunks = await queryRAG({
+        rfpId,
+        question: query,
+        maxResults: 5, // Get top 5 chunks per agent type
+      });
+      return { agentType: name, chunks };
+    })
+  );
+
+  // Combine all results with source attribution
+  const allChunks = results.flatMap(r => r.chunks);
+
+  // Group by agent for structured context
+  const contextByAgent = results.reduce(
+    (acc, r) => {
+      if (r.chunks.length > 0) {
+        acc[r.agentType] = r.chunks.map(c => c.content).join('\n');
+      }
+      return acc;
+    },
+    {} as Record<string, string>
+  );
+
+  return { allChunks, contextByAgent };
+}
+
+/**
  * PA-011: Generate structured outline for a deliverable
  *
  * Uses RAG to retrieve relevant data from all Deep Scan agents and creates
@@ -91,15 +153,13 @@ export async function generateOutline(input: SolutionInput): Promise<SolutionOut
   console.error(`[Solution Agent] Generating outline for "${input.deliverableName}"`);
 
   try {
-    // 1. RAG Query: Retrieve relevant context from Deep Scan agents
-    const ragResults = await queryRAG({
-      rfpId: input.rfpId,
-      question: `What are the key technical details, requirements, and architecture considerations for "${input.deliverableName}"?`,
-      maxResults: 10,
-    });
+    // 1. RAG Query: Retrieve comprehensive context from ALL Deep Scan agents
+    const { allChunks, contextByAgent } = await queryAllAgents(input.rfpId, input.deliverableName);
 
-    // Combine RAG chunks into context
-    const ragContext = ragResults.map(r => `[${r.agentName}] ${r.content}`).join('\n\n');
+    // Build structured context string with agent attribution
+    const ragContext = Object.entries(contextByAgent)
+      .map(([agent, content]) => `## Context from ${agent} Agent:\n${content}`)
+      .join('\n\n');
 
     // 2. Zod schema for AI-generated outline
     const OutlineSchema = z.object({
@@ -157,6 +217,8 @@ Estimate the total word count for the final document based on the outline comple
     console.error('[Solution Agent] Outline generated', {
       sections: outlineData.sections.length,
       estimatedWords: outlineData.estimatedWordCount,
+      agentSources: Object.keys(contextByAgent),
+      totalChunks: allChunks.length,
     });
 
     return {
@@ -207,14 +269,16 @@ export async function generateDraft(
       outline = await generateOutline(input);
     }
 
-    // 1. RAG Query: Retrieve detailed context
-    const ragResults = await queryRAG({
-      rfpId: input.rfpId,
-      question: `Provide detailed technical information, analysis, and recommendations for "${input.deliverableName}". Include tech stack details, architecture, requirements, and implementation approach.`,
-      maxResults: 15,
-    });
+    // 1. RAG Query: Retrieve comprehensive context from ALL Deep Scan agents
+    const { allChunks, contextByAgent } = await queryAllAgents(input.rfpId, input.deliverableName);
 
-    const ragContext = ragResults.map(r => `[${r.agentName}] ${r.content}`).join('\n\n');
+    // Build structured context string with agent attribution and more details
+    const ragContext = Object.entries(contextByAgent)
+      .map(([agent, content]) => `## Context from ${agent} Agent:\n${content}`)
+      .join('\n\n');
+
+    // Also track sources for reference generation
+    const sources = allChunks.map(c => `${c.agentName} (${c.chunkType})`).filter((v, i, a) => a.indexOf(v) === i);
 
     // 2. Zod schema for AI-generated draft
     const DraftSchema = z.object({
@@ -243,7 +307,9 @@ Write a complete, professional markdown document following the outline above.
 **Requirements:**
 - Minimum 500 words
 - Professional business writing style
-- Reference specific technical details from the context
+- Reference specific technical details from the Deep Scan agents context
+- **Include source references** where appropriate (e.g., "According to the TECH Agent analysis...")
+- Integrate insights from TECH, COMMERCIAL, RISK, LEGAL, and TEAM agents
 - Include concrete recommendations and next steps
 - Use markdown formatting (headings, lists, bold for emphasis)
 - Write in German if the customer context suggests it, otherwise English
@@ -251,11 +317,16 @@ Write a complete, professional markdown document following the outline above.
 **Structure:**
 Follow the provided outline exactly. Fill each section with relevant, detailed content based on the Deep Scan analysis context.
 
-Provide a comprehensive, ready-to-present draft that demonstrates deep understanding of the project requirements and technical solution.`,
+**Available Context Sources:**
+${Object.keys(contextByAgent).join(', ')}
+
+Provide a comprehensive, ready-to-present draft that demonstrates deep understanding of the project requirements and technical solution. Where relevant, mention which agent analysis informed your recommendations.`,
     });
 
     console.error('[Solution Agent] Draft generated', {
       wordCount: draftData.wordCount,
+      agentSources: Object.keys(contextByAgent),
+      sourcesReferenced: sources.length,
     });
 
     return {
@@ -330,14 +401,13 @@ export async function generateTalkingPoints(
       outline = await generateOutline(input);
     }
 
-    // 1. RAG Query: Retrieve key insights
-    const ragResults = await queryRAG({
-      rfpId: input.rfpId,
-      question: `What are the most important points to communicate about "${input.deliverableName}"? Include key benefits, risks, and recommendations.`,
-      maxResults: 10,
-    });
+    // 1. RAG Query: Retrieve comprehensive insights from ALL agents
+    const { contextByAgent } = await queryAllAgents(input.rfpId, input.deliverableName);
 
-    const ragContext = ragResults.map(r => `[${r.agentName}] ${r.content}`).join('\n\n');
+    // Build structured context focusing on key insights
+    const ragContext = Object.entries(contextByAgent)
+      .map(([agent, content]) => `## Key Points from ${agent} Agent:\n${content}`)
+      .join('\n\n');
 
     // 2. Zod schema for AI-generated talking points
     const TalkingPointsSchema = z.object({
@@ -359,7 +429,7 @@ export async function generateTalkingPoints(
 **Outline:**
 ${outline.outline.map(s => `${'#'.repeat(s.level + 1)} ${s.heading}`).join('\n')}
 
-**Context:**
+**Context from Deep Scan Agents:**
 ${ragContext || 'No context available'}
 
 Create concise, impactful talking points for a presentation of this deliverable.
@@ -368,14 +438,17 @@ Create concise, impactful talking points for a presentation of this deliverable.
 - Maximum 10 bullet points per topic
 - Clear, concise statements (one line each)
 - Focus on benefits, not just features
-- Include concrete numbers/facts where available
-- Anticipate and address potential concerns
+- Include concrete numbers/facts from agent analyses where available
+- Integrate insights from TECH, COMMERCIAL, RISK, LEGAL, and TEAM agents
+- Anticipate and address potential concerns raised by the agents
+- Where relevant, reference specific findings (e.g., "Budget aligned with COMMERCIAL analysis")
 
 Organize talking points by the main chapters from the outline. Each topic should have 3-7 bullet points.`,
     });
 
     console.error('[Solution Agent] Talking points generated', {
       topics: talkingPointsData.topics.length,
+      agentSources: Object.keys(contextByAgent),
     });
 
     return {
@@ -420,14 +493,13 @@ export async function generateVisualIdeas(input: SolutionInput): Promise<Solutio
   console.error(`[Solution Agent] Generating visual ideas for "${input.deliverableName}"`);
 
   try {
-    // 1. RAG Query: Retrieve data that could be visualized
-    const ragResults = await queryRAG({
-      rfpId: input.rfpId,
-      question: `What data, architecture, timelines, or processes could be visualized for "${input.deliverableName}"?`,
-      maxResults: 10,
-    });
+    // 1. RAG Query: Retrieve data from ALL agents that could be visualized
+    const { contextByAgent } = await queryAllAgents(input.rfpId, input.deliverableName);
 
-    const ragContext = ragResults.map(r => `[${r.agentName}] ${r.content}`).join('\n\n');
+    // Build context focusing on visualizable data
+    const ragContext = Object.entries(contextByAgent)
+      .map(([agent, content]) => `## Visualizable Data from ${agent} Agent:\n${content}`)
+      .join('\n\n');
 
     // 2. Zod schema for AI-generated visual ideas
     const VisualIdeasSchema = z.object({
@@ -449,10 +521,10 @@ export async function generateVisualIdeas(input: SolutionInput): Promise<Solutio
 
 **Deliverable:** ${input.deliverableName}
 
-**Available Context:**
+**Available Context from Deep Scan Agents:**
 ${ragContext || 'No context available'}
 
-Suggest minimum 3 impactful visualizations that would enhance this deliverable.
+Suggest minimum 3 impactful visualizations that would enhance this deliverable based on the agent analyses.
 
 **Visual Types:**
 - **diagram**: Flowcharts, process diagrams, decision trees
@@ -465,13 +537,19 @@ For each visual:
 1. Choose the most appropriate type
 2. Give it a descriptive title
 3. Explain what it should show and why it's valuable
-4. Suggest where to get the data (e.g., "From PT Estimation", "From Tech Stack Analysis")
+4. Suggest where to get the data - reference specific agent findings:
+   - "From TECH Agent: Technology Stack Analysis"
+   - "From COMMERCIAL Agent: Budget Breakdown"
+   - "From RISK Agent: Risk Matrix"
+   - "From TEAM Agent: Team Composition"
+   - "From PT Estimation based on requirements"
 
-Focus on visuals that tell a story and support key messages.`,
+Focus on visuals that tell a story, support key messages, and leverage the comprehensive agent data.`,
     });
 
     console.error('[Solution Agent] Visual ideas generated', {
       count: visualData.visuals.length,
+      agentSources: Object.keys(contextByAgent),
     });
 
     return {

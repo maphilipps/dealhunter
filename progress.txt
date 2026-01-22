@@ -7004,3 +7004,82 @@ Created comprehensive test suite at `tests/integration/api/pitchdeck/confirm-tea
 
 ### Commit:
 feat(DEA-183): Add comprehensive test coverage for team confirmation permissions
+
+### Linear Updates:
+- Status: Backlog → In Progress → Done
+- Comment added with implementation verification
+- All acceptance criteria met
+
+### Commit:
+63e735c - feat(DEA-183): Add comprehensive test coverage for team confirmation permissions
+
+**Task Complete:** ✅ Role-based authorization verified and test coverage added
+
+---
+
+## Issue DEA-175: AI-Agent nutzt alle RAG-Daten (TECH, COMMERCIAL, RISK, etc.)
+
+**Date:** 2026-01-22
+**Status:** Completed ✅
+**Category:** Lösungs-Skizzen / Solution Agent Enhancement
+
+### Problem:
+Solution Agent was only querying RAG with generic questions, not leveraging comprehensive data from all Deep Scan agents (TECH, COMMERCIAL, RISK, LEGAL, TEAM). Generated content lacked source attribution and didn't integrate insights from all available agent analyses.
+
+### Implementation:
+
+#### 1. Enhanced RAG Query Strategy
+- Created `queryAllAgents()` helper function in `lib/agents/solution-agent.ts:85-141`
+- Queries 6 agent types in parallel:
+  - TECH: Technical details, architecture, technology stack
+  - COMMERCIAL: Budget, cost estimates, commercial considerations
+  - RISK: Potential risks, challenges, mitigation strategies
+  - LEGAL: Legal requirements, compliance, regulatory considerations
+  - TEAM: Team composition, roles, resource requirements
+  - GENERAL: Overall project requirements
+
+#### 2. Source Attribution
+- Added agent source tracking in all generated content
+- Context organized by agent type with clear attribution
+- Enhanced console logging to show which agents contributed data
+- Draft generation now tracks unique sources for reference
+
+#### 3. Updated All Generation Functions
+- **generateOutline()** (PA-011): Uses comprehensive context from all agents
+- **generateDraft()** (PA-012): Includes source references, encourages agent attribution
+- **generateTalkingPoints()** (PA-013): Integrates insights from all agent types
+- **generateVisualIdeas()** (PA-014): References specific agent findings for data sources
+
+#### 4. Prompt Enhancements
+- Added explicit instructions to reference agent analyses
+- Examples of source attribution (e.g., "According to the TECH Agent analysis...")
+- Lists available context sources for each generation
+- Encourages integration of insights from multiple agents
+
+### Files Modified:
+- `lib/agents/solution-agent.ts` - Complete enhancement of RAG integration
+
+### Verification:
+- ✅ TypeScript compilation passes (npm run typecheck)
+- ✅ No new linting errors introduced
+- ✅ All functions now query comprehensive agent data
+- ✅ Source tracking implemented throughout
+- ✅ Enhanced logging shows agent contributions
+
+### Acceptance Criteria Met:
+- [x] RAG-Query für alle relevanten Agent-Outputs (TECH, COMMERCIAL, RISK, LEGAL, TEAM)
+- [x] Daten korrekt in Skizze integriert
+- [x] Quellen-Hinweise wo sinnvoll
+
+### Impact:
+- Solution sketches now leverage comprehensive Deep Scan data
+- Generated content will reference specific agent findings
+- Better quality deliverables with multi-agent insights
+- Transparent sourcing improves trustworthiness
+
+### Next Steps:
+This implementation provides the foundation for:
+- DEA-176: Web Research for best practices (can extend queryAllAgents)
+- DEA-174: Regeneration capability (reuses enhanced agent queries)
+- DEA-185: Parallel execution optimization (already uses Promise.all)
+

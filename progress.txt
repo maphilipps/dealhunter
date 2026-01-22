@@ -7109,3 +7109,31 @@ This implementation provides the foundation for:
 
 **Commit:** 80b48dd
 
+
+## DEA-184: PA-029 - Team-Änderungen nach Bestätigung möglich
+
+**Implemented:** 2026-01-22
+
+**Feature:**
+- New API route: POST /api/leads/[id]/pitchdeck/update-team
+- BL can modify team after confirmation
+- Role checks: Only BL (same BU) or Admin can update
+- Team changes tracked in audit trail (team_change action)
+- Email notifications sent to newly added members
+- Handles role changes for existing members
+- Returns summary of changes (added/removed/modified counts)
+
+**Implementation Details:**
+- Validates pitchdeck status (must be team_confirmed or in_progress)
+- Calculates team delta (added, removed, unchanged members)
+- Updates pitchdeckTeamMembers table atomically
+- Background jobs for emails and audit logs (non-blocking)
+- Comprehensive error handling and validation
+
+**Acceptance Criteria Met:**
+- ✅ BL can update team after confirmation
+- ✅ New members receive email notification
+- ✅ Audit trail contains all team changes
+
+**Files:**
+- app/api/leads/[id]/pitchdeck/update-team/route.ts (new)

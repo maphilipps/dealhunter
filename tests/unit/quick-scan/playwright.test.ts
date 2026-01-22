@@ -35,15 +35,28 @@ vi.mock('fs/promises', () => ({
   mkdir: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Helper function to rate Core Web Vitals (defined before tests)
+function rateWebVital(
+  metric: 'lcp' | 'cls' | 'fid' | 'inp' | 'ttfb',
+  value: number | undefined
+): 'good' | 'needs-improvement' | 'poor' | null {
+  if (value === undefined) return null;
+
+  const thresholds = {
+    lcp: { good: 2500, poor: 4000 }, // milliseconds
+    cls: { good: 0.1, poor: 0.25 }, // dimensionless
+    fid: { good: 100, poor: 300 }, // milliseconds (deprecated)
+    inp: { good: 200, poor: 500 }, // milliseconds
+    ttfb: { good: 800, poor: 1800 }, // milliseconds
+  };
+
+  const threshold = thresholds[metric];
+  if (value <= threshold.good) return 'good';
+  if (value <= threshold.poor) return 'needs-improvement';
+  return 'poor';
+}
+
 describe('rateWebVital', () => {
-  // We need to import after mocking
-  let rateWebVital: any;
-
-  beforeEach(async () => {
-    // Reset modules to ensure fresh imports
-    vi.resetModules();
-  });
-
   it('should rate LCP as good under 2.5s', () => {
     // LCP thresholds: good <= 2500ms, needs-improvement <= 4000ms, poor > 4000ms
     expect(rateWebVital('lcp', 2000)).toBe('good');
@@ -107,27 +120,6 @@ describe('rateWebVital', () => {
     expect(rateWebVital('ttfb', undefined)).toBe(null);
   });
 });
-
-// Helper function to rate Core Web Vitals (extracted for testing)
-function rateWebVital(
-  metric: 'lcp' | 'cls' | 'fid' | 'inp' | 'ttfb',
-  value: number | undefined
-): 'good' | 'needs-improvement' | 'poor' | null {
-  if (value === undefined) return null;
-
-  const thresholds = {
-    lcp: { good: 2500, poor: 4000 }, // milliseconds
-    cls: { good: 0.1, poor: 0.25 }, // dimensionless
-    fid: { good: 100, poor: 300 }, // milliseconds (deprecated)
-    inp: { good: 200, poor: 500 }, // milliseconds
-    ttfb: { good: 800, poor: 1800 }, // milliseconds
-  };
-
-  const threshold = thresholds[metric];
-  if (value <= threshold.good) return 'good';
-  if (value <= threshold.poor) return 'needs-improvement';
-  return 'poor';
-}
 
 describe('PlaywrightAuditResult interface', () => {
   it('should have correct structure for performance metrics with Core Web Vitals', () => {

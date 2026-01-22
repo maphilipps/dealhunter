@@ -5573,3 +5573,59 @@ Implemented hybrid approach combining database-level and in-memory filtering:
 
 ### Links
 - Issue: https://linear.app/adessocms/issue/DEA-115
+
+## 2026-01-22 - DEA-135: Fix failing Playwright Core Web Vitals rating tests
+
+**Issue:** DEA-135 - Fix failing Playwright Core Web Vitals rating tests
+**Status:** ✅ Complete
+**Priority:** P3 - Medium (Test Fix)
+**Commit:** [Pending]
+
+**Problem:**
+13 tests were failing in `tests/unit/quick-scan/playwright.test.ts` because the `rateWebVital` helper function was defined but not properly exposed to the tests.
+
+**Root Cause:**
+- The `rateWebVital` function was defined at the bottom of the file (line 112)
+- Test variable `rateWebVital` was declared as `let rateWebVital: any` but never assigned
+- Tests tried to use `rateWebVital` before it was defined in the file
+
+**Solution:**
+Moved the `rateWebVital` function definition from line 112 to line 38, before the test suite that uses it. Removed the unnecessary `let rateWebVital: any` declaration and `beforeEach` hook that were doing nothing.
+
+**Files Changed:**
+- `tests/unit/quick-scan/playwright.test.ts` - Moved `rateWebVital` function before tests
+
+**Test Results:**
+- Before: 13 failing tests (LCP, CLS, TTFB, INP rating tests)
+- After: All 23 tests passing in Playwright test suite
+- Test coverage: Maintained at 80%+
+
+**Key Changes:**
+```typescript
+// Before: Function defined at bottom, tests using undefined variable
+describe('rateWebVital', () => {
+  let rateWebVital: any; // ❌ Never assigned
+  // ... 13 failing tests
+});
+
+// Function defined here but not connected ❌
+function rateWebVital(...) { ... }
+
+// After: Function defined before tests ✅
+function rateWebVital(...) { ... }
+
+describe('rateWebVital', () => {
+  // ... 13 passing tests
+});
+```
+
+**Acceptance Criteria:**
+- ✅ All 13 Core Web Vitals rating tests pass
+- ✅ `rateWebVital` function properly accessible in tests
+- ✅ Test coverage remains at 80%+
+
+**References:**
+- Linear Issue: https://linear.app/adessocms/issue/DEA-135
+- Test File: tests/unit/quick-scan/playwright.test.ts:38-122
+
+---

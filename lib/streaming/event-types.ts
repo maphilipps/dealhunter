@@ -14,6 +14,10 @@ export enum AgentEventType {
   // URL Check Events
   URL_CHECK = 'url-check',
   URL_SUGGESTION = 'url-suggestion',
+  // Workflow Step Events (QuickScan 2.0 Refactoring)
+  STEP_START = 'step-start',
+  STEP_COMPLETE = 'step-complete',
+  WORKFLOW_PROGRESS = 'workflow-progress',
 }
 
 // QuickScan Phase Types
@@ -31,6 +35,38 @@ export interface AnalysisCompleteData {
   success: boolean;
   duration: number;
   details?: string;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WORKFLOW STEP EVENT DATA (QuickScan 2.0 Refactoring)
+// Used for consistent step-level tracking across all Quick Scan tools
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface StepStartData {
+  stepId: string;
+  stepName: string;
+  phase: QuickScanPhase;
+  timestamp: number;
+  dependencies?: string[]; // Steps this step depends on
+  optional?: boolean; // Whether step failure stops the workflow
+}
+
+export interface StepCompleteData {
+  stepId: string;
+  stepName: string;
+  phase: QuickScanPhase;
+  success: boolean;
+  duration: number;
+  error?: string;
+  result?: unknown; // Step output for downstream steps
+}
+
+export interface WorkflowProgressData {
+  phase: QuickScanPhase;
+  completedSteps: number;
+  totalSteps: number;
+  currentSteps: string[]; // Steps currently running
+  percentage: number;
 }
 
 // Tech Stack Detection specific event types
@@ -120,7 +156,11 @@ export type AgentEventData =
   | { type: AgentEventType.ANALYSIS_COMPLETE; data: AnalysisCompleteData }
   // URL Check Events
   | { type: AgentEventType.URL_CHECK; data: UrlCheckData }
-  | { type: AgentEventType.URL_SUGGESTION; data: UrlSuggestionData };
+  | { type: AgentEventType.URL_SUGGESTION; data: UrlSuggestionData }
+  // Workflow Step Events (QuickScan 2.0 Refactoring)
+  | { type: AgentEventType.STEP_START; data: StepStartData }
+  | { type: AgentEventType.STEP_COMPLETE; data: StepCompleteData }
+  | { type: AgentEventType.WORKFLOW_PROGRESS; data: WorkflowProgressData };
 
 export interface AgentEvent {
   id: string;
@@ -144,4 +184,23 @@ export interface StreamState {
       confidence?: number;
     }
   >;
+  // Workflow Step States (QuickScan 2.0 Refactoring)
+  stepStates: Record<
+    string,
+    {
+      status: 'pending' | 'running' | 'complete' | 'error' | 'skipped';
+      phase: QuickScanPhase;
+      stepName?: string;
+      startTime?: number;
+      duration?: number;
+      error?: string;
+      result?: unknown;
+    }
+  >;
+  workflowProgress: {
+    phase: QuickScanPhase;
+    completedSteps: number;
+    totalSteps: number;
+    percentage: number;
+  } | null;
 }

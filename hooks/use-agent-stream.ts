@@ -2,7 +2,14 @@
 
 import { useReducer, useRef, useCallback, useEffect } from 'react';
 
-import type { AgentEvent, StreamState, UrlSuggestionData } from '@/lib/streaming/event-types';
+import type {
+  AgentEvent,
+  StreamState,
+  UrlSuggestionData,
+  StepStartData,
+  StepCompleteData,
+  WorkflowProgressData,
+} from '@/lib/streaming/event-types';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
 /**
@@ -29,15 +36,23 @@ type Action =
 // Helper function to process a single event and update agent states
 function processEvent(
   event: AgentEvent,
-  currentAgentStates: StreamState['agentStates']
+  currentAgentStates: StreamState['agentStates'],
+  currentStepStates: StreamState['stepStates'],
+  currentWorkflowProgress: StreamState['workflowProgress']
 ): {
   agentStates: StreamState['agentStates'];
+  stepStates: StreamState['stepStates'];
+  workflowProgress: StreamState['workflowProgress'];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   decision?: any;
   error?: string;
   urlSuggestion?: UrlSuggestionData;
   shouldStopStreaming?: boolean;
 } {
   const newAgentStates = { ...currentAgentStates };
+  const newStepStates = { ...currentStepStates };
+  let newWorkflowProgress = currentWorkflowProgress;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let decision: any = undefined;
   let error: string | undefined = undefined;
   let urlSuggestion: UrlSuggestionData | undefined = undefined;
@@ -60,6 +75,34 @@ function processEvent(
       result: data.result,
       confidence: data.confidence,
     };
+  } else if (event.type === AgentEventType.STEP_START && event.data) {
+    // QuickScan 2.0: Step Start Event
+    const data = event.data as StepStartData;
+    newStepStates[data.stepId] = {
+      status: 'running',
+      phase: data.phase,
+      startTime: data.timestamp,
+      stepName: data.stepName,
+    };
+  } else if (event.type === AgentEventType.STEP_COMPLETE && event.data) {
+    // QuickScan 2.0: Step Complete Event
+    const data = event.data as StepCompleteData;
+    newStepStates[data.stepId] = {
+      status: data.success ? 'complete' : 'error',
+      phase: data.phase,
+      stepName: data.stepName,
+      duration: data.duration,
+      error: data.error,
+    };
+  } else if (event.type === AgentEventType.WORKFLOW_PROGRESS && event.data) {
+    // QuickScan 2.0: Workflow Progress Event
+    const data = event.data as WorkflowProgressData;
+    newWorkflowProgress = {
+      phase: data.phase,
+      completedSteps: data.completedSteps,
+      totalSteps: data.totalSteps,
+      percentage: data.percentage,
+    };
   } else if (event.type === AgentEventType.DECISION && event.data) {
     decision = event.data;
   } else if (event.type === AgentEventType.URL_SUGGESTION && event.data) {
@@ -72,7 +115,16 @@ function processEvent(
     shouldStopStreaming = true;
   }
 
-  return { agentStates: newAgentStates, decision, error, urlSuggestion, shouldStopStreaming };
+  return {
+    agentStates: newAgentStates,
+    stepStates: newStepStates,
+    workflowProgress: newWorkflowProgress,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    decision,
+    error,
+    urlSuggestion,
+    shouldStopStreaming,
+  };
 }
 
 // Best practice: Use reducer instead of multiple useState (rerender-dependencies)
@@ -84,6 +136,8 @@ function streamReducer(state: StreamState, action: Action): StreamState {
 
       const allEvents = [...state.events];
       let currentAgentStates = { ...state.agentStates };
+      let currentStepStates = { ...state.stepStates };
+      let currentWorkflowProgress = state.workflowProgress;
       let decision = state.decision;
       let error = state.error;
       let urlSuggestion = state.urlSuggestion;
@@ -113,8 +167,16 @@ function streamReducer(state: StreamState, action: Action): StreamState {
 
         const eventWithTime = { ...event, timestamp: finalTimestamp };
         allEvents.push(eventWithTime);
-        const result = processEvent(eventWithTime, currentAgentStates);
+        const result = processEvent(
+          eventWithTime,
+          currentAgentStates,
+          currentStepStates,
+          currentWorkflowProgress
+        );
         currentAgentStates = result.agentStates;
+        currentStepStates = result.stepStates;
+        currentWorkflowProgress = result.workflowProgress;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         if (result.decision) decision = result.decision;
         if (result.error) error = result.error;
         if (result.urlSuggestion) urlSuggestion = result.urlSuggestion;
@@ -129,6 +191,8 @@ function streamReducer(state: StreamState, action: Action): StreamState {
         ...state,
         events: newEvents,
         agentStates: currentAgentStates,
+        stepStates: currentStepStates,
+        workflowProgress: currentWorkflowProgress,
         decision,
         error,
         urlSuggestion,
@@ -144,62 +208,25 @@ function streamReducer(state: StreamState, action: Action): StreamState {
       const newEvents =
         allEvents.length > MAX_EVENTS ? allEvents.slice(allEvents.length - MAX_EVENTS) : allEvents;
 
-      // Update agent states based on event type
-      const newAgentStates = { ...state.agentStates };
-
-      if (event.type === AgentEventType.AGENT_PROGRESS && event.data) {
-        const data = event.data as { agent: string; message: string };
-        newAgentStates[data.agent] = {
-          status: 'running',
-          progress: data.message,
-        };
-      } else if (event.type === AgentEventType.AGENT_COMPLETE && event.data) {
-        const data = event.data as {
-          agent: string;
-          result: unknown;
-          confidence?: number;
-        };
-        newAgentStates[data.agent] = {
-          status: 'complete',
-          result: data.result,
-          confidence: data.confidence,
-        };
-      } else if (event.type === AgentEventType.DECISION && event.data) {
-        return {
-          ...state,
-          events: newEvents,
-          decision: event.data as any,
-          agentStates: newAgentStates,
-        };
-      } else if (event.type === AgentEventType.URL_SUGGESTION && event.data) {
-        return {
-          ...state,
-          events: newEvents,
-          urlSuggestion: event.data as UrlSuggestionData,
-          agentStates: newAgentStates,
-        };
-      } else if (event.type === AgentEventType.ERROR && event.data) {
-        const data = event.data as { message: string };
-        return {
-          ...state,
-          events: newEvents,
-          error: data.message,
-          isStreaming: false,
-          agentStates: newAgentStates,
-        };
-      } else if (event.type === AgentEventType.COMPLETE) {
-        return {
-          ...state,
-          events: newEvents,
-          isStreaming: false,
-          agentStates: newAgentStates,
-        };
-      }
+      // Process event using unified helper function
+      const result = processEvent(
+        event,
+        state.agentStates,
+        state.stepStates,
+        state.workflowProgress
+      );
 
       return {
         ...state,
         events: newEvents,
-        agentStates: newAgentStates,
+        agentStates: result.agentStates,
+        stepStates: result.stepStates,
+        workflowProgress: result.workflowProgress,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        decision: result.decision ?? state.decision,
+        error: result.error ?? state.error,
+        urlSuggestion: result.urlSuggestion ?? state.urlSuggestion,
+        isStreaming: result.shouldStopStreaming ? false : state.isStreaming,
       };
     }
 
@@ -217,6 +244,8 @@ function streamReducer(state: StreamState, action: Action): StreamState {
         decision: null,
         urlSuggestion: null,
         agentStates: {},
+        stepStates: {},
+        workflowProgress: null,
       };
 
     default:
@@ -231,6 +260,8 @@ const initialState: StreamState = {
   decision: null,
   urlSuggestion: null,
   agentStates: {},
+  stepStates: {},
+  workflowProgress: null,
 };
 
 export function useAgentStream() {
@@ -298,6 +329,7 @@ export function useAgentStream() {
 
     eventSource.onmessage = event => {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument
         const agentEvent: AgentEvent = JSON.parse(event.data);
 
         // Keep server timestamp - don't override with client time

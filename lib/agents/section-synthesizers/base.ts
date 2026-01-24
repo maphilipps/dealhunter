@@ -173,7 +173,7 @@ WICHTIG:
 - Nutze vorhandene Daten, ergänze mit Expertenwissen wenn nötig`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gemini-3-flash-preview',
+      model: 'claude-haiku-*', // Fast synthesizer model for lower latency
       messages: [
         { role: 'system', content: systemPrompt || defaultSystemPrompt },
         { role: 'user', content: userPrompt },

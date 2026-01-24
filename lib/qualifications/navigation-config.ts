@@ -37,7 +37,7 @@ export interface LeadNavigationSubSection {
  * 1. Overview - Executive summary
  * 2. Current Technology - Tech stack analysis
  * 3. Website Analysis - Performance, SEO, accessibility
- * 4. CMS Architecture - Current CMS structure
+ * 4. Target Architecture - CMS-agnostic target architecture and content model
  * 5. CMS Comparison - CMS selection and comparison
  * 6. Hosting & Infrastructure - Infrastructure analysis
  * 7. Integrations - Third-party integrations
@@ -121,34 +121,42 @@ export const QUALIFICATION_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
     ],
   },
   {
-    id: 'cms-architecture',
-    label: 'Drupal-Architektur',
+    id: 'target-architecture',
+    label: 'Ziel-Architektur',
     icon: 'Layers',
-    route: 'cms-architecture',
+    route: 'target-architecture',
     ragQueryTemplate:
-      'Analyze the current CMS architecture. What is the content model? How is the CMS configured? What are the content types and relationships?',
-    synthesizerAgent: 'cms-architecture-synthesizer',
+      'Define the target architecture based on requirements. What architectural approach is recommended (headless, hybrid, traditional)? What is the content model? What components and dynamic content features are needed? Keep this CMS-agnostic.',
+    synthesizerAgent: 'target-architecture-synthesizer',
     collapsed: false,
     subsections: [
       {
         id: 'architecture-overview',
         label: 'Architektur-Übersicht',
-        route: 'cms-architecture/overview',
+        route: 'target-architecture/overview',
+        ragQueryTemplate:
+          'Recommend an architectural approach based on project requirements: Headless vs. Hybrid vs. Traditional CMS, API strategy, multi-site/multi-language setup, editorial workflow needs. Keep CMS-agnostic.',
       },
       {
-        id: 'content-types',
-        label: 'Content Types',
-        route: 'cms-architecture/content-types',
+        id: 'content-model',
+        label: 'Content-Modell',
+        route: 'target-architecture/content-model',
+        ragQueryTemplate:
+          'Define the content model: What content entities are needed (articles, events, persons, locations, products)? What are the relationships between entities? What taxonomies and classifications are required? Present as a conceptual model, not CMS-specific.',
       },
       {
-        id: 'paragraphs',
-        label: 'Paragraphs',
-        route: 'cms-architecture/paragraphs',
+        id: 'component-catalog',
+        label: 'Komponenten-Katalog',
+        route: 'target-architecture/components',
+        ragQueryTemplate:
+          'Define the required editor components/building blocks: Hero sections, teaser grids, accordions, tabs, forms, etc. Describe variants, nesting rules, and editor experience. Keep conceptual and CMS-agnostic.',
       },
       {
-        id: 'views',
-        label: 'Views & Listings',
-        route: 'cms-architecture/views',
+        id: 'dynamic-content',
+        label: 'Dynamische Inhalte',
+        route: 'target-architecture/dynamic-content',
+        ragQueryTemplate:
+          'Define required dynamic content features: News listings with filters, search functionality, event calendars, person directories. Describe sorting, pagination, and faceted filtering needs. Keep functional and CMS-agnostic.',
       },
     ],
   },
@@ -285,13 +293,13 @@ export const QUALIFICATION_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
   },
   {
     id: 'calc-sheet',
-    label: 'Kalkulation',
+    label: 'adCalc',
     icon: 'Calculator',
     route: 'calc-sheet',
     ragQueryTemplate:
       'Project estimation including features breakdown, project tasks, team roles, risk assessment, hours calculation, and budget estimation for the adesso Calculator.',
     synthesizerAgent: 'calc-sheet-generator',
-    collapsed: true,
+    collapsed: false,
     subsections: [
       {
         id: 'calc-overview',

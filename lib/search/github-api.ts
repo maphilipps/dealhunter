@@ -24,7 +24,7 @@ export function parseGitHubUrl(url: string): { owner: string; repo: string } | n
   // https://github.com/drupal/drupal
   // https://github.com/drupal/drupal.git
   // github.com/drupal/drupal
-  const match = url.match(/github\.com\/([^\/]+)\/([^\/\.]+)/i);
+  const match = url.match(new RegExp('github\\.com/([^/]+)/([^/.]+)', 'i'));
   if (!match) return null;
 
   return { owner: match[1], repo: match[2] };

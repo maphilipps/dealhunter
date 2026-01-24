@@ -1,26 +1,9 @@
-import { NextRequest } from 'next/server';
 import { eq } from 'drizzle-orm';
+import { NextRequest } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads } from '@/lib/db/schema';
-import { scrapeSite, embedScrapedPage } from '@/lib/deep-scan/scraper';
-import { runWebsiteExpert } from '@/lib/deep-scan/experts/website-expert';
-import { runTechExpert } from '@/lib/deep-scan/experts/tech-expert';
-import { runPerformanceExpert } from '@/lib/deep-scan/experts/performance-expert';
-import { runMigrationExpert } from '@/lib/deep-scan/experts/migration-expert';
-import { runArchitectureExpert } from '@/lib/deep-scan/experts/architecture-expert';
-import { runHostingExpert } from '@/lib/deep-scan/experts/hosting-expert';
-import { runIntegrationsExpert } from '@/lib/deep-scan/experts/integrations-expert';
-import { runProjectExpert } from '@/lib/deep-scan/experts/project-expert';
-import { runCostsExpert } from '@/lib/deep-scan/experts/costs-expert';
-import { runDecisionExpert } from '@/lib/deep-scan/experts/decision-expert';
-import {
-  createAgentEventStream,
-  createSSEResponse,
-  type EventEmitter,
-} from '@/lib/streaming/event-emitter';
-import { AgentEventType } from '@/lib/streaming/event-types';
 import {
   getCheckpointState,
   saveCheckpoint,
@@ -30,6 +13,23 @@ import {
   resetCheckpoints,
   type DeepScanPhase,
 } from '@/lib/deep-scan/checkpoint';
+import { runArchitectureExpert } from '@/lib/deep-scan/experts/architecture-expert';
+import { runCostsExpert } from '@/lib/deep-scan/experts/costs-expert';
+import { runDecisionExpert } from '@/lib/deep-scan/experts/decision-expert';
+import { runHostingExpert } from '@/lib/deep-scan/experts/hosting-expert';
+import { runIntegrationsExpert } from '@/lib/deep-scan/experts/integrations-expert';
+import { runMigrationExpert } from '@/lib/deep-scan/experts/migration-expert';
+import { runPerformanceExpert } from '@/lib/deep-scan/experts/performance-expert';
+import { runProjectExpert } from '@/lib/deep-scan/experts/project-expert';
+import { runTechExpert } from '@/lib/deep-scan/experts/tech-expert';
+import { runWebsiteExpert } from '@/lib/deep-scan/experts/website-expert';
+import { scrapeSite, embedScrapedPage } from '@/lib/deep-scan/scraper';
+import {
+  createAgentEventStream,
+  createSSEResponse,
+  type EventEmitter,
+} from '@/lib/streaming/event-emitter';
+import { AgentEventType } from '@/lib/streaming/event-types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

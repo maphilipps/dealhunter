@@ -30,7 +30,7 @@ export default function UsersPage() {
       setIsLoading(false);
     }
 
-    loadUsers();
+    void loadUsers();
   }, [router]);
 
   if (isLoading) {

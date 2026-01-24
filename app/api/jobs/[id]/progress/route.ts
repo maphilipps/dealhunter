@@ -46,7 +46,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         };
 
         // Poll for updates every 1 second
-        const pollInterval = setInterval(async () => {
+        const pollInterval = setInterval(() => {
+          void (async () => {
           try {
             const [currentJob] = await db
               .select()
@@ -90,6 +91,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             clearInterval(pollInterval);
             controller.error(error);
           }
+          })();
         }, 1000);
 
         // Cleanup on client disconnect

@@ -1,9 +1,8 @@
-import { createId } from '@paralleldrive/cuid2';
-import { eq } from 'drizzle-orm';
 import { fakerDE as faker } from '@faker-js/faker';
+import { createId } from '@paralleldrive/cuid2';
 import bcrypt from 'bcryptjs';
+import { eq } from 'drizzle-orm';
 
-import { db } from './index';
 import {
   users,
   businessUnits,
@@ -22,6 +21,8 @@ import {
   referenceMatches,
   competitorMatches,
 } from './schema';
+
+import { db } from './index';
 
 const random = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const randomSubset = <T>(arr: T[], min = 1, max = 3): T[] => {
@@ -175,10 +176,7 @@ async function seed() {
         businessUnitId: bu.id,
         skills: JSON.stringify(randomSubset(skills, 2, 5)),
         roles: JSON.stringify(randomSubset(roles, 1, 2)),
-        availabilityStatus: random(['available', 'on_project', 'unavailable']) as
-          | 'available'
-          | 'on_project'
-          | 'unavailable',
+        availabilityStatus: random(['available', 'on_project', 'unavailable']),
       });
     }
   }

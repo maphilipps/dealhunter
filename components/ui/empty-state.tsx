@@ -5,9 +5,10 @@
  * Used for onboarding, empty lists, and missing data scenarios.
  */
 
-import { cn } from '@/lib/utils';
 import { Button } from './button';
 import { Card, CardContent } from './card';
+
+import { cn } from '@/lib/utils';
 
 export interface EmptyStateAction {
   label: string;

@@ -1,7 +1,9 @@
-import { generateStructuredOutput } from '@/lib/ai/config';
 import { z } from 'zod';
+
 import { queryLeadRag, storeAuditAgentOutput, formatAuditContext } from './base';
 import type { AuditAgentInput, AuditAgentOutput, AuditSection } from './types';
+
+import { generateStructuredOutput } from '@/lib/ai/config';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
 

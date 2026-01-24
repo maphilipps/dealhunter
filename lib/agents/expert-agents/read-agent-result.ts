@@ -1,6 +1,7 @@
+import { eq, and, desc } from 'drizzle-orm';
+
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
 
 export type ExpertAgentName =
   | 'timing_expert'

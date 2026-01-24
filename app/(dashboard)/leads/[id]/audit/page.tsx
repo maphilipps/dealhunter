@@ -1,10 +1,11 @@
-import { notFound } from 'next/navigation';
 import { eq } from 'drizzle-orm';
+import { notFound } from 'next/navigation';
+
+import { DeepScanClient } from './client';
 
 import { db } from '@/lib/db';
 import { leads, rfps } from '@/lib/db/schema';
 import { getAuditNavigation } from '@/lib/deep-scan/experts';
-import { DeepScanClient } from './client';
 
 export default async function AuditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

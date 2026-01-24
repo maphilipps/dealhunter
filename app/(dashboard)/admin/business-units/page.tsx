@@ -21,7 +21,7 @@ export default function BusinessUnitsPage() {
       }
       setIsLoading(false);
     }
-    loadData();
+    void loadData();
   }, []);
 
   if (isLoading) {

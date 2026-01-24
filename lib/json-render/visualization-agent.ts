@@ -48,7 +48,7 @@ function parseJsonlPatches(jsonl: string): JsonRenderTree {
         const key = patch.path.replace('/elements/', '');
         tree.elements[key] = patch.value;
       }
-    } catch (e) {
+    } catch (_e) {
       // Skip invalid JSON lines
       console.warn('Failed to parse JSONL line:', line);
     }

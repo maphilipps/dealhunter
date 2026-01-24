@@ -1,7 +1,8 @@
+import { createId } from '@paralleldrive/cuid2';
+
 import { db } from '@/lib/db';
 import { leads, rfps } from '@/lib/db/schema';
 import { runFileBasedDeepScan } from '@/lib/deep-scan/file-orchestrator';
-import { createId } from '@paralleldrive/cuid2';
 
 async function main() {
   console.log('🧪 Testing File-Based Deep Scan...');

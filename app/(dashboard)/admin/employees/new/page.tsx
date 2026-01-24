@@ -26,7 +26,7 @@ export default function NewEmployeePage() {
       }
       setIsLoading(false);
     }
-    loadData();
+    void loadData();
   }, []);
 
   if (isLoading) {

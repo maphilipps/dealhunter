@@ -466,7 +466,7 @@ function getMigrationRecommendationLabel(recommendation: string): string {
 
 // Copy to clipboard helper
 function copyToClipboard(text: string) {
-  navigator.clipboard.writeText(text);
+  void navigator.clipboard.writeText(text);
 }
 
 export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFactsPhaseProps) {
@@ -529,7 +529,7 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
       }
     }
     if (quickScan?.status === 'completed') {
-      loadBUs();
+      void loadBUs();
     }
   }, [quickScan?.status, quickScan?.recommendedBusinessUnit]);
 

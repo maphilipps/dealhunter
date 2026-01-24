@@ -1,10 +1,10 @@
+import { eq } from 'drizzle-orm';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { RAGDataClient } from '@/components/rag/rag-data-client';
 import { db } from '@/lib/db';
 import { leads } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 
 export const metadata: Metadata = {
   title: 'RAG Data | Lead',

@@ -3,8 +3,8 @@
  * Measures Core Web Vitals and page load performance
  */
 
-import type { BrowserSession, PerformanceResult, CoreWebVitals } from './types';
 import { evaluate, getNetworkRequests } from './agent-browser';
+import type { BrowserSession, PerformanceResult, CoreWebVitals } from './types';
 
 // ========================================
 // Web Vitals Thresholds (Google's recommendations)

@@ -1,9 +1,10 @@
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 
+import { eq } from 'drizzle-orm';
+
 import { db } from '../lib/db';
 import { dealEmbeddings } from '../lib/db/schema';
-import { eq } from 'drizzle-orm';
 
 async function generateEmbedding(text: string): Promise<number[] | null> {
   const apiKey = process.env.OPENAI_EMBEDDING_API_KEY;

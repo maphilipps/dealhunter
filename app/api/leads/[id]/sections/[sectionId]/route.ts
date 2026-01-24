@@ -97,7 +97,7 @@ export async function GET(
     console.log(`[Section API] Synthesizing ${results.length} results...`);
     const synthesisResult = await synthesizeSectionData({
       sectionId,
-      ragResults: results as LeadRAGResult[],
+      ragResults: results,
       leadId,
     });
 

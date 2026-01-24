@@ -126,7 +126,7 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
         setLoading(false);
       }
     }
-    fetchBUMatches();
+    void fetchBUMatches();
   }, [rfpId]);
 
   // Handle BL assignment

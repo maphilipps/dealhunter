@@ -57,7 +57,7 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
 
   // Load AI suggestion on mount
   useEffect(() => {
-    loadTeamSuggestion();
+    void loadTeamSuggestion();
   }, [bidId]);
 
   const loadTeamSuggestion = async () => {
@@ -119,7 +119,7 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
     if (sendNotifications) {
       setShowEmailPreview(true);
     } else {
-      handleAssignTeam();
+      void handleAssignTeam();
     }
   };
 

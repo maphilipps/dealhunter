@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import { meetsBidThreshold } from '@/lib/config/business-rules';
 
 import {
   coordinatorOutputSchema,
@@ -17,6 +16,7 @@ import {
 } from './schema';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
+import { meetsBidThreshold } from '@/lib/config/business-rules';
 
 /**
  * Decision Tree Builder

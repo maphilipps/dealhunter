@@ -2,8 +2,10 @@
 
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import pLimit from 'p-limit';
 
 import { createAuditLog } from '@/lib/admin/audit-actions';
+import { generateCompleteSolution, type SolutionInput } from '@/lib/agents/solution-agent';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
@@ -480,8 +482,6 @@ export async function confirmPitchdeckTeam(
   }
 }
 
-import { generateCompleteSolution, type SolutionInput } from '@/lib/agents/solution-agent';
-import pLimit from 'p-limit';
 
 export interface UpdateDeliverableStatusResult {
   success: boolean;

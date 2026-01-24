@@ -19,10 +19,10 @@ import { auth } from '@/lib/auth';
 import { buildQuestionsWithStatus } from '@/lib/bids/ten-questions';
 import { db } from '@/lib/db';
 import { businessUnits } from '@/lib/db/schema';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
 import { analyzeTimelineRisk, getRiskIcon } from '@/lib/timeline/risk-analyzer';
 import type { ProjectTimeline, RiskAnalysis } from '@/lib/timeline/schema';
-import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 export default async function RoutingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

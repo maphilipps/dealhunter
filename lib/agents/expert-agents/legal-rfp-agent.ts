@@ -6,7 +6,6 @@
  * Focuses on: liability, insurance, penalties, IP, contract terms, etc.
  */
 
-import { generateStructuredOutput } from '@/lib/ai/config';
 
 import {
   queryRfpDocument,
@@ -16,6 +15,8 @@ import {
 } from './base';
 import { LegalRfpAnalysisSchema, type LegalRfpAnalysis } from './legal-rfp-schema';
 import type { ExpertAgentInput, ExpertAgentOutput } from './types';
+
+import { generateStructuredOutput } from '@/lib/ai/config';
 
 const LEGAL_RFP_QUERIES = [
   'terms conditions contract agreement liability warranty',

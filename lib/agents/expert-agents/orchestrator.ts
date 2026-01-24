@@ -1,8 +1,8 @@
-import { runTimingAgent } from './timing-agent';
 import { runDeliverablesAgent } from './deliverables-agent';
-import { runTechStackAgent } from './techstack-agent';
 import { runLegalRfpAgent } from './legal-rfp-agent';
 import { runSummaryAgent } from './summary-agent';
+import { runTechStackAgent } from './techstack-agent';
+import { runTimingAgent } from './timing-agent';
 import type { ExpertAgentInput } from './types';
 
 export interface OrchestratorResult {

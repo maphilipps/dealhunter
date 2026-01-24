@@ -5,9 +5,10 @@
  * Used for Deep Scan, Team Notifications, and other background jobs.
  */
 
+import { eq } from 'drizzle-orm';
+
 import { db } from '@/lib/db';
 import { backgroundJobs } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 
 /**
  * Job Progress Event
@@ -59,8 +60,9 @@ export function createJobProgressStream(jobId: string): ReadableStream<Uint8Arra
       controller.enqueue(encoder.encode(connectEvent));
 
       // Poll job status every 1 second
-      intervalId = setInterval(async () => {
-        try {
+      intervalId = setInterval(() => {
+        void (async () => {
+          try {
           const [job] = await db
             .select()
             .from(backgroundJobs)
@@ -184,7 +186,8 @@ export function createJobProgressStream(jobId: string): ReadableStream<Uint8Arra
           controller.close();
           if (intervalId) clearInterval(intervalId);
         }
-      }, 1000); // Poll every 1 second
+      })();
+    }, 1000); // Poll every 1 second
     },
 
     cancel() {
@@ -279,8 +282,9 @@ export function createMultiJobStream(jobIds: string[]): ReadableStream<Uint8Arra
 
   return new ReadableStream({
     async start(controller) {
-      intervalId = setInterval(async () => {
-        try {
+      intervalId = setInterval(() => {
+        void (async () => {
+          try {
           // Fetch all jobs in parallel
           const jobs = await Promise.all(
             jobIds.map(jobId =>
@@ -324,7 +328,8 @@ export function createMultiJobStream(jobIds: string[]): ReadableStream<Uint8Arra
         } catch (error) {
           console.error('Multi-job SSE error:', error);
         }
-      }, 2000); // Poll every 2 seconds (lighter load for multiple jobs)
+      })();
+    }, 2000); // Poll every 2 seconds (lighter load for multiple jobs)
     },
 
     cancel() {

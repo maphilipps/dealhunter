@@ -1,8 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
-import { LeadSidebarRight } from '@/components/leads/lead-sidebar-right';
 import { LeadLayoutClient } from './layout-client';
+
+import { LeadSidebarRight } from '@/components/leads/lead-sidebar-right';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads } from '@/lib/db/schema';

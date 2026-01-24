@@ -198,7 +198,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             const requirements = JSON.parse(rfp.extractedRequirements) as Record<string, unknown>;
             customerName = (requirements.customerName as string) || customerName;
             projectDescription = (requirements.projectDescription as string) || projectDescription;
-          } catch (e) {
+          } catch (_e) {
             console.error('Could not parse RFP extractedRequirements');
           }
         }

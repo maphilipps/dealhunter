@@ -80,7 +80,7 @@ export function AgentCapabilities() {
         setIsLoading(false);
       }
     }
-    fetchCapabilities();
+    void fetchCapabilities();
   }, []);
 
   if (isLoading) {

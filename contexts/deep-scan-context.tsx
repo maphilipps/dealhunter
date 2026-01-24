@@ -168,7 +168,7 @@ export function DeepScanProvider({ children }: DeepScanProviderProps) {
 
   // Get expert result by name
   const getExpertResult = useCallback(
-    (expertName: string): unknown | null => {
+    (expertName: string): unknown => {
       // Try direct match first
       let state = stream.agentStates[expertName];
 

@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+
 import { generateCalcSheet } from '@/lib/agents/calc-sheet-generator-agent';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

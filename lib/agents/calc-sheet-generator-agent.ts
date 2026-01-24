@@ -163,14 +163,11 @@ export async function generateCalcSheet(
 ): Promise<CalcSheetGeneratorResult> {
   const { leadId, forceRegenerate = false } = input;
 
-  console.log(`[Calc-Sheet Generator] Starting for lead ${leadId}`);
-
   try {
     // 1. Check for existing calc-sheet data in RAG
     if (!forceRegenerate) {
       const existingData = await getExistingCalcSheetData(leadId);
       if (existingData) {
-        console.log('[Calc-Sheet Generator] Found existing data in RAG');
         return {
           success: true,
           calcSheet: existingData,
@@ -184,7 +181,6 @@ export async function generateCalcSheet(
     const context = await gatherContext(leadId);
 
     if (!context.hasData) {
-      console.log('[Calc-Sheet Generator] No context data available');
       return {
         success: false,
         calcSheet: null,
@@ -199,8 +195,6 @@ export async function generateCalcSheet(
 
     // 4. Store in RAG
     await storeCalcSheetInRAG(leadId, calcSheet);
-
-    console.log('[Calc-Sheet Generator] Successfully generated calc-sheet');
 
     return {
       success: true,
@@ -261,7 +255,10 @@ async function getExistingCalcSheetData(leadId: string): Promise<CalcSheet | nul
     // Try to parse the most recent calc-sheet
     for (const chunk of calcSheetChunks) {
       try {
-        const metadata = chunk.metadata ? JSON.parse(chunk.metadata) : {};
+        const metadata = chunk.metadata
+          ? (JSON.parse(chunk.metadata) as Record<string, unknown>)
+          : {};
+
         if (metadata.calcSheet) {
           return CalcSheetSchema.parse(metadata.calcSheet);
         }
@@ -616,8 +613,6 @@ ${riskList}`;
           version: '1.0',
         }),
       });
-
-      console.log('[Calc-Sheet Generator] Stored calc-sheet in RAG');
     }
   } catch (error) {
     console.error('[Calc-Sheet Generator] Failed to store in RAG:', error);

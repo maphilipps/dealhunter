@@ -40,11 +40,11 @@ export interface OptimizationResult<T> {
 interface IssueHandler {
   areas: string[];
   handler: (
-    results: Record<string, any>,
+    results: Record<string, unknown>,
     issue: EvaluationIssue,
     tools: IntelligentTools,
     ctx: OptimizerContext
-  ) => Promise<Record<string, any>>;
+  ) => Promise<Record<string, unknown>>;
 }
 
 // ========================================
@@ -54,13 +54,22 @@ interface IssueHandler {
 /**
  * Handler für Tech Stack Issues
  */
+// Type for tech stack within results
+interface TechStackField {
+  cms?: string;
+  cmsVersion?: string;
+  cmsConfidence?: number;
+  [key: string]: unknown;
+}
+
 async function handleTechStackIssue(
-  results: Record<string, any>,
+  results: Record<string, unknown>,
   issue: EvaluationIssue,
   tools: IntelligentTools,
   ctx: OptimizerContext
-): Promise<Record<string, any>> {
-  const optimized = { ...results };
+): Promise<Record<string, unknown>> {
+  const optimized: Record<string, unknown> = { ...results };
+  const techStack = results.techStack as TechStackField | undefined;
 
   ctx.emit?.({
     type: AgentEventType.AGENT_PROGRESS,
@@ -71,11 +80,11 @@ async function handleTechStackIssue(
   });
 
   // Try to improve CMS detection via GitHub
-  if (results.techStack?.cms && !results.techStack?.cmsVersion) {
-    const githubInfo = await tools.githubRepo(results.techStack.cms);
+  if (techStack?.cms && !techStack?.cmsVersion) {
+    const githubInfo = await tools.githubRepo(techStack.cms);
     if (githubInfo.latestVersion) {
       optimized.techStack = {
-        ...optimized.techStack,
+        ...(optimized.techStack as object),
         cmsVersion: githubInfo.latestVersion,
         cmsVersionConfidence: 90,
         githubStars: githubInfo.githubStars,
@@ -85,9 +94,10 @@ async function handleTechStackIssue(
   }
 
   // Try web search for tech stack verification
-  if (results.websiteUrl) {
+  const websiteUrl = results.websiteUrl as string | undefined;
+  if (websiteUrl) {
     const siteSearch = await tools.webSearch(
-      `site:${new URL(results.websiteUrl).hostname} technology stack`
+      `site:${new URL(websiteUrl).hostname} technology stack`
     );
     if (siteSearch.length > 0) {
       // Extract tech mentions from search results
@@ -103,11 +113,12 @@ async function handleTechStackIssue(
         { name: 'Magento', patterns: ['magento', 'mage', '/skin/'] },
       ];
 
+      const currentTechStack = optimized.techStack as TechStackField | undefined;
       for (const cms of cmsPatterns) {
         if (cms.patterns.some(p => techMentions.toLowerCase().includes(p))) {
-          if (!optimized.techStack?.cms || optimized.techStack.cmsConfidence < 80) {
+          if (!currentTechStack?.cms || (currentTechStack.cmsConfidence ?? 0) < 80) {
             optimized.techStack = {
-              ...optimized.techStack,
+              ...(optimized.techStack as object),
               cms: cms.name,
               cmsConfidence: 75,
               detectedVia: 'web-search',

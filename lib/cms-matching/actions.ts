@@ -34,14 +34,9 @@ export async function startCMSEvaluation(
     if (!options?.forceRefresh && scan.cmsEvaluation) {
       try {
         const existingResult = JSON.parse(scan.cmsEvaluation) as CMSMatchingResult;
-        console.log(
-          '[CMS Evaluation] Returning cached result from',
-          existingResult.metadata?.matchedAt
-        );
         return { success: true, result: existingResult };
       } catch {
         // Parsing fehlgeschlagen, neu berechnen
-        console.log('[CMS Evaluation] Cache invalid, recalculating...');
       }
     }
 
@@ -56,8 +51,6 @@ export async function startCMSEvaluation(
         ? JSON.parse(scan.performanceIndicators)
         : undefined,
     };
-
-    console.log('[CMS Evaluation] Running new evaluation with webSearch:', options?.useWebSearch);
 
     // CMS-Evaluation ausführen
     const result = await runCMSEvaluation({
@@ -74,8 +67,6 @@ export async function startCMSEvaluation(
         cmsEvaluationCompletedAt: new Date(),
       })
       .where(eq(quickScans.id, quickScanId));
-
-    console.log('[CMS Evaluation] Saved result to database');
 
     return { success: true, result };
   } catch (error) {

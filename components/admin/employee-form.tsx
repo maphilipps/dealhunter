@@ -70,10 +70,10 @@ function TagInput({
 
 export function EmployeeForm({
   businessUnits,
-  competencies,
+  _competencies,
 }: {
   businessUnits: Option[] | undefined;
-  competencies: Option[] | undefined;
+  _competencies: Option[] | undefined;
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -116,7 +116,7 @@ export function EmployeeForm({
       } else {
         toast.error(result.error || 'Fehler beim Erstellen');
       }
-    } catch (error) {
+    } catch {
       toast.error('Ein Fehler ist aufgetreten');
     } finally {
       setIsSubmitting(false);
@@ -185,7 +185,9 @@ export function EmployeeForm({
           <select
             id="availability"
             value={availability}
-            onChange={e => setAvailability(e.target.value as any)}
+            onChange={e =>
+              setAvailability(e.target.value as 'available' | 'on_project' | 'unavailable')
+            }
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="available">Verfügbar</option>

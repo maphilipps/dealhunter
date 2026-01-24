@@ -42,6 +42,7 @@ export async function startBitEvaluation(bidId: string) {
     await db.update(rfps).set({ status: 'evaluating' }).where(eq(rfps.id, bidId));
 
     // Get quick scan results if available
+
     const quickScanResult = await getQuickScanResult(bidId);
     const quickScanData =
       quickScanResult.success && quickScanResult.quickScan?.status === 'completed'

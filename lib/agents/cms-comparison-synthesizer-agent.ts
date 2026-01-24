@@ -81,8 +81,6 @@ export type CMSComparisonSynthesized = z.infer<typeof CMSComparisonSynthesizedSc
 export async function synthesizeCMSComparison(
   input: CMSComparisonSynthesizerInput
 ): Promise<CMSComparisonSynthesized> {
-  console.log(`[CMS Comparison Synthesizer] Starting for lead ${input.leadId}`);
-
   // Check if RAG data contains CMS comparison info
   const hasAdvocateData =
     input.ragData.includes('CMS Advocate') || input.ragData.includes('Fit-Score');
@@ -145,10 +143,6 @@ WICHTIG: Wenn keine ausreichenden Daten vorhanden sind, erstelle eine Basis-Empf
       sourcesCount: (input.ragData.match(/CMS \d+:/g) || []).length,
       lastUpdated: new Date().toISOString(),
     };
-
-    console.log(
-      `[CMS Comparison Synthesizer] Complete: recommended=${result.summary.recommendedCMS}, options=${result.cmsOptions.length}`
-    );
 
     return result;
   } catch (error) {

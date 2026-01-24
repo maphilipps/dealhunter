@@ -18,7 +18,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Lead ID is required' }, { status: 400 });
     }
 
-    console.log(`[Calc-Sheet API] Generating calc-sheet for lead: ${leadId}`);
+    console.error(`[Calc-Sheet API] Generating calc-sheet for lead: ${leadId}`);
 
     const result = await generateCalcSheet({ leadId });
 

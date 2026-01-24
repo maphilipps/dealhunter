@@ -8,9 +8,32 @@ import { TechnologyList } from '@/components/admin/technology-list';
 import { Button } from '@/components/ui/button';
 import { getTechnologies } from '@/lib/admin/technologies-actions';
 
+type Technology = {
+  id: string;
+  name: string;
+  baselineHours: number | null;
+  baselineName: string | null;
+  baselineEntityCounts: string | null;
+  isDefault: boolean;
+  createdAt: Date | null;
+  businessUnitId: string;
+  businessLineName: string | null;
+  logoUrl: string | null;
+  websiteUrl: string | null;
+  description: string | null;
+  category: string | null;
+  license: string | null;
+  latestVersion: string | null;
+  githubUrl: string | null;
+  githubStars: number | null;
+  communitySize: string | null;
+  researchStatus: string | null;
+  lastResearchedAt: Date | null;
+};
+
 export default function TechnologiesPage() {
   const router = useRouter();
-  const [technologies, setTechnologies] = useState<any[]>([]);
+  const [technologies, setTechnologies] = useState<Technology[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

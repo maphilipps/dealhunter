@@ -53,7 +53,7 @@ registry.register({
     'Aggregate all section insights for a lead. Returns consolidated data to support BID/NO-BID decision.',
   category: 'decision',
   inputSchema: aggregateInputSchema,
-  async execute(input, context: ToolContext) {
+  async execute(input, _context: ToolContext) {
     // Get lead
     const [lead] = await db.select().from(leads).where(eq(leads.id, input.leadId)).limit(1);
 

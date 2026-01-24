@@ -156,14 +156,16 @@ export const BIT_EVALUATION_SCHEMA: EvaluationSchema = {
 /**
  * Get nested value from object by path
  */
-function getNestedValue(obj: Record<string, any>, path: string): any {
-  return path.split('.').reduce((current, key) => current?.[key], obj);
+function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+  return path
+    .split('.')
+    .reduce((current: unknown, key) => (current as Record<string, unknown>)?.[key], obj);
 }
 
 /**
  * Check if a value is considered "filled"
  */
-function isValueFilled(value: any): boolean {
+function isValueFilled(value: unknown): boolean {
   if (value === null || value === undefined) return false;
   if (typeof value === 'string' && value.trim() === '') return false;
   if (Array.isArray(value) && value.length === 0) return false;
@@ -175,7 +177,7 @@ function isValueFilled(value: any): boolean {
  * Calculate basic quality metrics from results
  */
 function calculateBasicMetrics(
-  results: Record<string, any>,
+  results: Record<string, unknown>,
   schema: EvaluationSchema
 ): {
   filledRequired: number;
@@ -201,7 +203,7 @@ function calculateBasicMetrics(
           getNestedValue(results, confidencePath) ||
           getNestedValue(results, field.path + 'Confidence');
 
-        if (confidence !== undefined && confidence < field.minConfidence) {
+        if (typeof confidence === 'number' && confidence < field.minConfidence) {
           confidenceIssues.push(`${field.description}: ${confidence}% < ${field.minConfidence}%`);
         }
       }
@@ -231,7 +233,7 @@ function calculateBasicMetrics(
  * Uses AI to analyze results quality and suggest improvements.
  */
 export async function evaluateResults(
-  results: Record<string, any>,
+  results: Record<string, unknown>,
   schema: EvaluationSchema,
   ctx: EvaluatorContext = {}
 ): Promise<EvaluationResult> {
@@ -360,7 +362,7 @@ Gib eine strukturierte Bewertung mit konkreten Verbesserungsvorschlägen.`,
  * Quick evaluation without AI (faster, less accurate)
  */
 export function quickEvaluate(
-  results: Record<string, any>,
+  results: Record<string, unknown>,
   schema: EvaluationSchema
 ): { score: number; issues: string[]; canImprove: boolean } {
   const metrics = calculateBasicMetrics(results, schema);
@@ -394,7 +396,7 @@ export function quickEvaluate(
  * Evaluate QuickScan Results
  */
 export async function evaluateQuickScanResults(
-  results: Record<string, any>,
+  results: Record<string, unknown>,
   ctx: EvaluatorContext = {}
 ): Promise<EvaluationResult> {
   return evaluateResults(results, QUICKSCAN_EVALUATION_SCHEMA, {
@@ -407,7 +409,7 @@ export async function evaluateQuickScanResults(
  * Evaluate CMS Matching Results
  */
 export async function evaluateCMSMatchingResults(
-  results: Record<string, any>,
+  results: Record<string, unknown>,
   ctx: EvaluatorContext = {}
 ): Promise<EvaluationResult> {
   return evaluateResults(results, CMS_MATCHING_EVALUATION_SCHEMA, {
@@ -420,7 +422,7 @@ export async function evaluateCMSMatchingResults(
  * Evaluate BIT Evaluation Results
  */
 export async function evaluateBITResults(
-  results: Record<string, any>,
+  results: Record<string, unknown>,
   ctx: EvaluatorContext = {}
 ): Promise<EvaluationResult> {
   return evaluateResults(results, BIT_EVALUATION_SCHEMA, {

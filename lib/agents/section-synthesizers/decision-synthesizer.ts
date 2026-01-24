@@ -234,7 +234,7 @@ Output must be valid JSON matching the schema.`;
       .replace(/```\n?/g, '')
       .trim();
 
-    const rawResult = JSON.parse(cleanedResponse);
+    const rawResult = JSON.parse(cleanedResponse) as Record<string, unknown>;
     const decisionOutput: DecisionOutput = decisionOutputSchema.parse(rawResult);
 
     const confidence = this.calculateConfidence(ragResults);

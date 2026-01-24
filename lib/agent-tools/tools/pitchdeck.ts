@@ -257,7 +257,7 @@ registry.register({
       return { success: false, error: 'Access denied: Cannot update pitchdeck from other BU' };
     }
 
-    const { id, ...updates } = input;
+    const { id: _id, ...updates } = input;
 
     const [updated] = await db
       .update(pitchdecks)
@@ -368,7 +368,7 @@ registry.register({
       };
     }
 
-    const { id, ...updates } = input;
+    const { id: _id, ...updates } = input;
 
     const [updated] = await db
       .update(pitchdeckDeliverables)

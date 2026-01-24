@@ -78,7 +78,6 @@ export async function scrapeSite(
           deduped.push(sitemapUrl);
         }
       }
-      console.log(`[Scraper] Sitemap: ${sitemapUrls.length} URLs, ${deduped.length} unique`);
       urlsToScrape = deduped.slice(0, opts.maxPages);
     } else {
       // Fallback: crawl from homepage

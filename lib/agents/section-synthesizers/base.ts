@@ -248,14 +248,20 @@ WICHTIG:
     if (!existing) return null;
 
     // Parse sources JSON which contains agentName, generatedAt, and chunks
-    const sourcesData = existing.sources ? JSON.parse(existing.sources) : { chunks: [] };
+    const sourcesData = existing.sources
+      ? (JSON.parse(existing.sources) as { agentName?: string; chunks?: unknown[] })
+      : { chunks: [] };
 
     return {
-      content: JSON.parse(existing.content),
+      content: JSON.parse(existing.content) as Record<string, unknown>,
       metadata: {
         generatedAt: existing.createdAt || new Date(),
         agentName: sourcesData.agentName || 'unknown',
-        sources: sourcesData.chunks || [],
+        sources: (sourcesData.chunks || []) as {
+          agentName: string;
+          chunkId: string;
+          relevance: number;
+        }[],
         confidence: existing.confidence || 0,
       },
     };

@@ -69,11 +69,13 @@ export default async function CompetenciesPage() {
                   <div>
                     <span className="text-muted-foreground">Zertifizierungen:</span>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {JSON.parse(comp.certifications || '[]').map((cert: string, i: number) => (
-                        <Badge key={i} variant="outline" className="text-xs">
-                          {cert}
-                        </Badge>
-                      ))}
+                      {(JSON.parse(comp.certifications || '[]') as string[]).map(
+                        (cert: string, i: number) => (
+                          <Badge key={i} variant="outline" className="text-xs">
+                            {cert}
+                          </Badge>
+                        )
+                      )}
                     </div>
                   </div>
                 )}

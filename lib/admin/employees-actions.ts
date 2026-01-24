@@ -201,7 +201,7 @@ export async function importEmployeesFromCSV(csvData: string) {
       };
     }
 
-    const imported: any[] = [];
+    const imported: Array<{ id: string }> = [];
     const errors: string[] = [];
 
     for (let i = 1; i < lines.length; i++) {
@@ -232,7 +232,7 @@ export async function importEmployeesFromCSV(csvData: string) {
             businessUnitId,
             skills: JSON.stringify(skills),
             roles: JSON.stringify(roles),
-            availabilityStatus: availabilityStatus as any,
+            availabilityStatus: availabilityStatus as 'available' | 'on_project' | 'unavailable',
           })
           .returning();
 

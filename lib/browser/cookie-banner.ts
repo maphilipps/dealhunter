@@ -200,7 +200,6 @@ export async function dismissCookieBanner(
     await wait(500);
 
     const buttonName = acceptButton.name || acceptButton.ref;
-    console.log(`[Cookie Banner] Dismissed using: ${buttonName}`);
 
     return {
       dismissed: true,

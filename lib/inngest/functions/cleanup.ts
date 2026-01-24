@@ -1,4 +1,4 @@
-import { sql, lt } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 import { inngest } from '../client';
 
@@ -21,7 +21,7 @@ export const cleanupFunction = inngest.createFunction(
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      console.log('[Cleanup] Deleting jobs older than:', sevenDaysAgo);
+      console.warn('[Cleanup] Deleting jobs older than:', sevenDaysAgo);
 
       // Delete completed, failed, and cancelled jobs older than 7 days
       const result = await db

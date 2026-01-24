@@ -1,10 +1,16 @@
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { researchSingleRequirement } from '@/lib/cms-matching/agent';
 import { db } from '@/lib/db';
 import { technologies } from '@/lib/db/schema';
+
+const researchFeatureRequestSchema = z.object({
+  featureNames: z.array(z.string()).optional(),
+  featureName: z.string().optional(),
+});
 
 /**
  * POST /api/admin/technologies/[id]/research-feature
@@ -21,14 +27,22 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   const { id } = await context.params;
 
   try {
-    const body = await request.json();
+    const body: unknown = await request.json();
+    const parsed = researchFeatureRequestSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid request body', details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
 
     // Unterstütze beide Formate: featureNames (Array) oder featureName (String)
     let featureNames: string[] = [];
-    if (body.featureNames && Array.isArray(body.featureNames)) {
-      featureNames = body.featureNames.map((n: string) => n.trim()).filter(Boolean);
-    } else if (body.featureName && typeof body.featureName === 'string') {
-      featureNames = [body.featureName.trim()];
+    if (parsed.data.featureNames && parsed.data.featureNames.length > 0) {
+      featureNames = parsed.data.featureNames.map(n => n.trim()).filter(Boolean);
+    } else if (parsed.data.featureName) {
+      featureNames = [parsed.data.featureName.trim()];
     }
 
     if (featureNames.length === 0) {
@@ -39,7 +53,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     }
 
     // Technologie laden
-    const [tech] = await db.select().from(technologies).where(eq(technologies.id, id));
+    const techResult = await db.select().from(technologies).where(eq(technologies.id, id)).limit(1);
+    const tech = techResult[0];
 
     if (!tech) {
       return NextResponse.json({ error: 'Technologie nicht gefunden' }, { status: 404 });
@@ -49,12 +64,15 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const results = await Promise.all(
       featureNames.map(async featureName => {
         try {
-          const result = await researchSingleRequirement(tech.name, featureName, id);
-          return {
+          const result = await researchSingleRequirement(tech.name ?? '', featureName, id);
+          const resultData: Record<string, unknown> = {
             name: featureName,
             success: true,
-            ...result,
           };
+          for (const [key, value] of Object.entries(result)) {
+            resultData[key] = value;
+          }
+          return resultData;
         } catch (error) {
           return {
             name: featureName,
@@ -82,7 +100,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         successful: successCount,
         failed: failedCount,
       },
-      allFeatures: updatedTech?.features ? JSON.parse(updatedTech.features) : {},
+      allFeatures: updatedTech?.features
+        ? (JSON.parse(updatedTech.features) as Record<string, unknown>)
+        : {},
     });
   } catch (error) {
     console.error('Feature research error:', error);

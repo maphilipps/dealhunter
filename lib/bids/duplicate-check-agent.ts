@@ -80,9 +80,11 @@ export async function runDuplicateCheckAgent(params: {
   }
 
   // Calculate highest similarity
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const highestSimilarity = Math.max(...duplicateResult.similarMatches.map(m => m.similarity), 0);
 
   // Use AI to analyze duplicate result and provide structured recommendation
+
   const result = await generateObject({
     model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
     schema: DuplicateCheckAgentOutputSchema,

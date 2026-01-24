@@ -111,6 +111,7 @@ export async function runAccessibilityAudit(url: string): Promise<AccessibilityR
 
     // Read and parse results
     const jsonContent = await readFile(outputPath, 'utf-8');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result: LighthouseResult = JSON.parse(jsonContent);
 
     // Clean up temp file

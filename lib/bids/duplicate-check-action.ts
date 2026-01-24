@@ -44,11 +44,11 @@ export async function runDuplicateCheck(rfpId: string): Promise<{
       return { success: false, error: 'RFP muss zuerst extrahiert werden' };
     }
 
-    const extractedReqs: ExtractedRequirements = JSON.parse(rfp.extractedRequirements);
+    const extractedReqs: ExtractedRequirements = JSON.parse(
+      rfp.extractedRequirements
+    ) as ExtractedRequirements;
 
     // 3. Run Duplicate Check Agent
-    console.log(`[Duplicate Check Action] Running for RFP ${rfpId}`);
-
     const duplicateResult = await runDuplicateCheckAgent({
       extractedRequirements: extractedReqs,
       accountId: rfp.accountId || undefined,
@@ -71,11 +71,6 @@ export async function runDuplicateCheck(rfpId: string): Promise<{
     if (!duplicateResult.hasDuplicates) {
       const result = await onAgentComplete(rfpId, 'DuplicateCheck');
       nextAgent = result.nextAgent;
-      console.log(
-        `[Duplicate Check Action] No duplicates found, triggered next agent: ${nextAgent || 'none'}`
-      );
-    } else {
-      console.log(`[Duplicate Check Action] Duplicates found, waiting for user override`);
     }
 
     return {

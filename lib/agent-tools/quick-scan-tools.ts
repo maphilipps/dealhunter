@@ -171,6 +171,7 @@ registry.register({
   description: 'Schätzt Content-Typen basierend auf URL-Patterns (ohne AI)',
   category: 'quickscan',
   inputSchema: estimateContentSchema,
+  // eslint-disable-next-line @typescript-eslint/require-await
   async execute(input, _context: ToolContext) {
     try {
       const result = estimateContentTypesFromUrls(input.urls);
@@ -430,6 +431,7 @@ registry.register({
   description: 'Startet einen vollständigen QuickScan für einen RFP',
   category: 'quickscan',
   inputSchema: startQuickScanSchema,
+  // eslint-disable-next-line @typescript-eslint/require-await
   async execute(input, _context: ToolContext) {
     // This is a placeholder - the actual QuickScan is orchestrated by the agent
     // This tool signals intent to start a QuickScan

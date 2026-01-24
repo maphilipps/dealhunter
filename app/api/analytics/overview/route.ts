@@ -1,11 +1,11 @@
-import { sql, count, eq, and, ne } from 'drizzle-orm';
+// No destructuring needed - using only data operations
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, businessUnits } from '@/lib/db/schema';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await auth();
 

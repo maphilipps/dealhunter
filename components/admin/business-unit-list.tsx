@@ -54,7 +54,7 @@ export function BusinessUnitList({ businessUnits }: BusinessUnitListProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {businessUnits.map(bu => {
-        const keywords = JSON.parse(bu.keywords || '[]');
+        const keywords = JSON.parse(bu.keywords || '[]') as string[];
 
         return (
           <div key={bu.id} className="rounded-lg border bg-card p-6">
@@ -79,7 +79,7 @@ export function BusinessUnitList({ businessUnits }: BusinessUnitListProps) {
               <div>
                 <span className="text-muted-foreground">Keywords:</span>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {keywords.map((keyword: string, i: number) => (
+                  {keywords.map((keyword, i) => (
                     <span
                       key={i}
                       className="inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-xs"

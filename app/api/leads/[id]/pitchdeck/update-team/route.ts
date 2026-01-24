@@ -166,7 +166,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     );
 
     // Get removed employee details (for optional notifications)
-    const removedTeamMembersWithDetails = await Promise.all(
+    void Promise.all(
       removedEmployeeIds.map(async employeeId => {
         const [employee] = await db
           .select()
@@ -267,7 +267,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
               customerName = (requirements.customerName as string) || customerName;
               projectDescription =
                 (requirements.projectDescription as string) || projectDescription;
-            } catch (_e) {
+            } catch {
               console.error('Could not parse RFP extractedRequirements');
             }
           }
@@ -306,7 +306,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             projectUrl: pitchdeckUrl,
           });
 
-          console.log(
+          console.error(
             `✅ Team notification emails sent to ${teamNotifications.length} new members for pitchdeck ${pitchdeck.id}`
           );
         } catch (error) {

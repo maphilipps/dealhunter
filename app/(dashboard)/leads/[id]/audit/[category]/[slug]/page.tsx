@@ -45,10 +45,7 @@ export default async function AuditDetailPage({ params }: PageProps) {
     })
     .from(dealEmbeddings)
     .where(
-      and(
-        eq(dealEmbeddings.leadId, id),
-        eq(dealEmbeddings.chunkType, slug.replace(/-/g, '_'))
-      )
+      and(eq(dealEmbeddings.leadId, id), eq(dealEmbeddings.chunkType, slug.replace(/-/g, '_')))
     )
     .orderBy(dealEmbeddings.chunkIndex);
 
@@ -81,7 +78,7 @@ export default async function AuditDetailPage({ params }: PageProps) {
       </div>
 
       {chunks.map((chunk, index) => {
-        let parsedContent;
+        let parsedContent: unknown;
         try {
           parsedContent = JSON.parse(chunk.content);
         } catch {

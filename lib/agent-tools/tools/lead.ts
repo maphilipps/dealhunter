@@ -1,11 +1,11 @@
-import { eq, and, desc, inArray } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { leads, leadSectionData, rfps, quickScans, businessUnits, users } from '@/lib/db/schema';
+import { leads, leadSectionData, rfps } from '@/lib/db/schema';
 
 // ===== Input Schemas =====
 

@@ -33,9 +33,9 @@ const accountsCache = new LRUCache<string, CacheEntry>({
 /**
  * Cache statistics tracking
  */
-let cacheHits = 0;
-let cacheMisses = 0;
-let backgroundRefreshes = 0;
+let _cacheHits = 0;
+let _cacheMisses = 0;
+let _backgroundRefreshes = 0;
 
 /**
  * Helper function to fetch accounts from database
@@ -101,11 +101,11 @@ export async function getAccounts() {
       const { data, fetchTime } = cached;
       const age = Date.now() - fetchTime;
 
-      cacheHits++;
+      _cacheHits++;
 
       // Stale-while-revalidate: If data is older than 1 minute, refresh in background
       if (age > 1000 * 60) {
-        backgroundRefreshes++;
+        _backgroundRefreshes++;
 
         after(async () => {
           try {
@@ -122,7 +122,7 @@ export async function getAccounts() {
     }
 
     // Cache miss - fetch from database
-    cacheMisses++;
+    _cacheMisses++;
     const accounts = await fetchAccountsFromDB(session.user.id, session.user.role);
 
     // Store in cache

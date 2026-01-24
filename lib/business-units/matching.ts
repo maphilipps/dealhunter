@@ -42,13 +42,17 @@ async function calculateTechStackScore(
   const matched: string[] = [];
 
   // Parse tech stack from quick scan
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const techStack = quickScan.techStack ? JSON.parse(quickScan.techStack) : {};
   const detectedTechs: string[] = [];
 
-  if (techStack.cms) detectedTechs.push(techStack.cms.toLowerCase());
-  if (techStack.framework) detectedTechs.push(techStack.framework.toLowerCase());
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (techStack.cms) detectedTechs.push((techStack.cms as string).toLowerCase());
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (techStack.framework) detectedTechs.push((techStack.framework as string).toLowerCase());
   if (techStack.backend)
-    detectedTechs.push(...techStack.backend.map((t: string) => t.toLowerCase()));
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    detectedTechs.push(...(techStack.backend as string[]).map((t: string) => t.toLowerCase()));
 
   if (detectedTechs.length === 0) {
     return { score: 0, matched: [] };
@@ -110,7 +114,8 @@ function calculateFeaturesScore(quickScan: QuickScan, _businessUnit: BusinessUni
  */
 async function calculateReferencesScore(
   quickScan: QuickScan,
-  businessUnit: BusinessUnit
+
+  _businessUnit: BusinessUnit
 ): Promise<{ score: number; matched: Reference[] }> {
   const techStack = quickScan.techStack ? JSON.parse(quickScan.techStack) : {};
   const detectedTechs: string[] = [];

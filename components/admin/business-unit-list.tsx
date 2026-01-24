@@ -61,7 +61,7 @@ export function BusinessUnitList({ businessUnits }: BusinessUnitListProps) {
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-semibold">{bu.name}</h3>
               <button
-                onClick={() => handleDelete(bu.id, bu.name)}
+                onClick={() => void handleDelete(bu.id, bu.name)}
                 className="text-destructive hover:text-destructive/80"
                 title="Löschen"
               >

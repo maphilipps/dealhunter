@@ -176,7 +176,7 @@ async function seed() {
         businessUnitId: bu.id,
         skills: JSON.stringify(randomSubset(skills, 2, 5)),
         roles: JSON.stringify(randomSubset(roles, 1, 2)),
-        availabilityStatus: random(['available', 'on_project', 'unavailable']),
+        availabilityStatus: random(['available', 'on_project', 'unavailable'] as const),
       });
     }
   }

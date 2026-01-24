@@ -12,7 +12,6 @@ import { db } from '@/lib/db';
 import { businessUnits as businessUnitsTable } from '@/lib/db/schema';
 import { validateUrlForFetch } from '@/lib/utils/url-validation';
 
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // BUSINESS UNITS SINGLETON CACHE
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -232,7 +231,7 @@ export const fetchWebsiteStep = wrapToolWithProgress<BootstrapInput, WebsiteData
         result.wappalyzerResults = Array.isArray(wappalyzerResult)
           ? (wappalyzerResult as WappalyzerTechnology[])
           : [];
-      } catch (_e) {
+      } catch (e) {
         console.error('Wappalyzer error:', e);
         result.wappalyzerResults = [];
       }

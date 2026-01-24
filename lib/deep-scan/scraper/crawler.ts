@@ -3,6 +3,17 @@
  * Crawls and scrapes multiple pages for deep analysis
  */
 
+import { fetchSitemap } from './sitemap';
+import { detectTechnologies, mergeTechIndicators } from './tech-detection';
+import type {
+  ScrapedPage,
+  ScrapeResult,
+  ScrapeOptions,
+  PageStructure,
+  ExternalRequest,
+  TechIndicator,
+} from './types';
+
 import {
   openPage,
   closeBrowser,
@@ -15,17 +26,6 @@ import {
   type BrowserSession,
 } from '@/lib/browser';
 import { dismissCookieBanner } from '@/lib/browser/cookie-banner';
-
-import { fetchSitemap } from './sitemap';
-import { detectTechnologies, mergeTechIndicators } from './tech-detection';
-import type {
-  ScrapedPage,
-  ScrapeResult,
-  ScrapeOptions,
-  PageStructure,
-  ExternalRequest,
-  TechIndicator,
-} from './types';
 
 const DEFAULT_OPTIONS: ScrapeOptions = {
   maxPages: 30,
@@ -79,7 +79,7 @@ export async function scrapeSite(
         }
       }
       console.log(`[Scraper] Sitemap: ${sitemapUrls.length} URLs, ${deduped.length} unique`);
-      urlsToScrape = deduped.slice(0, opts.maxPages!);
+      urlsToScrape = deduped.slice(0, opts.maxPages);
     } else {
       // Fallback: crawl from homepage
       urlsToScrape = [url];

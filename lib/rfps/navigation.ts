@@ -47,7 +47,7 @@ export interface QuickScanDataAvailability {
  */
 export function getQuickScanDataAvailability(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  quickScan: any | null
+  quickScan: any
 ): QuickScanDataAvailability {
   if (!quickScan) {
     return {

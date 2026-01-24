@@ -9,7 +9,7 @@ fi
 issues=$(gh issue list --state open --json number,title,body,comments)
 
 for ((i=1; i<=$1; i++)); do
-  result=$(docker sandbox run --credentials host claude -p "$issues @progress.txt @plans/backlog/prompt.md")
+  result=$(docker sandbox run claude -p "$issues @progress.txt @plans/backlog/prompt.md")
 
   echo "$result"
 

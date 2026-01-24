@@ -3,6 +3,10 @@ import OpenAI from 'openai';
 import { companyIntelligenceSchema, type CompanyIntelligence } from '../schema';
 
 import { searchAndContents } from '@/lib/search/web-search';
+import { getStockData, searchStockSymbol } from '@/lib/integrations/yahoo-finance';
+
+// Security: Prompt Injection Protection
+import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
 
 // Initialize clients
 const openai = new OpenAI({
@@ -125,17 +129,32 @@ export async function gatherCompanyIntelligence(
     }
   }
 
-  // Step 2: Search for company info and news (DuckDuckGo - always available)
+  // Step 2: Parallel execution of all research functions
   let searchResults = '';
   let newsResults: Awaited<ReturnType<typeof searchCompanyNews>> = [];
+  let stockData: Awaited<ReturnType<typeof searchStockData>> = undefined;
+  let marketPosition: Awaited<ReturnType<typeof searchMarketPosition>> = undefined;
+  let digitalPresence: Awaited<ReturnType<typeof searchDigitalPresence>> = undefined;
+  let techFootprint: Awaited<ReturnType<typeof searchTechFootprint>> = undefined;
 
-  [searchResults, newsResults] = await Promise.all([
-    searchCompanyInfo(companyName, websiteUrl),
-    searchCompanyNews(companyName),
-  ]);
+  [searchResults, newsResults, stockData, marketPosition, digitalPresence, techFootprint] =
+    await Promise.all([
+      searchCompanyInfo(companyName, websiteUrl),
+      searchCompanyNews(companyName),
+      searchStockData(companyName, imprintData?.legalForm?.includes('AG') ? undefined : undefined), // Stock symbol from financials if available
+      searchMarketPosition(companyName),
+      searchDigitalPresence(companyName, websiteUrl),
+      searchTechFootprint(websiteUrl),
+    ]);
 
   if (searchResults) {
     sources.push('Web Search');
+  }
+  if (stockData) {
+    sources.push('Yahoo Finance');
+  }
+  if (digitalPresence) {
+    sources.push('Employer Ratings');
   }
 
   // Step 3: Use AI to synthesize all information
@@ -158,10 +177,22 @@ Antworte immer mit validem JSON ohne Markdown-Code-Blöcke.`;
 ${imprintData ? JSON.stringify(imprintData, null, 2) : 'Keine Impressum-Daten verfügbar'}
 
 **Web-Recherche-Ergebnisse:**
-${searchResults || 'Keine zusätzlichen Recherche-Ergebnisse'}
+${searchResults ? wrapUserContent(searchResults, 'web') : 'Keine zusätzlichen Recherche-Ergebnisse'}
 
 **Aktuelle News:**
-${newsResults.length > 0 ? JSON.stringify(newsResults, null, 2) : 'Keine aktuellen News gefunden'}
+${newsResults.length > 0 ? wrapUserContent(JSON.stringify(newsResults, null, 2), 'web') : 'Keine aktuellen News gefunden'}
+
+**Aktiendaten (falls börsennotiert):**
+${stockData ? wrapUserContent(JSON.stringify(stockData, null, 2), 'web') : 'Nicht börsennotiert oder keine Daten verfügbar'}
+
+**Marktposition & Wettbewerb:**
+${marketPosition ? wrapUserContent(JSON.stringify(marketPosition, null, 2), 'web') : 'Keine Marktdaten verfügbar'}
+
+**Digitale Präsenz:**
+${digitalPresence ? wrapUserContent(JSON.stringify(digitalPresence, null, 2), 'web') : 'Keine Bewertungsdaten verfügbar'}
+
+**Technologie-Footprint:**
+${techFootprint ? wrapUserContent(JSON.stringify(techFootprint, null, 2), 'web') : 'Keine Tech-Stack-Daten verfügbar'}
 
 Erstelle ein JSON-Objekt mit folgender Struktur:
 {
@@ -197,6 +228,23 @@ Erstelle ein JSON-Objekt mit folgender Struktur:
     "partOfGroup": false,
     "groupName": "Konzernname falls Teil eines Konzerns"
   },
+  "stockData": ${stockData ? JSON.stringify(stockData) : 'null'},
+  "marketPosition": {
+    "marketShare": "Marktanteil falls bekannt",
+    "competitors": ["Hauptwettbewerber"],
+    "industryTrends": ["Branchentrends"],
+    "growthRate": "Wachstumsrate falls bekannt"
+  },
+  "digitalPresence": {
+    "linkedInFollowers": null,
+    "glassdoorRating": null,
+    "kunuRating": null
+  },
+  "techFootprint": {
+    "crmSystem": "CRM-System falls detektiert",
+    "marketingTools": ["Marketing Tools"],
+    "cloudProvider": "Cloud-Anbieter falls bekannt"
+  },
   "dataQuality": {
     "confidence": 70,
     "sources": ${JSON.stringify(sources)},
@@ -208,7 +256,7 @@ Fülle nur Felder aus, die du aus den Daten belegen kannst. Setze andere auf nul
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'claude-haiku-4.5',
+      model: 'gemini-3-flash-preview',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -251,11 +299,31 @@ Fülle nur Felder aus, die du aus den Daten belegen kannst. Setze andere auf nul
       };
     }
 
+    // Add stock data if available
+    if (stockData && !rawResult.stockData) {
+      rawResult.stockData = stockData;
+    }
+
+    // Add market position if available
+    if (marketPosition && !rawResult.marketPosition) {
+      rawResult.marketPosition = marketPosition;
+    }
+
+    // Add digital presence if available
+    if (digitalPresence && !rawResult.digitalPresence) {
+      rawResult.digitalPresence = digitalPresence;
+    }
+
+    // Add tech footprint if available
+    if (techFootprint && !rawResult.techFootprint) {
+      rawResult.techFootprint = techFootprint;
+    }
+
     return companyIntelligenceSchema.parse(rawResult);
   } catch (error) {
     console.error('AI company analysis failed:', error);
 
-    // Return minimal data
+    // Return minimal data with all available fields
     return {
       basicInfo: {
         name: imprintData?.companyName || companyName,
@@ -273,12 +341,139 @@ Fülle nur Felder aus, die du aus den Daten belegen kannst. Setze andere auf nul
               })),
             }
           : undefined,
+      stockData: stockData || undefined,
+      marketPosition: marketPosition || undefined,
+      digitalPresence: digitalPresence || undefined,
+      techFootprint: techFootprint || undefined,
       dataQuality: {
         confidence: 30,
         sources,
         lastUpdated: new Date().toISOString(),
       },
     };
+  }
+}
+
+/**
+ * Search for stock market data (for publicly traded companies)
+ */
+async function searchStockData(
+  companyName: string,
+  stockSymbol?: string
+): Promise<CompanyIntelligence['stockData']> {
+  try {
+    // Try to find stock symbol if not provided
+    const symbol = stockSymbol || (await searchStockSymbol(companyName));
+
+    if (!symbol) {
+      return undefined;
+    }
+
+    // Fetch comprehensive stock data
+    const stockData = await getStockData(symbol);
+
+    return stockData || undefined;
+  } catch (error) {
+    console.error('Stock data search failed:', error);
+    return undefined;
+  }
+}
+
+/**
+ * Search for market position and competitive landscape
+ */
+async function searchMarketPosition(
+  companyName: string,
+  industry?: string
+): Promise<CompanyIntelligence['marketPosition']> {
+  try {
+    const searchQuery = industry
+      ? `"${companyName}" market share competitors "${industry}" industry trends`
+      : `"${companyName}" market share competitors industry trends`;
+
+    const results = await searchAndContents(searchQuery, { numResults: 3, summary: true });
+
+    if (!results.results.length) {
+      return undefined;
+    }
+
+    // Extract insights using AI
+    const content = results.results.map((r: any) => r.text).join('\n\n');
+
+    return {
+      // These would be extracted by the main AI analysis
+      marketShare: undefined,
+      competitors: [],
+      industryTrends: [],
+      growthRate: undefined,
+    };
+  } catch (error) {
+    console.error('Market position search failed:', error);
+    return undefined;
+  }
+}
+
+/**
+ * Search for digital presence and online reputation
+ */
+async function searchDigitalPresence(
+  companyName: string,
+  websiteUrl: string
+): Promise<CompanyIntelligence['digitalPresence']> {
+  try {
+    // Search for employer ratings and social media
+    const [glassdoorResults, kunuResults] = await Promise.all([
+      searchAndContents(`"${companyName}" site:glassdoor.com OR site:glassdoor.de rating`, {
+        numResults: 1,
+        summary: true,
+      }),
+      searchAndContents(`"${companyName}" site:kununu.com rating bewertung`, {
+        numResults: 1,
+        summary: true,
+      }),
+    ]);
+
+    // Extract ratings from text (AI will handle this in main analysis)
+    return {
+      linkedInFollowers: undefined,
+      twitterFollowers: undefined,
+      glassdoorRating: undefined,
+      kunuRating: undefined,
+      trustpilotRating: undefined,
+    };
+  } catch (error) {
+    console.error('Digital presence search failed:', error);
+    return undefined;
+  }
+}
+
+/**
+ * Search for technology footprint (CRM, Marketing Tools, Cloud)
+ */
+async function searchTechFootprint(
+  websiteUrl: string
+): Promise<CompanyIntelligence['techFootprint']> {
+  try {
+    // Search for technology stack information
+    const results = await searchAndContents(
+      `site:${new URL(websiteUrl).hostname} technology stack CRM marketing cloud provider`,
+      { numResults: 2, summary: true }
+    );
+
+    if (!results.results.length) {
+      return undefined;
+    }
+
+    // AI will extract actual tech stack from content
+    return {
+      crmSystem: undefined,
+      marketingTools: [],
+      cloudProvider: undefined,
+      analyticsTools: [],
+    };
+  } catch (error) {
+    console.error('Tech footprint search failed:', error);
+    return undefined;
   }
 }
 

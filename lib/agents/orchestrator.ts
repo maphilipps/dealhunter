@@ -336,6 +336,14 @@ async function runParallelAgents(
           navigationStructure: { depth: 0, breadth: 0, mainNavItems: [] },
           siteTree: [],
           contentVolume: { images: 0, videos: 0, documents: 0, totalAssets: 0 },
+          calculatorSummary: {
+            totalContentTypes: 0,
+            totalEstimatedHours: 0,
+            complexityDistribution: { H: 0, M: 0, L: 0 },
+            recommendedDrupalModules: [],
+            migrationRiskLevel: 'low' as const,
+            migrationRiskFactors: ['Agent failed - no data available'],
+          },
           analyzedAt: new Date().toISOString(),
           error: results[0].status === 'rejected' ? String(results[0].reason) : 'Unknown error',
         };

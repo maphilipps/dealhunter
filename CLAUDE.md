@@ -2,6 +2,25 @@
 
 AI-gestützte BD-Entscheidungsplattform für adesso SE. Workflow-driven mit AI Agents und modernem UI.
 
+## Skills (PFLICHT!)
+
+**KRITISCH: Skills MÜSSEN bei passenden Triggers verwendet werden - keine Ausnahmen!**
+
+| Trigger                                 | Skill                    | Beschreibung                        |
+| --------------------------------------- | ------------------------ | ----------------------------------- |
+| React/Next.js Code schreiben/reviewen   | `/react-best-practices`  | Performance-Optimierung (45 Regeln) |
+| UI reviewen, Accessibility prüfen       | `/web-design-guidelines` | Web Interface Guidelines Compliance |
+| Browser-Tests, Screenshots, Formulare   | `/agent-browser`         | Playwright-basierte Automation      |
+| Website für Drupal-Relaunch analysieren | `/website-audit`         | Audit mit Drupal-Mapping            |
+| PRD für neues Feature schreiben         | `/write-a-prd`           | Strukturiertes PRD-Template         |
+| RFC für Refactoring erstellen           | `/create-refactor-rfc`   | RFC mit Modul-Analyse               |
+
+**Skill-Nutzung ist NICHT optional:**
+
+- Bei 1% Wahrscheinlichkeit dass ein Skill passt → Skill aufrufen
+- Skill via `Skill` Tool aufrufen, NICHT mit Read Tool lesen
+- Mehrere Skills können kombiniert werden (z.B. `/react-best-practices` + `/web-design-guidelines`)
+
 ## Stack
 
 - **Framework:** Next.js 16 (App Router)
@@ -25,6 +44,21 @@ npm run db:studio        # Open Drizzle Studio
 ```
 
 **WICHTIG:** Verwende immer `d3k` für den Dev-Server, NICHT `npm run dev`!
+
+## Drizzle ORM Migrations
+
+### Schema-Änderungen
+
+- `npm run db:push` - Interactive mode, fragt bei Data-Loss
+- `npx drizzle-kit push --force` - Überspringt Bestätigungen (für CI/Scripts)
+- Nach Schema-Änderungen: `npm run typecheck` + Scripts in `/scripts/` prüfen
+
+### Deal Embeddings (RAG Storage)
+
+- `dealEmbeddings` = Unified Tabelle für alle RAG-Embeddings
+- `rfpId` Filter = Dokument-Phase (Extract, Quick Scan, Expert Agents)
+- `leadId` Filter = Qualifizierte Opportunity (Deep Scan, Audit, Section Data)
+- `embedding` ist nullable (für Screenshots) → `.filter(chunk => chunk.embedding !== null)` vor `JSON.parse()`
 
 ## Code Quality Tools
 
@@ -115,18 +149,6 @@ get_item_examples_from_registries(registries: ['@shadcn'], query: 'sidebar-demo'
 get_add_command_for_items(items: ['@shadcn/sidebar'])
 ```
 
-### Context7 MCP (`mcp__plugin_fullstack-ai_context7__*`)
-
-Für AI SDK und Next.js Dokumentation:
-
-```typescript
-// 1. Library ID resolven
-resolve-library-id(libraryName: 'ai', query: 'AI SDK documentation')
-
-// 2. Docs abrufen
-query-docs(libraryId: '/vercel/ai', query: 'useChat hook streaming')
-```
-
 ### Chrome DevTools MCP (`mcp__chrome-devtools__*`)
 
 Für Visual Testing und Debugging:
@@ -155,33 +177,13 @@ nextjs_call(port: '3000', toolName: 'get_errors')
 nextjs_call(port: '3000', toolName: 'get_routes')
 ```
 
-## Verfügbare Claude Code Skills
+## JSON Render (AI-Generated UI)
 
-### JSON Render Integration (`/json-render-integration`)
+Für Agent Output Visualisierung nutzt das Projekt `json-render`:
 
-Für AI-generierte UI-Komponenten mit Guardrails:
-
-```typescript
-// Workflow: Catalog → AI → JSON → React Components
-// Use Cases:
-// - User-generierte Dashboard Widgets aus Natural Language
-// - Agent Output Visualisierung (TECH, COMMERCIAL, RISK Agents)
-// - Dynamic Reports und Custom Analytics Views
-
-// Features:
-// - Guardrails: AI kann nur definierte Komponenten nutzen
-// - Streaming: Progressive Rendering während AI generiert
-// - ShadCN Integration: Mapping auf vorhandene UI-Komponenten
-// - Data Binding: JSON Pointer Paths (/path/to/value)
-```
-
-**Integration Points:**
-
-- **Analytics Dashboard** - User-generierte Custom Widgets
-- **Agent Results** - Strukturierte Visualisierung von Agent Outputs
-- **Dynamic Reports** - AI-generierte Compliance & Risk Reports
-
-Siehe `.claude/skills/json-render-integration.md` für vollständige Implementierungsanleitung.
+- **Registry:** `components/json-render/quick-scan-registry.tsx`
+- **Guardrails:** AI kann nur definierte Komponenten nutzen
+- **Streaming:** Progressive Rendering während AI generiert
 
 ## Workflow-Driven Architecture
 
@@ -255,77 +257,47 @@ app/
 ├── (dashboard)/              # Protected routes with Sidebar
 │   ├── layout.tsx           # Sidebar layout
 │   ├── page.tsx             # Dashboard home
-│   ├── bids/
-│   │   ├── page.tsx         # Bid list (Table)
-│   │   ├── new/page.tsx     # Upload form
-│   │   └── [id]/
-│   │       ├── page.tsx     # Bid detail
-│   │       └── evaluate/    # Bit/No Bit evaluation
-│   ├── accounts/            # Account management
-│   ├── analytics/           # Analytics dashboard
+│   ├── leads/               # Qualifizierte Opportunities
+│   │   ├── page.tsx         # Lead list
+│   │   └── [id]/            # Lead detail mit Sections
+│   │       ├── page.tsx     # Overview
+│   │       ├── audit/       # Deep Scan Audit
+│   │       ├── decision/    # Bid/No-Bid Entscheidung
+│   │       └── cms-comparison/
+│   ├── rfps/                # RFP Pipeline (vor Qualifizierung)
+│   │   ├── page.tsx         # RFP list
+│   │   └── [id]/            # RFP detail
+│   │       ├── page.tsx     # Quick Scan
+│   │       ├── routing/     # BL Routing
+│   │       └── tech/legal/timing/
 │   └── admin/               # Admin panel
-├── (auth)/                  # Login/Register
 └── api/                     # API routes
 
 components/
 ├── ui/                      # ShadCN components
-├── ai-elements/             # AI SDK Elements
-│   ├── conversation.tsx
-│   ├── message.tsx
-│   ├── reasoning.tsx
-│   └── sources.tsx
-├── bids/                    # Bid-specific components
-└── charts/                  # Chart wrappers
+├── leads/                   # Lead-specific components
+├── rfps/                    # RFP-specific components
+├── rag/                     # RAG/Embedding components
+└── json-render/             # AI-generated UI
 
 lib/
-├── agents/                  # AI SDK Agents
-│   ├── extraction-agent.ts
-│   ├── quick-scan-agent.ts
-│   ├── bid-evaluation-agent.ts
-│   └── coordinator-agent.ts
-├── db/
-│   ├── schema.ts           # Drizzle schema
-│   └── index.ts            # DB connection
-├── bids/                    # Bid actions
-└── types.ts                 # Schemas and types
-```
-
-## MCP Workflow Examples
-
-### UI Component Implementation
-
-```
-1. ShadCN MCP: search_items → find component
-2. ShadCN MCP: view_items → get details
-3. ShadCN MCP: get_item_examples → usage reference
-4. ShadCN MCP: get_add_command → install command
-5. Bash: npx shadcn@latest add <component>
-6. Implement using examples
-7. Chrome DevTools MCP: take_screenshot → verify
-8. Chrome DevTools MCP: list_console_messages → debug
-```
-
-### Agent Implementation
-
-```
-1. Context7 MCP: resolve-library-id → AI SDK
-2. Context7 MCP: query-docs → useChat, streamText, tools
-3. Implement agent with streaming
-4. Next.js DevTools MCP: nextjs_call → check errors
-5. Chrome DevTools MCP: list_console_messages → debug
-```
-
-### Chart Implementation
-
-```
-1. ShadCN MCP: search_items → 'chart pie donut'
-2. ShadCN MCP: get_item_examples → 'chart-pie-demo'
-3. Install: npx shadcn@latest add chart
-4. Adapt example with real data
-5. Chrome DevTools MCP: take_screenshot → verify
+├── agents/                  # AI SDK Agents (Expert Agents)
+├── db/schema.ts            # Drizzle schema
+├── leads/                   # Lead actions
+├── rfps/                    # RFP actions
+├── rag/                     # RAG/Embedding services
+└── quick-scan/              # Quick Scan tools
 ```
 
 ## Key Principles
+
+### 0. Skills First (PFLICHT!)
+
+- **Bei jedem Task prüfen:** Passt ein Skill? → Skill SOFORT aufrufen
+- **Keine Rationalisierung:** "Das ist nur eine kleine Änderung" ist KEIN Grund, Skills zu überspringen
+- **React/Next.js Code → `/react-best-practices`** - IMMER, auch bei kleinen Komponenten
+- **UI Review → `/web-design-guidelines`** - IMMER bei UI-Änderungen
+- **Browser Testing → `/agent-browser`** - IMMER für E2E Tests
 
 ### 1. Continuously Shippable Application
 
@@ -363,28 +335,17 @@ lib/
 - Chain-of-Thought anzeigen (Reasoning component)
 - Tool calls transparent darstellen
 
-### 6. MCP-Driven Discovery
+### 6. Visual Verification
 
-- ShadCN MCP für alle UI Komponenten
-- Context7 MCP für AI SDK und Next.js Docs
-- Chrome DevTools MCP für Visual Testing
-- Next.js DevTools MCP für Server Diagnostics
+- Nach jeder UI Änderung: `/agent-browser` für Screenshot + Test
+- Console Logs prüfen mit `list_console_messages()`
 
-### 7. Visual Verification
-
-- Nach jeder UI Änderung: Screenshot mit Chrome DevTools MCP
-- Console Logs prüfen
-- Responsive Design testen
-
-### 8. EPICS.md Dokumentationsstil
+### 7. EPICS.md Dokumentationsstil
 
 - **Nur Beschreibungen, keine Code-Skizzen** - Code entsteht während der Implementierung
-- Features und Agents beschreiben: Was sie tun, welche Inputs/Outputs, welche Gewichtung
-- Keine TypeScript-Beispiele oder Interface-Definitionen in EPICS.md
-- Technische Details gehören in den Code selbst, nicht in die Planung
 - **Regel:** EPICS.md = WAS gebaut wird, Code = WIE es gebaut wird
 
-### 9. Code Quality & Consistency
+### 8. Code Quality & Consistency
 
 - **Prettier für Formatting** - Automatisches Format-on-Save, kein manuelles Formatieren
 - **ESLint für Best Practices** - TypeScript-strict, React Hooks, Import Ordering
@@ -394,67 +355,11 @@ lib/
 
 ## Plan Mode
 
-Plan Mode trennt Research von Execution - Claude analysiert und plant, ohne Änderungen vorzunehmen, bis du den Plan genehmigst.
+**Aktivierung:** `/plan` oder `Shift+Tab` zweimal
 
-### Aktivierung
+**Nutzen für:** Komplexe Features, Architektur-Entscheidungen, DB Migrations, unbekannte Codebases
 
-- **Keyboard Shortcut:** `Shift+Tab` zweimal drücken (erneut drücken zum Beenden)
-- **Command:** `/plan` eingeben
-- **CLI Flag:** `claude --permission-mode plan`
-
-### Verfügbare Tools in Plan Mode
-
-| Tool        | Funktion                |
-| ----------- | ----------------------- |
-| `Read`      | Dateien lesen           |
-| `LS`        | Verzeichnisse auflisten |
-| `Glob`      | Datei-Pattern suchen    |
-| `Grep`      | Inhalte durchsuchen     |
-| `Task`      | Research Agents starten |
-| `TodoWrite` | Aufgaben planen         |
-| `WebFetch`  | Web-Inhalte abrufen     |
-| `WebSearch` | Web-Suchen              |
-
-**Gesperrt:** File edits, Bash commands, state-modifying operations.
-
-### Wann Plan Mode nutzen
-
-- **Komplexe Features:** Mehrere Dateien betroffen, Architektur-Entscheidungen nötig
-- **Unbekannte Codebases:** Erst verstehen, dann ändern
-- **Riskante Änderungen:** DB Migrations, API-Änderungen, Security-relevantes
-- **Requirements klären:** Tradeoffs diskutieren, Edge Cases identifizieren
-
-### Best Practices
-
-1. **Konkrete Requirements:** Plan Mode erzwingt strukturiertes Denken - keine vagen Anforderungen
-2. **Context Priming:** Der Plan-Prozess lädt relevanten Context, der bei der Execution hilft
-3. **Iterative Planung:** Plan reviewen → Fragen stellen → Plan verfeinern → Genehmigen
-4. **Plan-Datei nutzen:** Plans werden in `.claude/plans/` gespeichert und können bearbeitet werden
-
-### Workflow mit Plan Mode
-
-```
-1. /plan oder Shift+Tab+Tab → Plan Mode aktivieren
-2. Feature beschreiben
-3. Claude erkundet Codebase, stellt Klärungsfragen
-4. Claude erstellt step-by-step Plan
-5. Plan reviewen und ggf. anpassen
-6. Plan genehmigen → Execution startet
-7. Claude implementiert mit vollem Context aus Planning-Phase
-```
-
-### Plan Mode vs. Direkte Implementierung
-
-| Situation                      | Empfehlung            |
-| ------------------------------ | --------------------- |
-| Typo fixen, kleine Änderung    | Direkt implementieren |
-| Neues Feature, mehrere Dateien | **Plan Mode**         |
-| Bug mit klarer Ursache         | Direkt implementieren |
-| Architektur-Entscheidung nötig | **Plan Mode**         |
-| Bekanntes Pattern anwenden     | Direkt implementieren |
-| Unbekannte Codebase erkunden   | **Plan Mode**         |
-
-> **Tipp:** Im Zweifel Plan Mode nutzen - es ist besser, einen kurzen Plan zu erstellen, als Code zu produzieren, der verworfen werden muss.
+**Nicht nötig für:** Typo fixes, kleine Änderungen, bekannte Patterns
 
 ## Feature Implementation Workflow
 
@@ -518,116 +423,25 @@ SLACK_CHANNEL_ID=
 EXA_API_KEY=
 ```
 
-## Debugging with MCPs
+## Debugging
 
-### Visual Issues
+**Build-Fehler:** `fix_my_app(focusArea: 'build')` → Fix → Repeat bis clean
 
-```typescript
-// Screenshot für Bug Report
-take_screenshot(filePath: 'bug-screenshots/dashboard-broken.png')
-
-// Element inspizieren
-take_snapshot() // A11y tree
-```
-
-### Console Errors
+**Browser Testing:** Nutze `/agent-browser` Skill oder `mcp__dev3000__agent_browser_action`:
 
 ```typescript
-// Alle Errors
-list_console_messages(types: ['error'])
-
-// Spezifische Logs filtern
-list_console_messages(types: ['error', 'warn'], pageSize: 50)
-```
-
-### Network Issues
-
-```typescript
-// Failed requests
-list_network_requests(resourceTypes: ['fetch'], pageIdx: 0)
-
-// Request Details
-get_network_request(reqid: 123)
-```
-
-### Dev Server Errors
-
-```typescript
-// Next.js Compilation Errors
-nextjs_call(port: '3000', toolName: 'get_errors')
-
-// Route List
-nextjs_call(port: '3000', toolName: 'get_routes')
-```
-
-### Build Errors mit d3k (fix_my_app)
-
-Bei Build-Fehlern, TypeScript-Errors oder Runtime-Problemen kann `mcp__dev3000__fix_my_app` verwendet werden:
-
-```typescript
-// Build-Fehler analysieren
-fix_my_app(focusArea: 'build', timeRangeMinutes: 5)
-
-// Runtime/Browser Fehler
-fix_my_app(focusArea: 'runtime', timeRangeMinutes: 10)
-
-// Alle Fehler prüfen
-fix_my_app(focusArea: 'all')
-```
-
-**Workflow bei Build-Fehlern:**
-
-1. `fix_my_app(focusArea: 'build')` aufrufen
-2. Höchstpriorisierten Fehler beheben
-3. Erneut `fix_my_app` aufrufen um zu verifizieren
-4. Wiederholen bis keine Fehler mehr
-
-### Browser Testing mit agent-browser (IMMER NUTZEN!)
-
-**WICHTIG: Nutze IMMER `mcp__dev3000__agent_browser_action` statt Chrome DevTools MCP!**
-
-```typescript
-// Seite öffnen
 agent_browser_action(action: 'open', params: { url: 'http://localhost:3000' }, session: 'test')
-
-// Snapshot (Accessibility Tree mit Refs)
-agent_browser_action(action: 'snapshot', session: 'test')
-
-// Element klicken (mit @ref aus Snapshot)
+agent_browser_action(action: 'snapshot', session: 'test')  // A11y tree mit @refs
 agent_browser_action(action: 'click', params: { target: '@e5' }, session: 'test')
-
-// Formular ausfüllen
-agent_browser_action(action: 'fill', params: { target: '@e10', value: 'Test' }, session: 'test')
-
-// Screenshot
-agent_browser_action(action: 'screenshot', session: 'test')
-
-// Scrollen
-agent_browser_action(action: 'scroll', params: { direction: 'down', amount: 3 }, session: 'test')
 ```
 
-**Vorteile von agent-browser:**
-
-- Zuverlässiger als Chrome DevTools in Sandbox-Umgebungen
-- Ref-basiertes Klicken (@e1, @e2, etc.)
-- Session-Isolation für parallele Tests
-- Playwright-basiert
-
-## Testing Strategy
-
-1. **Visual Testing:** Chrome DevTools MCP Screenshots
-2. **Console Logs:** Error/Warning Detection
-3. **Performance:** Network Request Analysis
-4. **Responsive:** Viewport Resize Tests
-5. **Accessibility:** A11y Tree Snapshots
+**Console/Network:** `list_console_messages(types: ['error'])`, `list_network_requests()`
 
 ## When Implementing Features
 
-1. **Plan Mode für komplexe Tasks** - `/plan` für Features mit mehreren Dateien oder Architektur-Entscheidungen
-2. **Read existing code first** - Never propose changes to code you haven't read
-3. **Use TodoWrite** - Plan tasks before implementing
+1. **Skills ZUERST prüfen** - Passt `/react-best-practices`, `/web-design-guidelines`, etc.?
+2. **Plan Mode für komplexe Tasks** - `/plan` für Features mit mehreren Dateien
+3. **Read existing code first** - Never propose changes to code you haven't read
 4. **ShadCN Components** - Always use ShadCN, never custom UI
-5. **MCP for Docs** - Context7 MCP für AI SDK/Next.js Docs
-6. **Visual Verify** - Screenshot after every UI change
-7. **No over-engineering** - Keep it simple, YAGNI principle
-8. **Agent-Native** - Make agent activity visible in UI
+5. **Visual Verify** - `/agent-browser` nach jeder UI-Änderung
+6. **No over-engineering** - Keep it simple, YAGNI principle

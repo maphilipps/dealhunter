@@ -17,6 +17,9 @@ import { z } from 'zod';
 import { openai } from '../ai/providers';
 import { queryRAG } from '../rag/retrieval-service';
 
+// Security: Prompt Injection Protection
+import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -157,9 +160,12 @@ export async function generateOutline(input: SolutionInput): Promise<SolutionOut
     const { allChunks, contextByAgent } = await queryAllAgents(input.rfpId, input.deliverableName);
 
     // Build structured context string with agent attribution
-    const ragContext = Object.entries(contextByAgent)
+    const rawRagContext = Object.entries(contextByAgent)
       .map(([agent, content]) => `## Context from ${agent} Agent:\n${content}`)
       .join('\n\n');
+
+    // Wrap RAG context for prompt injection protection
+    const ragContext = wrapUserContent(rawRagContext, 'rag');
 
     // 2. Zod schema for AI-generated outline
     const OutlineSchema = z.object({
@@ -175,7 +181,7 @@ export async function generateOutline(input: SolutionInput): Promise<SolutionOut
 
     // 3. Generate outline using AI
     const { object: outlineData } = await generateObject({
-      model: openai('claude-sonnet-4') as unknown as LanguageModel,
+      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: OutlineSchema,
       prompt: `You are a technical solution architect creating a structured outline for a pitchdeck deliverable.
 
@@ -273,12 +279,17 @@ export async function generateDraft(
     const { allChunks, contextByAgent } = await queryAllAgents(input.rfpId, input.deliverableName);
 
     // Build structured context string with agent attribution and more details
-    const ragContext = Object.entries(contextByAgent)
+    const rawRagContext = Object.entries(contextByAgent)
       .map(([agent, content]) => `## Context from ${agent} Agent:\n${content}`)
       .join('\n\n');
 
+    // Wrap RAG context for prompt injection protection
+    const ragContext = wrapUserContent(rawRagContext, 'rag');
+
     // Also track sources for reference generation
-    const sources = allChunks.map(c => `${c.agentName} (${c.chunkType})`).filter((v, i, a) => a.indexOf(v) === i);
+    const sources = allChunks
+      .map(c => `${c.agentName} (${c.chunkType})`)
+      .filter((v, i, a) => a.indexOf(v) === i);
 
     // 2. Zod schema for AI-generated draft
     const DraftSchema = z.object({
@@ -288,7 +299,7 @@ export async function generateDraft(
 
     // 3. Generate draft using AI
     const { object: draftData } = await generateObject({
-      model: openai('claude-sonnet-4') as unknown as LanguageModel,
+      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: DraftSchema,
       prompt: `You are a technical solution architect creating a professional pitchdeck deliverable.
 
@@ -405,9 +416,12 @@ export async function generateTalkingPoints(
     const { contextByAgent } = await queryAllAgents(input.rfpId, input.deliverableName);
 
     // Build structured context focusing on key insights
-    const ragContext = Object.entries(contextByAgent)
+    const rawRagContext = Object.entries(contextByAgent)
       .map(([agent, content]) => `## Key Points from ${agent} Agent:\n${content}`)
       .join('\n\n');
+
+    // Wrap RAG context for prompt injection protection
+    const ragContext = wrapUserContent(rawRagContext, 'rag');
 
     // 2. Zod schema for AI-generated talking points
     const TalkingPointsSchema = z.object({
@@ -421,7 +435,7 @@ export async function generateTalkingPoints(
 
     // 3. Generate talking points using AI
     const { object: talkingPointsData } = await generateObject({
-      model: openai('claude-sonnet-4') as unknown as LanguageModel,
+      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: TalkingPointsSchema,
       prompt: `You are a presentation coach creating talking points for a technical pitch.
 
@@ -497,9 +511,12 @@ export async function generateVisualIdeas(input: SolutionInput): Promise<Solutio
     const { contextByAgent } = await queryAllAgents(input.rfpId, input.deliverableName);
 
     // Build context focusing on visualizable data
-    const ragContext = Object.entries(contextByAgent)
+    const rawRagContext = Object.entries(contextByAgent)
       .map(([agent, content]) => `## Visualizable Data from ${agent} Agent:\n${content}`)
       .join('\n\n');
+
+    // Wrap RAG context for prompt injection protection
+    const ragContext = wrapUserContent(rawRagContext, 'rag');
 
     // 2. Zod schema for AI-generated visual ideas
     const VisualIdeasSchema = z.object({
@@ -515,7 +532,7 @@ export async function generateVisualIdeas(input: SolutionInput): Promise<Solutio
 
     // 3. Generate visual ideas using AI
     const { object: visualData } = await generateObject({
-      model: openai('claude-sonnet-4') as unknown as LanguageModel,
+      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: VisualIdeasSchema,
       prompt: `You are a presentation designer suggesting visuals for a technical deliverable.
 
@@ -566,7 +583,8 @@ Focus on visuals that tell a story, support key messages, and leverage the compr
         {
           type: 'architecture',
           title: 'Solution Architecture Overview',
-          description: 'High-level system architecture showing main components and their interactions',
+          description:
+            'High-level system architecture showing main components and their interactions',
           dataSource: 'From Tech Stack Analysis',
         },
         {

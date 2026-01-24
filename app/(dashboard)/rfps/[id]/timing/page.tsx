@@ -1,4 +1,4 @@
-import { AlertCircle, Calendar, Clock } from 'lucide-react';
+import { AlertCircle, Calendar, Clock, Info } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -12,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { getAgentResult } from '@/lib/agents/expert-agents';
+import type { TimingAnalysis } from '@/lib/agents/expert-agents/timing-schema';
 import { auth } from '@/lib/auth';
 import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
 import { parseJsonField } from '@/lib/utils/json';
@@ -40,6 +42,10 @@ export default async function TimingPage({ params }: { params: Promise<{ id: str
   // Parse timeline
   const timeline = parseJsonField<ProjectTimeline | null>(quickScan?.timeline, null);
 
+  // Get expert agent result
+  const timingExpertResult = await getAgentResult(id, 'timing_expert');
+  const timingAnalysis = timingExpertResult?.metadata as TimingAnalysis | null;
+
   // Get extracted requirements for deadline
   const extractedReqs = parseJsonField<{
     targetDeadline?: string;
@@ -49,6 +55,37 @@ export default async function TimingPage({ params }: { params: Promise<{ id: str
   const submissionDeadline: string | undefined =
     extractedReqs?.submissionDeadline || extractedReqs?.targetDeadline || extractedReqs?.deadline;
 
+  // Helper for urgency badge
+  const getUrgencyVariant = (level: string) => {
+    switch (level) {
+      case 'critical':
+        return 'destructive';
+      case 'high':
+        return 'default';
+      case 'medium':
+        return 'secondary';
+      case 'low':
+        return 'outline';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getUrgencyLabel = (level: string) => {
+    switch (level) {
+      case 'critical':
+        return 'Kritisch';
+      case 'high':
+        return 'Hoch';
+      case 'medium':
+        return 'Mittel';
+      case 'low':
+        return 'Niedrig';
+      default:
+        return level;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -57,8 +94,195 @@ export default async function TimingPage({ params }: { params: Promise<{ id: str
         <p className="text-muted-foreground">Projekt-Timeline, Meilensteine und wichtige Termine</p>
       </div>
 
-      {/* Submission Deadline Card */}
-      {submissionDeadline && (
+      {/* Expert Agent Timing Analysis */}
+      {timingAnalysis && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Timing Analyse (Expert)
+              </CardTitle>
+              <Badge variant={getUrgencyVariant(timingAnalysis.urgencyLevel)}>
+                {getUrgencyLabel(timingAnalysis.urgencyLevel)}
+              </Badge>
+            </div>
+            <CardDescription>
+              Detaillierte Analyse durch Expert Agent (Konfidenz: {timingAnalysis.confidence}%)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Submission Deadline with Countdown */}
+            {timingAnalysis.submissionDeadline && (
+              <div className="rounded-lg border p-4 bg-muted/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <h4 className="font-semibold">Einreichungsfrist</h4>
+                </div>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Datum</p>
+                    <p className="text-xl font-bold">
+                      {new Date(timingAnalysis.submissionDeadline.date).toLocaleDateString(
+                        'de-DE',
+                        {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        }
+                      )}
+                    </p>
+                    {timingAnalysis.submissionDeadline.time && (
+                      <p className="text-sm text-muted-foreground">
+                        {timingAnalysis.submissionDeadline.time}{' '}
+                        {timingAnalysis.submissionDeadline.timezone || ''}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Verbleibende Zeit</p>
+                    <p className="text-xl font-bold">
+                      {timingAnalysis.daysUntilSubmission !== undefined ? (
+                        timingAnalysis.daysUntilSubmission < 0 ? (
+                          <span className="text-destructive">Abgelaufen</span>
+                        ) : timingAnalysis.daysUntilSubmission === 0 ? (
+                          <span className="text-yellow-600">Heute</span>
+                        ) : (
+                          <span
+                            className={
+                              timingAnalysis.daysUntilSubmission <= 7 ? 'text-yellow-600' : ''
+                            }
+                          >
+                            {timingAnalysis.daysUntilSubmission} Tage
+                          </span>
+                        )
+                      ) : (
+                        'N/A'
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Konfidenz</p>
+                    <p className="text-xl font-bold">
+                      {timingAnalysis.submissionDeadline.confidence}%
+                    </p>
+                  </div>
+                </div>
+                {timingAnalysis.submissionDeadline.rawText && (
+                  <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <p>Originaltext: &quot;{timingAnalysis.submissionDeadline.rawText}&quot;</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Clarification Deadline */}
+            {timingAnalysis.clarificationDeadline && (
+              <div className="rounded-lg border p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <h4 className="font-semibold">Rückfragefrist</h4>
+                </div>
+                <p className="text-lg font-medium">
+                  {new Date(timingAnalysis.clarificationDeadline).toLocaleDateString('de-DE', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
+              </div>
+            )}
+
+            {/* Milestones Table */}
+            {timingAnalysis.milestones.length > 0 && (
+              <div>
+                <h4 className="font-semibold mb-2">Meilensteine</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Meilenstein</TableHead>
+                      <TableHead>Datum</TableHead>
+                      <TableHead>Typ</TableHead>
+                      <TableHead className="text-center">Pflicht</TableHead>
+                      <TableHead className="text-right">Konfidenz</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {timingAnalysis.milestones.map((milestone, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{milestone.name}</p>
+                            {milestone.description && (
+                              <p className="text-sm text-muted-foreground">
+                                {milestone.description}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {milestone.date
+                            ? new Date(milestone.date).toLocaleDateString('de-DE')
+                            : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {milestone.dateType === 'exact'
+                              ? 'Exakt'
+                              : milestone.dateType === 'estimated'
+                                ? 'Geschätzt'
+                                : 'Relativ'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {milestone.mandatory ? '✓' : '-'}
+                        </TableCell>
+                        <TableCell className="text-right">{milestone.confidence}%</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            {/* Project Duration Info */}
+            {(timingAnalysis.projectStart ||
+              timingAnalysis.projectEnd ||
+              timingAnalysis.projectDurationMonths) && (
+              <div className="grid gap-4 md:grid-cols-3">
+                {timingAnalysis.projectStart && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Projektstart</p>
+                    <p className="font-medium">
+                      {new Date(timingAnalysis.projectStart).toLocaleDateString('de-DE')}
+                    </p>
+                  </div>
+                )}
+                {timingAnalysis.projectEnd && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Projektende</p>
+                    <p className="font-medium">
+                      {new Date(timingAnalysis.projectEnd).toLocaleDateString('de-DE')}
+                    </p>
+                  </div>
+                )}
+                {timingAnalysis.projectDurationMonths && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Projektdauer</p>
+                    <p className="font-medium">{timingAnalysis.projectDurationMonths} Monate</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Submission Deadline Card (fallback from extracted requirements) */}
+      {submissionDeadline && !timingAnalysis?.submissionDeadline && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

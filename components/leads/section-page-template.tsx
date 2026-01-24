@@ -1,22 +1,35 @@
 'use client';
 
 import { AlertCircle, Loader2, RefreshCw, TrendingUp } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
+import { QuickScanRenderer, type RenderTree } from '@/components/json-render/quick-scan-registry';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { LeadRAGResult, SectionQueryResult } from '@/lib/rag/lead-retrieval-service';
+
+/**
+ * Extended Section Result with visualization tree (matches API response)
+ */
+interface SynthesizedSectionResult {
+  sectionId: string;
+  results: unknown[];
+  confidence: number;
+  status: 'success' | 'no_data' | 'error';
+  errorMessage?: string;
+  visualizationTree?: RenderTree;
+  synthesisMethod?: 'ai' | 'fallback';
+}
 
 export interface SectionPageTemplateProps {
   leadId: string;
   sectionId: string;
   title: string;
   description?: string;
-  children?: React.ReactNode; // Optional: for custom content above RAG results
+  children?: React.ReactNode;
 }
 
 /**
@@ -24,22 +37,10 @@ export interface SectionPageTemplateProps {
  *
  * Provides consistent structure for all lead section pages:
  * - Header with title and description
- * - RAG query on mount with loading/error states
+ * - RAG query + AI synthesis on mount
  * - Confidence score display
- * - Web research trigger button
- * - Content slots for RAG results or custom content
- *
- * Usage:
- * ```tsx
- * <SectionPageTemplate
- *   leadId={leadId}
- *   sectionId="technology"
- *   title="Aktuelle Technologie"
- *   description="Tech-Stack Analyse der Kundenwebsite"
- * >
- *   <CustomContent /> // Optional
- * </SectionPageTemplate>
- * ```
+ * - JSON Render Tree visualization (always)
+ * - Refresh button to reload data
  */
 export function SectionPageTemplate({
   leadId,
@@ -50,72 +51,66 @@ export function SectionPageTemplate({
 }: SectionPageTemplateProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<LeadRAGResult[]>([]);
   const [confidence, setConfidence] = useState<number>(0);
-  const [researching, setResearching] = useState(false);
+  const [visualizationTree, setVisualizationTree] = useState<RenderTree | null>(null);
+  const [synthesisMethod, setSynthesisMethod] = useState<'ai' | 'fallback' | null>(null);
+  const [hasData, setHasData] = useState(false);
 
-  // Fetch RAG data on mount
-  useEffect(() => {
-    async function fetchSectionData() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/leads/${leadId}/sections/${sectionId}`);
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch section data: ${response.statusText}`);
-        }
-
-        const data = (await response.json()) as SectionQueryResult;
-
-        if (data.status === 'error') {
-          setError(data.errorMessage || 'Unknown error occurred');
-        } else if (data.status === 'no_data') {
-          setResults([]);
-          setConfidence(0);
-        } else {
-          setResults(data.results);
-          setConfidence(data.confidence);
-        }
-      } catch (err) {
-        console.error('[SectionPageTemplate] Fetch error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load section data');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    void fetchSectionData();
-  }, [leadId, sectionId]);
-
-  // Trigger web research
-  async function handleWebResearch() {
-    setResearching(true);
+  const fetchSectionData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
     try {
-      const response = await fetch(`/api/leads/${leadId}/sections/${sectionId}/research`, {
-        method: 'POST',
-      });
+      console.log(`[SectionPageTemplate] Fetching /api/leads/${leadId}/sections/${sectionId}`);
+      const response = await fetch(`/api/leads/${leadId}/sections/${sectionId}`);
 
       if (!response.ok) {
-        throw new Error('Web research failed');
+        const errorText = await response.text();
+        console.error('[SectionPageTemplate] API Error:', response.status, errorText);
+        throw new Error(`API Error ${response.status}: ${response.statusText}`);
       }
 
-      // Refresh section data after research
-      const data = (await response.json()) as SectionQueryResult;
+      const data = (await response.json()) as SynthesizedSectionResult;
+      console.log('[SectionPageTemplate] Response:', data);
 
-      if (data.status === 'success') {
-        setResults(data.results);
+      if (data.status === 'error') {
+        setError(data.errorMessage || 'Unknown error occurred');
+        setHasData(false);
+      } else if (data.status === 'no_data') {
+        setHasData(false);
+        setConfidence(0);
+        setVisualizationTree(null);
+      } else {
+        setHasData(true);
         setConfidence(data.confidence);
+        setVisualizationTree(data.visualizationTree || null);
+        setSynthesisMethod(data.synthesisMethod || null);
+
+        // Debug: Log if we got a visualization tree
+        if (data.visualizationTree) {
+          console.log('[SectionPageTemplate] Visualization tree:', data.visualizationTree);
+        } else {
+          console.warn('[SectionPageTemplate] No visualization tree in response');
+        }
       }
     } catch (err) {
-      console.error('[SectionPageTemplate] Web research error:', err);
-      setError('Web research failed. Please try again.');
+      console.error('[SectionPageTemplate] Fetch error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load section data');
+      setHasData(false);
     } finally {
-      setResearching(false);
+      setLoading(false);
     }
-  }
+  }, [leadId, sectionId]);
+
+  // Fetch on mount
+  useEffect(() => {
+    void fetchSectionData();
+  }, [fetchSectionData]);
+
+  // Refresh handler
+  const handleRefresh = () => {
+    void fetchSectionData();
+  };
 
   return (
     <div className="space-y-6">
@@ -126,30 +121,28 @@ export function SectionPageTemplate({
           {description && <p className="text-muted-foreground mt-1">{description}</p>}
         </div>
 
-        {/* Confidence Score Badge */}
-        {!loading && !error && (
-          <div className="flex items-center gap-2">
-            <ConfidenceBadge confidence={confidence} />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void handleWebResearch()}
-              disabled={researching}
-            >
-              {researching ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Researching...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Mehr recherchieren
-                </>
-              )}
-            </Button>
-          </div>
-        )}
+        {/* Actions */}
+        <div className="flex items-center gap-3">
+          {!loading && !error && hasData && <ConfidenceBadge confidence={confidence} />}
+          {synthesisMethod && (
+            <Badge variant={synthesisMethod === 'ai' ? 'default' : 'secondary'}>
+              {synthesisMethod === 'ai' ? 'AI Synthese' : 'Fallback'}
+            </Badge>
+          )}
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Laden...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Aktualisieren
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Custom Content Slot */}
@@ -160,82 +153,70 @@ export function SectionPageTemplate({
         <Card>
           <CardHeader>
             <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-4 w-72 mt-2" />
+            <Skeleton className="mt-2 h-4 w-72" />
           </CardHeader>
           <CardContent className="space-y-3">
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-3/4" />
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* Error State */}
-      {error && (
+      {!loading && error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Fehler beim Laden</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            {error}
+            <Button variant="link" className="ml-2 h-auto p-0" onClick={handleRefresh}>
+              Erneut versuchen
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
 
       {/* No Data State */}
-      {!loading && !error && results.length === 0 && (
+      {!loading && !error && !hasData && (
         <Card>
           <CardHeader>
             <CardTitle>Keine Daten verfügbar</CardTitle>
             <CardDescription>
-              Für diese Sektion sind noch keine Analyse-Ergebnisse vorhanden.
+              Für diese Sektion sind noch keine Analyse-Ergebnisse vorhanden. Starte einen Quick
+              Scan oder Deep Scan, um Daten zu generieren.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button
-              variant="outline"
-              onClick={() => void handleWebResearch()}
-              disabled={researching}
-            >
-              {researching ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Researching...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Web-Recherche starten
-                </>
-              )}
+            <Button variant="outline" onClick={handleRefresh}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Daten prüfen
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* RAG Results Display */}
-      {!loading && !error && results.length > 0 && (
-        <div className="space-y-4">
-          {results.map((result, index) => (
-            <Card key={result.chunkId || index}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg">
-                      {result.chunkType === 'summary' ? 'Summary' : result.agentName}
-                    </CardTitle>
-                    <CardDescription>
-                      Agent: {result.agentName} | Relevance: {Math.round(result.similarity * 100)}%
-                    </CardDescription>
-                  </div>
-                  <Badge variant="outline">{result.chunkType}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="prose prose-sm max-w-none">
-                  <p className="whitespace-pre-wrap">{result.content}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      {/* Visualization Tree (JSON Render) */}
+      {!loading && !error && hasData && visualizationTree && (
+        <QuickScanRenderer tree={visualizationTree} />
+      )}
+
+      {/* Data exists but no visualization tree - show debug info */}
+      {!loading && !error && hasData && !visualizationTree && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Visualisierung nicht verfügbar</AlertTitle>
+          <AlertDescription>
+            Die RAG-Daten wurden geladen, aber die AI-Synthese hat keine Visualisierung erzeugt.
+            <Button variant="link" className="ml-2 h-auto p-0" onClick={handleRefresh}>
+              Erneut versuchen
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   );
@@ -259,7 +240,7 @@ function ConfidenceBadge({ confidence }: { confidence: number }) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm text-muted-foreground">Confidence:</span>
+      <span className="text-muted-foreground text-sm">Confidence:</span>
       <Badge variant={getVariant(confidence)}>
         <TrendingUp className="mr-1 h-3 w-3" />
         {getLabel(confidence)} ({confidence}%)

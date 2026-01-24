@@ -1,0 +1,537 @@
+{
+  "prd": {
+    "name": "Pitchdeck-Assembly nach BID-Entscheidung",
+    "version": "1.0.0",
+    "created": "2026-01-22",
+    "status": "draft"
+  },
+  "requirements": [
+    {
+      "id": "PA-001",
+      "category": "Workflow Trigger",
+      "description": "Pitchdeck-Assembly startet automatisch nach BID-Entscheidung",
+      "steps_to_verify": [
+        "Lead mit Status 'bl_reviewing' öffnen",
+        "BID-Entscheidung mit Vote 'BID' abgeben",
+        "Prüfen: Lead-Status wechselt zu 'bid_voted'",
+        "Prüfen: Pitchdeck-Eintrag in DB erstellt mit Status 'draft'",
+        "Prüfen: Pitchdeck-Tab erscheint in Lead-Navigation"
+      ],
+      "acceptance_criteria": [
+        "Automatischer Trigger ohne manuelle Aktion",
+        "Pitchdeck nur bei Vote='BID' erstellt, nicht bei 'NO-BID'",
+        "Status-Übergang korrekt protokolliert"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-002",
+      "category": "Team-Zuweisung",
+      "description": "Staffing Agent generiert automatische Team-Vorschläge basierend auf Skills und Verfügbarkeit",
+      "steps_to_verify": [
+        "Pitchdeck mit Status 'draft' öffnen",
+        "Prüfen: Team-Vorschläge werden angezeigt",
+        "Prüfen: Jede Rolle aus PT-Estimation hat mindestens einen Vorschlag",
+        "Prüfen: Vorschläge enthalten Skill-Match-Score",
+        "Prüfen: Verfügbarkeitsstatus der Mitarbeiter ist sichtbar"
+      ],
+      "acceptance_criteria": [
+        "Rollen basierend auf PT-Estimation: PM, UX, Frontend, Backend, DevOps, QA",
+        "Skill-Matching-Algorithmus berücksichtigt Employee.skills",
+        "Verfügbarkeit aus Employee.availabilityStatus",
+        "BU-Priorisierung: eigene BU zuerst"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-003",
+      "category": "Team-Zuweisung",
+      "description": "BL muss Team-Vorschläge bestätigen bevor Team informiert wird",
+      "steps_to_verify": [
+        "Als BL einloggen",
+        "Pitchdeck-Tab mit Team-Vorschlägen öffnen",
+        "Team-Vorschlag anpassen (Mitarbeiter austauschen)",
+        "'Team bestätigen' Button klicken",
+        "Prüfen: Pitchdeck-Status wechselt zu 'team_confirmed'",
+        "Prüfen: teamConfirmedAt und teamConfirmedByUserId gesetzt"
+      ],
+      "acceptance_criteria": [
+        "Nur BL-Rolle kann Team bestätigen",
+        "Anpassungen vor Bestätigung möglich",
+        "Bestätigung ist einmalig, danach nur noch Änderungen"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-004",
+      "category": "Team-Zuweisung",
+      "description": "Team-Mitglieder werden per E-Mail über Zuweisung informiert",
+      "steps_to_verify": [
+        "Team bestätigen (PA-003)",
+        "Prüfen: E-Mail an alle Team-Mitglieder versendet",
+        "Prüfen: E-Mail enthält Projektname, Rolle, Deadlines",
+        "Prüfen: E-Mail enthält Link zur Lead-Seite"
+      ],
+      "acceptance_criteria": [
+        "E-Mail nur nach BL-Bestätigung, nicht bei Vorschlag",
+        "Template enthält alle relevanten Projekt-Details",
+        "Link führt direkt zum Pitchdeck-Tab"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-005",
+      "category": "Timeline",
+      "description": "Interne Meilensteine werden rückwärts von RFP-Deadline berechnet",
+      "steps_to_verify": [
+        "Lead mit RFP-Deadline (extractedRequirements.deadline) öffnen",
+        "Pitchdeck-Tab öffnen",
+        "Prüfen: Jedes Deliverable hat interne Deadline",
+        "Prüfen: Interne Deadlines liegen vor RFP-Deadline",
+        "Prüfen: Review-Puffer (2 Tage) berücksichtigt"
+      ],
+      "acceptance_criteria": [
+        "Rückwärtsplanung mit konfigurierbaren Standard-Puffern",
+        "Review-Puffer: 2 Tage, finale QA: 1 Tag",
+        "Bei fehlendem RFP-Deadline: Warnung anzeigen"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-006",
+      "category": "Timeline",
+      "description": "Visuelle Warnung bei überschrittenen internen Deadlines",
+      "steps_to_verify": [
+        "Deliverable mit vergangener interner Deadline simulieren",
+        "Pitchdeck-Tab öffnen",
+        "Prüfen: Deliverable ist rot markiert",
+        "Prüfen: Warnung-Icon sichtbar",
+        "Prüfen: Keine aktive Benachrichtigung (E-Mail/Slack)"
+      ],
+      "acceptance_criteria": [
+        "Nur visuelle Anzeige, keine aktive Eskalation",
+        "Rote Markierung für überfällige Items",
+        "Gelbe Markierung für <3 Tage bis Deadline"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-007",
+      "category": "Deliverable-Tracking",
+      "description": "Deliverables aus RFP werden automatisch als Pitchdeck-Items angelegt",
+      "steps_to_verify": [
+        "RFP mit extractedRequirements.requiredDeliverables prüfen",
+        "Pitchdeck starten (BID-Entscheidung)",
+        "Prüfen: Alle requiredDeliverables als pitchdeckDeliverables angelegt",
+        "Prüfen: Initialstatus ist 'open'"
+      ],
+      "acceptance_criteria": [
+        "1:1 Mapping von RFP-Deliverables zu Pitchdeck-Items",
+        "Deliverable-Name, Format, mandatory-Flag übernommen",
+        "RFP-Deadline als Basis für Timeline"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-008",
+      "category": "Deliverable-Tracking",
+      "description": "Status jedes Deliverables kann geändert werden",
+      "steps_to_verify": [
+        "Pitchdeck-Tab öffnen",
+        "Deliverable auswählen",
+        "Status ändern: open → in_progress → review → done",
+        "Prüfen: Status in DB aktualisiert",
+        "Prüfen: Fortschrittsbalken aktualisiert"
+      ],
+      "acceptance_criteria": [
+        "4 Status-Stufen: open, in_progress, review, done",
+        "Status-Änderung für alle Team-Mitglieder möglich",
+        "Audit-Trail: wer hat wann geändert"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-009",
+      "category": "Deliverable-Tracking",
+      "description": "Gesamtfortschritt als Prozent-Anzeige",
+      "steps_to_verify": [
+        "Pitchdeck mit 5 Deliverables öffnen",
+        "2 Deliverables auf 'done' setzen",
+        "Prüfen: Fortschrittsbalken zeigt 40%",
+        "Prüfen: Prozent-Zahl sichtbar"
+      ],
+      "acceptance_criteria": [
+        "Berechnung: (done / total) * 100",
+        "Visueller Fortschrittsbalken",
+        "Prozent-Anzeige als Zahl"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-010",
+      "category": "Deliverable-Tracking",
+      "description": "Pitchdeck wird bei RFP-Deadline automatisch als 'submitted' markiert",
+      "steps_to_verify": [
+        "Pitchdeck mit RFP-Deadline heute erstellen",
+        "System-Zeit auf nach Deadline setzen (oder Test-API)",
+        "Prüfen: Pitchdeck-Status wechselt zu 'submitted'",
+        "Prüfen: submittedAt Timestamp gesetzt"
+      ],
+      "acceptance_criteria": [
+        "Automatischer Statuswechsel bei Deadline-Erreichen",
+        "Kein manueller Abschluss erforderlich",
+        "Status 'submitted' ist Endzustand"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-011",
+      "category": "Lösungs-Skizzen",
+      "description": "AI-Agent generiert strukturierte Gliederung pro Deliverable",
+      "steps_to_verify": [
+        "Pitchdeck mit Deliverable 'Technisches Angebot' öffnen",
+        "Lösungs-Skizze-Tab für Deliverable öffnen",
+        "Prüfen: Gliederung mit Kapiteln und Unterkapiteln vorhanden",
+        "Prüfen: Markdown-Format korrekt"
+      ],
+      "acceptance_criteria": [
+        "Gliederung enthält min. 3 Hauptkapitel",
+        "Kapitel haben aussagekräftige Titel",
+        "Markdown-Headings (##, ###) korrekt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-012",
+      "category": "Lösungs-Skizzen",
+      "description": "AI-Agent generiert Volltext-Entwurf pro Deliverable",
+      "steps_to_verify": [
+        "Pitchdeck mit Deliverable öffnen",
+        "Draft-Tab öffnen",
+        "Prüfen: Volltext-Entwurf vorhanden (min. 500 Wörter)",
+        "Prüfen: Inhalt basiert auf Deep Scan Erkenntnissen"
+      ],
+      "acceptance_criteria": [
+        "Mindestens 500 Wörter pro Deliverable",
+        "Referenzen auf Tech-Stack, Anforderungen",
+        "Professioneller Schreibstil"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-013",
+      "category": "Lösungs-Skizzen",
+      "description": "AI-Agent generiert Talking Points für Präsentationen",
+      "steps_to_verify": [
+        "Pitchdeck mit Deliverable 'Präsentation' öffnen",
+        "Talking Points-Tab öffnen",
+        "Prüfen: Bullet-Liste mit Kernbotschaften",
+        "Prüfen: Max. 10 Punkte pro Folie/Kapitel"
+      ],
+      "acceptance_criteria": [
+        "Bullet-Points statt Fließtext",
+        "Klare, prägnante Aussagen",
+        "Strukturiert nach Präsentationsabschnitten"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-014",
+      "category": "Lösungs-Skizzen",
+      "description": "AI-Agent generiert Grafik-Ideen für Visualisierungen",
+      "steps_to_verify": [
+        "Pitchdeck mit Deliverable öffnen",
+        "Visual Ideas-Tab öffnen",
+        "Prüfen: Min. 3 Grafik-Vorschläge",
+        "Prüfen: Jeder Vorschlag hat Beschreibung"
+      ],
+      "acceptance_criteria": [
+        "Grafik-Typ (Diagramm, Timeline, Architektur)",
+        "Textuelle Beschreibung der Visualisierung",
+        "Daten-Quelle für die Grafik genannt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-015",
+      "category": "Lösungs-Skizzen",
+      "description": "Lösungs-Skizzen können neu generiert werden",
+      "steps_to_verify": [
+        "Deliverable mit vorhandener Skizze öffnen",
+        "'Neu generieren' Button klicken",
+        "Prüfen: Alte Skizze wird überschrieben",
+        "Prüfen: generatedAt Timestamp aktualisiert",
+        "Prüfen: Neue Skizze unterscheidet sich"
+      ],
+      "acceptance_criteria": [
+        "Read-Only: kein Inline-Edit",
+        "Regenerate überschreibt komplett",
+        "Keine Versionierung (alte Version verloren)"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-016",
+      "category": "Lösungs-Skizzen",
+      "description": "AI-Agent nutzt alle RAG-Daten (TECH, COMMERCIAL, RISK, etc.)",
+      "steps_to_verify": [
+        "Lead mit vollständigem Deep Scan prüfen",
+        "Lösungs-Skizze generieren",
+        "Prüfen: Technische Details aus TECH Agent",
+        "Prüfen: Budget-Aspekte aus COMMERCIAL Agent",
+        "Prüfen: Risiken aus RISK Agent erwähnt"
+      ],
+      "acceptance_criteria": [
+        "RAG-Query für alle relevanten Agent-Outputs",
+        "Daten korrekt in Skizze integriert",
+        "Quellen-Hinweise wo sinnvoll"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-017",
+      "category": "Lösungs-Skizzen",
+      "description": "AI-Agent nutzt Web Research für Best Practices",
+      "steps_to_verify": [
+        "Lösungs-Skizze generieren",
+        "Prüfen: Branchenstandards/Best Practices erwähnt",
+        "Prüfen: Referenz-Projekte aus Web Research",
+        "Prüfen: Aktuelle Technologie-Trends berücksichtigt"
+      ],
+      "acceptance_criteria": [
+        "Exa API oder Web Search Tool genutzt",
+        "Externe Quellen mit Source-Tracking",
+        "Relevante Best Practices für Branche/Tech-Stack"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-018",
+      "category": "Navigation & UI",
+      "description": "Pitchdeck-Tab erscheint nur bei BID-Entscheidung",
+      "steps_to_verify": [
+        "Lead mit blVote='NO-BID' öffnen",
+        "Prüfen: Kein Pitchdeck-Tab in Navigation",
+        "Lead mit blVote='BID' öffnen",
+        "Prüfen: Pitchdeck-Tab sichtbar"
+      ],
+      "acceptance_criteria": [
+        "Conditional Rendering basierend auf blVote",
+        "Tab nur bei 'BID', nicht bei 'NO-BID' oder null",
+        "Navigation bleibt übersichtlich"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-019",
+      "category": "Navigation & UI",
+      "description": "Pitchdeck-Tab zeigt Team-Übersicht mit Rollen",
+      "steps_to_verify": [
+        "Pitchdeck mit bestätigtem Team öffnen",
+        "Team-Section prüfen",
+        "Prüfen: Alle Team-Mitglieder sichtbar",
+        "Prüfen: Rolle, Name, E-Mail angezeigt"
+      ],
+      "acceptance_criteria": [
+        "Card-Layout für Team-Mitglieder",
+        "Rolle prominent angezeigt",
+        "Kontaktdaten (E-Mail) sichtbar"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-020",
+      "category": "Navigation & UI",
+      "description": "Pitchdeck-Tab zeigt Timeline mit Meilensteinen",
+      "steps_to_verify": [
+        "Pitchdeck öffnen",
+        "Timeline-Section prüfen",
+        "Prüfen: Gantt-ähnliche Darstellung",
+        "Prüfen: Alle Deliverables mit internen Deadlines",
+        "Prüfen: RFP-Deadline markiert"
+      ],
+      "acceptance_criteria": [
+        "Gantt-Chart (horizontal Bars)",
+        "Farbcodierung: grün (on track), gelb (bald fällig), rot (überfällig)",
+        "RFP-Deadline als vertikale Linie"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-021",
+      "category": "Schema",
+      "description": "Neue Tabelle 'pitchdecks' mit korrekten Feldern",
+      "steps_to_verify": [
+        "DB-Schema prüfen",
+        "Prüfen: pitchdecks Tabelle existiert",
+        "Prüfen: Felder id, leadId, status, timestamps vorhanden",
+        "Prüfen: Foreign Key zu leads Tabelle"
+      ],
+      "acceptance_criteria": [
+        "id: UUID Primary Key",
+        "leadId: UUID FK → leads",
+        "status: enum('draft', 'team_proposed', 'team_confirmed', 'in_progress', 'submitted')",
+        "teamConfirmedAt, teamConfirmedByUserId, submittedAt nullable"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-022",
+      "category": "Schema",
+      "description": "Neue Tabelle 'pitchdeckDeliverables' mit korrekten Feldern",
+      "steps_to_verify": [
+        "DB-Schema prüfen",
+        "Prüfen: pitchdeckDeliverables Tabelle existiert",
+        "Prüfen: Felder für Status, Timeline, Skizzen vorhanden",
+        "Prüfen: Foreign Keys korrekt"
+      ],
+      "acceptance_criteria": [
+        "id: UUID Primary Key",
+        "pitchdeckId: UUID FK → pitchdecks",
+        "status: enum('open', 'in_progress', 'review', 'done')",
+        "internalDeadline: timestamp",
+        "outline, draft, talkingPoints, visualIdeas: text",
+        "generatedAt: timestamp"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-023",
+      "category": "API",
+      "description": "POST /api/leads/[id]/pitchdeck/confirm-team funktioniert",
+      "steps_to_verify": [
+        "Als BL einloggen",
+        "API-Call mit Team-Daten senden",
+        "Prüfen: 200 Response",
+        "Prüfen: Pitchdeck-Status 'team_confirmed'",
+        "Prüfen: E-Mails versendet"
+      ],
+      "acceptance_criteria": [
+        "Auth-Check: nur BL-Rolle",
+        "Validation: Team muss vollständig sein",
+        "Side-Effect: E-Mail-Versand"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-024",
+      "category": "API",
+      "description": "POST /api/leads/[id]/pitchdeck/deliverables/[deliverableId]/regenerate funktioniert",
+      "steps_to_verify": [
+        "Deliverable-ID ermitteln",
+        "API-Call senden",
+        "Prüfen: 200 Response",
+        "Prüfen: Neue Skizzen in DB",
+        "Prüfen: generatedAt aktualisiert"
+      ],
+      "acceptance_criteria": [
+        "Überschreibt alle Skizzen-Felder",
+        "Streaming-Response für Progress",
+        "Error-Handling bei AI-Fehler"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-025",
+      "category": "Testing",
+      "description": "Staffing Agent hat 80%+ Test Coverage",
+      "steps_to_verify": [
+        "npm run test:coverage ausführen",
+        "Coverage-Report für lib/agents/staffing-agent.ts prüfen",
+        "Prüfen: Coverage >= 80%"
+      ],
+      "acceptance_criteria": [
+        "Unit Tests für Skill-Matching",
+        "Unit Tests für Verfügbarkeits-Check",
+        "Unit Tests für BU-Priorisierung",
+        "Edge Cases: leere Employee-Liste, keine Matches"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-026",
+      "category": "Testing",
+      "description": "Timeline Calculator hat 80%+ Test Coverage",
+      "steps_to_verify": [
+        "npm run test:coverage ausführen",
+        "Coverage-Report für lib/pitchdeck/timeline-calculator.ts prüfen",
+        "Prüfen: Coverage >= 80%"
+      ],
+      "acceptance_criteria": [
+        "Unit Tests für Rückwärtsplanung",
+        "Unit Tests für Puffer-Berechnung",
+        "Edge Cases: fehlende Deadline, viele Deliverables"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-027",
+      "category": "Testing",
+      "description": "Pitchdeck Orchestrator hat 80%+ Test Coverage",
+      "steps_to_verify": [
+        "npm run test:coverage ausführen",
+        "Coverage-Report für lib/pitchdeck/orchestrator.ts prüfen",
+        "Prüfen: Coverage >= 80%"
+      ],
+      "acceptance_criteria": [
+        "Unit Tests für Status-Übergänge",
+        "Unit Tests für Trigger-Logik",
+        "Integration Tests für Full Workflow"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-028",
+      "category": "Permissions",
+      "description": "Nur BL kann Team bestätigen",
+      "steps_to_verify": [
+        "Als BD einloggen",
+        "confirm-team API aufrufen",
+        "Prüfen: 403 Forbidden",
+        "Als BL einloggen",
+        "confirm-team API aufrufen",
+        "Prüfen: 200 OK"
+      ],
+      "acceptance_criteria": [
+        "Role-Check in API Route",
+        "BD bekommt 403",
+        "Admin bekommt 200 (kann override)"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-029",
+      "category": "Permissions",
+      "description": "Team-Änderungen nach Bestätigung möglich",
+      "steps_to_verify": [
+        "Team bestätigen",
+        "Team-Mitglied austauschen",
+        "Prüfen: Änderung erfolgreich",
+        "Prüfen: Audit-Trail enthält Änderung"
+      ],
+      "acceptance_criteria": [
+        "BL kann Team auch nach Bestätigung ändern",
+        "Neue Mitglieder bekommen E-Mail",
+        "Entfernte Mitglieder bekommen Info (optional)"
+      ],
+      "passes": false
+    },
+    {
+      "id": "PA-030",
+      "category": "Performance",
+      "description": "Solution Agent läuft parallel für alle Deliverables",
+      "steps_to_verify": [
+        "Pitchdeck mit 5 Deliverables starten",
+        "Skizzen-Generierung triggern",
+        "Prüfen: Alle 5 laufen parallel (Promise.all)",
+        "Prüfen: Rate Limiting beachtet"
+      ],
+      "acceptance_criteria": [
+        "Parallel Execution für Speed",
+        "Rate Limiting: max 3 concurrent",
+        "Error Isolation: ein Fehler blockt nicht andere"
+      ],
+      "passes": false
+    }
+  ]
+}

@@ -36,10 +36,15 @@ export const getCachedRfpWithRelations = cache(async (id: string) => {
           .from(accounts)
           .where(eq(accounts.id, rfp.accountId))
           .limit(1)
-          .then((r) => r[0] || null)
+          .then(r => r[0] || null)
       : Promise.resolve(null),
     rfp.quickScanId
-      ? db.select().from(quickScans).where(eq(quickScans.id, rfp.quickScanId)).limit(1).then((r) => r[0] || null)
+      ? db
+          .select()
+          .from(quickScans)
+          .where(eq(quickScans.id, rfp.quickScanId))
+          .limit(1)
+          .then(r => r[0] || null)
       : Promise.resolve(null),
   ]);
 

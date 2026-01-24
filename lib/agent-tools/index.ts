@@ -4,6 +4,7 @@ export { TOOL_CATEGORIES } from './types';
 
 // Register all tools by importing their modules
 import './tools/rfp';
+import './tools/lead';
 import './tools/account';
 import './tools/reference';
 import './tools/competency';
@@ -11,6 +12,12 @@ import './tools/employee';
 import './tools/technology';
 import './tools/business-unit';
 import './tools/staffing';
+import './tools/quickscan';
+import './tools/analysis';
+import './tools/pitchdeck';
+import './tools/audit';
+import './tools/workflow';
+import './tools/notification';
 
 // QuickScan 2.0 Agent Tools
 import './quick-scan-tools';

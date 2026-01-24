@@ -56,6 +56,7 @@ export const rfps = sqliteTable(
         'questions_ready', // 10 questions ready, waiting for BID/NO-BID decision (DEA-91 fallback)
         'evaluating', // AI is doing full decision evaluation (after manual trigger)
         'decision_made', // Decision made + Timeline complete, ready for BL routing
+        'bid_voted', // BL hat BID entschieden, ready for routing
         'archived', // NO BID - Archiviert
         'routed', // Routed to BL
         'full_scanning', // Deep Analysis läuft
@@ -413,6 +414,7 @@ export const auditTrails = sqliteTable(
     entityType: text('entity_type', {
       enum: [
         'rfp',
+        'lead',
         'business_unit',
         'employee',
         'reference',
@@ -1046,6 +1048,12 @@ export const leads = sqliteTable(
     deepScanStartedAt: integer('deep_scan_started_at', { mode: 'timestamp' }),
     deepScanCompletedAt: integer('deep_scan_completed_at', { mode: 'timestamp' }),
 
+    // Deep Scan Checkpoints (Robust Resume Support)
+    deepScanCurrentPhase: text('deep_scan_current_phase'), // 'scraping' | 'phase2' | 'phase3'
+    deepScanCompletedExperts: text('deep_scan_completed_experts'), // JSON array: ['website', 'tech', ...]
+    deepScanLastCheckpoint: integer('deep_scan_last_checkpoint', { mode: 'timestamp' }),
+    deepScanError: text('deep_scan_error'), // Last error for debugging
+
     // CMS Selection (DEA-151)
     selectedCmsId: text('selected_cms_id').references(() => technologies.id),
 
@@ -1433,6 +1441,7 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   competitorMatches: many(competitorMatches),
   sectionData: many(leadSectionData),
   pitchdeck: one(pitchdecks),
+  dealEmbeddings: many(dealEmbeddings),
 }));
 
 export const websiteAuditsRelations = relations(websiteAudits, ({ one }) => ({
@@ -1460,42 +1469,85 @@ export const cmsMatchResultsRelations = relations(cmsMatchResults, ({ one }) => 
   }),
 }));
 
-// RAG Knowledge Base - Embeddings for Cross-Agent Context Sharing (DEA-107)
-export const rfpEmbeddings = sqliteTable(
-  'rfp_embeddings',
+// Chunk Category Types - Distinguish between facts, elaborations, and estimates
+export const CHUNK_CATEGORIES = [
+  'fact', // Extrahierte Fakten, Rohdaten (Quick Scan, Scraper)
+  'elaboration', // AI-generierte Ausarbeitungen (Content Architecture, Component Library)
+  'recommendation', // Empfehlungen
+  'risk', // Risiko-Bewertungen
+  'estimate', // Schätzungen (Hours, Budget, Migration Complexity)
+] as const;
+export type ChunkCategory = (typeof CHUNK_CATEGORIES)[number];
+
+// ============================================================================
+// UNIFIED Deal Embeddings - Single table for RFP and Lead embeddings (DEA-143)
+// ============================================================================
+// Replaces both rfpEmbeddings and leadEmbeddings with a single unified table.
+// Either rfpId OR leadId must be set (constraint enforced at application level).
+export const dealEmbeddings = sqliteTable(
+  'deal_embeddings',
   {
     id: text('id')
       .primaryKey()
       .$defaultFn(() => createId()),
-    rfpId: text('rfp_id')
-      .notNull()
-      .references(() => rfps.id, { onDelete: 'cascade' }),
 
-    // Chunk Metadata
-    agentName: text('agent_name').notNull(), // 'extract', 'quick_scan', 'tech_agent', etc.
-    chunkType: text('chunk_type').notNull(), // 'tech_stack', 'performance', 'content_volume', etc.
-    chunkIndex: integer('chunk_index').notNull(), // 0, 1, 2... for ordering
+    // Foreign Keys - At least one must be set
+    rfpId: text('rfp_id').references(() => rfps.id, { onDelete: 'cascade' }),
+    leadId: text('lead_id').references(() => leads.id, { onDelete: 'cascade' }),
+
+    // Agent & Chunk Metadata
+    agentName: text('agent_name').notNull(), // 'extract', 'quick_scan', 'scraper', 'audit_website_expert', etc.
+    chunkType: text('chunk_type').notNull(), // 'tech_stack', 'performance', 'page_content', 'screenshot', etc.
+    chunkIndex: integer('chunk_index').notNull().default(0), // 0, 1, 2... for ordering
 
     // Content
     content: text('content').notNull(), // The text chunk
     metadata: text('metadata'), // JSON - additional chunk metadata
 
-    // Vector
-    embedding: text('embedding').notNull(), // JSON array - 3072 dimensions (text-embedding-3-large)
+    // Vector Embedding
+    embedding: text('embedding'), // JSON array - 3072 dimensions (text-embedding-3-large), nullable for screenshots
+
+    // === RAG Architektur: Fakten vs. Ausarbeitungen ===
+    chunkCategory: text('chunk_category', {
+      enum: ['fact', 'elaboration', 'recommendation', 'risk', 'estimate'],
+    }).default('elaboration'),
+    confidence: integer('confidence').default(50), // 0-100 scale
+    requiresValidation: integer('requires_validation', { mode: 'boolean' }).default(false),
+    validatedAt: integer('validated_at', { mode: 'timestamp' }),
+    validatedBy: text('validated_by'), // User ID
 
     // Timestamps
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    // Composite index for fast rfpId + chunkType queries
-    rfpChunkIdx: index('rfp_chunk_idx').on(table.rfpId, table.chunkType),
-    // Index for agent-based queries
-    rfpAgentIdx: index('rfp_agent_idx').on(table.rfpId, table.agentName),
+    // RFP-specific indexes
+    rfpIdx: index('deal_embeddings_rfp_idx').on(table.rfpId),
+    rfpChunkIdx: index('deal_embeddings_rfp_chunk_idx').on(table.rfpId, table.chunkType),
+    rfpAgentIdx: index('deal_embeddings_rfp_agent_idx').on(table.rfpId, table.agentName),
+    // Lead-specific indexes
+    leadIdx: index('deal_embeddings_lead_idx').on(table.leadId),
+    leadAgentIdx: index('deal_embeddings_lead_agent_idx').on(table.leadId, table.agentName),
+    leadCategoryIdx: index('deal_embeddings_lead_category_idx').on(
+      table.leadId,
+      table.chunkCategory
+    ),
   })
 );
 
-export type RfpEmbedding = typeof rfpEmbeddings.$inferSelect;
-export type NewRfpEmbedding = typeof rfpEmbeddings.$inferInsert;
+export type DealEmbedding = typeof dealEmbeddings.$inferSelect;
+export type NewDealEmbedding = typeof dealEmbeddings.$inferInsert;
+
+export const dealEmbeddingsRelations = relations(dealEmbeddings, ({ one }) => ({
+  rfp: one(rfps, {
+    fields: [dealEmbeddings.rfpId],
+    references: [rfps.id],
+  }),
+  lead: one(leads, {
+    fields: [dealEmbeddings.leadId],
+    references: [leads.id],
+  }),
+}));
 
 // RAW PDF Chunks - Original document text for RAG-based extraction (DEA-108)
 export const rawChunks = sqliteTable(

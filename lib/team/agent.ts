@@ -57,7 +57,7 @@ export async function suggestTeam(input: TeamSuggestionInput): Promise<TeamSugge
   };
 
   const completion = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       {
         role: 'system',

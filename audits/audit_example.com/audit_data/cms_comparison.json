@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "project": "CMS Relaunch",
+    "date": "2026-01-22T19:08:52.825Z"
+  },
+  "systems": {
+    "drupal": {
+      "name": "Drupal 11",
+      "score": 95,
+      "cost": "Low"
+    },
+    "umbraco": {
+      "name": "Umbraco",
+      "score": 72,
+      "cost": "Medium"
+    },
+    "magnolia": {
+      "name": "Magnolia",
+      "score": 45,
+      "cost": "High"
+    }
+  },
+  "recommendation": "Drupal 11"
+}

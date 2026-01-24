@@ -12,7 +12,7 @@ import { z } from 'zod';
 
 import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
-import { rfpEmbeddings, rawChunks, leadSectionData, leads } from '@/lib/db/schema';
+import { dealEmbeddings, rawChunks, leadSectionData, leads } from '@/lib/db/schema';
 
 import type {
   ActionResult,
@@ -59,7 +59,8 @@ const getSectionDataSchema = z.object({
 });
 
 const searchSimilarSchema = z.object({
-  rfpId: z.string().min(1, 'RFP ID is required'),
+  rfpId: z.string().optional(), // Now optional - can search by leadId instead
+  leadId: z.string().optional(), // New: search in dealEmbeddings
   query: z.string().min(1, 'Query is required'),
   threshold: z.number().min(0).max(1).default(0.5),
   maxResults: z.number().int().positive().max(50).default(10),
@@ -131,8 +132,8 @@ export async function getRAGStats(
     // Get total embeddings count
     const [embeddingCount] = await db
       .select({ count: count() })
-      .from(rfpEmbeddings)
-      .where(eq(rfpEmbeddings.rfpId, rfpId));
+      .from(dealEmbeddings)
+      .where(eq(dealEmbeddings.rfpId, rfpId));
 
     // Get total raw chunks count
     const [rawChunkCount] = await db
@@ -159,23 +160,23 @@ export async function getRAGStats(
     // Get agent stats with aggregation
     const agentStatsRows = await db
       .select({
-        agentName: rfpEmbeddings.agentName,
+        agentName: dealEmbeddings.agentName,
         chunkCount: count(),
-        lastUpdated: sql<string>`MAX(${rfpEmbeddings.createdAt})`,
+        lastUpdated: sql<string>`MAX(${dealEmbeddings.createdAt})`,
       })
-      .from(rfpEmbeddings)
-      .where(eq(rfpEmbeddings.rfpId, rfpId))
-      .groupBy(rfpEmbeddings.agentName);
+      .from(dealEmbeddings)
+      .where(eq(dealEmbeddings.rfpId, rfpId))
+      .groupBy(dealEmbeddings.agentName);
 
     // Get chunk types per agent
     const chunkTypeRows = await db
       .select({
-        agentName: rfpEmbeddings.agentName,
-        chunkType: rfpEmbeddings.chunkType,
+        agentName: dealEmbeddings.agentName,
+        chunkType: dealEmbeddings.chunkType,
       })
-      .from(rfpEmbeddings)
-      .where(eq(rfpEmbeddings.rfpId, rfpId))
-      .groupBy(rfpEmbeddings.agentName, rfpEmbeddings.chunkType);
+      .from(dealEmbeddings)
+      .where(eq(dealEmbeddings.rfpId, rfpId))
+      .groupBy(dealEmbeddings.agentName, dealEmbeddings.chunkType);
 
     // Build agent stats
     const agentChunkTypes = new Map<string, Set<string>>();
@@ -196,12 +197,12 @@ export async function getRAGStats(
     // Get chunk type distribution
     const chunkTypeDistRows = await db
       .select({
-        chunkType: rfpEmbeddings.chunkType,
+        chunkType: dealEmbeddings.chunkType,
         count: count(),
       })
-      .from(rfpEmbeddings)
-      .where(eq(rfpEmbeddings.rfpId, rfpId))
-      .groupBy(rfpEmbeddings.chunkType);
+      .from(dealEmbeddings)
+      .where(eq(dealEmbeddings.rfpId, rfpId))
+      .groupBy(dealEmbeddings.chunkType);
 
     const chunkTypeDistribution: Record<string, number> = {};
     for (const row of chunkTypeDistRows) {
@@ -225,7 +226,7 @@ export async function getRAGStats(
 }
 
 /**
- * Get paginated agent outputs (rfpEmbeddings)
+ * Get paginated agent outputs (dealEmbeddings)
  */
 export async function getAgentOutputs(
   input: AgentOutputsFilter
@@ -240,18 +241,18 @@ export async function getAgentOutputs(
 
   try {
     // Build where conditions
-    const conditions = [eq(rfpEmbeddings.rfpId, rfpId)];
+    const conditions = [eq(dealEmbeddings.rfpId, rfpId)];
 
     if (agentName) {
-      conditions.push(eq(rfpEmbeddings.agentName, agentName));
+      conditions.push(eq(dealEmbeddings.agentName, agentName));
     }
 
     if (chunkType) {
-      conditions.push(eq(rfpEmbeddings.chunkType, chunkType));
+      conditions.push(eq(dealEmbeddings.chunkType, chunkType));
     }
 
     if (search) {
-      conditions.push(like(rfpEmbeddings.content, `%${search}%`));
+      conditions.push(like(dealEmbeddings.content, `%${search}%`));
     }
 
     const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
@@ -259,23 +260,23 @@ export async function getAgentOutputs(
     // Get total count
     const [totalResult] = await db
       .select({ count: count() })
-      .from(rfpEmbeddings)
+      .from(dealEmbeddings)
       .where(whereClause);
 
     // Get items (without embedding vector)
     const items = await db
       .select({
-        id: rfpEmbeddings.id,
-        agentName: rfpEmbeddings.agentName,
-        chunkType: rfpEmbeddings.chunkType,
-        chunkIndex: rfpEmbeddings.chunkIndex,
-        content: rfpEmbeddings.content,
-        metadata: rfpEmbeddings.metadata,
-        createdAt: rfpEmbeddings.createdAt,
+        id: dealEmbeddings.id,
+        agentName: dealEmbeddings.agentName,
+        chunkType: dealEmbeddings.chunkType,
+        chunkIndex: dealEmbeddings.chunkIndex,
+        content: dealEmbeddings.content,
+        metadata: dealEmbeddings.metadata,
+        createdAt: dealEmbeddings.createdAt,
       })
-      .from(rfpEmbeddings)
+      .from(dealEmbeddings)
       .where(whereClause)
-      .orderBy(desc(rfpEmbeddings.createdAt))
+      .orderBy(desc(dealEmbeddings.createdAt))
       .limit(pageSize)
       .offset(offset);
 
@@ -305,9 +306,7 @@ export async function getAgentOutputs(
 /**
  * Get paginated raw chunks
  */
-export async function getRawChunks(
-  input: RawChunksFilter
-): Promise<ActionResult<RawChunksResult>> {
+export async function getRawChunks(input: RawChunksFilter): Promise<ActionResult<RawChunksResult>> {
   const parsed = getRawChunksSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
@@ -327,10 +326,7 @@ export async function getRawChunks(
     const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
 
     // Get total count
-    const [totalResult] = await db
-      .select({ count: count() })
-      .from(rawChunks)
-      .where(whereClause);
+    const [totalResult] = await db.select({ count: count() }).from(rawChunks).where(whereClause);
 
     // Get items (without embedding vector)
     const items = await db
@@ -427,6 +423,7 @@ export async function getSectionData(
 
 /**
  * Search for similar chunks using cosine similarity
+ * Supports both RFP-based search (dealEmbeddings, rawChunks) and Lead-based search (dealEmbeddings)
  */
 export async function searchSimilar(
   input: SimilaritySearchParams
@@ -436,8 +433,13 @@ export async function searchSimilar(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const { rfpId, query, threshold, maxResults, includeRawChunks } = parsed.data;
+  const { rfpId, leadId, query, threshold, maxResults, includeRawChunks } = parsed.data;
   const startTime = Date.now();
+
+  // Need either rfpId or leadId
+  if (!rfpId && !leadId) {
+    return { success: false, error: 'Either rfpId or leadId is required' };
+  }
 
   try {
     // Generate query embedding
@@ -456,54 +458,22 @@ export async function searchSimilar(
 
     const results: SimilarityResult[] = [];
 
-    // Search agent outputs
-    const agentChunks = await db
-      .select({
-        id: rfpEmbeddings.id,
-        agentName: rfpEmbeddings.agentName,
-        chunkType: rfpEmbeddings.chunkType,
-        chunkIndex: rfpEmbeddings.chunkIndex,
-        content: rfpEmbeddings.content,
-        embedding: rfpEmbeddings.embedding,
-        metadata: rfpEmbeddings.metadata,
-      })
-      .from(rfpEmbeddings)
-      .where(eq(rfpEmbeddings.rfpId, rfpId));
-
-    for (const chunk of agentChunks) {
-      const chunkEmbedding = safeParseJSON<number[]>(chunk.embedding, []);
-      if (chunkEmbedding.length === 0) continue;
-
-      const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
-
-      if (similarity >= threshold) {
-        results.push({
-          id: chunk.id,
-          source: 'agent',
-          agentName: chunk.agentName,
-          chunkType: chunk.chunkType,
-          chunkIndex: chunk.chunkIndex,
-          content: chunk.content,
-          similarity,
-          metadata: safeParseJSON<Record<string, unknown>>(chunk.metadata, {}),
-        });
-      }
-    }
-
-    // Search raw chunks if requested
-    if (includeRawChunks) {
-      const rawChunkItems = await db
+    // Search in dealEmbeddings if leadId provided
+    if (leadId) {
+      const leadChunks = await db
         .select({
-          id: rawChunks.id,
-          chunkIndex: rawChunks.chunkIndex,
-          content: rawChunks.content,
-          embedding: rawChunks.embedding,
-          metadata: rawChunks.metadata,
+          id: dealEmbeddings.id,
+          agentName: dealEmbeddings.agentName,
+          chunkType: dealEmbeddings.chunkType,
+          chunkIndex: dealEmbeddings.chunkIndex,
+          content: dealEmbeddings.content,
+          embedding: dealEmbeddings.embedding,
+          metadata: dealEmbeddings.metadata,
         })
-        .from(rawChunks)
-        .where(eq(rawChunks.rfpId, rfpId));
+        .from(dealEmbeddings)
+        .where(eq(dealEmbeddings.leadId, leadId));
 
-      for (const chunk of rawChunkItems) {
+      for (const chunk of leadChunks) {
         const chunkEmbedding = safeParseJSON<number[]>(chunk.embedding, []);
         if (chunkEmbedding.length === 0) continue;
 
@@ -512,12 +482,82 @@ export async function searchSimilar(
         if (similarity >= threshold) {
           results.push({
             id: chunk.id,
-            source: 'raw',
+            source: 'lead',
+            agentName: chunk.agentName,
+            chunkType: chunk.chunkType,
             chunkIndex: chunk.chunkIndex,
             content: chunk.content,
             similarity,
             metadata: safeParseJSON<Record<string, unknown>>(chunk.metadata, {}),
           });
+        }
+      }
+    }
+
+    // Search in dealEmbeddings if rfpId provided
+    if (rfpId) {
+      const agentChunks = await db
+        .select({
+          id: dealEmbeddings.id,
+          agentName: dealEmbeddings.agentName,
+          chunkType: dealEmbeddings.chunkType,
+          chunkIndex: dealEmbeddings.chunkIndex,
+          content: dealEmbeddings.content,
+          embedding: dealEmbeddings.embedding,
+          metadata: dealEmbeddings.metadata,
+        })
+        .from(dealEmbeddings)
+        .where(eq(dealEmbeddings.rfpId, rfpId!));
+
+      for (const chunk of agentChunks) {
+        const chunkEmbedding = safeParseJSON<number[]>(chunk.embedding, []);
+        if (chunkEmbedding.length === 0) continue;
+
+        const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
+
+        if (similarity >= threshold) {
+          results.push({
+            id: chunk.id,
+            source: 'agent',
+            agentName: chunk.agentName,
+            chunkType: chunk.chunkType,
+            chunkIndex: chunk.chunkIndex,
+            content: chunk.content,
+            similarity,
+            metadata: safeParseJSON<Record<string, unknown>>(chunk.metadata, {}),
+          });
+        }
+      }
+
+      // Search raw chunks if requested
+      if (includeRawChunks) {
+        const rawChunkItems = await db
+          .select({
+            id: rawChunks.id,
+            chunkIndex: rawChunks.chunkIndex,
+            content: rawChunks.content,
+            embedding: rawChunks.embedding,
+            metadata: rawChunks.metadata,
+          })
+          .from(rawChunks)
+          .where(eq(rawChunks.rfpId, rfpId));
+
+        for (const chunk of rawChunkItems) {
+          const chunkEmbedding = safeParseJSON<number[]>(chunk.embedding, []);
+          if (chunkEmbedding.length === 0) continue;
+
+          const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
+
+          if (similarity >= threshold) {
+            results.push({
+              id: chunk.id,
+              source: 'raw',
+              chunkIndex: chunk.chunkIndex,
+              content: chunk.content,
+              similarity,
+              metadata: safeParseJSON<Record<string, unknown>>(chunk.metadata, {}),
+            });
+          }
         }
       }
     }
@@ -561,16 +601,227 @@ export async function getRfpIdForLead(leadId: string): Promise<ActionResult<stri
   }
 }
 
+// ============================================================================
+// Lead Embeddings Actions (for Audit Ingestion)
+// Now using unified dealEmbeddings table with leadId filter
+// ============================================================================
+
+const getLeadEmbeddingsSchema = z.object({
+  leadId: z.string().min(1, 'Lead ID is required'),
+  agentName: z.string().optional(),
+  chunkType: z.string().optional(),
+  search: z.string().optional(),
+  page: z.number().int().positive().default(1),
+  pageSize: z.number().int().positive().max(100).default(20),
+});
+
+export interface LeadEmbeddingItem {
+  id: string;
+  agentName: string;
+  chunkType: string;
+  chunkIndex: number;
+  content: string;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+}
+
+export interface LeadEmbeddingsResult {
+  items: LeadEmbeddingItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+/**
+ * Get paginated lead embeddings (for audit data)
+ */
+export async function getLeadEmbeddings(
+  input: z.infer<typeof getLeadEmbeddingsSchema>
+): Promise<ActionResult<LeadEmbeddingsResult>> {
+  const parsed = getLeadEmbeddingsSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  const { leadId, agentName, chunkType, search, page, pageSize } = parsed.data;
+  const offset = (page - 1) * pageSize;
+
+  try {
+    // Build where conditions
+    const conditions = [eq(dealEmbeddings.leadId, leadId)];
+
+    if (agentName) {
+      conditions.push(eq(dealEmbeddings.agentName, agentName));
+    }
+
+    if (chunkType) {
+      conditions.push(eq(dealEmbeddings.chunkType, chunkType));
+    }
+
+    if (search) {
+      conditions.push(like(dealEmbeddings.content, `%${search}%`));
+    }
+
+    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+
+    // Get total count
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(dealEmbeddings)
+      .where(whereClause);
+
+    // Get items
+    const items = await db
+      .select({
+        id: dealEmbeddings.id,
+        agentName: dealEmbeddings.agentName,
+        chunkType: dealEmbeddings.chunkType,
+        chunkIndex: dealEmbeddings.chunkIndex,
+        content: dealEmbeddings.content,
+        metadata: dealEmbeddings.metadata,
+        createdAt: dealEmbeddings.createdAt,
+      })
+      .from(dealEmbeddings)
+      .where(whereClause)
+      .orderBy(desc(dealEmbeddings.createdAt))
+      .limit(pageSize)
+      .offset(offset);
+
+    const total = totalResult.count;
+    const totalPages = Math.ceil(total / pageSize);
+
+    return {
+      success: true,
+      data: {
+        items: items.map(item => ({
+          ...item,
+          metadata: safeParseJSON<Record<string, unknown>>(item.metadata, {}),
+          createdAt: item.createdAt ?? new Date(),
+        })),
+        total,
+        page,
+        pageSize,
+        totalPages,
+      },
+    };
+  } catch (error) {
+    console.error('[RAG Actions] getLeadEmbeddings failed:', error);
+    return { success: false, error: 'Failed to fetch lead embeddings' };
+  }
+}
+
+/**
+ * Get lead embeddings stats
+ */
+export async function getLeadEmbeddingsStats(
+  leadId: string
+): Promise<
+  ActionResult<{ total: number; byAgent: Record<string, number>; byType: Record<string, number> }>
+> {
+  try {
+    // Get total count
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(dealEmbeddings)
+      .where(eq(dealEmbeddings.leadId, leadId));
+
+    // Get counts by agent
+    const agentCounts = await db
+      .select({
+        agentName: dealEmbeddings.agentName,
+        count: count(),
+      })
+      .from(dealEmbeddings)
+      .where(eq(dealEmbeddings.leadId, leadId))
+      .groupBy(dealEmbeddings.agentName);
+
+    // Get counts by type
+    const typeCounts = await db
+      .select({
+        chunkType: dealEmbeddings.chunkType,
+        count: count(),
+      })
+      .from(dealEmbeddings)
+      .where(eq(dealEmbeddings.leadId, leadId))
+      .groupBy(dealEmbeddings.chunkType);
+
+    const byAgent: Record<string, number> = {};
+    for (const row of agentCounts) {
+      byAgent[row.agentName] = row.count;
+    }
+
+    const byType: Record<string, number> = {};
+    for (const row of typeCounts) {
+      byType[row.chunkType] = row.count;
+    }
+
+    return {
+      success: true,
+      data: {
+        total: totalResult.count,
+        byAgent,
+        byType,
+      },
+    };
+  } catch (error) {
+    console.error('[RAG Actions] getLeadEmbeddingsStats failed:', error);
+    return { success: false, error: 'Failed to fetch lead embeddings stats' };
+  }
+}
+
+/**
+ * Get unique agent names for lead embeddings
+ */
+export async function getLeadEmbeddingAgents(leadId: string): Promise<ActionResult<string[]>> {
+  try {
+    const agents = await db
+      .selectDistinct({ agentName: dealEmbeddings.agentName })
+      .from(dealEmbeddings)
+      .where(eq(dealEmbeddings.leadId, leadId))
+      .orderBy(dealEmbeddings.agentName);
+
+    return {
+      success: true,
+      data: agents.map(a => a.agentName),
+    };
+  } catch (error) {
+    console.error('[RAG Actions] getLeadEmbeddingAgents failed:', error);
+    return { success: false, error: 'Failed to get agent names' };
+  }
+}
+
+/**
+ * Get unique chunk types for lead embeddings
+ */
+export async function getLeadEmbeddingTypes(leadId: string): Promise<ActionResult<string[]>> {
+  try {
+    const types = await db
+      .selectDistinct({ chunkType: dealEmbeddings.chunkType })
+      .from(dealEmbeddings)
+      .where(eq(dealEmbeddings.leadId, leadId))
+      .orderBy(dealEmbeddings.chunkType);
+
+    return {
+      success: true,
+      data: types.map(t => t.chunkType),
+    };
+  } catch (error) {
+    console.error('[RAG Actions] getLeadEmbeddingTypes failed:', error);
+    return { success: false, error: 'Failed to get chunk types' };
+  }
+}
+
 /**
  * Get unique agent names for an RFP (for filter dropdowns)
  */
 export async function getAgentNames(rfpId: string): Promise<ActionResult<string[]>> {
   try {
     const agents = await db
-      .selectDistinct({ agentName: rfpEmbeddings.agentName })
-      .from(rfpEmbeddings)
-      .where(eq(rfpEmbeddings.rfpId, rfpId))
-      .orderBy(rfpEmbeddings.agentName);
+      .selectDistinct({ agentName: dealEmbeddings.agentName })
+      .from(dealEmbeddings)
+      .where(eq(dealEmbeddings.rfpId, rfpId))
+      .orderBy(dealEmbeddings.agentName);
 
     return {
       success: true,
@@ -588,10 +839,10 @@ export async function getAgentNames(rfpId: string): Promise<ActionResult<string[
 export async function getChunkTypes(rfpId: string): Promise<ActionResult<string[]>> {
   try {
     const types = await db
-      .selectDistinct({ chunkType: rfpEmbeddings.chunkType })
-      .from(rfpEmbeddings)
-      .where(eq(rfpEmbeddings.rfpId, rfpId))
-      .orderBy(rfpEmbeddings.chunkType);
+      .selectDistinct({ chunkType: dealEmbeddings.chunkType })
+      .from(dealEmbeddings)
+      .where(eq(dealEmbeddings.rfpId, rfpId))
+      .orderBy(dealEmbeddings.chunkType);
 
     return {
       success: true,

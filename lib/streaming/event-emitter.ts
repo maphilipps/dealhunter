@@ -21,6 +21,7 @@ export function createAgentEventStream(
 ): ReadableStream {
   let eventCounter = 0;
   let lastEmitTime = 0;
+  let isClosed = false;
 
   return new ReadableStream({
     async start(controller) {
@@ -28,6 +29,12 @@ export function createAgentEventStream(
 
       // Async emit function that ensures minimum delay between events
       const emit: EventEmitter = event => {
+        // Guard: Don't emit if controller is already closed
+        if (isClosed) {
+          console.warn('[EventEmitter] Attempted to emit after stream closed:', event.type);
+          return;
+        }
+
         const now = Date.now();
         const timeSinceLastEmit = now - lastEmitTime;
 
@@ -40,7 +47,13 @@ export function createAgentEventStream(
 
         // SSE format: "data: {json}\n\n"
         const sseData = `data: ${JSON.stringify(agentEvent)}\n\n`;
-        controller.enqueue(encoder.encode(sseData));
+        try {
+          controller.enqueue(encoder.encode(sseData));
+        } catch {
+          // Controller was closed externally (e.g., client disconnect)
+          isClosed = true;
+          return;
+        }
 
         // Track last emit time for delay calculation
         lastEmitTime = now;
@@ -67,6 +80,7 @@ export function createAgentEventStream(
           },
         });
       } finally {
+        isClosed = true;
         controller.close();
       }
     },

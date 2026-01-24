@@ -24,6 +24,7 @@ export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
   description: string;
   category:
     | 'rfp'
+    | 'lead'
     | 'account'
     | 'reference'
     | 'competency'
@@ -37,8 +38,14 @@ export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
     | 'notification'
     | 'document'
     | 'quickscan'
+    | 'quick_scan'
     | 'research'
-    | 'staffing';
+    | 'staffing'
+    | 'analysis'
+    | 'pitchdeck'
+    | 'audit'
+    | 'workflow'
+    | 'decision';
   inputSchema: z.ZodSchema<TInput>;
   execute: (input: TInput, context: ToolContext) => Promise<ToolResult<TOutput>>;
 }
@@ -83,6 +90,12 @@ export const TOOL_CATEGORIES = {
   notification: 'Notifications',
   document: 'Document Management',
   quickscan: 'QuickScan Website Analysis',
+  quick_scan: 'QuickScan Website Analysis',
   research: 'Company & Contact Research',
   staffing: 'Team Staffing & Skill Matching',
+  analysis: 'Analysis & Estimation',
+  pitchdeck: 'Pitchdeck Management',
+  audit: 'Website Audits',
+  workflow: 'Workflow & Job Management',
+  decision: 'Decision Aggregation',
 } as const;

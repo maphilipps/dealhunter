@@ -13,12 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   getRfpNavigationSections,
   isNavigationItemEnabled,
@@ -32,12 +27,7 @@ interface RfpSidebarRightProps {
   dataAvailability: QuickScanDataAvailability;
 }
 
-export function RfpSidebarRight({
-  rfpId,
-  title,
-  status,
-  dataAvailability,
-}: RfpSidebarRightProps) {
+export function RfpSidebarRight({ rfpId, title, status, dataAvailability }: RfpSidebarRightProps) {
   const pathname = usePathname();
   const navigationSections = getRfpNavigationSections(rfpId);
 
@@ -57,12 +47,12 @@ export function RfpSidebarRight({
           </SidebarGroup>
 
           {/* Navigation Sections */}
-          {navigationSections.map((section) => (
+          {navigationSections.map(section => (
             <SidebarGroup key={section.label}>
               <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {section.items.map((item) => {
+                  {section.items.map(item => {
                     const isActive = pathname === item.url;
                     const isEnabled = isNavigationItemEnabled(item, dataAvailability);
 
@@ -84,10 +74,7 @@ export function RfpSidebarRight({
                       <SidebarMenuItem key={item.title}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <SidebarMenuButton
-                              className="cursor-not-allowed opacity-50"
-                              disabled
-                            >
+                            <SidebarMenuButton className="cursor-not-allowed opacity-50" disabled>
                               <item.icon className="h-4 w-4" />
                               <span>{item.title}</span>
                             </SidebarMenuButton>

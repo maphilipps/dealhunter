@@ -66,9 +66,7 @@ export default async function FactsPage({ params }: { params: Promise<{ id: stri
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Website Facts</h1>
-        <p className="text-muted-foreground">
-          Analysierte Informationen über die Ziel-Website
-        </p>
+        <p className="text-muted-foreground">Analysierte Informationen über die Ziel-Website</p>
       </div>
 
       {/* Website URL Card */}

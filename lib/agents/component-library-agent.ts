@@ -2,7 +2,7 @@
  * Component Library Agent (DEA-147)
  *
  * Crawls customer website, captures screenshots, and analyzes UI components.
- * Uses Playwright for screenshot capture and GPT-4 Vision for component detection.
+ * Uses agent-browser CLI for screenshot capture and GPT-4 Vision for component detection.
  *
  * Features:
  * - Website crawling with configurable max depth
@@ -12,11 +12,11 @@
  * - Results stored in RAG for semantic retrieval
  */
 
-import { chromium } from 'playwright';
+import { openPage, closeBrowser, screenshot, evaluate, createSession, wait } from '@/lib/browser';
 
 import { getOpenAIDirectClient } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { rfpEmbeddings } from '@/lib/db/schema';
+import { dealEmbeddings } from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -30,6 +30,20 @@ export interface Component {
   estimatedProps?: Record<string, string>; // Property name → type
   usageContext: string;
   pageUrl: string;
+  // adesso Calculator 2.01 fields (DEA-140)
+  category:
+    | 'hero'
+    | 'card'
+    | 'form'
+    | 'navigation'
+    | 'media'
+    | 'layout'
+    | 'content'
+    | 'interactive'
+    | 'other';
+  complexity: 'H' | 'M' | 'L'; // High, Medium, Low
+  estimatedHours: number; // Development hours estimate
+  adessoMapping?: string; // Suggested adesso Paragraph (e.g., "paragraph_hero", "paragraph_card_grid")
 }
 
 export interface ComponentLibraryResult {
@@ -97,12 +111,7 @@ export async function analyzeComponents(
 
     // 2. Capture screenshots and analyze components
     const allComponents: Component[] = [];
-
-    const browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({
-      userAgent: 'Dealhunter-Component-Library/1.0',
-      viewport: { width: 1920, height: 1080 },
-    });
+    const session = createSession(`component-lib-${rfpId}`);
 
     try {
       for (let i = 0; i < urls.length; i++) {
@@ -110,38 +119,30 @@ export async function analyzeComponents(
         console.error(`[Component Library Agent] Analyzing page ${i + 1}/${urls.length}: ${url}`);
 
         try {
-          const page = await context.newPage();
-
-          // Navigate with timeout
-          await page.goto(url, {
-            waitUntil: 'networkidle',
-            timeout: 30000,
-          });
+          // Navigate to page
+          await openPage(url, session);
 
           // Wait for any client-side rendering
-          await page.waitForTimeout(2000);
+          await wait(2000);
 
-          // Capture screenshot
-          const screenshotBuffer = await page.screenshot({
-            fullPage: false, // Viewport only for performance
-            type: 'png',
-          });
+          // Capture screenshot (returns base64 string)
+          const screenshotResult = await screenshot(session);
 
-          const screenshotBase64 = screenshotBuffer.toString('base64');
+          // Ensure we have a valid base64 string
+          const screenshotBase64 = typeof screenshotResult === 'string' ? screenshotResult : null;
 
-          // Analyze with Vision AI
-          const components = await detectComponents(url, screenshotBase64);
-
-          allComponents.push(...components);
-
-          await page.close();
+          if (screenshotBase64 && screenshotBase64.length > 100) {
+            // Analyze with Vision AI
+            const components = await detectComponents(url, screenshotBase64);
+            allComponents.push(...components);
+          }
         } catch (error) {
           console.warn(`[Component Library Agent] Failed to analyze page ${url}:`, error);
           // Continue with next page
         }
       }
     } finally {
-      await browser.close();
+      await closeBrowser(session);
     }
 
     console.error(
@@ -203,8 +204,7 @@ async function crawlWebsite(
   const queue: { url: string; depth: number }[] = [{ url: baseUrl, depth: 0 }];
   const discovered: string[] = [];
 
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext();
+  const session = createSession('component-crawl');
 
   try {
     while (queue.length > 0 && discovered.length < maxPages) {
@@ -223,53 +223,47 @@ async function crawlWebsite(
       }
 
       try {
-        const page = await context.newPage();
-        await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 });
+        await openPage(url, session);
+        await wait(1500);
 
-        // Extract links
-        const links = await page.$$eval(
-          'a[href]',
-          (anchors, baseUrlArg) => {
-            const baseDomain = new URL(baseUrlArg).hostname;
-            return anchors
-              .map(a => {
-                const href = a.getAttribute('href');
-                if (!href) return null;
-
-                try {
-                  const absoluteUrl = new URL(href, baseUrlArg).href;
-                  const linkDomain = new URL(absoluteUrl).hostname;
-
-                  // Only include same-domain links
-                  if (linkDomain === baseDomain) {
-                    return absoluteUrl;
-                  }
-                } catch {
-                  return null;
-                }
-
-                return null;
-              })
-              .filter((link): link is string => link !== null);
-          },
-          baseUrl
+        // Extract links via evaluate
+        const baseDomain = new URL(baseUrl).hostname;
+        const links = await evaluate<string[]>(
+          `
+          const baseDomain = "${baseDomain}";
+          const baseUrl = "${baseUrl}";
+          const links = [];
+          document.querySelectorAll('a[href]').forEach(anchor => {
+            const href = anchor.getAttribute('href');
+            if (!href) return;
+            try {
+              const absoluteUrl = new URL(href, baseUrl).href;
+              const linkDomain = new URL(absoluteUrl).hostname;
+              if (linkDomain === baseDomain) {
+                links.push(absoluteUrl);
+              }
+            } catch {}
+          });
+          return [...new Set(links)];
+        `,
+          session
         );
 
         // Add links to queue
-        for (const link of links) {
-          if (!visited.has(link) && discovered.length < maxPages) {
-            queue.push({ url: link, depth: depth + 1 });
+        if (links) {
+          for (const link of links) {
+            if (!visited.has(link) && discovered.length < maxPages) {
+              queue.push({ url: link, depth: depth + 1 });
+            }
           }
         }
-
-        await page.close();
       } catch (error) {
         console.warn(`[Component Library Agent] Failed to crawl ${url}:`, error);
         // Continue with next URL
       }
     }
   } finally {
-    await browser.close();
+    await closeBrowser(session);
   }
 
   return discovered;
@@ -293,19 +287,66 @@ async function detectComponents(url: string, screenshotBase64: string): Promise<
     /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
     const openaiClient: any = getOpenAIDirectClient();
     const response = (await openaiClient.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gemini-3-flash-preview',
       messages: [
         {
           role: 'system',
-          content: `You are a UI component analyzer. Analyze the screenshot and identify distinct UI components.
+          content: `You are a senior UI/UX analyst at adesso SE, a leading German IT consultancy specializing in Drupal CMS implementations.
 
-For each component:
-1. Name: Descriptive name (e.g., "Hero Banner", "Product Card", "Navigation Menu")
-2. Description: What the component does
-3. Estimated Props: Key properties it might accept (e.g., {"title": "string", "image": "url"})
-4. Usage Context: Where/how it's used
+Your task is to analyze website screenshots and identify reusable UI components for the adesso Calculator 2.01 project estimation tool.
 
-Return a JSON array of components. Only include components that appear to be reusable patterns.`,
+## adesso Drupal Paragraph Library
+Map detected components to these standard adesso Paragraphs when applicable:
+- paragraph_hero: Full-width hero sections with background image/video, headline, CTA
+- paragraph_teaser_grid: Grid of teaser cards (2-4 columns)
+- paragraph_card_slider: Horizontal scrolling card carousel
+- paragraph_accordion: Expandable FAQ/content sections
+- paragraph_tabs: Tabbed content navigation
+- paragraph_media_gallery: Image/video gallery with lightbox
+- paragraph_form: Contact forms, newsletter signup, search
+- paragraph_cta_banner: Call-to-action banners
+- paragraph_quote: Testimonials, blockquotes
+- paragraph_timeline: Event timelines, process steps
+- paragraph_map: Google Maps, OpenStreetMap embeds
+- paragraph_download: File download lists
+- paragraph_table: Data tables, comparison tables
+- paragraph_video: Video embeds (YouTube, Vimeo, self-hosted)
+- paragraph_text: Rich text content blocks
+- paragraph_two_column: Two-column layouts
+- paragraph_icon_grid: Icon + text grid layouts
+
+## Component Categories
+Categorize each component as:
+- hero: Full-width hero sections
+- card: Card-based layouts (teasers, products, features)
+- form: Input forms, search, filters
+- navigation: Menus, breadcrumbs, pagination
+- media: Images, videos, galleries
+- layout: Structural components (grids, columns)
+- content: Text-heavy components (articles, FAQs)
+- interactive: Sliders, accordions, modals
+- other: Uncategorized
+
+## Complexity Rating (for adesso Calculator)
+Rate each component's implementation complexity:
+- H (High): 16-24 hours - Complex interactions, animations, integrations
+- M (Medium): 8-16 hours - Standard patterns with customization
+- L (Low): 2-8 hours - Simple, well-documented patterns
+
+## Output Format
+Return a JSON array where each component has:
+{
+  "name": "Component Name",
+  "description": "What it does",
+  "category": "hero|card|form|navigation|media|layout|content|interactive|other",
+  "complexity": "H|M|L",
+  "estimatedHours": number,
+  "estimatedProps": {"prop": "type"},
+  "usageContext": "Where/how used",
+  "adessoMapping": "paragraph_xxx or null if custom"
+}
+
+Only include components that appear to be reusable patterns. Be specific about complexity based on visual complexity, animation, and interaction requirements.`,
         },
         {
           role: 'user',
@@ -345,12 +386,25 @@ Return a JSON array of components. Only include components that appear to be reu
       description: string;
       estimatedProps?: Record<string, string>;
       usageContext: string;
+      // adesso Calculator 2.01 fields (DEA-140)
+      category?: Component['category'];
+      complexity?: Component['complexity'];
+      estimatedHours?: number;
+      adessoMapping?: string;
     }>;
 
     return parsed.map(comp => ({
-      ...comp,
+      name: comp.name,
+      description: comp.description,
+      estimatedProps: comp.estimatedProps,
+      usageContext: comp.usageContext,
       pageUrl: url,
       screenshotBase64, // Include screenshot for gallery view
+      // adesso Calculator 2.01 fields with defaults
+      category: comp.category ?? 'other',
+      complexity: comp.complexity ?? 'M',
+      estimatedHours: comp.estimatedHours ?? 8,
+      adessoMapping: comp.adessoMapping,
     }));
   } catch (error) {
     console.error('[Component Library Agent] Vision analysis failed:', error);
@@ -367,23 +421,58 @@ Return a JSON array of components. Only include components that appear to be reu
  */
 async function storeInRAG(rfpId: string, result: ComponentLibraryResult): Promise<void> {
   try {
-    // Build searchable content
+    // Build searchable content with adesso Calculator fields
     const componentSummaries = result.components
       .map(
         (comp, idx) =>
-          `Component ${idx + 1}: ${comp.name}\nDescription: ${comp.description}\nUsage: ${comp.usageContext}\nPage: ${comp.pageUrl}\n`
+          `Component ${idx + 1}: ${comp.name}
+Category: ${comp.category}
+Complexity: ${comp.complexity} (${comp.estimatedHours}h)
+adesso Paragraph: ${comp.adessoMapping ?? 'custom'}
+Description: ${comp.description}
+Usage: ${comp.usageContext}
+Page: ${comp.pageUrl}`
       )
       .join('\n\n');
 
-    const chunkText = `Component Library Analysis
+    // Calculate totals for adesso Calculator
+    const totalHours = result.components.reduce((sum, c) => sum + c.estimatedHours, 0);
+    const complexityCounts = {
+      H: result.components.filter(c => c.complexity === 'H').length,
+      M: result.components.filter(c => c.complexity === 'M').length,
+      L: result.components.filter(c => c.complexity === 'L').length,
+    };
+    const categoryCounts = result.components.reduce(
+      (acc, c) => {
+        acc[c.category] = (acc[c.category] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
+    const chunkText = `Component Library Analysis (adesso Calculator 2.01)
+
+## Summary
 Total Components: ${result.totalComponents}
 Pages Analyzed: ${result.pagesAnalyzed}
 Confidence: ${result.confidence}%
+Total Estimated Hours: ${totalHours}h
 
+## Complexity Distribution
+- High (H): ${complexityCounts.H} components
+- Medium (M): ${complexityCounts.M} components
+- Low (L): ${complexityCounts.L} components
+
+## Category Distribution
+${Object.entries(categoryCounts)
+  .map(([cat, count]) => `- ${cat}: ${count}`)
+  .join('\n')}
+
+## Components Detail
 ${componentSummaries}
 
-Sources: ${result.sources.join(', ')}`;
+## Sources
+${result.sources.join(', ')}`;
 
     // Generate embedding
     const chunks = [
@@ -402,7 +491,7 @@ Sources: ${result.sources.join(', ')}`;
     const chunksWithEmbeddings = await generateRawChunkEmbeddings(chunks);
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
-      await db.insert(rfpEmbeddings).values({
+      await db.insert(dealEmbeddings).values({
         rfpId,
         agentName: 'component_library',
         chunkType: 'analysis',
@@ -414,6 +503,18 @@ Sources: ${result.sources.join(', ')}`;
           pagesAnalyzed: result.pagesAnalyzed,
           confidence: result.confidence,
           sources: result.sources,
+          // adesso Calculator 2.01 aggregates (DEA-140)
+          totalEstimatedHours: totalHours,
+          complexityDistribution: complexityCounts,
+          categoryDistribution: categoryCounts,
+          // Component-level details for Calc-Sheet
+          componentDetails: result.components.map(c => ({
+            name: c.name,
+            category: c.category,
+            complexity: c.complexity,
+            estimatedHours: c.estimatedHours,
+            adessoMapping: c.adessoMapping,
+          })),
           // Note: Screenshots are NOT stored in RAG (too large)
           // They can be regenerated on-demand or stored separately
         }),

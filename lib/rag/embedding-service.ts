@@ -17,7 +17,7 @@ import {
   isEmbeddingEnabled,
 } from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
-import { rfpEmbeddings } from '@/lib/db/schema';
+import { dealEmbeddings } from '@/lib/db/schema';
 
 export interface ChunkWithEmbedding extends Chunk {
   embedding: number[];
@@ -91,10 +91,11 @@ export async function embedAgentOutput(
       return;
     }
 
-    // 3. Store in database
-    await db.insert(rfpEmbeddings).values(
+    // 3. Store in database (unified dealEmbeddings table)
+    await db.insert(dealEmbeddings).values(
       chunksWithEmbeddings.map(chunk => ({
         rfpId: chunk.rfpId,
+        leadId: null,
         agentName: chunk.agentName,
         chunkType: chunk.chunkType,
         chunkIndex: chunk.chunkIndex,

@@ -1,7 +1,7 @@
 /**
  * Accessibility Audit Agent
  *
- * Performs WCAG 2.1 AA compliance checks using Playwright + Axe-core.
+ * Performs WCAG 2.1 AA compliance checks using Lighthouse CLI.
  * Analyzes sample pages from a website and provides:
  * - Accessibility score (0-100)
  * - WCAG violations categorized by impact
@@ -9,9 +9,9 @@
  * - Integration with websiteAudits table
  */
 
-import AxeBuilder from '@axe-core/playwright';
 import { eq } from 'drizzle-orm';
-import { chromium } from 'playwright';
+
+import { runAccessibilityAudit } from '@/lib/browser';
 
 import { db } from '../db';
 import { websiteAudits } from '../db/schema';
@@ -61,7 +61,7 @@ export interface AnalyzeAccessibilityInput {
 /**
  * Run accessibility audit on sample pages
  *
- * Uses Playwright + Axe-core to scan for WCAG 2.1 AA violations.
+ * Uses Lighthouse CLI to scan for WCAG 2.1 AA violations.
  * Results are automatically saved to websiteAudits table.
  *
  * @param input - Lead ID and sample URLs from Full-Scan Agent
@@ -93,55 +93,11 @@ export async function analyzeAccessibility(
       return errorResult;
     }
 
-    // Launch headless browser
-    console.error('[Accessibility Audit Agent] Launching headless browser...');
-    const browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({
-      userAgent: 'Dealhunter-A11y-Audit/1.0',
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const allViolations: any[] = [];
-
-    // Audit up to 10 representative pages
+    // Audit up to 10 representative pages using Lighthouse
+    console.error('[Accessibility Audit Agent] Starting Lighthouse audits...');
     const pagesToAudit = input.sampleUrls.slice(0, 10);
 
-    try {
-      for (let i = 0; i < pagesToAudit.length; i++) {
-        const url = pagesToAudit[i];
-        console.error(
-          `[Accessibility Audit Agent] Auditing page ${i + 1}/${pagesToAudit.length}: ${url}`
-        );
-
-        try {
-          const page = await context.newPage();
-
-          // Set timeout for page load
-          await page.goto(url, {
-            waitUntil: 'networkidle',
-            timeout: 30000, // 30 second timeout
-          });
-
-          // Run axe audit with WCAG 2.1 AA tags
-          const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
-
-          allViolations.push(...results.violations);
-
-          await page.close();
-        } catch (error) {
-          console.warn(`[Accessibility Audit Agent] Failed to audit page ${url}:`, error);
-          // Continue with next page
-        }
-      }
-    } finally {
-      await browser.close();
-    }
-
-    console.error(
-      `[Accessibility Audit Agent] Browser closed. Processing ${allViolations.length} raw violations...`
-    );
-
-    // Aggregate violations by ID and impact
+    // Aggregate violations across all pages
     const violationMap = new Map<
       string,
       {
@@ -153,30 +109,39 @@ export async function analyzeAccessibility(
       }
     >();
 
-    for (const violation of allViolations) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      const existing = violationMap.get(violation.id);
+    for (let i = 0; i < pagesToAudit.length; i++) {
+      const url = pagesToAudit[i];
+      console.error(
+        `[Accessibility Audit Agent] Auditing page ${i + 1}/${pagesToAudit.length}: ${url}`
+      );
 
-      if (existing) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        existing.count += violation.nodes.length;
-      } else {
-        // Axe violations always have these properties
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-        violationMap.set(violation.id, {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          id: violation.id,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          impact: (violation.impact ?? 'moderate') as 'minor' | 'moderate' | 'serious' | 'critical',
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          count: violation.nodes.length,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          description: violation.description,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          helpUrl: violation.helpUrl,
-        });
+      try {
+        // Run Lighthouse accessibility audit
+        const result = await runAccessibilityAudit(url);
+
+        // Aggregate violations
+        for (const violation of result.violations) {
+          const existing = violationMap.get(violation.id);
+
+          if (existing) {
+            existing.count += 1;
+          } else {
+            violationMap.set(violation.id, {
+              id: violation.id,
+              impact: violation.impact,
+              count: 1,
+              description: violation.description,
+              helpUrl: violation.helpUrl || `https://web.dev/articles/${violation.id}`,
+            });
+          }
+        }
+      } catch (error) {
+        console.warn(`[Accessibility Audit Agent] Failed to audit page ${url}:`, error);
+        // Continue with next page
       }
     }
+
+    console.error(`[Accessibility Audit Agent] Lighthouse audits complete. Processing results...`);
 
     const violations = Array.from(violationMap.values());
 

@@ -41,7 +41,7 @@ export default async function ReferencesPage({ params }: { params: Promise<{ id:
     req =>
       req.toLowerCase().includes('referenz') ||
       req.toLowerCase().includes('reference') ||
-      req.toLowerCase().includes('projekt') && req.toLowerCase().includes('erfahrung')
+      (req.toLowerCase().includes('projekt') && req.toLowerCase().includes('erfahrung'))
   );
 
   // Try to extract structured reference information
@@ -149,7 +149,8 @@ export default async function ReferencesPage({ params }: { params: Promise<{ id:
                   <h4 className="font-semibold text-sm">Branchen-Erfahrung</h4>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Referenzen sollten Projekte in der Branche <Badge variant="outline">{industry}</Badge> enthalten
+                  Referenzen sollten Projekte in der Branche{' '}
+                  <Badge variant="outline">{industry}</Badge> enthalten
                 </p>
               </div>
             )}

@@ -2,6 +2,7 @@ import { Plus, FileText, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { RfpsEmptyStateClient } from '@/components/rfps/rfps-empty-state-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -92,19 +93,7 @@ export default async function BidsPage() {
         </CardHeader>
         <CardContent>
           {bids.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">Keine RFPs vorhanden</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Erstellen Sie Ihren ersten RFP, um loszulegen.
-              </p>
-              <Link href="/rfps/new">
-                <Button className="mt-4">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Neuer RFP
-                </Button>
-              </Link>
-            </div>
+            <RfpsEmptyStateClient />
           ) : (
             <Table>
               <TableHeader>

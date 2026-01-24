@@ -173,7 +173,8 @@ export async function sendTeamNotificationEmails(
   const results: TeamNotificationResult[] = [];
   // Use custom URL if provided, otherwise fallback to default /rfps/ URL
   const projectUrl =
-    customProjectUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/rfps/${bidId}`;
+    customProjectUrl ||
+    `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/rfps/${bidId}`;
 
   for (const member of teamMembers) {
     try {

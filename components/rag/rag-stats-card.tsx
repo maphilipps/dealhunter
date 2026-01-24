@@ -50,10 +50,10 @@ export function RAGStatsCard({ stats, isLoading }: RAGStatsCardProps) {
             <Bot className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEmbeddings.toLocaleString('de-DE')}</div>
-            <p className="text-xs text-muted-foreground">
-              von {stats.agentStats.length} Agents
-            </p>
+            <div className="text-2xl font-bold">
+              {stats.totalEmbeddings.toLocaleString('de-DE')}
+            </div>
+            <p className="text-xs text-muted-foreground">von {stats.agentStats.length} Agents</p>
           </CardContent>
         </Card>
 
@@ -74,7 +74,9 @@ export function RAGStatsCard({ stats, isLoading }: RAGStatsCardProps) {
             <Layers className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalSectionData.toLocaleString('de-DE')}</div>
+            <div className="text-2xl font-bold">
+              {stats.totalSectionData.toLocaleString('de-DE')}
+            </div>
             <p className="text-xs text-muted-foreground">Synthesized Sections</p>
           </CardContent>
         </Card>
@@ -102,9 +104,7 @@ export function RAGStatsCard({ stats, isLoading }: RAGStatsCardProps) {
                     <Badge variant="outline" className="font-mono">
                       {agent.agentName}
                     </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {agent.chunkCount} Chunks
-                    </span>
+                    <span className="text-sm text-muted-foreground">{agent.chunkCount} Chunks</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {agent.chunkTypes.slice(0, 3).map(type => (
@@ -139,9 +139,7 @@ export function RAGStatsCard({ stats, isLoading }: RAGStatsCardProps) {
               <Layers className="h-5 w-5" />
               Chunk Type Verteilung
             </CardTitle>
-            <CardDescription>
-              Verteilung der verschiedenen Chunk-Typen
-            </CardDescription>
+            <CardDescription>Verteilung der verschiedenen Chunk-Typen</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">

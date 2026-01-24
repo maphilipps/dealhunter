@@ -415,12 +415,12 @@ export const companyIntelligenceSchema = z.object({
   // Basic company info
   basicInfo: z.object({
     name: z.string().describe('Official company name'),
-    legalForm: z.string().optional().describe('Legal form (GmbH, AG, SE, etc.)'),
-    registrationNumber: z.string().optional().describe('HRB or similar registration number'),
-    foundedYear: z.number().optional().describe('Year company was founded'),
-    headquarters: z.string().optional().describe('Headquarters location'),
-    employeeCount: z.string().optional().describe('Employee count or range'),
-    industry: z.string().optional().describe('Primary industry/sector'),
+    legalForm: z.string().nullish().describe('Legal form (GmbH, AG, SE, etc.)'),
+    registrationNumber: z.string().nullish().describe('HRB or similar registration number'),
+    foundedYear: z.coerce.number().nullish().describe('Year company was founded'),
+    headquarters: z.string().nullish().describe('Headquarters location'),
+    employeeCount: z.string().nullish().describe('Employee count or range'),
+    industry: z.string().nullish().describe('Primary industry/sector'),
     website: z.string().describe('Company website URL'),
   }),
 
@@ -429,16 +429,16 @@ export const companyIntelligenceSchema = z.object({
     .object({
       revenueClass: z
         .enum(['startup', 'small', 'medium', 'large', 'enterprise', 'unknown'])
-        .optional()
+        .nullish()
         .describe('Revenue class estimation'),
       growthIndicators: z
         .array(z.string())
-        .optional()
+        .nullish()
         .describe('Growth signals (hiring, expansion, funding)'),
-      publiclyTraded: z.boolean().optional().describe('Is company publicly traded'),
-      stockSymbol: z.string().optional().describe('Stock ticker symbol if public'),
-      fundingStatus: z.string().optional().describe('For startups: funding stage'),
-      lastFundingAmount: z.string().optional().describe('Last funding round amount'),
+      publiclyTraded: z.boolean().nullish().describe('Is company publicly traded'),
+      stockSymbol: z.string().nullish().describe('Stock ticker symbol if public'),
+      fundingStatus: z.string().nullish().describe('For startups: funding stage'),
+      lastFundingAmount: z.string().nullish().describe('Last funding round amount'),
     })
     .optional(),
 
@@ -450,28 +450,33 @@ export const companyIntelligenceSchema = z.object({
           z.object({
             title: z.string().describe('News headline'),
             source: z.string().describe('News source'),
-            date: z.string().optional().describe('Publication date'),
-            url: z.string().optional().describe('Article URL'),
+            date: z.string().nullish().describe('Publication date'),
+            url: z.string().nullish().describe('Article URL'),
             sentiment: z
               .enum(['positive', 'neutral', 'negative'])
-              .optional()
+              .nullish()
               .describe('Sentiment of news'),
           })
         )
-        .optional()
+        .nullish()
         .describe('Recent news articles (top 5)'),
-      sentimentScore: z.number().min(-1).max(1).optional().describe('Overall sentiment (-1 to 1)'),
-      riskIndicators: z.array(z.string()).optional().describe('Any risk signals found'),
-      positiveSignals: z.array(z.string()).optional().describe('Positive signals found'),
+      sentimentScore: z.coerce
+        .number()
+        .min(-1)
+        .max(1)
+        .nullish()
+        .describe('Overall sentiment (-1 to 1)'),
+      riskIndicators: z.array(z.string()).nullish().describe('Any risk signals found'),
+      positiveSignals: z.array(z.string()).nullish().describe('Positive signals found'),
     })
     .optional(),
 
   // Leadership and contacts
   leadership: z
     .object({
-      ceo: z.string().optional().describe('CEO name'),
-      cto: z.string().optional().describe('CTO/IT head name'),
-      cmo: z.string().optional().describe('CMO/Marketing head name'),
+      ceo: z.string().nullish().describe('CEO name'),
+      cto: z.string().nullish().describe('CTO/IT head name'),
+      cmo: z.string().nullish().describe('CMO/Marketing head name'),
       otherContacts: z
         .array(
           z.object({
@@ -479,7 +484,7 @@ export const companyIntelligenceSchema = z.object({
             title: z.string(),
           })
         )
-        .optional()
+        .nullish()
         .describe('Other known decision makers'),
     })
     .optional(),
@@ -487,16 +492,69 @@ export const companyIntelligenceSchema = z.object({
   // Corporate structure
   corporateStructure: z
     .object({
-      parentCompany: z.string().optional().describe('Parent company if applicable'),
-      subsidiaries: z.array(z.string()).optional().describe('Known subsidiaries'),
-      partOfGroup: z.boolean().optional().describe('Part of larger corporate group'),
-      groupName: z.string().optional().describe('Corporate group name'),
+      parentCompany: z.string().nullish().describe('Parent company if applicable'),
+      subsidiaries: z.array(z.string()).nullish().describe('Known subsidiaries'),
+      partOfGroup: z.boolean().nullish().describe('Part of larger corporate group'),
+      groupName: z.string().nullish().describe('Corporate group name'),
     })
     .optional(),
 
+  // Stock data (for publicly traded companies)
+  stockData: z
+    .object({
+      currentPrice: z.coerce.number().nullish().describe('Current stock price'),
+      currency: z.string().nullish().describe('Currency (EUR, USD, etc.)'),
+      priceChange30d: z.coerce.number().nullish().describe('Price change % over 30 days'),
+      priceChange1y: z.coerce.number().nullish().describe('Price change % over 1 year'),
+      marketCap: z.string().nullish().describe('Market capitalization (e.g., "1.2B EUR")'),
+      exchange: z.string().nullish().describe('Stock exchange (XETRA, NYSE, etc.)'),
+      fiftyTwoWeekHigh: z.coerce.number().nullish().describe('52-week high price'),
+      fiftyTwoWeekLow: z.coerce.number().nullish().describe('52-week low price'),
+    })
+    .optional()
+    .describe('Stock market data for publicly traded companies'),
+
+  // Market position & trends
+  marketPosition: z
+    .object({
+      marketShare: z.string().nullish().describe('Market share (e.g., "~15% in DACH")'),
+      competitors: z.array(z.string()).nullish().describe('Main competitors'),
+      industryTrends: z.array(z.string()).nullish().describe('Current industry trends'),
+      growthRate: z.string().nullish().describe('Growth rate (e.g., "YoY 12%")'),
+      marketSegment: z.string().nullish().describe('Market segment/positioning'),
+    })
+    .optional()
+    .describe('Market position and competitive landscape'),
+
+  // Digital presence & reputation
+  digitalPresence: z
+    .object({
+      linkedInFollowers: z.coerce.number().nullish().describe('LinkedIn company page followers'),
+      twitterFollowers: z.coerce.number().nullish().describe('Twitter/X followers'),
+      glassdoorRating: z.coerce.number().nullish().describe('Glassdoor rating (0-5)'),
+      kunuRating: z.coerce.number().nullish().describe('Kununu rating (0-5)'),
+      trustpilotRating: z.coerce.number().nullish().describe('Trustpilot rating (0-5)'),
+      glassdoorReviewCount: z.coerce.number().nullish().describe('Number of Glassdoor reviews'),
+      kunuReviewCount: z.coerce.number().nullish().describe('Number of Kununu reviews'),
+    })
+    .optional()
+    .describe('Digital presence and online reputation'),
+
+  // Technology footprint (B2B relevant)
+  techFootprint: z
+    .object({
+      crmSystem: z.string().nullish().describe('CRM system (Salesforce, HubSpot, etc.)'),
+      marketingTools: z.array(z.string()).nullish().describe('Marketing automation tools detected'),
+      cloudProvider: z.string().nullish().describe('Cloud provider (AWS, Azure, GCP)'),
+      ecommerceplatform: z.string().nullish().describe('E-commerce platform (Shopify, etc.)'),
+      analyticsTools: z.array(z.string()).nullish().describe('Analytics and tracking tools'),
+    })
+    .optional()
+    .describe('Technology stack and tools in use'),
+
   // Data quality
   dataQuality: z.object({
-    confidence: z.number().min(0).max(100).describe('Overall confidence in data quality'),
+    confidence: z.coerce.number().min(0).max(100).describe('Overall confidence in data quality'),
     sources: z.array(z.string()).describe('Data sources used'),
     lastUpdated: z.string().describe('When this data was gathered'),
   }),

@@ -53,11 +53,11 @@ export function RfpMobileNav({ rfpId, title, status, dataAvailability }: RfpMobi
           </SheetDescription>
         </SheetHeader>
         <nav className="mt-6 flex flex-col gap-6">
-          {navigationSections.map((section) => (
+          {navigationSections.map(section => (
             <div key={section.label}>
               <h3 className="text-muted-foreground mb-2 text-sm font-semibold">{section.label}</h3>
               <div className="flex flex-col gap-1">
-                {section.items.map((item) => {
+                {section.items.map(item => {
                   const isActive = pathname === item.url;
                   const isEnabled = isNavigationItemEnabled(item, dataAvailability);
                   const Icon = item.icon;
@@ -69,7 +69,9 @@ export function RfpMobileNav({ rfpId, title, status, dataAvailability }: RfpMobi
                         href={item.url}
                         onClick={() => setOpen(false)}
                         className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                          isActive ? 'bg-accent text-accent-foreground font-medium' : 'hover:bg-accent/50'
+                          isActive
+                            ? 'bg-accent text-accent-foreground font-medium'
+                            : 'hover:bg-accent/50'
                         }`}
                       >
                         <Icon className="size-4" />

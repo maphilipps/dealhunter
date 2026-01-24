@@ -98,7 +98,7 @@ Create a well-organized visualization with the business line recommendation prom
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'claude-haiku-4.5',
+      model: 'gemini-3-flash-preview',
       messages: [
         { role: 'system', content: QUICK_SCAN_VISUALIZATION_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
@@ -251,7 +251,7 @@ CONTENT VOLUME:
 Create a well-organized visualization.`;
 
   const stream = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       { role: 'system', content: QUICK_SCAN_VISUALIZATION_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
@@ -736,7 +736,7 @@ ANWEISUNGEN:
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'gemini-3-flash-preview',
       messages: [
         { role: 'system', content: QUICK_SCAN_VISUALIZATION_SYSTEM_PROMPT },
         { role: 'user', content: dataPrompt },

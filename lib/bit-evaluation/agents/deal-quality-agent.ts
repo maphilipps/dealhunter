@@ -4,6 +4,9 @@ import { dealQualitySchema, type DealQuality } from '../schema';
 
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
+// Security: Prompt Injection Protection
+import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
+
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -42,10 +45,13 @@ export async function runDealQualityAgent(input: DealQualityAgentInput): Promise
         );
 
         if (newsSearch && newsSearch.length > 0) {
-          customerNews = `\n\n**Aktuelle Kunden-News (EXA):**\n${newsSearch
+          const rawNewsData = newsSearch
             .slice(0, 2)
             .map(r => `- ${r.title}: ${r.snippet}`)
-            .join('\n')}`;
+            .join('\n');
+
+          // Wrap web search results for prompt injection protection
+          customerNews = `\n\n**Aktuelle Kunden-News (EXA):**\n${wrapUserContent(rawNewsData, 'web')}`;
           console.log(`[Deal Quality Agent] ${newsSearch.length} Kunden-News gefunden`);
         }
       }
@@ -57,10 +63,13 @@ export async function runDealQualityAgent(input: DealQualityAgentInput): Promise
       );
 
       if (budgetSearch && budgetSearch.length > 0) {
-        marketInsights = `\n\n**Markt-Benchmarks (EXA):**\n${budgetSearch
+        const rawBudgetData = budgetSearch
           .slice(0, 2)
           .map(r => `- ${r.title}: ${r.snippet}`)
-          .join('\n')}`;
+          .join('\n');
+
+        // Wrap web search results for prompt injection protection
+        marketInsights = `\n\n**Markt-Benchmarks (EXA):**\n${wrapUserContent(rawBudgetData, 'web')}`;
         console.log(`[Deal Quality Agent] ${budgetSearch.length} Markt-Insights gefunden`);
       }
     } catch (error) {
@@ -69,7 +78,7 @@ export async function runDealQualityAgent(input: DealQualityAgentInput): Promise
   }
 
   const completion = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       {
         role: 'system',

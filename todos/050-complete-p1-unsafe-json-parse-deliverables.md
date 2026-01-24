@@ -1,7 +1,7 @@
 ---
 status: complete
 priority: p1
-issue_id: "050"
+issue_id: '050'
 tags: [code-review, typescript, dea-186, type-safety]
 dependencies: []
 ---
@@ -13,6 +13,7 @@ dependencies: []
 The deliverables page parses `extractedRequirements` from the database using `JSON.parse` with a direct type assertion, bypassing Zod validation. This could cause runtime errors if the data is malformed or corrupted.
 
 **Why it matters:**
+
 - Database could contain malformed JSON from bugs or migrations
 - No runtime validation that the shape matches `ExtractedRequirements`
 - Could cause unhandled exceptions and white screens
@@ -25,6 +26,7 @@ The deliverables page parses `extractedRequirements` from the database using `JS
 **Location:** `app/(dashboard)/rfps/[id]/deliverables/page.tsx:40-42`
 
 **Vulnerable Code:**
+
 ```typescript
 const extractedReqs: ExtractedRequirements | null = rfp.extractedRequirements
   ? (JSON.parse(rfp.extractedRequirements) as ExtractedRequirements)
@@ -36,6 +38,7 @@ const extractedReqs: ExtractedRequirements | null = rfp.extractedRequirements
 ### Pattern Recognition
 
 Same anti-pattern exists in multiple pages:
+
 - `app/(dashboard)/rfps/[id]/page.tsx`
 - `app/(dashboard)/rfps/[id]/contacts/page.tsx`
 - `app/(dashboard)/rfps/[id]/timeline/page.tsx`
@@ -43,6 +46,7 @@ Same anti-pattern exists in multiple pages:
 ## Proposed Solutions
 
 ### Option A: Zod safeParse (Recommended)
+
 **Pros:** Runtime validation, graceful error handling
 **Cons:** Slight performance overhead
 **Effort:** Small (30 minutes)
@@ -63,6 +67,7 @@ const extractedReqs = parseResult?.data ?? null;
 ```
 
 ### Option B: Try-Catch Wrapper
+
 **Pros:** Simple, catches parse errors
 **Cons:** Less strict validation
 **Effort:** Small (15 minutes)
@@ -71,15 +76,14 @@ const extractedReqs = parseResult?.data ?? null;
 ```typescript
 let extractedReqs: ExtractedRequirements | null = null;
 try {
-  extractedReqs = rfp.extractedRequirements
-    ? JSON.parse(rfp.extractedRequirements)
-    : null;
+  extractedReqs = rfp.extractedRequirements ? JSON.parse(rfp.extractedRequirements) : null;
 } catch (e) {
   console.error('Failed to parse extractedRequirements:', e);
 }
 ```
 
 ### Option C: Create Utility Function
+
 **Pros:** DRY, consistent across codebase
 **Cons:** Requires refactoring multiple files
 **Effort:** Medium (2 hours)
@@ -101,6 +105,7 @@ export function parseExtractedRequirements(json: string | null): ExtractedRequir
 ## Technical Details
 
 **Affected Files:**
+
 - `app/(dashboard)/rfps/[id]/deliverables/page.tsx:40-42`
 - Similar pattern in other RFP detail pages
 
@@ -117,8 +122,8 @@ export function parseExtractedRequirements(json: string | null): ExtractedRequir
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                     | Learnings                                      |
+| ---------- | -------------------------- | ---------------------------------------------- |
 | 2026-01-22 | Created from PR #11 review | TypeScript reviewer + Next.js reviewer flagged |
 
 ## Resources

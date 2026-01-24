@@ -1,8 +1,8 @@
 /**
- * Leads Empty State Client Component
+ * Qualifications Empty State Client Component
  *
  * Client-side empty state with suggested actions for capability discovery.
- * Used when no leads are available for the current user/BU.
+ * Used when no qualifications are available for the current user/BU.
  */
 
 'use client';
@@ -13,11 +13,11 @@ import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SuggestedActions } from '@/components/ui/suggested-actions';
 
-export interface LeadsEmptyStateClientProps {
+export interface QualificationsEmptyStateClientProps {
   userRole: string;
 }
 
-export function LeadsEmptyStateClient({ userRole }: LeadsEmptyStateClientProps) {
+export function QualificationsEmptyStateClient({ userRole }: QualificationsEmptyStateClientProps) {
   const router = useRouter();
 
   // BL users see different suggestions than Admin users
@@ -25,10 +25,10 @@ export function LeadsEmptyStateClient({ userRole }: LeadsEmptyStateClientProps) 
     userRole === 'bl'
       ? [
           {
-            id: 'wait-for-leads',
+            id: 'wait-for-qualifications',
             icon: <Zap className="h-5 w-5" />,
-            label: 'Leads erwarten',
-            description: 'BD Team qualifiziert RFPs und leitet passende Leads weiter',
+            label: 'Qualifications erwarten',
+            description: 'BD Team qualifiziert RFPs und leitet passende Qualifications weiter',
             onClick: () => {
               // Just informational - no action needed
             },
@@ -39,9 +39,9 @@ export function LeadsEmptyStateClient({ userRole }: LeadsEmptyStateClientProps) 
             id: 'view-docs',
             icon: <BookOpen className="h-5 w-5" />,
             label: 'Dokumentation',
-            description: 'Erfahren Sie mehr über den Lead-Review-Prozess',
+            description: 'Erfahren Sie mehr über den Qualification-Review-Prozess',
             onClick: () => {
-              router.push('/docs/lead-process');
+              router.push('/docs/qualification-process');
             },
             variant: 'outline' as const,
           },
@@ -83,11 +83,11 @@ export function LeadsEmptyStateClient({ userRole }: LeadsEmptyStateClientProps) 
     <div className="space-y-6">
       <EmptyState
         icon={<FileText className="h-12 w-12" />}
-        title="Keine Leads vorhanden"
+        title="Keine Qualifications vorhanden"
         description={
           userRole === 'bl'
-            ? 'Für Ihre Business Unit wurden noch keine Leads weitergeleitet. Sobald das BD Team ein passendes RFP qualifiziert, erscheint es hier.'
-            : 'Es gibt aktuell keine Leads im System. Laden Sie RFPs hoch, um den Qualifizierungsprozess zu starten.'
+            ? 'Für Ihre Business Unit wurden noch keine Qualifications weitergeleitet. Sobald das BD Team ein passendes RFP qualifiziert, erscheint es hier.'
+            : 'Es gibt aktuell keine Qualifications im System. Laden Sie RFPs hoch, um den Qualifizierungsprozess zu starten.'
         }
         variant="info"
       />

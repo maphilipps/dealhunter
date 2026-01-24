@@ -86,22 +86,22 @@ const allNavItems: Array<{
     ],
   },
   {
-    title: 'Leads',
-    url: '/leads',
+    title: 'Qualifications',
+    url: '/qualifications',
     icon: ListTodo,
     roles: ['bl', 'admin'],
     items: [
       {
-        title: 'Meine Leads',
-        url: '/leads',
+        title: 'Meine Qualifications',
+        url: '/qualifications',
       },
       {
-        title: 'Alle Leads',
-        url: '/leads?filter=all',
+        title: 'Alle Qualifications',
+        url: '/qualifications?filter=all',
       },
       {
         title: 'Deep Scan',
-        url: '/leads?view=deep-scan',
+        url: '/qualifications?view=deep-scan',
       },
     ],
   },

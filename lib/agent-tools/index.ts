@@ -3,8 +3,8 @@ export type { ToolDefinition, ToolContext, ToolResult, ToolRegistry } from './ty
 export { TOOL_CATEGORIES } from './types';
 
 // Register all tools by importing their modules
-import './tools/rfp';
-import './tools/lead';
+import './tools/pre-qualification';
+import './tools/qualification';
 import './tools/account';
 import './tools/reference';
 import './tools/competency';

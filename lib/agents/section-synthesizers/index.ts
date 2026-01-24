@@ -61,7 +61,7 @@ export const SYNTHESIZER_REGISTRY = {
   overview: overviewSynthesizer,
   technology: technologySynthesizer,
   'website-analysis': websiteAnalysisSynthesizer,
-  'cms-architecture': cmsArchitectureSynthesizer,
+  'target-architecture': cmsArchitectureSynthesizer, // TODO: rename synthesizer file to target-architecture-synthesizer
   'cms-comparison': cmsComparisonSynthesizer,
   hosting: hostingSynthesizer,
   integrations: integrationsSynthesizer,

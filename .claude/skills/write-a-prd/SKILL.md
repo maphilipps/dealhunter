@@ -3,25 +3,83 @@ name: write-a-prd
 description: Use this skill when writing a PRD for a feature.
 ---
 
-This skill will be invoked when the user wants to create a PRD. You should go through the steps below. You may skip steps if you don't consider them necessary.
+# PRD Writing Skill - Interview-Based Approach
 
-1. Ask the user for a long, detailed description of the problem they want to solve and any potential ideas for solutions.
+This skill uses a **deep, continuous interview process** to gather all requirements before writing the PRD. The interview continues until you have complete clarity on every aspect.
 
-2. Explore the repo to verify their assertions and understand the current state of the codebase.
+## Phase 1: Initial Context
 
-3. Ask whether they have considered other options, and present other options to them.
+1. If the user references a SPEC file (e.g., `@SPEC.md` or similar), **read it first** to understand the baseline.
+2. Explore the relevant parts of the codebase to understand the current state and validate any assertions from the spec.
 
-4. Interview the user about the implementation. Be extremely detailed and thorough.
+## Phase 2: Deep Interview Loop
 
-5. Hammer out the exact scope of the implementation. Work out what you plan to build and what you DON'T plan to build as part of this PRD.
+**CRITICAL: Use `AskUserQuestionTool` for ALL questions.**
 
-6. Sketch out the major modules you will need to build or modify to complete the implementation. Actively look for opportunities to extract deep modules that can be tested in isolation.
+Interview the user in depth about **literally everything**. Cover these categories but don't limit yourself to them:
 
-A deep module (as opposed to a shallow module) is one which encapsulates a lot of functionality in a simple, testable interface which rarely changes.
+### Technical Implementation
+- Architecture decisions and tradeoffs
+- Data models and schema implications
+- API design choices
+- State management approach
+- Performance considerations
+- Error handling strategies
+- Migration paths from current state
 
-Check with the user that these modules match their expectations. Check with the user which modules they want tests written for.
+### UI & UX
+- User flows and edge cases
+- Loading states and feedback
+- Error states and recovery
+- Accessibility requirements
+- Mobile/responsive considerations
+- Animation and interaction patterns
 
-7. Once you have a complete understanding of the problem and solution, use the template below to write the PRD. The PRD should be submitted as a GitHub issue.
+### Concerns & Risks
+- Security implications
+- Scalability bottlenecks
+- Backwards compatibility
+- Data integrity during transitions
+- Third-party dependencies
+- Failure modes and fallbacks
+
+### Tradeoffs
+- Build vs buy decisions
+- Complexity vs flexibility
+- Speed vs completeness
+- Consistency vs autonomy
+- Short-term vs long-term
+
+### Scope & Boundaries
+- What's explicitly IN scope
+- What's explicitly OUT of scope
+- MVP vs full feature set
+- Dependencies on other work
+
+### Testing Strategy
+- What needs unit tests
+- What needs integration tests
+- What needs E2E tests
+- Edge cases to cover
+
+**Interview Rules:**
+- **NO OBVIOUS QUESTIONS** - Don't ask things clearly stated in the spec or that any competent developer would already know
+- **BE SPECIFIC** - Ask about concrete scenarios, not abstract concepts
+- **GO DEEP** - Follow up on answers to uncover hidden assumptions
+- **CHALLENGE ASSUMPTIONS** - Probe decisions that might have alternatives
+- **CONTINUE UNTIL COMPLETE** - Keep interviewing until you have zero open questions
+
+Use `AskUserQuestionTool` with 2-4 targeted questions per round. After each answer, determine if you need more clarity and continue the interview loop.
+
+**Exit the interview loop ONLY when:**
+- All ambiguities are resolved
+- All edge cases are addressed
+- All tradeoffs are explicitly decided
+- The user confirms they have nothing more to add
+
+## Phase 3: Write the PRD
+
+Once the interview is complete, write the PRD using this template and submit it as a GitHub issue:
 
 <prd-template>
 

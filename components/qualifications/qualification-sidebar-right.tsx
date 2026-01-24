@@ -169,9 +169,10 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
                 const isOpen = openSections.has(section.id);
                 const isDecisionSection = section.id === 'decision';
 
-                // Content to render (collapsible or single item)
+                // Content to render (collapsible, always-expanded, or single item)
                 const content =
                   hasSubsections && section.collapsed ? (
+                    // Collapsible section (can be toggled)
                     <Collapsible
                       key={section.id}
                       open={isOpen}
@@ -204,7 +205,34 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
                         </CollapsibleContent>
                       </SidebarMenuItem>
                     </Collapsible>
+                  ) : hasSubsections && !section.collapsed ? (
+                    // Always-expanded section (subsections always visible)
+                    <SidebarMenuItem key={section.id}>
+                      <SidebarMenuButton asChild isActive={isActive}>
+                        <Link href={sectionRoute}>
+                          {IconComponent && <IconComponent className="h-4 w-4" />}
+                          <span>{section.label}</span>
+                          {getStatusBadge(sectionStatus)}
+                        </Link>
+                      </SidebarMenuButton>
+                      <SidebarMenuSub>
+                        {section.subsections?.map(subsection => {
+                          const subsectionRoute = `/qualifications/${leadId}/${subsection.route}`;
+                          const isSubActive = pathname === subsectionRoute;
+                          return (
+                            <SidebarMenuSubItem key={subsection.id}>
+                              <SidebarMenuSubButton asChild isActive={isSubActive}>
+                                <Link href={subsectionRoute}>
+                                  <span>{subsection.label}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        })}
+                      </SidebarMenuSub>
+                    </SidebarMenuItem>
                   ) : (
+                    // Single item without subsections
                     <SidebarMenuItem key={section.id}>
                       <SidebarMenuButton asChild isActive={isActive}>
                         <Link href={sectionRoute}>

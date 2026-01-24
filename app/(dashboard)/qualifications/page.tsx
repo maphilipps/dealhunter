@@ -2,7 +2,7 @@ import { Eye } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { LeadsEmptyStateClient } from '@/components/qualifications/qualifications-empty-state-client';
+import { QualificationsEmptyStateClient } from '@/components/qualifications/qualifications-empty-state-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,28 +17,28 @@ import {
 import { auth } from '@/lib/auth';
 import { getLeads } from '@/lib/qualifications/actions';
 
-export default async function LeadsPage() {
+export default async function QualificationsPage() {
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect('/login');
   }
 
-  // Redirect BD users to Pre-Qualifications page - they work with Pre-Qualifications, not leads
+  // Redirect BD users to Pre-Qualifications page - they work with Pre-Qualifications, not qualifications
   if (session.user.role === 'bd') {
     redirect('/pre-qualifications');
   }
 
   const result = await getLeads();
-  const leads = result.leads || [];
+  const qualifications = result.leads || [];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Leads</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Qualifications</h1>
         <p className="text-muted-foreground">
-          Leads aus dem RFP-Qualifizierungsprozess für Ihre Business Unit
+          Qualifications aus dem RFP-Qualifizierungsprozess für Ihre Business Unit
         </p>
       </div>
 
@@ -47,14 +47,14 @@ export default async function LeadsPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Gesamt</CardDescription>
-            <CardTitle className="text-3xl">{leads.length}</CardTitle>
+            <CardTitle className="text-3xl">{qualifications.length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Neu weitergeleitet</CardDescription>
             <CardTitle className="text-3xl">
-              {leads.filter(l => l.status === 'routed').length}
+              {qualifications.filter(l => l.status === 'routed').length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -63,8 +63,9 @@ export default async function LeadsPage() {
             <CardDescription>In Analyse</CardDescription>
             <CardTitle className="text-3xl">
               {
-                leads.filter(l => ['full_scanning', 'bl_reviewing'].includes(l.status || 'routed'))
-                  .length
+                qualifications.filter(l =>
+                  ['full_scanning', 'bl_reviewing'].includes(l.status || 'routed')
+                ).length
               }
             </CardTitle>
           </CardHeader>
@@ -73,21 +74,21 @@ export default async function LeadsPage() {
           <CardHeader className="pb-2">
             <CardDescription>BID entschieden</CardDescription>
             <CardTitle className="text-3xl text-green-600">
-              {leads.filter(l => l.blVote === 'BID').length}
+              {qualifications.filter(l => l.blVote === 'BID').length}
             </CardTitle>
           </CardHeader>
         </Card>
       </div>
 
-      {/* Leads Table */}
+      {/* Qualifications Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Alle Leads</CardTitle>
-          <CardDescription>Klicken Sie auf einen Lead, um Details zu sehen</CardDescription>
+          <CardTitle>Alle Qualifications</CardTitle>
+          <CardDescription>Klicken Sie auf eine Qualification, um Details zu sehen</CardDescription>
         </CardHeader>
         <CardContent>
-          {leads.length === 0 ? (
-            <LeadsEmptyStateClient userRole={session.user.role} />
+          {qualifications.length === 0 ? (
+            <QualificationsEmptyStateClient userRole={session.user.role} />
           ) : (
             <Table>
               <TableHeader>
@@ -101,7 +102,7 @@ export default async function LeadsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {leads.map(lead => (
+                {qualifications.map(lead => (
                   <TableRow key={lead.id}>
                     <TableCell className="font-medium">{lead.customerName}</TableCell>
                     <TableCell>

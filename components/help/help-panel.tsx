@@ -69,9 +69,9 @@ const defaultFAQs: HelpItem[] = [
 const defaultShortcuts: Shortcut[] = [
   { keys: ['Cmd', 'K'], description: 'Command Palette öffnen' },
   { keys: ['Cmd', 'B'], description: 'Sidebar ein-/ausblenden' },
-  { keys: ['G', 'L'], description: 'Zu Leads navigieren' },
-  { keys: ['G', 'R'], description: 'Zu RFPs navigieren' },
-  { keys: ['N'], description: 'Neues RFP erstellen' },
+  { keys: ['G', 'L'], description: 'Zu Qualifications navigieren' },
+  { keys: ['G', 'R'], description: 'Zu Pre-Qualifications navigieren' },
+  { keys: ['N'], description: 'Neue Pre-Qualification erstellen' },
 ];
 
 const defaultQuickLinks: QuickLink[] = [
@@ -80,7 +80,11 @@ const defaultQuickLinks: QuickLink[] = [
     href: '/pre-qualifications',
     description: 'Alle Pre-Qualifications anzeigen und verwalten',
   },
-  { label: 'Leads Dashboard', href: '/leads', description: 'Aktuelle Leads und Status' },
+  {
+    label: 'Qualifications Dashboard',
+    href: '/qualifications',
+    description: 'Aktuelle Qualifications und Status',
+  },
   {
     label: 'Analytics',
     href: '/analytics',

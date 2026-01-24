@@ -112,7 +112,7 @@ export function BusinessUnitForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
+    <form onSubmit={e => void handleSubmit(e)} className="space-y-6 max-w-2xl">
       <div>
         <label htmlFor="name" className="block text-sm font-medium mb-2">
           Name des Bereichs *

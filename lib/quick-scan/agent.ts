@@ -781,7 +781,7 @@ async function fetchWebsiteData(url: string): Promise<WebsiteData> {
         headers: result.headers,
       });
       result.wappalyzerResults = Array.isArray(wappalyzerResult) ? wappalyzerResult : [];
-    } catch (_e) {
+    } catch (e) {
       console.error('Wappalyzer error:', e);
       result.wappalyzerResults = [];
     }

@@ -1,3 +1,35 @@
+## 2026-01-24 - GitHub #17: Replace .catch() with .default() in Zod Schemas
+
+**Issue:** GitHub #17 - [Schema] Replace .catch() with .default() to prevent silent failures
+**Status:** ✅ Complete
+**Priority:** Quick Win (Code Quality)
+
+**Problem:**
+Zod `.catch()` silently masks ALL validation errors, including invalid AI-generated values. When AI returns "INVALID" for an enum, `.catch('medium')` silently converts it without warning - making debugging impossible.
+
+**Solution:**
+Replace `.catch()` with `.default()` which only applies for undefined values, but throws for invalid values.
+
+**Files Changed:**
+- `lib/agents/calc-sheet-generator-agent.ts` (5 changes: Lines 47, 48, 71, 84, 85)
+- `lib/deep-scan/experts/project-expert.ts` (1 change: Line 93)
+
+**Changes:**
+- `type: .catch('custom')` → `.default('custom')`
+- `complexity: .catch('M')` → `.default('M')`
+- `level: .catch('Senior')` → `.default('Senior')`
+- `likelihood: .catch('medium')` → `.default('medium')`
+- `impact: .catch('medium')` → `.default('medium')`
+- `frequency: .catch('monthly')` → `.default('monthly')`
+
+**Verification:**
+- ✅ TypeScript passes (`npm run typecheck`)
+- ✅ No remaining Zod `.catch()` in agents/schemas (only Promise `.catch()` remains, which is correct)
+
+**Note:** Issue mentioned legal-rfp-schema.ts, summary-schema.ts, techstack-schema.ts - but these already use `.default()` correctly. The actual `.catch()` usages were in calc-sheet-generator-agent.ts and project-expert.ts.
+
+---
+
 ## 2026-01-22 - DEA-109: PRD - RAG Integration für alle Agents + Dashboard Synthese
 
 **Issue:** DEA-109 - PRD: RAG-Integration für alle Agents + Dashboard Synthese

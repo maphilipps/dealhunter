@@ -71,24 +71,27 @@ export default async function ContactsPage({ params }: { params: Promise<{ id: s
               {/* Research Quality Stats */}
               {researchQuality && (
                 <div className="flex gap-4 text-xs text-muted-foreground pb-3 border-b">
-                  {researchQuality.linkedInFound !== undefined && researchQuality.linkedInFound > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <Linkedin className="h-3.5 w-3.5 text-blue-600" />
-                      <span>{researchQuality.linkedInFound} LinkedIn Profile</span>
-                    </div>
-                  )}
-                  {researchQuality.emailsConfirmed !== undefined && researchQuality.emailsConfirmed > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <Mail className="h-3.5 w-3.5 text-green-600" />
-                      <span>{researchQuality.emailsConfirmed} bestätigte Emails</span>
-                    </div>
-                  )}
-                  {researchQuality.emailsDerived !== undefined && researchQuality.emailsDerived > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <Mail className="h-3.5 w-3.5 text-orange-600" />
-                      <span>{researchQuality.emailsDerived} abgeleitete Emails</span>
-                    </div>
-                  )}
+                  {researchQuality.linkedInFound !== undefined &&
+                    researchQuality.linkedInFound > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <Linkedin className="h-3.5 w-3.5 text-blue-600" />
+                        <span>{researchQuality.linkedInFound} LinkedIn Profile</span>
+                      </div>
+                    )}
+                  {researchQuality.emailsConfirmed !== undefined &&
+                    researchQuality.emailsConfirmed > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="h-3.5 w-3.5 text-green-600" />
+                        <span>{researchQuality.emailsConfirmed} bestätigte Emails</span>
+                      </div>
+                    )}
+                  {researchQuality.emailsDerived !== undefined &&
+                    researchQuality.emailsDerived > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="h-3.5 w-3.5 text-orange-600" />
+                        <span>{researchQuality.emailsDerived} abgeleitete Emails</span>
+                      </div>
+                    )}
                   {researchQuality.confidence !== undefined && (
                     <div className="ml-auto">
                       <Badge
@@ -150,10 +153,7 @@ export default async function ContactsPage({ params }: { params: Promise<{ id: s
                       {dm.email && (
                         <div className="flex items-center gap-2">
                           <Mail className="h-4 w-4 text-muted-foreground" />
-                          <a
-                            href={`mailto:${dm.email}`}
-                            className="text-blue-600 hover:underline"
-                          >
+                          <a href={`mailto:${dm.email}`} className="text-blue-600 hover:underline">
                             {dm.email}
                           </a>
                           {dm.emailConfidence && dm.emailConfidence !== 'unknown' && (

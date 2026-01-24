@@ -4,6 +4,9 @@ import { referenceMatchSchema, type ReferenceMatch } from '../schema';
 
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
+// Security: Prompt Injection Protection
+import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
+
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -44,10 +47,13 @@ export async function runReferenceAgent(input: ReferenceAgentInput): Promise<Ref
         );
 
         if (referenceSearch && referenceSearch.length > 0) {
-          adessoReferences = `\n\n**adesso Referenzen in ${industry} (EXA):**\n${referenceSearch
+          const rawRefData = referenceSearch
             .slice(0, 2)
             .map(r => `- ${r.title}: ${r.snippet}`)
-            .join('\n')}`;
+            .join('\n');
+
+          // Wrap web search results for prompt injection protection
+          adessoReferences = `\n\n**adesso Referenzen in ${industry} (EXA):**\n${wrapUserContent(rawRefData, 'web')}`;
           console.log(`[Reference Agent] ${referenceSearch.length} adesso Referenzen gefunden`);
         }
       }
@@ -60,10 +66,13 @@ export async function runReferenceAgent(input: ReferenceAgentInput): Promise<Ref
         );
 
         if (techProjectSearch && techProjectSearch.length > 0) {
-          industryProjects = `\n\n**adesso ${cms} Projekte (EXA):**\n${techProjectSearch
+          const rawTechData = techProjectSearch
             .slice(0, 2)
             .map(r => `- ${r.title}: ${r.snippet}`)
-            .join('\n')}`;
+            .join('\n');
+
+          // Wrap web search results for prompt injection protection
+          industryProjects = `\n\n**adesso ${cms} Projekte (EXA):**\n${wrapUserContent(rawTechData, 'web')}`;
           console.log(`[Reference Agent] ${techProjectSearch.length} Tech-Projekte gefunden`);
         }
       }
@@ -73,7 +82,7 @@ export async function runReferenceAgent(input: ReferenceAgentInput): Promise<Ref
   }
 
   const completion = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       {
         role: 'system',

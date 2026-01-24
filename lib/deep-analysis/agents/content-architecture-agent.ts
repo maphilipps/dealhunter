@@ -57,7 +57,7 @@ async function callAI<T>(
   schema: z.ZodSchema<T>
 ): Promise<T> {
   const completion = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },

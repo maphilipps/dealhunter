@@ -1,3 +1,9 @@
+/**
+ * adesso SE Corporate Design System
+ * Colors: adesso Blue (#006EC7), adesso Violet (#461EBE)
+ * Typography: Fira Sans (body), Fira Sans Condensed (headings), JetBrains Mono (code)
+ */
+
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -6,8 +12,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-fira-sans);
+  --font-mono: var(--font-jetbrains-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -45,71 +51,108 @@
 
 :root {
   --radius: 0.625rem;
+
+  /* ===== adesso Brand Colors (Light Mode) ===== */
+
+  /* Backgrounds */
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(0 0 0); /* Pure black for max readability */
+
+  /* Cards & Popovers */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  --popover-foreground: oklch(0 0 0);
+
+  /* Primary: adesso Blue #006EC7 */
+  --primary: oklch(0.52 0.16 246);
+  --primary-foreground: oklch(1 0 0);
+
+  /* Secondary: adesso Violet #461EBE */
+  --secondary: oklch(0.4 0.22 290);
+  --secondary-foreground: oklch(1 0 0);
+
+  /* Muted: adesso Grey */
+  --muted: oklch(0.92 0.005 75); /* Grey 20% #E7E5E3 */
+  --muted-foreground: oklch(0.57 0.02 60); /* Text Secondary #887D75 */
+
+  /* Accent: adesso Grey 20% */
+  --accent: oklch(0.92 0.005 75);
+  --accent-foreground: oklch(0 0 0);
+
+  /* Destructive: Traffic Red #EE0000 */
+  --destructive: oklch(0.54 0.27 28);
+
+  /* Borders & Input */
+  --border: oklch(0.83 0.005 75); /* Grey 40% #CFCBC8 */
+  --input: oklch(0.92 0.005 75);
+  --ring: oklch(0.52 0.16 246); /* adesso Blue for focus rings */
+
+  /* Chart Colors - adesso Palette */
+  --chart-1: oklch(0.52 0.16 246); /* adesso Blue */
+  --chart-2: oklch(0.4 0.22 290); /* adesso Violet */
+  --chart-3: oklch(0.78 0.15 165); /* adesso Turquoise #28DCAA */
+  --chart-4: oklch(0.83 0.17 85); /* Traffic Yellow #FFC000 */
+  --chart-5: oklch(0.7 0.02 70); /* Grey 70% #ACA49E */
+
+  /* Sidebar - adesso Blue/Violet Gradient Base */
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-foreground: oklch(0 0 0);
+  --sidebar-primary: oklch(0.52 0.16 246);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.92 0.005 75);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(0.83 0.005 75);
+  --sidebar-ring: oklch(0.52 0.16 246);
 }
 
 .dark {
+  /* ===== adesso Brand Colors (Dark Mode) ===== */
+
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
+
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
+
+  /* Primary: adesso Blue (lighter for dark mode) */
+  --primary: oklch(0.62 0.16 246);
+  --primary-foreground: oklch(0.145 0 0);
+
+  /* Secondary: adesso Violet (lighter for dark mode) */
+  --secondary: oklch(0.5 0.22 290);
+  --secondary-foreground: oklch(1 0 0);
+
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
+
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+
+  /* Destructive: Traffic Red (brighter for dark mode) */
+  --destructive: oklch(0.65 0.24 28);
+
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  --ring: oklch(0.62 0.16 246);
+
+  /* Chart Colors - Dark Mode */
+  --chart-1: oklch(0.62 0.16 246); /* adesso Blue */
+  --chart-2: oklch(0.55 0.22 290); /* adesso Violet */
+  --chart-3: oklch(0.78 0.15 165); /* adesso Turquoise */
+  --chart-4: oklch(0.83 0.17 85); /* Traffic Yellow */
+  --chart-5: oklch(0.75 0.02 70); /* Grey */
+
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: oklch(0.62 0.16 246);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.62 0.16 246);
 }
 
 @layer base {
@@ -118,5 +161,41 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-fira-sans), ui-sans-serif, system-ui, sans-serif;
   }
+}
+
+/* ===== adesso Typography ===== */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family:
+    var(--font-fira-condensed), var(--font-fira-sans), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+}
+
+/* Code blocks and monospace */
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+/* ===== adesso Utility Classes ===== */
+
+/* Gradient für Header/Hero-Bereiche */
+.adesso-gradient {
+  background: linear-gradient(135deg, oklch(0.52 0.16 246), oklch(0.4 0.22 290));
+}
+
+/* Text auf Gradient */
+.adesso-gradient-text {
+  background: linear-gradient(135deg, oklch(0.52 0.16 246), oklch(0.4 0.22 290));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

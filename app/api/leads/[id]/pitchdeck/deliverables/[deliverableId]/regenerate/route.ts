@@ -165,13 +165,10 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       }
     });
 
-    console.error(
-      `[Regenerate API] Success for deliverable: ${deliverable.deliverableName}`,
-      {
-        outlineSections: solution.outline.outline.length,
-        draftWords: solution.draft.wordCount,
-      }
-    );
+    console.error(`[Regenerate API] Success for deliverable: ${deliverable.deliverableName}`, {
+      outlineSections: solution.outline.outline.length,
+      draftWords: solution.draft.wordCount,
+    });
 
     // 13. Return updated deliverable
     return NextResponse.json(
@@ -191,7 +188,10 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('POST /api/leads/[id]/pitchdeck/deliverables/[deliverableId]/regenerate error:', error);
+    console.error(
+      'POST /api/leads/[id]/pitchdeck/deliverables/[deliverableId]/regenerate error:',
+      error
+    );
     return NextResponse.json(
       {
         error: 'Internal server error',

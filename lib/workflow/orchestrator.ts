@@ -407,6 +407,7 @@ function getStatusLabel(status: RFPStatus): string {
     bit_pending: 'BL-Routing erforderlich', // BID/NO-BID by BL after routing
     questions_ready: 'Fragen bereit',
     decision_made: 'Entscheidung getroffen',
+    bid_voted: 'BID-Entscheidung getroffen',
     evaluating: 'Evaluierung läuft',
     archived: 'Archiviert (NO-BID)',
     routed: 'An BL weitergeleitet',

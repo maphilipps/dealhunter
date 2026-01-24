@@ -118,7 +118,7 @@ export interface SectionDataFilter {
 
 export interface SimilarityResult {
   id: string;
-  source: 'agent' | 'raw';
+  source: 'agent' | 'raw' | 'lead';
   agentName?: string;
   chunkType?: string;
   chunkIndex: number;
@@ -128,7 +128,8 @@ export interface SimilarityResult {
 }
 
 export interface SimilaritySearchParams {
-  rfpId: string;
+  rfpId?: string;
+  leadId?: string;
   query: string;
   threshold?: number;
   maxResults?: number;
@@ -145,6 +146,4 @@ export interface SimilaritySearchResult {
 // Action Result Types
 // ============================================================================
 
-export type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type ActionResult<T> = { success: true; data: T } | { success: false; error: string };

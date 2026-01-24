@@ -1,12 +1,14 @@
 'use client';
 
 import * as Icons from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Progress } from '@/components/ui/progress';
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +22,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
+import { useDeepScan, SECTION_TO_EXPERT_MAP, ALL_EXPERTS } from '@/contexts/deep-scan-context';
 import { LEAD_NAVIGATION_SECTIONS } from '@/lib/leads/navigation-config';
 
 interface LeadSidebarRightProps {
@@ -29,29 +32,35 @@ interface LeadSidebarRightProps {
   blVote: 'BID' | 'NO-BID' | null;
 }
 
-type SectionStatus = 'loading' | 'ready' | 'warning' | 'error';
+type SectionStatus = 'loading' | 'ready' | 'warning' | 'error' | 'running';
 
-// Mock status data - in real implementation, this would come from the DB or API
-function getSectionStatus(sectionId: string): SectionStatus {
-  // For now, mark all sections as 'loading' except 'overview' which is 'ready'
-  if (sectionId === 'overview') return 'ready';
-  return 'loading';
-}
+function getStatusBadge(status: SectionStatus | null) {
+  // No badge for sections that don't need status
+  if (status === null) return null;
 
-function getStatusBadge(status: SectionStatus) {
   const variants: Record<
     SectionStatus,
-    { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }
+    {
+      variant: 'default' | 'secondary' | 'destructive' | 'outline';
+      label: string;
+      icon?: React.ReactNode;
+    }
   > = {
-    loading: { variant: 'outline', label: 'Loading' },
-    ready: { variant: 'default', label: 'Ready' },
-    warning: { variant: 'secondary', label: 'Warning' },
-    error: { variant: 'destructive', label: 'Error' },
+    loading: { variant: 'outline', label: 'Warten' },
+    running: {
+      variant: 'secondary',
+      label: '',
+      icon: <Loader2 className="h-3 w-3 animate-spin" />,
+    },
+    ready: { variant: 'default', label: 'Bereit' },
+    warning: { variant: 'secondary', label: 'Warnung' },
+    error: { variant: 'destructive', label: 'Fehler' },
   };
 
   const config = variants[status];
   return (
-    <Badge variant={config.variant} className="ml-auto text-xs">
+    <Badge variant={config.variant} className="ml-auto text-xs flex items-center gap-1">
+      {config.icon}
       {config.label}
     </Badge>
   );
@@ -60,6 +69,9 @@ function getStatusBadge(status: SectionStatus) {
 export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRightProps) {
   const pathname = usePathname();
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['overview']));
+
+  // Get DeepScan context for live status updates
+  const deepScan = useDeepScan();
 
   const toggleSection = (sectionId: string) => {
     setOpenSections(prev => {
@@ -73,9 +85,64 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
     });
   };
 
+  // Sections that are always functional (no waiting status)
+  const ALWAYS_READY_SECTIONS = ['overview', 'decision', 'rag-data', 'audit'];
+
+  // Get section status from DeepScan context or fallback to static status
+  const getSectionStatus = (sectionId: string): SectionStatus | null => {
+    // These sections don't wait for anything - they're functional pages
+    if (ALWAYS_READY_SECTIONS.includes(sectionId)) return null;
+
+    // Check if this section corresponds to a Deep Scan expert
+    const expertName = SECTION_TO_EXPERT_MAP[sectionId];
+    if (expertName && deepScan.isStreaming) {
+      const expertStatus = deepScan.getExpertStatus(expertName);
+      if (expertStatus === 'complete') return 'ready';
+      if (expertStatus === 'running') return 'running';
+      if (expertStatus === 'error') return 'error';
+      return 'loading'; // pending
+    }
+
+    // If not streaming, check if expert has completed previously
+    if (expertName) {
+      const expertStatus = deepScan.getExpertStatus(expertName);
+      if (expertStatus === 'complete') return 'ready';
+      if (expertStatus === 'error') return 'error';
+    }
+
+    // Default: no badge (status unknown/not scanned yet)
+    return null;
+  };
+
+  // Calculate scan progress for the header
+  const scanProgress =
+    deepScan.isStreaming && ALL_EXPERTS.length > 0
+      ? (deepScan.completedExperts.length / ALL_EXPERTS.length) * 100
+      : 0;
+
   return (
     <Sidebar collapsible="none" variant="sidebar" side="right">
       <SidebarContent>
+        {/* Deep Scan Progress Header (only when scanning) */}
+        {deepScan.isStreaming && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <div className="px-2 py-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg mx-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    {deepScan.activeAgent || 'Initialisiere...'}
+                  </span>
+                </div>
+                <Progress value={scanProgress} className="h-1.5" />
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  {deepScan.completedExperts.length} / {ALL_EXPERTS.length} Experten abgeschlossen
+                </p>
+              </div>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         {/* Lead Metadata */}
         <SidebarGroup>
           <SidebarGroupLabel>Lead Navigation</SidebarGroupLabel>
@@ -91,7 +158,7 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {LEAD_NAVIGATION_SECTIONS.map((section, index) => {
+              {LEAD_NAVIGATION_SECTIONS.map(section => {
                 const IconComponent = (Icons as unknown as Record<string, Icons.LucideIcon>)[
                   section.icon
                 ];

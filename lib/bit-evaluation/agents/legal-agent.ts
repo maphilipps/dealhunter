@@ -9,6 +9,9 @@ import {
 
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
+// Security: Prompt Injection Protection
+import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
+
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -28,7 +31,7 @@ export interface LegalAgentInput {
  */
 export async function runLegalQuickCheck(input: LegalAgentInput): Promise<LegalQuickCheck> {
   const completion = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       {
         role: 'system',
@@ -113,10 +116,13 @@ export async function runLegalAgent(input: LegalAgentInput): Promise<LegalAssess
         );
 
         if (evbSearch && evbSearch.length > 0) {
-          contractInsights = `\n\n**EVB-IT Vertrags-Insights (EXA):**\n${evbSearch
+          const rawEvbData = evbSearch
             .slice(0, 2)
             .map(r => `- ${r.title}: ${r.snippet}`)
-            .join('\n')}`;
+            .join('\n');
+
+          // Wrap web search results for prompt injection protection
+          contractInsights = `\n\n**EVB-IT Vertrags-Insights (EXA):**\n${wrapUserContent(rawEvbData, 'web')}`;
           console.log(`[Legal Agent] ${evbSearch.length} Vertrags-Insights gefunden`);
         }
       }
@@ -129,10 +135,13 @@ export async function runLegalAgent(input: LegalAgentInput): Promise<LegalAssess
         );
 
         if (complianceSearch && complianceSearch.length > 0) {
-          complianceInsights = `\n\n**Branchenspezifische Compliance (EXA):**\n${complianceSearch
+          const rawCompData = complianceSearch
             .slice(0, 2)
             .map(r => `- ${r.title}: ${r.snippet}`)
-            .join('\n')}`;
+            .join('\n');
+
+          // Wrap web search results for prompt injection protection
+          complianceInsights = `\n\n**Branchenspezifische Compliance (EXA):**\n${wrapUserContent(rawCompData, 'web')}`;
           console.log(`[Legal Agent] ${complianceSearch.length} Compliance-Insights gefunden`);
         }
       }
@@ -145,7 +154,7 @@ export async function runLegalAgent(input: LegalAgentInput): Promise<LegalAssess
   let fullCheck = undefined;
   if (level === 'full') {
     const completion = await openai.chat.completions.create({
-      model: 'claude-haiku-4.5',
+      model: 'gemini-3-flash-preview',
       messages: [
         {
           role: 'system',
@@ -244,7 +253,7 @@ Respond with JSON containing a "fullCheck" object with:
 
   // Combine results
   const finalCompletion = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       {
         role: 'system',

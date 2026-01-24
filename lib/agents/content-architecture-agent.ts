@@ -23,6 +23,12 @@ export interface ContentType {
   pattern: string; // URL pattern (e.g. "/news/", "/products/")
   estimatedCount: number;
   characteristics: string[]; // e.g. ["Has publish date", "Has author"]
+  // adesso Calculator 2.01 fields (DEA-140)
+  drupalContentType?: string; // Mapped Drupal content type (e.g., "article", "page", "event")
+  migrationComplexity: 'H' | 'M' | 'L'; // Migration complexity rating
+  estimatedHours: number; // Content type setup + migration hours
+  requiredParagraphs?: string[]; // Suggested adesso Paragraphs
+  hasFields?: string[]; // Detected Drupal-like fields (body, image, date, taxonomy)
 }
 
 export interface NavigationStructure {
@@ -64,6 +70,16 @@ export interface ContentArchitectureResult {
 
   // Content Volume
   contentVolume: ContentVolume;
+
+  // adesso Calculator 2.01 Summary (DEA-140)
+  calculatorSummary: {
+    totalContentTypes: number;
+    totalEstimatedHours: number;
+    complexityDistribution: { H: number; M: number; L: number };
+    recommendedDrupalModules: string[];
+    migrationRiskLevel: 'low' | 'medium' | 'high';
+    migrationRiskFactors: string[];
+  };
 
   // Metadata
   analyzedAt: string;
@@ -126,6 +142,14 @@ export async function analyzeContentArchitecture(
           documents: 0,
           totalAssets: 0,
         },
+        calculatorSummary: {
+          totalContentTypes: 0,
+          totalEstimatedHours: 0,
+          complexityDistribution: { H: 0, M: 0, L: 0 },
+          recommendedDrupalModules: [],
+          migrationRiskLevel: 'low',
+          migrationRiskFactors: ['No crawl data - cannot assess migration'],
+        },
         analyzedAt: new Date().toISOString(),
         error: 'Missing or incomplete crawl data',
       };
@@ -134,7 +158,7 @@ export async function analyzeContentArchitecture(
     const { websiteUrl, crawlData } = input;
     const samplePages = crawlData.samplePages || [];
 
-    // Zod schema for AI analysis
+    // Zod schema for AI analysis with adesso Calculator fields
     const ContentArchitectureAnalysisSchema = z.object({
       pageCountEstimate: z.number().describe('Estimated total number of pages on the website'),
       pageCountConfidence: z
@@ -146,6 +170,12 @@ export async function analyzeContentArchitecture(
           pattern: z.string(),
           estimatedCount: z.number(),
           characteristics: z.array(z.string()),
+          // adesso Calculator 2.01 fields
+          drupalContentType: z.string().optional().describe('Mapped Drupal content type'),
+          migrationComplexity: z.enum(['H', 'M', 'L']).describe('Migration complexity'),
+          estimatedHours: z.number().describe('Hours for content type setup + migration'),
+          requiredParagraphs: z.array(z.string()).optional().describe('Suggested paragraphs'),
+          hasFields: z.array(z.string()).optional().describe('Detected fields'),
         })
       ),
       navigationDepth: z.number().describe('Maximum depth of navigation hierarchy'),
@@ -154,41 +184,78 @@ export async function analyzeContentArchitecture(
       imageCount: z.number(),
       videoCount: z.number(),
       documentCount: z.number(),
+      // adesso Calculator summary
+      recommendedDrupalModules: z.array(z.string()).describe('Recommended Drupal contrib modules'),
+      migrationRiskLevel: z.enum(['low', 'medium', 'high']).describe('Overall migration risk'),
+      migrationRiskFactors: z.array(z.string()).describe('Specific risk factors'),
     });
 
-    // Use AI to analyze patterns in sample pages
+    // Use AI to analyze patterns in sample pages with adesso/Drupal expertise
     const { object: analysis } = await generateObject({
-      model: openai('claude-haiku-4.5') as unknown as LanguageModel,
+      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: ContentArchitectureAnalysisSchema,
-      prompt: `Analyze the following website structure and provide content architecture insights.
+      prompt: `You are a senior Drupal architect at adesso SE, analyzing a website for migration to Drupal.
 
+## Context
+adesso SE is a leading German IT consultancy specializing in Drupal CMS implementations.
+You are preparing a content architecture analysis for the adesso Calculator 2.01 project estimation tool.
+
+## Website to Analyze
 Website: ${websiteUrl}
 Homepage: ${crawlData.homepage?.title || 'Unknown'}
 
 Sample Pages (${samplePages.length} crawled):
 ${samplePages.map((url, i) => `${i + 1}. ${url}`).join('\n')}
 
-Based on the sample pages, estimate:
+## Analysis Tasks
 
-1. **Page Count**: How many total pages does this website likely have?
-   - Consider URL patterns (/page/1, /page/2, etc.)
-   - Consider pagination indicators
-   - Consider site structure (blog, products, services, etc.)
+### 1. Page Count Estimation
+- Consider URL patterns (/page/1, /page/2, etc.)
+- Consider pagination indicators
+- Consider site structure (blog, products, services, etc.)
 
-2. **Content Types**: What types of pages exist?
-   - Identify distinct page types (News, Blog, Product, Landing, etc.)
-   - Estimate how many pages of each type
-   - Identify URL patterns for each type
+### 2. Content Types → Drupal Mapping
+For each distinct content type:
+- **name**: Descriptive name (e.g., "News Article", "Product Page")
+- **pattern**: URL pattern (e.g., "/news/", "/products/")
+- **drupalContentType**: Map to standard Drupal types:
+  - article (news, blog posts with author/date)
+  - page (static pages)
+  - event (date-based content)
+  - product (e-commerce items)
+  - landing_page (marketing pages with paragraphs)
+  - person (team members, staff profiles)
+  - location (offices, stores with address)
+  - faq (question/answer pairs)
+  - download (file downloads, resources)
+  - webform (contact, application forms)
+- **migrationComplexity**:
+  - H (High): 16-24h - Complex fields, custom logic, integrations
+  - M (Medium): 8-16h - Standard fields with customization
+  - L (Low): 4-8h - Simple content, text-only
+- **estimatedHours**: Setup + migration hours
+- **requiredParagraphs**: Suggested adesso Paragraphs (paragraph_hero, paragraph_teaser_grid, etc.)
+- **hasFields**: Detected fields (body, image, date, taxonomy, author, location, price)
 
-3. **Navigation Structure**:
-   - How deep is the navigation hierarchy? (e.g., Home > Category > Subcategory = depth 3)
-   - How many items per navigation level on average?
-   - What are the main top-level navigation items?
+### 3. Navigation Structure
+- Depth: Max navigation hierarchy depth
+- Breadth: Average items per level
+- Main navigation items
 
-4. **Content Volume**:
-   - Estimate total number of images (based on typical pages)
-   - Estimate total number of videos
-   - Estimate total number of documents (PDFs, downloads)
+### 4. Content Volume
+- Images, videos, documents (PDFs)
+
+### 5. Migration Risk Assessment
+- **recommendedDrupalModules**: Contrib modules needed (paragraphs, media, metatag, pathauto, etc.)
+- **migrationRiskLevel**: Overall risk (low/medium/high)
+- **migrationRiskFactors**: Specific concerns (e.g., "Custom search integration", "Multi-language content", "Complex taxonomy")
+
+## adesso Calculator Estimation Guidelines
+- Simple content type (L): 4-8h (basic fields, no integrations)
+- Standard content type (M): 8-16h (standard fields, basic views)
+- Complex content type (H): 16-24h (custom fields, integrations, complex display)
+- Add 50% for multi-language
+- Add 2-4h per external integration
 
 Provide realistic estimates based on the sample. Be conservative if uncertain.`,
     });
@@ -219,6 +286,19 @@ Provide realistic estimates based on the sample. Be conservative if uncertain.`,
         documents: analysis.documentCount,
         totalAssets: analysis.imageCount + analysis.videoCount + analysis.documentCount,
       },
+      // adesso Calculator 2.01 Summary (DEA-140)
+      calculatorSummary: {
+        totalContentTypes: analysis.contentTypes.length,
+        totalEstimatedHours: analysis.contentTypes.reduce((sum, ct) => sum + ct.estimatedHours, 0),
+        complexityDistribution: {
+          H: analysis.contentTypes.filter(ct => ct.migrationComplexity === 'H').length,
+          M: analysis.contentTypes.filter(ct => ct.migrationComplexity === 'M').length,
+          L: analysis.contentTypes.filter(ct => ct.migrationComplexity === 'L').length,
+        },
+        recommendedDrupalModules: analysis.recommendedDrupalModules,
+        migrationRiskLevel: analysis.migrationRiskLevel,
+        migrationRiskFactors: analysis.migrationRiskFactors,
+      },
       analyzedAt: new Date().toISOString(),
     };
   } catch (error) {
@@ -241,6 +321,14 @@ Provide realistic estimates based on the sample. Be conservative if uncertain.`,
         videos: 0,
         documents: 0,
         totalAssets: 0,
+      },
+      calculatorSummary: {
+        totalContentTypes: 0,
+        totalEstimatedHours: 0,
+        complexityDistribution: { H: 0, M: 0, L: 0 },
+        recommendedDrupalModules: [],
+        migrationRiskLevel: 'low',
+        migrationRiskFactors: ['Analysis failed - no data available'],
       },
       analyzedAt: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'Unknown error',

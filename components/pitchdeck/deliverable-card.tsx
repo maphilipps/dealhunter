@@ -8,11 +8,7 @@ import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { getDeadlineStatus } from '@/lib/pitchdeck/timeline-calculator';
 
 // Types for solution sketches
@@ -61,7 +57,9 @@ export function DeliverableCard({ deliverable, leadId }: DeliverableCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Parse solution sketches
-  const outline = deliverable.outline ? (JSON.parse(deliverable.outline) as { outline: OutlineSection[] }) : null;
+  const outline = deliverable.outline
+    ? (JSON.parse(deliverable.outline) as { outline: OutlineSection[] })
+    : null;
   const talkingPoints = deliverable.talkingPoints
     ? (JSON.parse(deliverable.talkingPoints) as { talkingPoints: TalkingPoint[] })
     : null;
@@ -118,9 +116,7 @@ export function DeliverableCard({ deliverable, leadId }: DeliverableCardProps) {
       window.location.reload();
     } catch (error) {
       console.error('Regeneration error:', error);
-      toast.error(
-        error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten'
-      );
+      toast.error(error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten');
     } finally {
       setIsRegenerating(false);
     }
@@ -150,10 +146,7 @@ export function DeliverableCard({ deliverable, leadId }: DeliverableCardProps) {
             <div className="flex items-center gap-2">
               <p className="font-medium">{deliverable.deliverableName}</p>
               {deadlineStatus && deliverable.internalDeadline && (
-                <Badge
-                  variant="outline"
-                  className={deadlineBadgeColors[deadlineStatus]}
-                >
+                <Badge variant="outline" className={deadlineBadgeColors[deadlineStatus]}>
                   {deadlineStatus === 'overdue' && 'Überfällig'}
                   {deadlineStatus === 'warning' && 'Bald fällig'}
                   {deadlineStatus === 'ok' &&
@@ -167,7 +160,8 @@ export function DeliverableCard({ deliverable, leadId }: DeliverableCardProps) {
                 <>
                   <span>•</span>
                   <span>
-                    Generiert: {format(new Date(deliverable.generatedAt), 'dd.MM.yyyy HH:mm', { locale: de })}
+                    Generiert:{' '}
+                    {format(new Date(deliverable.generatedAt), 'dd.MM.yyyy HH:mm', { locale: de })}
                   </span>
                 </>
               )}

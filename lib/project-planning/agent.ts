@@ -39,7 +39,7 @@ export async function generateProjectPlan(input: ProjectPlanningInput): Promise<
   const baselineCoverage = baselineComparison?.baselineCoverage || 0;
 
   const { object } = await generateObject({
-    model: 'openai/gpt-4o-mini',
+    model: 'gemini-3-flash-preview',
     schema: projectPlanSchema,
     prompt: `Du bist ein erfahrener Projektplaner bei adesso SE.
 

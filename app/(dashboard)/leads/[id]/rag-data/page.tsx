@@ -19,11 +19,7 @@ export default async function RAGDataPage({ params }: PageProps) {
   const { id } = await params;
 
   // Verify lead exists
-  const [lead] = await db
-    .select({ id: leads.id })
-    .from(leads)
-    .where(eq(leads.id, id))
-    .limit(1);
+  const [lead] = await db.select({ id: leads.id }).from(leads).where(eq(leads.id, id)).limit(1);
 
   if (!lead) {
     notFound();

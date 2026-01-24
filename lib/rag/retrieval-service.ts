@@ -14,7 +14,7 @@ import { eq } from 'drizzle-orm';
 import { generateQueryEmbedding } from './embedding-service';
 
 import { db } from '@/lib/db';
-import { rfpEmbeddings } from '@/lib/db/schema';
+import { dealEmbeddings } from '@/lib/db/schema';
 
 export interface RAGQuery {
   rfpId: string;
@@ -88,17 +88,18 @@ export async function queryRAG(query: RAGQuery): Promise<RAGResult[]> {
     // 2. Fetch all chunks for this RFP
     const chunks = await db
       .select()
-      .from(rfpEmbeddings)
-      .where(eq(rfpEmbeddings.rfpId, query.rfpId));
+      .from(dealEmbeddings)
+      .where(eq(dealEmbeddings.rfpId, query.rfpId));
 
     if (chunks.length === 0) {
       return [];
     }
 
-    // 3. Calculate similarity for each chunk
+    // 3. Calculate similarity for each chunk (filter out chunks without embeddings)
     const resultsWithSimilarity = chunks
+      .filter(chunk => chunk.embedding !== null)
       .map(chunk => {
-        const chunkEmbedding = JSON.parse(chunk.embedding) as number[];
+        const chunkEmbedding = JSON.parse(chunk.embedding!) as number[];
         const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
 
         const metadata = chunk.metadata ? JSON.parse(chunk.metadata) : {};
@@ -151,9 +152,9 @@ export async function queryRAG(query: RAGQuery): Promise<RAGResult[]> {
  */
 export async function getEmbeddingStatus(rfpId: string): Promise<Record<string, boolean>> {
   const embeddings = await db
-    .select({ agentName: rfpEmbeddings.agentName })
-    .from(rfpEmbeddings)
-    .where(eq(rfpEmbeddings.rfpId, rfpId));
+    .select({ agentName: dealEmbeddings.agentName })
+    .from(dealEmbeddings)
+    .where(eq(dealEmbeddings.rfpId, rfpId));
 
   const agentNames = Array.from(new Set(embeddings.map(e => e.agentName)));
 

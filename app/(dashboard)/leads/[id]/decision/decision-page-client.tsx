@@ -4,6 +4,7 @@ import { AlertCircle, CheckCircle2, ThumbsDown, ThumbsUp, TrendingUp, XCircle } 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 
+import { ProjectPlanCard } from '@/components/leads/project-plan-card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,7 +83,8 @@ export function DecisionPageClient({ lead }: DecisionPageClientProps) {
         if (data.status === 'error') {
           setError(data.errorMessage || 'Unknown error occurred');
         } else if (data.status === 'no_data') {
-          setError('Keine Analysedaten verfügbar. Bitte führen Sie zuerst den Deep Scan durch.');
+          // Kein Error mehr - Entscheidung ist auch ohne Analyse möglich
+          setAnalysis(null);
         } else {
           // Parse the AI-generated decision analysis from RAG results
           const parsedAnalysis = parseDecisionAnalysis(data.results || []);
@@ -208,32 +210,7 @@ export function DecisionPageClient({ lead }: DecisionPageClientProps) {
     );
   }
 
-  // No analysis data
-  if (!analysis) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">BID/NO-BID Entscheidung</h1>
-          <p className="text-muted-foreground">Keine Daten verfügbar</p>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Analyse fehlt</CardTitle>
-            <CardDescription>
-              Für diesen Lead sind noch keine Analysedaten vorhanden.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" onClick={() => router.push(`/leads/${lead.id}`)}>
-              Zurück zur Übersicht
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Confirmation dialog handler
+  // Confirmation dialog handler - moved before conditional returns
   const handleVoteClick = (vote: 'BID' | 'NO-BID') => {
     setSelectedVote(vote);
     setShowConfirmDialog(true);
@@ -246,8 +223,9 @@ export function DecisionPageClient({ lead }: DecisionPageClientProps) {
       const result = await submitBLDecision({
         leadId: lead.id,
         vote: selectedVote,
-        confidenceScore: analysis.confidenceScore,
-        reasoning: analysis.reasoning,
+        // Default-Werte wenn keine Analyse vorhanden
+        confidenceScore: analysis?.confidenceScore ?? 50,
+        reasoning: analysis?.reasoning ?? `Manuelle ${selectedVote} Entscheidung ohne AI-Analyse`,
       });
 
       if (result.success) {
@@ -259,6 +237,91 @@ export function DecisionPageClient({ lead }: DecisionPageClientProps) {
       }
     });
   };
+
+  // No analysis data - show simplified decision UI
+  if (!analysis) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">BID/NO-BID Entscheidung</h1>
+          <p className="text-muted-foreground">Schnelle Entscheidung für {lead.customerName}</p>
+        </div>
+
+        {/* Info Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-muted-foreground" />
+              Keine AI-Analyse verfügbar
+            </CardTitle>
+            <CardDescription>
+              Es wurden noch keine Analysedaten für diesen Lead erfasst. Sie können trotzdem eine
+              Entscheidung treffen.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
+        {/* Decision Buttons */}
+        <Card className="border-2">
+          <CardHeader>
+            <CardTitle>Ihre Entscheidung</CardTitle>
+            <CardDescription>
+              Treffen Sie Ihre BID/NO-BID Entscheidung basierend auf Ihrer eigenen Einschätzung.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-4">
+              <Button
+                size="lg"
+                className="flex-1"
+                onClick={() => handleVoteClick('BID')}
+                disabled={isPending}
+              >
+                <ThumbsUp className="mr-2 h-5 w-5" />
+                BID
+              </Button>
+              <Button
+                size="lg"
+                variant="destructive"
+                className="flex-1"
+                onClick={() => handleVoteClick('NO-BID')}
+                disabled={isPending}
+              >
+                <ThumbsDown className="mr-2 h-5 w-5" />
+                NO-BID
+              </Button>
+            </div>
+            <Separator />
+            <Button variant="outline" onClick={() => router.push(`/leads/${lead.id}`)}>
+              Zurück zur Übersicht
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Confirmation Dialog */}
+        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Entscheidung bestätigen</AlertDialogTitle>
+              <AlertDialogDescription>
+                Möchten Sie wirklich <strong>{selectedVote}</strong> für {lead.customerName}{' '}
+                entscheiden?
+                <br />
+                <br />
+                Diese Entscheidung kann nicht rückgängig gemacht werden.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isPending}>Abbrechen</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDecision} disabled={isPending}>
+                {isPending ? 'Speichert...' : 'Bestätigen'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -372,6 +435,9 @@ export function DecisionPageClient({ lead }: DecisionPageClientProps) {
           </Card>
         ))}
       </div>
+
+      {/* Project Plan */}
+      <ProjectPlanCard leadId={lead.id} />
 
       {/* Reasoning */}
       <Card>

@@ -372,6 +372,142 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     );
   },
 
+  // ========================================
+  // TEXT COMPONENTS (for AI synthesis & fallback)
+  // ========================================
+
+  /**
+   * BulletList - Simple bullet point list for text content
+   * Used by: fallback generator, AI synthesis
+   */
+  BulletList: ({ element }) => {
+    const { title, items } = element.props as {
+      title?: string;
+      items: string[];
+    };
+
+    return (
+      <div className="space-y-2">
+        {title && <p className="font-medium text-sm">{title}</p>}
+        <ul className="list-disc list-inside space-y-1">
+          {items.map((item, idx) => (
+            <li key={idx} className="text-sm text-muted-foreground">
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  },
+
+  /**
+   * Paragraph - Simple text paragraph for explanations
+   */
+  Paragraph: ({ element }) => {
+    const { text } = element.props as { text: string };
+    return <p className="text-sm text-muted-foreground">{text}</p>;
+  },
+
+  /**
+   * KeyValue - Key-value pair display
+   */
+  KeyValue: ({ element }) => {
+    const { label, value } = element.props as { label: string; value: string };
+    return (
+      <div className="flex justify-between text-sm py-1">
+        <span className="text-muted-foreground">{label}:</span>
+        <span className="font-medium">{value}</span>
+      </div>
+    );
+  },
+
+  /**
+   * Section - Section header with optional badge
+   */
+  Section: ({ element, children }) => {
+    const {
+      title,
+      description,
+      badge,
+      badgeVariant = 'default',
+    } = element.props as {
+      title: string;
+      description?: string;
+      badge?: string;
+      badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
+    };
+
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">{title}</h3>
+            {description && <p className="text-sm text-muted-foreground">{description}</p>}
+          </div>
+          {badge && <Badge variant={badgeVariant}>{badge}</Badge>}
+        </div>
+        {children}
+      </div>
+    );
+  },
+
+  /**
+   * Insight - Highlighted insight box with icon
+   */
+  Insight: ({ element }) => {
+    const {
+      title,
+      text,
+      type = 'info',
+    } = element.props as {
+      title: string;
+      text: string;
+      type?: 'info' | 'warning' | 'success' | 'tip';
+    };
+
+    const typeConfig = {
+      info: {
+        icon: HelpCircle,
+        bgColor: 'bg-blue-50 border-blue-200',
+        iconColor: 'text-blue-600',
+        titleColor: 'text-blue-900',
+      },
+      warning: {
+        icon: Shield,
+        bgColor: 'bg-yellow-50 border-yellow-200',
+        iconColor: 'text-yellow-600',
+        titleColor: 'text-yellow-900',
+      },
+      success: {
+        icon: CheckCircle2,
+        bgColor: 'bg-green-50 border-green-200',
+        iconColor: 'text-green-600',
+        titleColor: 'text-green-900',
+      },
+      tip: {
+        icon: Lightbulb,
+        bgColor: 'bg-purple-50 border-purple-200',
+        iconColor: 'text-purple-600',
+        titleColor: 'text-purple-900',
+      },
+    };
+
+    const config = typeConfig[type];
+    const Icon = config.icon;
+
+    return (
+      <div className={cn('p-3 rounded-lg border', config.bgColor)}>
+        <div className="flex items-start gap-3">
+          <Icon className={cn('h-5 w-5 mt-0.5 flex-shrink-0', config.iconColor)} />
+          <div className="flex-1 min-w-0">
+            <p className={cn('font-medium text-sm', config.titleColor)}>{title}</p>
+            <p className="text-sm text-muted-foreground mt-1">{text}</p>
+          </div>
+        </div>
+      </div>
+    );
+  },
+
   // Company Intelligence Components
   CompanyCard: ({ element }) => {
     const { name, industry, size, location, employeeCount, revenue } = element.props as {
@@ -1834,6 +1970,416 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
             )}
           </div>
         )}
+      </div>
+    );
+  },
+
+  // ========================================
+  // Deep-Scan Expert Components
+  // ========================================
+
+  /**
+   * ExpertResultCard - Summary card for an expert agent's results
+   */
+  ExpertResultCard: ({ element, children }) => {
+    const { expertName, confidence, status, summary } = element.props as {
+      expertName: string;
+      confidence?: number;
+      status?: 'complete' | 'running' | 'error' | 'pending';
+      summary?: string;
+    };
+
+    const statusConfig = {
+      complete: { label: 'Abgeschlossen', color: 'bg-green-100 text-green-800 border-green-200' },
+      running: { label: 'In Bearbeitung', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+      error: { label: 'Fehler', color: 'bg-red-100 text-red-800 border-red-200' },
+      pending: { label: 'Ausstehend', color: 'bg-gray-100 text-gray-800 border-gray-200' },
+    };
+
+    const config = status ? statusConfig[status] : statusConfig.complete;
+
+    return (
+      <Card className="mb-4">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">{expertName}</CardTitle>
+            <div className="flex items-center gap-2">
+              {confidence !== undefined && <Badge variant="secondary">{confidence}%</Badge>}
+              <Badge className={cn('text-xs', config.color)}>{config.label}</Badge>
+            </div>
+          </div>
+          {summary && <CardDescription>{summary}</CardDescription>}
+        </CardHeader>
+        {children && <CardContent className="pt-0">{children}</CardContent>}
+      </Card>
+    );
+  },
+
+  /**
+   * TechStackSummary - Combined view of CMS, frameworks, and hosting
+   */
+  TechStackSummary: ({ element }) => {
+    const { cms, frameworks, hosting, confidence } = element.props as {
+      cms?: { name: string; version?: string; confidence: number };
+      frameworks?: Array<{ name: string; type: string; confidence: number }>;
+      hosting?: { provider?: string; type?: string; cdn?: string };
+      confidence?: number;
+    };
+
+    return (
+      <div className="space-y-4">
+        {/* Overall confidence */}
+        {confidence !== undefined && (
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-sm text-muted-foreground">Gesamtvertrauen:</span>
+            <Progress value={confidence} className="flex-1 max-w-[200px] h-2" />
+            <span className="text-sm font-medium">{confidence}%</span>
+          </div>
+        )}
+
+        {/* CMS */}
+        {cms && (
+          <div className="p-3 rounded-lg bg-purple-50 border border-purple-100">
+            <p className="text-sm font-medium text-purple-800 mb-2">CMS</p>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">{cms.name}</span>
+              {cms.version && <Badge variant="outline">v{cms.version}</Badge>}
+              <Badge variant="secondary">{cms.confidence}%</Badge>
+            </div>
+          </div>
+        )}
+
+        {/* Frameworks */}
+        {frameworks && frameworks.length > 0 && (
+          <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+            <p className="text-sm font-medium text-blue-800 mb-2">Frameworks & Libraries</p>
+            <div className="flex flex-wrap gap-2">
+              {frameworks.map((fw, idx) => (
+                <div
+                  key={idx}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded border"
+                >
+                  <span className="font-medium text-sm">{fw.name}</span>
+                  <span className="text-xs text-muted-foreground">({fw.type})</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Hosting */}
+        {hosting && (hosting.provider || hosting.type || hosting.cdn) && (
+          <div className="p-3 rounded-lg bg-orange-50 border border-orange-100">
+            <p className="text-sm font-medium text-orange-800 mb-2">Hosting</p>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              {hosting.provider && (
+                <div>
+                  <span className="text-muted-foreground">Provider:</span>
+                  <p className="font-medium">{hosting.provider}</p>
+                </div>
+              )}
+              {hosting.type && (
+                <div>
+                  <span className="text-muted-foreground">Typ:</span>
+                  <p className="font-medium">{hosting.type}</p>
+                </div>
+              )}
+              {hosting.cdn && (
+                <div>
+                  <span className="text-muted-foreground">CDN:</span>
+                  <p className="font-medium">{hosting.cdn}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  },
+
+  /**
+   * DecisionCard - BID/NO-BID recommendation with score breakdown
+   */
+  DecisionCard: ({ element }) => {
+    const { decision, confidence, score, reasoning, factors } = element.props as {
+      decision: 'BID' | 'NO-BID' | 'REVIEW';
+      confidence: number;
+      score?: number;
+      reasoning: string;
+      factors?: Array<{
+        name: string;
+        score: number;
+        weight: number;
+        impact: 'positive' | 'negative' | 'neutral';
+      }>;
+    };
+
+    const decisionConfig = {
+      BID: {
+        label: 'BID',
+        color: 'bg-green-500 text-white',
+        borderColor: 'border-green-200 bg-green-50',
+      },
+      'NO-BID': {
+        label: 'NO-BID',
+        color: 'bg-red-500 text-white',
+        borderColor: 'border-red-200 bg-red-50',
+      },
+      REVIEW: {
+        label: 'REVIEW',
+        color: 'bg-yellow-500 text-white',
+        borderColor: 'border-yellow-200 bg-yellow-50',
+      },
+    };
+
+    const config = decisionConfig[decision];
+    const impactColors = {
+      positive: 'text-green-600',
+      negative: 'text-red-600',
+      neutral: 'text-gray-600',
+    };
+
+    return (
+      <div className={cn('p-4 rounded-lg border-2', config.borderColor)}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Badge className={cn('text-lg px-4 py-1', config.color)}>{config.label}</Badge>
+            {score !== undefined && <span className="text-2xl font-bold">{score}/100</span>}
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">Confidence</p>
+            <p className="text-xl font-semibold">{confidence}%</p>
+          </div>
+        </div>
+
+        <p className="text-sm mb-4">{reasoning}</p>
+
+        {factors && factors.length > 0 && (
+          <div className="space-y-2 pt-4 border-t">
+            <p className="text-sm font-medium text-muted-foreground">Bewertungsfaktoren</p>
+            {factors.map((factor, idx) => (
+              <div key={idx} className="flex items-center justify-between text-sm">
+                <span className={impactColors[factor.impact]}>{factor.name}</span>
+                <div className="flex items-center gap-2">
+                  <Progress value={factor.score} className="w-20 h-1.5" />
+                  <span className="w-8 text-right">{factor.score}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  },
+
+  /**
+   * MigrationComplexity - Visual complexity indicator for migrations
+   */
+  MigrationComplexity: ({ element }) => {
+    const { level, score, factors, estimatedEffort } = element.props as {
+      level: 'low' | 'medium' | 'high' | 'very_high';
+      score: number;
+      factors?: Array<{ name: string; impact: 'low' | 'medium' | 'high' }>;
+      estimatedEffort?: { minDays: number; maxDays: number };
+    };
+
+    const levelConfig = {
+      low: { label: 'Niedrig', color: 'bg-green-500', bgColor: 'bg-green-50 border-green-200' },
+      medium: {
+        label: 'Mittel',
+        color: 'bg-yellow-500',
+        bgColor: 'bg-yellow-50 border-yellow-200',
+      },
+      high: { label: 'Hoch', color: 'bg-orange-500', bgColor: 'bg-orange-50 border-orange-200' },
+      very_high: { label: 'Sehr hoch', color: 'bg-red-500', bgColor: 'bg-red-50 border-red-200' },
+    };
+
+    const config = levelConfig[level];
+    const impactConfig = {
+      low: 'bg-green-100 text-green-800',
+      medium: 'bg-yellow-100 text-yellow-800',
+      high: 'bg-red-100 text-red-800',
+    };
+
+    return (
+      <div className={cn('p-4 rounded-lg border', config.bgColor)}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Migrationskomplexität</p>
+            <div className="flex items-center gap-2 mt-1">
+              <div className={cn('w-3 h-3 rounded-full', config.color)} />
+              <span className="text-xl font-bold">{config.label}</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-bold">{score}</p>
+            <p className="text-sm text-muted-foreground">/ 100</p>
+          </div>
+        </div>
+
+        {/* Progress bar visualization */}
+        <div className="h-3 bg-gray-200 rounded-full overflow-hidden mb-4">
+          <div
+            className={cn('h-full transition-all', config.color)}
+            style={{ width: `${score}%` }}
+          />
+        </div>
+
+        {estimatedEffort && (
+          <div className="p-2 bg-white/50 rounded mb-4">
+            <p className="text-sm">
+              <span className="text-muted-foreground">Geschätzter Aufwand: </span>
+              <span className="font-medium">
+                {estimatedEffort.minDays}–{estimatedEffort.maxDays} PT
+              </span>
+            </p>
+          </div>
+        )}
+
+        {factors && factors.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground uppercase">
+              Komplexitätsfaktoren
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {factors.map((factor, idx) => (
+                <Badge key={idx} className={cn('text-xs', impactConfig[factor.impact])}>
+                  {factor.name}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  },
+
+  /**
+   * ProsConsList - Two-column pro/contra display
+   */
+  ProsConsList: ({ element }) => {
+    const { title, pros, cons } = element.props as {
+      title?: string;
+      pros: Array<{ text: string; importance?: 'high' | 'medium' | 'low' }>;
+      cons: Array<{ text: string; importance?: 'high' | 'medium' | 'low' }>;
+    };
+
+    const importanceWeight = { high: 'font-medium', medium: '', low: 'text-muted-foreground' };
+
+    return (
+      <div className="space-y-3">
+        {title && <h4 className="font-medium">{title}</h4>}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Pros */}
+          <div className="p-3 rounded-lg bg-green-50 border border-green-100">
+            <p className="text-sm font-medium text-green-800 mb-2 flex items-center gap-1">
+              <CheckCircle2 className="h-4 w-4" />
+              Vorteile ({pros.length})
+            </p>
+            <ul className="space-y-1.5">
+              {pros.map((pro, idx) => (
+                <li
+                  key={idx}
+                  className={cn(
+                    'text-sm flex items-start gap-2',
+                    importanceWeight[pro.importance || 'medium']
+                  )}
+                >
+                  <span className="text-green-600 mt-0.5">+</span>
+                  <span>{pro.text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Cons */}
+          <div className="p-3 rounded-lg bg-red-50 border border-red-100">
+            <p className="text-sm font-medium text-red-800 mb-2 flex items-center gap-1">
+              <XCircle className="h-4 w-4" />
+              Nachteile ({cons.length})
+            </p>
+            <ul className="space-y-1.5">
+              {cons.map((con, idx) => (
+                <li
+                  key={idx}
+                  className={cn(
+                    'text-sm flex items-start gap-2',
+                    importanceWeight[con.importance || 'medium']
+                  )}
+                >
+                  <span className="text-red-600 mt-0.5">−</span>
+                  <span>{con.text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  },
+
+  /**
+   * NextStepsList - Action items with priority and owner
+   */
+  NextStepsList: ({ element }) => {
+    const { title, steps } = element.props as {
+      title?: string;
+      steps: Array<{
+        action: string;
+        priority: 'critical' | 'high' | 'medium' | 'low';
+        owner?: string;
+        dueDate?: string;
+        completed?: boolean;
+      }>;
+    };
+
+    const priorityConfig = {
+      critical: { label: 'Kritisch', color: 'bg-red-100 text-red-800 border-red-200' },
+      high: { label: 'Hoch', color: 'bg-orange-100 text-orange-800 border-orange-200' },
+      medium: { label: 'Mittel', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+      low: { label: 'Niedrig', color: 'bg-gray-100 text-gray-800 border-gray-200' },
+    };
+
+    return (
+      <div className="space-y-3">
+        {title && <h4 className="font-medium">{title}</h4>}
+        <div className="space-y-2">
+          {steps.map((step, idx) => {
+            const config = priorityConfig[step.priority];
+            return (
+              <div
+                key={idx}
+                className={cn(
+                  'p-3 rounded-lg border flex items-start gap-3',
+                  step.completed ? 'bg-muted/50 opacity-70' : 'bg-card'
+                )}
+              >
+                <div className="flex-shrink-0 mt-0.5">
+                  {step.completed ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={cn('text-sm', step.completed && 'line-through')}>{step.action}</p>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <Badge className={cn('text-xs', config.color)}>{config.label}</Badge>
+                    {step.owner && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {step.owner}
+                      </span>
+                    )}
+                    {step.dueDate && (
+                      <span className="text-xs text-muted-foreground">bis {step.dueDate}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   },

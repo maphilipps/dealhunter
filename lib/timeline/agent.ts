@@ -174,7 +174,7 @@ ${input.specialRequirements?.length ? `## Special Requirements\n${input.specialR
   }
 
   const { object } = await generateObject({
-    model: openai('claude-haiku-4.5') as unknown as LanguageModel,
+    model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
     schema: projectTimelineSchema,
     prompt: `Du bist ein erfahrener Projektplaner bei adesso SE.
 

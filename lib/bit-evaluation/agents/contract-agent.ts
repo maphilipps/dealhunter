@@ -4,6 +4,9 @@ import { contractAnalysisSchema, type ContractAnalysis } from '../schema';
 
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
+// Security: Prompt Injection Protection
+import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
+
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -42,10 +45,13 @@ export async function runContractAgent(input: ContractAgentInput): Promise<Contr
         const contractSearch = await intelligentTools.webSearch(searchQuery, 3);
 
         if (contractSearch && contractSearch.length > 0) {
-          contractTypeInsights = `\n\n**Vertragsmodell-Insights (EXA):**\n${contractSearch
+          const rawContractData = contractSearch
             .slice(0, 2)
             .map(r => `- ${r.title}: ${r.snippet}`)
-            .join('\n')}`;
+            .join('\n');
+
+          // Wrap web search results for prompt injection protection
+          contractTypeInsights = `\n\n**Vertragsmodell-Insights (EXA):**\n${wrapUserContent(rawContractData, 'web')}`;
           console.log(`[Contract Agent] ${contractSearch.length} Vertragsmodell-Insights gefunden`);
         }
       }
@@ -55,7 +61,7 @@ export async function runContractAgent(input: ContractAgentInput): Promise<Contr
   }
 
   const completion = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       {
         role: 'system',

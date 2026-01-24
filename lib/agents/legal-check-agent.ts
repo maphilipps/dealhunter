@@ -16,7 +16,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { leads, rfpEmbeddings } from '@/lib/db/schema';
+import { leads, dealEmbeddings } from '@/lib/db/schema';
 import { queryRagForLead, formatLeadContext } from '@/lib/rag/lead-retrieval-service';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -295,7 +295,7 @@ ${recommendationsText}`;
     const chunksWithEmbeddings = await generateRawChunkEmbeddings(chunks);
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
-      await db.insert(rfpEmbeddings).values({
+      await db.insert(dealEmbeddings).values({
         rfpId,
         agentName: 'legal_check',
         chunkType: 'analysis',

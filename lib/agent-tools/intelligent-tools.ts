@@ -137,7 +137,7 @@ export interface IntelligentToolsContext {
 /**
  * Web Search via EXA (with DuckDuckGo fallback)
  */
-async function createWebSearch(ctx: IntelligentToolsContext) {
+function createWebSearch(ctx: IntelligentToolsContext) {
   return async (query: string, numResults = 5): Promise<SearchResult[]> => {
     const startTime = Date.now();
     const searchProvider = isExaSearchAvailable() ? 'EXA' : 'DuckDuckGo';
@@ -187,7 +187,7 @@ async function createWebSearch(ctx: IntelligentToolsContext) {
 /**
  * URL Content Fetching via EXA (with fetch fallback)
  */
-async function createFetchUrl(ctx: IntelligentToolsContext) {
+function createFetchUrl(ctx: IntelligentToolsContext) {
   return async (url: string): Promise<{ content: string; error?: string }> => {
     const startTime = Date.now();
 
@@ -233,7 +233,7 @@ async function createFetchUrl(ctx: IntelligentToolsContext) {
 /**
  * GitHub Repository Info
  */
-async function createGitHubRepo(ctx: IntelligentToolsContext) {
+function createGitHubRepo(ctx: IntelligentToolsContext) {
   return async (urlOrName: string): Promise<GitHubInfo> => {
     const startTime = Date.now();
 
@@ -286,7 +286,7 @@ async function createGitHubRepo(ctx: IntelligentToolsContext) {
 /**
  * Single Page Crawling
  */
-async function createCrawlPage(ctx: IntelligentToolsContext) {
+function createCrawlPage(ctx: IntelligentToolsContext) {
   return async (url: string): Promise<PageContent> => {
     const startTime = Date.now();
 
@@ -362,7 +362,7 @@ async function createCrawlPage(ctx: IntelligentToolsContext) {
 /**
  * Multi-Page Site Crawling
  */
-async function createCrawlSite(ctx: IntelligentToolsContext) {
+function createCrawlSite(ctx: IntelligentToolsContext) {
   return async (
     url: string,
     options?: { maxDepth?: number; maxPages?: number }
@@ -459,7 +459,7 @@ async function createCrawlSite(ctx: IntelligentToolsContext) {
 /**
  * Quick Navigation Scan
  */
-async function createQuickNavScan(ctx: IntelligentToolsContext) {
+function createQuickNavScan(ctx: IntelligentToolsContext) {
   return async (url: string) => {
     ctx.emit?.({
       type: AgentEventType.AGENT_PROGRESS,
@@ -487,7 +487,7 @@ async function createQuickNavScan(ctx: IntelligentToolsContext) {
 /**
  * Screenshot Tool
  */
-async function createScreenshot(ctx: IntelligentToolsContext) {
+function createScreenshot(ctx: IntelligentToolsContext) {
   return async (url: string, outputPath: string): Promise<ScreenshotResult> => {
     ctx.emit?.({
       type: AgentEventType.AGENT_PROGRESS,
@@ -507,7 +507,7 @@ async function createScreenshot(ctx: IntelligentToolsContext) {
 /**
  * Sitemap Fetching
  */
-async function createFetchSitemap(ctx: IntelligentToolsContext) {
+function createFetchSitemap(ctx: IntelligentToolsContext) {
   return async (url: string): Promise<SitemapResult> => {
     const baseUrl = url.startsWith('http') ? url : `https://${url}`;
     const sitemapPaths = [

@@ -1,10 +1,23 @@
 'use client';
 
-import { Upload, FileText, Loader2, Globe, Type } from 'lucide-react';
+import { Upload, FileText, Loader2, Globe, Type, X, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { uploadCombinedBid } from '@/lib/bids/actions';
 
 interface UploadBidFormProps {
@@ -16,8 +29,8 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
   const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [websiteUrls, setWebsiteUrls] = useState<string[]>(['']);
   const [additionalText, setAdditionalText] = useState('');
   const [enableDSGVO, setEnableDSGVO] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
@@ -36,32 +49,56 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
     e.preventDefault();
     setIsDragging(false);
 
-    const files = e.dataTransfer.files;
-    if (files && files[0]) {
-      const file = files[0];
-      if (file.type === 'application/pdf') {
-        setSelectedFile(file);
-      } else {
-        toast.error('Nur PDF-Dateien sind erlaubt');
-      }
+    const files = Array.from(e.dataTransfer.files);
+    const pdfFiles = files.filter(file => file.type === 'application/pdf');
+
+    if (pdfFiles.length === 0) {
+      toast.error('Nur PDF-Dateien sind erlaubt');
+      return;
     }
+
+    if (pdfFiles.length !== files.length) {
+      toast.warning(`${files.length - pdfFiles.length} Nicht-PDF-Dateien wurden ignoriert`);
+    }
+
+    setSelectedFiles(prev => [...prev, ...pdfFiles]);
   }, []);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files[0]) {
-      const file = files[0];
-      if (file.type === 'application/pdf') {
-        setSelectedFile(file);
-      } else {
-        toast.error('Nur PDF-Dateien sind erlaubt');
-      }
+    if (!files) return;
+
+    const pdfFiles = Array.from(files).filter(file => file.type === 'application/pdf');
+
+    if (pdfFiles.length === 0) {
+      toast.error('Nur PDF-Dateien sind erlaubt');
+      return;
     }
+
+    setSelectedFiles(prev => [...prev, ...pdfFiles]);
+    e.target.value = '';
+  }, []);
+
+  const removeFile = useCallback((index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const addUrlField = useCallback(() => {
+    setWebsiteUrls(prev => [...prev, '']);
+  }, []);
+
+  const updateUrl = useCallback((index: number, value: string) => {
+    setWebsiteUrls(prev => prev.map((url, i) => (i === index ? value : url)));
+  }, []);
+
+  const removeUrl = useCallback((index: number) => {
+    setWebsiteUrls(prev => (prev.length > 1 ? prev.filter((_, i) => i !== index) : ['']));
   }, []);
 
   const handleSubmit = async () => {
-    // Validate at least one input
-    if (!selectedFile && !websiteUrl.trim() && !additionalText.trim()) {
+    const validUrls = websiteUrls.filter(url => url.trim());
+
+    if (selectedFiles.length === 0 && validUrls.length === 0 && !additionalText.trim()) {
       toast.error('Mindestens eine Eingabe (PDF, URL oder Text) ist erforderlich');
       return;
     }
@@ -71,12 +108,12 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
     try {
       const formData = new FormData();
 
-      if (selectedFile) {
-        formData.append('file', selectedFile);
+      for (const file of selectedFiles) {
+        formData.append('files', file);
       }
 
-      if (websiteUrl.trim()) {
-        formData.append('websiteUrl', websiteUrl.trim());
+      for (const url of validUrls) {
+        formData.append('websiteUrls', url);
       }
 
       if (additionalText.trim()) {
@@ -94,11 +131,24 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
       const result = await uploadCombinedBid(formData);
 
       if (result.success) {
-        if (result.piiRemoved) {
-          toast.success('Erfolgreich hochgeladen (persönliche Daten entfernt)');
-        } else {
-          toast.success('Erfolgreich hochgeladen');
+        const fileCount = selectedFiles.length;
+        const urlCount = validUrls.length;
+        const hasText = additionalText.trim().length > 0;
+
+        let message = 'Erfolgreich hochgeladen';
+        if (fileCount > 1 || urlCount > 1 || (fileCount >= 1 && urlCount >= 1)) {
+          const parts = [];
+          if (fileCount > 0) parts.push(`${fileCount} PDF${fileCount > 1 ? 's' : ''}`);
+          if (urlCount > 0) parts.push(`${urlCount} URL${urlCount > 1 ? 's' : ''}`);
+          if (hasText) parts.push('Text');
+          message = `${parts.join(' + ')} kombiniert`;
         }
+
+        if (result.piiRemoved) {
+          message += ' (persönliche Daten entfernt)';
+        }
+
+        toast.success(message);
         router.push(`/rfps/${result.bidId}`);
       } else {
         toast.error(result.error || 'Upload fehlgeschlagen');
@@ -111,218 +161,281 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
     }
   };
 
-  const hasAnyInput = selectedFile || websiteUrl.trim() || additionalText.trim();
+  const validUrls = websiteUrls.filter(url => url.trim());
+  const hasAnyInput = selectedFiles.length > 0 || validUrls.length > 0 || additionalText.trim();
+  const totalFileSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
 
   return (
     <div className="space-y-6">
       {/* Info Banner */}
-      <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
-        <h3 className="font-semibold text-primary mb-2">
-          RFP Eingabe - Wählen Sie mindestens eine Methode:
-        </h3>
-        <ul className="text-sm space-y-1 text-muted-foreground">
-          <li>
-            ✓ <strong>PDF Upload</strong> - RFP-Dokument hochladen (empfohlen)
-          </li>
-          <li>
-            ✓ <strong>Freitext/E-Mail</strong> - Text direkt eingeben oder E-Mail einfügen
-          </li>
-          <li>
-            ✓ <strong>Website-URL</strong> - Für automatische Tech-Stack-Analyse (empfohlen)
-          </li>
-        </ul>
-      </div>
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg text-primary">
+            RFP Eingabe - Kombinieren Sie beliebig viele Quellen
+          </CardTitle>
+          <CardDescription>
+            Alle Quellen werden zu einem ganzheitlichen Input für die AI-Analyse kombiniert.
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
-      {/* Account Selection */}
-      <div className="rounded-lg border bg-card p-4">
-        <label htmlFor="account-select" className="block text-sm font-medium mb-2">
-          Account zuordnen (optional)
-        </label>
-        <select
-          id="account-select"
-          value={selectedAccountId}
-          onChange={e => setSelectedAccountId(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2"
-          disabled={isUploading}
-        >
-          <option value="">-- Kein Account ausgewählt --</option>
-          {accounts.map(account => (
-            <option key={account.id} value={account.id}>
-              {account.name} ({account.industry})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Section 1: PDF Upload */}
-      <div className="rounded-lg border-2 border-primary/50 bg-card p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Upload className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">Option 1: PDF Upload</h2>
-        </div>
-
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          className={`
-            border-2 border-dashed rounded-lg p-8 text-center
-            transition-colors cursor-pointer
-            ${isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'}
-            ${selectedFile ? 'bg-muted/50' : ''}
-          `}
-        >
-          <input
-            type="file"
-            id="pdf-upload"
-            accept="application/pdf"
-            className="hidden"
-            onChange={handleFileSelect}
-            disabled={isUploading}
-          />
-
-          <label htmlFor="pdf-upload" className="cursor-pointer block">
-            {selectedFile ? (
-              <div className="space-y-3">
-                <FileText className="mx-auto h-12 w-12 text-primary" />
-                <div>
-                  <p className="font-medium">{selectedFile.name}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={e => {
-                    e.preventDefault();
-                    setSelectedFile(null);
-                  }}
-                  className="text-sm text-muted-foreground hover:text-foreground underline"
-                >
-                  Andere Datei wählen
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">PDF hierher ziehen oder klicken zum Auswählen</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Unterstützt werden PDF-Dateien bis 10 MB
-                  </p>
-                </div>
-              </div>
-            )}
-          </label>
-        </div>
-
-        {selectedFile && (
-          <div className="mt-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/50">
-              <input
-                type="checkbox"
-                id="dsgvo-cleaning"
-                checked={enableDSGVO}
-                onChange={e => setEnableDSGVO(e.target.checked)}
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* LEFT COLUMN: Account + URLs */}
+        <div className="space-y-6">
+          {/* Account Selection */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">Account zuordnen</CardTitle>
+              <CardDescription>Optional: Bestehenden Account verknüpfen</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Select
+                value={selectedAccountId}
+                onValueChange={setSelectedAccountId}
                 disabled={isUploading}
-                className="h-4 w-4"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="-- Kein Account ausgewählt --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">-- Kein Account ausgewählt --</SelectItem>
+                  {accounts.map(account => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name} ({account.industry})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
+          {/* Website URLs */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Globe className="h-5 w-5 text-primary" />
+                Website-URLs
+              </CardTitle>
+              <CardDescription>Für automatische Tech-Stack-Analyse (empfohlen)</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {websiteUrls.map((url, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    type="url"
+                    value={url}
+                    onChange={e => updateUrl(index, e.target.value)}
+                    placeholder={
+                      index === 0 ? 'https://www.kunde.de' : 'Weitere URL (z.B. LinkedIn)'
+                    }
+                    disabled={isUploading}
+                  />
+                  {websiteUrls.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeUrl(index)}
+                      disabled={isUploading}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addUrlField}
+                disabled={isUploading}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Weitere URL hinzufügen
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* RIGHT COLUMN: Files + Freetext */}
+        <div className="space-y-6">
+          {/* PDF Upload */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Upload className="h-5 w-5 text-primary" />
+                    PDF Dokumente
+                  </CardTitle>
+                  <CardDescription>RFP, Anhänge, E-Mails als PDF</CardDescription>
+                </div>
+                {selectedFiles.length > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    {selectedFiles.length} Datei{selectedFiles.length > 1 ? 'en' : ''} (
+                    {(totalFileSize / 1024 / 1024).toFixed(1)} MB)
+                  </span>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Uploaded Files List */}
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2">
+                  {selectedFiles.map((file, index) => (
+                    <div
+                      key={`${file.name}-${index}`}
+                      className="flex items-center gap-3 p-2 rounded-lg border bg-muted/50"
+                    >
+                      <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeFile(index)}
+                        disabled={isUploading}
+                        className="h-8 w-8"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Drop Zone */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`
+                  border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer
+                  ${isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'}
+                `}
+              >
+                <input
+                  type="file"
+                  id="pdf-upload"
+                  accept="application/pdf"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileSelect}
+                  disabled={isUploading}
+                />
+
+                <label htmlFor="pdf-upload" className="cursor-pointer block">
+                  <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm font-medium">
+                    {selectedFiles.length > 0 ? 'Weitere PDFs hinzufügen' : 'PDFs hierher ziehen'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    oder klicken (max. 10 MB/Datei)
+                  </p>
+                </label>
+              </div>
+
+              {/* DSGVO Checkbox */}
+              {selectedFiles.length > 0 && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="dsgvo-cleaning"
+                    checked={enableDSGVO}
+                    onCheckedChange={checked => setEnableDSGVO(checked === true)}
+                    disabled={isUploading}
+                  />
+                  <Label htmlFor="dsgvo-cleaning" className="text-sm">
+                    DSGVO-Bereinigung (persönliche Daten entfernen)
+                  </Label>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Freetext */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Type className="h-5 w-5 text-primary" />
+                Freitext / E-Mail
+              </CardTitle>
+              <CardDescription>Zusätzliche Informationen oder E-Mail-Inhalt</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={additionalText}
+                onChange={e => setAdditionalText(e.target.value)}
+                placeholder="Kopieren Sie hier den RFP-Text oder E-Mail-Inhalt ein..."
+                rows={6}
+                disabled={isUploading}
+                className="resize-y"
               />
-              <label htmlFor="dsgvo-cleaning" className="text-sm font-medium cursor-pointer">
-                DSGVO-Bereinigung aktivieren (persönliche Daten entfernen)
-              </label>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Section 2: Website URL */}
-      <div className="rounded-lg border-2 border-primary/50 bg-card p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Globe className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">Option 2: Website-URL</h2>
-          <span className="text-xs text-muted-foreground">(empfohlen für Tech-Stack-Analyse)</span>
-        </div>
-
-        <div>
-          <label htmlFor="website-url" className="block text-sm font-medium mb-2">
-            Kunden-Website für Quick Scan
-          </label>
-          <input
-            id="website-url"
-            type="url"
-            value={websiteUrl}
-            onChange={e => setWebsiteUrl(e.target.value)}
-            placeholder="https://www.beispiel-kunde.de"
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            disabled={isUploading}
-          />
-          <p className="text-xs text-muted-foreground mt-2">
-            Die URL wird für die automatische Tech-Stack-Analyse verwendet
-          </p>
-        </div>
-      </div>
-
-      {/* Section 3: Freitext/E-Mail Input */}
-      <div className="rounded-lg border-2 border-primary/50 bg-card p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Type className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">Option 3: Freitext / E-Mail</h2>
-        </div>
-
-        <div>
-          <label htmlFor="additional-text" className="block text-sm font-medium mb-2">
-            RFP-Text direkt eingeben oder E-Mail-Inhalt einfügen
-          </label>
-          <textarea
-            id="additional-text"
-            value={additionalText}
-            onChange={e => setAdditionalText(e.target.value)}
-            placeholder="Kopieren Sie hier den RFP-Text oder E-Mail-Inhalt ein. Kann auch als Ergänzung zum PDF verwendet werden..."
-            rows={8}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
-            disabled={isUploading}
-          />
-          <p className="text-xs text-muted-foreground mt-2">{additionalText.length} Zeichen</p>
+              <p className="text-xs text-muted-foreground mt-2 text-right">
+                {additionalText.length} Zeichen
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
       {/* Submit Section */}
-      <div className="rounded-lg border bg-card p-6">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            {hasAnyInput ? (
-              <span className="text-green-600 font-medium">
-                ✓ Mindestens eine Eingabe vorhanden
-              </span>
-            ) : (
-              <span className="text-amber-600 font-medium">
-                ⚠ Mindestens eine Eingabe erforderlich
-              </span>
-            )}
-          </div>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              {hasAnyInput ? (
+                <div className="space-y-1">
+                  <span className="text-green-600 font-medium">✓ Eingaben vorhanden:</span>
+                  <div className="text-muted-foreground text-xs flex gap-2">
+                    {selectedFiles.length > 0 && (
+                      <span>
+                        {selectedFiles.length} PDF{selectedFiles.length > 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {validUrls.length > 0 && (
+                      <span>
+                        {validUrls.length} URL{validUrls.length > 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {additionalText.trim() && <span>+ Text</span>}
+                  </div>
+                </div>
+              ) : (
+                <span className="text-amber-600 font-medium">
+                  ⚠ Mindestens eine Eingabe erforderlich
+                </span>
+              )}
+            </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              void handleSubmit();
-            }}
-            disabled={isUploading || !hasAnyInput}
-            className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isUploading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Wird verarbeitet...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4" />
-                Bid erstellen
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+            <Button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={isUploading || !hasAnyInput}
+              size="lg"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Wird verarbeitet...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Bid erstellen
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

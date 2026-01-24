@@ -1,7 +1,10 @@
+import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
-import { SectionPageTemplate } from '@/components/leads/section-page-template';
+import { CMSComparisonView } from '@/components/leads/cms-comparison-client';
 import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { leads, technologies } from '@/lib/db/schema';
 
 export default async function CmsComparisonPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -11,12 +14,22 @@ export default async function CmsComparisonPage({ params }: { params: Promise<{ 
     redirect('/login');
   }
 
+  // Fetch lead with selected CMS info
+  const [lead] = await db
+    .select({
+      selectedCmsId: leads.selectedCmsId,
+      selectedCmsName: technologies.name,
+    })
+    .from(leads)
+    .leftJoin(technologies, eq(leads.selectedCmsId, technologies.id))
+    .where(eq(leads.id, id))
+    .limit(1);
+
   return (
-    <SectionPageTemplate
+    <CMSComparisonView
       leadId={id}
-      sectionId="cms-comparison"
-      title="CMS-Vergleich & Auswahl"
-      description="CMS-Optionen Vergleich und Empfehlung"
+      selectedCmsId={lead?.selectedCmsId}
+      selectedCmsName={lead?.selectedCmsName}
     />
   );
 }

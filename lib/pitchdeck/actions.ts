@@ -954,5 +954,3 @@ export async function generateAllSolutionSketches(
     };
   }
 }
-
-

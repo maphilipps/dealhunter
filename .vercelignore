@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+
+# Database (SQLite doesn't work on Vercel serverless)
+local.db
+*.db
+
+# Screenshots (development only)
+public/screenshots/
+
+# Development files
+.wip/
+audits/
+docs/plans/
+EPICS/
+
+# Large/unnecessary files
+*.log
+.DS_Store

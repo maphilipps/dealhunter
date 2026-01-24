@@ -176,6 +176,18 @@ export async function convertRfpToLead(
       };
     }
 
+    // Extract website URL from extractedRequirements.websiteUrls array
+    let websiteUrl: string | null = null;
+    if (extractedReqs.websiteUrls && Array.isArray(extractedReqs.websiteUrls)) {
+      const primaryUrl = (extractedReqs.websiteUrls as Array<{ url: string; type?: string }>).find(
+        u => u.type === 'primary'
+      );
+      websiteUrl =
+        primaryUrl?.url || (extractedReqs.websiteUrls[0] as { url: string })?.url || null;
+    } else if (extractedReqs.websiteUrl) {
+      websiteUrl = extractedReqs.websiteUrl as string;
+    }
+
     // Create Lead
     const [newLead] = await db
       .insert(leads)
@@ -183,7 +195,7 @@ export async function convertRfpToLead(
         rfpId: rfp.id,
         status: 'routed',
         customerName: (extractedReqs.customerName as string | undefined) || 'Unbekannter Kunde',
-        websiteUrl: rfp.websiteUrl || (extractedReqs.websiteUrl as string | undefined) || null,
+        websiteUrl: rfp.websiteUrl || websiteUrl,
         industry: (extractedReqs.industry as string | undefined) || null,
         projectDescription: (extractedReqs.projectDescription as string | undefined) || null,
         budget: (extractedReqs.budget as string | undefined) || null,
@@ -372,6 +384,264 @@ export async function submitBLDecision(input: BLDecisionInput): Promise<BLDecisi
     };
   } catch (error) {
     console.error('Error submitting BL decision:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
+}
+
+/**
+ * Update Lead website URL
+ *
+ * @param leadId - Lead ID
+ * @param websiteUrl - New website URL
+ * @returns Success or error
+ */
+export async function updateLeadWebsiteUrl(
+  leadId: string,
+  websiteUrl: string
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Validate URL format
+    const urlSchema = z.string().url();
+    const result = urlSchema.safeParse(websiteUrl);
+    if (!result.success) {
+      return { success: false, error: 'Ungültige URL' };
+    }
+
+    // Verify lead exists
+    const [lead] = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+    if (!lead) {
+      return { success: false, error: 'Lead nicht gefunden' };
+    }
+
+    // Update website URL
+    await db.update(leads).set({ websiteUrl }).where(eq(leads.id, leadId));
+
+    // Create audit log
+    await createAuditLog({
+      action: 'update',
+      entityType: 'lead',
+      entityId: leadId,
+      previousValue: JSON.stringify({ websiteUrl: lead.websiteUrl }),
+      newValue: JSON.stringify({ websiteUrl }),
+      reason: 'Website URL aktualisiert',
+    });
+
+    revalidatePath(`/leads/${leadId}`);
+    revalidatePath(`/leads/${leadId}/audit`);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating lead website URL:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
+}
+
+// ===== Phase 4.1: Automatische Audit-Erkennung =====
+
+export interface AuditStatus {
+  hasAuditDirectory: boolean;
+  hasAuditDataInRAG: boolean;
+  auditPath: string | null;
+  domain: string | null;
+  chunksCount: number;
+  status: 'not_available' | 'available' | 'ingested' | 'ingesting' | 'error';
+  error?: string;
+}
+
+/**
+ * Extract domain from a URL
+ */
+function extractDomainFromUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    // Remove www. prefix if present
+    return parsed.hostname.replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if audit directory exists for a domain
+ */
+async function checkAuditDirectoryExists(domain: string): Promise<string | null> {
+  const { existsSync } = await import('fs');
+  const { join } = await import('path');
+
+  const auditPath = join(process.cwd(), 'audits', `audit_${domain}`);
+
+  if (existsSync(auditPath)) {
+    return auditPath;
+  }
+
+  return null;
+}
+
+/**
+ * Check audit data status for a lead
+ *
+ * This function:
+ * 1. Extracts domain from lead's websiteUrl
+ * 2. Checks if audit directory exists (`audits/audit_${domain}/`)
+ * 3. Checks if already ingested in RAG
+ * 4. Returns status for UI badge display
+ */
+export async function getAuditStatus(leadId: string): Promise<AuditStatus> {
+  try {
+    // Get lead
+    const [lead] = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+
+    if (!lead) {
+      return {
+        hasAuditDirectory: false,
+        hasAuditDataInRAG: false,
+        auditPath: null,
+        domain: null,
+        chunksCount: 0,
+        status: 'error',
+        error: 'Lead nicht gefunden',
+      };
+    }
+
+    // Extract domain from websiteUrl
+    if (!lead.websiteUrl) {
+      return {
+        hasAuditDirectory: false,
+        hasAuditDataInRAG: false,
+        auditPath: null,
+        domain: null,
+        chunksCount: 0,
+        status: 'not_available',
+      };
+    }
+
+    const domain = extractDomainFromUrl(lead.websiteUrl);
+    if (!domain) {
+      return {
+        hasAuditDirectory: false,
+        hasAuditDataInRAG: false,
+        auditPath: null,
+        domain: null,
+        chunksCount: 0,
+        status: 'not_available',
+      };
+    }
+
+    // Check if audit directory exists
+    const auditPath = await checkAuditDirectoryExists(domain);
+
+    if (!auditPath) {
+      return {
+        hasAuditDirectory: false,
+        hasAuditDataInRAG: false,
+        auditPath: null,
+        domain,
+        chunksCount: 0,
+        status: 'not_available',
+      };
+    }
+
+    // Check if already ingested in RAG
+    const { hasAuditData, getAuditChunkCount } = await import('@/lib/audit/audit-rag-ingestion');
+    const isIngested = await hasAuditData(leadId);
+    const chunksCount = isIngested ? await getAuditChunkCount(leadId) : 0;
+
+    return {
+      hasAuditDirectory: true,
+      hasAuditDataInRAG: isIngested,
+      auditPath,
+      domain,
+      chunksCount,
+      status: isIngested ? 'ingested' : 'available',
+    };
+  } catch (error) {
+    console.error('Error checking audit status:', error);
+    return {
+      hasAuditDirectory: false,
+      hasAuditDataInRAG: false,
+      auditPath: null,
+      domain: null,
+      chunksCount: 0,
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
+}
+
+export interface IngestAuditResult {
+  success: boolean;
+  chunksCreated?: number;
+  error?: string;
+}
+
+/**
+ * Check and ingest audit data for a lead
+ *
+ * This function:
+ * 1. Checks if audit directory exists for the lead's domain
+ * 2. Checks if already ingested in RAG
+ * 3. If not ingested, triggers ingestion
+ * 4. Returns result status
+ */
+export async function checkAndIngestAuditData(leadId: string): Promise<IngestAuditResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    // Get current audit status
+    const status = await getAuditStatus(leadId);
+
+    // If no audit directory, nothing to do
+    if (!status.hasAuditDirectory || !status.auditPath) {
+      return {
+        success: true,
+        chunksCreated: 0,
+      };
+    }
+
+    // If already ingested, nothing to do
+    if (status.hasAuditDataInRAG) {
+      return {
+        success: true,
+        chunksCreated: status.chunksCount,
+      };
+    }
+
+    // Ingest audit data
+    const { ingestAuditToRAG } = await import('@/lib/audit/audit-rag-ingestion');
+    const result = await ingestAuditToRAG(status.auditPath, leadId);
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error || 'Fehler beim Importieren der Audit-Daten',
+      };
+    }
+
+    // Revalidate the lead page to show updated audit status
+    revalidatePath(`/leads/${leadId}`);
+    revalidatePath(`/leads/${leadId}/audit`);
+    revalidatePath(`/leads/${leadId}/rag-data`);
+
+    return {
+      success: true,
+      chunksCreated: result.stats.chunksCreated,
+    };
+  } catch (error) {
+    console.error('Error ingesting audit data:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',

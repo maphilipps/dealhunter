@@ -68,7 +68,7 @@ export async function runBaselineComparison(
     .join('\n');
 
   const { object } = await generateObject({
-    model: 'openai/gpt-4o-mini',
+    model: 'gemini-3-flash-preview',
     schema: baselineComparisonResultSchema,
     prompt: `Du bist ein Experte für Software-Projektschätzung bei adesso SE.
 

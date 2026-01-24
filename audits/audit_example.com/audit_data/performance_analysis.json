@@ -1,0 +1,30 @@
+{
+  "url": "https://www.example.com",
+  "timestamp": "2026-01-22T19:08:52.812Z",
+  "coreWebVitals": {
+    "lcp": 364,
+    "cls": 0,
+    "ttfb": 53
+  },
+  "score": 85,
+  "bottlenecks": [
+    {
+      "issue": "Large video file (6MB)",
+      "impact": "high"
+    },
+    {
+      "issue": "Missing WebP images",
+      "impact": "medium"
+    },
+    {
+      "issue": "Render-blocking fonts",
+      "impact": "medium"
+    }
+  ],
+  "recommendations": [
+    "Implement Lazy Loading for videos",
+    "Convert images to WebP",
+    "Use font-display: swap"
+  ],
+  "overall_grade": "B+"
+}

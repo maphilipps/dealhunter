@@ -5,6 +5,9 @@ import { competitionCheckSchema, type CompetitionCheck } from '../schema';
 // Intelligent Agent Framework - NEW
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
+// Security: Prompt Injection Protection
+import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
+
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -46,10 +49,13 @@ export async function runCompetitionAgent(input: CompetitionAgentInput): Promise
         );
 
         if (marketSearch && marketSearch.length > 0) {
-          marketInsights = `\n\nAktuelle Markt-Insights (Web Search):\n${marketSearch
+          const rawMarketData = marketSearch
             .slice(0, 3)
             .map(r => `- ${r.title}: ${r.snippet}`)
-            .join('\n')}`;
+            .join('\n');
+
+          // Wrap external web search results for prompt injection protection
+          marketInsights = `\n\nAktuelle Markt-Insights (Web Search):\n${wrapUserContent(rawMarketData, 'web')}`;
           console.log(`[Competition Agent] ${marketSearch.length} Markt-Insights gefunden`);
         }
       }
@@ -62,10 +68,13 @@ export async function runCompetitionAgent(input: CompetitionAgentInput): Promise
         );
 
         if (customerSearch && customerSearch.length > 0) {
-          competitorNews = `\n\nKunden-spezifische Insights (Web Search):\n${customerSearch
+          const rawCustomerData = customerSearch
             .slice(0, 2)
             .map(r => `- ${r.title}: ${r.snippet}`)
-            .join('\n')}`;
+            .join('\n');
+
+          // Wrap external web search results for prompt injection protection
+          competitorNews = `\n\nKunden-spezifische Insights (Web Search):\n${wrapUserContent(rawCustomerData, 'web')}`;
           console.log(`[Competition Agent] ${customerSearch.length} Kunden-Insights gefunden`);
         }
       }
@@ -76,7 +85,7 @@ export async function runCompetitionAgent(input: CompetitionAgentInput): Promise
   }
 
   const completion = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       {
         role: 'system',

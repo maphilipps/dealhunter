@@ -1,102 +1,29 @@
+/**
+ * Browser-based auditing tools using agent-browser CLI
+ * Provides screenshots, accessibility audits, and performance metrics
+ */
+
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
 
-import AxeBuilder from '@axe-core/playwright';
-import { chromium, type Browser, type Page } from 'playwright';
+import {
+  openPage,
+  closeBrowser,
+  screenshot,
+  setViewport,
+  evaluate,
+  getPageContent,
+  createSession,
+  wait,
+  type BrowserSession,
+} from '@/lib/browser';
+import { dismissCookieBanner } from '@/lib/browser/cookie-banner';
+import { runAccessibilityAudit } from '@/lib/browser/accessibility';
+import { getPerformanceMetrics } from '@/lib/browser/performance';
 
-/**
- * Common cookie consent selectors for auto-dismissal
- * Covers: OneTrust, Cookiebot, Usercentrics, Borlabs, CookieFirst, etc.
- */
-const COOKIE_CONSENT_SELECTORS = [
-  // Generic accept buttons (German)
-  'button:has-text("Alle akzeptieren")',
-  'button:has-text("Alle Cookies akzeptieren")',
-  'button:has-text("Akzeptieren")',
-  'button:has-text("Zustimmen")',
-  'button:has-text("Einverstanden")',
-  // Generic accept buttons (English)
-  'button:has-text("Accept all")',
-  'button:has-text("Accept All Cookies")',
-  'button:has-text("Accept")',
-  'button:has-text("I agree")',
-  'button:has-text("Allow all")',
-  // OneTrust
-  '#onetrust-accept-btn-handler',
-  '.onetrust-accept-btn-handler',
-  '[data-testid="accept-btn"]',
-  // Cookiebot
-  '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
-  '#CybotCookiebotDialogBodyButtonAccept',
-  // Usercentrics
-  '#uc-btn-accept-banner',
-  '[data-testid="uc-accept-all-button"]',
-  // Borlabs Cookie
-  '.BorlabsCookie .btn-primary',
-  '[data-cookie-accept-all]',
-  // CookieFirst
-  '[data-cookiefirst-action="accept"]',
-  // Klaro
-  '.klaro .cm-btn-success',
-  '.klaro .cm-btn-accept-all',
-  // Generic patterns
-  '[data-consent="accept"]',
-  '[data-action="accept-all"]',
-  '.cookie-banner button.accept',
-  '.cookie-consent button.accept',
-  '.cc-btn.cc-accept-all',
-  '#cookie-consent-accept',
-  '[aria-label*="cookie" i][aria-label*="accept" i]',
-];
-
-/**
- * Try to dismiss cookie consent banners
- */
-async function dismissCookieBanner(page: Page): Promise<boolean> {
-  // Wait a moment for banner to appear
-  await page.waitForTimeout(1000);
-
-  for (const selector of COOKIE_CONSENT_SELECTORS) {
-    try {
-      const button = page.locator(selector).first();
-      if (await button.isVisible({ timeout: 500 })) {
-        await button.click();
-        // Wait for banner to disappear
-        await page.waitForTimeout(500);
-        // eslint-disable-next-line no-console
-        console.log(`Cookie banner dismissed using selector: ${selector}`);
-        return true;
-      }
-    } catch {
-      // Continue to next selector
-    }
-  }
-
-  return false;
-}
-
-/**
- * Rate a Core Web Vital metric based on Google's thresholds
- */
-function rateWebVital(
-  metric: 'lcp' | 'cls' | 'fid' | 'inp' | 'ttfb',
-  value: number | undefined
-): 'good' | 'needs-improvement' | 'poor' | null {
-  if (value === undefined) return null;
-
-  const thresholds = {
-    lcp: { good: 2500, poor: 4000 }, // milliseconds
-    cls: { good: 0.1, poor: 0.25 }, // dimensionless
-    fid: { good: 100, poor: 300 }, // milliseconds (deprecated)
-    inp: { good: 200, poor: 500 }, // milliseconds
-    ttfb: { good: 800, poor: 1800 }, // milliseconds
-  };
-
-  const threshold = thresholds[metric];
-  if (value <= threshold.good) return 'good';
-  if (value <= threshold.poor) return 'needs-improvement';
-  return 'poor';
-}
+// ========================================
+// Types
+// ========================================
 
 export interface PlaywrightAuditResult {
   screenshots: {
@@ -121,14 +48,12 @@ export interface PlaywrightAuditResult {
     loadTime: number;
     domContentLoaded: number;
     firstPaint?: number;
-    // Core Web Vitals
-    lcp?: number; // Largest Contentful Paint
-    fid?: number; // First Input Delay (deprecated, use INP)
-    cls?: number; // Cumulative Layout Shift
-    ttfb?: number; // Time to First Byte
-    inp?: number; // Interaction to Next Paint (new FID replacement)
-    fcp?: number; // First Contentful Paint
-    // Resource counts
+    lcp?: number;
+    fid?: number;
+    cls?: number;
+    ttfb?: number;
+    inp?: number;
+    fcp?: number;
     resourceCount: {
       scripts: number;
       stylesheets: number;
@@ -137,7 +62,6 @@ export interface PlaywrightAuditResult {
       total: number;
     };
     totalSize: number;
-    // Web Vitals ratings
     ratings?: {
       lcp: 'good' | 'needs-improvement' | 'poor' | null;
       cls: 'good' | 'needs-improvement' | 'poor' | null;
@@ -156,72 +80,60 @@ export interface PlaywrightAuditResult {
   };
 }
 
+// ========================================
+// HTML Fetching
+// ========================================
+
 /**
- * Simple Playwright-based HTML fetcher for bot-protected websites
- * Used as fallback when simple fetch() fails
+ * Fetch HTML from a URL using agent-browser
+ * Used as fallback when simple fetch() fails due to bot protection
  */
 export async function fetchHtmlWithPlaywright(url: string): Promise<{
   html: string;
   headers: Record<string, string>;
   finalUrl: string;
 }> {
-  let browser: Browser | null = null;
+  const session = createSession('fetch');
 
   try {
-    browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
-    const context = await browser.newContext({
-      userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      viewport: { width: 1920, height: 1080 },
-      locale: 'de-DE',
-    });
-
-    const page = await context.newPage();
-
-    // Navigate with timeout
-    const response = await page.goto(url, {
-      waitUntil: 'domcontentloaded',
-      timeout: 30000,
-    });
-
-    // Wait for potential JS rendering
-    await page.waitForTimeout(2000);
-
-    // Try to dismiss cookie banner
-    await dismissCookieBanner(page);
-
-    // Get HTML content
-    const html = await page.content();
-
-    // Get response headers
-    const headers: Record<string, string> = {};
-    if (response) {
-      const responseHeaders = response.headers();
-      for (const [key, value] of Object.entries(responseHeaders)) {
-        headers[key.toLowerCase()] = value;
-      }
+    const opened = await openPage(url, session);
+    if (!opened) {
+      return { html: '', headers: {}, finalUrl: url };
     }
 
-    const finalUrl = page.url();
+    // Wait for page to stabilize
+    await wait(2000);
 
-    await browser.close();
+    // Dismiss cookie banner
+    await dismissCookieBanner(session);
 
-    return { html, headers, finalUrl };
+    // Get page content
+    const content = await getPageContent(session);
+
+    await closeBrowser(session);
+
+    if (!content) {
+      return { html: '', headers: {}, finalUrl: url };
+    }
+
+    return {
+      html: content.html,
+      headers: {}, // agent-browser doesn't expose response headers directly
+      finalUrl: content.url,
+    };
   } catch (error) {
-    if (browser) {
-      await browser.close();
-    }
-    console.error('Playwright fetch error:', error);
+    await closeBrowser(session);
+    console.error('[agent-browser] Fetch error:', error);
     return { html: '', headers: {}, finalUrl: url };
   }
 }
 
+// ========================================
+// Comprehensive Audit
+// ========================================
+
 /**
- * Run comprehensive Playwright audit including screenshots, accessibility, and performance
+ * Run comprehensive audit including screenshots, accessibility, and performance
  */
 export async function runPlaywrightAudit(
   url: string,
@@ -235,169 +147,81 @@ export async function runPlaywrightAudit(
 ): Promise<PlaywrightAuditResult> {
   const {
     takeScreenshots = true,
-    runAccessibilityAudit = true,
+    runAccessibilityAudit: doA11y = true,
     analyzeNavigation = true,
     keyPages = [],
   } = options;
 
-  let browser: Browser | null = null;
+  const session = createSession(`audit-${bidId}`);
+  const fullUrl = url.startsWith('http') ? url : `https://${url}`;
 
-  try {
-    // Launch browser
-    browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
-    const context = await browser.newContext({
-      viewport: { width: 1920, height: 1080 },
-      userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    });
-
-    const page = await context.newPage();
-
-    // Ensure URL has protocol
-    const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-
-    // Track performance metrics
-    const performanceMetrics = {
+  // Initialize result
+  const result: PlaywrightAuditResult = {
+    screenshots: { keyPages: [] },
+    accessibility: {
+      score: 100,
+      level: 'AAA',
+      violations: [],
+      passes: 0,
+      incomplete: 0,
+    },
+    performance: {
       loadTime: 0,
       domContentLoaded: 0,
-      firstPaint: undefined as number | undefined,
-      lcp: undefined as number | undefined,
-      fid: undefined as number | undefined,
-      cls: undefined as number | undefined,
-      ttfb: undefined as number | undefined,
-      inp: undefined as number | undefined,
-      fcp: undefined as number | undefined,
       resourceCount: { scripts: 0, stylesheets: 0, images: 0, fonts: 0, total: 0 },
       totalSize: 0,
       ratings: {
-        lcp: null as 'good' | 'needs-improvement' | 'poor' | null,
-        cls: null as 'good' | 'needs-improvement' | 'poor' | null,
-        fid: null as 'good' | 'needs-improvement' | 'poor' | null,
-        inp: null as 'good' | 'needs-improvement' | 'poor' | null,
-        ttfb: null as 'good' | 'needs-improvement' | 'poor' | null,
+        lcp: null,
+        cls: null,
+        fid: null,
+        inp: null,
+        ttfb: null,
       },
-    };
+    },
+    navigation: {
+      mainNav: [],
+      footerNav: [],
+      hasSearch: false,
+      hasBreadcrumbs: false,
+      hasMegaMenu: false,
+      maxDepth: 1,
+    },
+  };
 
-    // Track resources
-    const resources: Array<{ type: string; size: number }> = [];
-
-    page.on('response', response => {
-      try {
-        const headers = response.headers();
-        const contentType = headers['content-type'] || '';
-        const contentLength = parseInt(headers['content-length'] || '0', 10);
-
-        let resourceType = 'other';
-        if (contentType.includes('javascript')) resourceType = 'script';
-        else if (contentType.includes('css')) resourceType = 'stylesheet';
-        else if (contentType.includes('image')) resourceType = 'image';
-        else if (contentType.includes('font')) resourceType = 'font';
-
-        resources.push({ type: resourceType, size: contentLength });
-      } catch {
-        // Ignore errors from response processing
-      }
-    });
-
-    // Navigate with timing
+  try {
+    // Open page
     const startTime = Date.now();
-    await page.goto(fullUrl, {
-      waitUntil: 'networkidle',
-      timeout: 30000,
-    });
-    performanceMetrics.loadTime = Date.now() - startTime;
-
-    // Try to dismiss cookie consent banner
-    await dismissCookieBanner(page);
-
-    // Get Core Web Vitals and performance timing from browser
-    const timing = await page.evaluate(() => {
-      const navEntries = performance.getEntriesByType(
-        'navigation'
-      ) as PerformanceNavigationTiming[];
-      const navEntry = navEntries[0];
-      const paintEntries = performance.getEntriesByType('paint');
-      const firstPaint = paintEntries.find(e => e.name === 'first-paint')?.startTime;
-      const firstContentfulPaint = paintEntries.find(
-        e => e.name === 'first-contentful-paint'
-      )?.startTime;
-
-      // Get LCP from PerformanceObserver (if available)
-      let lcp: number | undefined;
-      const lcpEntries = performance.getEntriesByType('largest-contentful-paint');
-      if (lcpEntries.length > 0) {
-        lcp = lcpEntries[lcpEntries.length - 1].startTime;
-      }
-
-      // Get CLS (Cumulative Layout Shift)
-      let cls = 0;
-      const layoutShiftEntries = performance.getEntriesByType('layout-shift');
-      for (const entry of layoutShiftEntries) {
-        // @ts-expect-error - hadRecentInput is part of LayoutShift but not fully typed
-        if (!entry.hadRecentInput) {
-          // @ts-expect-error - value is part of LayoutShift but not fully typed
-          cls += entry.value || 0;
-        }
-      }
-
-      // Calculate TTFB (Time to First Byte)
-      const ttfb = navEntry ? navEntry.responseStart - navEntry.requestStart : undefined;
-
-      return {
-        domContentLoaded: navEntry ? navEntry.domContentLoadedEventEnd - navEntry.startTime : 0,
-        firstPaint,
-        fcp: firstContentfulPaint,
-        lcp,
-        cls: cls > 0 ? cls : undefined,
-        ttfb,
-      };
-    });
-
-    performanceMetrics.domContentLoaded = timing.domContentLoaded;
-    performanceMetrics.firstPaint = timing.firstPaint;
-    performanceMetrics.fcp = timing.fcp;
-    performanceMetrics.lcp = timing.lcp;
-    performanceMetrics.cls = timing.cls;
-    performanceMetrics.ttfb = timing.ttfb;
-
-    // Rate Core Web Vitals
-    performanceMetrics.ratings.lcp = rateWebVital('lcp', timing.lcp);
-    performanceMetrics.ratings.cls = rateWebVital('cls', timing.cls);
-    performanceMetrics.ratings.ttfb = rateWebVital('ttfb', timing.ttfb);
-
-    // Calculate resource counts
-    for (const resource of resources) {
-      performanceMetrics.totalSize += resource.size;
-      performanceMetrics.resourceCount.total++;
-      if (resource.type === 'script') performanceMetrics.resourceCount.scripts++;
-      else if (resource.type === 'stylesheet') performanceMetrics.resourceCount.stylesheets++;
-      else if (resource.type === 'image') performanceMetrics.resourceCount.images++;
-      else if (resource.type === 'font') performanceMetrics.resourceCount.fonts++;
+    const opened = await openPage(fullUrl, session);
+    if (!opened) {
+      throw new Error('Failed to open page');
     }
 
-    const result: PlaywrightAuditResult = {
-      screenshots: {
-        keyPages: [],
-      },
-      accessibility: {
-        score: 100,
-        level: 'AAA',
-        violations: [],
-        passes: 0,
-        incomplete: 0,
-      },
-      performance: performanceMetrics,
-      navigation: {
-        mainNav: [],
-        footerNav: [],
-        hasSearch: false,
-        hasBreadcrumbs: false,
-        hasMegaMenu: false,
-        maxDepth: 1,
+    // Wait for page load
+    await wait(3000);
+    result.performance.loadTime = Date.now() - startTime;
+
+    // Dismiss cookie banner
+    await dismissCookieBanner(session);
+
+    // Get performance metrics
+    const perfMetrics = await getPerformanceMetrics(session);
+    result.performance = {
+      ...result.performance,
+      domContentLoaded: perfMetrics.domContentLoaded,
+      firstPaint: perfMetrics.firstPaint,
+      lcp: perfMetrics.vitals.lcp,
+      fcp: perfMetrics.vitals.fcp,
+      cls: perfMetrics.vitals.cls,
+      ttfb: perfMetrics.vitals.ttfb,
+      inp: perfMetrics.vitals.inp,
+      resourceCount: perfMetrics.resourceCount,
+      totalSize: perfMetrics.totalSize,
+      ratings: {
+        lcp: perfMetrics.ratings.lcp,
+        cls: perfMetrics.ratings.cls,
+        fid: null, // Deprecated
+        inp: perfMetrics.ratings.inp,
+        ttfb: perfMetrics.ratings.ttfb,
       },
     };
 
@@ -406,22 +230,23 @@ export async function runPlaywrightAudit(
       const screenshotDir = join(process.cwd(), 'public', 'screenshots', 'quickscan', bidId);
       await mkdir(screenshotDir, { recursive: true });
 
-      // Desktop screenshot (1920x1080) - fullPage to capture entire viewport
+      // Desktop screenshot (1920x1080)
+      await setViewport({ width: 1920, height: 1080, ...session });
       const desktopPath = join(screenshotDir, 'desktop.png');
-      await page.setViewportSize({ width: 1920, height: 1080 });
-      await page.screenshot({ path: desktopPath, fullPage: true });
+      await screenshot({ ...session, filePath: desktopPath, fullPage: true });
       result.screenshots.desktop = `/screenshots/quickscan/${bidId}/desktop.png`;
 
-      // Mobile screenshot (375x812 - iPhone X) - fullPage to capture entire viewport
+      // Mobile screenshot (375x812)
+      await setViewport({ width: 375, height: 812, ...session });
+      await wait(500); // Allow reflow
       const mobilePath = join(screenshotDir, 'mobile.png');
-      await page.setViewportSize({ width: 375, height: 812 });
-      await page.screenshot({ path: mobilePath, fullPage: true });
+      await screenshot({ ...session, filePath: mobilePath, fullPage: true });
       result.screenshots.mobile = `/screenshots/quickscan/${bidId}/mobile.png`;
 
       // Reset viewport
-      await page.setViewportSize({ width: 1920, height: 1080 });
+      await setViewport({ width: 1920, height: 1080, ...session });
 
-      // Take screenshots of key pages (max 5)
+      // Screenshot key pages (max 5)
       for (let i = 0; i < Math.min(keyPages.length, 5); i++) {
         const keyPageUrl = keyPages[i];
         try {
@@ -429,13 +254,16 @@ export async function runPlaywrightAudit(
             ? keyPageUrl
             : new URL(keyPageUrl, fullUrl).toString();
 
-          await page.goto(absoluteUrl, { waitUntil: 'networkidle', timeout: 15000 });
-          // Dismiss cookie banner on key pages too
-          await dismissCookieBanner(page);
-          const title = await page.title();
+          await openPage(absoluteUrl, session);
+          await wait(2000);
+          await dismissCookieBanner(session);
+
+          const content = await getPageContent(session);
+          const title = content?.title || '';
+
           const filename = `page_${i + 1}.png`;
           const pagePath = join(screenshotDir, filename);
-          await page.screenshot({ path: pagePath, fullPage: true });
+          await screenshot({ ...session, filePath: pagePath, fullPage: true });
 
           result.screenshots.keyPages.push({
             url: absoluteUrl,
@@ -447,141 +275,56 @@ export async function runPlaywrightAudit(
         }
       }
 
-      // Navigate back to main page for remaining audits
-      await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 30000 });
-    }
-
-    // Run accessibility audit with axe-core
-    if (runAccessibilityAudit) {
-      try {
-        const axeResults = await new AxeBuilder({ page })
-          .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'])
-          .analyze();
-
-        // Map violations
-        result.accessibility.violations = axeResults.violations.map(v => ({
-          id: v.id,
-          impact: v.impact as 'critical' | 'serious' | 'moderate' | 'minor',
-          description: v.description,
-          nodes: v.nodes.length,
-          helpUrl: v.helpUrl,
-        }));
-
-        result.accessibility.passes = axeResults.passes.length;
-        result.accessibility.incomplete = axeResults.incomplete.length;
-
-        // Calculate score (100 - penalties)
-        const criticalCount = result.accessibility.violations.filter(
-          v => v.impact === 'critical'
-        ).length;
-        const seriousCount = result.accessibility.violations.filter(
-          v => v.impact === 'serious'
-        ).length;
-        const moderateCount = result.accessibility.violations.filter(
-          v => v.impact === 'moderate'
-        ).length;
-        const minorCount = result.accessibility.violations.filter(v => v.impact === 'minor').length;
-
-        const penalty = criticalCount * 15 + seriousCount * 8 + moderateCount * 3 + minorCount * 1;
-        result.accessibility.score = Math.max(0, Math.min(100, 100 - penalty));
-
-        // Determine WCAG level
-        if (criticalCount > 0) {
-          result.accessibility.level = 'fail';
-        } else if (seriousCount > 0) {
-          result.accessibility.level = 'A';
-        } else if (moderateCount > 0) {
-          result.accessibility.level = 'AA';
-        } else {
-          result.accessibility.level = 'AAA';
-        }
-      } catch (error) {
-        console.error('Axe-core audit failed:', error);
-        // Keep default values
-      }
+      // Navigate back to main page
+      await openPage(fullUrl, session);
+      await wait(1000);
     }
 
     // Analyze navigation structure
     if (analyzeNavigation) {
-      const navData = await page.evaluate(() => {
-        const mainNavItems: string[] = [];
-        const footerNavItems: string[] = [];
-
-        // Find main navigation
-        const navElements = document.querySelectorAll(
-          'nav, [role="navigation"], header nav, .main-nav, .navbar'
-        );
-        navElements.forEach(nav => {
-          const links = nav.querySelectorAll('a');
-          links.forEach(link => {
-            const text = link.textContent?.trim();
-            if (text && text.length < 50 && !mainNavItems.includes(text)) {
-              mainNavItems.push(text);
-            }
-          });
-        });
-
-        // Find footer navigation
-        const footer = document.querySelector('footer');
-        if (footer) {
-          const links = footer.querySelectorAll('a');
-          links.forEach(link => {
-            const text = link.textContent?.trim();
-            if (text && text.length < 50 && !footerNavItems.includes(text)) {
-              footerNavItems.push(text);
-            }
-          });
-        }
-
-        // Check for search
-        const hasSearch =
-          document.querySelector('input[type="search"]') !== null ||
-          document.querySelector('[role="search"]') !== null ||
-          document.querySelector('.search, .searchbox, #search') !== null;
-
-        // Check for breadcrumbs
-        const hasBreadcrumbs =
-          document.querySelector('[aria-label*="breadcrumb" i]') !== null ||
-          document.querySelector('.breadcrumb, .breadcrumbs') !== null ||
-          document.querySelector('[itemtype*="BreadcrumbList"]') !== null;
-
-        // Check for mega menu
-        const hasMegaMenu =
-          document.querySelector('.mega-menu, .megamenu') !== null ||
-          document.querySelectorAll('nav ul ul').length > 3;
-
-        // Calculate max navigation depth
-        let maxDepth = 1;
-        const nestedLists = document.querySelectorAll('nav ul ul');
-        if (nestedLists.length > 0) maxDepth = 2;
-        const deepNested = document.querySelectorAll('nav ul ul ul');
-        if (deepNested.length > 0) maxDepth = 3;
-
-        return {
-          mainNav: mainNavItems.slice(0, 20),
-          footerNav: footerNavItems.slice(0, 30),
-          hasSearch,
-          hasBreadcrumbs,
-          hasMegaMenu,
-          maxDepth,
-        };
-      });
-
-      result.navigation = navData;
+      const navData = await analyzeNavigationStructure(session);
+      if (navData) {
+        result.navigation = navData;
+      }
     }
 
-    await browser.close();
+    await closeBrowser(session);
+
+    // Run accessibility audit separately (uses Lighthouse CLI)
+    if (doA11y) {
+      try {
+        const a11yResult = await runAccessibilityAudit(fullUrl);
+        result.accessibility = {
+          score: a11yResult.score,
+          level: a11yResult.level,
+          violations: a11yResult.violations.map(v => ({
+            id: v.id,
+            impact: v.impact,
+            description: v.description,
+            nodes: 1, // Lighthouse doesn't provide node count
+            helpUrl: v.helpUrl || '',
+          })),
+          passes: a11yResult.passes,
+          incomplete: a11yResult.incomplete,
+        };
+      } catch (error) {
+        console.error('[Accessibility] Audit failed:', error);
+      }
+    }
+
     return result;
   } catch (error) {
-    if (browser) {
-      await browser.close();
-    }
+    await closeBrowser(session);
     throw error;
   }
 }
 
+// ========================================
+// Individual Functions
+// ========================================
+
 /**
- * Take a single screenshot of a URL (with cookie banner dismissal)
+ * Take a single screenshot
  */
 export async function takeScreenshot(
   url: string,
@@ -589,102 +332,136 @@ export async function takeScreenshot(
   viewport: { width: number; height: number } = { width: 1920, height: 1080 },
   fullPage: boolean = true
 ): Promise<string> {
-  let browser: Browser | null = null;
+  const session = createSession('screenshot');
 
   try {
-    browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
-    const context = await browser.newContext({ viewport });
-    const page = await context.newPage();
-
     const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-    await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 30000 });
 
-    // Dismiss cookie banner before taking screenshot
-    await dismissCookieBanner(page);
+    await openPage(fullUrl, session);
+    await wait(2000);
+    await dismissCookieBanner(session);
 
-    await page.screenshot({ path: outputPath, fullPage });
+    await setViewport({ ...viewport, ...session });
+    await screenshot({ ...session, filePath: outputPath, fullPage });
 
-    await browser.close();
+    await closeBrowser(session);
     return outputPath;
   } catch (error) {
-    if (browser) {
-      await browser.close();
-    }
+    await closeBrowser(session);
     throw error;
   }
 }
 
 /**
- * Run accessibility audit only (with cookie banner dismissal)
+ * Run accessibility audit only
  */
 export async function runAccessibilityAuditOnly(
   url: string
 ): Promise<PlaywrightAuditResult['accessibility']> {
-  let browser: Browser | null = null;
+  const fullUrl = url.startsWith('http') ? url : `https://${url}`;
 
   try {
-    browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-    await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 30000 });
-
-    // Dismiss cookie banner before running accessibility audit
-    await dismissCookieBanner(page);
-
-    const axeResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'])
-      .analyze();
-
-    const violations = axeResults.violations.map(v => ({
-      id: v.id,
-      impact: v.impact as 'critical' | 'serious' | 'moderate' | 'minor',
-      description: v.description,
-      nodes: v.nodes.length,
-      helpUrl: v.helpUrl,
-    }));
-
-    const criticalCount = violations.filter(v => v.impact === 'critical').length;
-    const seriousCount = violations.filter(v => v.impact === 'serious').length;
-    const moderateCount = violations.filter(v => v.impact === 'moderate').length;
-    const minorCount = violations.filter(v => v.impact === 'minor').length;
-
-    const penalty = criticalCount * 15 + seriousCount * 8 + moderateCount * 3 + minorCount * 1;
-    const score = Math.max(0, Math.min(100, 100 - penalty));
-
-    let level: 'A' | 'AA' | 'AAA' | 'fail' = 'AAA';
-    if (criticalCount > 0) level = 'fail';
-    else if (seriousCount > 0) level = 'A';
-    else if (moderateCount > 0) level = 'AA';
-
-    await browser.close();
+    const a11yResult = await runAccessibilityAudit(fullUrl);
 
     return {
-      score,
-      level,
-      violations,
-      passes: axeResults.passes.length,
-      incomplete: axeResults.incomplete.length,
+      score: a11yResult.score,
+      level: a11yResult.level,
+      violations: a11yResult.violations.map(v => ({
+        id: v.id,
+        impact: v.impact,
+        description: v.description,
+        nodes: 1,
+        helpUrl: v.helpUrl || '',
+      })),
+      passes: a11yResult.passes,
+      incomplete: a11yResult.incomplete,
     };
   } catch (error) {
-    if (browser) {
-      await browser.close();
-    }
+    console.error('[Accessibility] Audit failed:', error);
     throw error;
   }
 }
 
 // ========================================
-// HTTPX Tech Detection (stub implementation)
+// Navigation Analysis
+// ========================================
+
+/**
+ * Analyze navigation structure via browser evaluate
+ */
+async function analyzeNavigationStructure(
+  session: BrowserSession
+): Promise<PlaywrightAuditResult['navigation'] | null> {
+  return evaluate<PlaywrightAuditResult['navigation']>(
+    `
+    const mainNavItems = [];
+    const footerNavItems = [];
+
+    // Find main navigation
+    const navElements = document.querySelectorAll(
+      'nav, [role="navigation"], header nav, .main-nav, .navbar'
+    );
+    navElements.forEach(nav => {
+      const links = nav.querySelectorAll('a');
+      links.forEach(link => {
+        const text = link.textContent?.trim();
+        if (text && text.length < 50 && !mainNavItems.includes(text)) {
+          mainNavItems.push(text);
+        }
+      });
+    });
+
+    // Find footer navigation
+    const footer = document.querySelector('footer');
+    if (footer) {
+      const links = footer.querySelectorAll('a');
+      links.forEach(link => {
+        const text = link.textContent?.trim();
+        if (text && text.length < 50 && !footerNavItems.includes(text)) {
+          footerNavItems.push(text);
+        }
+      });
+    }
+
+    // Check for search
+    const hasSearch =
+      document.querySelector('input[type="search"]') !== null ||
+      document.querySelector('[role="search"]') !== null ||
+      document.querySelector('.search, .searchbox, #search') !== null;
+
+    // Check for breadcrumbs
+    const hasBreadcrumbs =
+      document.querySelector('[aria-label*="breadcrumb" i]') !== null ||
+      document.querySelector('.breadcrumb, .breadcrumbs') !== null ||
+      document.querySelector('[itemtype*="BreadcrumbList"]') !== null;
+
+    // Check for mega menu
+    const hasMegaMenu =
+      document.querySelector('.mega-menu, .megamenu') !== null ||
+      document.querySelectorAll('nav ul ul').length > 3;
+
+    // Calculate max navigation depth
+    let maxDepth = 1;
+    const nestedLists = document.querySelectorAll('nav ul ul');
+    if (nestedLists.length > 0) maxDepth = 2;
+    const deepNested = document.querySelectorAll('nav ul ul ul');
+    if (deepNested.length > 0) maxDepth = 3;
+
+    return {
+      mainNav: mainNavItems.slice(0, 20),
+      footerNav: footerNavItems.slice(0, 30),
+      hasSearch,
+      hasBreadcrumbs,
+      hasMegaMenu,
+      maxDepth,
+    };
+  `,
+    session
+  );
+}
+
+// ========================================
+// Tech Detection (Stubs)
 // ========================================
 
 export interface HttpxTechResult {
@@ -698,21 +475,15 @@ export interface HttpxTechResult {
 }
 
 /**
- * Run httpx-based tech detection (stub - returns minimal result)
- * TODO: Implement actual httpx integration
+ * Run httpx-based tech detection (stub)
  */
 export function runHttpxTechDetection(_url: string): Promise<HttpxTechResult> {
-  // Stub implementation - returns empty result
   return Promise.resolve({
     technologies: [],
     headers: {},
     statusCode: 200,
   });
 }
-
-// ========================================
-// Enhanced Tech Stack Detection
-// ========================================
 
 export interface EnhancedTechStackResult {
   cms?: {
@@ -737,16 +508,9 @@ export interface EnhancedTechStackResult {
 }
 
 /**
- * Enhanced tech stack detection combining multiple sources
- * TODO: Implement actual detection logic
+ * Enhanced tech stack detection (stub)
  */
 export function detectEnhancedTechStack(_url: string): Promise<EnhancedTechStackResult> {
-  // Stub implementation - returns empty result
-  // Actual implementation would combine:
-  // - Wappalyzer signatures
-  // - HTTP headers analysis
-  // - HTML/JS analysis
-  // - Cookie analysis
   return Promise.resolve({
     analytics: [],
     marketing: [],

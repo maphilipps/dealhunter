@@ -58,6 +58,18 @@ export const LEAD_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
       'Provide an executive summary of the lead including key facts, opportunities, and risks.',
     synthesizerAgent: 'overview-synthesizer',
     collapsed: false,
+    subsections: [
+      {
+        id: 'executive-summary',
+        label: 'Executive Summary',
+        route: '',
+      },
+      {
+        id: 'detailed-summary',
+        label: 'Detaillierte Zusammenfassung',
+        route: 'zusammenfassung',
+      },
+    ],
   },
   {
     id: 'technology',
@@ -68,6 +80,13 @@ export const LEAD_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
       'What is the current technology stack of the customer website? Include CMS, framework, hosting, and all detected technologies.',
     synthesizerAgent: 'technology-synthesizer',
     collapsed: false,
+    subsections: [
+      {
+        id: 'tech-stack',
+        label: 'Tech-Stack Überblick',
+        route: 'technology',
+      },
+    ],
   },
   {
     id: 'website-analysis',
@@ -78,26 +97,77 @@ export const LEAD_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
       'Provide a comprehensive website analysis including performance metrics (Core Web Vitals), SEO analysis, accessibility audit, and security assessment.',
     synthesizerAgent: 'website-analysis-synthesizer',
     collapsed: false,
+    subsections: [
+      {
+        id: 'page-types',
+        label: 'Seitentypen',
+        route: 'website-analysis/page-types',
+      },
+      {
+        id: 'components',
+        label: 'Components',
+        route: 'website-analysis/components',
+      },
+      {
+        id: 'performance',
+        label: 'Performance-Audit',
+        route: 'website-analysis/performance',
+      },
+      {
+        id: 'accessibility',
+        label: 'Accessibility-Audit',
+        route: 'website-analysis/accessibility',
+      },
+    ],
   },
   {
     id: 'cms-architecture',
-    label: 'CMS-Architektur',
+    label: 'Drupal-Architektur',
     icon: 'Layers',
     route: 'cms-architecture',
     ragQueryTemplate:
       'Analyze the current CMS architecture. What is the content model? How is the CMS configured? What are the content types and relationships?',
     synthesizerAgent: 'cms-architecture-synthesizer',
     collapsed: false,
+    subsections: [
+      {
+        id: 'architecture-overview',
+        label: 'Architektur-Übersicht',
+        route: 'cms-architecture/overview',
+      },
+      {
+        id: 'content-types',
+        label: 'Content Types',
+        route: 'cms-architecture/content-types',
+      },
+      {
+        id: 'paragraphs',
+        label: 'Paragraphs',
+        route: 'cms-architecture/paragraphs',
+      },
+      {
+        id: 'views',
+        label: 'Views & Listings',
+        route: 'cms-architecture/views',
+      },
+    ],
   },
   {
     id: 'cms-comparison',
-    label: 'CMS-Vergleich & Auswahl',
+    label: 'CMS-Vergleich',
     icon: 'Scale',
     route: 'cms-comparison',
     ragQueryTemplate:
       'Compare available CMS options for this project. Which CMS systems are suitable? What are the pros and cons? Provide a recommendation.',
     synthesizerAgent: 'cms-comparison-synthesizer',
     collapsed: false,
+    subsections: [
+      {
+        id: 'comparison-overview',
+        label: 'Vergleichsübersicht',
+        route: 'cms-comparison',
+      },
+    ],
   },
   {
     id: 'hosting',
@@ -108,6 +178,18 @@ export const LEAD_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
       'Analyze the current and recommended hosting infrastructure. What are the requirements? What are the costs? What are the technical constraints?',
     synthesizerAgent: 'hosting-synthesizer',
     collapsed: false,
+    subsections: [
+      {
+        id: 'azure',
+        label: 'Azure-Architektur',
+        route: 'hosting/azure',
+      },
+      {
+        id: 'high-scale',
+        label: 'High-Scale',
+        route: 'hosting/high-scale',
+      },
+    ],
   },
   {
     id: 'integrations',
@@ -118,6 +200,13 @@ export const LEAD_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
       'What third-party integrations are currently in use or required? Include CRM, marketing automation, analytics, payment systems, etc.',
     synthesizerAgent: 'integrations-synthesizer',
     collapsed: false,
+    subsections: [
+      {
+        id: 'integrations-overview',
+        label: 'Übersicht & Systemlandschaft',
+        route: 'integrations',
+      },
+    ],
   },
   {
     id: 'migration',
@@ -128,36 +217,44 @@ export const LEAD_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
       'Analyze the migration complexity. What content needs to be migrated? What are the technical challenges? What is the estimated effort?',
     synthesizerAgent: 'migration-synthesizer',
     collapsed: false,
+    subsections: [
+      {
+        id: 'strategy',
+        label: 'Migrations-Strategie',
+        route: 'migration/strategy',
+      },
+      {
+        id: 'timeline',
+        label: 'Timeline & Meilensteine',
+        route: 'migration/timeline',
+      },
+      {
+        id: 'risks',
+        label: 'Risiken & Mitigation',
+        route: 'migration/risks',
+      },
+    ],
   },
   {
-    id: 'staffing',
-    label: 'Staffing & Timeline',
-    icon: 'Calendar',
-    route: 'staffing',
-    ragQueryTemplate:
-      'What resources are needed for this project? Provide role-based staffing requirements and a project timeline with phases.',
-    synthesizerAgent: 'staffing-synthesizer',
+    id: 'project-org',
+    label: 'Projekt-Organisation',
+    icon: 'Users',
+    route: 'project-org',
+    ragQueryTemplate: 'Define the project organization, team structure, and KPIs.',
+    synthesizerAgent: 'project-org-synthesizer',
     collapsed: false,
-  },
-  {
-    id: 'references',
-    label: 'Referenzen',
-    icon: 'Bookmark',
-    route: 'references',
-    ragQueryTemplate:
-      'Which reference projects are relevant for this lead? Include projects with similar technology, industry, or scope.',
-    synthesizerAgent: 'references-synthesizer',
-    collapsed: false,
-  },
-  {
-    id: 'legal',
-    label: 'Legal-Prüfung',
-    icon: 'Scale',
-    route: 'legal',
-    ragQueryTemplate:
-      'Analyze legal and compliance aspects. GDPR compliance, licensing risks, industry-specific regulations, contract terms.',
-    synthesizerAgent: 'legal-check-synthesizer',
-    collapsed: false,
+    subsections: [
+      {
+        id: 'team',
+        label: 'Team & Ressourcen',
+        route: 'project-org/team',
+      },
+      {
+        id: 'kpis',
+        label: 'KPIs & Erfolgskriterien',
+        route: 'project-org/kpis',
+      },
+    ],
   },
   {
     id: 'costs',
@@ -168,6 +265,70 @@ export const LEAD_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
       'Provide a detailed cost breakdown. What are the implementation costs? What are the ongoing costs? What is the budget fit?',
     synthesizerAgent: 'costs-synthesizer',
     collapsed: false,
+    subsections: [
+      {
+        id: 'features',
+        label: 'Feature-Liste',
+        route: 'costs/features',
+      },
+      {
+        id: 'budget',
+        label: 'Budget-Analyse',
+        route: 'costs/budget',
+      },
+      {
+        id: 'roi',
+        label: 'ROI & TCO',
+        route: 'costs/roi',
+      },
+    ],
+  },
+  {
+    id: 'calc-sheet',
+    label: 'Kalkulation',
+    icon: 'Calculator',
+    route: 'calc-sheet',
+    ragQueryTemplate:
+      'Project estimation including features breakdown, project tasks, team roles, risk assessment, hours calculation, and budget estimation for the adesso Calculator.',
+    synthesizerAgent: 'calc-sheet-generator',
+    collapsed: true,
+    subsections: [
+      {
+        id: 'calc-overview',
+        label: 'Übersicht',
+        route: 'calc-sheet',
+        ragQueryTemplate:
+          'Project summary including client name, project type, CMS selection, total features, total hours, and estimated budget.',
+      },
+      {
+        id: 'calc-features',
+        label: 'Features',
+        route: 'calc-sheet/features',
+        ragQueryTemplate:
+          'List all project features with ID, name, description, type (Content Type, Paragraph, View, Module), complexity (H/M/L), and estimated hours.',
+      },
+      {
+        id: 'calc-tasks',
+        label: 'Aufgaben',
+        route: 'calc-sheet/tasks',
+        ragQueryTemplate:
+          'List all project tasks with ID, phase, description, assigned role, and estimated hours.',
+      },
+      {
+        id: 'calc-roles',
+        label: 'Rollen',
+        route: 'calc-sheet/roles',
+        ragQueryTemplate:
+          'List all project roles with ID, title, level, responsibilities, and FTE allocation.',
+      },
+      {
+        id: 'calc-risks',
+        label: 'Risiken',
+        route: 'calc-sheet/risks',
+        ragQueryTemplate:
+          'List all project risks with ID, name, description, likelihood, impact, and mitigation strategy.',
+      },
+    ],
   },
   {
     id: 'decision',
@@ -178,31 +339,110 @@ export const LEAD_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
       'Aggregate all section insights into a final BID/NO-BID recommendation. Include pros, cons, confidence score, and reasoning.',
     synthesizerAgent: 'decision-synthesizer',
     collapsed: false,
+    subsections: [
+      {
+        id: 'final-recommendation',
+        label: 'Finale Empfehlung',
+        route: 'decision',
+      },
+    ],
+  },
+  {
+    id: 'audit',
+    label: 'Deep Scan Audit',
+    icon: 'Radar',
+    route: 'audit',
+    ragQueryTemplate:
+      'Run a comprehensive deep scan audit of the customer website including technology detection, performance analysis, and content structure mapping.',
+    synthesizerAgent: 'audit-orchestrator',
+    collapsed: false,
+    subsections: [
+      {
+        id: 'audit-overview',
+        label: 'Audit Übersicht',
+        route: 'audit',
+      },
+      {
+        id: 'audit-technology',
+        label: 'Technologie-Erkennung',
+        route: 'audit/technology',
+      },
+      {
+        id: 'audit-content',
+        label: 'Content-Struktur',
+        route: 'audit/content',
+      },
+      {
+        id: 'audit-performance',
+        label: 'Performance',
+        route: 'audit/performance',
+      },
+    ],
+  },
+  {
+    id: 'rag-data',
+    label: 'RAG Data (Debug)',
+    icon: 'Database',
+    route: 'rag-data',
+    ragQueryTemplate: '',
+    synthesizerAgent: undefined,
+    collapsed: false,
   },
 ];
 
 /**
- * Get a section by its route
+ * Get a section or subsection by its route
  * @param route - Route path (relative to /leads/[id]/)
- * @returns LeadNavigationSection or undefined if not found
+ * @returns LeadNavigationSection or LeadNavigationSubSection or undefined
  */
-export function getSectionByRoute(route: string): LeadNavigationSection | undefined {
+export function getSectionByRoute(
+  route: string
+): LeadNavigationSection | LeadNavigationSubSection | undefined {
   // Normalize route: remove leading/trailing slashes
   const normalizedRoute = route.replace(/^\/+|\/+$/g, '');
 
-  return LEAD_NAVIGATION_SECTIONS.find(section => {
-    const sectionRoute = section.route.replace(/^\/+|\/+$/g, '');
+  // Search top-level sections
+  const section = LEAD_NAVIGATION_SECTIONS.find(s => {
+    const sectionRoute = s.route.replace(/^\/+|\/+$/g, '');
     return sectionRoute === normalizedRoute;
   });
+  if (section) return section;
+
+  // Search subsections
+  for (const s of LEAD_NAVIGATION_SECTIONS) {
+    if (s.subsections) {
+      const subsection = s.subsections.find(sub => {
+        const subRoute = sub.route.replace(/^\/+|\/+$/g, '');
+        return subRoute === normalizedRoute;
+      });
+      if (subsection) return subsection;
+    }
+  }
+
+  return undefined;
 }
 
 /**
- * Get a section by its ID
- * @param id - Section ID
- * @returns LeadNavigationSection or undefined if not found
+ * Get a section or subsection by its ID
+ * @param id - Section or Subsection ID
+ * @returns LeadNavigationSection or LeadNavigationSubSection or undefined
  */
-export function getSectionById(id: string): LeadNavigationSection | undefined {
-  return LEAD_NAVIGATION_SECTIONS.find(section => section.id === id);
+export function getSectionById(
+  id: string
+): LeadNavigationSection | LeadNavigationSubSection | undefined {
+  // Search top-level sections
+  const section = LEAD_NAVIGATION_SECTIONS.find(s => s.id === id);
+  if (section) return section;
+
+  // Search subsections
+  for (const s of LEAD_NAVIGATION_SECTIONS) {
+    if (s.subsections) {
+      const subsection = s.subsections.find(sub => sub.id === id);
+      if (subsection) return subsection;
+    }
+  }
+
+  return undefined;
 }
 
 /**
@@ -230,14 +470,20 @@ export function isValidSectionRoute(route: string): boolean {
   return getSectionByRoute(route) !== undefined;
 }
 
-/**
- * Get the RAG query template for a section
- * @param sectionId - Section ID
- * @returns RAG query template or undefined
- */
 export function getRAGQueryTemplate(sectionId: string): string | undefined {
   const section = getSectionById(sectionId);
-  return section?.ragQueryTemplate;
+  if (!section) return undefined;
+
+  if (!section.ragQueryTemplate && 'route' in section) {
+    const parent = LEAD_NAVIGATION_SECTIONS.find(s =>
+      s.subsections?.some(sub => sub.id === section.id)
+    );
+    if (parent?.ragQueryTemplate) {
+      return parent.ragQueryTemplate;
+    }
+  }
+
+  return section.ragQueryTemplate;
 }
 
 /**

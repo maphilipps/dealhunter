@@ -80,6 +80,7 @@ export type AuditAction =
 
 export type AuditEntityType =
   | 'rfp'
+  | 'lead'
   | 'business_unit'
   | 'employee'
   | 'reference'

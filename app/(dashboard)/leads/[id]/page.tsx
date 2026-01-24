@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
+import { AuditStatusBadge } from '@/components/leads/audit-status-badge';
+import { CustomerDeepDive } from '@/components/leads/customer-deep-dive';
+import { ExecutiveSummaryCard } from '@/components/leads/executive-summary-card';
 import { LeadOverviewClient } from '@/components/leads/lead-overview-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -139,10 +142,23 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{lead.customerName}</h1>
-        <p className="text-muted-foreground">Lead Overview & Deep Analysis Results</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{lead.customerName}</h1>
+          <p className="text-muted-foreground">Lead Overview & Deep Analysis Results</p>
+        </div>
+        <AuditStatusBadge leadId={id} variant="badge" />
       </div>
+
+      {/* Executive Summary Card (Phase 1.1) - Prominent first element */}
+      <ExecutiveSummaryCard
+        leadId={id}
+        customerName={lead.customerName}
+        industry={lead.industry}
+        budget={lead.budget}
+        websiteUrl={lead.websiteUrl}
+        projectDescription={lead.projectDescription}
+      />
 
       {/* Status & Basic Info */}
       <Card>
@@ -173,6 +189,12 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
           </div>
         </CardContent>
       </Card>
+
+      {/* Customer Deep Dive (Phase 1.2) - Quick Scan data */}
+      <CustomerDeepDive leadId={id} quickScanId={lead.quickScanId} />
+
+      {/* Audit Status Card (Phase 4.1) - Shows if audit data is available */}
+      <AuditStatusBadge leadId={id} variant="card" />
 
       {/* Background Job Progress (Client Component with Polling) */}
       <LeadOverviewClient leadId={id} leadStatus={lead.status} />

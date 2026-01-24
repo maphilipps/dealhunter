@@ -32,8 +32,8 @@ interface ExtractionPreviewProps {
 
 type WebsiteUrl = {
   url: string;
-  type: 'primary' | 'product' | 'regional' | 'related';
-  description?: string;
+  type: 'primary' | 'product' | 'regional' | 'related' | 'corporate' | 'main' | 'other';
+  description?: string | null;
   extractedFromDocument: boolean;
   selected?: boolean;
 };
@@ -623,17 +623,14 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         </div>
       )}
 
-      {/* Timeline */}
+      {/* Timeline - Prominent Visualization */}
       {data.timeline !== undefined && (
-        <div className="space-y-2">
-          <Label htmlFor="timeline">Zeitrahmen</Label>
-          <Input
-            id="timeline"
-            value={data.timeline || ''}
-            onChange={e => setData({ ...data, timeline: e.target.value })}
-            placeholder="z.B. 6 Monate, Q1 2026"
-          />
-        </div>
+        <TimelineCard
+          timeline={data.timeline || ''}
+          submissionDeadline={data.submissionDeadline}
+          submissionTime={data.submissionTime}
+          onChange={timeline => setData({ ...data, timeline })}
+        />
       )}
 
       {/* Submission Deadline Visualization */}
@@ -740,23 +737,6 @@ function SubmissionDeadlineCard({
                 </p>
               </div>
             </div>
-
-            {/* Timeline Bar */}
-            {projectStart && projectEnd && (
-              <div className="mt-4 pt-4 border-t border-dashed">
-                <p className="text-xs text-muted-foreground mb-2">Projektzeitraum</p>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-medium">{projectStart.toLocaleDateString('de-DE')}</span>
-                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full"
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                  <span className="font-medium">{projectEnd.toLocaleDateString('de-DE')}</span>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
@@ -825,11 +805,11 @@ function SubmissionDeadlineCard({
 
 type Deliverable = {
   name: string;
-  description?: string;
-  deadline?: string;
-  deadlineTime?: string;
-  format?: string;
-  copies?: number;
+  description?: string | null;
+  deadline?: string | null;
+  deadlineTime?: string | null;
+  format?: string | null;
+  copies?: number | null;
   mandatory: boolean;
   confidence: number;
 };
@@ -1000,6 +980,272 @@ function RequiredDeliverablesCard({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Timeline Card with phase visualization
+ */
+function TimelineCard({
+  timeline,
+  submissionDeadline,
+  submissionTime,
+  onChange,
+}: {
+  timeline: string;
+  submissionDeadline?: string;
+  submissionTime?: string;
+  onChange: (timeline: string) => void;
+}) {
+  // Parse timeline text to extract phases
+  const parseTimeline = (text: string) => {
+    const phases: Array<{ name: string; startDate: string; endDate: string }> = [];
+
+    // Match patterns like "Phase 1 (Build) vom 08.02.2026 bis 31.05.2026"
+    const phaseRegex =
+      /Phase\s+(\d+)\s*\(([^)]+)\)\s+vom\s+(\d{2}\.\d{2}\.\d{4})\s+bis\s+(\d{2}\.\d{2}\.\d{4})/gi;
+    let match;
+
+    while ((match = phaseRegex.exec(text)) !== null) {
+      phases.push({
+        name: `Phase ${match[1]}: ${match[2]}`,
+        startDate: match[3],
+        endDate: match[4],
+      });
+    }
+
+    // Also match patterns like "Phase 3 (Grow) ab dem 01.08.2026"
+    const openPhaseRegex = /Phase\s+(\d+)\s*\(([^)]+)\)\s+ab\s+dem\s+(\d{2}\.\d{2}\.\d{4})/gi;
+    while ((match = openPhaseRegex.exec(text)) !== null) {
+      phases.push({
+        name: `Phase ${match[1]}: ${match[2]}`,
+        startDate: match[3],
+        endDate: 'Vertragsende',
+      });
+    }
+
+    return phases;
+  };
+
+  const phases = parseTimeline(timeline);
+  const hasPhases = phases.length > 0;
+
+  // Calculate total duration
+  const calculateDuration = (startStr: string, endStr: string) => {
+    if (endStr === 'Vertragsende') return null;
+
+    const [startDay, startMonth, startYear] = startStr.split('.').map(Number);
+    const [endDay, endMonth, endYear] = endStr.split('.').map(Number);
+
+    const start = new Date(startYear, startMonth - 1, startDay);
+    const end = new Date(endYear, endMonth - 1, endDay);
+
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const months = Math.round(diffDays / 30);
+
+    return { days: diffDays, months };
+  };
+
+  // Calculate days until deadline
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const deadline = submissionDeadline ? new Date(submissionDeadline) : null;
+  const daysUntilDeadline = deadline
+    ? Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+  const isUrgent = daysUntilDeadline !== null && daysUntilDeadline <= 7;
+  const isExpired = daysUntilDeadline !== null && daysUntilDeadline < 0;
+
+  const totalItems = (deadline ? 1 : 0) + phases.length;
+  const hasContent = totalItems > 0;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Clock className="h-5 w-5 text-muted-foreground" />
+        <Label className="text-base font-semibold">Projektzeitplan</Label>
+      </div>
+
+      {/* Timeline Visualization */}
+      {hasContent ? (
+        <Card className="border-2 border-purple-500 bg-purple-50">
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-purple-600" />
+              <p className="font-semibold text-purple-900">
+                {totalItems} {totalItems === 1 ? 'Meilenstein' : 'Meilensteine'} definiert
+              </p>
+            </div>
+
+            {/* Phase Cards */}
+            <div className="space-y-3">
+              {/* Submission Deadline as first milestone */}
+              {deadline && (
+                <div
+                  className={`rounded-lg border-2 p-3 space-y-2 ${
+                    isExpired
+                      ? 'bg-red-50 border-red-300'
+                      : isUrgent
+                        ? 'bg-orange-50 border-orange-300'
+                        : 'bg-blue-50 border-blue-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          isExpired
+                            ? 'bg-red-600 text-white'
+                            : isUrgent
+                              ? 'bg-orange-600 text-white'
+                              : 'bg-blue-600 text-white'
+                        }`}
+                      >
+                        <AlertTriangle className="h-4 w-4" />
+                      </div>
+                      <p
+                        className={`font-semibold ${
+                          isExpired
+                            ? 'text-red-900'
+                            : isUrgent
+                              ? 'text-orange-900'
+                              : 'text-blue-900'
+                        }`}
+                      >
+                        Abgabefrist
+                      </p>
+                    </div>
+                    {daysUntilDeadline !== null && (
+                      <Badge
+                        variant={isExpired ? 'destructive' : isUrgent ? 'default' : 'secondary'}
+                      >
+                        {isExpired
+                          ? `${Math.abs(daysUntilDeadline)} Tage überfällig`
+                          : `${daysUntilDeadline} Tage verbleibend`}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Deadline Date */}
+                  <div className="flex items-center gap-2 text-sm pl-10">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">
+                      {deadline.toLocaleDateString('de-DE', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                      })}
+                      {submissionTime && ` um ${submissionTime} Uhr`}
+                    </span>
+                  </div>
+
+                  {/* Visual indicator bar */}
+                  <div className="pl-10">
+                    <div
+                      className={`h-2 rounded-full overflow-hidden ${
+                        isExpired ? 'bg-red-100' : isUrgent ? 'bg-orange-100' : 'bg-blue-100'
+                      }`}
+                    >
+                      <div
+                        className={`h-full rounded-full ${
+                          isExpired
+                            ? 'bg-gradient-to-r from-red-500 to-red-600'
+                            : isUrgent
+                              ? 'bg-gradient-to-r from-orange-500 to-orange-600'
+                              : 'bg-gradient-to-r from-blue-500 to-blue-600'
+                        }`}
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Project Phases */}
+              {phases.map((phase, idx) => {
+                const duration = calculateDuration(phase.startDate, phase.endDate);
+
+                return (
+                  <div
+                    key={idx}
+                    className="bg-white rounded-lg border-2 border-purple-200 p-3 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-sm">
+                          {idx + 1}
+                        </div>
+                        <p className="font-semibold text-purple-900">{phase.name}</p>
+                      </div>
+                      {duration && (
+                        <Badge variant="secondary">
+                          {duration.months} {duration.months === 1 ? 'Monat' : 'Monate'}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Date Range */}
+                    <div className="flex items-center gap-2 text-sm pl-10">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{phase.startDate}</span>
+                      <span className="text-muted-foreground">bis</span>
+                      <span className="font-medium">{phase.endDate}</span>
+                    </div>
+
+                    {/* Visual Progress Bar */}
+                    <div className="pl-10">
+                      <div className="h-2 bg-purple-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full"
+                          style={{ width: '100%' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Original Text Preview */}
+            <div className="pt-3 border-t border-purple-200">
+              <p className="text-xs text-purple-700 font-medium mb-1">Originaltext:</p>
+              <p className="text-xs text-purple-600 italic">{timeline}</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        /* No phases detected - show input only */
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-yellow-800">
+              Keine strukturierten Phasen erkannt
+            </p>
+            <p className="text-xs text-yellow-700 mt-1">
+              Der Zeitplan konnte nicht automatisch in Phasen unterteilt werden. Bitte überprüfen
+              Sie die Eingabe.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Editable Timeline Input */}
+      <div className="space-y-2">
+        <Label htmlFor="timeline">Zeitplan bearbeiten</Label>
+        <Textarea
+          id="timeline"
+          value={timeline}
+          onChange={e => onChange(e.target.value)}
+          placeholder="z.B. Phase 1 (Build) vom 08.02.2026 bis 31.05.2026, Phase 2 (Optimize) vom 01.06.2026 bis 31.07.2026"
+          rows={3}
+          className="text-sm"
+        />
+        <p className="text-xs text-muted-foreground">
+          Format: Phase X (Name) vom DD.MM.YYYY bis DD.MM.YYYY
+        </p>
+      </div>
     </div>
   );
 }

@@ -67,7 +67,7 @@ export function ScreenshotGallery({ screenshots }: ScreenshotGalleryProps) {
       </div>
 
       {/* Carousel Dialog */}
-      <Dialog open={selectedIndex !== null} onOpenChange={(open) => !open && handleClose()}>
+      <Dialog open={selectedIndex !== null} onOpenChange={open => !open && handleClose()}>
         <DialogContent className="max-w-5xl max-h-[90vh] p-0">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle>Screenshots</DialogTitle>

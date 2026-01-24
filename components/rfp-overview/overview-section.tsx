@@ -415,7 +415,7 @@ function ComplexityBadge({ complexity }: { complexity: 'low' | 'medium' | 'high'
 
 // Utility functions
 function formatRevenueClass(
-  revenueClass?: 'startup' | 'small' | 'medium' | 'large' | 'enterprise' | 'unknown'
+  revenueClass?: 'startup' | 'small' | 'medium' | 'large' | 'enterprise' | 'unknown' | null
 ): string | null {
   if (!revenueClass || revenueClass === 'unknown') return null;
   const labels: Record<string, string> = {

@@ -29,8 +29,10 @@ export const extractedRequirementsSchema = z.object({
     .array(
       z.object({
         url: z.string().describe('Website URL'),
-        type: z.enum(['primary', 'product', 'regional', 'related']).describe('Type of website'),
-        description: z.string().optional().describe('Brief description of this website'),
+        type: z
+          .enum(['primary', 'product', 'regional', 'related', 'corporate', 'main', 'other'])
+          .describe('Type of website'),
+        description: z.string().nullish().describe('Brief description of this website'),
         extractedFromDocument: z.boolean().describe('Whether this URL was found in the document'),
       })
     )
@@ -42,7 +44,10 @@ export const extractedRequirementsSchema = z.object({
 
   // Project Details
   // CHANGED: Made optional - better empty than placeholder text
-  projectDescription: z.string().optional().describe('Detailed description of the project requirements'),
+  projectDescription: z
+    .string()
+    .optional()
+    .describe('Detailed description of the project requirements'),
   projectName: z.string().optional().describe('Name or title of the project if mentioned'),
 
   // Technical Requirements
@@ -103,11 +108,11 @@ export const extractedRequirementsSchema = z.object({
     .array(
       z.object({
         name: z.string().describe('Name of the deliverable'),
-        description: z.string().optional().describe('Description of what is required'),
-        deadline: z.string().optional().describe('Deadline in ISO format YYYY-MM-DD'),
-        deadlineTime: z.string().optional().describe('Exact time for deadline in HH:MM format'),
-        format: z.string().optional().describe('Required format (e.g., PDF, Word, hardcopy)'),
-        copies: z.number().optional().describe('Number of copies required'),
+        description: z.string().nullish().describe('Description of what is required'),
+        deadline: z.string().nullish().describe('Deadline in ISO format YYYY-MM-DD'),
+        deadlineTime: z.string().nullish().describe('Exact time for deadline in HH:MM format'),
+        format: z.string().nullish().describe('Required format (e.g., PDF, Word, hardcopy)'),
+        copies: z.number().nullish().describe('Number of copies required'),
         mandatory: z.boolean().default(true).describe('Whether this deliverable is mandatory'),
         confidence: z.number().min(0).max(100).describe('Confidence score 0-100'),
       })
@@ -126,8 +131,8 @@ export const extractedRequirementsSchema = z.object({
       z.object({
         name: z.string().describe('Contact person name'),
         role: z.string().describe('Job title or role'),
-        email: z.string().optional().describe('Email address'),
-        phone: z.string().optional().describe('Phone number'),
+        email: z.string().nullish().describe('Email address'),
+        phone: z.string().nullish().describe('Phone number'),
         category: z
           .enum(['decision_maker', 'influencer', 'coordinator', 'unknown'])
           .describe('Contact category based on decision-making power'),

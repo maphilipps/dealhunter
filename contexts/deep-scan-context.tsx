@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useCallback, useMemo, type ReactNode } from 'react';
+
 import { useAgentStream } from '@/hooks/use-agent-stream';
 import type { AgentEvent } from '@/lib/streaming/event-types';
 
@@ -22,7 +23,7 @@ export interface DeepScanContextValue {
   isStreaming: boolean;
   events: AgentEvent[];
   error: string | null;
-  decision: unknown | null;
+  decision: unknown;
 
   // Agent states (keyed by agent name from stream)
   agentStates: Record<string, ExpertState>;
@@ -34,7 +35,7 @@ export interface DeepScanContextValue {
 
   // Helper functions
   getExpertStatus: (expertName: string) => ExpertStatus;
-  getExpertResult: (expertName: string) => unknown | null;
+  getExpertResult: (expertName: string) => unknown;
 
   // Actions
   startDeepScan: (leadId: string) => void;

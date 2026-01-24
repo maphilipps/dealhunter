@@ -15,7 +15,7 @@ import { test, expect, Page } from '@playwright/test';
  * Helper function to create an RFP with text input
  */
 async function createRFP(page: Page, text: string, url?: string) {
-  await page.goto('/rfps/new');
+  await page.goto('/pre-qualifications/new');
 
   if (url) {
     await page.fill('#website-url', url);
@@ -25,7 +25,7 @@ async function createRFP(page: Page, text: string, url?: string) {
   await page.click('button:has-text("Bid erstellen")');
 
   // Wait for redirect to RFP detail page
-  await expect(page).toHaveURL(/\/rfps\/[a-z0-9-]+$/);
+  await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
 }
 
 test.describe('Extraction: Loading State (TC-1)', () => {
@@ -249,7 +249,7 @@ test.describe('Extraction: Navigation (TC-4)', () => {
     // If back link exists, click it
     if ((await backLink.count()) > 0) {
       await backLink.first().click();
-      await expect(page).toHaveURL(/\/rfps$/);
+      await expect(page).toHaveURL(/\/pre-qualifications$/);
     }
   });
 
@@ -276,14 +276,14 @@ test.describe('Extraction: Error States (TC-5)', () => {
   });
 
   test('TC-5.1: Empty input shows validation error', async ({ page }) => {
-    await page.goto('/rfps/new');
+    await page.goto('/pre-qualifications/new');
 
     // Try to submit without text
     await page.click('button:has-text("Bid erstellen")');
 
     // Should show validation error or stay on same page
     await page.waitForTimeout(1000);
-    await expect(page).toHaveURL(/\/rfps\/new$/);
+    await expect(page).toHaveURL(/\/pre-qualifications\/new$/);
   });
 
   test('TC-5.2: Extraction handles very short input', async ({ page }) => {

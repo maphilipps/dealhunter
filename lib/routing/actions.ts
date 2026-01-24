@@ -9,7 +9,7 @@ import { type RouteBusinessUnitInput } from './schemas';
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, businessUnits } from '@/lib/db/schema';
+import { preQualifications, businessUnits } from '@/lib/db/schema';
 import { sendBLAssignmentEmail } from '@/lib/notifications/email';
 
 export interface AssignBusinessUnitInput {
@@ -52,7 +52,11 @@ export async function assignBusinessUnit(
     }
 
     // Get bid
-    const bids = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const bids = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (bids.length === 0) {
       return {
@@ -112,7 +116,7 @@ export async function assignBusinessUnit(
     if (overrideReason) {
       await createAuditLog({
         action: 'bl_override',
-        entityType: 'rfp',
+        entityType: 'pre_qualification',
         entityId: bidId,
         previousValue: (aiRecommendation as string | null) ?? undefined,
         newValue: businessLineName,
@@ -123,7 +127,7 @@ export async function assignBusinessUnit(
     // Update bid with assigned business line
     const notifiedAt = new Date();
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         assignedBusinessUnitId: businessLine.id,
         assignedBLNotifiedAt: notifiedAt,
@@ -140,10 +144,10 @@ export async function assignBusinessUnit(
           }),
         }),
       })
-      .where(eq(rfps.id, bidId));
+      .where(eq(preQualifications.id, bidId));
 
     // DEA-38: Auto-convert to Lead when status becomes 'routed'
-    const { convertRfpToLead } = await import('@/lib/leads/actions');
+    const { convertRfpToLead } = await import('@/lib/qualifications/actions');
     const leadResult = await convertRfpToLead({ rfpId: bidId });
 
     let leadId: string | undefined;
@@ -159,7 +163,7 @@ export async function assignBusinessUnit(
     revalidatePath('/bl-review');
     revalidatePath('/leads');
     if (leadId) {
-      revalidatePath(`/leads/${leadId}`);
+      revalidatePath(`/qualifications/${leadId}`);
     }
 
     // ROUTE-003: Send email notification to BL leader
@@ -224,7 +228,11 @@ export async function getBusinessLineRecommendation(bidId: string) {
 
   try {
     // Get bid with extracted requirements
-    const bids = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const bids = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (bids.length === 0) {
       return { success: false, error: 'Bid nicht gefunden' };

@@ -1,7 +1,7 @@
 import { eq, and } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { references, referenceMatches, leads, websiteAudits } from '@/lib/db/schema';
+import { references, referenceMatches, qualifications, websiteAudits } from '@/lib/db/schema';
 import type { NewReferenceMatch } from '@/lib/db/schema';
 
 /**
@@ -136,7 +136,11 @@ function calculateIndustryMatch(
  */
 export async function matchLeadAgainstReferences(leadId: string): Promise<ReferenceMatchScore[]> {
   // 1. Fetch lead with website audit (for tech stack)
-  const [lead] = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+  const [lead] = await db
+    .select()
+    .from(qualifications)
+    .where(eq(qualifications.id, leadId))
+    .limit(1);
 
   if (!lead) {
     throw new Error(`Lead ${leadId} not found`);
@@ -145,7 +149,7 @@ export async function matchLeadAgainstReferences(leadId: string): Promise<Refere
   const [websiteAudit] = await db
     .select()
     .from(websiteAudits)
-    .where(eq(websiteAudits.leadId, leadId))
+    .where(eq(websiteAudits.qualificationId, leadId))
     .limit(1);
 
   // Extract tech stack from website audit
@@ -237,11 +241,11 @@ export async function saveReferenceMatches(
   matches: ReferenceMatchScore[]
 ): Promise<void> {
   // Delete existing matches for this lead
-  await db.delete(referenceMatches).where(eq(referenceMatches.leadId, leadId));
+  await db.delete(referenceMatches).where(eq(referenceMatches.qualificationId, leadId));
 
   // Insert new matches
   const newMatches: NewReferenceMatch[] = matches.map((match, index) => ({
-    leadId,
+    qualificationId: leadId,
     referenceId: match.referenceId,
     totalScore: match.totalScore,
     techStackScore: match.techStackScore,

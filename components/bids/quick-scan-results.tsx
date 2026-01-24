@@ -137,7 +137,7 @@ export function QuickScanResults({
 
         {/* Live Activity Stream - Grouped by Agent */}
         <ActivityStream
-          streamUrl={`/api/rfps/${bidId}/quick-scan/stream`}
+          streamUrl={`/api/pre-qualifications/${bidId}/quick-scan/stream`}
           title="Quick Scan Agent Activity"
           autoStart={true}
           grouped={true}

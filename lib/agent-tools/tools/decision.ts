@@ -5,7 +5,7 @@ import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { leads, leadSectionData } from '@/lib/db/schema';
+import { qualifications, qualificationSectionData } from '@/lib/db/schema';
 
 /**
  * Sprint 4.1: Decision Aggregation Tools
@@ -55,7 +55,11 @@ registry.register({
   inputSchema: aggregateInputSchema,
   async execute(input, _context: ToolContext) {
     // Get lead
-    const [lead] = await db.select().from(leads).where(eq(leads.id, input.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, input.leadId))
+      .limit(1);
 
     if (!lead) {
       return { success: false, error: 'Lead not found' };
@@ -64,8 +68,8 @@ registry.register({
     // Get all section data for this lead
     const sections = await db
       .select()
-      .from(leadSectionData)
-      .where(eq(leadSectionData.leadId, input.leadId));
+      .from(qualificationSectionData)
+      .where(eq(qualificationSectionData.qualificationId, input.leadId));
 
     // Parse section content and extract key insights
     const parsedSections = sections.map(s => ({

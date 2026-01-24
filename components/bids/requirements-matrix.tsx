@@ -195,7 +195,7 @@ export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixP
 
   const loadMatrix = async () => {
     try {
-      const res = await fetch(`/api/rfps/${rfpId}/cms-matrix/stream`);
+      const res = await fetch(`/api/pre-qualifications/${rfpId}/cms-matrix/stream`);
       if (res.ok) {
         const data = await res.json();
         if (data.matrix) {
@@ -213,7 +213,7 @@ export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixP
     setStatusMessage('Starte Matrix-Recherche...');
 
     try {
-      const res = await fetch(`/api/rfps/${rfpId}/cms-matrix/stream`, {
+      const res = await fetch(`/api/pre-qualifications/${rfpId}/cms-matrix/stream`, {
         method: 'POST',
       });
 

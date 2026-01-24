@@ -71,7 +71,7 @@ export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) 
   useEffect(() => {
     async function fetchBUMatches() {
       try {
-        const res = await fetch(`/api/rfps/${rfpId}/bu-matching`);
+        const res = await fetch(`/api/pre-qualifications/${rfpId}/bu-matching`);
         if (res.ok) {
           const data = await res.json();
           setBuMatches(data.matches || []);

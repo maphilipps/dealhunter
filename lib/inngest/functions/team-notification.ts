@@ -3,7 +3,7 @@ import { eq, and } from 'drizzle-orm';
 import { inngest } from '../client';
 
 import { db } from '@/lib/db';
-import { backgroundJobs, rfps, teamAssignments, employees } from '@/lib/db/schema';
+import { backgroundJobs, preQualifications, teamAssignments, employees } from '@/lib/db/schema';
 import { sendTeamNotificationEmails, TeamMemberNotification } from '@/lib/notifications/email';
 
 interface ProjectPlanSummary {
@@ -37,7 +37,7 @@ export const teamNotificationFunction = inngest.createFunction(
           id: jobId,
           jobType: 'team-notification',
           inngestRunId: event.id || 'manual-trigger',
-          rfpId: bidId,
+          preQualificationId: bidId,
           userId,
           status: 'running',
           progress: 0,
@@ -64,7 +64,11 @@ export const teamNotificationFunction = inngest.createFunction(
           })
           .where(eq(backgroundJobs.id, jobRecord.id));
 
-        const [bidData] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+        const [bidData] = await db
+          .select()
+          .from(preQualifications)
+          .where(eq(preQualifications.id, bidId))
+          .limit(1);
 
         if (!bidData) {
           throw new Error(`Bid ${bidId} not found`);
@@ -82,7 +86,7 @@ export const teamNotificationFunction = inngest.createFunction(
           })
           .from(teamAssignments)
           .innerJoin(employees, eq(teamAssignments.employeeId, employees.id))
-          .where(eq(teamAssignments.rfpId, bidId));
+          .where(eq(teamAssignments.preQualificationId, bidId));
 
         if (assignments.length === 0) {
           throw new Error('No team members assigned - cannot send notifications');
@@ -194,14 +198,14 @@ export const teamNotificationFunction = inngest.createFunction(
 
         // Update teamNotifications field in RFP
         await db
-          .update(rfps)
+          .update(preQualifications)
           .set({
             teamNotifications: JSON.stringify(notificationResults.results),
             teamNotifiedAt: new Date(),
             status: 'notified',
             updatedAt: new Date(),
           })
-          .where(eq(rfps.id, bidId));
+          .where(eq(preQualifications.id, bidId));
 
         // Update notifiedAt timestamp in team_assignments
         for (const member of teamMembers) {
@@ -212,7 +216,7 @@ export const teamNotificationFunction = inngest.createFunction(
             })
             .where(
               and(
-                eq(teamAssignments.rfpId, bidId),
+                eq(teamAssignments.preQualificationId, bidId),
                 eq(teamAssignments.employeeId, member.employee.id)
               )
             );

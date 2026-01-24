@@ -5,14 +5,14 @@ export * from './types';
 export * from './timing-schema';
 export * from './deliverables-schema';
 export * from './techstack-schema';
-export * from './legal-rfp-schema';
+export * from './legal-pre-qualification-schema';
 export * from './summary-schema';
 
 // Agents
 export { runTimingAgent } from './timing-agent';
 export { runDeliverablesAgent } from './deliverables-agent';
 export { runTechStackAgent } from './techstack-agent';
-export { runLegalRfpAgent } from './legal-rfp-agent';
+export { runLegalRfpAgent } from './legal-pre-qualification-agent';
 export { runSummaryAgent } from './summary-agent';
 
 // Orchestrator

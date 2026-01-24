@@ -11,7 +11,6 @@
 
 import { eq } from 'drizzle-orm';
 
-
 import { db } from '../db';
 import { websiteAudits } from '../db/schema';
 
@@ -256,7 +255,7 @@ async function saveToDatabase(
     const [existingAudit] = await db
       .select()
       .from(websiteAudits)
-      .where(eq(websiteAudits.leadId, leadId))
+      .where(eq(websiteAudits.qualificationId, leadId))
       .limit(1);
 
     const auditData = {
@@ -278,7 +277,7 @@ async function saveToDatabase(
     } else {
       // Create new
       await db.insert(websiteAudits).values({
-        leadId,
+        qualificationId: leadId,
         websiteUrl,
         ...auditData,
         startedAt: new Date(),

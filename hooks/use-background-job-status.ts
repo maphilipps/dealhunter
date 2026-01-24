@@ -28,7 +28,7 @@ export function useBackgroundJobStatus({
 
   const fetchJobStatus = useCallback(async () => {
     try {
-      const response = await fetch(`/api/leads/${leadId}/background-job`);
+      const response = await fetch(`/api/qualifications/${leadId}/background-job`);
 
       if (!response.ok) {
         if (response.status === 404) {

@@ -5,7 +5,7 @@ import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { accounts, rfps } from '@/lib/db/schema';
+import { accounts, preQualifications } from '@/lib/db/schema';
 
 const listAccountsInputSchema = z.object({
   limit: z.number().min(1).max(100).default(50),
@@ -50,16 +50,16 @@ registry.register({
 
     const opportunities = await db
       .select({
-        id: rfps.id,
-        status: rfps.status,
-        source: rfps.source,
-        stage: rfps.stage,
-        decision: rfps.decision,
-        createdAt: rfps.createdAt,
+        id: preQualifications.id,
+        status: preQualifications.status,
+        source: preQualifications.source,
+        stage: preQualifications.stage,
+        decision: preQualifications.decision,
+        createdAt: preQualifications.createdAt,
       })
-      .from(rfps)
-      .where(eq(rfps.accountId, input.id))
-      .orderBy(desc(rfps.createdAt));
+      .from(preQualifications)
+      .where(eq(preQualifications.accountId, input.id))
+      .orderBy(desc(preQualifications.createdAt));
 
     return { success: true, data: { account, opportunities } };
   },

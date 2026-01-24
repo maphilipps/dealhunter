@@ -225,7 +225,7 @@ export async function performWebResearch(query: WebResearchQuery): Promise<WebRe
     const existingChunks = await db
       .select({ chunkIndex: rawChunks.chunkIndex })
       .from(rawChunks)
-      .where(eq(rawChunks.rfpId, rfpId))
+      .where(eq(rawChunks.preQualificationId, rfpId))
       .orderBy(desc(rawChunks.chunkIndex))
       .limit(1);
 
@@ -233,7 +233,7 @@ export async function performWebResearch(query: WebResearchQuery): Promise<WebRe
 
     await db.insert(rawChunks).values(
       chunksWithEmbeddings.map((chunk, idx) => ({
-        rfpId,
+        preQualificationId: rfpId,
         chunkIndex: startIndex + idx + 1,
         content: chunk.content,
         tokenCount: chunk.tokenCount,

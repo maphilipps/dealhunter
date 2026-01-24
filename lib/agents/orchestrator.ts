@@ -26,7 +26,7 @@ import {
   analyzeMigrationComplexity,
   type MigrationComplexityResult,
 } from './migration-complexity-agent';
-import { leads, backgroundJobs } from '../db/schema';
+import { qualifications, backgroundJobs } from '../db/schema';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -396,7 +396,7 @@ async function createBackgroundJob(leadId: string, userId: string): Promise<stri
     .insert(backgroundJobs)
     .values({
       jobType: 'deep-analysis',
-      rfpId: null, // This is a lead-based job, not RFP
+      preQualificationId: null, // This is a lead-based job, not PreQualification
       userId,
       status: 'running',
       progress: 0,
@@ -464,12 +464,12 @@ async function updateLeadStatus(
   status: 'full_scanning' | 'bl_reviewing'
 ): Promise<void> {
   await db
-    .update(leads)
+    .update(qualifications)
     .set({
       status,
       updatedAt: new Date(),
     })
-    .where(eq(leads.id, leadId));
+    .where(eq(qualifications.id, leadId));
 
   console.error(`[Orchestrator] Lead status updated to: ${status}`);
 }

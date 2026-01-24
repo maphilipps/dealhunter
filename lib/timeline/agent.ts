@@ -140,12 +140,12 @@ ${input.specialRequirements?.length ? `## Special Requirements\n${input.specialR
       // Query for relevant performance and complexity data
       const [performanceResults, contentResults] = await Promise.all([
         queryRAG({
-          rfpId: input.rfpId,
+          preQualificationId: input.rfpId,
           question: 'What are the website performance indicators and issues?',
           maxResults: 3,
         }),
         queryRAG({
-          rfpId: input.rfpId,
+          preQualificationId: input.rfpId,
           question: 'What is the content architecture and complexity?',
           maxResults: 3,
         }),

@@ -3,7 +3,7 @@ import { eq, desc, count } from 'drizzle-orm';
 import { listToolsForAgent, getToolsByCategory } from '@/lib/agent-tools';
 import { db } from '@/lib/db';
 import {
-  rfps,
+  preQualifications,
   accounts,
   references,
   competencies,
@@ -61,18 +61,18 @@ export async function buildAgentContext(userId: string): Promise<AgentContext> {
 
   const [rfpCountResult] = await db
     .select({ count: count() })
-    .from(rfps)
-    .where(eq(rfps.userId, userId));
+    .from(preQualifications)
+    .where(eq(preQualifications.userId, userId));
 
   const recentRfps = await db
     .select({
-      id: rfps.id,
-      status: rfps.status,
-      extractedRequirements: rfps.extractedRequirements,
+      id: preQualifications.id,
+      status: preQualifications.status,
+      extractedRequirements: preQualifications.extractedRequirements,
     })
-    .from(rfps)
-    .where(eq(rfps.userId, userId))
-    .orderBy(desc(rfps.createdAt))
+    .from(preQualifications)
+    .where(eq(preQualifications.userId, userId))
+    .orderBy(desc(preQualifications.createdAt))
     .limit(5);
 
   const [accountCountResult] = await db

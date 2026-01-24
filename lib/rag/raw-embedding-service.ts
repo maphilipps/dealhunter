@@ -73,17 +73,17 @@ export async function generateRawChunkEmbeddings(
  *
  * Flow:
  * 1. Check if embeddings are enabled
- * 2. Delete existing raw chunks for this RFP (idempotent)
+ * 2. Delete existing raw chunks for this pre-qualification (idempotent)
  * 3. Chunk the raw text
  * 4. Generate embeddings for all chunks
  * 5. Store in raw_chunks table
  *
- * @param rfpId - The RFP ID to associate chunks with
+ * @param preQualificationId - The pre-qualification ID to associate chunks with
  * @param rawText - The raw document text to embed
  * @returns Statistics about the embedding process
  */
 export async function embedRawText(
-  rfpId: string,
+  preQualificationId: string,
   rawText: string
 ): Promise<{
   success: boolean;
@@ -102,14 +102,16 @@ export async function embedRawText(
   }
 
   try {
-    // 1. Delete existing raw chunks for this RFP (idempotent re-run)
-    await db.delete(rawChunks).where(eq(rawChunks.rfpId, rfpId));
+    // 1. Delete existing raw chunks for this pre-qualification (idempotent re-run)
+    await db.delete(rawChunks).where(eq(rawChunks.preQualificationId, preQualificationId));
 
     // 2. Chunk the raw text
     const chunks = chunkRawText(rawText);
 
     if (chunks.length === 0) {
-      console.log(`[RAG-RAW] No chunks generated for RFP ${rfpId} - text too short or empty`);
+      console.log(
+        `[RAG-RAW] No chunks generated for pre-qualification ${preQualificationId} - text too short or empty`
+      );
       return {
         success: true,
         stats: getChunkStats([]),
@@ -131,7 +133,7 @@ export async function embedRawText(
     // 4. Store in database
     await db.insert(rawChunks).values(
       chunksWithEmbeddings.map(chunk => ({
-        rfpId,
+        preQualificationId,
         chunkIndex: chunk.chunkIndex,
         content: chunk.content,
         tokenCount: chunk.tokenCount,
@@ -142,7 +144,7 @@ export async function embedRawText(
 
     const stats = getChunkStats(chunks);
     console.log(
-      `[RAG-RAW] Embedded ${stats.totalChunks} chunks (${stats.totalTokens} tokens) for RFP ${rfpId}`
+      `[RAG-RAW] Embedded ${stats.totalChunks} chunks (${stats.totalTokens} tokens) for pre-qualification ${preQualificationId}`
     );
 
     return {
@@ -150,7 +152,10 @@ export async function embedRawText(
       stats,
     };
   } catch (error) {
-    console.error(`[RAG-RAW] Failed to embed raw text for RFP ${rfpId}:`, error);
+    console.error(
+      `[RAG-RAW] Failed to embed raw text for pre-qualification ${preQualificationId}:`,
+      error
+    );
     return {
       success: false,
       stats: getChunkStats([]),
@@ -160,33 +165,33 @@ export async function embedRawText(
 }
 
 /**
- * Check if raw chunks exist for an RFP
+ * Check if raw chunks exist for a pre-qualification
  */
-export async function hasRawChunks(rfpId: string): Promise<boolean> {
+export async function hasRawChunks(preQualificationId: string): Promise<boolean> {
   const result = await db
     .select({ id: rawChunks.id })
     .from(rawChunks)
-    .where(eq(rawChunks.rfpId, rfpId))
+    .where(eq(rawChunks.preQualificationId, preQualificationId))
     .limit(1);
 
   return result.length > 0;
 }
 
 /**
- * Get raw chunk count for an RFP
+ * Get raw chunk count for a pre-qualification
  */
-export async function getRawChunkCount(rfpId: string): Promise<number> {
+export async function getRawChunkCount(preQualificationId: string): Promise<number> {
   const result = await db
     .select({ id: rawChunks.id })
     .from(rawChunks)
-    .where(eq(rawChunks.rfpId, rfpId));
+    .where(eq(rawChunks.preQualificationId, preQualificationId));
 
   return result.length;
 }
 
 /**
- * Delete raw chunks for an RFP
+ * Delete raw chunks for a pre-qualification
  */
-export async function deleteRawChunks(rfpId: string): Promise<void> {
-  await db.delete(rawChunks).where(eq(rawChunks.rfpId, rfpId));
+export async function deleteRawChunks(preQualificationId: string): Promise<void> {
+  await db.delete(rawChunks).where(eq(rawChunks.preQualificationId, preQualificationId));
 }

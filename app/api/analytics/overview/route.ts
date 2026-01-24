@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, businessUnits } from '@/lib/db/schema';
+import { preQualifications, businessUnits } from '@/lib/db/schema';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -16,16 +16,16 @@ export async function GET(_request: NextRequest) {
     // Get all RFPs for aggregation
     const allRfps = await db
       .select({
-        id: rfps.id,
-        status: rfps.status,
-        decision: rfps.decision,
-        source: rfps.source,
-        stage: rfps.stage,
-        assignedBusinessUnitId: rfps.assignedBusinessUnitId,
-        createdAt: rfps.createdAt,
-        updatedAt: rfps.updatedAt,
+        id: preQualifications.id,
+        status: preQualifications.status,
+        decision: preQualifications.decision,
+        source: preQualifications.source,
+        stage: preQualifications.stage,
+        assignedBusinessUnitId: preQualifications.assignedBusinessUnitId,
+        createdAt: preQualifications.createdAt,
+        updatedAt: preQualifications.updatedAt,
       })
-      .from(rfps);
+      .from(preQualifications);
 
     // Calculate bid rate
     const decidedBids = allRfps.filter(r => r.decision !== 'pending');
@@ -35,18 +35,20 @@ export async function GET(_request: NextRequest) {
 
     // Calculate time to decision (average)
     let avgTimeToDecision = 0;
-    const rfpsWithDecision = allRfps.filter(
+    const preQualificationsWithDecision = allRfps.filter(
       r => r.decision !== 'pending' && r.createdAt && r.updatedAt
     );
-    if (rfpsWithDecision.length > 0) {
-      const totalTime = rfpsWithDecision.reduce((sum, r) => {
+    if (preQualificationsWithDecision.length > 0) {
+      const totalTime = preQualificationsWithDecision.reduce((sum, r) => {
         const created =
           r.createdAt instanceof Date ? r.createdAt.getTime() : new Date(r.createdAt!).getTime();
         const updated =
           r.updatedAt instanceof Date ? r.updatedAt.getTime() : new Date(r.updatedAt!).getTime();
         return sum + (updated - created);
       }, 0);
-      avgTimeToDecision = Math.round(totalTime / rfpsWithDecision.length / (1000 * 60 * 60)); // hours
+      avgTimeToDecision = Math.round(
+        totalTime / preQualificationsWithDecision.length / (1000 * 60 * 60)
+      ); // hours
     }
 
     // Source distribution

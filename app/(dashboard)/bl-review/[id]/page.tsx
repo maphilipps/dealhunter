@@ -31,7 +31,7 @@ import { auth } from '@/lib/auth';
 import type { BaselineComparisonResult } from '@/lib/baseline-comparison/schema';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 import { db } from '@/lib/db';
-import { rfps, businessUnits, users, quickScans } from '@/lib/db/schema';
+import { preQualifications, businessUnits, users, quickScans } from '@/lib/db/schema';
 import type { TeamNotificationResult } from '@/lib/notifications/email';
 import type { ProjectPlan } from '@/lib/project-planning/schema';
 import type {
@@ -79,7 +79,11 @@ export default async function BLReviewDetailPage({
   }
 
   // Get the bid
-  const [bid] = await db.select().from(rfps).where(eq(rfps.id, id)).limit(1);
+  const [bid] = await db
+    .select()
+    .from(preQualifications)
+    .where(eq(preQualifications.id, id))
+    .limit(1);
 
   if (!bid) {
     notFound();

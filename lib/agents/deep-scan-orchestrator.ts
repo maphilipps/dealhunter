@@ -23,8 +23,8 @@ import { runIntegrationsAgent } from '@/lib/agents/integrations-agent';
 import { runLegalCheckAgent } from '@/lib/agents/legal-check-agent';
 import { runReferencesAgent } from '@/lib/agents/references-agent';
 import { db } from '@/lib/db';
-import { leads, leadSectionData, dealEmbeddings } from '@/lib/db/schema';
-import { LEAD_NAVIGATION_SECTIONS } from '@/lib/leads/navigation-config';
+import { qualifications, qualificationSectionData, dealEmbeddings } from '@/lib/db/schema';
+import { QUALIFICATION_NAVIGATION_SECTIONS } from '@/lib/qualifications/navigation-config';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 /**
@@ -110,7 +110,11 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
 
   'website-analysis': async (leadId, rfpId) => {
     // Fetch lead data to get website URL
-    const leadData = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+    const leadData = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, leadId))
+      .limit(1);
 
     if (!leadData[0]?.websiteUrl) {
       return {
@@ -322,9 +326,9 @@ async function executeSectionAgent(
     // Execute agent
     const result = await agent(leadId, rfpId);
 
-    // Store result in leadSectionData for caching
-    await db.insert(leadSectionData).values({
-      leadId,
+    // Store result in qualificationSectionData for caching
+    await db.insert(qualificationSectionData).values({
+      qualificationId: leadId,
       sectionId,
       content: JSON.stringify(result.content),
       confidence: result.confidence,
@@ -351,7 +355,7 @@ async function executeSectionAgent(
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
       await db.insert(dealEmbeddings).values({
-        rfpId,
+        preQualificationId: rfpId,
         agentName: `deep-scan-${sectionId}`,
         chunkType: 'analysis',
         chunkIndex: 0,
@@ -359,7 +363,7 @@ async function executeSectionAgent(
         embedding: JSON.stringify(chunksWithEmbeddings[0].embedding),
         metadata: JSON.stringify({
           sectionId,
-          leadId,
+          qualificationId: leadId,
           confidence: result.confidence,
           sources: result.sources,
         }),
@@ -402,26 +406,26 @@ export async function runDeepScan(leadId: string): Promise<DeepScanProgress> {
 
   try {
     // 1. Get Lead and RFP ID
-    const leadData = await db.select().from(leads).where(eq(leads.id, leadId));
+    const leadData = await db.select().from(qualifications).where(eq(qualifications.id, leadId));
 
     if (leadData.length === 0) {
       throw new Error(`Lead ${leadId} not found`);
     }
 
     const lead = leadData[0];
-    const rfpId = lead.rfpId;
+    const rfpId = lead.preQualificationId;
 
     // 2. Update status to 'running'
     await db
-      .update(leads)
+      .update(qualifications)
       .set({
         deepScanStatus: 'running',
         deepScanStartedAt: startTime,
       })
-      .where(eq(leads.id, leadId));
+      .where(eq(qualifications.id, leadId));
 
     // 3. Execute all agents in parallel
-    const agentPromises = LEAD_NAVIGATION_SECTIONS.map(section =>
+    const agentPromises = QUALIFICATION_NAVIGATION_SECTIONS.map(section =>
       executeSectionAgent(section.id, section.label, leadId, rfpId)
     );
 
@@ -433,7 +437,7 @@ export async function runDeepScan(leadId: string): Promise<DeepScanProgress> {
         return result.value;
       } else {
         // Promise was rejected (shouldn't happen with our error handling, but just in case)
-        const section = LEAD_NAVIGATION_SECTIONS[index];
+        const section = QUALIFICATION_NAVIGATION_SECTIONS[index];
         const errorMessage =
           result.reason instanceof Error
             ? result.reason.message
@@ -461,12 +465,12 @@ export async function runDeepScan(leadId: string): Promise<DeepScanProgress> {
 
     // 6. Update lead with final status
     await db
-      .update(leads)
+      .update(qualifications)
       .set({
         deepScanStatus: finalStatus,
         deepScanCompletedAt: new Date(),
       })
-      .where(eq(leads.id, leadId));
+      .where(eq(qualifications.id, leadId));
 
     // 7. Return progress
     const progress: DeepScanProgress = {
@@ -494,12 +498,12 @@ export async function runDeepScan(leadId: string): Promise<DeepScanProgress> {
 
     // Update lead status to failed
     await db
-      .update(leads)
+      .update(qualifications)
       .set({
         deepScanStatus: 'failed',
         deepScanCompletedAt: new Date(),
       })
-      .where(eq(leads.id, leadId));
+      .where(eq(qualifications.id, leadId));
 
     throw error;
   }
@@ -516,12 +520,12 @@ export async function runDeepScan(leadId: string): Promise<DeepScanProgress> {
 export async function getDeepScanProgress(leadId: string): Promise<DeepScanProgress | null> {
   const leadData = await db
     .select({
-      deepScanStatus: leads.deepScanStatus,
-      deepScanStartedAt: leads.deepScanStartedAt,
-      deepScanCompletedAt: leads.deepScanCompletedAt,
+      deepScanStatus: qualifications.deepScanStatus,
+      deepScanStartedAt: qualifications.deepScanStartedAt,
+      deepScanCompletedAt: qualifications.deepScanCompletedAt,
     })
-    .from(leads)
-    .where(eq(leads.id, leadId));
+    .from(qualifications)
+    .where(eq(qualifications.id, leadId));
 
   if (leadData.length === 0 || leadData[0].deepScanStatus === 'pending') {
     return null;
@@ -532,8 +536,8 @@ export async function getDeepScanProgress(leadId: string): Promise<DeepScanProgr
   // Get all section data
   const sectionResults = await db
     .select()
-    .from(leadSectionData)
-    .where(eq(leadSectionData.leadId, leadId));
+    .from(qualificationSectionData)
+    .where(eq(qualificationSectionData.qualificationId, leadId));
 
   const agentResults: AgentResult[] = sectionResults.map(section => {
     const parsedContent: unknown = JSON.parse(section.content);
@@ -544,7 +548,8 @@ export async function getDeepScanProgress(leadId: string): Promise<DeepScanProgr
     return {
       sectionId: section.sectionId,
       sectionLabel:
-        LEAD_NAVIGATION_SECTIONS.find(s => s.id === section.sectionId)?.label || section.sectionId,
+        QUALIFICATION_NAVIGATION_SECTIONS.find(s => s.id === section.sectionId)?.label ||
+        section.sectionId,
       status: 'success' as const,
       content: parsedContent,
       confidence: section.confidence || undefined,
@@ -555,7 +560,7 @@ export async function getDeepScanProgress(leadId: string): Promise<DeepScanProgr
 
   return {
     leadId,
-    totalAgents: LEAD_NAVIGATION_SECTIONS.length,
+    totalAgents: QUALIFICATION_NAVIGATION_SECTIONS.length,
     completedAgents: agentResults.length,
     successfulAgents: agentResults.length,
     failedAgents: 0,

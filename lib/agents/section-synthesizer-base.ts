@@ -66,7 +66,7 @@ export abstract class SectionSynthesizerBase {
 
     // Query all RAG data for this lead
     const results = await queryRagForLead({
-      leadId,
+      qualificationId: leadId,
       question,
       maxResults: 15, // Fetch more to allow for audit prioritization
     });

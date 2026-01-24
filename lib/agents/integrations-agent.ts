@@ -15,7 +15,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { leads, quickScans, dealEmbeddings } from '@/lib/db/schema';
+import { qualifications, quickScans, dealEmbeddings } from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -119,13 +119,13 @@ export async function runIntegrationsAgent(
   // 1. Fetch lead and Quick Scan data
   const [leadData] = await db
     .select({
-      customerName: leads.customerName,
-      industry: leads.industry,
-      websiteUrl: leads.websiteUrl,
-      quickScanId: leads.quickScanId,
+      customerName: qualifications.customerName,
+      industry: qualifications.industry,
+      websiteUrl: qualifications.websiteUrl,
+      quickScanId: qualifications.quickScanId,
     })
-    .from(leads)
-    .where(eq(leads.id, leadId))
+    .from(qualifications)
+    .where(eq(qualifications.id, leadId))
     .limit(1);
 
   if (!leadData) {
@@ -245,8 +245,8 @@ ${result.recommendations.map(r => `- ${r}`).join('\n')}`;
 
   if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
     await db.insert(dealEmbeddings).values({
-      leadId,
-      rfpId,
+      qualificationId: leadId,
+      preQualificationId: rfpId,
       agentName: 'integrations',
       chunkType: 'analysis',
       chunkIndex: 0,

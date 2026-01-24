@@ -28,7 +28,7 @@ const CHECKPOINT_DIR = process.env.CHECKPOINT_DIR || path.join(process.cwd(), 't
 export const WorkflowStateSchema = z.object({
   workflowId: z.string(),
   workflowType: z.enum(['deep-analysis', 'bit-evaluation', 'team-staffing', 'extraction']),
-  rfpId: z.string().optional(),
+  preQualificationId: z.string().optional(),
   userId: z.string(),
   status: z.enum(['pending', 'running', 'paused', 'completed', 'failed']),
   currentStep: z.string(),

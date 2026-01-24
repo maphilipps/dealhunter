@@ -4,14 +4,14 @@ import { db } from '../lib/db';
 import { dealEmbeddings } from '../lib/db/schema';
 
 async function test() {
-  const leadId = 's4i39tt1ystbewlzhkqgain1';
+  const qualificationId = 's4i39tt1ystbewlzhkqgain1';
   const search = 'Locarno';
 
-  console.log('Testing getLeadEmbeddings logic for lead:', leadId);
+  console.log('Testing getQualificationEmbeddings logic for qualification:', qualificationId);
   console.log('Search term:', search);
 
   // Build where conditions (same as in the server action)
-  const conditions = [eq(dealEmbeddings.leadId, leadId)];
+  const conditions = [eq(dealEmbeddings.qualificationId, qualificationId)];
   conditions.push(like(dealEmbeddings.content, '%' + search + '%'));
 
   const whereClause = and(...conditions);

@@ -16,7 +16,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { leads, references, dealEmbeddings } from '@/lib/db/schema';
+import { qualifications, references, dealEmbeddings } from '@/lib/db/schema';
 import { queryRagForLead, formatLeadContext } from '@/lib/rag/lead-retrieval-service';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -167,12 +167,12 @@ export async function runReferencesAgent(leadId: string, rfpId: string): Promise
     // 1. Fetch lead data
     const leadData = await db
       .select({
-        customerName: leads.customerName,
-        industry: leads.industry,
-        requirements: leads.requirements,
+        customerName: qualifications.customerName,
+        industry: qualifications.industry,
+        requirements: qualifications.requirements,
       })
-      .from(leads)
-      .where(eq(leads.id, leadId));
+      .from(qualifications)
+      .where(eq(qualifications.id, leadId));
 
     if (leadData.length === 0) {
       throw new Error(`Lead ${leadId} not found`);
@@ -182,7 +182,7 @@ export async function runReferencesAgent(leadId: string, rfpId: string): Promise
 
     // 2. Query RAG for technology requirements
     const ragResults = await queryRagForLead({
-      leadId,
+      qualificationId: leadId,
       question: 'Technology stack, technical requirements, CMS, frameworks, programming languages',
       agentNameFilter: ['technology', 'deep-scan-technology', 'quick_scan'],
       maxResults: 5,
@@ -585,7 +585,7 @@ ${recommendationDetails || 'No recommendations available.'}`;
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
       await db.insert(dealEmbeddings).values({
-        rfpId,
+        preQualificationId: rfpId,
         agentName: 'references',
         chunkType: 'analysis',
         chunkIndex: 0,

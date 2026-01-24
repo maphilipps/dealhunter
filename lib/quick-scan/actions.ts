@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, quickScans } from '@/lib/db/schema';
+import { preQualifications, quickScans } from '@/lib/db/schema';
 
 /**
  * Start Quick Scan for a bid opportunity
@@ -26,7 +26,11 @@ export async function startQuickScan(bidId: string) {
 
   try {
     // Get the bid opportunity
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -59,7 +63,7 @@ export async function startQuickScan(bidId: string) {
     const [quickScan] = await db
       .insert(quickScans)
       .values({
-        rfpId: bidId,
+        preQualificationId: bidId,
         websiteUrl,
         status: 'running',
         startedAt: new Date(),
@@ -68,15 +72,15 @@ export async function startQuickScan(bidId: string) {
 
     // Update bid status to quick_scanning
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         status: 'quick_scanning',
         quickScanId: quickScan.id,
       })
-      .where(eq(rfps.id, bidId));
+      .where(eq(preQualifications.id, bidId));
 
     // Return immediately - scan is executed via SSE stream
-    // The UI will connect to /api/rfps/[id]/quick-scan/stream which runs the actual scan
+    // The UI will connect to /api/pre-qualifications/[id]/quick-scan/stream which runs the actual scan
     return {
       success: true,
       quickScanId: quickScan.id,
@@ -106,7 +110,11 @@ export async function retriggerQuickScan(bidId: string) {
 
   try {
     // Get the bid opportunity
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -156,7 +164,7 @@ export async function retriggerQuickScan(bidId: string) {
       const [quickScan] = await db
         .insert(quickScans)
         .values({
-          rfpId: bidId,
+          preQualificationId: bidId,
           websiteUrl,
           status: 'running',
           startedAt: new Date(),
@@ -168,7 +176,7 @@ export async function retriggerQuickScan(bidId: string) {
 
     // Update bid status and reset BIT evaluation data
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         status: 'quick_scanning',
         quickScanId: quickScanId,
@@ -176,7 +184,7 @@ export async function retriggerQuickScan(bidId: string) {
         decisionData: null,
         alternativeRecommendation: null,
       })
-      .where(eq(rfps.id, bidId));
+      .where(eq(preQualifications.id, bidId));
 
     return {
       success: true,
@@ -203,7 +211,11 @@ export async function getQuickScanResult(bidId: string) {
   }
 
   try {
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };

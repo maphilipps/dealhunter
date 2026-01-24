@@ -8,7 +8,13 @@
 import { createId } from '@paralleldrive/cuid2';
 
 import { db } from '../lib/db';
-import { rfps, leads, quickScans, dealEmbeddings, websiteAudits } from '../lib/db/schema';
+import {
+  preQualifications,
+  qualifications,
+  quickScans,
+  dealEmbeddings,
+  websiteAudits,
+} from '../lib/db/schema';
 
 const USER_ID = 'eyfeoyanpr2ye2uhnr8edwqe'; // marc.philipps@adesso.de
 const PHP_BU_ID = 'yt75ql93d7freq6zz9w6na2r'; // PHP Business Unit (Drupal)
@@ -77,15 +83,15 @@ async function seedLocarnoLead() {
   console.log('🎬 Creating Locarno Film Festival Lead...\n');
 
   // Generate IDs
-  const rfpId = createId();
-  const leadId = createId();
+  const preQualificationId = createId();
+  const qualificationId = createId();
   const quickScanId = createId();
   const websiteAuditId = createId();
 
   // 1. Create RFP
   console.log('\n📄 Creating RFP...');
-  await db.insert(rfps).values({
-    id: rfpId,
+  await db.insert(preQualifications).values({
+    id: preQualificationId,
     userId: USER_ID,
     source: 'proactive',
     stage: 'rfp',
@@ -140,13 +146,13 @@ Zeitplan: Go-Live Mitte April 2025`,
     assignedBusinessUnitId: PHP_BU_ID,
     quickScanId: quickScanId,
   });
-  console.log('✅ RFP created:', rfpId);
+  console.log('✅ RFP created:', preQualificationId);
 
   // 2. Create QuickScan with audit data
   console.log('\n🔍 Creating QuickScan...');
   await db.insert(quickScans).values({
     id: quickScanId,
-    rfpId: rfpId,
+    preQualificationId: preQualificationId,
     websiteUrl: 'https://www.locarnofestival.ch',
     status: 'completed',
     techStack: JSON.stringify({
@@ -209,9 +215,9 @@ Zeitplan: Go-Live Mitte April 2025`,
 
   // 3. Create Lead
   console.log('\n👤 Creating Lead...');
-  await db.insert(leads).values({
-    id: leadId,
-    rfpId: rfpId,
+  await db.insert(qualifications).values({
+    id: qualificationId,
+    preQualificationId: preQualificationId,
     status: 'bl_reviewing',
     customerName: 'Locarno Film Festival',
     websiteUrl: 'https://www.locarnofestival.ch',
@@ -240,7 +246,7 @@ Zeitplan: Go-Live Mitte April 2025`,
     deepScanStatus: 'completed',
     deepScanCompletedAt: new Date(),
   });
-  console.log('✅ Lead created:', leadId);
+  console.log('✅ Lead created:', qualificationId);
 
   // 4. Create WebsiteAudit
   console.log('\n🌐 Creating Website Audit...');
@@ -249,7 +255,7 @@ Zeitplan: Go-Live Mitte April 2025`,
 
   await db.insert(websiteAudits).values({
     id: websiteAuditId,
-    leadId: leadId,
+    qualificationId: qualificationId,
     status: 'completed',
     websiteUrl: 'https://www.locarnofestival.ch',
     cms: 'Magnolia CMS 6.3',
@@ -550,7 +556,7 @@ Performance-Erwartungen:
   for (const embedding of embeddings) {
     await db.insert(dealEmbeddings).values({
       id: createId(),
-      leadId: leadId,
+      qualificationId: qualificationId,
       agentName: embedding.agentName,
       chunkType: embedding.chunkType,
       content: embedding.content,
@@ -563,13 +569,13 @@ Performance-Erwartungen:
   console.log('\n' + '='.repeat(60));
   console.log('🎉 Locarno Film Festival Lead erfolgreich erstellt!\n');
   console.log('IDs:');
-  console.log(`  - RFP ID:          ${rfpId}`);
-  console.log(`  - Lead ID:         ${leadId}`);
+  console.log(`  - RFP ID:          ${preQualificationId}`);
+  console.log(`  - Lead ID:         ${qualificationId}`);
   console.log(`  - QuickScan ID:    ${quickScanId}`);
   console.log(`  - WebsiteAudit ID: ${websiteAuditId}`);
   console.log('\nZugriff:');
-  console.log(`  - Lead Details:  http://localhost:3000/leads/${leadId}`);
-  console.log(`  - Lead Audit:    http://localhost:3000/leads/${leadId}/audit`);
+  console.log(`  - Lead Details:  http://localhost:3000/qualifications/${qualificationId}`);
+  console.log(`  - Lead Audit:    http://localhost:3000/qualifications/${qualificationId}/audit`);
   console.log('='.repeat(60));
 }
 

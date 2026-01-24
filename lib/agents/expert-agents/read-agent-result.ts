@@ -30,7 +30,9 @@ export async function getAgentResult(
       createdAt: dealEmbeddings.createdAt,
     })
     .from(dealEmbeddings)
-    .where(and(eq(dealEmbeddings.rfpId, rfpId), eq(dealEmbeddings.agentName, agentName)))
+    .where(
+      and(eq(dealEmbeddings.preQualificationId, rfpId), eq(dealEmbeddings.agentName, agentName))
+    )
     .orderBy(desc(dealEmbeddings.createdAt))
     .limit(1);
 

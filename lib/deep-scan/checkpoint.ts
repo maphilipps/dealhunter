@@ -10,7 +10,7 @@
 import { eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { leads } from '@/lib/db/schema';
+import { qualifications } from '@/lib/db/schema';
 
 export type DeepScanPhase = 'scraping' | 'phase2' | 'phase3';
 
@@ -27,13 +27,13 @@ export interface CheckpointState {
 export async function getCheckpointState(leadId: string): Promise<CheckpointState> {
   const [lead] = await db
     .select({
-      currentPhase: leads.deepScanCurrentPhase,
-      completedExperts: leads.deepScanCompletedExperts,
-      lastCheckpoint: leads.deepScanLastCheckpoint,
-      lastError: leads.deepScanError,
+      currentPhase: qualifications.deepScanCurrentPhase,
+      completedExperts: qualifications.deepScanCompletedExperts,
+      lastCheckpoint: qualifications.deepScanLastCheckpoint,
+      lastError: qualifications.deepScanError,
     })
-    .from(leads)
-    .where(eq(leads.id, leadId))
+    .from(qualifications)
+    .where(eq(qualifications.id, leadId))
     .limit(1);
 
   if (!lead) {
@@ -79,7 +79,7 @@ export async function saveCheckpoint(
   }
 
   await db
-    .update(leads)
+    .update(qualifications)
     .set({
       deepScanCurrentPhase: phase,
       deepScanCompletedExperts: JSON.stringify(completed),
@@ -87,7 +87,7 @@ export async function saveCheckpoint(
       deepScanError: null, // Clear error on successful checkpoint
       updatedAt: new Date(),
     })
-    .where(eq(leads.id, leadId));
+    .where(eq(qualifications.id, leadId));
 }
 
 /**
@@ -99,14 +99,14 @@ export async function saveError(
   phase: DeepScanPhase
 ): Promise<void> {
   await db
-    .update(leads)
+    .update(qualifications)
     .set({
       deepScanCurrentPhase: phase,
       deepScanError: errorMessage,
       deepScanLastCheckpoint: new Date(),
       updatedAt: new Date(),
     })
-    .where(eq(leads.id, leadId));
+    .where(eq(qualifications.id, leadId));
 }
 
 /**
@@ -114,7 +114,7 @@ export async function saveError(
  */
 export async function resetCheckpoints(leadId: string): Promise<void> {
   await db
-    .update(leads)
+    .update(qualifications)
     .set({
       deepScanCurrentPhase: null,
       deepScanCompletedExperts: null,
@@ -125,7 +125,7 @@ export async function resetCheckpoints(leadId: string): Promise<void> {
       deepScanCompletedAt: null,
       updatedAt: new Date(),
     })
-    .where(eq(leads.id, leadId));
+    .where(eq(qualifications.id, leadId));
 }
 
 /**
@@ -133,7 +133,7 @@ export async function resetCheckpoints(leadId: string): Promise<void> {
  */
 export async function markDeepScanStarted(leadId: string): Promise<void> {
   await db
-    .update(leads)
+    .update(qualifications)
     .set({
       deepScanStatus: 'running',
       deepScanStartedAt: new Date(),
@@ -141,7 +141,7 @@ export async function markDeepScanStarted(leadId: string): Promise<void> {
       deepScanError: null,
       updatedAt: new Date(),
     })
-    .where(eq(leads.id, leadId));
+    .where(eq(qualifications.id, leadId));
 }
 
 /**
@@ -153,14 +153,14 @@ export async function markDeepScanCompleted(
   error?: string
 ): Promise<void> {
   await db
-    .update(leads)
+    .update(qualifications)
     .set({
       deepScanStatus: success ? 'completed' : 'failed',
       deepScanCompletedAt: new Date(),
       deepScanError: error || null,
       updatedAt: new Date(),
     })
-    .where(eq(leads.id, leadId));
+    .where(eq(qualifications.id, leadId));
 }
 
 /**
@@ -175,9 +175,9 @@ export async function shouldResume(leadId: string): Promise<{
 
   // Resume if we have completed experts but scan is not done
   const [lead] = await db
-    .select({ status: leads.deepScanStatus })
-    .from(leads)
-    .where(eq(leads.id, leadId))
+    .select({ status: qualifications.deepScanStatus })
+    .from(qualifications)
+    .where(eq(qualifications.id, leadId))
     .limit(1);
 
   const shouldResumeFromCheckpoint =

@@ -7,7 +7,7 @@ import {
   businessUnits,
   technologies,
   accounts,
-  rfps,
+  preQualifications,
   references,
   competencies,
   competitors,
@@ -677,7 +677,7 @@ async function seedDAXData() {
     const status = rfpTemplate.decision === 'bid' ? 'timeline_estimating' : 'bit_pending';
 
     const [rfp] = await db
-      .insert(rfps)
+      .insert(preQualifications)
       .values({
         userId: testUser.id,
         source: rfpTemplate.source as 'reactive' | 'proactive',
@@ -699,7 +699,7 @@ async function seedDAXData() {
     const [quickScan] = await db
       .insert(quickScans)
       .values({
-        rfpId: rfp.id,
+        preQualificationId: rfp.id,
         websiteUrl: rfpTemplate.websiteUrl,
         status: 'completed',
         cms: rfpTemplate.quickScanData.cms,
@@ -718,7 +718,10 @@ async function seedDAXData() {
       .returning();
 
     // Update RFP with Quick Scan ID
-    await db.update(rfps).set({ quickScanId: quickScan.id }).where(eq(rfps.id, rfp.id));
+    await db
+      .update(preQualifications)
+      .set({ quickScanId: quickScan.id })
+      .where(eq(preQualifications.id, rfp.id));
 
     console.log(
       `  ✓ ${rfpTemplate.extractedRequirements.projectName} (${rfpTemplate.account.name})`

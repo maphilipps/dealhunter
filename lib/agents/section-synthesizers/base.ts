@@ -8,7 +8,7 @@
  * Workflow:
  * 1. Query RAG for lead-specific data
  * 2. Generate structured content via AI
- * 3. Save to leadSectionData table
+ * 3. Save to qualificationSectionData table
  *
  * Pattern: Template Method - Base class defines workflow, subclasses implement specifics.
  */
@@ -18,8 +18,8 @@ import OpenAI from 'openai';
 
 import type { ToolContext } from '@/lib/agent-tools/types';
 import { db } from '@/lib/db';
-import { leadSectionData } from '@/lib/db/schema';
-import { getRAGQueryTemplate } from '@/lib/leads/navigation-config';
+import { qualificationSectionData } from '@/lib/db/schema';
+import { getRAGQueryTemplate } from '@/lib/qualifications/navigation-config';
 import {
   queryRagForLead,
   type LeadRAGQuery,
@@ -90,7 +90,7 @@ export interface RAGQueryOptions {
 export abstract class SectionSynthesizerBase {
   /**
    * Unique section identifier (e.g., 'technology', 'website-analysis')
-   * Must match IDs in LEAD_NAVIGATION_SECTIONS
+   * Must match IDs in QUALIFICATION_NAVIGATION_SECTIONS
    */
   abstract readonly sectionId: string;
 
@@ -133,7 +133,7 @@ export abstract class SectionSynthesizerBase {
       customQuestion || defaultTemplate || `Provide information for ${this.sectionId}`;
 
     const query: LeadRAGQuery = {
-      leadId,
+      qualificationId: leadId,
       sectionId: this.sectionId,
       question,
       maxResults: options?.maxResults || 10,
@@ -188,7 +188,7 @@ WICHTIG:
   /**
    * Save section data to database
    *
-   * Upserts leadSectionData entry with generated content and metadata.
+   * Upserts qualificationSectionData entry with generated content and metadata.
    *
    * @param leadId - Lead ID
    * @param content - Structured section content (will be JSON.stringified)
@@ -202,12 +202,17 @@ WICHTIG:
     // Check if section data already exists
     const [existing] = await db
       .select()
-      .from(leadSectionData)
-      .where(and(eq(leadSectionData.leadId, leadId), eq(leadSectionData.sectionId, this.sectionId)))
+      .from(qualificationSectionData)
+      .where(
+        and(
+          eq(qualificationSectionData.qualificationId, leadId),
+          eq(qualificationSectionData.sectionId, this.sectionId)
+        )
+      )
       .limit(1);
 
     const dataToSave = {
-      leadId,
+      qualificationId: leadId,
       sectionId: this.sectionId,
       content: JSON.stringify(content),
       sources: JSON.stringify({
@@ -222,10 +227,13 @@ WICHTIG:
 
     if (existing) {
       // Update existing entry
-      await db.update(leadSectionData).set(dataToSave).where(eq(leadSectionData.id, existing.id));
+      await db
+        .update(qualificationSectionData)
+        .set(dataToSave)
+        .where(eq(qualificationSectionData.id, existing.id));
     } else {
       // Insert new entry
-      await db.insert(leadSectionData).values(dataToSave);
+      await db.insert(qualificationSectionData).values(dataToSave);
     }
   }
 
@@ -241,8 +249,13 @@ WICHTIG:
   } | null> {
     const [existing] = await db
       .select()
-      .from(leadSectionData)
-      .where(and(eq(leadSectionData.leadId, leadId), eq(leadSectionData.sectionId, this.sectionId)))
+      .from(qualificationSectionData)
+      .where(
+        and(
+          eq(qualificationSectionData.qualificationId, leadId),
+          eq(qualificationSectionData.sectionId, this.sectionId)
+        )
+      )
       .limit(1);
 
     if (!existing) return null;

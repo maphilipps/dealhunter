@@ -60,3 +60,6 @@ next-env.d.ts
 /tmp/checkpoints/
 *.checkpoint
 *.completed
+
+# local database
+local.db

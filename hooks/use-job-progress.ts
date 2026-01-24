@@ -7,6 +7,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+
 import type { JobProgressEvent } from '@/lib/realtime/event-stream';
 
 export interface JobProgressState {
@@ -16,7 +17,7 @@ export interface JobProgressState {
   completedSteps: string[];
   status: 'idle' | 'connecting' | 'running' | 'completed' | 'error';
   error: string | null;
-  result: unknown | null;
+  result: unknown;
   isConnected: boolean;
 }
 

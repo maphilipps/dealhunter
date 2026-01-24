@@ -44,8 +44,8 @@ export const CalcSheetFeatureSchema = z.object({
   description: z.string().optional().default(''),
   type: z
     .enum(['content_type', 'paragraph', 'view', 'module', 'integration', 'custom'])
-    .catch('custom'),
-  complexity: z.enum(['H', 'M', 'L']).catch('M'),
+    .default('custom'),
+  complexity: z.enum(['H', 'M', 'L']).default('M'),
   hours: z.number().optional().default(8),
 });
 
@@ -68,7 +68,7 @@ export const CalcSheetRoleSchema = z.object({
     .default('')
     .transform(v => v || generateRoleId()),
   title: z.string().optional().default('Unbekannte Rolle'),
-  level: z.enum(['Junior', 'Senior', 'Lead', 'Expert']).catch('Senior'),
+  level: z.enum(['Junior', 'Senior', 'Lead', 'Expert']).default('Senior'),
   responsibilities: z.array(z.string()).default([]),
   fte: z.number().default(1),
 });
@@ -81,8 +81,8 @@ export const CalcSheetRiskSchema = z.object({
     .transform(v => v || generateRiskId()),
   name: z.string().optional().default('Unbekanntes Risiko'),
   description: z.string().optional().default(''),
-  likelihood: z.enum(['low', 'medium', 'high']).catch('medium'),
-  impact: z.enum(['low', 'medium', 'high']).catch('medium'),
+  likelihood: z.enum(['low', 'medium', 'high']).default('medium'),
+  impact: z.enum(['low', 'medium', 'high']).default('medium'),
   mitigation: z.string().optional().default('Zu definieren'),
 });
 

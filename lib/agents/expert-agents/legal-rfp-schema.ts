@@ -15,9 +15,9 @@ export const LegalRequirementSchema = z.object({
       'data_protection',
       'other',
     ])
-    .catch('other'),
+    .default('other'),
   mandatory: z.boolean().default(false),
-  riskLevel: z.enum(['low', 'medium', 'high', 'critical']).catch('medium'),
+  riskLevel: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
   implication: z.string().default(''),
   confidence: z.coerce.number().min(0).max(100).default(50),
   rawText: z.string().default(''),
@@ -46,7 +46,7 @@ export const LegalRfpAnalysisSchema = z.object({
     )
     .default([]),
 
-  overallRiskLevel: z.enum(['low', 'medium', 'high', 'critical']).catch('medium'),
+  overallRiskLevel: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
   riskFactors: z.array(z.string()).default([]),
   dealBreakers: z.array(z.string()).default([]),
 

@@ -46,8 +46,8 @@ export const ManagementSummarySchema = z.object({
     .object({
       fitScore: z.coerce.number().min(1).max(10).default(5), // How well does this fit adesso?
       complexityScore: z.coerce.number().min(1).max(10).default(5),
-      urgencyLevel: z.enum(['critical', 'high', 'medium', 'low']).catch('medium'),
-      recommendation: z.enum(['pursue', 'consider', 'decline']).catch('consider'),
+      urgencyLevel: z.enum(['critical', 'high', 'medium', 'low']).default('medium'),
+      recommendation: z.enum(['pursue', 'consider', 'decline']).default('consider'),
       reasoning: z.string().default(''),
     })
     .default({

@@ -3,7 +3,7 @@
  * Simple, linear workflow validation without over-engineering
  */
 
-import type { BidOpportunity } from '@/lib/db/schema';
+import type { PreQualification } from '@/lib/db/schema';
 
 export type BLReviewPhase =
   | 'bu_matching'
@@ -25,7 +25,7 @@ interface TransitionResult {
  */
 export function canTransitionTo(
   bid: Pick<
-    BidOpportunity,
+    PreQualification,
     'quickScanId' | 'deepMigrationAnalysisId' | 'assignedTeam' | 'teamNotifiedAt'
   >,
   nextPhase: BLReviewPhase
@@ -79,7 +79,7 @@ export function canTransitionTo(
  * Tabs are progressively unlocked as phases complete
  */
 export function getEnabledTabs(
-  bid: Pick<BidOpportunity, 'quickScanId' | 'deepMigrationAnalysisId' | 'assignedTeam'>
+  bid: Pick<PreQualification, 'quickScanId' | 'deepMigrationAnalysisId' | 'assignedTeam'>
 ): TabId[] {
   const tabs: TabId[] = ['overview'];
 
@@ -103,7 +103,7 @@ export function getEnabledTabs(
  * Get current workflow phase based on bid status
  */
 export function getCurrentPhase(
-  bid: Pick<BidOpportunity, 'status' | 'assignedTeam' | 'teamNotifiedAt'>
+  bid: Pick<PreQualification, 'status' | 'assignedTeam' | 'teamNotifiedAt'>
 ): BLReviewPhase {
   const status = bid.status;
 
@@ -122,7 +122,7 @@ export function getCurrentPhase(
  */
 export function getWorkflowProgress(
   bid: Pick<
-    BidOpportunity,
+    PreQualification,
     'quickScanId' | 'deepMigrationAnalysisId' | 'assignedTeam' | 'teamNotifiedAt' | 'status'
   >
 ): Array<{ phase: BLReviewPhase; label: string; completed: boolean; current: boolean }> {

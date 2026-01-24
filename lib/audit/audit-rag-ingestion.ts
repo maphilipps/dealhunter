@@ -11,7 +11,7 @@ import { parseAuditDirectory, getAuditStats } from './audit-file-parser';
 
 import { isEmbeddingEnabled } from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
-import { leads, dealEmbeddings } from '@/lib/db/schema';
+import { qualifications, dealEmbeddings } from '@/lib/db/schema';
 import { estimateTokens } from '@/lib/rag/raw-chunk-service';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -115,7 +115,7 @@ function splitContentForEmbedding(content: string): string[] {
 
 export interface IngestionResult {
   success: boolean;
-  leadId: string;
+  qualificationId: string;
   projectName: string;
   stats: {
     filesProcessed: number;
@@ -134,16 +134,21 @@ export interface IngestionProgress {
 }
 
 /**
- * Find an existing lead for the audit project by name
+ * Find an existing qualification for the audit project by name
  */
 export async function findLeadByName(projectName: string): Promise<string | null> {
   const normalizedName = projectName.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const existingLeads = await db.select().from(leads);
+  const existingQualifications = await db.select().from(qualifications);
 
-  for (const lead of existingLeads) {
-    const leadCustomer = (lead.customerName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (leadCustomer.includes(normalizedName) || normalizedName.includes(leadCustomer)) {
-      return lead.id;
+  for (const qualification of existingQualifications) {
+    const qualificationCustomer = (qualification.customerName || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+    if (
+      qualificationCustomer.includes(normalizedName) ||
+      normalizedName.includes(qualificationCustomer)
+    ) {
+      return qualification.id;
     }
   }
 
@@ -151,34 +156,50 @@ export async function findLeadByName(projectName: string): Promise<string | null
 }
 
 /**
- * Verify a lead exists by ID
+ * Verify a qualification exists by ID
  */
-export async function verifyLeadExists(leadId: string): Promise<boolean> {
-  const result = await db.select({ id: leads.id }).from(leads).where(eq(leads.id, leadId)).limit(1);
+export async function verifyLeadExists(qualificationId: string): Promise<boolean> {
+  const result = await db
+    .select({ id: qualifications.id })
+    .from(qualifications)
+    .where(eq(qualifications.id, qualificationId))
+    .limit(1);
 
   return result.length > 0;
 }
 
 /**
- * Get all leads for selection
+ * Get all qualifications for selection
  */
 export async function getAllLeads(): Promise<Array<{ id: string; customerName: string }>> {
-  return db.select({ id: leads.id, customerName: leads.customerName }).from(leads);
+  return db
+    .select({ id: qualifications.id, customerName: qualifications.customerName })
+    .from(qualifications);
 }
 
 /**
  * Delete existing audit chunks for a lead (idempotent)
  */
-async function deleteExistingAuditChunks(leadId: string): Promise<number> {
+async function deleteExistingAuditChunks(qualificationId: string): Promise<number> {
   const existing = await db
     .select({ id: dealEmbeddings.id })
     .from(dealEmbeddings)
-    .where(and(eq(dealEmbeddings.leadId, leadId), eq(dealEmbeddings.agentName, AGENT_NAME)));
+    .where(
+      and(
+        eq(dealEmbeddings.qualificationId, qualificationId),
+        eq(dealEmbeddings.agentName, AGENT_NAME)
+      )
+    );
 
   if (existing.length > 0) {
     await db
       .delete(dealEmbeddings)
-      .where(and(eq(dealEmbeddings.leadId, leadId), eq(dealEmbeddings.agentName, AGENT_NAME)));
+      .where(
+        and(
+          eq(dealEmbeddings.qualificationId, qualificationId),
+          eq(dealEmbeddings.agentName, AGENT_NAME)
+        )
+      );
   }
 
   return existing.length;
@@ -190,35 +211,35 @@ async function deleteExistingAuditChunks(leadId: string): Promise<number> {
  * Each file is stored as a single raw chunk with its full content.
  *
  * @param auditPath - Path to the audit directory
- * @param leadId - Lead ID to associate data with (required)
+ * @param qualificationId - Qualification ID to associate data with (required)
  * @param onProgress - Optional callback for progress updates
  * @returns Ingestion result with statistics
  */
 export async function ingestAuditToRAG(
   auditPath: string,
-  leadId: string,
+  qualificationId: string,
   onProgress?: (progress: IngestionProgress) => void
 ): Promise<IngestionResult> {
   // Check if embeddings are enabled
   if (!isEmbeddingEnabled()) {
     return {
       success: false,
-      leadId: '',
+      qualificationId: '',
       projectName: '',
       stats: { filesProcessed: 0, chunksCreated: 0, totalTokens: 0, embeddingsGenerated: 0 },
       error: 'Embeddings are not enabled. Set OPENAI_EMBEDDING_API_KEY in your environment.',
     };
   }
 
-  // Verify lead exists
-  const leadExists = await verifyLeadExists(leadId);
-  if (!leadExists) {
+  // Verify qualification exists
+  const qualificationExists = await verifyLeadExists(qualificationId);
+  if (!qualificationExists) {
     return {
       success: false,
-      leadId: '',
+      qualificationId: '',
       projectName: '',
       stats: { filesProcessed: 0, chunksCreated: 0, totalTokens: 0, embeddingsGenerated: 0 },
-      error: `Lead not found: ${leadId}`,
+      error: `Qualification not found: ${qualificationId}`,
     };
   }
 
@@ -230,7 +251,7 @@ export async function ingestAuditToRAG(
     const auditStats = getAuditStats(audit);
 
     // 2. Delete existing audit chunks (idempotent)
-    await deleteExistingAuditChunks(leadId);
+    await deleteExistingAuditChunks(qualificationId);
 
     // 3. Store all files as raw chunks (split if too large)
     let chunksCreated = 0;
@@ -285,7 +306,7 @@ export async function ingestAuditToRAG(
         const withEmbedding = await generateRawChunkEmbeddings([rawChunk]);
 
         await db.insert(dealEmbeddings).values({
-          leadId,
+          qualificationId,
           agentName: AGENT_NAME,
           chunkType,
           chunkIndex: globalChunkIndex++,
@@ -320,7 +341,7 @@ export async function ingestAuditToRAG(
 
     return {
       success: true,
-      leadId,
+      qualificationId,
       projectName: audit.projectName,
       stats: {
         filesProcessed: auditStats.totalFiles,
@@ -333,7 +354,7 @@ export async function ingestAuditToRAG(
     console.error('[Audit Ingestion] Failed:', error);
     return {
       success: false,
-      leadId: '',
+      qualificationId: '',
       projectName: '',
       stats: { filesProcessed: 0, chunksCreated: 0, totalTokens: 0, embeddingsGenerated: 0 },
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -342,26 +363,36 @@ export async function ingestAuditToRAG(
 }
 
 /**
- * Check if a lead has audit data in the RAG system
+ * Check if a qualification has audit data in the RAG system
  */
-export async function hasAuditData(leadId: string): Promise<boolean> {
+export async function hasAuditData(qualificationId: string): Promise<boolean> {
   const result = await db
     .select({ id: dealEmbeddings.id })
     .from(dealEmbeddings)
-    .where(and(eq(dealEmbeddings.leadId, leadId), eq(dealEmbeddings.agentName, AGENT_NAME)))
+    .where(
+      and(
+        eq(dealEmbeddings.qualificationId, qualificationId),
+        eq(dealEmbeddings.agentName, AGENT_NAME)
+      )
+    )
     .limit(1);
 
   return result.length > 0;
 }
 
 /**
- * Get audit chunk count for a lead
+ * Get audit chunk count for a qualification
  */
-export async function getAuditChunkCount(leadId: string): Promise<number> {
+export async function getAuditChunkCount(qualificationId: string): Promise<number> {
   const result = await db
     .select({ id: dealEmbeddings.id })
     .from(dealEmbeddings)
-    .where(and(eq(dealEmbeddings.leadId, leadId), eq(dealEmbeddings.agentName, AGENT_NAME)));
+    .where(
+      and(
+        eq(dealEmbeddings.qualificationId, qualificationId),
+        eq(dealEmbeddings.agentName, AGENT_NAME)
+      )
+    );
 
   return result.length;
 }

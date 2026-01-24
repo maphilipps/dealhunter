@@ -28,7 +28,7 @@ export async function queryRfpDocument(
   maxResults: number = 5
 ): Promise<RawRAGResult[]> {
   return queryRawChunks({
-    rfpId,
+    preQualificationId: rfpId,
     question: query,
     maxResults,
   });
@@ -67,14 +67,16 @@ export async function storeAgentResult(
     const existingChunks = await db
       .select({ chunkIndex: dealEmbeddings.chunkIndex })
       .from(dealEmbeddings)
-      .where(and(eq(dealEmbeddings.rfpId, rfpId), eq(dealEmbeddings.agentName, agentName)));
+      .where(
+        and(eq(dealEmbeddings.preQualificationId, rfpId), eq(dealEmbeddings.agentName, agentName))
+      );
 
     const nextChunkIndex =
       existingChunks.length > 0 ? Math.max(...existingChunks.map(c => c.chunkIndex)) + 1 : 0;
 
     await db.insert(dealEmbeddings).values({
-      rfpId,
-      leadId: null,
+      preQualificationId: rfpId,
+      qualificationId: null,
       agentName,
       chunkType: `${agentName}_result`,
       chunkIndex: nextChunkIndex,

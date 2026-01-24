@@ -10,11 +10,11 @@ import {
   accounts,
   competitors,
   employees,
-  rfps,
-  leads,
+  preQualifications,
+  qualifications,
   quickScans,
   websiteAudits,
-  leadSectionData,
+  qualificationSectionData,
   cmsMatchResults,
   ptEstimations,
   references,
@@ -261,7 +261,7 @@ async function seed() {
     const bu = random(allBUs);
 
     const [rfp] = await db
-      .insert(rfps)
+      .insert(preQualifications)
       .values({
         userId: activeUserId,
         source: 'reactive',
@@ -278,7 +278,7 @@ async function seed() {
     const [qs] = await db
       .insert(quickScans)
       .values({
-        rfpId: rfp.id,
+        preQualificationId: rfp.id,
         websiteUrl: account.website || faker.internet.url(),
         status: 'completed',
         techStack: JSON.stringify({ cms: 'Typo3', frontend: 'jQuery', server: 'Apache' }),
@@ -288,12 +288,15 @@ async function seed() {
       })
       .returning();
 
-    await db.update(rfps).set({ quickScanId: qs.id }).where(eq(rfps.id, rfp.id));
+    await db
+      .update(preQualifications)
+      .set({ quickScanId: qs.id })
+      .where(eq(preQualifications.id, rfp.id));
 
     const [lead] = await db
-      .insert(leads)
+      .insert(qualifications)
       .values({
-        rfpId: rfp.id,
+        preQualificationId: rfp.id,
         status: scenario.status as any,
         customerName: account.name,
         websiteUrl: account.website,
@@ -329,8 +332,8 @@ async function seed() {
 
     const sections = ['executive-summary', 'technology-fit', 'commercial-aspects'];
     for (const section of sections) {
-      await db.insert(leadSectionData).values({
-        leadId: lead.id,
+      await db.insert(qualificationSectionData).values({
+        qualificationId: lead.id,
         sectionId: section,
         content: JSON.stringify({
           summary: faker.lorem.paragraph(),
@@ -341,7 +344,7 @@ async function seed() {
     }
 
     await db.insert(websiteAudits).values({
-      leadId: lead.id,
+      qualificationId: lead.id,
       status: 'completed',
       websiteUrl: account.website || faker.internet.url(),
       performanceScore: faker.number.int({ min: 40, max: 90 }),
@@ -354,7 +357,7 @@ async function seed() {
     if (allTechs.length > 0) {
       const tech = random(allTechs);
       await db.insert(cmsMatchResults).values({
-        leadId: lead.id,
+        qualificationId: lead.id,
         technologyId: tech.id,
         totalScore: faker.number.int({ min: 70, max: 95 }),
         featureScore: 80,
@@ -369,7 +372,7 @@ async function seed() {
     }
 
     await db.insert(ptEstimations).values({
-      leadId: lead.id,
+      qualificationId: lead.id,
       totalPT: faker.number.int({ min: 100, max: 1000 }),
       totalCost: faker.number.int({ min: 100000, max: 1000000 }),
       durationMonths: faker.number.int({ min: 3, max: 12 }),
@@ -383,7 +386,7 @@ async function seed() {
 
     if (allReferences.length > 0) {
       await db.insert(referenceMatches).values({
-        leadId: lead.id,
+        qualificationId: lead.id,
         referenceId: random(allReferences).id,
         totalScore: 85,
         techStackScore: 90,
@@ -395,7 +398,7 @@ async function seed() {
 
     if (allCompetitors.length > 0) {
       await db.insert(competitorMatches).values({
-        leadId: lead.id,
+        qualificationId: lead.id,
         competitorId: random(allCompetitors).id,
         source: 'database',
         relevanceScore: 90,

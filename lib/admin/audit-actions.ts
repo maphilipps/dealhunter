@@ -28,8 +28,8 @@ export async function getAuditLogs(filters?: {
         eq(
           auditTrails.entityType,
           filters.entityType as
-            | 'rfp'
-            | 'lead'
+            | 'pre_qualification'
+            | 'qualification'
             | 'business_unit'
             | 'employee'
             | 'reference'
@@ -107,8 +107,8 @@ export type AuditAction =
   | 'reject';
 
 export type AuditEntityType =
-  | 'rfp'
-  | 'lead'
+  | 'pre_qualification'
+  | 'qualification'
   | 'business_unit'
   | 'employee'
   | 'reference'

@@ -17,7 +17,7 @@ import { runWebsiteExpert } from './experts/website-expert';
 import { AgentFile, NavigationSubpage, AuditScanResult } from './types';
 
 import { db } from '@/lib/db';
-import { leads } from '@/lib/db/schema';
+import { qualifications } from '@/lib/db/schema';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 
 // Expert agent type with emit parameter (optional for file-based usage)
@@ -69,8 +69,8 @@ function extractDomain(url: string): string {
  */
 export async function runFileBasedDeepScan(leadId: string): Promise<AuditScanResult> {
   // 1. Get Lead Data
-  const lead = await db.query.leads.findFirst({
-    where: eq(leads.id, leadId),
+  const lead = await db.query.qualifications.findFirst({
+    where: eq(qualifications.id, leadId),
   });
 
   if (!lead || !lead.websiteUrl) {

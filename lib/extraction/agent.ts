@@ -15,7 +15,7 @@ const DOCUMENT_CONTEXT_START = '<<<DOCUMENT_CONTEXT_START_7f3a2b>>>';
 const DOCUMENT_CONTEXT_END = '<<<DOCUMENT_CONTEXT_END_7f3a2b>>>';
 
 export interface ExtractionInput {
-  rfpId?: string;
+  preQualificationId?: string;
   rawText: string;
   inputType: 'pdf' | 'email' | 'freetext';
   metadata?: {
@@ -305,7 +305,7 @@ async function extractSingleField(
 
   // Query RAG for relevant chunks
   const chunks = await queryRawChunks({
-    rfpId,
+    preQualificationId: rfpId,
     question: query,
     maxResults: 5,
   });
@@ -481,19 +481,19 @@ export async function runExtractionWithStreaming(
   emit: EventEmitter
 ): Promise<ExtractionOutput> {
   try {
-    // Step 1: Verify we have an rfpId for RAG
-    if (!input.rfpId) {
+    // Step 1: Verify we have a preQualificationId for RAG
+    if (!input.preQualificationId) {
       emit({
         type: AgentEventType.ERROR,
         data: {
-          message: 'Keine RFP-ID für RAG-Extraktion vorhanden',
-          code: 'MISSING_RFP_ID',
+          message: 'Keine Pre-Qualification-ID für RAG-Extraktion vorhanden',
+          code: 'MISSING_PRE_QUALIFICATION_ID',
         },
       });
       return {
         requirements: getEmptyRequirements(),
         success: false,
-        error: 'Missing rfpId for RAG extraction',
+        error: 'Missing preQualificationId for RAG extraction',
       };
     }
 
@@ -514,7 +514,7 @@ export async function runExtractionWithStreaming(
       },
     });
 
-    const embedResult = await embedRawText(input.rfpId, input.rawText);
+    const embedResult = await embedRawText(input.preQualificationId, input.rawText);
 
     if (!embedResult.success) {
       emit({
@@ -556,7 +556,12 @@ export async function runExtractionWithStreaming(
 
     for (const field of EXTRACTION_FIELDS) {
       try {
-        const value = await extractSingleField(input.rfpId, field, documentLanguage, emit);
+        const value = await extractSingleField(
+          input.preQualificationId,
+          field,
+          documentLanguage,
+          emit
+        );
         if (value !== null && value !== undefined) {
           extractedData[field.name] = value;
         }
@@ -772,7 +777,7 @@ export async function runExtractionWithStreaming(
     });
 
     // Step 7: Embed structured requirements into RAG
-    if (input.rfpId) {
+    if (input.preQualificationId) {
       emit({
         type: AgentEventType.AGENT_PROGRESS,
         data: {
@@ -783,7 +788,7 @@ export async function runExtractionWithStreaming(
 
       // Fire-and-forget embedding to not block response
       embedAgentOutput(
-        input.rfpId,
+        input.preQualificationId,
         'extract',
         requirements as unknown as Record<string, unknown>
       ).catch(err => {

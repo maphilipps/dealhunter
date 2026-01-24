@@ -323,7 +323,7 @@ ${result.comparison.finalRecommendation.nextSteps.map(s => `- ${s}`).join('\n')}
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
       await db.insert(dealEmbeddings).values({
-        rfpId,
+        preQualificationId: rfpId,
         agentName: 'cms_advocate_orchestrator',
         chunkType: 'analysis',
         chunkIndex: 0,

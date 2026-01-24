@@ -27,19 +27,23 @@ import type {
 
 import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
-import { dealEmbeddings, rawChunks, leadSectionData, leads } from '@/lib/db/schema';
-
+import {
+  dealEmbeddings,
+  rawChunks,
+  qualificationSectionData,
+  qualifications,
+} from '@/lib/db/schema';
 
 // ============================================================================
 // Validation Schemas
 // ============================================================================
 
 const getRAGStatsSchema = z.object({
-  rfpId: z.string().min(1, 'RFP ID is required'),
+  preQualificationId: z.string().min(1, 'PreQualification ID is required'),
 });
 
 const getAgentOutputsSchema = z.object({
-  rfpId: z.string().min(1, 'RFP ID is required'),
+  preQualificationId: z.string().min(1, 'PreQualification ID is required'),
   agentName: z.string().optional(),
   chunkType: z.string().optional(),
   search: z.string().optional(),
@@ -48,20 +52,20 @@ const getAgentOutputsSchema = z.object({
 });
 
 const getRawChunksSchema = z.object({
-  rfpId: z.string().min(1, 'RFP ID is required'),
+  preQualificationId: z.string().min(1, 'PreQualification ID is required'),
   search: z.string().optional(),
   page: z.number().int().positive().default(1),
   pageSize: z.number().int().positive().max(100).default(20),
 });
 
 const getSectionDataSchema = z.object({
-  leadId: z.string().min(1, 'Lead ID is required'),
+  qualificationId: z.string().min(1, 'Qualification ID is required'),
   sectionId: z.string().optional(),
 });
 
 const searchSimilarSchema = z.object({
-  rfpId: z.string().optional(), // Now optional - can search by leadId instead
-  leadId: z.string().optional(), // New: search in dealEmbeddings
+  preQualificationId: z.string().optional(), // Now optional - can search by qualificationId instead
+  qualificationId: z.string().optional(), // New: search in dealEmbeddings
   query: z.string().min(1, 'Query is required'),
   threshold: z.number().min(0).max(1).default(0.5),
   maxResults: z.number().int().positive().max(50).default(10),
@@ -127,34 +131,34 @@ export async function getRAGStats(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const { rfpId } = parsed.data;
+  const { preQualificationId } = parsed.data;
 
   try {
     // Get total embeddings count
     const [embeddingCount] = await db
       .select({ count: count() })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.rfpId, rfpId));
+      .where(eq(dealEmbeddings.preQualificationId, preQualificationId));
 
     // Get total raw chunks count
     const [rawChunkCount] = await db
       .select({ count: count() })
       .from(rawChunks)
-      .where(eq(rawChunks.rfpId, rfpId));
+      .where(eq(rawChunks.preQualificationId, preQualificationId));
 
-    // Get lead ID for this RFP to query section data
-    const [lead] = await db
-      .select({ id: leads.id })
-      .from(leads)
-      .where(eq(leads.rfpId, rfpId))
+    // Get qualification ID for this prequalification to query section data
+    const [qualification] = await db
+      .select({ id: qualifications.id })
+      .from(qualifications)
+      .where(eq(qualifications.preQualificationId, preQualificationId))
       .limit(1);
 
     let sectionCount = 0;
-    if (lead) {
+    if (qualification) {
       const [sectionDataCount] = await db
         .select({ count: count() })
-        .from(leadSectionData)
-        .where(eq(leadSectionData.leadId, lead.id));
+        .from(qualificationSectionData)
+        .where(eq(qualificationSectionData.qualificationId, qualification.id));
       sectionCount = sectionDataCount.count;
     }
 
@@ -166,7 +170,7 @@ export async function getRAGStats(
         lastUpdated: sql<string>`MAX(${dealEmbeddings.createdAt})`,
       })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.rfpId, rfpId))
+      .where(eq(dealEmbeddings.preQualificationId, preQualificationId))
       .groupBy(dealEmbeddings.agentName);
 
     // Get chunk types per agent
@@ -176,7 +180,7 @@ export async function getRAGStats(
         chunkType: dealEmbeddings.chunkType,
       })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.rfpId, rfpId))
+      .where(eq(dealEmbeddings.preQualificationId, preQualificationId))
       .groupBy(dealEmbeddings.agentName, dealEmbeddings.chunkType);
 
     // Build agent stats
@@ -202,7 +206,7 @@ export async function getRAGStats(
         count: count(),
       })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.rfpId, rfpId))
+      .where(eq(dealEmbeddings.preQualificationId, preQualificationId))
       .groupBy(dealEmbeddings.chunkType);
 
     const chunkTypeDistribution: Record<string, number> = {};
@@ -237,12 +241,12 @@ export async function getAgentOutputs(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const { rfpId, agentName, chunkType, search, page, pageSize } = parsed.data;
+  const { preQualificationId, agentName, chunkType, search, page, pageSize } = parsed.data;
   const offset = (page - 1) * pageSize;
 
   try {
     // Build where conditions
-    const conditions = [eq(dealEmbeddings.rfpId, rfpId)];
+    const conditions = [eq(dealEmbeddings.preQualificationId, preQualificationId)];
 
     if (agentName) {
       conditions.push(eq(dealEmbeddings.agentName, agentName));
@@ -313,12 +317,12 @@ export async function getRawChunks(input: RawChunksFilter): Promise<ActionResult
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const { rfpId, search, page, pageSize } = parsed.data;
+  const { preQualificationId, search, page, pageSize } = parsed.data;
   const offset = (page - 1) * pageSize;
 
   try {
     // Build where conditions
-    const conditions = [eq(rawChunks.rfpId, rfpId)];
+    const conditions = [eq(rawChunks.preQualificationId, preQualificationId)];
 
     if (search) {
       conditions.push(like(rawChunks.content, `%${search}%`));
@@ -382,14 +386,14 @@ export async function getSectionData(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const { leadId, sectionId } = parsed.data;
+  const { qualificationId, sectionId } = parsed.data;
 
   try {
     // Build where conditions
-    const conditions = [eq(leadSectionData.leadId, leadId)];
+    const conditions = [eq(qualificationSectionData.qualificationId, qualificationId)];
 
     if (sectionId) {
-      conditions.push(eq(leadSectionData.sectionId, sectionId));
+      conditions.push(eq(qualificationSectionData.sectionId, sectionId));
     }
 
     const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
@@ -397,9 +401,9 @@ export async function getSectionData(
     // Get items
     const items = await db
       .select()
-      .from(leadSectionData)
+      .from(qualificationSectionData)
       .where(whereClause)
-      .orderBy(leadSectionData.sectionId);
+      .orderBy(qualificationSectionData.sectionId);
 
     return {
       success: true,
@@ -434,12 +438,13 @@ export async function searchSimilar(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const { rfpId, leadId, query, threshold, maxResults, includeRawChunks } = parsed.data;
+  const { preQualificationId, qualificationId, query, threshold, maxResults, includeRawChunks } =
+    parsed.data;
   const startTime = Date.now();
 
-  // Need either rfpId or leadId
-  if (!rfpId && !leadId) {
-    return { success: false, error: 'Either rfpId or leadId is required' };
+  // Need either preQualificationId or qualificationId
+  if (!preQualificationId && !qualificationId) {
+    return { success: false, error: 'Either preQualificationId or qualificationId is required' };
   }
 
   try {
@@ -459,9 +464,9 @@ export async function searchSimilar(
 
     const results: SimilarityResult[] = [];
 
-    // Search in dealEmbeddings if leadId provided
-    if (leadId) {
-      const leadChunks = await db
+    // Search in dealEmbeddings if qualificationId provided
+    if (qualificationId) {
+      const qualificationChunks = await db
         .select({
           id: dealEmbeddings.id,
           agentName: dealEmbeddings.agentName,
@@ -472,9 +477,9 @@ export async function searchSimilar(
           metadata: dealEmbeddings.metadata,
         })
         .from(dealEmbeddings)
-        .where(eq(dealEmbeddings.leadId, leadId));
+        .where(eq(dealEmbeddings.qualificationId, qualificationId));
 
-      for (const chunk of leadChunks) {
+      for (const chunk of qualificationChunks) {
         const chunkEmbedding = safeParseJSON<number[]>(chunk.embedding, []);
         if (chunkEmbedding.length === 0) continue;
 
@@ -495,8 +500,8 @@ export async function searchSimilar(
       }
     }
 
-    // Search in dealEmbeddings if rfpId provided
-    if (rfpId) {
+    // Search in dealEmbeddings if preQualificationId provided
+    if (preQualificationId) {
       const agentChunks = await db
         .select({
           id: dealEmbeddings.id,
@@ -508,7 +513,7 @@ export async function searchSimilar(
           metadata: dealEmbeddings.metadata,
         })
         .from(dealEmbeddings)
-        .where(eq(dealEmbeddings.rfpId, rfpId));
+        .where(eq(dealEmbeddings.preQualificationId, preQualificationId));
 
       for (const chunk of agentChunks) {
         const chunkEmbedding = safeParseJSON<number[]>(chunk.embedding, []);
@@ -541,7 +546,7 @@ export async function searchSimilar(
             metadata: rawChunks.metadata,
           })
           .from(rawChunks)
-          .where(eq(rawChunks.rfpId, rfpId));
+          .where(eq(rawChunks.preQualificationId, preQualificationId));
 
         for (const chunk of rawChunkItems) {
           const chunkEmbedding = safeParseJSON<number[]>(chunk.embedding, []);
@@ -584,17 +589,19 @@ export async function searchSimilar(
 /**
  * Get RFP ID for a lead (helper for client components)
  */
-export async function getRfpIdForLead(leadId: string): Promise<ActionResult<string | null>> {
+export async function getRfpIdForLead(
+  qualificationId: string
+): Promise<ActionResult<string | null>> {
   try {
     const [lead] = await db
-      .select({ rfpId: leads.rfpId })
-      .from(leads)
-      .where(eq(leads.id, leadId))
+      .select({ preQualificationId: qualifications.preQualificationId })
+      .from(qualifications)
+      .where(eq(qualifications.id, qualificationId))
       .limit(1);
 
     return {
       success: true,
-      data: lead?.rfpId ?? null,
+      data: lead?.preQualificationId ?? null,
     };
   } catch (error) {
     console.error('[RAG Actions] getRfpIdForLead failed:', error);
@@ -604,11 +611,11 @@ export async function getRfpIdForLead(leadId: string): Promise<ActionResult<stri
 
 // ============================================================================
 // Lead Embeddings Actions (for Audit Ingestion)
-// Now using unified dealEmbeddings table with leadId filter
+// Now using unified dealEmbeddings table with qualificationId filter
 // ============================================================================
 
 const getLeadEmbeddingsSchema = z.object({
-  leadId: z.string().min(1, 'Lead ID is required'),
+  qualificationId: z.string().min(1, 'Qualification ID is required'),
   agentName: z.string().optional(),
   chunkType: z.string().optional(),
   search: z.string().optional(),
@@ -645,12 +652,12 @@ export async function getLeadEmbeddings(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const { leadId, agentName, chunkType, search, page, pageSize } = parsed.data;
+  const { qualificationId, agentName, chunkType, search, page, pageSize } = parsed.data;
   const offset = (page - 1) * pageSize;
 
   try {
     // Build where conditions
-    const conditions = [eq(dealEmbeddings.leadId, leadId)];
+    const conditions = [eq(dealEmbeddings.qualificationId, qualificationId)];
 
     if (agentName) {
       conditions.push(eq(dealEmbeddings.agentName, agentName));
@@ -716,7 +723,7 @@ export async function getLeadEmbeddings(
  * Get lead embeddings stats
  */
 export async function getLeadEmbeddingsStats(
-  leadId: string
+  qualificationId: string
 ): Promise<
   ActionResult<{ total: number; byAgent: Record<string, number>; byType: Record<string, number> }>
 > {
@@ -725,7 +732,7 @@ export async function getLeadEmbeddingsStats(
     const [totalResult] = await db
       .select({ count: count() })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.leadId, leadId));
+      .where(eq(dealEmbeddings.qualificationId, qualificationId));
 
     // Get counts by agent
     const agentCounts = await db
@@ -734,7 +741,7 @@ export async function getLeadEmbeddingsStats(
         count: count(),
       })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.leadId, leadId))
+      .where(eq(dealEmbeddings.qualificationId, qualificationId))
       .groupBy(dealEmbeddings.agentName);
 
     // Get counts by type
@@ -744,7 +751,7 @@ export async function getLeadEmbeddingsStats(
         count: count(),
       })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.leadId, leadId))
+      .where(eq(dealEmbeddings.qualificationId, qualificationId))
       .groupBy(dealEmbeddings.chunkType);
 
     const byAgent: Record<string, number> = {};
@@ -774,12 +781,14 @@ export async function getLeadEmbeddingsStats(
 /**
  * Get unique agent names for lead embeddings
  */
-export async function getLeadEmbeddingAgents(leadId: string): Promise<ActionResult<string[]>> {
+export async function getLeadEmbeddingAgents(
+  qualificationId: string
+): Promise<ActionResult<string[]>> {
   try {
     const agents = await db
       .selectDistinct({ agentName: dealEmbeddings.agentName })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.leadId, leadId))
+      .where(eq(dealEmbeddings.qualificationId, qualificationId))
       .orderBy(dealEmbeddings.agentName);
 
     return {
@@ -795,12 +804,14 @@ export async function getLeadEmbeddingAgents(leadId: string): Promise<ActionResu
 /**
  * Get unique chunk types for lead embeddings
  */
-export async function getLeadEmbeddingTypes(leadId: string): Promise<ActionResult<string[]>> {
+export async function getLeadEmbeddingTypes(
+  qualificationId: string
+): Promise<ActionResult<string[]>> {
   try {
     const types = await db
       .selectDistinct({ chunkType: dealEmbeddings.chunkType })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.leadId, leadId))
+      .where(eq(dealEmbeddings.qualificationId, qualificationId))
       .orderBy(dealEmbeddings.chunkType);
 
     return {
@@ -816,12 +827,12 @@ export async function getLeadEmbeddingTypes(leadId: string): Promise<ActionResul
 /**
  * Get unique agent names for an RFP (for filter dropdowns)
  */
-export async function getAgentNames(rfpId: string): Promise<ActionResult<string[]>> {
+export async function getAgentNames(preQualificationId: string): Promise<ActionResult<string[]>> {
   try {
     const agents = await db
       .selectDistinct({ agentName: dealEmbeddings.agentName })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.rfpId, rfpId))
+      .where(eq(dealEmbeddings.preQualificationId, preQualificationId))
       .orderBy(dealEmbeddings.agentName);
 
     return {
@@ -837,12 +848,12 @@ export async function getAgentNames(rfpId: string): Promise<ActionResult<string[
 /**
  * Get unique chunk types for an RFP (for filter dropdowns)
  */
-export async function getChunkTypes(rfpId: string): Promise<ActionResult<string[]>> {
+export async function getChunkTypes(preQualificationId: string): Promise<ActionResult<string[]>> {
   try {
     const types = await db
       .selectDistinct({ chunkType: dealEmbeddings.chunkType })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.rfpId, rfpId))
+      .where(eq(dealEmbeddings.preQualificationId, preQualificationId))
       .orderBy(dealEmbeddings.chunkType);
 
     return {

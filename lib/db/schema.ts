@@ -17,8 +17,8 @@ export const users = sqliteTable('users', {
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
-export const rfps = sqliteTable(
-  'rfps',
+export const preQualifications = sqliteTable(
+  'pre_qualifications',
   {
     id: text('id')
       .primaryKey()
@@ -131,9 +131,9 @@ export const rfps = sqliteTable(
   },
   table => ({
     // CRITICAL: Performance Indexes (TODO-029 Fix)
-    assignedBusinessUnitIdx: index('rfps_assigned_bu_idx').on(table.assignedBusinessUnitId),
-    statusIdx: index('rfps_status_idx').on(table.status),
-    userIdIdx: index('rfps_user_id_idx').on(table.userId),
+    assignedBusinessUnitIdx: index('pre_qualifications_assigned_bu_idx').on(table.assignedBusinessUnitId),
+    statusIdx: index('pre_qualifications_status_idx').on(table.status),
+    userIdIdx: index('pre_qualifications_user_id_idx').on(table.userId),
   })
 );
 
@@ -197,13 +197,8 @@ export const references = sqliteTable(
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
-export type Rfp = typeof rfps.$inferSelect;
-export type NewRfp = typeof rfps.$inferInsert;
-// Backwards compatibility aliases
-export type RfpOpportunity = Rfp;
-export type NewRfpOpportunity = NewRfp;
-export type BidOpportunity = Rfp;
-export type NewBidOpportunity = NewRfp;
+export type PreQualification = typeof preQualifications.$inferSelect;
+export type NewPreQualification = typeof preQualifications.$inferInsert;
 export type Reference = typeof references.$inferSelect;
 export type NewReference = typeof references.$inferInsert;
 
@@ -413,8 +408,8 @@ export const auditTrails = sqliteTable(
     }).notNull(),
     entityType: text('entity_type', {
       enum: [
-        'rfp',
-        'lead',
+        'pre_qualification',
+        'qualification',
         'business_unit',
         'employee',
         'reference',
@@ -477,9 +472,9 @@ export const quickScans = sqliteTable(
     id: text('id')
       .primaryKey()
       .$defaultFn(() => createId()),
-    rfpId: text('rfp_id')
+    preQualificationId: text('pre_qualification_id')
       .notNull()
-      .references(() => rfps.id),
+      .references(() => preQualifications.id),
 
     // Target Website
     websiteUrl: text('website_url').notNull(),
@@ -543,7 +538,7 @@ export const quickScans = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    rfpIdx: index('quick_scans_rfp_idx').on(table.rfpId),
+    preQualificationIdx: index('quick_scans_pre_qualification_idx').on(table.preQualificationId),
   })
 );
 
@@ -554,9 +549,9 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
-  rfpId: text('rfp_id')
+  preQualificationId: text('pre_qualification_id')
     .notNull()
-    .references(() => rfps.id),
+    .references(() => preQualifications.id),
   userId: text('user_id')
     .notNull()
     .references(() => users.id),
@@ -597,9 +592,9 @@ export const documents = sqliteTable(
     id: text('id')
       .primaryKey()
       .$defaultFn(() => createId()),
-    rfpId: text('rfp_id')
+    preQualificationId: text('pre_qualification_id')
       .notNull()
-      .references(() => rfps.id),
+      .references(() => preQualifications.id),
     userId: text('user_id')
       .notNull()
       .references(() => users.id),
@@ -622,7 +617,7 @@ export const documents = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    rfpIdx: index('documents_rfp_idx').on(table.rfpId),
+    preQualificationIdx: index('documents_pre_qualification_idx').on(table.preQualificationId),
   })
 );
 
@@ -695,9 +690,9 @@ export const teamAssignments = sqliteTable(
       .$defaultFn(() => createId()),
 
     // References
-    rfpId: text('rfp_id')
+    preQualificationId: text('pre_qualification_id')
       .notNull()
-      .references(() => rfps.id),
+      .references(() => preQualifications.id),
     employeeId: text('employee_id')
       .notNull()
       .references(() => employees.id),
@@ -712,7 +707,7 @@ export const teamAssignments = sqliteTable(
     notifiedAt: integer('notified_at', { mode: 'timestamp' }),
   },
   table => ({
-    rfpIdx: index('team_assignments_rfp_idx').on(table.rfpId),
+    preQualificationIdx: index('team_assignments_pre_qualification_idx').on(table.preQualificationId),
     employeeIdx: index('team_assignments_employee_idx').on(table.employeeId),
   })
 );
@@ -728,9 +723,9 @@ export const subjectiveAssessments = sqliteTable(
       .$defaultFn(() => createId()),
 
     // References
-    rfpId: text('rfp_id')
+    preQualificationId: text('pre_qualification_id')
       .notNull()
-      .references(() => rfps.id),
+      .references(() => preQualifications.id),
     userId: text('user_id')
       .notNull()
       .references(() => users.id),
@@ -753,7 +748,7 @@ export const subjectiveAssessments = sqliteTable(
     updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    rfpIdx: index('subjective_assessments_rfp_idx').on(table.rfpId),
+    preQualificationIdx: index('subjective_assessments_pre_qualification_idx').on(table.preQualificationId),
     userIdx: index('subjective_assessments_user_idx').on(table.userId),
   })
 );
@@ -775,7 +770,7 @@ export const backgroundJobs = sqliteTable(
     inngestRunId: text('inngest_run_id'), // Inngest execution ID for tracking
 
     // References
-    rfpId: text('rfp_id').references(() => rfps.id),
+    preQualificationId: text('pre_qualification_id').references(() => preQualifications.id),
     userId: text('user_id')
       .notNull()
       .references(() => users.id),
@@ -806,7 +801,7 @@ export const backgroundJobs = sqliteTable(
     updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    rfpIdx: index('background_jobs_rfp_idx').on(table.rfpId),
+    preQualificationIdx: index('background_jobs_pre_qualification_idx').on(table.preQualificationId),
     statusIdx: index('background_jobs_status_idx').on(table.status),
     jobTypeIdx: index('background_jobs_job_type_idx').on(table.jobType),
     createdAtIdx: index('background_jobs_created_at_idx').on(table.createdAt),
@@ -819,7 +814,7 @@ export type NewBackgroundJob = typeof backgroundJobs.$inferInsert;
 // ===== Drizzle Relations =====
 
 export const usersRelations = relations(users, ({ many, one }) => ({
-  rfps: many(rfps),
+  preQualifications: many(preQualifications),
   references: many(references),
   competencies: many(competencies),
   accounts: many(accounts),
@@ -830,21 +825,21 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   }),
 }));
 
-export const rfpsRelations = relations(rfps, ({ one, many }) => ({
+export const preQualificationsRelations = relations(preQualifications, ({ one, many }) => ({
   user: one(users, {
-    fields: [rfps.userId],
+    fields: [preQualifications.userId],
     references: [users.id],
   }),
   account: one(accounts, {
-    fields: [rfps.accountId],
+    fields: [preQualifications.accountId],
     references: [accounts.id],
   }),
   quickScan: one(quickScans, {
-    fields: [rfps.quickScanId],
+    fields: [preQualifications.quickScanId],
     references: [quickScans.id],
   }),
   deepMigrationAnalysis: one(deepMigrationAnalyses, {
-    fields: [rfps.deepMigrationAnalysisId],
+    fields: [preQualifications.deepMigrationAnalysisId],
     references: [deepMigrationAnalyses.id],
   }),
   documents: many(documents),
@@ -878,20 +873,20 @@ export const accountsRelations = relations(accounts, ({ one, many }) => ({
     fields: [accounts.userId],
     references: [users.id],
   }),
-  rfps: many(rfps),
+  preQualifications: many(preQualifications),
 }));
 
 export const quickScansRelations = relations(quickScans, ({ one }) => ({
-  rfp: one(rfps, {
-    fields: [quickScans.rfpId],
-    references: [rfps.id],
+  preQualification: one(preQualifications, {
+    fields: [quickScans.preQualificationId],
+    references: [preQualifications.id],
   }),
 }));
 
 export const deepMigrationAnalysesRelations = relations(deepMigrationAnalyses, ({ one }) => ({
-  rfp: one(rfps, {
-    fields: [deepMigrationAnalyses.rfpId],
-    references: [rfps.id],
+  preQualification: one(preQualifications, {
+    fields: [deepMigrationAnalyses.preQualificationId],
+    references: [preQualifications.id],
   }),
   user: one(users, {
     fields: [deepMigrationAnalyses.userId],
@@ -900,9 +895,9 @@ export const deepMigrationAnalysesRelations = relations(deepMigrationAnalyses, (
 }));
 
 export const documentsRelations = relations(documents, ({ one }) => ({
-  rfp: one(rfps, {
-    fields: [documents.rfpId],
-    references: [rfps.id],
+  preQualification: one(preQualifications, {
+    fields: [documents.preQualificationId],
+    references: [preQualifications.id],
   }),
   user: one(users, {
     fields: [documents.userId],
@@ -944,9 +939,9 @@ export const competitorsRelations = relations(competitors, ({ one }) => ({
 }));
 
 export const teamAssignmentsRelations = relations(teamAssignments, ({ one }) => ({
-  rfp: one(rfps, {
-    fields: [teamAssignments.rfpId],
-    references: [rfps.id],
+  preQualification: one(preQualifications, {
+    fields: [teamAssignments.preQualificationId],
+    references: [preQualifications.id],
   }),
   employee: one(employees, {
     fields: [teamAssignments.employeeId],
@@ -955,9 +950,9 @@ export const teamAssignmentsRelations = relations(teamAssignments, ({ one }) => 
 }));
 
 export const subjectiveAssessmentsRelations = relations(subjectiveAssessments, ({ one }) => ({
-  rfp: one(rfps, {
-    fields: [subjectiveAssessments.rfpId],
-    references: [rfps.id],
+  preQualification: one(preQualifications, {
+    fields: [subjectiveAssessments.preQualificationId],
+    references: [preQualifications.id],
   }),
   user: one(users, {
     fields: [subjectiveAssessments.userId],
@@ -966,9 +961,9 @@ export const subjectiveAssessmentsRelations = relations(subjectiveAssessments, (
 }));
 
 export const backgroundJobsRelations = relations(backgroundJobs, ({ one }) => ({
-  rfp: one(rfps, {
-    fields: [backgroundJobs.rfpId],
-    references: [rfps.id],
+  preQualification: one(preQualifications, {
+    fields: [backgroundJobs.preQualificationId],
+    references: [preQualifications.id],
   }),
   user: one(users, {
     fields: [backgroundJobs.userId],
@@ -983,24 +978,24 @@ export const auditTrailsRelations = relations(auditTrails, ({ one }) => ({
   }),
 }));
 
-// ===== Phase 2: Lead Management (DEA-66) =====
+// ===== Phase 2: Qualification Management (DEA-66) =====
 
-export const leads = sqliteTable(
-  'leads',
+export const qualifications = sqliteTable(
+  'qualifications',
   {
     id: text('id')
       .primaryKey()
       .$defaultFn(() => createId()),
 
-    // Source RFP
-    rfpId: text('rfp_id')
+    // Source PreQualification
+    preQualificationId: text('pre_qualification_id')
       .notNull()
-      .references(() => rfps.id),
+      .references(() => preQualifications.id),
 
-    // Lead Status (Phase 2 Workflow)
+    // Qualification Status (Phase 2 Workflow)
     status: text('status', {
       enum: [
-        'routed', // Neu vom RFP konvertiert
+        'routed', // Neu von der PreQualification konvertiert
         'full_scanning', // Full-Scan Agent läuft
         'bl_reviewing', // BL prüft Ergebnisse
         'bid_voted', // BL hat BID/NO-BID entschieden
@@ -1010,7 +1005,7 @@ export const leads = sqliteTable(
       .notNull()
       .default('routed'),
 
-    // Extracted from RFP (denormalized for quick access)
+    // Extracted from PreQualification (denormalized for quick access)
     customerName: text('customer_name').notNull(),
     websiteUrl: text('website_url'),
     industry: text('industry'),
@@ -1063,27 +1058,27 @@ export const leads = sqliteTable(
     updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    rfpIdx: index('leads_rfp_idx').on(table.rfpId),
-    statusIdx: index('leads_status_idx').on(table.status),
-    businessUnitIdx: index('leads_business_unit_idx').on(table.businessUnitId),
-    blVoteIdx: index('leads_bl_vote_idx').on(table.blVote),
+    preQualificationIdx: index('qualifications_pre_qualification_idx').on(table.preQualificationId),
+    statusIdx: index('qualifications_status_idx').on(table.status),
+    businessUnitIdx: index('qualifications_business_unit_idx').on(table.businessUnitId),
+    blVoteIdx: index('qualifications_bl_vote_idx').on(table.blVote),
   })
 );
 
-export type Lead = typeof leads.$inferSelect;
-export type NewLead = typeof leads.$inferInsert;
+export type Qualification = typeof qualifications.$inferSelect;
+export type NewQualification = typeof qualifications.$inferInsert;
 
-export const leadSectionData = sqliteTable(
-  'lead_section_data',
+export const qualificationSectionData = sqliteTable(
+  'qualification_section_data',
   {
     id: text('id')
       .primaryKey()
       .$defaultFn(() => createId()),
 
-    // Lead Reference
-    leadId: text('lead_id')
+    // Qualification Reference
+    qualificationId: text('qualification_id')
       .notNull()
-      .references(() => leads.id, { onDelete: 'cascade' }),
+      .references(() => qualifications.id, { onDelete: 'cascade' }),
 
     // Section Identification
     sectionId: text('section_id').notNull(), // e.g., 'technology', 'website-analysis', 'cms-comparison'
@@ -1098,13 +1093,13 @@ export const leadSectionData = sqliteTable(
     updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    leadSectionIdx: index('lead_section_data_lead_section_idx').on(table.leadId, table.sectionId),
-    leadIdx: index('lead_section_data_lead_idx').on(table.leadId),
+    qualificationSectionIdx: index('qualification_section_data_qualification_section_idx').on(table.qualificationId, table.sectionId),
+    qualificationIdx: index('qualification_section_data_qualification_idx').on(table.qualificationId),
   })
 );
 
-export type LeadSectionData = typeof leadSectionData.$inferSelect;
-export type NewLeadSectionData = typeof leadSectionData.$inferInsert;
+export type QualificationSectionData = typeof qualificationSectionData.$inferSelect;
+export type NewQualificationSectionData = typeof qualificationSectionData.$inferInsert;
 
 export const websiteAudits = sqliteTable(
   'website_audits',
@@ -1113,10 +1108,10 @@ export const websiteAudits = sqliteTable(
       .primaryKey()
       .$defaultFn(() => createId()),
 
-    // Lead Reference
-    leadId: text('lead_id')
+    // Qualification Reference
+    qualificationId: text('qualification_id')
       .notNull()
-      .references(() => leads.id),
+      .references(() => qualifications.id),
 
     // Audit Status
     status: text('status', { enum: ['pending', 'running', 'completed', 'failed'] })
@@ -1185,7 +1180,7 @@ export const websiteAudits = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    leadIdx: index('website_audits_lead_idx').on(table.leadId),
+    qualificationIdx: index('website_audits_qualification_idx').on(table.qualificationId),
     statusIdx: index('website_audits_status_idx').on(table.status),
   })
 );
@@ -1200,10 +1195,10 @@ export const cmsMatchResults = sqliteTable(
       .primaryKey()
       .$defaultFn(() => createId()),
 
-    // Lead Reference
-    leadId: text('lead_id')
+    // Qualification Reference
+    qualificationId: text('qualification_id')
       .notNull()
-      .references(() => leads.id),
+      .references(() => qualifications.id),
 
     // CMS Reference
     technologyId: text('technology_id')
@@ -1230,7 +1225,7 @@ export const cmsMatchResults = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    leadIdx: index('cms_match_results_lead_idx').on(table.leadId),
+    qualificationIdx: index('cms_match_results_qualification_idx').on(table.qualificationId),
     rankIdx: index('cms_match_results_rank_idx').on(table.rank),
     recommendedIdx: index('cms_match_results_recommended_idx').on(table.isRecommended),
   })
@@ -1246,10 +1241,10 @@ export const baselineComparisons = sqliteTable(
       .primaryKey()
       .$defaultFn(() => createId()),
 
-    // Lead & CMS Reference
-    leadId: text('lead_id')
+    // Qualification & CMS Reference
+    qualificationId: text('qualification_id')
       .notNull()
-      .references(() => leads.id),
+      .references(() => qualifications.id),
     technologyId: text('technology_id')
       .notNull()
       .references(() => technologies.id),
@@ -1283,7 +1278,7 @@ export const baselineComparisons = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    leadIdx: index('baseline_comparisons_lead_idx').on(table.leadId),
+    qualificationIdx: index('baseline_comparisons_qualification_idx').on(table.qualificationId),
     technologyIdx: index('baseline_comparisons_technology_idx').on(table.technologyId),
   })
 );
@@ -1298,10 +1293,10 @@ export const ptEstimations = sqliteTable(
       .primaryKey()
       .$defaultFn(() => createId()),
 
-    // Lead Reference
-    leadId: text('lead_id')
+    // Qualification Reference
+    qualificationId: text('qualification_id')
       .notNull()
-      .references(() => leads.id),
+      .references(() => qualifications.id),
 
     // Total Estimation
     totalPT: integer('total_pt').notNull(), // hours
@@ -1330,7 +1325,7 @@ export const ptEstimations = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    leadIdx: index('pt_estimations_lead_idx').on(table.leadId),
+    qualificationIdx: index('pt_estimations_qualification_idx').on(table.qualificationId),
   })
 );
 
@@ -1345,9 +1340,9 @@ export const referenceMatches = sqliteTable(
       .$defaultFn(() => createId()),
 
     // References
-    leadId: text('lead_id')
+    qualificationId: text('qualification_id')
       .notNull()
-      .references(() => leads.id),
+      .references(() => qualifications.id),
     referenceId: text('reference_id')
       .notNull()
       .references(() => references.id),
@@ -1369,7 +1364,7 @@ export const referenceMatches = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    leadIdx: index('reference_matches_lead_idx').on(table.leadId),
+    qualificationIdx: index('reference_matches_qualification_idx').on(table.qualificationId),
     referenceIdx: index('reference_matches_reference_idx').on(table.referenceId),
     rankIdx: index('reference_matches_rank_idx').on(table.rank),
   })
@@ -1386,9 +1381,9 @@ export const competitorMatches = sqliteTable(
       .$defaultFn(() => createId()),
 
     // References
-    leadId: text('lead_id')
+    qualificationId: text('qualification_id')
       .notNull()
-      .references(() => leads.id),
+      .references(() => qualifications.id),
     competitorId: text('competitor_id')
       .notNull()
       .references(() => competitors.id),
@@ -1406,7 +1401,7 @@ export const competitorMatches = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    leadIdx: index('competitor_matches_lead_idx').on(table.leadId),
+    qualificationIdx: index('competitor_matches_qualification_idx').on(table.qualificationId),
     competitorIdx: index('competitor_matches_competitor_idx').on(table.competitorId),
   })
 );
@@ -1416,21 +1411,21 @@ export type NewCompetitorMatch = typeof competitorMatches.$inferInsert;
 
 // ===== Relations for Phase 2 Tables =====
 
-export const leadsRelations = relations(leads, ({ one, many }) => ({
-  rfp: one(rfps, {
-    fields: [leads.rfpId],
-    references: [rfps.id],
+export const qualificationsRelations = relations(qualifications, ({ one, many }) => ({
+  preQualification: one(preQualifications, {
+    fields: [qualifications.preQualificationId],
+    references: [preQualifications.id],
   }),
   businessUnit: one(businessUnits, {
-    fields: [leads.businessUnitId],
+    fields: [qualifications.businessUnitId],
     references: [businessUnits.id],
   }),
   quickScan: one(quickScans, {
-    fields: [leads.quickScanId],
+    fields: [qualifications.quickScanId],
     references: [quickScans.id],
   }),
   blVotedBy: one(users, {
-    fields: [leads.blVotedByUserId],
+    fields: [qualifications.blVotedByUserId],
     references: [users.id],
   }),
   websiteAudit: one(websiteAudits),
@@ -1439,29 +1434,29 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   ptEstimations: many(ptEstimations),
   referenceMatches: many(referenceMatches),
   competitorMatches: many(competitorMatches),
-  sectionData: many(leadSectionData),
+  sectionData: many(qualificationSectionData),
   pitchdeck: one(pitchdecks),
   dealEmbeddings: many(dealEmbeddings),
 }));
 
 export const websiteAuditsRelations = relations(websiteAudits, ({ one }) => ({
-  lead: one(leads, {
-    fields: [websiteAudits.leadId],
-    references: [leads.id],
+  qualification: one(qualifications, {
+    fields: [websiteAudits.qualificationId],
+    references: [qualifications.id],
   }),
 }));
 
-export const leadSectionDataRelations = relations(leadSectionData, ({ one }) => ({
-  lead: one(leads, {
-    fields: [leadSectionData.leadId],
-    references: [leads.id],
+export const qualificationSectionDataRelations = relations(qualificationSectionData, ({ one }) => ({
+  qualification: one(qualifications, {
+    fields: [qualificationSectionData.qualificationId],
+    references: [qualifications.id],
   }),
 }));
 
 export const cmsMatchResultsRelations = relations(cmsMatchResults, ({ one }) => ({
-  lead: one(leads, {
-    fields: [cmsMatchResults.leadId],
-    references: [leads.id],
+  qualification: one(qualifications, {
+    fields: [cmsMatchResults.qualificationId],
+    references: [qualifications.id],
   }),
   technology: one(technologies, {
     fields: [cmsMatchResults.technologyId],
@@ -1480,10 +1475,10 @@ export const CHUNK_CATEGORIES = [
 export type ChunkCategory = (typeof CHUNK_CATEGORIES)[number];
 
 // ============================================================================
-// UNIFIED Deal Embeddings - Single table for RFP and Lead embeddings (DEA-143)
+// UNIFIED Deal Embeddings - Single table for PreQualification and Qualification embeddings (DEA-143)
 // ============================================================================
 // Replaces both rfpEmbeddings and leadEmbeddings with a single unified table.
-// Either rfpId OR leadId must be set (constraint enforced at application level).
+// Either preQualificationId OR qualificationId must be set (constraint enforced at application level).
 export const dealEmbeddings = sqliteTable(
   'deal_embeddings',
   {
@@ -1492,8 +1487,8 @@ export const dealEmbeddings = sqliteTable(
       .$defaultFn(() => createId()),
 
     // Foreign Keys - At least one must be set
-    rfpId: text('rfp_id').references(() => rfps.id, { onDelete: 'cascade' }),
-    leadId: text('lead_id').references(() => leads.id, { onDelete: 'cascade' }),
+    preQualificationId: text('pre_qualification_id').references(() => preQualifications.id, { onDelete: 'cascade' }),
+    qualificationId: text('qualification_id').references(() => qualifications.id, { onDelete: 'cascade' }),
 
     // Agent & Chunk Metadata
     agentName: text('agent_name').notNull(), // 'extract', 'quick_scan', 'scraper', 'audit_website_expert', etc.
@@ -1521,15 +1516,15 @@ export const dealEmbeddings = sqliteTable(
     updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    // RFP-specific indexes
-    rfpIdx: index('deal_embeddings_rfp_idx').on(table.rfpId),
-    rfpChunkIdx: index('deal_embeddings_rfp_chunk_idx').on(table.rfpId, table.chunkType),
-    rfpAgentIdx: index('deal_embeddings_rfp_agent_idx').on(table.rfpId, table.agentName),
-    // Lead-specific indexes
-    leadIdx: index('deal_embeddings_lead_idx').on(table.leadId),
-    leadAgentIdx: index('deal_embeddings_lead_agent_idx').on(table.leadId, table.agentName),
-    leadCategoryIdx: index('deal_embeddings_lead_category_idx').on(
-      table.leadId,
+    // PreQualification-specific indexes
+    preQualificationIdx: index('deal_embeddings_pre_qualification_idx').on(table.preQualificationId),
+    preQualificationChunkIdx: index('deal_embeddings_pre_qualification_chunk_idx').on(table.preQualificationId, table.chunkType),
+    preQualificationAgentIdx: index('deal_embeddings_pre_qualification_agent_idx').on(table.preQualificationId, table.agentName),
+    // Qualification-specific indexes
+    qualificationIdx: index('deal_embeddings_qualification_idx').on(table.qualificationId),
+    qualificationAgentIdx: index('deal_embeddings_qualification_agent_idx').on(table.qualificationId, table.agentName),
+    qualificationCategoryIdx: index('deal_embeddings_qualification_category_idx').on(
+      table.qualificationId,
       table.chunkCategory
     ),
   })
@@ -1539,13 +1534,13 @@ export type DealEmbedding = typeof dealEmbeddings.$inferSelect;
 export type NewDealEmbedding = typeof dealEmbeddings.$inferInsert;
 
 export const dealEmbeddingsRelations = relations(dealEmbeddings, ({ one }) => ({
-  rfp: one(rfps, {
-    fields: [dealEmbeddings.rfpId],
-    references: [rfps.id],
+  preQualification: one(preQualifications, {
+    fields: [dealEmbeddings.preQualificationId],
+    references: [preQualifications.id],
   }),
-  lead: one(leads, {
-    fields: [dealEmbeddings.leadId],
-    references: [leads.id],
+  qualification: one(qualifications, {
+    fields: [dealEmbeddings.qualificationId],
+    references: [qualifications.id],
   }),
 }));
 
@@ -1556,9 +1551,9 @@ export const rawChunks = sqliteTable(
     id: text('id')
       .primaryKey()
       .$defaultFn(() => createId()),
-    rfpId: text('rfp_id')
+    preQualificationId: text('pre_qualification_id')
       .notNull()
-      .references(() => rfps.id, { onDelete: 'cascade' }),
+      .references(() => preQualifications.id, { onDelete: 'cascade' }),
 
     // Chunk Metadata
     chunkIndex: integer('chunk_index').notNull(), // 0, 1, 2... for ordering
@@ -1575,7 +1570,7 @@ export const rawChunks = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    rfpIdx: index('raw_chunks_rfp_idx').on(table.rfpId),
+    preQualificationIdx: index('raw_chunks_pre_qualification_idx').on(table.preQualificationId),
   })
 );
 
@@ -1583,9 +1578,9 @@ export type RawChunk = typeof rawChunks.$inferSelect;
 export type NewRawChunk = typeof rawChunks.$inferInsert;
 
 export const baselineComparisonsRelations = relations(baselineComparisons, ({ one }) => ({
-  lead: one(leads, {
-    fields: [baselineComparisons.leadId],
-    references: [leads.id],
+  qualification: one(qualifications, {
+    fields: [baselineComparisons.qualificationId],
+    references: [qualifications.id],
   }),
   technology: one(technologies, {
     fields: [baselineComparisons.technologyId],
@@ -1594,16 +1589,16 @@ export const baselineComparisonsRelations = relations(baselineComparisons, ({ on
 }));
 
 export const ptEstimationsRelations = relations(ptEstimations, ({ one }) => ({
-  lead: one(leads, {
-    fields: [ptEstimations.leadId],
-    references: [leads.id],
+  qualification: one(qualifications, {
+    fields: [ptEstimations.qualificationId],
+    references: [qualifications.id],
   }),
 }));
 
 export const referenceMatchesRelations = relations(referenceMatches, ({ one }) => ({
-  lead: one(leads, {
-    fields: [referenceMatches.leadId],
-    references: [leads.id],
+  qualification: one(qualifications, {
+    fields: [referenceMatches.qualificationId],
+    references: [qualifications.id],
   }),
   reference: one(references, {
     fields: [referenceMatches.referenceId],
@@ -1612,9 +1607,9 @@ export const referenceMatchesRelations = relations(referenceMatches, ({ one }) =
 }));
 
 export const competitorMatchesRelations = relations(competitorMatches, ({ one }) => ({
-  lead: one(leads, {
-    fields: [competitorMatches.leadId],
-    references: [leads.id],
+  qualification: one(qualifications, {
+    fields: [competitorMatches.qualificationId],
+    references: [qualifications.id],
   }),
   competitor: one(competitors, {
     fields: [competitorMatches.competitorId],
@@ -1631,10 +1626,10 @@ export const pitchdecks = sqliteTable(
       .primaryKey()
       .$defaultFn(() => createId()),
 
-    // Lead Reference
-    leadId: text('lead_id')
+    // Qualification Reference
+    qualificationId: text('qualification_id')
       .notNull()
-      .references(() => leads.id),
+      .references(() => qualifications.id),
 
     // Pitchdeck Status
     status: text('status', {
@@ -1655,7 +1650,7 @@ export const pitchdecks = sqliteTable(
     updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   },
   table => ({
-    leadIdx: index('pitchdecks_lead_idx').on(table.leadId),
+    qualificationIdx: index('pitchdecks_qualification_idx').on(table.qualificationId),
     statusIdx: index('pitchdecks_status_idx').on(table.status),
   })
 );
@@ -1746,9 +1741,9 @@ export type PitchdeckTeamMember = typeof pitchdeckTeamMembers.$inferSelect;
 export type NewPitchdeckTeamMember = typeof pitchdeckTeamMembers.$inferInsert;
 
 export const pitchdecksRelations = relations(pitchdecks, ({ one, many }) => ({
-  lead: one(leads, {
-    fields: [pitchdecks.leadId],
-    references: [leads.id],
+  qualification: one(qualifications, {
+    fields: [pitchdecks.qualificationId],
+    references: [qualifications.id],
   }),
   teamConfirmedBy: one(users, {
     fields: [pitchdecks.teamConfirmedByUserId],

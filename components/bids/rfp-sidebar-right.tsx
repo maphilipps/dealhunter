@@ -18,7 +18,7 @@ import {
   getRfpNavigationSections,
   isNavigationItemEnabled,
   type QuickScanDataAvailability,
-} from '@/lib/rfps/navigation';
+} from '@/lib/pre-qualifications/navigation';
 
 interface RfpSidebarRightProps {
   rfpId: string;

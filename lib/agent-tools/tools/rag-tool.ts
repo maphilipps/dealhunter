@@ -61,7 +61,7 @@ export function createRagTool(rfpId: string) {
       techStackFilter?: string;
     }) => {
       const results = await queryRAG({
-        rfpId,
+        preQualificationId: rfpId,
         question,
         techStackFilter,
         maxResults: 5,

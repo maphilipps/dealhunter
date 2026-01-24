@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { documents, rfps } from '@/lib/db/schema';
+import { documents, preQualifications } from '@/lib/db/schema';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -19,14 +19,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const [doc] = await db
       .select({
         document: documents,
-        bid: rfps,
+        bid: preQualifications,
       })
       .from(documents)
-      .innerJoin(rfps, eq(documents.rfpId, rfps.id))
+      .innerJoin(preQualifications, eq(documents.preQualificationId, preQualifications.id))
       .where(
         and(
           eq(documents.id, documentId),
-          eq(rfps.userId, session.user.id) // Ensure user owns this bid
+          eq(preQualifications.userId, session.user.id) // Ensure user owns this bid
         )
       )
       .limit(1);

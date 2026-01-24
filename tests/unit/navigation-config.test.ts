@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  LEAD_NAVIGATION_SECTIONS,
+  QUALIFICATION_NAVIGATION_SECTIONS,
   getSectionByRoute,
   getSectionById,
   getAllSections,
@@ -9,12 +9,12 @@ import {
   getRAGQueryTemplate,
   getSynthesizerAgent,
   type LeadNavigationSection,
-} from '@/lib/leads/navigation-config';
+} from '@/lib/qualifications/navigation-config';
 
 describe('navigation-config', () => {
-  describe('LEAD_NAVIGATION_SECTIONS', () => {
+  describe('QUALIFICATION_NAVIGATION_SECTIONS', () => {
     it('should have 14 sections', () => {
-      expect(LEAD_NAVIGATION_SECTIONS).toHaveLength(14);
+      expect(QUALIFICATION_NAVIGATION_SECTIONS).toHaveLength(14);
     });
 
     it('should have all required section IDs', () => {
@@ -35,24 +35,24 @@ describe('navigation-config', () => {
         'rag-data',
       ];
 
-      const actualIds = LEAD_NAVIGATION_SECTIONS.map(s => s.id);
+      const actualIds = QUALIFICATION_NAVIGATION_SECTIONS.map(s => s.id);
       expect(actualIds).toEqual(expectedIds);
     });
 
     it('should have unique section IDs', () => {
-      const ids = LEAD_NAVIGATION_SECTIONS.map(s => s.id);
+      const ids = QUALIFICATION_NAVIGATION_SECTIONS.map(s => s.id);
       const uniqueIds = new Set(ids);
       expect(uniqueIds.size).toBe(ids.length);
     });
 
     it('should have unique routes', () => {
-      const routes = LEAD_NAVIGATION_SECTIONS.map(s => s.route);
+      const routes = QUALIFICATION_NAVIGATION_SECTIONS.map(s => s.route);
       const uniqueRoutes = new Set(routes);
       expect(uniqueRoutes.size).toBe(routes.length);
     });
 
     it('should have all required fields for each section', () => {
-      LEAD_NAVIGATION_SECTIONS.forEach(section => {
+      QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
         expect(section).toHaveProperty('id');
         expect(section).toHaveProperty('label');
         expect(section).toHaveProperty('icon');
@@ -64,7 +64,7 @@ describe('navigation-config', () => {
     });
 
     it('should have RAG query templates for all main sections (except debug)', () => {
-      LEAD_NAVIGATION_SECTIONS.forEach(section => {
+      QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
         if (section.id === 'rag-data') return;
         expect(section.ragQueryTemplate).toBeTruthy();
         expect(section.ragQueryTemplate!.length).toBeGreaterThan(10);
@@ -72,7 +72,7 @@ describe('navigation-config', () => {
     });
 
     it('should have synthesizer agents for all standard sections', () => {
-      LEAD_NAVIGATION_SECTIONS.forEach(section => {
+      QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
         if (section.id === 'rag-data') return;
         expect(section.synthesizerAgent).toBeTruthy();
       });
@@ -119,7 +119,7 @@ describe('navigation-config', () => {
     });
 
     it('should return correct section for all section IDs', () => {
-      LEAD_NAVIGATION_SECTIONS.forEach(expectedSection => {
+      QUALIFICATION_NAVIGATION_SECTIONS.forEach(expectedSection => {
         const section = getSectionById(expectedSection.id);
         expect(section).toBeDefined();
         expect(section?.id).toBe(expectedSection.id);
@@ -134,9 +134,9 @@ describe('navigation-config', () => {
       expect(sections).toHaveLength(14);
     });
 
-    it('should return the same reference as LEAD_NAVIGATION_SECTIONS', () => {
+    it('should return the same reference as QUALIFICATION_NAVIGATION_SECTIONS', () => {
       const sections = getAllSections();
-      expect(sections).toBe(LEAD_NAVIGATION_SECTIONS);
+      expect(sections).toBe(QUALIFICATION_NAVIGATION_SECTIONS);
     });
   });
 
@@ -153,9 +153,9 @@ describe('navigation-config', () => {
       expect(ids[11]).toBe('decision');
     });
 
-    it('should match the IDs from LEAD_NAVIGATION_SECTIONS', () => {
+    it('should match the IDs from QUALIFICATION_NAVIGATION_SECTIONS', () => {
       const ids = getAllSectionIds();
-      const expectedIds = LEAD_NAVIGATION_SECTIONS.map(s => s.id);
+      const expectedIds = QUALIFICATION_NAVIGATION_SECTIONS.map(s => s.id);
       expect(ids).toEqual(expectedIds);
     });
   });
@@ -191,7 +191,7 @@ describe('navigation-config', () => {
     });
 
     it('should return templates for all sections (except debug)', () => {
-      LEAD_NAVIGATION_SECTIONS.forEach(section => {
+      QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
         if (section.id === 'rag-data') return;
         const template = getRAGQueryTemplate(section.id);
         expect(template).toBeDefined();
@@ -213,7 +213,7 @@ describe('navigation-config', () => {
     });
 
     it('should return agents for all sections (except debug)', () => {
-      LEAD_NAVIGATION_SECTIONS.forEach(section => {
+      QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
         if (section.id === 'rag-data') return;
         const agent = getSynthesizerAgent(section.id);
         expect(agent).toBeDefined();
@@ -222,7 +222,7 @@ describe('navigation-config', () => {
     });
 
     it('should follow naming convention *-synthesizer (except calc-sheet, audit)', () => {
-      LEAD_NAVIGATION_SECTIONS.forEach(section => {
+      QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
         // Skip sections without synthesizer or with special agent names
         if (section.id === 'rag-data' || section.id === 'calc-sheet' || section.id === 'audit')
           return;

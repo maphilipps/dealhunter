@@ -1,7 +1,7 @@
 /**
  * Legal Check Agent (DEA-149)
  *
- * Performs industry-specific legal compliance analysis for leads.
+ * Performs industry-specific legal compliance analysis for qualifications.
  * Checks for GDPR, Cookie Consent, Impressum, Privacy Policy and other requirements.
  *
  * Features:
@@ -16,7 +16,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { leads, dealEmbeddings } from '@/lib/db/schema';
+import { qualifications, dealEmbeddings } from '@/lib/db/schema';
 import { queryRagForLead, formatLeadContext } from '@/lib/rag/lead-retrieval-service';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -152,12 +152,12 @@ export async function runLegalCheckAgent(leadId: string, rfpId: string): Promise
     // 1. Fetch lead data
     const leadData = await db
       .select({
-        customerName: leads.customerName,
-        websiteUrl: leads.websiteUrl,
-        industry: leads.industry,
+        customerName: qualifications.customerName,
+        websiteUrl: qualifications.websiteUrl,
+        industry: qualifications.industry,
       })
-      .from(leads)
-      .where(eq(leads.id, leadId));
+      .from(qualifications)
+      .where(eq(qualifications.id, leadId));
 
     if (leadData.length === 0) {
       throw new Error(`Lead ${leadId} not found`);
@@ -172,7 +172,7 @@ export async function runLegalCheckAgent(leadId: string, rfpId: string): Promise
 
     // 2. Query RAG for existing website analysis
     const ragResults = await queryRagForLead({
-      leadId,
+      qualificationId: leadId,
       question:
         'Website legal compliance: privacy policy, cookie consent, impressum, terms of service, GDPR, data protection',
       agentNameFilter: ['website-analysis', 'deep-scan-website-analysis', 'component_library'],
@@ -296,7 +296,7 @@ ${recommendationsText}`;
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
       await db.insert(dealEmbeddings).values({
-        rfpId,
+        preQualificationId: rfpId,
         agentName: 'legal_check',
         chunkType: 'analysis',
         chunkIndex: 0,

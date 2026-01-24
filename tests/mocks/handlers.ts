@@ -32,7 +32,7 @@ export const handlers = [
   }),
 
   // Mock RFP extraction endpoint
-  http.post('/api/rfps/extract', async () => {
+  http.post('/api/pre-qualifications/extract', async () => {
     return HttpResponse.json({
       success: true,
       data: mockAIResponses.extraction,
@@ -40,7 +40,7 @@ export const handlers = [
   }),
 
   // Mock quick scan endpoint
-  http.post('/api/rfps/:id/quick-scan', async () => {
+  http.post('/api/pre-qualifications/:id/quick-scan', async () => {
     return HttpResponse.json({
       success: true,
       data: mockAIResponses.quickScan,
@@ -48,7 +48,7 @@ export const handlers = [
   }),
 
   // Mock decision endpoint
-  http.post('/api/rfps/:id/evaluate', async () => {
+  http.post('/api/pre-qualifications/:id/evaluate', async () => {
     return HttpResponse.json({
       success: true,
       data: mockAIResponses.decision,
@@ -56,7 +56,7 @@ export const handlers = [
   }),
 
   // Mock routing endpoint
-  http.post('/api/rfps/:id/route', async () => {
+  http.post('/api/pre-qualifications/:id/route', async () => {
     return HttpResponse.json({
       success: true,
       data: mockAIResponses.routing,

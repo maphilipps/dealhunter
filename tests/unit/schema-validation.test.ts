@@ -1,5 +1,8 @@
 import { expect, test, describe } from 'vitest';
-import { LegalRequirementSchema, LegalRfpAnalysisSchema } from '@/lib/agents/expert-agents/legal-rfp-schema';
+import {
+  LegalRequirementSchema,
+  LegalRfpAnalysisSchema,
+} from '@/lib/agents/expert-agents/legal-pre-qualification-schema';
 import { ManagementSummarySchema } from '@/lib/agents/expert-agents/summary-schema';
 
 describe('Schema Validation Strictness', () => {
@@ -35,7 +38,7 @@ describe('Schema Validation Strictness', () => {
       const input = {
         overallRiskLevel: 'INVALID_LEVEL',
       };
-      
+
       expect(() => LegalRfpAnalysisSchema.parse(input)).toThrow();
     });
   });
@@ -44,12 +47,12 @@ describe('Schema Validation Strictness', () => {
     test('should throw error for invalid urgencyLevel', () => {
       const input = {
         assessment: {
-            urgencyLevel: 'INVALID_URGENCY',
-        }
+          urgencyLevel: 'INVALID_URGENCY',
+        },
       };
       // assessment is nested. ManagementSummarySchema has defaults for assessment.
       // But if we provide assessment object, we must validate its fields.
-      
+
       // We need to provide a structure that satisfies the schema enough to reach the validation
       const fullInput = {
         assessment: {
@@ -57,25 +60,25 @@ describe('Schema Validation Strictness', () => {
           complexityScore: 5,
           urgencyLevel: 'INVALID_URGENCY', // Should fail, currently caught as 'medium'
           recommendation: 'consider',
-          reasoning: 'test'
-        }
+          reasoning: 'test',
+        },
       };
 
       expect(() => ManagementSummarySchema.parse(fullInput)).toThrow();
     });
 
     test('should throw error for invalid recommendation', () => {
-        const fullInput = {
-          assessment: {
-            fitScore: 5,
-            complexityScore: 5,
-            urgencyLevel: 'medium',
-            recommendation: 'INVALID_REC', // Should fail, currently caught as 'consider'
-            reasoning: 'test'
-          }
-        };
-  
-        expect(() => ManagementSummarySchema.parse(fullInput)).toThrow();
-      });
+      const fullInput = {
+        assessment: {
+          fitScore: 5,
+          complexityScore: 5,
+          urgencyLevel: 'medium',
+          recommendation: 'INVALID_REC', // Should fail, currently caught as 'consider'
+          reasoning: 'test',
+        },
+      };
+
+      expect(() => ManagementSummarySchema.parse(fullInput)).toThrow();
+    });
   });
 });

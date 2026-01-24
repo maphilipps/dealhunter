@@ -56,7 +56,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
     const pollInterval = setInterval(() => {
       void (async () => {
         try {
-          const response = await fetch(`/api/rfps/${bidId}/deep-analysis/status`);
+          const response = await fetch(`/api/pre-qualifications/${bidId}/deep-analysis/status`);
           const result = await response.json();
 
           if (result.success && result.analysis) {
@@ -90,7 +90,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
     toast.info('Starte Deep Analysis - dies dauert ca. 25-30 Minuten...');
 
     try {
-      const response = await fetch(`/api/rfps/${bidId}/deep-analysis/trigger`, {
+      const response = await fetch(`/api/pre-qualifications/${bidId}/deep-analysis/trigger`, {
         method: 'POST',
       });
 
@@ -100,7 +100,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
         toast.success('Deep Analysis gestartet!');
         setIsPolling(true);
         // Fetch initial status
-        const statusResponse = await fetch(`/api/rfps/${bidId}/deep-analysis/status`);
+        const statusResponse = await fetch(`/api/pre-qualifications/${bidId}/deep-analysis/status`);
         const statusResult = await statusResponse.json();
         if (statusResult.success && statusResult.analysis) {
           setAnalysis(statusResult.analysis);

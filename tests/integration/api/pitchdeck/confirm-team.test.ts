@@ -5,10 +5,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // This is a vitest/next-auth compatibility issue, not a code issue
 // eslint-disable-next-line vitest/no-disabled-tests
 import { NextRequest } from 'next/server';
-import { POST } from '@/app/api/leads/[id]/pitchdeck/confirm-team/route';
+import { POST } from '@/app/api/qualifications/[id]/pitchdeck/confirm-team/route';
 import * as authModule from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, pitchdecks, users, employees, rfps, pitchdeckTeamMembers } from '@/lib/db/schema';
+import {
+  qualifications,
+  pitchdecks,
+  users,
+  employees,
+  preQualifications,
+  pitchdeckTeamMembers,
+} from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 // Mock dependencies
@@ -33,7 +40,7 @@ vi.mock('next/server', async importOriginal => {
   };
 });
 
-describe.skip('POST /api/leads/[id]/pitchdeck/confirm-team', () => {
+describe.skip('POST /api/qualifications/[id]/pitchdeck/confirm-team', () => {
   const mockLeadId = 'lead-123';
   const mockUserId = 'user-bl-1';
   const mockAdminUserId = 'user-admin-1';
@@ -147,7 +154,7 @@ describe.skip('POST /api/leads/[id]/pitchdeck/confirm-team', () => {
               })),
             };
           }
-          if (table === rfps) {
+          if (table === preQualifications) {
             return createMockDbQuery(mockRfp);
           }
           return createMockDbQuery(null);
@@ -269,7 +276,7 @@ describe.skip('POST /api/leads/[id]/pitchdeck/confirm-team', () => {
               limit: vi.fn().mockResolvedValue([mockEmployee1]),
             };
           }
-          if (table === rfps) {
+          if (table === preQualifications) {
             return {
               where: vi.fn().mockReturnThis(),
               limit: vi.fn().mockResolvedValue([mockRfp]),
@@ -523,7 +530,7 @@ describe.skip('POST /api/leads/[id]/pitchdeck/confirm-team', () => {
               limit: vi.fn().mockResolvedValue([mockBlUser]),
             };
           }
-          if (table === rfps) {
+          if (table === preQualifications) {
             return {
               where: vi.fn().mockReturnThis(),
               limit: vi.fn().mockResolvedValue([]),
@@ -571,7 +578,7 @@ describe.skip('POST /api/leads/[id]/pitchdeck/confirm-team', () => {
               limit: vi.fn().mockResolvedValue([mockEmployee1]),
             };
           }
-          if (table === rfps) {
+          if (table === preQualifications) {
             return {
               where: vi.fn().mockReturnThis(),
               limit: vi.fn().mockResolvedValue([mockRfp]),

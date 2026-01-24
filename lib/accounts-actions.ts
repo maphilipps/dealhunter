@@ -7,7 +7,7 @@ import { after } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { accounts, rfps } from '@/lib/db/schema';
+import { accounts, preQualifications } from '@/lib/db/schema';
 import type { Account } from '@/lib/db/schema';
 
 /**
@@ -218,16 +218,16 @@ export async function getAccountWithOpportunities(accountId: string) {
     // Get opportunities linked to this account
     const opportunities = await db
       .select({
-        id: rfps.id,
-        status: rfps.status,
-        source: rfps.source,
-        stage: rfps.stage,
-        inputType: rfps.inputType,
-        createdAt: rfps.createdAt,
+        id: preQualifications.id,
+        status: preQualifications.status,
+        source: preQualifications.source,
+        stage: preQualifications.stage,
+        inputType: preQualifications.inputType,
+        createdAt: preQualifications.createdAt,
       })
-      .from(rfps)
-      .where(eq(rfps.accountId, accountId))
-      .orderBy(desc(rfps.createdAt));
+      .from(preQualifications)
+      .where(eq(preQualifications.accountId, accountId))
+      .orderBy(desc(preQualifications.createdAt));
 
     return {
       success: true,
@@ -322,8 +322,8 @@ export async function deleteAccount(accountId: string) {
     // Check if account has linked opportunities
     const linkedOpportunities = await db
       .select()
-      .from(rfps)
-      .where(eq(rfps.accountId, accountId))
+      .from(preQualifications)
+      .where(eq(preQualifications.accountId, accountId))
       .limit(1);
 
     if (linkedOpportunities.length > 0) {

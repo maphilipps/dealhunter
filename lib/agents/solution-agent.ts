@@ -118,7 +118,7 @@ async function queryAllAgents(rfpId: string, deliverableName: string) {
   const results = await Promise.all(
     agentQueries.map(async ({ name, query }) => {
       const chunks = await queryRAG({
-        rfpId,
+        preQualificationId: rfpId,
         question: query,
         maxResults: 5, // Get top 5 chunks per agent type
       });

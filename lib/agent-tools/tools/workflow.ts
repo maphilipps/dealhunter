@@ -5,7 +5,7 @@ import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { backgroundJobs, leads, rfps } from '@/lib/db/schema';
+import { backgroundJobs, qualifications, preQualifications } from '@/lib/db/schema';
 
 /**
  * Sprint 4.1: Workflow Orchestration Tools
@@ -31,10 +31,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Get lead with rfpId (check authorization via rfp.userId)
     const [leadData] = await db
-      .select({ lead: leads, rfp: rfps })
-      .from(leads)
-      .innerJoin(rfps, eq(leads.rfpId, rfps.id))
-      .where(and(eq(leads.id, input.leadId), eq(rfps.userId, context.userId)))
+      .select({ lead: qualifications, rfp: preQualifications })
+      .from(qualifications)
+      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
+      .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!leadData) {
@@ -59,7 +59,7 @@ registry.register({
       .insert(backgroundJobs)
       .values({
         jobType: 'deep-analysis',
-        rfpId: lead.rfpId,
+        preQualificationId: lead.preQualificationId,
         userId: context.userId,
         status: 'pending',
         progress: 0,
@@ -69,13 +69,13 @@ registry.register({
 
     // Update lead status
     await db
-      .update(leads)
+      .update(qualifications)
       .set({
         deepScanStatus: 'running',
         deepScanStartedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(eq(leads.id, input.leadId));
+      .where(eq(qualifications.id, input.leadId));
 
     return {
       success: true,
@@ -133,19 +133,23 @@ registry.register({
       .where(eq(backgroundJobs.id, input.jobId));
 
     // If Deep Analysis job, update lead status
-    if (job.jobType === 'deep-analysis' && job.rfpId) {
+    if (job.jobType === 'deep-analysis' && job.preQualificationId) {
       // Find lead by rfpId
-      const [lead] = await db.select().from(leads).where(eq(leads.rfpId, job.rfpId)).limit(1);
+      const [lead] = await db
+        .select()
+        .from(qualifications)
+        .where(eq(qualifications.preQualificationId, job.preQualificationId))
+        .limit(1);
 
       if (lead) {
         await db
-          .update(leads)
+          .update(qualifications)
           .set({
             deepScanStatus: 'failed',
             deepScanError: 'Job cancelled by user',
             updatedAt: new Date(),
           })
-          .where(eq(leads.id, lead.id));
+          .where(eq(qualifications.id, lead.id));
       }
     }
 
@@ -228,10 +232,12 @@ registry.register({
     // Filter by leadId (via rfpId, authorize via rfp.userId)
     if (input.leadId) {
       const [leadData] = await db
-        .select({ lead: leads, rfp: rfps })
-        .from(leads)
-        .innerJoin(rfps, eq(leads.rfpId, rfps.id))
-        .where(and(eq(leads.id, input.leadId), eq(rfps.userId, context.userId)))
+        .select({ lead: qualifications, rfp: preQualifications })
+        .from(qualifications)
+        .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
+        .where(
+          and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId))
+        )
         .limit(1);
 
       if (!leadData) {
@@ -244,7 +250,10 @@ registry.register({
         .select()
         .from(backgroundJobs)
         .where(
-          and(eq(backgroundJobs.userId, context.userId), eq(backgroundJobs.rfpId, _lead.rfpId))
+          and(
+            eq(backgroundJobs.userId, context.userId),
+            eq(backgroundJobs.preQualificationId, _lead.preQualificationId)
+          )
         );
     }
 
@@ -252,9 +261,13 @@ registry.register({
     const conditions = [eq(backgroundJobs.userId, context.userId)];
 
     if (input.leadId) {
-      const [lead] = await db.select().from(leads).where(eq(leads.id, input.leadId)).limit(1);
-      if (lead?.rfpId) {
-        conditions.push(eq(backgroundJobs.rfpId, lead.rfpId));
+      const [lead] = await db
+        .select()
+        .from(qualifications)
+        .where(eq(qualifications.id, input.leadId))
+        .limit(1);
+      if (lead?.preQualificationId) {
+        conditions.push(eq(backgroundJobs.preQualificationId, lead.preQualificationId));
       }
     }
 
@@ -329,18 +342,22 @@ registry.register({
       .where(eq(backgroundJobs.id, input.jobId));
 
     // If Deep Analysis job, update lead status
-    if (job.jobType === 'deep-analysis' && job.rfpId) {
-      const [lead] = await db.select().from(leads).where(eq(leads.rfpId, job.rfpId)).limit(1);
+    if (job.jobType === 'deep-analysis' && job.preQualificationId) {
+      const [lead] = await db
+        .select()
+        .from(qualifications)
+        .where(eq(qualifications.preQualificationId, job.preQualificationId))
+        .limit(1);
 
       if (lead) {
         await db
-          .update(leads)
+          .update(qualifications)
           .set({
             deepScanStatus: 'pending',
             deepScanError: null,
             updatedAt: new Date(),
           })
-          .where(eq(leads.id, lead.id));
+          .where(eq(qualifications.id, lead.id));
       }
     }
 

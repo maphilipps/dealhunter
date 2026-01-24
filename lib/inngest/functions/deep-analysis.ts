@@ -4,7 +4,12 @@ import { eq, desc } from 'drizzle-orm';
 import { inngest } from '../client';
 
 import { db } from '@/lib/db';
-import { deepMigrationAnalyses, rfps, quickScans, backgroundJobs } from '@/lib/db/schema';
+import {
+  deepMigrationAnalyses,
+  preQualifications,
+  quickScans,
+  backgroundJobs,
+} from '@/lib/db/schema';
 import { auditAccessibility } from '@/lib/deep-analysis/agents/accessibility-audit-agent';
 import { analyzeContentArchitecture } from '@/lib/deep-analysis/agents/content-architecture-agent';
 import { scoreMigrationComplexity } from '@/lib/deep-analysis/agents/migration-complexity-agent';
@@ -53,7 +58,11 @@ export const deepAnalysisFunction = inngest.createFunction(
       async () => {
         console.log('[Inngest] Starting deep analysis for bid:', bidId);
 
-        const [bidData] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+        const [bidData] = await db
+          .select()
+          .from(preQualifications)
+          .where(eq(preQualifications.id, bidId))
+          .limit(1);
 
         if (!bidData) {
           throw new Error(`Bid ${bidId} not found`);
@@ -67,7 +76,7 @@ export const deepAnalysisFunction = inngest.createFunction(
         const [quickScanData] = await db
           .select()
           .from(quickScans)
-          .where(eq(quickScans.rfpId, bidId))
+          .where(eq(quickScans.preQualificationId, bidId))
           .orderBy(desc(quickScans.createdAt))
           .limit(1);
 
@@ -75,7 +84,7 @@ export const deepAnalysisFunction = inngest.createFunction(
         const [analysisRecord] = await db
           .insert(deepMigrationAnalyses)
           .values({
-            rfpId: bidId,
+            preQualificationId: bidId,
             userId: userId, // User ownership for access control
             jobId: event.id || 'manual-trigger',
             status: 'running' as const,
@@ -94,7 +103,7 @@ export const deepAnalysisFunction = inngest.createFunction(
             id: jobId || createId(),
             jobType: 'deep-analysis',
             inngestRunId: event.id || 'manual-trigger',
-            rfpId: bidId,
+            preQualificationId: bidId,
             userId,
             status: 'running',
             progress: 0,
@@ -109,7 +118,7 @@ export const deepAnalysisFunction = inngest.createFunction(
         const state = createWorkflowState<DeepAnalysisState>({
           workflowId,
           workflowType: 'deep-analysis',
-          rfpId: bidId,
+          preQualificationId: bidId,
           userId,
           status: 'running',
           currentStep: 'init-analysis',
@@ -154,12 +163,12 @@ export const deepAnalysisFunction = inngest.createFunction(
 
         // Update RFP status to 'full_scanning'
         await db
-          .update(rfps)
+          .update(preQualifications)
           .set({
             status: 'full_scanning',
             updatedAt: new Date(),
           })
-          .where(eq(rfps.id, bidId));
+          .where(eq(preQualifications.id, bidId));
 
         const result = await runFullScan({
           websiteUrl: bid.websiteUrl!,
@@ -398,13 +407,13 @@ export const deepAnalysisFunction = inngest.createFunction(
       // Step 7: Update bid status and complete job
       await step.run('update-bid-status', async () => {
         await db
-          .update(rfps)
+          .update(preQualifications)
           .set({
             deepMigrationAnalysisId: analysis.id,
             status: 'analysis_complete',
             updatedAt: new Date(),
           })
-          .where(eq(rfps.id, bidId));
+          .where(eq(preQualifications.id, bidId));
 
         // Mark job as completed
         await db

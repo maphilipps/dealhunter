@@ -6,8 +6,8 @@ import { extractTextFromPdf } from './pdf-extractor';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, documents } from '@/lib/db/schema';
-import type { Rfp } from '@/lib/db/schema';
+import { preQualifications, documents } from '@/lib/db/schema';
+import type { PreQualification } from '@/lib/db/schema';
 import { extractRequirements } from '@/lib/extraction/agent';
 import { suggestWebsiteUrls } from '@/lib/extraction/url-suggestion-agent';
 import { detectPII, cleanText } from '@/lib/pii/pii-cleaner';
@@ -18,7 +18,7 @@ import { triggerNextAgent } from '@/lib/workflow/orchestrator';
  * Helper function to check if user has access to a bid
  * Admin can access all bids, other users only their own
  */
-function canAccessBid(bid: Rfp, userId: string, userRole: string): boolean {
+function canAccessBid(bid: PreQualification, userId: string, userRole: string): boolean {
   return userRole === 'admin' || bid.userId === userId;
 }
 
@@ -35,9 +35,9 @@ export async function getBids() {
   try {
     const bids = await db
       .select()
-      .from(rfps)
-      .where(eq(rfps.userId, session.user.id))
-      .orderBy(desc(rfps.createdAt));
+      .from(preQualifications)
+      .where(eq(preQualifications.userId, session.user.id))
+      .orderBy(desc(preQualifications.createdAt));
 
     return { success: true, bids };
   } catch (error) {
@@ -62,13 +62,17 @@ export async function getBidDocuments(bidId: string) {
     let bid;
     if (session.user.role === 'admin') {
       // Admin can access any bid
-      bid = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+      bid = await db
+        .select()
+        .from(preQualifications)
+        .where(eq(preQualifications.id, bidId))
+        .limit(1);
     } else {
       // Other users only their own bids
       bid = await db
         .select()
-        .from(rfps)
-        .where(and(eq(rfps.id, bidId), eq(rfps.userId, session.user.id)))
+        .from(preQualifications)
+        .where(and(eq(preQualifications.id, bidId), eq(preQualifications.userId, session.user.id)))
         .limit(1);
     }
 
@@ -87,7 +91,7 @@ export async function getBidDocuments(bidId: string) {
         uploadedAt: documents.uploadedAt,
       })
       .from(documents)
-      .where(eq(documents.rfpId, bidId))
+      .where(eq(documents.preQualificationId, bidId))
       .orderBy(desc(documents.uploadedAt));
 
     return { success: true, documents: docs };
@@ -155,7 +159,7 @@ export async function uploadPdfBid(formData: FormData) {
 
     // Create BidOpportunity record
     const [bidOpportunity] = await db
-      .insert(rfps)
+      .insert(preQualifications)
       .values({
         userId: session.user.id,
         accountId: accountId || undefined,
@@ -172,7 +176,7 @@ export async function uploadPdfBid(formData: FormData) {
     // Save PDF file to documents table
     const base64Data = buffer.toString('base64');
     await db.insert(documents).values({
-      rfpId: bidOpportunity.id,
+      preQualificationId: bidOpportunity.id,
       userId: session.user.id,
       fileName: file.name,
       fileType: file.type,
@@ -225,7 +229,7 @@ export async function uploadFreetextBid(data: {
 
     // Create BidOpportunity record
     const [bidOpportunity] = await db
-      .insert(rfps)
+      .insert(preQualifications)
       .values({
         userId: session.user.id,
         accountId: accountId || undefined,
@@ -284,7 +288,7 @@ export async function uploadEmailBid(data: {
 
     // Create BidOpportunity record
     const [bidOpportunity] = await db
-      .insert(rfps)
+      .insert(preQualifications)
       .values({
         userId: session.user.id,
         accountId: accountId || undefined,
@@ -322,7 +326,11 @@ export async function startExtraction(bidId: string) {
 
   try {
     // Get the bid opportunity
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -334,13 +342,13 @@ export async function startExtraction(bidId: string) {
 
     // Update status to extracting with optimistic locking
     const updated = await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         status: 'extracting',
         version: bid.version + 1,
         updatedAt: new Date(),
       })
-      .where(and(eq(rfps.id, bidId), eq(rfps.version, bid.version)))
+      .where(and(eq(preQualifications.id, bidId), eq(preQualifications.version, bid.version)))
       .returning();
 
     if (!updated || updated.length === 0) {
@@ -350,10 +358,10 @@ export async function startExtraction(bidId: string) {
       };
     }
 
-    // Run extraction (rfpId enables RAG-based extraction)
+    // Run extraction (preQualificationId enables RAG-based extraction)
     const metadata = bid.metadata ? JSON.parse(bid.metadata) : {};
     const extractionResult = await extractRequirements({
-      rfpId: bidId,
+      preQualificationId: bidId,
       rawText: bid.rawInput,
       inputType: bid.inputType as 'pdf' | 'email' | 'freetext',
 
@@ -366,12 +374,12 @@ export async function startExtraction(bidId: string) {
 
     // Save extracted requirements and update status to reviewing
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         extractedRequirements: JSON.stringify(extractionResult.requirements),
         status: 'reviewing',
       })
-      .where(eq(rfps.id, bidId));
+      .where(eq(preQualifications.id, bidId));
 
     return {
       success: true,
@@ -396,7 +404,11 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
 
   try {
     // Get the bid opportunity
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -408,12 +420,12 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
 
     // Update requirements and move to quick_scanning status
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         extractedRequirements: JSON.stringify(requirements),
         status: 'quick_scanning',
       })
-      .where(eq(rfps.id, bidId));
+      .where(eq(preQualifications.id, bidId));
 
     // Auto-launch Quick Scan (fire-and-forget)
     // Don't await - let it run in background while user sees success
@@ -604,7 +616,7 @@ export async function uploadCombinedBid(formData: FormData) {
 
     // Create BidOpportunity record
     const [bidOpportunity] = await db
-      .insert(rfps)
+      .insert(preQualifications)
       .values({
         userId: session.user.id,
         accountId: validAccountId,
@@ -623,7 +635,7 @@ export async function uploadCombinedBid(formData: FormData) {
       const base64Data = buffer.toString('base64');
 
       await db.insert(documents).values({
-        rfpId: bidOpportunity.id,
+        preQualificationId: bidOpportunity.id,
         userId: session.user.id,
         fileName: file.name,
         fileType: file.type,
@@ -702,7 +714,11 @@ export async function forwardToBusinessLeader(bidId: string, businessUnitId: str
 
   try {
     // Get the bid
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -726,13 +742,13 @@ export async function forwardToBusinessLeader(bidId: string, businessUnitId: str
 
     // Update RFP with business unit assignment and status
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         assignedBusinessUnitId: businessUnitId,
         status: 'bl_reviewing',
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, bidId));
+      .where(eq(preQualifications.id, bidId));
 
     return {
       success: true,
@@ -757,7 +773,11 @@ export async function makeBitDecision(bidId: string, decision: 'bid' | 'no_bid',
 
   try {
     // Get the bid
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -769,14 +789,14 @@ export async function makeBitDecision(bidId: string, decision: 'bid' | 'no_bid',
 
     // Update RFP with decision
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         decision: decision,
         status: decision === 'bid' ? 'routed' : 'archived',
         alternativeRecommendation: reason || null,
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, bidId));
+      .where(eq(preQualifications.id, bidId));
 
     return {
       success: true,

@@ -9,10 +9,10 @@ import { generateCompleteSolution, type SolutionInput } from '@/lib/agents/solut
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
-  leads,
+  qualifications,
   pitchdecks,
   pitchdeckDeliverables,
-  rfps,
+  preQualifications,
   employees,
   ptEstimations,
 } from '@/lib/db/schema';
@@ -30,17 +30,17 @@ export interface CreatePitchdeckResult {
  * DEA-160 (PA-001): Create Pitchdeck after BID Decision
  *
  * This function:
- * 1. Creates a pitchdeck record for the lead
+ * 1. Creates a pitchdeck record for the qualification
  * 2. Copies deliverables from RFP extractedRequirements
  * 3. Sets status to 'draft'
  * 4. Creates audit trail
  *
  * This is called automatically after a BID vote is cast.
  *
- * @param leadId - The lead ID to create pitchdeck for
+ * @param qualificationId - The qualification ID to create pitchdeck for
  * @returns Pitchdeck ID if successful
  */
-export async function createPitchdeck(leadId: string): Promise<CreatePitchdeckResult> {
+export async function createPitchdeck(qualificationId: string): Promise<CreatePitchdeckResult> {
   // Security: Authentication check
   const session = await auth();
   if (!session?.user?.id) {
@@ -49,7 +49,11 @@ export async function createPitchdeck(leadId: string): Promise<CreatePitchdeckRe
 
   try {
     // Get lead
-    const [lead] = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, qualificationId))
+      .limit(1);
 
     if (!lead) {
       return {
@@ -70,7 +74,7 @@ export async function createPitchdeck(leadId: string): Promise<CreatePitchdeckRe
     const existingPitchdeck = await db
       .select()
       .from(pitchdecks)
-      .where(eq(pitchdecks.leadId, leadId))
+      .where(eq(pitchdecks.qualificationId, qualificationId))
       .limit(1);
 
     if (existingPitchdeck.length > 0) {
@@ -81,7 +85,11 @@ export async function createPitchdeck(leadId: string): Promise<CreatePitchdeckRe
     }
 
     // Get RFP to extract deliverables
-    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1);
+    const [rfp] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, lead.preQualificationId))
+      .limit(1);
 
     if (!rfp) {
       return {
@@ -94,7 +102,7 @@ export async function createPitchdeck(leadId: string): Promise<CreatePitchdeckRe
     const [newPitchdeck] = await db
       .insert(pitchdecks)
       .values({
-        leadId,
+        qualificationId: qualificationId,
         status: 'draft',
       })
       .returning();
@@ -154,8 +162,8 @@ export async function createPitchdeck(leadId: string): Promise<CreatePitchdeckRe
     // Create audit trail
     await createAuditLog({
       action: 'create',
-      entityType: 'rfp',
-      entityId: leadId,
+      entityType: 'qualification',
+      entityId: qualificationId,
       previousValue: null,
       newValue: JSON.stringify({
         pitchdeckId: newPitchdeck.id,
@@ -166,7 +174,7 @@ export async function createPitchdeck(leadId: string): Promise<CreatePitchdeckRe
     });
 
     // Revalidate cache
-    revalidatePath(`/leads/${leadId}`);
+    revalidatePath(`/qualifications/${qualificationId}`);
     revalidatePath('/leads');
 
     return {
@@ -226,7 +234,11 @@ export async function suggestPitchdeckTeam(
     }
 
     // Get lead
-    const [lead] = await db.select().from(leads).where(eq(leads.id, pitchdeck.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .limit(1);
 
     if (!lead) {
       return {
@@ -236,7 +248,11 @@ export async function suggestPitchdeckTeam(
     }
 
     // Get RFP for extracted requirements
-    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1);
+    const [rfp] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, lead.preQualificationId))
+      .limit(1);
 
     if (!rfp) {
       return {
@@ -249,7 +265,7 @@ export async function suggestPitchdeckTeam(
     const [ptEstimation] = await db
       .select()
       .from(ptEstimations)
-      .where(eq(ptEstimations.leadId, lead.id))
+      .where(eq(ptEstimations.qualificationId, lead.id))
       .limit(1);
 
     // Get Quick Scan results if available
@@ -298,7 +314,7 @@ export async function suggestPitchdeckTeam(
 
     // Generate team suggestion using existing AI agent
     const suggestion = await suggestTeam({
-      bidId: lead.rfpId, // Use RFP ID for consistency
+      bidId: lead.preQualificationId, // Use RFP ID for consistency
       extractedRequirements,
       quickScanResults,
       assignedBusinessLine: lead.businessUnitId,
@@ -317,7 +333,7 @@ export async function suggestPitchdeckTeam(
     // Create audit trail
     await createAuditLog({
       action: 'update',
-      entityType: 'rfp',
+      entityType: 'qualification',
       entityId: lead.id,
       previousValue: JSON.stringify({ status: pitchdeck.status }),
       newValue: JSON.stringify({
@@ -329,8 +345,8 @@ export async function suggestPitchdeckTeam(
     });
 
     // Revalidate cache
-    revalidatePath(`/leads/${lead.id}/pitchdeck`);
-    revalidatePath(`/leads/${lead.id}`);
+    revalidatePath(`/qualifications/${lead.id}/pitchdeck`);
+    revalidatePath(`/qualifications/${lead.id}`);
 
     return {
       success: true,
@@ -388,7 +404,11 @@ export async function confirmPitchdeckTeam(
     }
 
     // Get lead
-    const [lead] = await db.select().from(leads).where(eq(leads.id, pitchdeck.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .limit(1);
 
     if (!lead) {
       return {
@@ -451,8 +471,8 @@ export async function confirmPitchdeckTeam(
     // Create audit trail
     await createAuditLog({
       action: 'update',
-      entityType: 'rfp',
-      entityId: lead.rfpId,
+      entityType: 'pre_qualification',
+      entityId: lead.preQualificationId,
       previousValue: JSON.stringify({
         pitchdeckStatus: pitchdeck.status,
         teamConfirmed: false,
@@ -466,8 +486,8 @@ export async function confirmPitchdeckTeam(
     });
 
     // Revalidate cache
-    revalidatePath(`/leads/${lead.id}/pitchdeck`);
-    revalidatePath(`/leads/${lead.id}`);
+    revalidatePath(`/qualifications/${lead.id}/pitchdeck`);
+    revalidatePath(`/qualifications/${lead.id}`);
 
     return {
       success: true,
@@ -481,7 +501,6 @@ export async function confirmPitchdeckTeam(
     };
   }
 }
-
 
 export interface UpdateDeliverableStatusResult {
   success: boolean;
@@ -555,7 +574,11 @@ export async function updateDeliverableStatus(
     }
 
     // Get lead for audit trail
-    const [lead] = await db.select().from(leads).where(eq(leads.id, pitchdeck.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .limit(1);
 
     if (!lead) {
       return {
@@ -567,8 +590,8 @@ export async function updateDeliverableStatus(
     // Create audit trail (who changed what and when)
     await createAuditLog({
       action: 'update',
-      entityType: 'rfp',
-      entityId: lead.rfpId,
+      entityType: 'pre_qualification',
+      entityId: lead.preQualificationId,
       previousValue: JSON.stringify({
         deliverableId,
         deliverableName: deliverable.deliverableName,
@@ -584,8 +607,8 @@ export async function updateDeliverableStatus(
     });
 
     // Revalidate cache
-    revalidatePath(`/leads/${lead.id}/pitchdeck`);
-    revalidatePath(`/leads/${lead.id}`);
+    revalidatePath(`/qualifications/${lead.id}/pitchdeck`);
+    revalidatePath(`/qualifications/${lead.id}`);
 
     return {
       success: true,
@@ -659,7 +682,11 @@ export async function generateSolutionSketches(
     }
 
     // Get lead
-    const [lead] = await db.select().from(leads).where(eq(leads.id, pitchdeck.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .limit(1);
 
     if (!lead) {
       return {
@@ -669,7 +696,11 @@ export async function generateSolutionSketches(
     }
 
     // Get RFP for context
-    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1);
+    const [rfp] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, lead.preQualificationId))
+      .limit(1);
 
     if (!rfp) {
       return {
@@ -740,8 +771,8 @@ export async function generateSolutionSketches(
     // Create audit trail
     await createAuditLog({
       action: 'update',
-      entityType: 'rfp',
-      entityId: lead.rfpId,
+      entityType: 'pre_qualification',
+      entityId: lead.preQualificationId,
       previousValue: JSON.stringify({
         deliverableId,
         deliverableName: deliverable.deliverableName,
@@ -760,8 +791,8 @@ export async function generateSolutionSketches(
     });
 
     // Revalidate cache
-    revalidatePath(`/leads/${lead.id}/pitchdeck`);
-    revalidatePath(`/leads/${lead.id}`);
+    revalidatePath(`/qualifications/${lead.id}/pitchdeck`);
+    revalidatePath(`/qualifications/${lead.id}`);
 
     console.error(
       `[Generate Solution Sketches] Success for deliverable: ${deliverable.deliverableName}`,

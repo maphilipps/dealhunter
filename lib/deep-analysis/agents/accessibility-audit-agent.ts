@@ -1,58 +1,55 @@
 /**
  * Accessibility Auditor Agent
- * Uses Playwright + axe-core to audit WCAG 2.1 AA compliance
+ * Uses Lighthouse CLI to audit WCAG 2.1 AA compliance
  * Expected duration: 10-14 minutes
  */
 
-import AxeBuilder from '@axe-core/playwright';
-import { chromium } from 'playwright';
+import { runAccessibilityAudit } from '@/lib/browser';
 
 import { AccessibilityAuditSchema, type AccessibilityAudit } from '../schemas';
+
+interface AggregatedViolation {
+  id: string;
+  impact: 'minor' | 'moderate' | 'serious' | 'critical';
+  count: number;
+  description: string;
+  helpUrl: string;
+}
 
 export async function auditAccessibility(
   websiteUrl: string,
   sampleUrls: string[],
   onProgress?: (message: string) => void
 ): Promise<AccessibilityAudit> {
-  onProgress?.('Launching headless browser for accessibility audit...');
+  onProgress?.('Starting accessibility audit with Lighthouse...');
 
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    userAgent: 'Dealhunter-DeepAnalysis/1.0 (Accessibility Audit Bot)',
-  });
-
-  const allViolations: any[] = [];
+  const allViolations: AggregatedViolation[] = [];
 
   // Audit up to 10 representative pages
   const pagesToAudit = sampleUrls.slice(0, 10);
 
-  try {
-    for (let i = 0; i < pagesToAudit.length; i++) {
-      const url = pagesToAudit[i];
-      onProgress?.(`Auditing page ${i + 1}/${pagesToAudit.length}: ${new URL(url).pathname}`);
+  for (let i = 0; i < pagesToAudit.length; i++) {
+    const url = pagesToAudit[i];
+    onProgress?.(`Auditing page ${i + 1}/${pagesToAudit.length}: ${new URL(url).pathname}`);
 
-      try {
-        const page = await context.newPage();
+    try {
+      // Run Lighthouse accessibility audit
+      const result = await runAccessibilityAudit(url);
 
-        // Set timeout for page load
-        await page.goto(url, {
-          waitUntil: 'networkidle',
-          timeout: 30000, // 30 second timeout
+      // Convert Lighthouse violations to our format
+      for (const violation of result.violations) {
+        allViolations.push({
+          id: violation.id,
+          impact: violation.impact,
+          count: 1, // Lighthouse doesn't provide instance count
+          description: violation.description,
+          helpUrl: violation.helpUrl || `https://web.dev/articles/${violation.id}`,
         });
-
-        // Run axe audit with WCAG 2.1 AA tags
-        const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
-
-        allViolations.push(...results.violations);
-
-        await page.close();
-      } catch (error) {
-        console.warn(`Failed to audit page ${url}:`, error);
-        // Continue with next page
       }
+    } catch (error) {
+      console.warn(`Failed to audit page ${url}:`, error);
+      // Continue with next page
     }
-  } finally {
-    await browser.close();
   }
 
   onProgress?.(`Audited ${pagesToAudit.length} pages, processing results...`);
@@ -73,12 +70,12 @@ export async function auditAccessibility(
     const existing = violationMap.get(violation.id);
 
     if (existing) {
-      existing.count += violation.nodes.length;
+      existing.count += violation.count;
     } else {
       violationMap.set(violation.id, {
         id: violation.id,
-        impact: violation.impact as 'minor' | 'moderate' | 'serious' | 'critical',
-        count: violation.nodes.length,
+        impact: violation.impact,
+        count: violation.count,
         description: violation.description,
         helpUrl: violation.helpUrl,
       });

@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
 import { LeadSidebarRight } from '@/components/leads/lead-sidebar-right';
+import { LeadLayoutClient } from './layout-client';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads } from '@/lib/db/schema';
@@ -20,7 +21,6 @@ export default async function LeadDashboardLayout({
     redirect('/login');
   }
 
-  // Get lead for right sidebar metadata
   const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
 
   if (!lead) {
@@ -33,10 +33,17 @@ export default async function LeadDashboardLayout({
   }
 
   return (
-    <>
-      {children}
-      {/* Right Sidebar: Lead-specific Navigation (rendered as sibling to AppSidebar via parent SidebarProvider) */}
-      <LeadSidebarRight leadId={id} customerName={lead.customerName} status={lead.status} />
-    </>
+    <LeadLayoutClient>
+      <div className="flex h-full w-full gap-4">
+        <div className="flex-1 overflow-auto">{children}</div>
+        {/* Right Sidebar: Lead-specific Navigation (rendered as sibling to AppSidebar via parent SidebarProvider) */}
+        <LeadSidebarRight
+          leadId={id}
+          customerName={lead.customerName}
+          status={lead.status}
+          blVote={lead.blVote}
+        />
+      </div>
+    </LeadLayoutClient>
   );
 }

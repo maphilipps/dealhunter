@@ -12,7 +12,7 @@ import { suggestWebsiteUrlsAction } from '@/lib/bids/actions';
 
 interface WebsiteUrl {
   url: string;
-  type: 'primary' | 'product' | 'regional' | 'related';
+  type: 'primary' | 'product' | 'regional' | 'related' | 'corporate' | 'main' | 'other';
   description?: string;
   confidence?: number;
   selected: boolean;

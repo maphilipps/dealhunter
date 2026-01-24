@@ -1,14 +1,6 @@
-import {
-  AlertCircle,
-  AlertTriangle,
-  Calendar,
-  Clock,
-  RefreshCw,
-  Sparkles,
-} from 'lucide-react';
+import { AlertCircle, AlertTriangle, Calendar, Clock, RefreshCw, Sparkles } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 
-import { BLRoutingCard } from '@/components/bids/bl-routing-card';
 import { TenQuestionsCard } from '@/components/bids/ten-questions-card';
 import { ReloadTimelineButton } from '@/components/rfps/reload-timeline-button';
 import { RoutingForm } from '@/components/rfps/routing-form';
@@ -56,9 +48,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
   const allBusinessUnits = await db.select().from(businessUnits);
 
   // Parse available data (graceful - may be null)
-  const timeline = quickScan?.timeline
-    ? (JSON.parse(quickScan.timeline) as ProjectTimeline)
-    : null;
+  const timeline = quickScan?.timeline ? (JSON.parse(quickScan.timeline) as ProjectTimeline) : null;
 
   const blRecommendation = quickScan?.recommendedBusinessUnit
     ? {
@@ -207,7 +197,9 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
                 )}
               </div>
               <div className="rounded-lg bg-white p-4">
-                <p className="text-muted-foreground mb-2 text-sm font-medium">BID/NO-BID Bewertung</p>
+                <p className="text-muted-foreground mb-2 text-sm font-medium">
+                  BID/NO-BID Bewertung
+                </p>
                 <p className="text-foreground text-lg font-bold">
                   {rfp.status === 'routed' ||
                   rfp.status === 'full_scanning' ||
@@ -230,20 +222,6 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
             )}
           </CardContent>
         </Card>
-      )}
-
-      {/* BL Routing Card - only show if recommendation available */}
-      {blRecommendation && (
-        <BLRoutingCard
-          bidId={rfp.id}
-          recommendation={{
-            primaryBusinessLine: blRecommendation.primaryBusinessLine,
-            confidence: blRecommendation.confidence,
-            reasoning: blRecommendation.reasoning,
-            alternativeBusinessLines: [],
-            requiredSkills: [],
-          }}
-        />
       )}
 
       {/* 10 Questions Card - only show if data available */}
@@ -285,7 +263,9 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
               <CardTitle>Projekt-Timeline</CardTitle>
               <Badge variant="outline">Konfidenz: {timeline.confidence}%</Badge>
             </div>
-            <CardDescription>AI-basierte Schätzung basierend auf Quick Scan Ergebnissen</CardDescription>
+            <CardDescription>
+              AI-basierte Schätzung basierend auf Quick Scan Ergebnissen
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Summary */}
@@ -420,10 +400,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
                 <h4 className="mb-2 font-semibold">Identifizierte Risiken</h4>
                 <div className="space-y-2">
                   {timeline.risks.map(
-                    (
-                      risk: { factor: string; impact: string; likelihood: string },
-                      idx: number
-                    ) => (
+                    (risk: { factor: string; impact: string; likelihood: string }, idx: number) => (
                       <div key={idx} className="flex items-start gap-2 rounded-lg border p-3">
                         <AlertTriangle className="mt-0.5 h-4 w-4 text-yellow-600" />
                         <div className="flex-1">

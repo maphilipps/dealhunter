@@ -84,7 +84,7 @@ export async function runDuplicateCheckAgent(params: {
 
   // Use AI to analyze duplicate result and provide structured recommendation
   const result = await generateObject({
-    model: openai('claude-haiku-4.5') as unknown as LanguageModel,
+    model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
     schema: DuplicateCheckAgentOutputSchema,
     prompt: `
 Du bist ein Duplicate Detection Agent. Analysiere die gefundenen Duplikate und gib eine strukturierte Empfehlung.

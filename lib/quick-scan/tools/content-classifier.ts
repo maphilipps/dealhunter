@@ -1,9 +1,16 @@
-import { chromium, type Browser } from 'playwright';
 import { z } from 'zod';
 
 import type { ContentTypeDistribution } from '../schema';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
+import {
+  openPage,
+  closeBrowser,
+  evaluate,
+  createSession,
+  wait,
+  type BrowserSession,
+} from '@/lib/browser';
 
 /**
  * Content Classifier Tool
@@ -92,17 +99,15 @@ function sampleUrls(urls: string[], sampleSize: number): string[] {
  * Fetch page content for classification
  */
 async function fetchPageContent(
-  browser: Browser,
-  url: string,
-  timeout: number
+  session: BrowserSession,
+  url: string
 ): Promise<{ html: string; title: string; url: string } | null> {
-  const page = await browser.newPage();
-
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
+    await openPage(url, session);
+    await wait(1500);
 
-    const content = await page.evaluate(() => {
-      // Get main content area if possible
+    const content = await evaluate<{ html: string; title: string; url: string }>(
+      `
       const mainContent =
         document.querySelector('main') ||
         document.querySelector('[role="main"]') ||
@@ -110,16 +115,16 @@ async function fetchPageContent(
         document.body;
 
       return {
-        html: mainContent.innerHTML.slice(0, 10000), // Limit content size
+        html: mainContent ? mainContent.innerHTML.slice(0, 10000) : '',
         title: document.title,
         url: window.location.href,
       };
-    });
+    `,
+      session
+    );
 
-    await page.close();
     return content;
   } catch (error) {
-    await page.close();
     console.error(`Failed to fetch ${url}:`, error);
     return null;
   }
@@ -195,16 +200,11 @@ export async function classifyContentTypes(
   urls: string[],
   options: ClassificationOptions = {}
 ): Promise<ContentTypeDistribution> {
-  const { sampleSize = 15, timeout = 15000 } = options;
+  const { sampleSize = 15 } = options;
 
-  let browser: Browser | null = null;
+  const session = createSession('content-classifier');
 
   try {
-    browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
     // Sample URLs
     const sampledUrls = sampleUrls(urls, sampleSize);
 
@@ -212,14 +212,14 @@ export async function classifyContentTypes(
     const classifications: { url: string; classification: PageClassification }[] = [];
 
     for (const url of sampledUrls) {
-      const content = await fetchPageContent(browser, url, timeout);
+      const content = await fetchPageContent(session, url);
       if (content) {
         const classification = await classifyPage(content);
         classifications.push({ url, classification });
       }
     }
 
-    await browser.close();
+    await closeBrowser(session);
 
     // Aggregate results
     const typeCounts = new Map<string, { count: number; examples: string[] }>();
@@ -281,9 +281,7 @@ export async function classifyContentTypes(
       recommendations,
     };
   } catch (error) {
-    if (browser) {
-      await browser.close();
-    }
+    await closeBrowser(session);
     throw error;
   }
 }

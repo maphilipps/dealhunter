@@ -9,6 +9,7 @@ import { embedAgentOutput } from '@/lib/rag/embedding-service';
 import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
 import { generateTimelineFromQuickScan } from '@/lib/timeline/integration';
+import { runExpertAgents } from '@/lib/agents/expert-agents';
 import { onAgentComplete } from '@/lib/workflow/orchestrator';
 
 export const runtime = 'nodejs';
@@ -317,6 +318,46 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       } catch (error) {
         console.error('[QuickScan Stream] Failed to embed Quick Scan result:', error);
         // Don't block on embedding failure
+      }
+
+      // Run Expert Agents (Timing, Deliverables, TechStack, Legal, Summary)
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: { agent: 'Expert Agents', message: 'Starte detaillierte RFP-Analyse...' },
+      });
+
+      try {
+        const expertResult = await runExpertAgents({ rfpId: id });
+
+        emit({
+          type: AgentEventType.AGENT_COMPLETE,
+          data: {
+            agent: 'Expert Agents',
+            result: {
+              success: expertResult.success,
+              timing: expertResult.results.timing.success,
+              deliverables: expertResult.results.deliverables.success,
+              techstack: expertResult.results.techstack.success,
+              legal: expertResult.results.legal.success,
+              summary: expertResult.results.summary.success,
+            },
+          },
+        });
+
+        console.log(
+          '[QuickScan Stream] Expert Agents completed:',
+          expertResult.success ? 'success' : 'partial'
+        );
+      } catch (error) {
+        console.error('[QuickScan Stream] Expert Agents failed:', error);
+        emit({
+          type: AgentEventType.ERROR,
+          data: {
+            agent: 'Expert Agents',
+            message: 'Expert-Analyse fehlgeschlagen',
+          },
+        });
+        // Don't block on expert agent failure
       }
 
       // DEA-90: Use orchestrator to handle status transition

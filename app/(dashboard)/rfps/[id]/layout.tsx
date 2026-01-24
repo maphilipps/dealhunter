@@ -3,11 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { RfpSidebarRight } from '@/components/bids/rfp-sidebar-right';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { auth } from '@/lib/auth';
-import {
-  getCachedRfpWithRelations,
-  getCachedUser,
-  getRfpTitle,
-} from '@/lib/rfps/cached-queries';
+import { getCachedRfpWithRelations, getCachedUser, getRfpTitle } from '@/lib/rfps/cached-queries';
 import { getQuickScanDataAvailability } from '@/lib/rfps/navigation';
 
 export default async function RfpDashboardLayout({

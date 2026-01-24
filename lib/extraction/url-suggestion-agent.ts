@@ -12,17 +12,42 @@ const openai = new OpenAI({
 /**
  * Schema for URL suggestions
  */
+// Valid URL suggestion types
+const validUrlTypes = [
+  'primary',
+  'product',
+  'regional',
+  'related',
+  'corporate',
+  'main',
+  'other',
+] as const;
+
 export const urlSuggestionSchema = z.object({
   suggestions: z.array(
     z.object({
       url: z.string().describe('Suggested website URL'),
-      type: z.enum(['primary', 'product', 'regional', 'related']).describe('Type of website'),
+      type: z.enum(validUrlTypes).describe('Type of website'),
       description: z.string().describe('Why this URL is relevant'),
       confidence: z.number().min(0).max(100).describe('Confidence in this suggestion'),
     })
   ),
   reasoning: z.string().describe('Overall reasoning for suggestions'),
 });
+
+// Map unknown types to valid types
+function normalizeUrlType(type: string): (typeof validUrlTypes)[number] {
+  const normalized = type?.toLowerCase()?.trim() || 'other';
+  if (validUrlTypes.includes(normalized as (typeof validUrlTypes)[number])) {
+    return normalized as (typeof validUrlTypes)[number];
+  }
+  // Map common variants
+  if (['website', 'homepage', 'official', 'company'].includes(normalized)) return 'primary';
+  if (['shop', 'store', 'ecommerce'].includes(normalized)) return 'product';
+  if (['local', 'country', 'region'].includes(normalized)) return 'regional';
+  if (['partner', 'subsidiary', 'affiliate'].includes(normalized)) return 'related';
+  return 'other';
+}
 
 export type UrlSuggestion = z.infer<typeof urlSuggestionSchema>;
 
@@ -102,7 +127,7 @@ export async function suggestWebsiteUrls(input: UrlSuggestionInput): Promise<Url
     }
 
     const completion = await openai.chat.completions.create({
-      model: 'claude-haiku-4.5',
+      model: 'gemini-3-flash-preview',
       messages: [
         {
           role: 'system',
@@ -185,14 +210,22 @@ RESPOND WITH THIS EXACT JSON STRUCTURE ONLY:
       };
     }
 
-    // Convert null values to undefined
-    const cleanedResult = Object.fromEntries(
-      Object.entries(rawResult).filter(([_, v]) => v !== null)
+    // Extract suggestions array safely
+    const rawSuggestions = Array.isArray(rawResult.suggestions) ? rawResult.suggestions : [];
+    const rawReasoning =
+      typeof rawResult.reasoning === 'string' ? rawResult.reasoning : 'No suggestions available';
+
+    // Normalize suggestion types before validation
+    const normalizedSuggestions = rawSuggestions.map(
+      (s: { url: string; type: string; description: string; confidence: number }) => ({
+        ...s,
+        type: normalizeUrlType(s.type),
+      })
     );
 
     return urlSuggestionSchema.parse({
-      suggestions: cleanedResult.suggestions || [],
-      reasoning: cleanedResult.reasoning || 'No suggestions available',
+      suggestions: normalizedSuggestions,
+      reasoning: rawReasoning,
     });
   } catch (error) {
     console.error('URL suggestion error:', error);

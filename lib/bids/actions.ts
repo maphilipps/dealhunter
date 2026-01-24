@@ -428,8 +428,15 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
 }
 
 /**
- * Upload bid with combined inputs (PDF + Website URL + Additional Text)
- * This is the new unified upload method that replaces separate PDF/Freetext/Email uploads
+ * Upload bid with combined inputs (Multiple PDFs + Multiple URLs + Additional Text)
+ * This is the unified upload method that combines all sources into one holistic input
+ *
+ * Supports:
+ * - Multiple PDF files (extracted in parallel)
+ * - Multiple website URLs
+ * - Additional freetext
+ *
+ * All sources are combined into a structured rawInput for downstream agents
  */
 export async function uploadCombinedBid(formData: FormData) {
   const session = await auth();
@@ -447,8 +454,9 @@ export async function uploadCombinedBid(formData: FormData) {
     return { success: false, error: 'Benutzer nicht gefunden. Bitte melden Sie sich erneut an.' };
   }
 
-  const file = formData.get('file') as File | null;
-  const websiteUrl = (formData.get('websiteUrl') as string)?.trim() || '';
+  // Get multiple files and URLs
+  const files = formData.getAll('files') as File[];
+  const websiteUrls = (formData.getAll('websiteUrls') as string[]).filter(url => url.trim());
   const additionalText = (formData.get('additionalText') as string)?.trim() || '';
   const source = (formData.get('source') as 'reactive' | 'proactive') || 'reactive';
   const stage = (formData.get('stage') as 'cold' | 'warm' | 'rfp') || 'rfp';
@@ -456,7 +464,7 @@ export async function uploadCombinedBid(formData: FormData) {
   const accountId = formData.get('accountId') as string | null;
 
   // At least one input is required
-  if (!file && !websiteUrl && !additionalText) {
+  if (files.length === 0 && websiteUrls.length === 0 && !additionalText) {
     return {
       success: false,
       error: 'Mindestens eine Eingabe (PDF, URL oder Text) ist erforderlich',
@@ -466,9 +474,7 @@ export async function uploadCombinedBid(formData: FormData) {
   // Validate accountId if provided
   let validAccountId: string | undefined = undefined;
   if (accountId && accountId.trim() !== '' && accountId !== 'null') {
-    // Check if account exists
     const { accounts } = await import('@/lib/db/schema');
-    const { eq } = await import('drizzle-orm');
     const [account] = await db.select().from(accounts).where(eq(accounts.id, accountId)).limit(1);
     if (!account) {
       return { success: false, error: 'Ausgewählter Account existiert nicht' };
@@ -477,71 +483,117 @@ export async function uploadCombinedBid(formData: FormData) {
   }
 
   try {
-    let extractedText = '';
-    let piiData = null;
-    let inputType: 'pdf' | 'freetext' | 'combined' = 'freetext';
+    const maxSize = 10 * 1024 * 1024; // 10 MB per file
+    const extractedTexts: { fileName: string; text: string }[] = [];
+    const fileBuffers: { file: File; buffer: Buffer }[] = [];
+    let piiData: string | null = null;
+    const allPiiMatches: Array<{ type: string; original: string; replacement: string }> = [];
 
-    // Process PDF if provided
-    if (file) {
-      // Validate file type
+    // Validate all files first
+    for (const file of files) {
       if (file.type !== 'application/pdf') {
-        return { success: false, error: 'Nur PDF-Dateien sind erlaubt' };
+        return { success: false, error: `${file.name}: Nur PDF-Dateien sind erlaubt` };
       }
-
-      // Validate file size (10 MB limit)
-      const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
-        return { success: false, error: 'Datei ist zu groß (max. 10 MB)' };
+        return { success: false, error: `${file.name}: Datei ist zu groß (max. 10 MB)` };
       }
-
-      // Convert file to buffer
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
-      // Extract text from PDF
-      extractedText = await extractTextFromPdf(buffer);
-
-      if (!extractedText || extractedText.trim().length === 0) {
-        return { success: false, error: 'PDF-Text konnte nicht extrahiert werden' };
-      }
-
-      // Apply DSGVO cleaning if enabled
-      if (enableDSGVO) {
-        const piiMatches = detectPII(extractedText);
-        if (piiMatches.length > 0) {
-          extractedText = cleanText(extractedText, piiMatches);
-          piiData = JSON.stringify(
-            piiMatches.map(m => ({
-              type: m.type,
-              original: m.original,
-              replacement: m.replacement,
-            }))
-          );
-        }
-      }
-
-      inputType = 'pdf';
     }
 
-    // Build combined raw input
-    let rawInput = extractedText;
+    // Convert all files to buffers (needed for both extraction and storage)
+    for (const file of files) {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      fileBuffers.push({ file, buffer });
+    }
 
-    // Add website URL section
-    if (websiteUrl) {
-      rawInput += rawInput ? '\n\n' : '';
-      rawInput += `Website-URL: ${websiteUrl}`;
+    // Extract text from all PDFs in parallel
+    if (fileBuffers.length > 0) {
+      const extractionPromises = fileBuffers.map(async ({ file, buffer }) => {
+        try {
+          let text = await extractTextFromPdf(buffer);
+
+          // Apply DSGVO cleaning if enabled
+          if (enableDSGVO && text) {
+            const piiMatches = detectPII(text);
+            if (piiMatches.length > 0) {
+              text = cleanText(text, piiMatches);
+              allPiiMatches.push(
+                ...piiMatches.map(m => ({
+                  type: m.type,
+                  original: m.original,
+                  replacement: m.replacement,
+                }))
+              );
+            }
+          }
+
+          return { fileName: file.name, text: text || '' };
+        } catch (error) {
+          console.error(`PDF extraction failed for ${file.name}:`, error);
+          return { fileName: file.name, text: '' };
+        }
+      });
+
+      const results = await Promise.all(extractionPromises);
+      extractedTexts.push(...results.filter(r => r.text.trim().length > 0));
+    }
+
+    // Check if at least some content was extracted
+    if (
+      files.length > 0 &&
+      extractedTexts.length === 0 &&
+      !additionalText &&
+      websiteUrls.length === 0
+    ) {
+      return { success: false, error: 'Aus keinem der PDFs konnte Text extrahiert werden' };
+    }
+
+    // Store PII data if any was found
+    if (allPiiMatches.length > 0) {
+      piiData = JSON.stringify(allPiiMatches);
+    }
+
+    // Build structured combined raw input
+    const rawInputParts: string[] = [];
+
+    // Add PDF sections
+    if (extractedTexts.length === 1) {
+      // Single PDF: No header needed
+      rawInputParts.push(extractedTexts[0].text);
+    } else if (extractedTexts.length > 1) {
+      // Multiple PDFs: Add headers for each
+      for (const { fileName, text } of extractedTexts) {
+        rawInputParts.push(`=== DOKUMENT: ${fileName} ===\n\n${text}`);
+      }
+    }
+
+    // Add website URLs section
+    if (websiteUrls.length === 1) {
+      rawInputParts.push(`Website-URL: ${websiteUrls[0]}`);
+    } else if (websiteUrls.length > 1) {
+      rawInputParts.push(
+        `Website-URLs:\n${websiteUrls.map((url, i) => `${i + 1}. ${url}`).join('\n')}`
+      );
     }
 
     // Add additional text section
     if (additionalText) {
-      rawInput += rawInput ? '\n\n' : '';
-      rawInput += `Zusätzliche Informationen:\n${additionalText}`;
+      rawInputParts.push(`Zusätzliche Informationen:\n${additionalText}`);
     }
 
-    // If multiple inputs provided, mark as combined
-    const inputCount = [!!file, !!websiteUrl, !!additionalText].filter(Boolean).length;
-    if (inputCount > 1) {
+    const rawInput = rawInputParts.join('\n\n---\n\n');
+
+    // Determine input type
+    let inputType: 'pdf' | 'freetext' | 'combined' = 'freetext';
+    const hasFiles = extractedTexts.length > 0;
+    const hasUrls = websiteUrls.length > 0;
+    const hasText = additionalText.length > 0;
+    const sourceCount = [hasFiles, hasUrls, hasText].filter(Boolean).length;
+
+    if (sourceCount > 1 || extractedTexts.length > 1 || websiteUrls.length > 1) {
       inputType = 'combined';
+    } else if (hasFiles) {
+      inputType = 'pdf';
     }
 
     // Validate minimum content
@@ -565,10 +617,8 @@ export async function uploadCombinedBid(formData: FormData) {
       })
       .returning();
 
-    // Save PDF file to documents table if provided
-    if (file) {
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
+    // Save all PDF files to documents table
+    for (const { file, buffer } of fileBuffers) {
       const base64Data = buffer.toString('base64');
 
       await db.insert(documents).values({
@@ -585,8 +635,13 @@ export async function uploadCombinedBid(formData: FormData) {
     return {
       success: true,
       bidId: bidOpportunity.id,
-      piiRemoved: enableDSGVO && piiData !== null,
+      piiRemoved: enableDSGVO && allPiiMatches.length > 0,
       inputType,
+      stats: {
+        filesProcessed: extractedTexts.length,
+        urlsAdded: websiteUrls.length,
+        hasAdditionalText: hasText,
+      },
     };
   } catch (error) {
     console.error('Combined upload error:', error);

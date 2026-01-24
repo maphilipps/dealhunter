@@ -4,6 +4,9 @@ import { strategicFitSchema, type StrategicFit } from '../schema';
 
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
+// Security: Prompt Injection Protection
+import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
+
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -45,10 +48,13 @@ export async function runStrategicFitAgent(input: StrategicFitAgentInput): Promi
         );
 
         if (customerSearch && customerSearch.length > 0) {
-          customerInsights = `\n\n**Kunden-Intelligence (EXA):**\n${customerSearch
+          const rawCustData = customerSearch
             .slice(0, 2)
             .map(r => `- ${r.title}: ${r.snippet}`)
-            .join('\n')}`;
+            .join('\n');
+
+          // Wrap web search results for prompt injection protection
+          customerInsights = `\n\n**Kunden-Intelligence (EXA):**\n${wrapUserContent(rawCustData, 'web')}`;
           console.log(`[Strategic Fit Agent] ${customerSearch.length} Kunden-Insights gefunden`);
         }
       }
@@ -61,10 +67,13 @@ export async function runStrategicFitAgent(input: StrategicFitAgentInput): Promi
         );
 
         if (industrySearch && industrySearch.length > 0) {
-          industryInsights = `\n\n**Branchen-Trends (EXA):**\n${industrySearch
+          const rawIndData = industrySearch
             .slice(0, 2)
             .map(r => `- ${r.title}: ${r.snippet}`)
-            .join('\n')}`;
+            .join('\n');
+
+          // Wrap web search results for prompt injection protection
+          industryInsights = `\n\n**Branchen-Trends (EXA):**\n${wrapUserContent(rawIndData, 'web')}`;
           console.log(`[Strategic Fit Agent] ${industrySearch.length} Branchen-Insights gefunden`);
         }
       }
@@ -74,7 +83,7 @@ export async function runStrategicFitAgent(input: StrategicFitAgentInput): Promi
   }
 
   const completion = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       {
         role: 'system',

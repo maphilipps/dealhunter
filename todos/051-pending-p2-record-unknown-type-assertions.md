@@ -1,7 +1,7 @@
 ---
 status: pending
 priority: p2
-issue_id: "051"
+issue_id: '051'
 tags: [code-review, typescript, dea-186, type-safety]
 dependencies: []
 ---
@@ -13,6 +13,7 @@ dependencies: []
 The extraction agent uses `Record<string, unknown>` type assertions extensively, followed by additional property casts. This pattern bypasses TypeScript's type system and is error-prone.
 
 **Why it matters:**
+
 - Multiple layers of type assertions indicate poorly defined types
 - Every property access requires another cast
 - Maintenance burden and potential runtime errors
@@ -25,16 +26,17 @@ The extraction agent uses `Record<string, unknown>` type assertions extensively,
 **Location:** `lib/extraction/agent.ts:568, 592-593, 616`
 
 **Problematic Pattern:**
+
 ```typescript
-extractedData.contacts = (extractedData.contacts as Record<string, unknown>[])
-  .filter(contact => {
-    const name = contact.name as string | undefined;
-    const confidence = typeof contact.confidence === 'number' ? contact.confidence : 0;
-    // ...
-  })
+extractedData.contacts = (extractedData.contacts as Record<string, unknown>[]).filter(contact => {
+  const name = contact.name as string | undefined;
+  const confidence = typeof contact.confidence === 'number' ? contact.confidence : 0;
+  // ...
+});
 ```
 
 **Issues:**
+
 1. `Record<string, unknown>[]` cast is too loose
 2. `contact.name as string | undefined` is another unsafe cast
 3. Confidence type check at runtime instead of compile time
@@ -42,6 +44,7 @@ extractedData.contacts = (extractedData.contacts as Record<string, unknown>[])
 ## Proposed Solutions
 
 ### Option A: Define Intermediate Types (Recommended)
+
 **Pros:** Type-safe, better DX, IDE support
 **Cons:** More code upfront
 **Effort:** Medium (2-3 hours)
@@ -76,6 +79,7 @@ function isValidContact(contact: unknown): contact is ParsedContact {
 ```
 
 ### Option B: Use Zod for Runtime Parsing
+
 **Pros:** Single source of truth, runtime validation
 **Cons:** Performance overhead
 **Effort:** Medium (2-3 hours)
@@ -95,6 +99,7 @@ const contacts = extractedData.contacts
 ```
 
 ### Option C: Infer Types from Schema
+
 **Pros:** DRY, uses existing schema
 **Cons:** Complex type manipulation
 **Effort:** Small (1 hour)
@@ -112,6 +117,7 @@ type Contact = NonNullable<z.infer<typeof extractedRequirementsSchema>['contacts
 ## Technical Details
 
 **Affected Files:**
+
 - `lib/extraction/agent.ts:568-612` - Contact/Deliverable filtering
 - `lib/extraction/agent.ts:615-641` - URL/Budget/CMS filtering
 
@@ -128,8 +134,8 @@ type Contact = NonNullable<z.infer<typeof extractedRequirementsSchema>['contacts
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                     | Learnings                                      |
+| ---------- | -------------------------- | ---------------------------------------------- |
 | 2026-01-22 | Created from PR #11 review | TypeScript reviewer flagged type safety issues |
 
 ## Resources

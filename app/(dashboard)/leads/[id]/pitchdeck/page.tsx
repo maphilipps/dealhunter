@@ -17,11 +17,7 @@ import {
   rfps,
 } from '@/lib/db/schema';
 
-export default async function PitchdeckPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function PitchdeckPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
 
@@ -47,11 +43,7 @@ export default async function PitchdeckPage({
   }
 
   // Get pitchdeck
-  const [pitchdeck] = await db
-    .select()
-    .from(pitchdecks)
-    .where(eq(pitchdecks.leadId, id))
-    .limit(1);
+  const [pitchdeck] = await db.select().from(pitchdecks).where(eq(pitchdecks.leadId, id)).limit(1);
 
   if (!pitchdeck) {
     return (
@@ -63,9 +55,7 @@ export default async function PitchdeckPage({
         <Card>
           <CardHeader>
             <CardTitle>Kein Pitchdeck verfügbar</CardTitle>
-            <CardDescription>
-              Für diesen Lead wurde noch kein Pitchdeck erstellt.
-            </CardDescription>
+            <CardDescription>Für diesen Lead wurde noch kein Pitchdeck erstellt.</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
@@ -153,11 +143,7 @@ export default async function PitchdeckPage({
           ) : (
             <div className="space-y-2">
               {deliverables.map(deliverable => (
-                <DeliverableCard
-                  key={deliverable.id}
-                  deliverable={deliverable}
-                  leadId={id}
-                />
+                <DeliverableCard key={deliverable.id} deliverable={deliverable} leadId={id} />
               ))}
             </div>
           )}

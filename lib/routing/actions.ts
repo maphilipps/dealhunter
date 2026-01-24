@@ -22,6 +22,7 @@ export interface AssignBusinessUnitResult {
   success: boolean;
   error?: string;
   warning?: string;
+  leadId?: string;
 }
 
 /**
@@ -62,16 +63,17 @@ export async function assignBusinessUnit(
 
     const bid = bids[0];
 
-    // Validate status - must be decision_made
-    if (bid.status !== 'decision_made') {
+    // Validate status - must be a routing-ready state
+    const routingReadyStates = ['decision_made', 'bit_pending', 'bid_voted', 'questions_ready'];
+    if (!routingReadyStates.includes(bid.status)) {
       return {
         success: false,
-        error: 'Bid muss in Status "decision_made" sein',
+        error: `Bid muss in einem routing-bereiten Status sein (${routingReadyStates.join(', ')}). Aktuell: ${bid.status}`,
       };
     }
 
-    // Validate BIT decision
-    if (bid.decision !== 'bid') {
+    // Validate BIT decision (only if status indicates a decision was made)
+    if ((bid.status === 'decision_made' || bid.status === 'bid_voted') && bid.decision !== 'bid') {
       return {
         success: false,
         error: 'Nur BIT-Opportunities können geroutet werden',
@@ -144,7 +146,10 @@ export async function assignBusinessUnit(
     const { convertRfpToLead } = await import('@/lib/leads/actions');
     const leadResult = await convertRfpToLead({ rfpId: bidId });
 
-    if (!leadResult.success) {
+    let leadId: string | undefined;
+    if (leadResult.success) {
+      leadId = leadResult.leadId;
+    } else {
       console.error('Lead conversion failed:', leadResult.error);
       // Don't fail the entire operation - the routing was successful
     }
@@ -152,6 +157,10 @@ export async function assignBusinessUnit(
     // Revalidate cache for updated views
     revalidatePath(`/bl-review/${bidId}`);
     revalidatePath('/bl-review');
+    revalidatePath('/leads');
+    if (leadId) {
+      revalidatePath(`/leads/${leadId}`);
+    }
 
     // ROUTE-003: Send email notification to BL leader
     const emailResult = await sendBLAssignmentEmail({
@@ -171,6 +180,7 @@ export async function assignBusinessUnit(
 
     return {
       success: true,
+      leadId,
       warning: emailResult.success
         ? undefined
         : 'Zuweisung erfolgreich, aber E-Mail-Benachrichtigung fehlgeschlagen',

@@ -6,14 +6,7 @@ import { z } from 'zod';
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import {
-  leads,
-  pitchdecks,
-  pitchdeckTeamMembers,
-  users,
-  employees,
-  rfps,
-} from '@/lib/db/schema';
+import { leads, pitchdecks, pitchdeckTeamMembers, users, employees, rfps } from '@/lib/db/schema';
 import { sendTeamNotificationEmails, TeamMemberNotification } from '@/lib/notifications/email';
 
 // ============================================================================
@@ -196,18 +189,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // 11. Update Team Members in Database
     // Remove old team members
     if (removedEmployeeIds.length > 0) {
-      await db
-        .delete(pitchdeckTeamMembers)
-        .where(
-          and(
-            eq(pitchdeckTeamMembers.pitchdeckId, pitchdeck.id),
-            // @ts-expect-error - Drizzle inArray type issue with string arrays
-            eq(
-              pitchdeckTeamMembers.employeeId,
-              removedEmployeeIds.length === 1 ? removedEmployeeIds[0] : undefined
-            )
+      await db.delete(pitchdeckTeamMembers).where(
+        and(
+          eq(pitchdeckTeamMembers.pitchdeckId, pitchdeck.id),
+          // @ts-expect-error - Drizzle inArray type issue with string arrays
+          eq(
+            pitchdeckTeamMembers.employeeId,
+            removedEmployeeIds.length === 1 ? removedEmployeeIds[0] : undefined
           )
-        );
+        )
+      );
 
       // Workaround: delete one by one if multiple
       if (removedEmployeeIds.length > 1) {
@@ -274,7 +265,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             try {
               const requirements = JSON.parse(rfp.extractedRequirements) as Record<string, unknown>;
               customerName = (requirements.customerName as string) || customerName;
-              projectDescription = (requirements.projectDescription as string) || projectDescription;
+              projectDescription =
+                (requirements.projectDescription as string) || projectDescription;
             } catch (e) {
               console.error('Could not parse RFP extractedRequirements');
             }

@@ -129,10 +129,7 @@ async function searchWithExa(
  * Note: This requires the web-search MCP to be available
  * Currently placeholder - can be implemented when MCP wrapper is available
  */
-async function searchWithNative(
-  query: string,
-  maxResults: number
-): Promise<WebResearchResult[]> {
+async function searchWithNative(query: string, maxResults: number): Promise<WebResearchResult[]> {
   console.log(
     `[WEB-RESEARCH] Native web search not yet implemented (query: "${query}", maxResults: ${maxResults})`
   );
@@ -156,9 +153,7 @@ async function searchWithNative(
  * @param query - The research query
  * @returns Research response with results and stats
  */
-export async function performWebResearch(
-  query: WebResearchQuery
-): Promise<WebResearchResponse> {
+export async function performWebResearch(query: WebResearchQuery): Promise<WebResearchResponse> {
   const { rfpId, sectionId, question, maxResults = 3 } = query;
 
   // 1. Check rate limit
@@ -197,10 +192,7 @@ export async function performWebResearch(
 
   // 4. Combine results into text for chunking
   const combinedText = results
-    .map(
-      (r, idx) =>
-        `=== Result ${idx + 1}: ${r.title} ===\nSource: ${r.url}\n\n${r.snippet}\n\n`
-    )
+    .map((r, idx) => `=== Result ${idx + 1}: ${r.title} ===\nSource: ${r.url}\n\n${r.snippet}\n\n`)
     .join('\n');
 
   try {

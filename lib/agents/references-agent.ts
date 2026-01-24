@@ -16,7 +16,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { leads, references, rfpEmbeddings } from '@/lib/db/schema';
+import { leads, references, dealEmbeddings } from '@/lib/db/schema';
 import { queryRagForLead, formatLeadContext } from '@/lib/rag/lead-retrieval-service';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -584,7 +584,7 @@ ${recommendationDetails || 'No recommendations available.'}`;
     const chunksWithEmbeddings = await generateRawChunkEmbeddings(chunks);
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
-      await db.insert(rfpEmbeddings).values({
+      await db.insert(dealEmbeddings).values({
         rfpId,
         agentName: 'references',
         chunkType: 'analysis',

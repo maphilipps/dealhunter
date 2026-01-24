@@ -12,7 +12,6 @@ import { BLRoutingCard } from './bl-routing-card';
 import { DecisionCard } from './decision-card';
 import { DecisionConfidenceBanner } from './decision-confidence-banner';
 import { DeepAnalysisCard } from './deep-analysis-card';
-import { DocumentsSidebar } from './documents-sidebar';
 import { DuplicateWarning } from './duplicate-warning';
 import { ExtractionPreview } from './extraction-preview';
 import { LowConfidenceDialog } from './low-confidence-dialog';
@@ -375,42 +374,22 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     }
   }, [bid.status, bid.id, quickScan, extractedData, router]);
 
-  // Draft state - Show raw input and start extraction button
+  // Draft state - Show start extraction button
   if (bid.status === 'draft' && !isExtracting) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 max-w-full overflow-hidden">
-        <div className="space-y-6 min-w-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Rohdaten</CardTitle>
-              <CardDescription>Extrahierter Text aus dem Dokument</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-lg bg-muted p-4">
-                <pre className="whitespace-pre-wrap text-sm font-mono">
-                  {bid.rawInput.substring(0, 1000)}
-                  {bid.rawInput.length > 1000 && '...'}
-                </pre>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Nächster Schritt</CardTitle>
-              <CardDescription>AI-gestützte Extraktion der Anforderungen</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={handleStartExtraction} disabled={isExtracting}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                AI-Extraktion starten
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-        <aside className="lg:sticky lg:top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
-          <DocumentsSidebar bidId={bid.id} />
-        </aside>
+      <div className="space-y-6 max-w-full">
+        <Card>
+          <CardHeader>
+            <CardTitle>Nächster Schritt</CardTitle>
+            <CardDescription>AI-gestützte Extraktion der Anforderungen</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={handleStartExtraction} disabled={isExtracting}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              AI-Extraktion starten
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -420,21 +399,6 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 max-w-full overflow-hidden">
         <div className="space-y-6 min-w-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Rohdaten</CardTitle>
-              <CardDescription>Extrahierter Text aus dem Dokument</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-lg bg-muted p-4">
-                <pre className="whitespace-pre-wrap text-sm font-mono">
-                  {bid.rawInput.substring(0, 500)}
-                  {bid.rawInput.length > 500 && '...'}
-                </pre>
-              </div>
-            </CardContent>
-          </Card>
-
           <ActivityStream
             streamUrl={`/api/rfps/${bid.id}/extraction/stream`}
             title="AI-Extraktion"
@@ -450,9 +414,6 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             autoStart={true}
           />
         </div>
-        <aside className="lg:sticky lg:top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
-          <DocumentsSidebar bidId={bid.id} />
-        </aside>
       </div>
     );
   }
@@ -460,37 +421,27 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Reviewing state - Show extraction preview and edit form
   if (bid.status === 'reviewing' && extractedData) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 max-w-full overflow-hidden">
-        <div className="space-y-6 min-w-0">
-          {/* Duplicate Warning */}
-          {duplicateCheck?.hasDuplicates && (
-            <DuplicateWarning
-              duplicateCheck={duplicateCheck}
-              onDismiss={() => setDuplicateCheck(null)}
-            />
-          )}
+      <div className="space-y-6 max-w-full">
+        {/* Duplicate Warning */}
+        {duplicateCheck?.hasDuplicates && (
+          <DuplicateWarning
+            duplicateCheck={duplicateCheck}
+            onDismiss={() => setDuplicateCheck(null)}
+          />
+        )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                Extraktion abgeschlossen
-              </CardTitle>
-              <CardDescription>
-                Überprüfen und korrigieren Sie die extrahierten Daten
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ExtractionPreview
-                initialData={extractedData}
-                onConfirm={handleConfirmRequirements}
-              />
-            </CardContent>
-          </Card>
-        </div>
-        <aside className="lg:sticky lg:top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
-          <DocumentsSidebar bidId={bid.id} />
-        </aside>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              Extraktion abgeschlossen
+            </CardTitle>
+            <CardDescription>Überprüfen und korrigieren Sie die extrahierten Daten</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ExtractionPreview initialData={extractedData} onConfirm={handleConfirmRequirements} />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -858,7 +809,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
                               Workflow abgeschlossen
                             </CardTitle>
                             <CardDescription className="text-blue-700 dark:text-blue-300">
-                              Alle Phasen wurden erfolgreich durchlaufen. Das Projekt wurde übergeben.
+                              Alle Phasen wurden erfolgreich durchlaufen. Das Projekt wurde
+                              übergeben.
                             </CardDescription>
                           </CardHeader>
                         </Card>
@@ -889,9 +841,6 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
               );
             })()}
         </div>
-        <aside className="lg:sticky lg:top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
-          <DocumentsSidebar bidId={bid.id} />
-        </aside>
       </div>
     );
   }
@@ -899,7 +848,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Other states - Show extracted data readonly
   if (extractedData) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 max-w-full overflow-hidden">
+      <div className="space-y-6 max-w-full">
         <Card>
           <CardHeader>
             <CardTitle>Extrahierte Anforderungen</CardTitle>
@@ -937,9 +886,6 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             </div>
           </CardContent>
         </Card>
-        <aside className="lg:sticky lg:top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
-          <DocumentsSidebar bidId={bid.id} />
-        </aside>
       </div>
     );
   }

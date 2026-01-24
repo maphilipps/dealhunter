@@ -2,6 +2,7 @@ import { Eye, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { LeadsEmptyStateClient } from '@/components/leads/leads-empty-state-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -86,15 +87,7 @@ export default async function LeadsPage() {
         </CardHeader>
         <CardContent>
           {leads.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">Keine Leads vorhanden</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {session.user.role === 'bl'
-                  ? 'Für Ihre Business Unit wurden noch keine Leads weitergeleitet.'
-                  : 'Es gibt aktuell keine Leads im System.'}
-              </p>
-            </div>
+            <LeadsEmptyStateClient userRole={session.user.role} />
           ) : (
             <Table>
               <TableHeader>

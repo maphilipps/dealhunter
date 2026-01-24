@@ -9,13 +9,17 @@
  * - Source tracking
  */
 
-import { eq } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNotNull } from 'drizzle-orm';
 
-import { queryRAG, type RAGQuery, type RAGResult } from './retrieval-service';
+import { generateQueryEmbedding } from './embedding-service';
+import type { RAGResult } from './retrieval-service';
 
 import { db } from '@/lib/db';
-import { leads } from '@/lib/db/schema';
+import type { ChunkCategory } from '@/lib/db/schema';
+import { dealEmbeddings } from '@/lib/db/schema';
 import { getRAGQueryTemplate } from '@/lib/leads/navigation-config';
+
+const SIMILARITY_THRESHOLD = 0.3; // text-embedding-3-large has lower similarity scores
 
 export interface LeadRAGQuery {
   leadId: string;
@@ -23,6 +27,10 @@ export interface LeadRAGQuery {
   question: string;
   agentNameFilter?: string | string[]; // Filter by specific agent(s)
   maxResults?: number; // default: 5
+  // Category-based filtering (DEA-140)
+  chunkCategories?: ChunkCategory[]; // Filter by chunk category (fact, elaboration, etc.)
+  minConfidence?: number; // Minimum confidence score (0-100)
+  onlyValidated?: boolean; // Only return validated chunks
 }
 
 export interface LeadRAGResult extends RAGResult {
@@ -32,6 +40,10 @@ export interface LeadRAGResult extends RAGResult {
     chunkType: string;
     relevance: number;
   }>;
+  // Category info (DEA-140)
+  chunkCategory?: ChunkCategory | null;
+  chunkConfidence?: number | null;
+  isValidated?: boolean;
 }
 
 export interface SectionQueryResult {
@@ -43,66 +55,186 @@ export interface SectionQueryResult {
 }
 
 /**
+ * Calculate cosine similarity between two vectors
+ */
+function cosineSimilarity(vecA: number[], vecB: number[]): number {
+  if (vecA.length !== vecB.length) {
+    throw new Error('Vectors must have same length');
+  }
+
+  let dotProduct = 0;
+  let magnitudeA = 0;
+  let magnitudeB = 0;
+
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    magnitudeA += vecA[i] * vecA[i];
+    magnitudeB += vecB[i] * vecB[i];
+  }
+
+  magnitudeA = Math.sqrt(magnitudeA);
+  magnitudeB = Math.sqrt(magnitudeB);
+
+  if (magnitudeA === 0 || magnitudeB === 0) {
+    return 0;
+  }
+
+  return dotProduct / (magnitudeA * magnitudeB);
+}
+
+/**
  * Query RAG knowledge base for a specific lead
  *
- * Maps Lead ID → RFP ID and performs RAG query
- * Optionally filters by section and agent name
+ * DIRECTLY queries lead_embeddings table (not rfp_embeddings)
+ * because audit data is stored per lead, not per RFP.
  *
  * @param query - Lead RAG query parameters
  * @returns Array of relevant chunks with source tracking
  */
 export async function queryRagForLead(query: LeadRAGQuery): Promise<LeadRAGResult[]> {
   try {
-    // 1. Map Lead → RFP ID
-    const lead = await db.select({ rfpId: leads.rfpId }).from(leads).where(eq(leads.id, query.leadId));
-
-    if (lead.length === 0) {
-      console.warn(`[Lead-RAG] Lead ${query.leadId} not found`);
-      return [];
-    }
-
-    const rfpId = lead[0].rfpId;
-
-    // 2. Build question from section template if sectionId provided
+    // 1. Build question from section template if sectionId provided
     let question = query.question;
     if (query.sectionId) {
       const template = getRAGQueryTemplate(query.sectionId);
       if (template) {
-        // If question is empty, use template; otherwise append template context
         question = query.question ? `${query.question}\n\nContext: ${template}` : template;
       }
     }
 
-    // 3. Perform RAG query
-    const ragQuery: RAGQuery = {
-      rfpId,
-      question,
-      maxResults: query.maxResults,
-    };
+    console.log(`[Lead-RAG] Query for lead ${query.leadId}: "${question.substring(0, 50)}..."`);
 
-    const results = await queryRAG(ragQuery);
+    // 2. Build filter conditions
+    const conditions = [eq(dealEmbeddings.leadId, query.leadId)];
 
-    // 4. Filter by agent name if specified
-    let filteredResults = results;
+    // Category filter (DEA-140)
+    if (query.chunkCategories && query.chunkCategories.length > 0) {
+      conditions.push(inArray(dealEmbeddings.chunkCategory, query.chunkCategories));
+    }
+
+    // Confidence filter (DEA-140)
+    if (query.minConfidence !== undefined && query.minConfidence > 0) {
+      conditions.push(gte(dealEmbeddings.confidence, query.minConfidence));
+    }
+
+    // Validated filter (DEA-140)
+    if (query.onlyValidated) {
+      conditions.push(isNotNull(dealEmbeddings.validatedAt));
+    }
+
+    // Fetch all chunks for this LEAD directly from lead_embeddings
+    const chunks = await db
+      .select()
+      .from(dealEmbeddings)
+      .where(and(...conditions));
+
+    console.log(
+      `[Lead-RAG] Found ${chunks.length} chunks in lead_embeddings` +
+        (query.chunkCategories ? ` (categories: ${query.chunkCategories.join(', ')})` : '')
+    );
+
+    if (chunks.length === 0) {
+      return [];
+    }
+
+    // 3. Try to generate query embedding for similarity ranking
+    const queryEmbedding = await generateQueryEmbedding(question);
+
+    let resultsWithSimilarity: Array<{
+      chunkId: string;
+      agentName: string;
+      chunkType: string;
+      content: string;
+      similarity: number;
+      metadata: Record<string, unknown>;
+      // Category info (DEA-140)
+      chunkCategory: ChunkCategory | null;
+      confidence: number | null;
+      validatedAt: Date | null;
+    }>;
+
+    if (queryEmbedding) {
+      // 4a. Calculate similarity for each chunk (embedding-based)
+      resultsWithSimilarity = chunks
+        .filter(chunk => chunk.embedding !== null)
+        .map(chunk => {
+          const chunkEmbedding = JSON.parse(chunk.embedding!) as number[];
+          const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
+          const metadata = chunk.metadata ? JSON.parse(chunk.metadata) : {};
+
+          return {
+            chunkId: chunk.id,
+            agentName: chunk.agentName,
+            chunkType: chunk.chunkType,
+            content: chunk.content,
+            similarity,
+            metadata,
+            // Category info (DEA-140)
+            chunkCategory: chunk.chunkCategory,
+            confidence: chunk.confidence,
+            validatedAt: chunk.validatedAt,
+          };
+        })
+        .filter(result => result.similarity > SIMILARITY_THRESHOLD);
+
+      console.log(
+        `[Lead-RAG] ${resultsWithSimilarity.length} chunks above threshold ${SIMILARITY_THRESHOLD}`
+      );
+    } else {
+      // 4b. FALLBACK: No embeddings available, return all chunks with default similarity
+      console.warn('[Lead-RAG] No embeddings available, using fallback (all chunks)');
+      resultsWithSimilarity = chunks.map(chunk => {
+        const metadata = chunk.metadata ? JSON.parse(chunk.metadata) : {};
+        return {
+          chunkId: chunk.id,
+          agentName: chunk.agentName,
+          chunkType: chunk.chunkType,
+          content: chunk.content,
+          similarity: 0.75, // Default similarity for fallback
+          metadata,
+          // Category info (DEA-140)
+          chunkCategory: chunk.chunkCategory,
+          confidence: chunk.confidence,
+          validatedAt: chunk.validatedAt,
+        };
+      });
+      console.log(`[Lead-RAG] Fallback: returning all ${resultsWithSimilarity.length} chunks`);
+    }
+
+    // 5. Filter by agent name if specified
+    let filteredResults = resultsWithSimilarity;
     if (query.agentNameFilter) {
       const agentNames = Array.isArray(query.agentNameFilter)
         ? query.agentNameFilter
         : [query.agentNameFilter];
 
-      filteredResults = results.filter((result) => agentNames.includes(result.agentName));
+      filteredResults = resultsWithSimilarity.filter(result =>
+        agentNames.includes(result.agentName)
+      );
 
-      // If agent filter yields no results, fall back to all results
       if (filteredResults.length === 0) {
         console.warn(
           `[Lead-RAG] Agent filter [${agentNames.join(', ')}] yielded no results, falling back to all results`
         );
-        filteredResults = results;
+        filteredResults = resultsWithSimilarity;
       }
     }
 
-    // 5. Add source tracking
-    const resultsWithSources: LeadRAGResult[] = filteredResults.map((result) => ({
-      ...result,
+    // 6. Sort by similarity DESC
+    filteredResults.sort((a, b) => b.similarity - a.similarity);
+
+    // 7. Limit results
+    const maxResults = query.maxResults || 5;
+    const limitedResults = filteredResults.slice(0, maxResults);
+
+    // 8. Add source tracking and map category info
+    const resultsWithSources: LeadRAGResult[] = limitedResults.map(result => ({
+      chunkId: result.chunkId,
+      agentName: result.agentName,
+      chunkType: result.chunkType,
+      content: result.content,
+      similarity: result.similarity,
+      metadata: result.metadata,
       sources: [
         {
           agentName: result.agentName,
@@ -111,6 +243,10 @@ export async function queryRagForLead(query: LeadRAGQuery): Promise<LeadRAGResul
           relevance: result.similarity,
         },
       ],
+      // Category info (DEA-140) - map to interface fields
+      chunkCategory: result.chunkCategory,
+      chunkConfidence: result.confidence,
+      isValidated: result.validatedAt !== null,
     }));
 
     return resultsWithSources;
@@ -139,7 +275,7 @@ export async function batchQuerySections(
   const results = new Map<string, SectionQueryResult>();
 
   // Run queries in parallel
-  const queries = sectionIds.map(async (sectionId) => {
+  const queries = sectionIds.map(async sectionId => {
     try {
       // Get section template
       const template = getRAGQueryTemplate(sectionId);
@@ -220,7 +356,7 @@ export async function queryMultipleAgents(
   const results = new Map<string, LeadRAGResult[]>();
 
   // Run queries in parallel
-  const queries = agentNames.map(async (agentName) => {
+  const queries = agentNames.map(async agentName => {
     const agentResults = await queryRagForLead({
       leadId,
       question,
@@ -266,7 +402,7 @@ export function calculateConfidenceScore(results: LeadRAGResult[]): number {
 
   // Factor 3: Agent diversity (0-20 points)
   // More unique agents = higher confidence
-  const uniqueAgents = new Set(results.map((r) => r.agentName)).size;
+  const uniqueAgents = new Set(results.map(r => r.agentName)).size;
   const diversityScore = Math.min(20, (uniqueAgents / 3) * 20);
 
   const totalScore = countScore + similarityScore + diversityScore;
@@ -282,9 +418,7 @@ export function calculateConfidenceScore(results: LeadRAGResult[]): number {
  * @param results - Query results
  * @returns Sorted array of unique sources
  */
-export function aggregateSources(
-  results: LeadRAGResult[]
-): Array<{
+export function aggregateSources(results: LeadRAGResult[]): Array<{
   agentName: string;
   chunkId: string;
   chunkType: string;
@@ -323,13 +457,16 @@ export function aggregateSources(
  * @param includeMetadata - Whether to include agent/chunk metadata
  * @returns Formatted context string
  */
-export function formatLeadContext(results: LeadRAGResult[], includeMetadata: boolean = false): string {
+export function formatLeadContext(
+  results: LeadRAGResult[],
+  includeMetadata: boolean = false
+): string {
   if (results.length === 0) {
     return '';
   }
 
   return results
-    .map((result) => {
+    .map(result => {
       const metadataPrefix = includeMetadata
         ? `[Agent: ${result.agentName} | Type: ${result.chunkType} | Relevance: ${Math.round(result.similarity * 100)}%]\n`
         : '';

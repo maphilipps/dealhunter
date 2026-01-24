@@ -32,13 +32,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  getAgentOutputs,
-  getRawChunks,
-  getAgentNames,
-  getChunkTypes,
-} from '@/lib/rag/actions';
-import type { AgentOutput, RawChunkItem, AgentOutputsResult, RawChunksResult } from '@/lib/rag/types';
+import { getAgentOutputs, getRawChunks, getAgentNames, getChunkTypes } from '@/lib/rag/actions';
+import type {
+  AgentOutput,
+  RawChunkItem,
+  AgentOutputsResult,
+  RawChunksResult,
+} from '@/lib/rag/types';
 
 type BrowserMode = 'agent' | 'raw';
 
@@ -73,10 +73,12 @@ export function ChunkBrowser({ rfpId, mode }: ChunkBrowserProps) {
   // Load filter options for agent mode
   useEffect(() => {
     if (mode === 'agent') {
-      Promise.all([getAgentNames(rfpId), getChunkTypes(rfpId)]).then(([agentsResult, typesResult]) => {
-        if (agentsResult.success) setAvailableAgents(agentsResult.data);
-        if (typesResult.success) setAvailableTypes(typesResult.data);
-      });
+      Promise.all([getAgentNames(rfpId), getChunkTypes(rfpId)]).then(
+        ([agentsResult, typesResult]) => {
+          if (agentsResult.success) setAvailableAgents(agentsResult.data);
+          if (typesResult.success) setAvailableTypes(typesResult.data);
+        }
+      );
     }
   }, [rfpId, mode]);
 
@@ -239,9 +241,7 @@ export function ChunkBrowser({ rfpId, mode }: ChunkBrowserProps) {
 
                     return (
                       <TableRow key={item.id}>
-                        <TableCell className="font-mono text-xs">
-                          {item.chunkIndex}
-                        </TableCell>
+                        <TableCell className="font-mono text-xs">{item.chunkIndex}</TableCell>
                         {isAgentMode && agentItem && (
                           <>
                             <TableCell>
@@ -265,11 +265,7 @@ export function ChunkBrowser({ rfpId, mode }: ChunkBrowserProps) {
                           </TableCell>
                         )}
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setSelectedChunk(item)}
-                          >
+                          <Button size="sm" variant="ghost" onClick={() => setSelectedChunk(item)}>
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TableCell>

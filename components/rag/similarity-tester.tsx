@@ -24,10 +24,11 @@ import { searchSimilar } from '@/lib/rag/actions';
 import type { SimilarityResult, SimilaritySearchResult } from '@/lib/rag/types';
 
 interface SimilarityTesterProps {
-  rfpId: string;
+  rfpId?: string;
+  leadId?: string;
 }
 
-export function SimilarityTester({ rfpId }: SimilarityTesterProps) {
+export function SimilarityTester({ rfpId, leadId }: SimilarityTesterProps) {
   const [query, setQuery] = useState('');
   const [threshold, setThreshold] = useState(0.5);
   const [maxResults, setMaxResults] = useState(10);
@@ -46,6 +47,7 @@ export function SimilarityTester({ rfpId }: SimilarityTesterProps) {
     try {
       const searchResult = await searchSimilar({
         rfpId,
+        leadId,
         query: query.trim(),
         threshold,
         maxResults,
@@ -63,7 +65,7 @@ export function SimilarityTester({ rfpId }: SimilarityTesterProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [rfpId, query, threshold, maxResults, includeRaw]);
+  }, [rfpId, leadId, query, threshold, maxResults, includeRaw]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !isLoading) {
@@ -208,6 +210,11 @@ export function SimilarityTester({ rfpId }: SimilarityTesterProps) {
                             <Badge variant="outline" className="font-mono text-xs">
                               <Bot className="h-3 w-3 mr-1" />
                               {item.agentName}
+                            </Badge>
+                          ) : item.source === 'lead' ? (
+                            <Badge variant="default" className="font-mono text-xs bg-green-600">
+                              <Bot className="h-3 w-3 mr-1" />
+                              {item.agentName || 'Lead'}
                             </Badge>
                           ) : (
                             <Badge variant="secondary" className="text-xs">

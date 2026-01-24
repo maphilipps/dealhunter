@@ -140,7 +140,10 @@ export async function GET(request: Request) {
               reason: 'Auto-Submit: RFP-Deadline erreicht',
             });
           } catch (error) {
-            console.error(`[Cron] Failed to create audit log for pitchdeck ${result.pitchdeckId}:`, error);
+            console.error(
+              `[Cron] Failed to create audit log for pitchdeck ${result.pitchdeckId}:`,
+              error
+            );
           }
         }
       });

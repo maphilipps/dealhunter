@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 
+import { BIT_EVALUATION_WEIGHTS, calculateWeightedBitScore } from '@/lib/config/business-rules';
 import { runCapabilityAgent } from './agents/capability-agent';
 import { runCompetitionAgent } from './agents/competition-agent';
 import { runContractAgent } from './agents/contract-agent';
@@ -40,7 +41,7 @@ const openai = new OpenAI({
  */
 async function callAI<T>(systemPrompt: string, userPrompt: string, schema: any): Promise<T> {
   const completion = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
@@ -156,22 +157,19 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
 
     logActivity('All agents completed', 'Calculating weighted scores');
 
-    // Calculate weighted scores
-    // Capability: 25%, Deal Quality: 20%, Strategic Fit: 15%, Win Probability: 15%, Legal: 15%, Reference: 10%
-    const weightedScores = {
+    // Calculate weighted scores using centralized config
+    const individualScores = {
       capability: capabilityMatch.overallCapabilityScore,
       dealQuality: dealQuality.overallDealQualityScore,
       strategicFit: strategicFit.overallStrategicFitScore,
       winProbability: competitionCheck.estimatedWinProbability,
       legal: legalAssessment.overallLegalScore,
       reference: referenceMatch.overallReferenceScore,
-      overall:
-        capabilityMatch.overallCapabilityScore * 0.25 +
-        dealQuality.overallDealQualityScore * 0.2 +
-        strategicFit.overallStrategicFitScore * 0.15 +
-        competitionCheck.estimatedWinProbability * 0.15 +
-        legalAssessment.overallLegalScore * 0.15 +
-        referenceMatch.overallReferenceScore * 0.1,
+    };
+
+    const weightedScores = {
+      ...individualScores,
+      overall: calculateWeightedBitScore(individualScores),
     };
 
     // Collect all critical blockers (including Contract Agent - DEA-7)
@@ -561,22 +559,19 @@ export async function runBitEvaluationWithStreaming(
       },
     });
 
-    // Calculate weighted scores
-    // Capability: 25%, Deal Quality: 20%, Strategic Fit: 15%, Win Probability: 15%, Legal: 15%, Reference: 10%
-    const weightedScores = {
+    // Calculate weighted scores using centralized config
+    const individualScores = {
       capability: capabilityMatch.overallCapabilityScore,
       dealQuality: dealQuality.overallDealQualityScore,
       strategicFit: strategicFit.overallStrategicFitScore,
       winProbability: competitionCheck.estimatedWinProbability,
       legal: legalAssessment.overallLegalScore,
       reference: referenceMatch.overallReferenceScore,
-      overall:
-        capabilityMatch.overallCapabilityScore * 0.25 +
-        dealQuality.overallDealQualityScore * 0.2 +
-        strategicFit.overallStrategicFitScore * 0.15 +
-        competitionCheck.estimatedWinProbability * 0.15 +
-        legalAssessment.overallLegalScore * 0.15 +
-        referenceMatch.overallReferenceScore * 0.1,
+    };
+
+    const weightedScores = {
+      ...individualScores,
+      overall: calculateWeightedBitScore(individualScores),
     };
 
     // Collect all critical blockers (including Contract Agent - DEA-7)

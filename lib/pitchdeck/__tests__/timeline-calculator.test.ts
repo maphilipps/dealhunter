@@ -55,7 +55,7 @@ describe('Timeline Calculator', () => {
 
       // All deadlines should be before work deadline (Feb 12)
       const workDeadline = new Date('2026-02-12T23:59:59Z');
-      deadlines.forEach((deadline) => {
+      deadlines.forEach(deadline => {
         expect(deadline.getTime()).toBeLessThanOrEqual(workDeadline.getTime());
       });
 
@@ -169,7 +169,7 @@ describe('Timeline Calculator', () => {
       // With 20% margin: ~17.6 days effective
       // Should fit all deadlines before work deadline
       const workDeadline = new Date('2026-02-23T23:59:59Z');
-      deadlines.forEach((deadline) => {
+      deadlines.forEach(deadline => {
         expect(deadline.getTime()).toBeLessThanOrEqual(workDeadline.getTime());
       });
     });
@@ -191,7 +191,7 @@ describe('Timeline Calculator', () => {
       const workDeadline = new Date(rfpDeadline);
       workDeadline.setDate(workDeadline.getDate() - 3); // Default 3 day buffer
 
-      deadlines.forEach((deadline) => {
+      deadlines.forEach(deadline => {
         expect(deadline.getTime()).toBe(workDeadline.getTime());
       });
     });
@@ -204,7 +204,7 @@ describe('Timeline Calculator', () => {
       expect(deadlines).toHaveLength(3);
 
       // Should still return deadlines (all set to work deadline in past)
-      deadlines.forEach((deadline) => {
+      deadlines.forEach(deadline => {
         expect(deadline).toBeInstanceOf(Date);
       });
     });
@@ -230,7 +230,7 @@ describe('Timeline Calculator', () => {
       expect(deadlines).toHaveLength(deliverableCount);
 
       // All deadlines should be valid dates
-      deadlines.forEach((deadline) => {
+      deadlines.forEach(deadline => {
         expect(deadline).toBeInstanceOf(Date);
         expect(isNaN(deadline.getTime())).toBe(false);
       });
@@ -263,7 +263,7 @@ describe('Timeline Calculator', () => {
       // Work deadline is rfpDeadline - 3 days (default buffers)
       const workDeadline = new Date('2026-02-17T23:59:59Z');
 
-      deadlines.forEach((deadline) => {
+      deadlines.forEach(deadline => {
         expect(deadline.getTime()).toBeLessThanOrEqual(workDeadline.getTime());
       });
     });
@@ -377,7 +377,7 @@ describe('Timeline Calculator', () => {
       expect(deadlines).toHaveLength(5);
 
       // Check status of each deadline
-      const statuses = deadlines.map((deadline) => getDeadlineStatus(deadline));
+      const statuses = deadlines.map(deadline => getDeadlineStatus(deadline));
 
       // First deadline should be closer (possibly warning)
       // Last deadline should be further out (ok)
@@ -385,7 +385,7 @@ describe('Timeline Calculator', () => {
       expect(statuses[statuses.length - 1]).toBe('ok');
 
       // No deadlines should be overdue initially
-      expect(statuses.every((s) => s !== 'overdue')).toBe(true);
+      expect(statuses.every(s => s !== 'overdue')).toBe(true);
     });
 
     it('should handle complete workflow: calculate, check, simulate progress', () => {
@@ -393,14 +393,14 @@ describe('Timeline Calculator', () => {
       const deadlines = calculateInternalDeadlines(rfpDeadline, 3);
 
       // Initial check - all should be ok or warning
-      const initialStatuses = deadlines.map((d) => getDeadlineStatus(d));
-      expect(initialStatuses.every((s) => s !== 'overdue')).toBe(true);
+      const initialStatuses = deadlines.map(d => getDeadlineStatus(d));
+      expect(initialStatuses.every(s => s !== 'overdue')).toBe(true);
 
       // Simulate time passing - move 10 days forward
       vi.setSystemTime(new Date('2026-02-11T10:00:00Z'));
 
       // Now check statuses again
-      const laterStatuses = deadlines.map((d) => getDeadlineStatus(d));
+      const laterStatuses = deadlines.map(d => getDeadlineStatus(d));
 
       // First deadline should now be overdue or in warning
       expect(['overdue', 'warning']).toContain(laterStatuses[0]);
@@ -420,15 +420,14 @@ describe('Timeline Calculator', () => {
 
       // Verify all deadlines respect work deadline (Apr 1 - 8 days)
       const workDeadline = new Date('2026-03-24T23:59:59Z');
-      deadlines.forEach((deadline) => {
+      deadlines.forEach(deadline => {
         expect(deadline.getTime()).toBeLessThanOrEqual(workDeadline.getTime());
       });
 
       // Check distribution - should be relatively evenly spaced
       const daysBetween: number[] = [];
       for (let i = 1; i < deadlines.length; i++) {
-        const days =
-          (deadlines[i].getTime() - deadlines[i - 1].getTime()) / (1000 * 60 * 60 * 24);
+        const days = (deadlines[i].getTime() - deadlines[i - 1].getTime()) / (1000 * 60 * 60 * 24);
         daysBetween.push(days);
       }
 
@@ -453,7 +452,7 @@ describe('Timeline Calculator', () => {
       const deadlines = calculateInternalDeadlines(rfpDeadline, 5);
 
       // Some deadlines should be in February
-      const hasFebruaryDeadline = deadlines.some((d) => d.getMonth() === 1); // Month 1 = February
+      const hasFebruaryDeadline = deadlines.some(d => d.getMonth() === 1); // Month 1 = February
       expect(hasFebruaryDeadline).toBe(true);
     });
 
@@ -464,7 +463,7 @@ describe('Timeline Calculator', () => {
       expect(deadlines).toHaveLength(10);
 
       // All deadlines should be valid
-      deadlines.forEach((d) => {
+      deadlines.forEach(d => {
         expect(d).toBeInstanceOf(Date);
         expect(isNaN(d.getTime())).toBe(false);
       });
@@ -475,7 +474,7 @@ describe('Timeline Calculator', () => {
       const deadlines = calculateInternalDeadlines(rfpDeadline, 3);
 
       // Deadlines should maintain time precision
-      deadlines.forEach((d) => {
+      deadlines.forEach(d => {
         expect(d.getHours()).toBeDefined();
         expect(d.getMinutes()).toBeDefined();
       });
@@ -491,7 +490,7 @@ describe('Timeline Calculator', () => {
       // Should calculate correctly even with Feb 29th in range
       expect(deadlines).toHaveLength(5);
 
-      deadlines.forEach((d) => {
+      deadlines.forEach(d => {
         expect(d).toBeInstanceOf(Date);
         expect(d.getTime()).toBeLessThanOrEqual(rfpDeadline.getTime());
       });

@@ -1,4 +1,6 @@
 import { extractedRequirementsSchema, type ExtractedRequirements } from './schema';
+import { suggestWebsiteUrls } from './url-suggestion-agent';
+import { embedAgentOutput } from '@/lib/rag/embedding-service';
 
 import { openai } from '@/lib/ai/config';
 import { embedRawText } from '@/lib/rag/raw-embedding-service';
@@ -57,7 +59,7 @@ async function detectDocumentLanguage(rawText: string): Promise<DocumentLanguage
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'claude-haiku-4.5',
+      model: 'gemini-3-flash-preview',
       messages: [
         {
           role: 'system',
@@ -272,7 +274,7 @@ Falls keine spezifischen Unterlagen genannt werden: antworte mit []`,
     extractPrompt: `Extrahiere alle Website-URLs die im Dokument genannt werden.
 Suche nach: URLs mit http/https, "www.", Domains, "current website", "existing site".
 Antworte im JSON Array Format:
-[{"url": "https://example.com", "type": "primary|product|regional|related", "description": "Beschreibung", "extractedFromDocument": true}]
+[{"url": "https://example.com", "type": "primary|product|regional|related|corporate|main|other", "description": "Beschreibung", "extractedFromDocument": true}]
 WICHTIG: Nur echte, vollständige URLs extrahieren.
 Falls keine URLs gefunden: antworte mit []`,
     isArray: true,
@@ -331,7 +333,7 @@ async function extractSingleField(
   // The document content is wrapped in markers, and the system is instructed
   // to only extract information from content between these delimiters
   const completion = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       {
         role: 'system',
@@ -574,7 +576,12 @@ export async function runExtractionWithStreaming(
           const name = contact.name as string | undefined;
           const confidence = typeof contact.confidence === 'number' ? contact.confidence : 0;
           // Reject if no name, placeholder name, or low confidence
-          if (!name || name === '...' || name.toLowerCase() === 'unbekannt' || name.toLowerCase() === 'unknown') {
+          if (
+            !name ||
+            name === '...' ||
+            name.toLowerCase() === 'unbekannt' ||
+            name.toLowerCase() === 'unknown'
+          ) {
             return false;
           }
           if (confidence < MIN_CONFIDENCE_THRESHOLD) {
@@ -600,7 +607,12 @@ export async function runExtractionWithStreaming(
           const name = d.name as string | undefined;
           const confidence = typeof d.confidence === 'number' ? d.confidence : 0;
           // Reject if no name, placeholder name, or low confidence
-          if (!name || name === '...' || name.toLowerCase() === 'unbekannt' || name.toLowerCase() === 'unknown') {
+          if (
+            !name ||
+            name === '...' ||
+            name.toLowerCase() === 'unbekannt' ||
+            name.toLowerCase() === 'unknown'
+          ) {
             return false;
           }
           if (confidence < MIN_CONFIDENCE_THRESHOLD) {
@@ -616,15 +628,16 @@ export async function runExtractionWithStreaming(
 
     // Filter websiteUrls - remove invalid entries
     if (Array.isArray(extractedData.websiteUrls)) {
-      extractedData.websiteUrls = (extractedData.websiteUrls as Record<string, unknown>[])
-        .filter(url => {
+      extractedData.websiteUrls = (extractedData.websiteUrls as Record<string, unknown>[]).filter(
+        url => {
           const urlStr = url.url as string | undefined;
           // Must have a valid URL
           if (!urlStr || !urlStr.startsWith('http')) {
             return false;
           }
           return true;
-        });
+        }
+      );
     }
 
     // Filter budget if confidence is too low
@@ -640,6 +653,74 @@ export async function runExtractionWithStreaming(
       const cms = extractedData.cmsConstraints as { confidence?: number };
       if (typeof cms.confidence === 'number' && cms.confidence < MIN_CONFIDENCE_THRESHOLD) {
         extractedData.cmsConstraints = undefined;
+      }
+    }
+
+    // Step 5b: Enrich URL data with AI/Web Search if needed
+    // If no URLs found, or to augment existing ones
+    const currentUrls = Array.isArray(extractedData.websiteUrls) ? extractedData.websiteUrls : [];
+
+    if (currentUrls.length === 0) {
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: 'Extraktion',
+          message: 'Keine URLs im Dokument gefunden. Starte AI-Websuche zur Anreicherung...',
+        },
+      });
+
+      try {
+        const customerName =
+          typeof extractedData.customerName === 'string' ? extractedData.customerName : '';
+
+        // Only search if we at least have a customer name
+        if (customerName && customerName !== 'nicht gefunden') {
+          const suggestionInput = {
+            customerName,
+            industry:
+              typeof extractedData.industry === 'string' ? extractedData.industry : undefined,
+            projectDescription:
+              typeof extractedData.projectDescription === 'string'
+                ? extractedData.projectDescription
+                : undefined,
+            technologies: Array.isArray(extractedData.technologies)
+              ? (extractedData.technologies as string[])
+              : undefined,
+            useWebSearch: true,
+          };
+
+          const suggestions = await suggestWebsiteUrls(suggestionInput);
+
+          if (suggestions.suggestions.length > 0) {
+            const enrichedUrls = suggestions.suggestions.map(s => ({
+              url: s.url,
+              type: s.type,
+              description: s.description || 'AI-enriched',
+              confidence: s.confidence,
+              extractedFromDocument: false, // Mark as AI-enriched
+            }));
+
+            extractedData.websiteUrls = enrichedUrls;
+
+            emit({
+              type: AgentEventType.AGENT_PROGRESS,
+              data: {
+                agent: 'Extraktion',
+                message: `${suggestions.suggestions.length} URLs durch AI/Suche ergänzt: ${suggestions.suggestions.map(s => s.url).join(', ')}`,
+              },
+            });
+          } else {
+            emit({
+              type: AgentEventType.AGENT_PROGRESS,
+              data: {
+                agent: 'Extraktion',
+                message: 'Keine URLs durch Websuche gefunden.',
+              },
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('URL enrichment failed:', err);
       }
     }
 
@@ -685,6 +766,26 @@ export async function runExtractionWithStreaming(
         message: `Extraktion abgeschlossen! Gefunden: ${foundItems.join(', ') || 'keine Daten'}`,
       },
     });
+
+    // Step 7: Embed structured requirements into RAG
+    if (input.rfpId) {
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: 'Extraktion',
+          message: 'Speichere extrahierte Daten in RAG Knowledge Base...',
+        },
+      });
+
+      // Fire-and-forget embedding to not block response
+      embedAgentOutput(
+        input.rfpId,
+        'extract',
+        requirements as unknown as Record<string, unknown>
+      ).catch(err => {
+        console.error('Failed to embed extraction results:', err);
+      });
+    }
 
     return {
       requirements,

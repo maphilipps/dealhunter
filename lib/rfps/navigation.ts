@@ -8,6 +8,7 @@ import {
   Info,
   Users,
   GitBranch,
+  Grid3X3,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -112,13 +113,11 @@ export function getRfpNavigationSections(rfpId: string): NavigationSection[] {
           title: 'Timing',
           icon: Clock,
           url: `/rfps/${rfpId}/timing`,
-          requiredField: 'hasTimeline',
         },
         {
           title: 'Deliverables',
           icon: FileText,
           url: `/rfps/${rfpId}/deliverables`,
-          requiredField: 'hasDeliverables',
         },
         {
           title: 'Referenzen',
@@ -141,19 +140,16 @@ export function getRfpNavigationSections(rfpId: string): NavigationSection[] {
           title: 'Tech Stack',
           icon: Code,
           url: `/rfps/${rfpId}/tech`,
-          requiredField: 'hasTechStack',
         },
         {
           title: 'Facts',
           icon: Info,
           url: `/rfps/${rfpId}/facts`,
-          requiredField: 'hasContentVolume',
         },
         {
           title: 'Kontakte',
           icon: Users,
           url: `/rfps/${rfpId}/contacts`,
-          requiredField: 'hasDecisionMakers',
         },
       ],
     },
@@ -165,6 +161,12 @@ export function getRfpNavigationSections(rfpId: string): NavigationSection[] {
           icon: GitBranch,
           url: `/rfps/${rfpId}/routing`,
           alwaysEnabled: true, // Routing is ALWAYS accessible (manual routing)
+        },
+        {
+          title: 'CMS Matrix',
+          icon: Grid3X3,
+          url: `/rfps/${rfpId}/routing/cms-matrix`,
+          alwaysEnabled: true,
         },
       ],
     },

@@ -6,14 +6,70 @@ import {
   CheckCircle2,
   XCircle,
   Plug,
+  FileText,
+  Layers,
+  Cloud,
+  AlertTriangle,
 } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { getAgentResult } from '@/lib/agents/expert-agents';
+import type { TechStackAnalysis } from '@/lib/agents/expert-agents/techstack-schema';
 import { auth } from '@/lib/auth';
 import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
+
+// Labels for categories and requirement types
+const categoryLabels: Record<string, string> = {
+  cms: 'CMS',
+  framework: 'Framework',
+  language: 'Programmiersprache',
+  database: 'Datenbank',
+  cloud: 'Cloud',
+  integration: 'Integration',
+  security: 'Security',
+  analytics: 'Analytics',
+  other: 'Sonstige',
+};
+
+const requirementTypeLabels: Record<string, string> = {
+  required: 'Erforderlich',
+  preferred: 'Bevorzugt',
+  excluded: 'Ausgeschlossen',
+  mentioned: 'Erwähnt',
+};
+
+const flexibilityLabels: Record<string, string> = {
+  rigid: 'Strikt vorgegeben',
+  preferred: 'Bevorzugt',
+  flexible: 'Flexibel',
+  open: 'Offen',
+};
+
+const flexibilityColors: Record<string, string> = {
+  rigid: 'bg-red-100 text-red-800',
+  preferred: 'bg-yellow-100 text-yellow-800',
+  flexible: 'bg-blue-100 text-blue-800',
+  open: 'bg-green-100 text-green-800',
+};
+
+const requirementTypeColors: Record<string, string> = {
+  required: 'bg-red-100 text-red-800',
+  preferred: 'bg-yellow-100 text-yellow-800',
+  excluded: 'bg-gray-100 text-gray-800',
+  mentioned: 'bg-blue-100 text-blue-800',
+};
 
 // Tech Stack Data Types (from Quick Scan)
 interface TechStackData {
@@ -115,8 +171,11 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
     redirect('/login');
   }
 
-  // Get RFP with relations (cached and parallelized)
-  const { rfp, quickScan } = await getCachedRfpWithRelations(id);
+  // Get RFP with relations (cached and parallelized) and expert agent results
+  const [{ rfp, quickScan }, techStackAgentResult] = await Promise.all([
+    getCachedRfpWithRelations(id),
+    getAgentResult(id, 'techstack_expert'),
+  ]);
 
   if (!rfp) {
     notFound();
@@ -127,27 +186,354 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
     notFound();
   }
 
+  // Parse techstack expert analysis
+  let techStackAnalysis: TechStackAnalysis | null = null;
+  if (techStackAgentResult?.metadata?.result) {
+    techStackAnalysis = techStackAgentResult.metadata.result as TechStackAnalysis;
+  }
+
   // Parse tech stack data from Quick Scan
-  const techStack = quickScan
-    ? parseJsonField<TechStackData>(quickScan.techStack)
-    : null;
+  const techStack = quickScan ? parseJsonField<TechStackData>(quickScan.techStack) : null;
   const performanceIndicators = quickScan
     ? parseJsonField<PerformanceData>(quickScan.performanceIndicators)
     : null;
   const accessibilityAudit = quickScan
     ? parseJsonField<AccessibilityAuditData>(quickScan.accessibilityAudit)
     : null;
-  const integrations = quickScan
-    ? parseJsonField<IntegrationsData>(quickScan.integrations)
-    : null;
+  const integrations = quickScan ? parseJsonField<IntegrationsData>(quickScan.integrations) : null;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Tech Stack</h1>
-        <p className="text-muted-foreground">Technologien und Performance-Indikatoren</p>
+        <p className="text-muted-foreground">Anforderungen aus RFP & Website-Analyse</p>
       </div>
+
+      {/* RFP Requirements Section */}
+      {techStackAnalysis && (
+        <>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              RFP Anforderungen (Expert Agent)
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* CMS Requirements Card */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-5 w-5 text-blue-600" />
+                    <CardTitle className="text-lg">CMS Anforderungen</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge
+                      className={flexibilityColors[techStackAnalysis.cmsRequirements.flexibility]}
+                    >
+                      {flexibilityLabels[techStackAnalysis.cmsRequirements.flexibility]}
+                    </Badge>
+                    {techStackAnalysis.cmsRequirements.headlessRequired && (
+                      <Badge variant="outline">Headless erforderlich</Badge>
+                    )}
+                    {techStackAnalysis.cmsRequirements.multilingualRequired && (
+                      <Badge variant="outline">Mehrsprachig erforderlich</Badge>
+                    )}
+                  </div>
+
+                  {techStackAnalysis.cmsRequirements.explicit?.length ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Explizit gefordert</p>
+                      <div className="flex flex-wrap gap-1">
+                        {techStackAnalysis.cmsRequirements.explicit.map(cms => (
+                          <Badge key={cms} variant="default" className="bg-red-600">
+                            {cms}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {techStackAnalysis.cmsRequirements.preferred?.length ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Bevorzugt</p>
+                      <div className="flex flex-wrap gap-1">
+                        {techStackAnalysis.cmsRequirements.preferred.map(cms => (
+                          <Badge key={cms} variant="secondary">
+                            {cms}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {techStackAnalysis.cmsRequirements.excluded?.length ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Ausgeschlossen</p>
+                      <div className="flex flex-wrap gap-1">
+                        {techStackAnalysis.cmsRequirements.excluded.map(cms => (
+                          <Badge key={cms} variant="outline" className="line-through text-gray-500">
+                            {cms}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+
+              {/* Integration Requirements Card */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Plug className="h-5 w-5 text-orange-600" />
+                    <CardTitle className="text-lg">Integration Anforderungen</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {techStackAnalysis.integrations.sso?.length ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">SSO Systeme</p>
+                      <div className="flex flex-wrap gap-1">
+                        {techStackAnalysis.integrations.sso.map(s => (
+                          <Badge key={s} variant="outline">
+                            {s}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {techStackAnalysis.integrations.erp?.length ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">ERP Systeme</p>
+                      <div className="flex flex-wrap gap-1">
+                        {techStackAnalysis.integrations.erp.map(e => (
+                          <Badge key={e} variant="outline">
+                            {e}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {techStackAnalysis.integrations.crm?.length ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">CRM Systeme</p>
+                      <div className="flex flex-wrap gap-1">
+                        {techStackAnalysis.integrations.crm.map(c => (
+                          <Badge key={c} variant="outline">
+                            {c}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {techStackAnalysis.integrations.payment?.length ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Payment Provider</p>
+                      <div className="flex flex-wrap gap-1">
+                        {techStackAnalysis.integrations.payment.map(p => (
+                          <Badge key={p} variant="outline">
+                            {p}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {techStackAnalysis.integrations.other?.length ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Weitere Integrationen</p>
+                      <div className="flex flex-wrap gap-1">
+                        {techStackAnalysis.integrations.other.map(o => (
+                          <Badge key={o} variant="outline">
+                            {o}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {!techStackAnalysis.integrations.sso?.length &&
+                    !techStackAnalysis.integrations.erp?.length &&
+                    !techStackAnalysis.integrations.crm?.length &&
+                    !techStackAnalysis.integrations.payment?.length &&
+                    !techStackAnalysis.integrations.other?.length && (
+                      <p className="text-sm text-muted-foreground">
+                        Keine Integrationen spezifiziert
+                      </p>
+                    )}
+                </CardContent>
+              </Card>
+
+              {/* Infrastructure Requirements Card */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Cloud className="h-5 w-5 text-cyan-600" />
+                    <CardTitle className="text-lg">Infrastruktur Anforderungen</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {techStackAnalysis.infrastructure.cloudProviders?.length ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Cloud Provider</p>
+                      <div className="flex flex-wrap gap-1">
+                        {techStackAnalysis.infrastructure.cloudProviders.map(c => (
+                          <Badge key={c} variant="outline">
+                            {c}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {techStackAnalysis.infrastructure.hostingRequirements && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Hosting</p>
+                      <p className="text-sm">
+                        {techStackAnalysis.infrastructure.hostingRequirements}
+                      </p>
+                    </div>
+                  )}
+
+                  {techStackAnalysis.infrastructure.securityCertifications?.length ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Security Zertifizierungen
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {techStackAnalysis.infrastructure.securityCertifications.map(s => (
+                          <Badge key={s} variant="outline" className="bg-green-50">
+                            {s}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {techStackAnalysis.infrastructure.complianceRequirements?.length ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Compliance Anforderungen</p>
+                      <div className="flex flex-wrap gap-1">
+                        {techStackAnalysis.infrastructure.complianceRequirements.map(c => (
+                          <Badge key={c} variant="outline" className="bg-yellow-50">
+                            {c}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {!techStackAnalysis.infrastructure.cloudProviders?.length &&
+                    !techStackAnalysis.infrastructure.hostingRequirements &&
+                    !techStackAnalysis.infrastructure.securityCertifications?.length &&
+                    !techStackAnalysis.infrastructure.complianceRequirements?.length && (
+                      <p className="text-sm text-muted-foreground">
+                        Keine Infrastruktur-Anforderungen spezifiziert
+                      </p>
+                    )}
+                </CardContent>
+              </Card>
+
+              {/* Complexity Assessment Card */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                    <CardTitle className="text-lg">Komplexitätsbewertung</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-muted-foreground">Komplexitätsscore</p>
+                      <span className="text-lg font-bold">
+                        {techStackAnalysis.complexityScore}/10
+                      </span>
+                    </div>
+                    <Progress value={techStackAnalysis.complexityScore * 10} className="h-2" />
+                  </div>
+
+                  {techStackAnalysis.complexityFactors.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Komplexitätsfaktoren</p>
+                      <ul className="text-sm space-y-1">
+                        {techStackAnalysis.complexityFactors.map((factor, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-amber-600 mt-0.5">•</span>
+                            <span>{factor}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    <Badge variant="outline">Konfidenz: {techStackAnalysis.confidence}%</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* All Technology Requirements Table */}
+            {techStackAnalysis.requirements.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Alle Technologie-Anforderungen</CardTitle>
+                  <CardDescription>Aus dem RFP-Dokument extrahierte Technologien</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Kategorie</TableHead>
+                        <TableHead>Typ</TableHead>
+                        <TableHead>Kontext</TableHead>
+                        <TableHead className="text-right">Konfidenz</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {techStackAnalysis.requirements.map((req, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">{req.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {categoryLabels[req.category] || req.category}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={requirementTypeColors[req.requirementType]}>
+                              {requirementTypeLabels[req.requirementType] || req.requirementType}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
+                            {req.context}
+                          </TableCell>
+                          <TableCell className="text-right">{req.confidence}%</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <Separator className="my-8" />
+        </>
+      )}
+
+      {/* Website Tech Stack Section Header */}
+      <h2 className="text-xl font-semibold flex items-center gap-2">
+        <Server className="h-5 w-5 text-purple-600" />
+        Website Tech Stack (Quick Scan)
+      </h2>
 
       {/* Tech Stack Card */}
       <Card>
@@ -166,7 +552,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">CSS Frameworks</p>
                   <div className="flex flex-wrap gap-2">
-                    {techStack.cssFrameworks.map((fw) => (
+                    {techStack.cssFrameworks.map(fw => (
                       <Badge key={fw.name} variant="outline">
                         {fw.name} ({fw.confidence}%)
                       </Badge>
@@ -180,7 +566,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">JavaScript Frameworks</p>
                   <div className="flex flex-wrap gap-2">
-                    {techStack.javascriptFrameworks.map((fw) => (
+                    {techStack.javascriptFrameworks.map(fw => (
                       <Badge key={fw.name} variant="outline">
                         {fw.name} ({fw.confidence}%)
                       </Badge>
@@ -194,7 +580,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Backend</p>
                   <div className="flex flex-wrap gap-2">
-                    {techStack.backend.map((b) => (
+                    {techStack.backend.map(b => (
                       <Badge key={b} variant="outline">
                         {b}
                       </Badge>
@@ -208,7 +594,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Libraries</p>
                   <div className="flex flex-wrap gap-2">
-                    {techStack.libraries.map((lib) => (
+                    {techStack.libraries.map(lib => (
                       <Badge key={lib} variant="outline">
                         {lib}
                       </Badge>
@@ -222,7 +608,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Analytics</p>
                   <div className="flex flex-wrap gap-2">
-                    {techStack.analytics.map((a) => (
+                    {techStack.analytics.map(a => (
                       <Badge key={a} variant="outline">
                         {a}
                       </Badge>
@@ -236,7 +622,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Marketing</p>
                   <div className="flex flex-wrap gap-2">
-                    {techStack.marketing.map((m) => (
+                    {techStack.marketing.map(m => (
                       <Badge key={m} variant="outline">
                         {m}
                       </Badge>
@@ -250,7 +636,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Headless CMS</p>
                   <div className="flex flex-wrap gap-2">
-                    {techStack.headlessCms.map((cms) => (
+                    {techStack.headlessCms.map(cms => (
                       <Badge key={cms} variant="outline">
                         {cms}
                       </Badge>
@@ -264,7 +650,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Build Tools</p>
                   <div className="flex flex-wrap gap-2">
-                    {techStack.buildTools.map((tool) => (
+                    {techStack.buildTools.map(tool => (
                       <Badge key={tool} variant="outline">
                         {tool}
                       </Badge>
@@ -279,7 +665,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
                   <p className="text-xs text-muted-foreground mb-2">CDN</p>
                   <div className="flex flex-wrap gap-2">
                     {techStack.cdn && <Badge variant="outline">{techStack.cdn}</Badge>}
-                    {techStack.cdnProviders?.map((cdn) => (
+                    {techStack.cdnProviders?.map(cdn => (
                       <Badge key={cdn} variant="outline">
                         {cdn}
                       </Badge>
@@ -295,7 +681,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
                     API Endpoints ({techStack.apiEndpoints.rest.length} gefunden)
                   </p>
                   <div className="text-xs font-mono bg-slate-100 p-2 rounded max-h-64 overflow-auto">
-                    {techStack.apiEndpoints.rest.map((url) => (
+                    {techStack.apiEndpoints.rest.map(url => (
                       <div key={url} className="truncate">
                         {url}
                       </div>
@@ -371,7 +757,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
               {integrations.analytics?.length ? (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Analytics</p>
-                  {integrations.analytics.map((a) => (
+                  {integrations.analytics.map(a => (
                     <Badge key={a} variant="outline" className="mr-1 mb-1 text-xs">
                       {a}
                     </Badge>
@@ -381,7 +767,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
               {integrations.marketing?.length ? (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Marketing</p>
-                  {integrations.marketing.map((m) => (
+                  {integrations.marketing.map(m => (
                     <Badge key={m} variant="outline" className="mr-1 mb-1 text-xs">
                       {m}
                     </Badge>
@@ -391,7 +777,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
               {integrations.payment?.length ? (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Payment</p>
-                  {integrations.payment.map((p) => (
+                  {integrations.payment.map(p => (
                     <Badge key={p} variant="outline" className="mr-1 mb-1 text-xs">
                       {p}
                     </Badge>
@@ -401,7 +787,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
               {integrations.social?.length ? (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Social</p>
-                  {integrations.social.map((s) => (
+                  {integrations.social.map(s => (
                     <Badge key={s} variant="outline" className="mr-1 mb-1 text-xs">
                       {s}
                     </Badge>
@@ -411,7 +797,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
               {integrations.other?.length ? (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Weitere</p>
-                  {integrations.other.map((o) => (
+                  {integrations.other.map(o => (
                     <Badge key={o} variant="outline" className="mr-1 mb-1 text-xs">
                       {o}
                     </Badge>
@@ -597,10 +983,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
                 <div className="flex flex-wrap gap-2">
                   <StatusBadge ok={accessibilityAudit.checks.hasAltTexts} label="Alt-Texte" />
                   <StatusBadge ok={accessibilityAudit.checks.hasAriaLabels} label="ARIA Labels" />
-                  <StatusBadge
-                    ok={accessibilityAudit.checks.hasProperHeadings}
-                    label="Headings"
-                  />
+                  <StatusBadge ok={accessibilityAudit.checks.hasProperHeadings} label="Headings" />
                   <StatusBadge ok={accessibilityAudit.checks.hasSkipLinks} label="Skip Links" />
                   <StatusBadge
                     ok={accessibilityAudit.checks.languageAttribute}
@@ -621,9 +1004,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Kein Accessibility Audit durchgeführt.
-            </p>
+            <p className="text-sm text-muted-foreground">Kein Accessibility Audit durchgeführt.</p>
           )}
         </CardContent>
       </Card>

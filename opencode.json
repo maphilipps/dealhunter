@@ -4,6 +4,13 @@
       "type": "remote",
       "url": "http://localhost:3684/mcp",
       "enabled": true
+    },
+    "vercel": {
+      "type": "remote",
+      "url": "https://mcp.vercel.com",
+      "oauth": {},
+      "enabled": true
     }
-  }
+  },
+  "$schema": "https://opencode.ai/config.json"
 }

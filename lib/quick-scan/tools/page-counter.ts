@@ -1,9 +1,13 @@
-import { chromium, type Browser } from 'playwright';
-
 /**
- * Page Counter Tool
+ * Page Counter Tool using agent-browser CLI
  * Counts pages using multiple strategies: sitemap, link discovery, navigation
  */
+
+import { openPage, closeBrowser, evaluate, createSession, wait } from '@/lib/browser';
+
+// ========================================
+// Types
+// ========================================
 
 interface PageCountResult {
   actualPageCount: number;
@@ -21,6 +25,10 @@ interface CountOptions {
   timeout?: number;
   maxPages?: number;
 }
+
+// ========================================
+// Sitemap Parsing
+// ========================================
 
 /**
  * Fetch and parse sitemap.xml
@@ -85,25 +93,27 @@ async function parseSitemap(baseUrl: string, timeout: number): Promise<string[]>
   return [...new Set(urls)]; // Deduplicate
 }
 
+// ========================================
+// Link Discovery
+// ========================================
+
 /**
- * Extract links from homepage using Playwright
+ * Discover links from homepage using agent-browser
  */
-async function discoverLinks(
-  browser: Browser,
-  baseUrl: string,
-  timeout: number
-): Promise<string[]> {
-  const page = await browser.newPage();
-  const urls: string[] = [];
+async function discoverLinks(baseUrl: string, timeout: number): Promise<string[]> {
+  const session = createSession('link-discovery');
 
   try {
-    await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout });
+    await openPage(baseUrl, session);
+    await wait(2000);
 
     const baseUrlObj = new URL(baseUrl);
     const baseDomain = baseUrlObj.hostname;
 
-    const links = await page.evaluate(domain => {
-      const discovered: string[] = [];
+    const links = await evaluate<string[]>(
+      `
+      const domain = "${baseDomain}";
+      const discovered = [];
       document.querySelectorAll('a[href]').forEach(anchor => {
         const href = anchor.getAttribute('href');
         if (!href) return;
@@ -113,10 +123,10 @@ async function discoverLinks(
           // Only internal links
           if (
             url.hostname === domain ||
-            url.hostname === `www.${domain}` ||
-            domain === `www.${url.hostname}`
+            url.hostname === 'www.' + domain ||
+            domain === 'www.' + url.hostname
           ) {
-            const cleanUrl = `${url.origin}${url.pathname}`.replace(/\/$/, '');
+            const cleanUrl = (url.origin + url.pathname).replace(/\\/$/, '');
             discovered.push(cleanUrl);
           }
         } catch {
@@ -124,34 +134,31 @@ async function discoverLinks(
         }
       });
       return discovered;
-    }, baseDomain);
+    `,
+      session
+    );
 
-    urls.push(...links);
-    await page.close();
+    await closeBrowser(session);
+    return [...new Set(links || [])];
   } catch (error) {
-    await page.close();
+    await closeBrowser(session);
     throw error;
   }
-
-  return [...new Set(urls)];
 }
 
 /**
- * Extract navigation links
+ * Extract navigation links using agent-browser
  */
-async function extractNavigationLinks(
-  browser: Browser,
-  baseUrl: string,
-  timeout: number
-): Promise<string[]> {
-  const page = await browser.newPage();
-  const urls: string[] = [];
+async function extractNavigationLinks(baseUrl: string, timeout: number): Promise<string[]> {
+  const session = createSession('nav-links');
 
   try {
-    await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout });
+    await openPage(baseUrl, session);
+    await wait(2000);
 
-    const navLinks = await page.evaluate(() => {
-      const links: string[] = [];
+    const navLinks = await evaluate<string[]>(
+      `
+      const links = [];
 
       // Main navigation
       const navSelectors = [
@@ -171,7 +178,7 @@ async function extractNavigationLinks(
           if (href && (href.startsWith('/') || href.startsWith(window.location.origin))) {
             try {
               const url = new URL(href, window.location.origin);
-              const cleanUrl = `${url.origin}${url.pathname}`.replace(/\/$/, '');
+              const cleanUrl = (url.origin + url.pathname).replace(/\\/$/, '');
               links.push(cleanUrl);
             } catch {
               // Invalid URL
@@ -188,7 +195,7 @@ async function extractNavigationLinks(
           if (href && (href.startsWith('/') || href.startsWith(window.location.origin))) {
             try {
               const url = new URL(href, window.location.origin);
-              const cleanUrl = `${url.origin}${url.pathname}`.replace(/\/$/, '');
+              const cleanUrl = (url.origin + url.pathname).replace(/\\/$/, '');
               links.push(cleanUrl);
             } catch {
               // Invalid URL
@@ -198,17 +205,21 @@ async function extractNavigationLinks(
       }
 
       return links;
-    });
+    `,
+      session
+    );
 
-    urls.push(...navLinks);
-    await page.close();
+    await closeBrowser(session);
+    return [...new Set(navLinks || [])];
   } catch (error) {
-    await page.close();
+    await closeBrowser(session);
     throw error;
   }
-
-  return [...new Set(urls)];
 }
+
+// ========================================
+// URL Categorization
+// ========================================
 
 /**
  * Categorize URLs by type based on path patterns
@@ -247,6 +258,10 @@ function categorizeUrls(urls: string[]): Record<string, number> {
   return counts;
 }
 
+// ========================================
+// Main Functions
+// ========================================
+
 /**
  * Count pages from multiple sources
  */
@@ -256,7 +271,6 @@ export async function countPages(
 ): Promise<PageCountResult> {
   const { timeout = 30000, maxPages = 10000 } = options;
 
-  let browser: Browser | null = null;
   const errors: string[] = [];
   const allUrls = new Set<string>();
 
@@ -267,61 +281,46 @@ export async function countPages(
     navigation: 0,
   };
 
+  // 1. Try sitemap first (most reliable)
   try {
-    // 1. Try sitemap first (most reliable)
-    try {
-      const sitemapUrls = await parseSitemap(fullUrl, timeout);
-      sitemapUrls.forEach(u => allUrls.add(u));
-      sources.sitemap = sitemapUrls.length;
-    } catch (error) {
-      errors.push(`Sitemap error: ${error instanceof Error ? error.message : 'Unknown'}`);
-    }
-
-    // 2. Browser-based discovery
-    browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
-    // 3. Link discovery from homepage
-    try {
-      const discoveredUrls = await discoverLinks(browser, fullUrl, timeout);
-      const newUrls = discoveredUrls.filter(u => !allUrls.has(u));
-      newUrls.forEach(u => allUrls.add(u));
-      sources.linkDiscovery = newUrls.length;
-    } catch (error) {
-      errors.push(`Link discovery error: ${error instanceof Error ? error.message : 'Unknown'}`);
-    }
-
-    // 4. Navigation links
-    try {
-      const navUrls = await extractNavigationLinks(browser, fullUrl, timeout);
-      const newUrls = navUrls.filter(u => !allUrls.has(u));
-      newUrls.forEach(u => allUrls.add(u));
-      sources.navigation = newUrls.length;
-    } catch (error) {
-      errors.push(`Navigation error: ${error instanceof Error ? error.message : 'Unknown'}`);
-    }
-
-    await browser.close();
-
-    // Limit results
-    const urls = Array.from(allUrls).slice(0, maxPages);
-    const byType = categorizeUrls(urls);
-
-    return {
-      actualPageCount: urls.length,
-      sources,
-      byType,
-      urls,
-      errors,
-    };
+    const sitemapUrls = await parseSitemap(fullUrl, timeout);
+    sitemapUrls.forEach(u => allUrls.add(u));
+    sources.sitemap = sitemapUrls.length;
   } catch (error) {
-    if (browser) {
-      await browser.close();
-    }
-    throw error;
+    errors.push(`Sitemap error: ${error instanceof Error ? error.message : 'Unknown'}`);
   }
+
+  // 2. Link discovery from homepage
+  try {
+    const discoveredUrls = await discoverLinks(fullUrl, timeout);
+    const newUrls = discoveredUrls.filter(u => !allUrls.has(u));
+    newUrls.forEach(u => allUrls.add(u));
+    sources.linkDiscovery = newUrls.length;
+  } catch (error) {
+    errors.push(`Link discovery error: ${error instanceof Error ? error.message : 'Unknown'}`);
+  }
+
+  // 3. Navigation links
+  try {
+    const navUrls = await extractNavigationLinks(fullUrl, timeout);
+    const newUrls = navUrls.filter(u => !allUrls.has(u));
+    newUrls.forEach(u => allUrls.add(u));
+    sources.navigation = newUrls.length;
+  } catch (error) {
+    errors.push(`Navigation error: ${error instanceof Error ? error.message : 'Unknown'}`);
+  }
+
+  // Limit results
+  const urls = Array.from(allUrls).slice(0, maxPages);
+  const byType = categorizeUrls(urls);
+
+  return {
+    actualPageCount: urls.length,
+    sources,
+    byType,
+    urls,
+    errors,
+  };
 }
 
 /**

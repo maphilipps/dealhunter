@@ -1106,14 +1106,16 @@ export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMa
   const baselineTechs = await loadBaselineTechnologies(input.businessUnitId);
 
   // Fallback wenn keine Technologien in der DB
+  // WICHTIG: Nur adesso-Baseline-Technologien vergleichen!
   const cmsOptions =
     baselineTechs.length > 0
       ? baselineTechs.map(t => ({ id: t.id, name: t.name, isBaseline: t.isDefault }))
       : [
           { id: 'drupal', name: 'Drupal', isBaseline: true },
-          { id: 'wordpress', name: 'WordPress', isBaseline: false },
-          { id: 'contentful', name: 'Contentful', isBaseline: false },
-          { id: 'strapi', name: 'Strapi', isBaseline: false },
+          { id: 'ibexa', name: 'Ibexa', isBaseline: true },
+          { id: 'magnolia', name: 'Magnolia', isBaseline: true },
+          { id: 'firstspirit', name: 'FirstSpirit', isBaseline: true },
+          { id: 'sulu', name: 'Sulu', isBaseline: true },
         ];
 
   // 4. Für jede Anforderung: Scores pro CMS berechnen (PARALLEL für alle CMS)

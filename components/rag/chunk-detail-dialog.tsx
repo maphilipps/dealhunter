@@ -61,9 +61,7 @@ export function ChunkDetailDialog({ chunk, open, onOpenChange }: ChunkDetailDial
               </>
             )}
           </DialogTitle>
-          <DialogDescription>
-            Chunk ID: {chunk.id}
-          </DialogDescription>
+          <DialogDescription>Chunk ID: {chunk.id}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -75,9 +73,7 @@ export function ChunkDetailDialog({ chunk, open, onOpenChange }: ChunkDetailDial
                   <Bot className="h-3 w-3 mr-1" />
                   {chunk.agentName}
                 </Badge>
-                <Badge variant="secondary">
-                  {chunk.chunkType}
-                </Badge>
+                <Badge variant="secondary">{chunk.chunkType}</Badge>
               </>
             )}
 
@@ -87,11 +83,7 @@ export function ChunkDetailDialog({ chunk, open, onOpenChange }: ChunkDetailDial
                   <Bot className="h-3 w-3 mr-1" />
                   {chunk.agentName}
                 </Badge>
-                {chunk.chunkType && (
-                  <Badge variant="secondary">
-                    {chunk.chunkType}
-                  </Badge>
-                )}
+                {chunk.chunkType && <Badge variant="secondary">{chunk.chunkType}</Badge>}
               </>
             )}
 
@@ -102,16 +94,20 @@ export function ChunkDetailDialog({ chunk, open, onOpenChange }: ChunkDetailDial
 
             {isSimilarityResult && (
               <Badge
-                variant={chunk.similarity > 0.8 ? 'default' : chunk.similarity > 0.6 ? 'secondary' : 'outline'}
+                variant={
+                  chunk.similarity > 0.8
+                    ? 'default'
+                    : chunk.similarity > 0.6
+                      ? 'secondary'
+                      : 'outline'
+                }
               >
                 Similarity: {(chunk.similarity * 100).toFixed(1)}%
               </Badge>
             )}
 
             {isRawChunk && 'tokenCount' in chunk && (
-              <Badge variant="outline">
-                {chunk.tokenCount} Tokens
-              </Badge>
+              <Badge variant="outline">{chunk.tokenCount} Tokens</Badge>
             )}
 
             {'createdAt' in chunk && chunk.createdAt && (
@@ -136,9 +132,7 @@ export function ChunkDetailDialog({ chunk, open, onOpenChange }: ChunkDetailDial
               </Button>
             </div>
             <ScrollArea className="h-64 rounded-md border p-4 bg-muted/50">
-              <pre className="text-sm whitespace-pre-wrap font-mono">
-                {chunk.content}
-              </pre>
+              <pre className="text-sm whitespace-pre-wrap font-mono">{chunk.content}</pre>
             </ScrollArea>
           </div>
 

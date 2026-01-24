@@ -26,6 +26,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 ```
 
 **Wie bei Leads**:
+
 - Links: `AppSidebar` (Hauptnavigation)
 - Mitte: Content (children - Unterseiten)
 - Rechts: `RfpSidebarRight` (RFP-spezifische Navigation)
@@ -37,6 +38,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 ### Übersicht: `/rfps/[id]`
 
 **Inhalte**:
+
 - Quick Scan Ergebnisse
 - BL Routing (falls status >= 'routed')
 - Wichtigste Facts auf einen Blick
@@ -51,6 +53,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 **Datenquelle**: `extractedData.requiredDeliverables`, RAG, `quickScan`
 
 **Inhalte**:
+
 - Timeline Card
 - Projekt-Phasen (falls im Dokument)
 - Submission Deadline (Hauptfrist)
@@ -65,6 +68,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 **Datenquelle**: `extractedData.requiredDeliverables`, `extractedData.deliverables`
 
 **Inhalte**:
+
 - Einzureichende Unterlagen (Name, Deadline, Format, Mandatory)
 - Lieferumfang (Projekt-Deliverables in Stichpunkten)
 
@@ -77,6 +81,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 **Datenquelle**: `extractedData.requiredReferences`, RAG
 
 **Inhalte**:
+
 - Geforderte Referenzen (Anzahl, Art, Zeitraum)
 - Referenz-Kriterien
 - Adesso Matching-Vorschläge (optional)
@@ -90,6 +95,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 **Datenquelle**: `extractedData.legalRequirements`, RAG
 
 **Inhalte**:
+
 - Rechtliche Anforderungen
 - Compliance-Vorgaben
 - Vertragsklauseln
@@ -104,6 +110,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 **Datenquelle**: `quickScan.techStack`, `quickScan.performanceIndicators`
 
 **Inhalte**:
+
 - Gefundene Technologien (ALLE anzeigen, kein "+13 mehr")
 - Performance Indicators
 - Tech Stack Details von HTTPX
@@ -118,6 +125,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 **Datenquelle**: `quickScan.contentVolume`, `quickScan.screenshots`
 
 **Inhalte**:
+
 - Website Facts (URL, Content Volume)
 - Screenshots (Thumbnails mit Carousel Modal)
 - SEO/Meta Informationen
@@ -131,12 +139,14 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 **Datenquelle**: `quickScan.decisionMakers`, Web Search, RAG
 
 **Inhalte**:
+
 - Entscheider & Stakeholder (Enhanced Decision Makers Card)
 - Web Search Ergebnisse (LinkedIn Profile, Xing, etc.)
 - Organisationsstruktur (falls vorhanden)
 - Ansprechpartner aus Dokument
 
 **Features**:
+
 - Web Search Integration für Kontakte
 - LinkedIn Profile Suche
 - Kontakt-Details (Name, Position, Email, Telefon)
@@ -150,6 +160,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 **Datenquelle**: `bid.status`, `quickScan`, `bitEvaluationResult`
 
 **Inhalte**:
+
 - BL Routing Card
 - 10 Questions Card
 - Quick Scan Summary
@@ -164,6 +175,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 **Datei**: `/components/bids/rfp-sidebar-right.tsx` (NEU)
 
 **Features**:
+
 - Rechte Sidebar mit Navigation zu RFP-Unterseiten
 - Active Link Highlighting (basierend auf aktueller Route)
 - Icons für jeden Bereich
@@ -171,6 +183,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 - Responsive (collapsible auf Mobile)
 
 **ShadCN Components**:
+
 - `Sidebar` (side="right")
 - `SidebarContent`
 - `SidebarGroup`, `SidebarGroupLabel`, `SidebarGroupContent`
@@ -178,17 +191,17 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 
 **Navigation Sections**:
 
-| Gruppe | Item | Icon | Route |
-|--------|------|------|-------|
-| Overview | Übersicht | LayoutDashboard | `/rfps/[id]` |
-| Details | Timing | Clock | `/rfps/[id]/timing` |
-| Details | Deliverables | FileText | `/rfps/[id]/deliverables` |
-| Details | Referenzen | Award | `/rfps/[id]/references` |
-| Details | Legal | Scale | `/rfps/[id]/legal` |
-| Analysis | Tech Stack | Code | `/rfps/[id]/tech` |
-| Analysis | Facts | Info | `/rfps/[id]/facts` |
-| Analysis | Kontakte | Users | `/rfps/[id]/contacts` |
-| Routing | BL Routing | ArrowRight | `/rfps/[id]/routing` |
+| Gruppe   | Item         | Icon            | Route                     |
+| -------- | ------------ | --------------- | ------------------------- |
+| Overview | Übersicht    | LayoutDashboard | `/rfps/[id]`              |
+| Details  | Timing       | Clock           | `/rfps/[id]/timing`       |
+| Details  | Deliverables | FileText        | `/rfps/[id]/deliverables` |
+| Details  | Referenzen   | Award           | `/rfps/[id]/references`   |
+| Details  | Legal        | Scale           | `/rfps/[id]/legal`        |
+| Analysis | Tech Stack   | Code            | `/rfps/[id]/tech`         |
+| Analysis | Facts        | Info            | `/rfps/[id]/facts`        |
+| Analysis | Kontakte     | Users           | `/rfps/[id]/contacts`     |
+| Routing  | BL Routing   | ArrowRight      | `/rfps/[id]/routing`      |
 
 ---
 
@@ -208,6 +221,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 ### Phase 2: Unterseiten erstellen
 
 **Verzeichnisstruktur**:
+
 ```
 app/(dashboard)/rfps/[id]/
 ├── layout.tsx (NEU)
@@ -225,6 +239,7 @@ app/(dashboard)/rfps/[id]/
 ### Phase 3: Übersicht bereinigen
 
 **Zu entfernen aus `/app/(dashboard)/rfps/[id]/page.tsx`**:
+
 - DeepAnalysisCard
 - BaselineComparisonCard
 - ProjectPlanningCard
@@ -233,6 +248,7 @@ app/(dashboard)/rfps/[id]/
 - Team Assignment Summary Card
 
 **Zu behalten**:
+
 - ExtractionPreview (für Status 'extracted')
 - QuickScanResults (für Status >= 'scanned')
 - BLRoutingCard (für Status >= 'routed')
@@ -241,6 +257,7 @@ app/(dashboard)/rfps/[id]/
 ### Phase 4: Screenshot Carousel
 
 **In Facts Unterseite**:
+
 - Thumbnails (max 200px width)
 - Click → Dialog öffnen
 - Dialog: Carousel mit allen Screenshots
@@ -254,23 +271,23 @@ app/(dashboard)/rfps/[id]/
 
 ### Neu zu erstellen
 
-| Datei | Beschreibung |
-|-------|--------------|
-| `/app/(dashboard)/rfps/[id]/layout.tsx` | Layout mit Sidebar Right |
-| `/components/bids/rfp-sidebar-right.tsx` | RFP Navigation Sidebar |
-| `/app/(dashboard)/rfps/[id]/timing/page.tsx` | Timing Unterseite |
-| `/app/(dashboard)/rfps/[id]/deliverables/page.tsx` | Deliverables Unterseite |
-| `/app/(dashboard)/rfps/[id]/references/page.tsx` | References Unterseite |
-| `/app/(dashboard)/rfps/[id]/legal/page.tsx` | Legal Unterseite |
-| `/app/(dashboard)/rfps/[id]/tech/page.tsx` | Tech Stack Unterseite |
-| `/app/(dashboard)/rfps/[id]/facts/page.tsx` | Facts Unterseite |
-| `/app/(dashboard)/rfps/[id]/contacts/page.tsx` | Contacts Unterseite |
-| `/app/(dashboard)/rfps/[id]/routing/page.tsx` | Routing Unterseite |
+| Datei                                              | Beschreibung             |
+| -------------------------------------------------- | ------------------------ |
+| `/app/(dashboard)/rfps/[id]/layout.tsx`            | Layout mit Sidebar Right |
+| `/components/bids/rfp-sidebar-right.tsx`           | RFP Navigation Sidebar   |
+| `/app/(dashboard)/rfps/[id]/timing/page.tsx`       | Timing Unterseite        |
+| `/app/(dashboard)/rfps/[id]/deliverables/page.tsx` | Deliverables Unterseite  |
+| `/app/(dashboard)/rfps/[id]/references/page.tsx`   | References Unterseite    |
+| `/app/(dashboard)/rfps/[id]/legal/page.tsx`        | Legal Unterseite         |
+| `/app/(dashboard)/rfps/[id]/tech/page.tsx`         | Tech Stack Unterseite    |
+| `/app/(dashboard)/rfps/[id]/facts/page.tsx`        | Facts Unterseite         |
+| `/app/(dashboard)/rfps/[id]/contacts/page.tsx`     | Contacts Unterseite      |
+| `/app/(dashboard)/rfps/[id]/routing/page.tsx`      | Routing Unterseite       |
 
 ### Zu modifizieren
 
-| Datei | Änderung |
-|-------|----------|
+| Datei                                 | Änderung                  |
+| ------------------------------------- | ------------------------- |
 | `/app/(dashboard)/rfps/[id]/page.tsx` | Bereinigen, nur Übersicht |
 
 ### Optional zu entfernen
@@ -286,6 +303,7 @@ app/(dashboard)/rfps/[id]/
 ## Verification Checklist
 
 ### UI & Navigation
+
 - [ ] 3-Sidebar Layout (AppSidebar, Content, RfpSidebarRight)
 - [ ] RFP Sidebar Right mit 9 Unterseiten-Links
 - [ ] Active Link Highlighting
@@ -293,6 +311,7 @@ app/(dashboard)/rfps/[id]/
 - [ ] Alle Unterseiten erreichbar (keine 404s)
 
 ### Unterseiten Content
+
 - [ ] Übersicht: Quick Scan, BL Routing, keine unerwünschten Cards
 - [ ] Timing: Timeline & Deadlines
 - [ ] Deliverables: Unterlagen & Lieferumfang
@@ -304,6 +323,7 @@ app/(dashboard)/rfps/[id]/
 - [ ] Routing: BL Routing & 10 Questions
 
 ### Code Quality
+
 - [ ] Keine Console Errors
 - [ ] Keine Build Errors
 - [ ] Performance OK (< 3s Page Load)

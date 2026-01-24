@@ -4,6 +4,9 @@ import { capabilityMatchSchema, type CapabilityMatch } from '../schema';
 
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
+// Security: Prompt Injection Protection
+import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
+
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -39,11 +42,13 @@ export async function runCapabilityAgent(input: CapabilityAgentInput): Promise<C
       if (cms) {
         const githubInfo = await intelligentTools.githubRepo(cms);
         if (githubInfo && !githubInfo.error) {
-          githubInsights = `\n\n**GitHub Intelligence für ${cms}:**
-- Aktuelle Version: ${githubInfo.latestVersion || 'N/A'}
+          const rawGithubData = `- Aktuelle Version: ${githubInfo.latestVersion || 'N/A'}
 - GitHub Stars: ${githubInfo.githubStars || 'N/A'}
 - Letztes Release: ${githubInfo.lastRelease || 'N/A'}
 - Lizenz: ${githubInfo.license || 'N/A'}`;
+
+          // Wrap external GitHub data for prompt injection protection
+          githubInsights = `\n\n**GitHub Intelligence für ${cms}:**\n${wrapUserContent(rawGithubData, 'web')}`;
           console.log(`[Capability Agent] GitHub Info für ${cms}: v${githubInfo.latestVersion}`);
         }
       }
@@ -56,10 +61,13 @@ export async function runCapabilityAgent(input: CapabilityAgentInput): Promise<C
       );
 
       if (techSearch && techSearch.length > 0) {
-        technologyInsights = `\n\n**Aktuelle Technologie-Insights (EXA):**\n${techSearch
+        const rawTechData = techSearch
           .slice(0, 2)
           .map(r => `- ${r.title}: ${r.snippet}`)
-          .join('\n')}`;
+          .join('\n');
+
+        // Wrap web search results for prompt injection protection
+        technologyInsights = `\n\n**Aktuelle Technologie-Insights (EXA):**\n${wrapUserContent(rawTechData, 'web')}`;
         console.log(`[Capability Agent] ${techSearch.length} Tech-Insights gefunden`);
       }
     } catch (error) {
@@ -68,7 +76,7 @@ export async function runCapabilityAgent(input: CapabilityAgentInput): Promise<C
   }
 
   const completion = await openai.chat.completions.create({
-    model: 'claude-haiku-4.5',
+    model: 'gemini-3-flash-preview',
     messages: [
       {
         role: 'system',

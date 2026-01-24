@@ -35,6 +35,8 @@ export const LEAD_PUBLIC_FIELDS = {
   customerName: leads.customerName,
   industry: leads.industry,
   budget: leads.budget,
+  websiteUrl: leads.websiteUrl,
+  projectDescription: leads.projectDescription,
   status: leads.status,
   blVote: leads.blVote,
   blConfidenceScore: leads.blConfidenceScore,
@@ -43,6 +45,8 @@ export const LEAD_PUBLIC_FIELDS = {
   createdAt: leads.createdAt,
   businessUnitId: leads.businessUnitId,
   rfpId: leads.rfpId,
+  quickScanId: leads.quickScanId,
+  selectedCmsId: leads.selectedCmsId,
 } as const;
 
 /**

@@ -1,11 +1,22 @@
-import { chromium, type Browser, type Page } from 'playwright';
+/**
+ * Navigation Crawler Tool using agent-browser CLI
+ * Crawls the full navigation structure of a website
+ */
+
+import {
+  openPage,
+  closeBrowser,
+  evaluate,
+  createSession,
+  wait,
+  type BrowserSession,
+} from '@/lib/browser';
 
 import type { SiteTree, SiteTreeNode } from '../schema';
 
-/**
- * Navigation Crawler Tool
- * Crawls the full navigation structure of a website
- */
+// ========================================
+// Types
+// ========================================
 
 interface CrawlOptions {
   maxDepth?: number;
@@ -26,10 +37,14 @@ interface CrawlResult {
   errors: string[];
 }
 
+// ========================================
+// Navigation Extraction
+// ========================================
+
 /**
- * Extract navigation structure from a page using Playwright
+ * Extract navigation structure from a page using evaluate
  */
-async function extractNavigation(page: Page): Promise<{
+async function extractNavigation(session: BrowserSession): Promise<{
   mainNav: NavItem[];
   footerNav: NavItem[];
   hasSearch: boolean;
@@ -38,9 +53,18 @@ async function extractNavigation(page: Page): Promise<{
   stickyHeader: boolean;
   mobileMenu: boolean;
 }> {
-  return page.evaluate(() => {
-    const mainNavItems: NavItem[] = [];
-    const footerNavItems: NavItem[] = [];
+  const result = await evaluate<{
+    mainNav: NavItem[];
+    footerNav: NavItem[];
+    hasSearch: boolean;
+    hasBreadcrumbs: boolean;
+    hasMegaMenu: boolean;
+    stickyHeader: boolean;
+    mobileMenu: boolean;
+  }>(
+    `
+    const mainNavItems = [];
+    const footerNavItems = [];
 
     // Extract main navigation
     const navSelectors = [
@@ -62,10 +86,10 @@ async function extractNavigation(page: Page): Promise<{
         );
         topLevelItems.forEach(item => {
           const link =
-            item.querySelector('a') || (item.tagName === 'A' ? (item as HTMLAnchorElement) : null);
+            item.querySelector('a') || (item.tagName === 'A' ? item : null);
           if (!link) return;
 
-          const navItem: NavItem = {
+          const navItem = {
             label: (link.textContent || '').trim().slice(0, 50),
             url: link.getAttribute('href') || undefined,
             children: [],
@@ -76,10 +100,9 @@ async function extractNavigation(page: Page): Promise<{
           if (subMenu) {
             const subItems = subMenu.querySelectorAll(':scope > li > a, :scope > a');
             subItems.forEach(subLink => {
-              const subAnchor = subLink as HTMLAnchorElement;
-              navItem.children!.push({
-                label: (subAnchor.textContent || '').trim().slice(0, 50),
-                url: subAnchor.getAttribute('href') || undefined,
+              navItem.children.push({
+                label: (subLink.textContent || '').trim().slice(0, 50),
+                url: subLink.getAttribute('href') || undefined,
               });
             });
           }
@@ -154,18 +177,34 @@ async function extractNavigation(page: Page): Promise<{
       stickyHeader,
       mobileMenu,
     };
-  });
+  `,
+    session
+  );
+
+  return (
+    result || {
+      mainNav: [],
+      footerNav: [],
+      hasSearch: false,
+      hasBreadcrumbs: false,
+      hasMegaMenu: false,
+      stickyHeader: false,
+      mobileMenu: false,
+    }
+  );
 }
 
 /**
  * Extract all internal links from a page
  */
-async function extractLinks(page: Page, baseUrl: string): Promise<string[]> {
+async function extractLinks(session: BrowserSession, baseUrl: string): Promise<string[]> {
   const baseUrlObj = new URL(baseUrl);
   const baseDomain = baseUrlObj.hostname;
 
-  return page.evaluate(domain => {
-    const links = new Set<string>();
+  const links = await evaluate<string[]>(
+    `
+    const domain = "${baseDomain}";
+    const links = new Set();
     document.querySelectorAll('a[href]').forEach(anchor => {
       const href = anchor.getAttribute('href');
       if (!href) return;
@@ -175,11 +214,11 @@ async function extractLinks(page: Page, baseUrl: string): Promise<string[]> {
         // Only internal links
         if (
           url.hostname === domain ||
-          url.hostname === `www.${domain}` ||
-          domain === `www.${url.hostname}`
+          url.hostname === 'www.' + domain ||
+          domain === 'www.' + url.hostname
         ) {
           // Clean URL
-          const cleanUrl = `${url.origin}${url.pathname}`.replace(/\/$/, '');
+          const cleanUrl = (url.origin + url.pathname).replace(/\\/$/, '');
           links.add(cleanUrl);
         }
       } catch {
@@ -187,8 +226,16 @@ async function extractLinks(page: Page, baseUrl: string): Promise<string[]> {
       }
     });
     return Array.from(links);
-  }, baseDomain);
+  `,
+    session
+  );
+
+  return links || [];
 }
+
+// ========================================
+// Site Tree Building
+// ========================================
 
 /**
  * Build site tree from discovered URLs
@@ -256,6 +303,10 @@ function calculateMaxDepth(nodes: SiteTreeNode[], currentDepth = 1): number {
   return maxDepth;
 }
 
+// ========================================
+// Main Functions
+// ========================================
+
 /**
  * Crawl navigation and build full site tree
  */
@@ -265,35 +316,24 @@ export async function crawlNavigation(
 ): Promise<CrawlResult> {
   const { maxDepth = 3, maxPages = 500, timeout = 30000 } = options;
 
-  let browser: Browser | null = null;
+  const session = createSession('nav-crawler');
   const errors: string[] = [];
   const discoveredUrls = new Set<string>();
   const visitedUrls = new Set<string>();
   const urlQueue: { url: string; depth: number }[] = [];
 
   try {
-    browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
-    const context = await browser.newContext({
-      viewport: { width: 1920, height: 1080 },
-      userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    });
-
-    const page = await context.newPage();
     const fullUrl = url.startsWith('http') ? url : `https://${url}`;
 
     // Initial page load
-    await page.goto(fullUrl, { waitUntil: 'networkidle', timeout });
+    await openPage(fullUrl, session);
+    await wait(3000);
 
     // Extract navigation structure
-    const navigation = await extractNavigation(page);
+    const navigation = await extractNavigation(session);
 
     // Get initial links
-    const initialLinks = await extractLinks(page, fullUrl);
+    const initialLinks = await extractLinks(session, fullUrl);
     initialLinks.forEach(link => {
       discoveredUrls.add(link);
       urlQueue.push({ url: link, depth: 1 });
@@ -326,11 +366,12 @@ export async function crawlNavigation(
       }
 
       try {
-        await page.goto(currentUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
+        await openPage(currentUrl, session);
+        await wait(1500);
         visitedUrls.add(currentUrl);
 
         if (depth < maxDepth) {
-          const links = await extractLinks(page, fullUrl);
+          const links = await extractLinks(session, fullUrl);
           links.forEach(link => {
             if (!visitedUrls.has(link) && !discoveredUrls.has(link)) {
               discoveredUrls.add(link);
@@ -345,7 +386,7 @@ export async function crawlNavigation(
       }
     }
 
-    await browser.close();
+    await closeBrowser(session);
 
     // Build site tree
     const allUrls = Array.from(discoveredUrls);
@@ -402,9 +443,7 @@ export async function crawlNavigation(
       errors,
     };
   } catch (error) {
-    if (browser) {
-      await browser.close();
-    }
+    await closeBrowser(session);
     throw error;
   }
 }
@@ -420,24 +459,17 @@ export async function quickNavigationScan(url: string): Promise<{
   hasMegaMenu: boolean;
   estimatedPages: number;
 }> {
-  let browser: Browser | null = null;
+  const session = createSession('quick-nav');
 
   try {
-    browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
     const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-    await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 20000 });
+    await openPage(fullUrl, session);
+    await wait(2000);
 
-    const navigation = await extractNavigation(page);
-    const links = await extractLinks(page, fullUrl);
+    const navigation = await extractNavigation(session);
+    const links = await extractLinks(session, fullUrl);
 
-    await browser.close();
+    await closeBrowser(session);
 
     return {
       mainNav: navigation.mainNav,
@@ -448,9 +480,7 @@ export async function quickNavigationScan(url: string): Promise<{
       estimatedPages: links.length,
     };
   } catch (error) {
-    if (browser) {
-      await browser.close();
-    }
+    await closeBrowser(session);
     throw error;
   }
 }

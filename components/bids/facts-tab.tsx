@@ -16,6 +16,10 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
+  Building2,
+  TrendingUp,
+  Star,
+  Wrench,
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -34,6 +38,7 @@ import type {
   DecisionMakersResearch,
   Screenshots,
   AccessibilityAudit,
+  CompanyIntelligence,
 } from '@/lib/quick-scan/schema';
 
 interface FactsTabProps {
@@ -72,6 +77,7 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
   const decisionMakers = safeJsonParse<DecisionMakersResearch>(quickScan.decisionMakers);
   const screenshots = safeJsonParse<Screenshots>(quickScan.screenshots);
   const accessibilityAudit = safeJsonParse<AccessibilityAudit>(quickScan.accessibilityAudit);
+  const companyIntelligence = safeJsonParse<CompanyIntelligence>(quickScan.companyIntelligence);
 
   const handleRetrigger = async () => {
     setIsRetriggering(true);
@@ -123,6 +129,277 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
           <CardDescription>Analyse von {quickScan.websiteUrl}</CardDescription>
         </CardHeader>
       </Card>
+
+      {/* Company Intelligence Cards */}
+      {companyIntelligence && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Stock Data Card (for publicly traded companies) */}
+          {companyIntelligence.stockData && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-emerald-600" />
+                  <CardTitle>Aktien & Marktdaten</CardTitle>
+                </div>
+                <CardDescription>Börsennotiertes Unternehmen</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Current Price */}
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm text-muted-foreground">Aktueller Kurs</span>
+                  <span className="text-2xl font-bold">
+                    {companyIntelligence.stockData.currentPrice?.toFixed(2)}{' '}
+                    {companyIntelligence.stockData.currency}
+                  </span>
+                </div>
+
+                {/* Price Changes */}
+                <div className="grid grid-cols-2 gap-4 pt-3 border-t">
+                  {companyIntelligence.stockData.priceChange30d != null && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">30 Tage</p>
+                      <Badge
+                        variant={
+                          companyIntelligence.stockData.priceChange30d >= 0
+                            ? 'default'
+                            : 'destructive'
+                        }
+                      >
+                        {companyIntelligence.stockData.priceChange30d >= 0 ? '+' : ''}
+                        {companyIntelligence.stockData.priceChange30d.toFixed(2)}%
+                      </Badge>
+                    </div>
+                  )}
+                  {companyIntelligence.stockData.priceChange1y != null && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">1 Jahr</p>
+                      <Badge
+                        variant={
+                          companyIntelligence.stockData.priceChange1y >= 0
+                            ? 'default'
+                            : 'destructive'
+                        }
+                      >
+                        {companyIntelligence.stockData.priceChange1y >= 0 ? '+' : ''}
+                        {companyIntelligence.stockData.priceChange1y.toFixed(2)}%
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+
+                {/* Market Cap & Exchange */}
+                <div className="pt-3 border-t space-y-2">
+                  {companyIntelligence.stockData.marketCap && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Marktkapitalisierung</span>
+                      <span className="font-medium">{companyIntelligence.stockData.marketCap}</span>
+                    </div>
+                  )}
+                  {companyIntelligence.stockData.exchange && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Börse</span>
+                      <span className="font-medium">{companyIntelligence.stockData.exchange}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Market Position Card */}
+          {companyIntelligence.marketPosition && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-violet-600" />
+                  <CardTitle>Marktposition</CardTitle>
+                </div>
+                <CardDescription>Wettbewerb & Trends</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Market Share */}
+                {companyIntelligence.marketPosition.marketShare && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Marktanteil</p>
+                    <p className="text-lg font-semibold">
+                      {companyIntelligence.marketPosition.marketShare}
+                    </p>
+                  </div>
+                )}
+
+                {/* Competitors */}
+                {companyIntelligence.marketPosition.competitors &&
+                  companyIntelligence.marketPosition.competitors.length > 0 && (
+                    <div className="pt-3 border-t">
+                      <p className="text-sm text-muted-foreground mb-2">Wettbewerber</p>
+                      <div className="flex flex-wrap gap-1">
+                        {companyIntelligence.marketPosition.competitors.map(comp => (
+                          <Badge key={comp} variant="outline">
+                            {comp}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Industry Trends */}
+                {companyIntelligence.marketPosition.industryTrends &&
+                  companyIntelligence.marketPosition.industryTrends.length > 0 && (
+                    <div className="pt-3 border-t">
+                      <p className="text-sm text-muted-foreground mb-2">Branchentrends</p>
+                      <ul className="space-y-1">
+                        {companyIntelligence.marketPosition.industryTrends.map((trend, idx) => (
+                          <li key={idx} className="text-xs text-muted-foreground">
+                            • {trend}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Digital Presence Card */}
+          {companyIntelligence.digitalPresence && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Star className="h-5 w-5 text-amber-600" />
+                  <CardTitle>Digitale Präsenz</CardTitle>
+                </div>
+                <CardDescription>Reputation & Social Media</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Employer Ratings */}
+                <div className="grid grid-cols-2 gap-4">
+                  {companyIntelligence.digitalPresence.glassdoorRating != null && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Glassdoor</p>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        <span className="font-semibold">
+                          {companyIntelligence.digitalPresence.glassdoorRating.toFixed(1)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">/5</span>
+                      </div>
+                      {companyIntelligence.digitalPresence.glassdoorReviewCount && (
+                        <p className="text-xs text-muted-foreground">
+                          {companyIntelligence.digitalPresence.glassdoorReviewCount} Reviews
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {companyIntelligence.digitalPresence.kunuRating != null && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Kununu</p>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        <span className="font-semibold">
+                          {companyIntelligence.digitalPresence.kunuRating.toFixed(1)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">/5</span>
+                      </div>
+                      {companyIntelligence.digitalPresence.kunuReviewCount && (
+                        <p className="text-xs text-muted-foreground">
+                          {companyIntelligence.digitalPresence.kunuReviewCount} Bewertungen
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Social Media Followers */}
+                {(companyIntelligence.digitalPresence.linkedInFollowers ||
+                  companyIntelligence.digitalPresence.twitterFollowers) && (
+                  <div className="pt-3 border-t grid grid-cols-2 gap-4">
+                    {companyIntelligence.digitalPresence.linkedInFollowers && (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">LinkedIn</p>
+                        <p className="font-semibold">
+                          {companyIntelligence.digitalPresence.linkedInFollowers.toLocaleString()}{' '}
+                          Follower
+                        </p>
+                      </div>
+                    )}
+                    {companyIntelligence.digitalPresence.twitterFollowers && (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Twitter/X</p>
+                        <p className="font-semibold">
+                          {companyIntelligence.digitalPresence.twitterFollowers.toLocaleString()}{' '}
+                          Follower
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Tech Footprint Card */}
+          {companyIntelligence.techFootprint && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Wrench className="h-5 w-5 text-slate-600" />
+                  <CardTitle>Tech-Footprint</CardTitle>
+                </div>
+                <CardDescription>Erkannte Business-Tools</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* CRM System */}
+                {companyIntelligence.techFootprint.crmSystem && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">CRM System</p>
+                    <Badge variant="default">{companyIntelligence.techFootprint.crmSystem}</Badge>
+                  </div>
+                )}
+
+                {/* Cloud Provider */}
+                {companyIntelligence.techFootprint.cloudProvider && (
+                  <div className="pt-3 border-t">
+                    <p className="text-sm text-muted-foreground mb-1">Cloud Provider</p>
+                    <Badge variant="secondary">
+                      {companyIntelligence.techFootprint.cloudProvider}
+                    </Badge>
+                  </div>
+                )}
+
+                {/* Marketing Tools */}
+                {companyIntelligence.techFootprint.marketingTools &&
+                  companyIntelligence.techFootprint.marketingTools.length > 0 && (
+                    <div className="pt-3 border-t">
+                      <p className="text-sm text-muted-foreground mb-2">Marketing Tools</p>
+                      <div className="flex flex-wrap gap-1">
+                        {companyIntelligence.techFootprint.marketingTools.map(tool => (
+                          <Badge key={tool} variant="outline">
+                            {tool}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Analytics Tools */}
+                {companyIntelligence.techFootprint.analyticsTools &&
+                  companyIntelligence.techFootprint.analyticsTools.length > 0 && (
+                    <div className="pt-3 border-t">
+                      <p className="text-sm text-muted-foreground mb-2">Analytics</p>
+                      <div className="flex flex-wrap gap-1">
+                        {companyIntelligence.techFootprint.analyticsTools.map(tool => (
+                          <Badge key={tool} variant="outline">
+                            {tool}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Tech Stack Card */}
       {techStack && (

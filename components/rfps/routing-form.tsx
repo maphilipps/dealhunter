@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { BusinessUnit } from '@/lib/db/schema';
-import { routeRfpToBusinessLine } from '@/lib/rfps/actions';
+import { assignBusinessUnit } from '@/lib/routing/actions';
 
 interface BLRecommendation {
   primaryBusinessLine: string;
@@ -56,15 +56,28 @@ export function RoutingForm({ rfpId, blRecommendation, allBusinessUnits }: Routi
 
     void (async () => {
       try {
-        const result = await routeRfpToBusinessLine({
-          rfpId,
-          businessLineId: selectedBL,
-          reason: reason.trim() || undefined,
-          overrideRecommendation: selectedBL !== recommendedBuId,
+        // Business Unit Name aus der Liste holen
+        const selectedBU = allBusinessUnits.find(bu => bu.id === selectedBL);
+        if (!selectedBU) {
+          setError('Business Unit nicht gefunden');
+          setIsSubmitting(false);
+          return;
+        }
+
+        const isOverriding = selectedBL !== recommendedBuId;
+        const result = await assignBusinessUnit({
+          bidId: rfpId,
+          businessLineName: selectedBU.name,
+          overrideReason: isOverriding ? reason.trim() : undefined,
         });
 
         if (result.success) {
-          router.push(`/rfps/${rfpId}`);
+          // Redirect zum Lead falls einer erstellt wurde, sonst zum RFP
+          if (result.leadId) {
+            router.push(`/leads/${result.leadId}`);
+          } else {
+            router.push(`/rfps/${rfpId}`);
+          }
           router.refresh();
         } else {
           setError(result.error || 'Fehler beim Routen des RFPs');

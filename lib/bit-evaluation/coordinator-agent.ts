@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { meetsBidThreshold } from '@/lib/config/business-rules';
+
 import {
   coordinatorOutputSchema,
   decisionNodeSchema,
@@ -380,8 +382,9 @@ export async function runCoordinatorAgent(context: {
   };
   allCriticalBlockers: string[];
 }): Promise<CoordinatorOutput> {
-  // Calculate initial recommendation
-  const shouldBit = context.scores.overall >= 55 && context.allCriticalBlockers.length === 0;
+  // Calculate initial recommendation using centralized config
+  const hasCriticalBlockers = context.allCriticalBlockers.length > 0;
+  const shouldBit = meetsBidThreshold(context.scores.overall, hasCriticalBlockers);
   const recommendation = shouldBit ? 'bit' : 'no_bit';
 
   // Build decision tree

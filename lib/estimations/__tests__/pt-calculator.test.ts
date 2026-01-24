@@ -88,9 +88,30 @@ describe('PT Estimation Calculator', () => {
     pageCountConfidence: 'medium',
     pageCountMethod: 'AI-based estimation',
     contentTypes: [
-      { name: 'Blog Post', pattern: '/blog/', estimatedCount: 200, characteristics: [] },
-      { name: 'Product Page', pattern: '/products/', estimatedCount: 150, characteristics: [] },
-      { name: 'Landing Page', pattern: '/pages/', estimatedCount: 150, characteristics: [] },
+      {
+        name: 'Blog Post',
+        pattern: '/blog/',
+        estimatedCount: 200,
+        characteristics: [],
+        migrationComplexity: 'M' as const,
+        estimatedHours: 12,
+      },
+      {
+        name: 'Product Page',
+        pattern: '/products/',
+        estimatedCount: 150,
+        characteristics: [],
+        migrationComplexity: 'H' as const,
+        estimatedHours: 20,
+      },
+      {
+        name: 'Landing Page',
+        pattern: '/pages/',
+        estimatedCount: 150,
+        characteristics: [],
+        migrationComplexity: 'L' as const,
+        estimatedHours: 6,
+      },
     ],
     navigationStructure: {
       depth: 3,
@@ -103,6 +124,14 @@ describe('PT Estimation Calculator', () => {
       videos: 50,
       documents: 30,
       totalAssets: 1080,
+    },
+    calculatorSummary: {
+      totalContentTypes: 3,
+      totalEstimatedHours: 38,
+      complexityDistribution: { H: 1, M: 1, L: 1 },
+      recommendedDrupalModules: ['paragraphs', 'media', 'pathauto'],
+      migrationRiskLevel: 'medium' as const,
+      migrationRiskFactors: ['Multiple content types'],
     },
     analyzedAt: new Date().toISOString(),
     ...overrides,
@@ -192,9 +221,30 @@ describe('PT Estimation Calculator', () => {
       // 3 content types → 3 content types, ~9 paragraphs, ~2 taxonomies, ~1 view, 5 blocks
       const contentArchitecture = createMockContentArchitecture({
         contentTypes: [
-          { name: 'Blog', pattern: '/blog/', estimatedCount: 100, characteristics: [] },
-          { name: 'Product', pattern: '/product/', estimatedCount: 50, characteristics: [] },
-          { name: 'Page', pattern: '/page/', estimatedCount: 50, characteristics: [] },
+          {
+            name: 'Blog',
+            pattern: '/blog/',
+            estimatedCount: 100,
+            characteristics: [],
+            migrationComplexity: 'M' as const,
+            estimatedHours: 10,
+          },
+          {
+            name: 'Product',
+            pattern: '/product/',
+            estimatedCount: 50,
+            characteristics: [],
+            migrationComplexity: 'M' as const,
+            estimatedHours: 10,
+          },
+          {
+            name: 'Page',
+            pattern: '/page/',
+            estimatedCount: 50,
+            characteristics: [],
+            migrationComplexity: 'M' as const,
+            estimatedHours: 10,
+          },
         ],
         navigationStructure: {
           depth: 3,
@@ -224,7 +274,9 @@ describe('PT Estimation Calculator', () => {
           name: `Type ${i + 1}`,
           pattern: `/type${i + 1}/`,
           estimatedCount: 50,
-          characteristics: [],
+          characteristics: [] as string[],
+          migrationComplexity: 'M' as const,
+          estimatedHours: 10,
         })),
       });
 
@@ -264,7 +316,9 @@ describe('PT Estimation Calculator', () => {
           name: `Type ${i + 1}`,
           pattern: `/type${i + 1}/`,
           estimatedCount: 50,
-          characteristics: [],
+          characteristics: [] as string[],
+          migrationComplexity: 'M' as const,
+          estimatedHours: 10,
         })),
         navigationStructure: {
           depth: 3,
@@ -298,7 +352,14 @@ describe('PT Estimation Calculator', () => {
 
       const contentArchitecture = createMockContentArchitecture({
         contentTypes: [
-          { name: 'Blog', pattern: '/blog/', estimatedCount: 100, characteristics: [] },
+          {
+            name: 'Blog',
+            pattern: '/blog/',
+            estimatedCount: 100,
+            characteristics: [],
+            migrationComplexity: 'M' as const,
+            estimatedHours: 10,
+          },
         ],
       });
 
@@ -340,7 +401,9 @@ describe('PT Estimation Calculator', () => {
           name: `Type ${i + 1}`,
           pattern: `/type${i + 1}/`,
           estimatedCount: 50,
-          characteristics: [],
+          characteristics: [] as string[],
+          migrationComplexity: 'M' as const,
+          estimatedHours: 10,
         })),
         navigationStructure: {
           depth: 3,
@@ -387,7 +450,9 @@ describe('PT Estimation Calculator', () => {
           name: `Type ${i + 1}`,
           pattern: `/type${i + 1}/`,
           estimatedCount: 50,
-          characteristics: [],
+          characteristics: [] as string[],
+          migrationComplexity: 'M' as const,
+          estimatedHours: 10,
         })),
       });
 
@@ -668,7 +733,9 @@ describe('PT Estimation Calculator', () => {
           name: `Type ${i + 1}`,
           pattern: `/type${i + 1}/`,
           estimatedCount: 50,
-          characteristics: [],
+          characteristics: [] as string[],
+          migrationComplexity: 'M' as const,
+          estimatedHours: 10,
         })),
       });
 
@@ -752,7 +819,9 @@ describe('PT Estimation Calculator', () => {
           name: `Type ${i + 1}`,
           pattern: `/type${i + 1}/`,
           estimatedCount: 60,
-          characteristics: [],
+          characteristics: [] as string[],
+          migrationComplexity: 'M' as const,
+          estimatedHours: 10,
         })),
         navigationStructure: {
           depth: 4,

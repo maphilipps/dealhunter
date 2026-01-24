@@ -1,16 +1,25 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Fira_Sans, Fira_Sans_Condensed, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+// adesso Corporate Typography
+const firaSans = Fira_Sans({
+  variable: '--font-fira-sans',
   subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const firaSansCondensed = Fira_Sans_Condensed({
+  variable: '--font-fira-condensed',
   subsets: ['latin'],
+  weight: ['600', '700'],
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  variable: '--font-jetbrains-mono',
+  subsets: ['latin'],
+  weight: ['400', '500'],
 });
 
 export const metadata: Metadata = {
@@ -30,7 +39,9 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://adesso-ai-hub.3asabc.de" />
         <link rel="preconnect" href="https://adesso-ai-hub.3asabc.de" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${firaSans.variable} ${firaSansCondensed.variable} ${jetBrainsMono.variable} antialiased`}
+      >
         {children}
         <Toaster />
       </body>

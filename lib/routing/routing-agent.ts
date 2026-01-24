@@ -9,21 +9,18 @@ import {
 } from './schemas';
 
 import { openai } from '@/lib/ai/providers';
+import { TECH_TO_BU_MAPPING, getBusinessUnitForTech } from '@/lib/config/business-rules';
 import { db } from '@/lib/db';
 import { businessUnits, technologies } from '@/lib/db/schema';
 
+// Security: Prompt Injection Protection
+import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
+
 /**
  * Deterministic Technology → Business Unit Mapping
- *
- * For certain technologies, we want automatic routing without AI:
- * - Ibexa → PHP
- * - FirstSpirit → WEM
+ * Now sourced from centralized config
  */
-const TECH_TO_BU_MAPPING: Record<string, string> = {
-  ibexa: 'PHP',
-  firstspirit: 'WEM',
-  'first spirit': 'WEM',
-};
+// TECH_TO_BU_MAPPING imported from @/lib/config/business-rules
 
 /**
  * Check if any detected technology has a deterministic Business Unit mapping
@@ -135,8 +132,8 @@ export async function matchBusinessLine(
       };
     }
 
-    // Build context for AI
-    const projectContext = `
+    // Build context for AI (user-provided content needs wrapping)
+    const rawProjectContext = `
 Kunde: ${input.customerName || 'Nicht angegeben'}
 Industrie: ${input.industry || 'Nicht angegeben'}
 Website: ${input.websiteUrl || 'Nicht angegeben'}
@@ -151,6 +148,9 @@ Identifizierte Technologien:
 ${input.technologies?.join(', ') || 'Keine angegeben'}
     `.trim();
 
+    // Wrap user content for prompt injection protection
+    const projectContext = wrapUserContent(rawProjectContext, 'document');
+
     const businessUnitsContext = businessUnitsData
       .map(bu =>
         `
@@ -164,7 +164,7 @@ Technologies: ${bu.technologies.join(', ') || 'Keine'}
 
     // Call AI to match business line
     const result = await generateObject({
-      model: openai('gpt-4o') as unknown as LanguageModel,
+      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: BusinessLineRoutingSchema,
       system: `Du bist ein Business Line Routing Agent für adesso SE.
 

@@ -17,6 +17,7 @@ import { generateObject, type LanguageModel } from 'ai';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { CMS_INDUSTRY_AFFINITY, getCmsAffinityScore } from '@/lib/config/business-rules';
 import type { ContentArchitectureResult } from '../agents/content-architecture-agent';
 import type { MigrationComplexityResult } from '../agents/migration-complexity-agent';
 import { openai } from '../ai/providers';
@@ -86,72 +87,9 @@ const SCORING_WEIGHTS = {
 
 /**
  * Industry-to-CMS affinity mapping (0-100 scores)
+ * Now sourced from centralized config
  */
-const INDUSTRY_AFFINITY = {
-  'Public Sector': {
-    Drupal: 90,
-    Ibexa: 70,
-    Magnolia: 50,
-    FirstSpirit: 40,
-    Sulu: 60,
-  },
-  Government: {
-    Drupal: 95,
-    Ibexa: 75,
-    Magnolia: 60,
-    FirstSpirit: 50,
-    Sulu: 55,
-  },
-  'Higher Education': {
-    Drupal: 85,
-    Ibexa: 70,
-    Magnolia: 60,
-    FirstSpirit: 65,
-    Sulu: 75,
-  },
-  Healthcare: {
-    Drupal: 80,
-    Ibexa: 85,
-    Magnolia: 70,
-    FirstSpirit: 75,
-    Sulu: 60,
-  },
-  Finance: {
-    Drupal: 70,
-    Ibexa: 80,
-    Magnolia: 85,
-    FirstSpirit: 90,
-    Sulu: 50,
-  },
-  Retail: {
-    Drupal: 75,
-    Ibexa: 70,
-    Magnolia: 65,
-    FirstSpirit: 70,
-    Sulu: 80,
-  },
-  Manufacturing: {
-    Drupal: 65,
-    Ibexa: 75,
-    Magnolia: 80,
-    FirstSpirit: 85,
-    Sulu: 55,
-  },
-  Technology: {
-    Drupal: 70,
-    Ibexa: 65,
-    Magnolia: 60,
-    FirstSpirit: 65,
-    Sulu: 85,
-  },
-  default: {
-    Drupal: 70,
-    Ibexa: 70,
-    Magnolia: 70,
-    FirstSpirit: 70,
-    Sulu: 70,
-  },
-} as Record<string, Record<string, number>>;
+const INDUSTRY_AFFINITY = CMS_INDUSTRY_AFFINITY;
 
 /**
  * Size-based CMS affinity (based on page count)
@@ -517,7 +455,7 @@ async function generateReasoning(input: GenerateReasoningInput): Promise<string>
 
   try {
     const { object } = await generateObject({
-      model: openai('claude-sonnet-4') as unknown as LanguageModel,
+      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: ReasoningSchema,
       prompt: `Generate a concise recommendation reasoning for this CMS match.
 

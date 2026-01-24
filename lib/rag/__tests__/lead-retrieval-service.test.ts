@@ -203,9 +203,9 @@ describe('lead-retrieval-service', () => {
       });
 
       expect(result).toHaveLength(2);
-      expect(result.some((r) => r.agentName === 'tech_agent')).toBe(true);
-      expect(result.some((r) => r.agentName === 'commercial_agent')).toBe(true);
-      expect(result.some((r) => r.agentName === 'risk_agent')).toBe(false);
+      expect(result.some(r => r.agentName === 'tech_agent')).toBe(true);
+      expect(result.some(r => r.agentName === 'commercial_agent')).toBe(true);
+      expect(result.some(r => r.agentName === 'risk_agent')).toBe(false);
     });
 
     it('should fallback to all results if agent filter yields no results', async () => {

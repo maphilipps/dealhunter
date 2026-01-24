@@ -96,10 +96,7 @@ describe('web-research-service', () => {
       });
 
       // Should not call Exa API
-      expect(fetchMock).not.toHaveBeenCalledWith(
-        'https://api.exa.ai/search',
-        expect.anything()
-      );
+      expect(fetchMock).not.toHaveBeenCalledWith('https://api.exa.ai/search', expect.anything());
     });
 
     it('should use Exa API when configured', async () => {

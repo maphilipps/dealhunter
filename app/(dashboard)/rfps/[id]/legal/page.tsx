@@ -1,10 +1,33 @@
-import { AlertCircle, CheckCircle2, FileText, Scale, Shield, XCircle } from 'lucide-react';
+import {
+  AlertCircle,
+  AlertTriangle,
+  Award,
+  CheckCircle2,
+  Clock,
+  FileText,
+  Gavel,
+  HelpCircle,
+  Lightbulb,
+  Scale,
+  Shield,
+  ShieldAlert,
+  XCircle,
+  XOctagon,
+} from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import { getAgentResult, type LegalRfpAnalysis } from '@/lib/agents/expert-agents';
 import { auth } from '@/lib/auth';
 import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
 import { parseJsonField } from '@/lib/utils/json';
@@ -38,6 +61,60 @@ interface ExtractedRequirements {
   certifications?: string[];
 }
 
+const categoryLabels: Record<string, string> = {
+  contract_terms: 'Vertragsbedingungen',
+  compliance: 'Compliance',
+  insurance: 'Versicherung',
+  certification: 'Zertifizierungen',
+  nda_ip: 'NDA & Geistiges Eigentum',
+  subcontracting: 'Unteraufträge',
+  payment_terms: 'Zahlungsbedingungen',
+  warranty: 'Gewährleistung & SLA',
+  data_protection: 'Datenschutz',
+  other: 'Sonstige',
+};
+
+function getRiskBadgeVariant(
+  level: 'low' | 'medium' | 'high' | 'critical'
+): 'default' | 'secondary' | 'destructive' | 'outline' {
+  switch (level) {
+    case 'critical':
+      return 'destructive';
+    case 'high':
+      return 'destructive';
+    case 'medium':
+      return 'secondary';
+    case 'low':
+      return 'default';
+  }
+}
+
+function getRiskBadgeClassName(level: 'low' | 'medium' | 'high' | 'critical'): string {
+  switch (level) {
+    case 'critical':
+      return 'bg-red-600 hover:bg-red-700';
+    case 'high':
+      return 'bg-orange-500 hover:bg-orange-600';
+    case 'medium':
+      return 'bg-yellow-500 hover:bg-yellow-600 text-black';
+    case 'low':
+      return 'bg-green-600 hover:bg-green-700';
+  }
+}
+
+function getRiskLabel(level: 'low' | 'medium' | 'high' | 'critical'): string {
+  switch (level) {
+    case 'critical':
+      return 'Kritisch';
+    case 'high':
+      return 'Hoch';
+    case 'medium':
+      return 'Mittel';
+    case 'low':
+      return 'Niedrig';
+  }
+}
+
 export default async function LegalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
@@ -47,7 +124,13 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
   }
 
   // Get RFP with relations (cached and parallelized)
-  const { rfp, quickScan } = await getCachedRfpWithRelations(id);
+  const [{ rfp, quickScan }, legalAgentRow] = await Promise.all([
+    getCachedRfpWithRelations(id),
+    getAgentResult(id, 'legal_rfp_expert'),
+  ]);
+
+  // Parse the legal agent result from metadata
+  const legalAgentResult = legalAgentRow?.metadata as LegalRfpAnalysis | null;
 
   if (!rfp) {
     notFound();
@@ -59,15 +142,25 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
   }
 
   // Parse legal compliance
-  const legalCompliance = parseJsonField<LegalCompliance | null>(
-    quickScan?.legalCompliance,
-    null
-  );
+  const legalCompliance = parseJsonField<LegalCompliance | null>(quickScan?.legalCompliance, null);
 
   // Parse extracted requirements
   const extractedReqs = parseJsonField<ExtractedRequirements | null>(
     rfp.extractedRequirements,
     null
+  );
+
+  // Group requirements by category
+  type LegalRequirement = LegalRfpAnalysis['requirements'][number];
+  const requirementsByCategory = legalAgentResult?.requirements?.reduce(
+    (acc: Record<string, LegalRequirement[]>, req: LegalRequirement) => {
+      if (!acc[req.category]) {
+        acc[req.category] = [];
+      }
+      acc[req.category].push(req);
+      return acc;
+    },
+    {} as Record<string, LegalRequirement[]>
   );
 
   return (
@@ -77,6 +170,335 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
         <h1 className="text-3xl font-bold tracking-tight">Legal & Compliance</h1>
         <p className="text-muted-foreground">Rechtliche Anforderungen und Compliance-Vorgaben</p>
       </div>
+
+      {/* Expert Agent Analysis */}
+      {legalAgentResult && (
+        <>
+          {/* Risk Overview Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5" />
+                  Risiko-Übersicht
+                </CardTitle>
+                <Badge className={getRiskBadgeClassName(legalAgentResult.overallRiskLevel)}>
+                  {getRiskLabel(legalAgentResult.overallRiskLevel)}
+                </Badge>
+              </div>
+              <CardDescription>
+                Bewertung der rechtlichen Risiken aus dem RFP-Dokument (Konfidenz:{' '}
+                {legalAgentResult.confidence}%)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="flex items-center gap-3 rounded-lg border p-4">
+                  <XOctagon className="h-8 w-8 text-red-500" />
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {legalAgentResult.dealBreakers?.length ?? 0}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Deal Breaker</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-lg border p-4">
+                  <AlertTriangle className="h-8 w-8 text-orange-500" />
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {legalAgentResult.riskFactors?.length ?? 0}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Risikofaktoren</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-lg border p-4">
+                  <Scale className="h-8 w-8 text-blue-500" />
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {legalAgentResult.requirements?.length ?? 0}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Anforderungen</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Risk Factors */}
+              {(legalAgentResult.riskFactors?.length ?? 0) > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold">Risikofaktoren</h4>
+                  <ul className="space-y-1">
+                    {legalAgentResult.riskFactors.map((factor, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+                        <span>{factor}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Deal Breakers Card - Red themed */}
+          {(legalAgentResult.dealBreakers?.length ?? 0) > 0 && (
+            <Card className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                  <XOctagon className="h-5 w-5" />
+                  Deal Breaker
+                </CardTitle>
+                <CardDescription className="text-red-600 dark:text-red-400">
+                  Kritische Punkte, die das Angebot gefährden könnten
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3">
+                  {legalAgentResult.dealBreakers.map((breaker, idx) => (
+                    <li
+                      key={idx}
+                      className="flex items-start gap-3 rounded-lg border border-red-200 bg-white p-3 dark:border-red-800 dark:bg-red-950/50"
+                    >
+                      <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+                      <span className="text-sm font-medium">{breaker}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Contract Details Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gavel className="h-5 w-5" />
+                Vertragsdetails
+              </CardTitle>
+              <CardDescription>Wichtige vertragliche Rahmenbedingungen</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                {legalAgentResult.contractDetails.contractType && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Vertragsart</p>
+                    <p className="text-sm">{legalAgentResult.contractDetails.contractType}</p>
+                  </div>
+                )}
+                {legalAgentResult.contractDetails.duration && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Laufzeit</p>
+                    <p className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4" />
+                      {legalAgentResult.contractDetails.duration}
+                    </p>
+                  </div>
+                )}
+                {legalAgentResult.contractDetails.terminationNotice && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Kündigungsfrist</p>
+                    <p className="text-sm">{legalAgentResult.contractDetails.terminationNotice}</p>
+                  </div>
+                )}
+                {legalAgentResult.contractDetails.liabilityLimit && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Haftungslimit</p>
+                    <p className="text-sm">{legalAgentResult.contractDetails.liabilityLimit}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Penalty Clauses */}
+              {legalAgentResult.contractDetails?.penaltyClauses &&
+                (legalAgentResult.contractDetails.penaltyClauses?.length ?? 0) > 0 && (
+                  <>
+                    <Separator className="my-4" />
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Vertragsstrafen</p>
+                      <ul className="space-y-2">
+                        {legalAgentResult.contractDetails.penaltyClauses.map((penalty, idx) => (
+                          <li
+                            key={idx}
+                            className="flex items-start gap-2 rounded-lg bg-orange-50 p-2 text-sm dark:bg-orange-950/30"
+                          >
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+                            <span>{penalty}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
+            </CardContent>
+          </Card>
+
+          {/* Requirements Cards - Certifications & Insurance */}
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Required Certifications */}
+            {(legalAgentResult.requiredCertifications?.length ?? 0) > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5" />
+                    Geforderte Zertifizierungen
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {legalAgentResult.requiredCertifications.map((cert, idx) => (
+                      <Badge key={idx} variant="outline" className="text-sm">
+                        {cert}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Required Insurance */}
+            {(legalAgentResult.requiredInsurance?.length ?? 0) > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Versicherungsanforderungen
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {legalAgentResult.requiredInsurance.map((insurance, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+                        <div>
+                          <p className="text-sm font-medium">{insurance.type}</p>
+                          {insurance.minAmount && (
+                            <p className="text-xs text-muted-foreground">
+                              Mindestdeckung: {insurance.minAmount}
+                            </p>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Legal Requirements Accordion by Category */}
+          {requirementsByCategory && Object.keys(requirementsByCategory).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Rechtliche Anforderungen nach Kategorie
+                </CardTitle>
+                <CardDescription>
+                  Detaillierte Aufschlüsselung aller identifizierten rechtlichen Anforderungen
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Accordion type="multiple" className="w-full">
+                  {Object.entries(requirementsByCategory).map(([category, reqs]) => (
+                    <AccordionItem key={category} value={category}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center gap-3">
+                          <span>{categoryLabels[category] || category}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {reqs.length}
+                          </Badge>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <ul className="space-y-3">
+                          {reqs.map((req, idx) => (
+                            <li key={idx} className="rounded-lg border p-3">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-sm font-medium">{req.requirement}</p>
+                                <div className="flex shrink-0 gap-2">
+                                  {req.mandatory && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      Pflicht
+                                    </Badge>
+                                  )}
+                                  <Badge
+                                    variant={getRiskBadgeVariant(req.riskLevel)}
+                                    className={`text-xs ${getRiskBadgeClassName(req.riskLevel)}`}
+                                  >
+                                    {getRiskLabel(req.riskLevel)}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <p className="mt-2 text-sm text-muted-foreground">
+                                {req.implication}
+                              </p>
+                              <p className="mt-2 text-xs text-muted-foreground italic">
+                                &ldquo;{req.rawText}&rdquo;
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Questions for Legal Card */}
+          {(legalAgentResult.questionsForLegal?.length ?? 0) > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5" />
+                  Fragen für die Rechtsabteilung
+                </CardTitle>
+                <CardDescription>
+                  Offene Punkte, die vor der Abgabe geklärt werden sollten
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ol className="space-y-2">
+                  {legalAgentResult.questionsForLegal.map((question, idx) => (
+                    <li key={idx} className="flex items-start gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                        {idx + 1}
+                      </span>
+                      <span className="text-sm">{question}</span>
+                    </li>
+                  ))}
+                </ol>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recommendations Card */}
+          {(legalAgentResult.recommendations?.length ?? 0) > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5" />
+                  Empfehlungen
+                </CardTitle>
+                <CardDescription>Handlungsempfehlungen für die Angebotsabgabe</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {legalAgentResult.recommendations.map((rec, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+                      <span className="text-sm">{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          <Separator />
+          <h2 className="text-xl font-semibold">Website-Compliance (Quick Scan)</h2>
+        </>
+      )}
 
       {/* Legal Compliance Score */}
       {legalCompliance && (
@@ -132,7 +554,9 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
                   {legalCompliance.gdprIndicators.cookieConsentTool && (
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <span>Cookie-Consent Tool: {legalCompliance.gdprIndicators.cookieConsentTool}</span>
+                      <span>
+                        Cookie-Consent Tool: {legalCompliance.gdprIndicators.cookieConsentTool}
+                      </span>
                     </div>
                   )}
                   {legalCompliance.gdprIndicators.analyticsCompliant && (
@@ -280,7 +704,8 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
       )}
 
       {/* No Data Available */}
-      {!legalCompliance &&
+      {!legalAgentResult &&
+        !legalCompliance &&
         !extractedReqs?.legalRequirements &&
         !extractedReqs?.complianceRequirements &&
         !extractedReqs?.contractualClauses &&
@@ -290,8 +715,8 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Keine rechtlichen Informationen verfügbar</AlertTitle>
             <AlertDescription>
-              Der Quick Scan muss zuerst durchgeführt werden, bevor rechtliche Informationen und
-              Compliance-Analysen verfügbar sind.
+              Der Quick Scan oder die Expertenanalyse muss zuerst durchgeführt werden, bevor
+              rechtliche Informationen und Compliance-Analysen verfügbar sind.
             </AlertDescription>
           </Alert>
         )}

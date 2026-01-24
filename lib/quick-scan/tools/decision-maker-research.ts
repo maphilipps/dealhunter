@@ -136,29 +136,19 @@ async function extractPeopleFromPage(
   }>
 > {
   try {
-    const result = await generateStructuredOutput<
-      z.ZodObject<{
-        people: z.ZodArray<
-          z.ZodObject<{
-            name: z.ZodString;
-            role: z.ZodString;
-            email: z.ZodOptional<z.ZodString>;
-            linkedInUrl: z.ZodOptional<z.ZodString>;
-            phone: z.ZodOptional<z.ZodString>;
-          }>
-        >;
-      }>
-    >({
+    const result = await generateStructuredOutput({
       schema: z.object({
-        people: z.array(
-          z.object({
-            name: z.string().describe('Vollständiger Name der Person'),
-            role: z.string().describe('Position/Rolle in der Firma'),
-            email: z.string().optional().describe('E-Mail-Adresse wenn gefunden'),
-            linkedInUrl: z.string().optional().describe('LinkedIn URL wenn gefunden'),
-            phone: z.string().optional().describe('Telefonnummer wenn gefunden'),
-          })
-        ),
+        people: z
+          .array(
+            z.object({
+              name: z.string().optional().default('Unbekannt'),
+              role: z.string().optional().default('Unbekannt'),
+              email: z.string().optional(),
+              linkedInUrl: z.string().optional(),
+              phone: z.string().optional(),
+            })
+          )
+          .default([]),
       }),
       system: `Du bist ein Experte für die Extraktion von Kontaktinformationen aus Webseiten.
 

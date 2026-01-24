@@ -15,10 +15,15 @@
 import { eq } from 'drizzle-orm';
 
 import { analyzeComponents } from '@/lib/agents/component-library-agent';
+import { runCostsAgent } from '@/lib/agents/costs-agent';
+import { runCustomerResearchAgent } from '@/lib/agents/customer-research-agent';
+import { runDecisionAgent } from '@/lib/agents/decision-agent';
+import { runHostingAgent } from '@/lib/agents/hosting-agent';
+import { runIntegrationsAgent } from '@/lib/agents/integrations-agent';
 import { runLegalCheckAgent } from '@/lib/agents/legal-check-agent';
 import { runReferencesAgent } from '@/lib/agents/references-agent';
 import { db } from '@/lib/db';
-import { leads, leadSectionData, rfpEmbeddings } from '@/lib/db/schema';
+import { leads, leadSectionData, dealEmbeddings } from '@/lib/db/schema';
 import { LEAD_NAVIGATION_SECTIONS } from '@/lib/leads/navigation-config';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -76,12 +81,22 @@ export type SectionAgent = (
  */
 const AGENT_REGISTRY: Record<string, SectionAgent> = {
   overview: async (leadId, rfpId) => {
-    // TODO: Implement OverviewAgent (DEA-147+)
-    return Promise.resolve({
-      content: { summary: 'Overview analysis placeholder', leadId, rfpId },
-      confidence: 50,
-      sources: [],
-    });
+    // DEA-140 Phase 2.1: Customer Research Agent
+    const result = await runCustomerResearchAgent(leadId, rfpId);
+    return {
+      content: {
+        companyProfile: result.companyProfile,
+        decisionMakers: result.decisionMakers,
+        itLandscape: result.itLandscape,
+        news: result.news,
+        summary: result.summary,
+        recommendedApproach: result.recommendedApproach,
+        leadId,
+        rfpId,
+      },
+      confidence: result.confidence,
+      sources: result.dataSources,
+    };
   },
 
   technology: async (leadId, rfpId) => {
@@ -155,21 +170,39 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
   },
 
   hosting: async (leadId, rfpId) => {
-    // TODO: Implement HostingAgent
-    return Promise.resolve({
-      content: { currentInfra: null, recommendation: null, leadId, rfpId },
-      confidence: 50,
+    // Phase 2.4: Hosting Agent with Azure recommendations
+    const result = await runHostingAgent(leadId, rfpId);
+    return {
+      content: {
+        currentInfrastructure: result.currentInfrastructure,
+        recommendation: result.recommendation,
+        alternatives: result.alternatives,
+        requirements: result.requirements,
+        migrationRisk: result.migrationRisk,
+        leadId,
+        rfpId,
+      },
+      confidence: result.confidence,
       sources: [],
-    });
+    };
   },
 
   integrations: async (leadId, rfpId) => {
-    // TODO: Implement IntegrationsAgent
-    return Promise.resolve({
-      content: { integrations: [], systemLandscape: null, leadId, rfpId },
-      confidence: 50,
+    // Phase 2.5: Integrations Agent with system landscape
+    const result = await runIntegrationsAgent(leadId, rfpId);
+    return {
+      content: {
+        integrations: result.integrations,
+        systemLandscape: result.systemLandscape,
+        summary: result.summary,
+        integrationRisks: result.integrationRisks,
+        recommendations: result.recommendations,
+        leadId,
+        rfpId,
+      },
+      confidence: result.confidence,
       sources: [],
-    });
+    };
   },
 
   migration: async (leadId, rfpId) => {
@@ -230,21 +263,42 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
   },
 
   costs: async (leadId, rfpId) => {
-    // TODO: Implement CostAgent
-    return Promise.resolve({
-      content: { budget: null, features: [], roi: null, leadId, rfpId },
-      confidence: 50,
+    // Phase 2.3: Costs Agent with PT Calculator integration
+    const result = await runCostsAgent(leadId, rfpId);
+    return {
+      content: {
+        totalHours: result.totalHours,
+        totalPT: result.totalPT,
+        totalCost: result.totalCost,
+        costBreakdown: result.costBreakdown,
+        budgetFit: result.budgetFit,
+        featureCosts: result.featureCosts,
+        roi: result.roi,
+        assumptions: result.assumptions,
+        leadId,
+        rfpId,
+      },
+      confidence: result.confidence,
       sources: [],
-    });
+    };
   },
 
   decision: async (leadId, rfpId) => {
-    // TODO: Implement DecisionAgent (aggregates all other sections)
-    return Promise.resolve({
-      content: { recommendation: null, pros: [], cons: [], leadId, rfpId },
-      confidence: 50,
+    // DEA-152 Phase 2.2: Decision Agent with BID/NO-BID aggregation
+    const result = await runDecisionAgent(leadId, rfpId);
+    return {
+      content: {
+        recommendation: result.recommendation,
+        confidenceScore: result.confidenceScore,
+        executiveSummary: result.executiveSummary,
+        categories: result.categories,
+        reasoning: result.reasoning,
+        leadId,
+        rfpId,
+      },
+      confidence: result.confidenceScore,
       sources: [],
-    });
+    };
   },
 };
 
@@ -296,7 +350,7 @@ async function executeSectionAgent(
     const chunksWithEmbeddings = await generateRawChunkEmbeddings(chunks);
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
-      await db.insert(rfpEmbeddings).values({
+      await db.insert(dealEmbeddings).values({
         rfpId,
         agentName: `deep-scan-${sectionId}`,
         chunkType: 'analysis',

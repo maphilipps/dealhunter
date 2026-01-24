@@ -132,7 +132,7 @@ export async function analyzeMigrationComplexity(
 
     // Use AI to analyze complexity
     const { object: analysis } = await generateObject({
-      model: openai('claude-sonnet-4') as unknown as LanguageModel,
+      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: MigrationComplexityAnalysisSchema,
       prompt: `Analyze the migration complexity for the following website migration.
 

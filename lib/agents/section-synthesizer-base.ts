@@ -110,7 +110,7 @@ export abstract class SectionSynthesizerBase {
     temperature = 0.3
   ): Promise<string> {
     const result = await generateText({
-      model: openai('gpt-4o-2024-11-20'),
+      model: openai('gemini-3-flash-preview'),
       temperature,
       maxRetries: 2,
       system: systemPrompt,

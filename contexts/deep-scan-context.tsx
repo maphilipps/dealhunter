@@ -53,7 +53,7 @@ export interface DeepScanContextValue {
 const EXPERT_TO_SECTION_MAP: Record<string, string> = {
   'Tech Expert': 'technology',
   'Website Expert': 'website-analysis',
-  'Architecture Expert': 'cms-architecture',
+  'Architecture Expert': 'target-architecture',
   'Hosting Expert': 'hosting',
   'Integrations Expert': 'integrations',
   'Migration Expert': 'migration',

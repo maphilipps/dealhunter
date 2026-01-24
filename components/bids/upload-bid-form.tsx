@@ -149,7 +149,7 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
         }
 
         toast.success(message);
-        router.push(`/rfps/${result.bidId}`);
+        router.push(`/pre-qualifications/${result.bidId}`);
       } else {
         toast.error(result.error || 'Upload fehlgeschlagen');
       }

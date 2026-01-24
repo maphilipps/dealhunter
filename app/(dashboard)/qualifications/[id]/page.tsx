@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
-import { AuditStatusBadge } from '@/components/leads/audit-status-badge';
-import { CustomerDeepDive } from '@/components/leads/customer-deep-dive';
-import { ExecutiveSummaryCard } from '@/components/leads/executive-summary-card';
-import { LeadOverviewClient } from '@/components/leads/lead-overview-client';
+import { AuditStatusBadge } from '@/components/qualifications/audit-status-badge';
+import { CustomerDeepDive } from '@/components/qualifications/customer-deep-dive';
+import { ExecutiveSummaryCard } from '@/components/qualifications/executive-summary-card';
+import { LeadOverviewClient } from '@/components/qualifications/qualification-overview-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,8 +23,8 @@ import {
   PT_ESTIMATION_PUBLIC_FIELDS,
 } from '@/lib/db/projections';
 import {
-  leads,
-  rfps,
+  qualifications,
+  preQualifications,
   businessUnits,
   websiteAudits,
   cmsMatchResults,
@@ -37,7 +37,11 @@ import {
 // Cached function for fetching lead with all related data in parallel
 const getLeadWithDetails = cache(async (id: string) => {
   // Phase 1: Fetch lead first (dependency root) - only select public fields
-  const [lead] = await db.select(LEAD_PUBLIC_FIELDS).from(leads).where(eq(leads.id, id)).limit(1);
+  const [lead] = await db
+    .select(LEAD_PUBLIC_FIELDS)
+    .from(qualifications)
+    .where(eq(qualifications.id, id))
+    .limit(1);
 
   if (!lead) {
     return null;
@@ -46,12 +50,12 @@ const getLeadWithDetails = cache(async (id: string) => {
   // Phase 2: Parallel fetch for all independent queries - select only needed fields
   const [rfp, businessUnit, websiteAudit, cmsMatches, ptEstimation, refMatches] = await Promise.all(
     [
-      // Get related RFP (depends on lead.rfpId) - only public fields
-      lead.rfpId
+      // Get related RFP (depends on lead.preQualificationId) - only public fields
+      lead.preQualificationId
         ? db
             .select(RFP_PUBLIC_FIELDS)
-            .from(rfps)
-            .where(eq(rfps.id, lead.rfpId))
+            .from(preQualifications)
+            .where(eq(preQualifications.id, lead.preQualificationId))
             .limit(1)
             .then(r => r[0])
         : Promise.resolve(null),
@@ -68,7 +72,7 @@ const getLeadWithDetails = cache(async (id: string) => {
       db
         .select(WEBSITE_AUDIT_PUBLIC_FIELDS)
         .from(websiteAudits)
-        .where(eq(websiteAudits.leadId, id))
+        .where(eq(websiteAudits.qualificationId, id))
         .limit(1)
         .then(r => r[0]),
 
@@ -80,7 +84,7 @@ const getLeadWithDetails = cache(async (id: string) => {
         })
         .from(cmsMatchResults)
         .leftJoin(technologies, eq(cmsMatchResults.technologyId, technologies.id))
-        .where(eq(cmsMatchResults.leadId, id))
+        .where(eq(cmsMatchResults.qualificationId, id))
         .orderBy(desc(cmsMatchResults.rank))
         .limit(3),
 
@@ -88,7 +92,7 @@ const getLeadWithDetails = cache(async (id: string) => {
       db
         .select(PT_ESTIMATION_PUBLIC_FIELDS)
         .from(ptEstimations)
-        .where(eq(ptEstimations.leadId, id))
+        .where(eq(ptEstimations.qualificationId, id))
         .limit(1)
         .then(r => r[0]),
 
@@ -100,7 +104,7 @@ const getLeadWithDetails = cache(async (id: string) => {
         })
         .from(referenceMatches)
         .leftJoin(references, eq(referenceMatches.referenceId, references.id))
-        .where(eq(referenceMatches.leadId, id))
+        .where(eq(referenceMatches.qualificationId, id))
         .orderBy(desc(referenceMatches.rank))
         .limit(5),
     ]
@@ -262,7 +266,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
                 </div>
 
                 <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link href={`/leads/${id}/website-audit`}>Details ansehen</Link>
+                  <Link href={`/qualifications/${id}/website-audit`}>Details ansehen</Link>
                 </Button>
               </>
             ) : websiteAudit?.status === 'running' ? (
@@ -325,7 +329,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
                 )}
 
                 <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link href={`/leads/${id}/estimation`}>Details ansehen</Link>
+                  <Link href={`/qualifications/${id}/estimation`}>Details ansehen</Link>
                 </Button>
               </>
             ) : (
@@ -374,7 +378,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
                 ))}
 
                 <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link href={`/leads/${id}/cms-recommendation`}>Alle Details</Link>
+                  <Link href={`/qualifications/${id}/cms-recommendation`}>Alle Details</Link>
                 </Button>
               </>
             ) : (
@@ -418,7 +422,9 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
                 ))}
 
                 <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link href={`/leads/${id}/references`}>Alle {refMatches.length} ansehen</Link>
+                  <Link href={`/qualifications/${id}/references`}>
+                    Alle {refMatches.length} ansehen
+                  </Link>
                 </Button>
               </>
             ) : (
@@ -477,7 +483,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link href={`/leads/${id}/decision`}>Entscheidung treffen</Link>
+              <Link href={`/qualifications/${id}/decision`}>Entscheidung treffen</Link>
             </Button>
           </CardContent>
         </Card>
@@ -492,11 +498,11 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
         <CardContent>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" asChild>
-              <Link href={`/leads/${id}/quick-scan`}>Quick Scan ansehen</Link>
+              <Link href={`/qualifications/${id}/quick-scan`}>Quick Scan ansehen</Link>
             </Button>
             {rfp && (
               <Button variant="outline" asChild>
-                <Link href={`/rfps/${rfp.id}`}>Ursprüngliches RFP</Link>
+                <Link href={`/pre-qualifications/${rfp.id}`}>Ursprüngliches RFP</Link>
               </Button>
             )}
           </div>

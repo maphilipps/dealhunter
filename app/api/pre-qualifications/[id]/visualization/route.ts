@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, quickScans } from '@/lib/db/schema';
+import { preQualifications, quickScans } from '@/lib/db/schema';
 import { generateQuickScanVisualization } from '@/lib/json-render/visualization-agent';
 import type { QuickScanResult } from '@/lib/quick-scan/agent';
 
@@ -18,7 +18,7 @@ const visualizationRequestSchema = z.object({
 export const runtime = 'nodejs';
 
 /**
- * GET /api/rfps/[id]/visualization
+ * GET /api/pre-qualifications/[id]/visualization
  * Get cached visualization or return null
  */
 export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -36,8 +36,8 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     // Get bid and verify ownership
     const [bid] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, bidId), eq(rfps.userId, session.user.id)));
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, bidId), eq(preQualifications.userId, session.user.id)));
 
     if (!bid || !bid.quickScanId) {
       return new Response(JSON.stringify({ tree: null }), {
@@ -74,7 +74,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
 }
 
 /**
- * POST /api/rfps/[id]/visualization
+ * POST /api/pre-qualifications/[id]/visualization
  * Generate and cache a json-render visualization tree from Quick Scan results
  */
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -105,8 +105,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     // Get bid and verify ownership
     const [bid] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, bidId), eq(rfps.userId, session.user.id)));
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, bidId), eq(preQualifications.userId, session.user.id)));
 
     if (!bid) {
       return new Response(JSON.stringify({ error: 'Bid not found' }), {

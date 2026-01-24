@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 import { runExpertAgents } from '@/lib/agents/expert-agents';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, quickScans } from '@/lib/db/schema';
+import { preQualifications, quickScans } from '@/lib/db/schema';
 import { runQuickScanWithStreaming } from '@/lib/quick-scan/agent';
 import { embedAgentOutput } from '@/lib/rag/embedding-service';
 import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
@@ -36,8 +36,8 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     // 2. Fetch bid data and verify ownership
     const [bid] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, id), eq(rfps.userId, session.user.id)));
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, id), eq(preQualifications.userId, session.user.id)));
 
     if (!bid) {
       return new Response(JSON.stringify({ error: 'Not found' }), {

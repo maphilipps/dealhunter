@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { synthesizeSectionData } from '@/lib/agents/section-synthesizer-agent';
 import type { JsonRenderTree } from '@/lib/agents/section-synthesizer-agent';
 import { auth } from '@/lib/auth';
-import { getRAGQueryTemplate } from '@/lib/leads/navigation-config';
+import { getRAGQueryTemplate } from '@/lib/qualifications/navigation-config';
 import { calculateConfidenceScore, queryRagForLead } from '@/lib/rag/lead-retrieval-service';
 import type { SectionQueryResult } from '@/lib/rag/lead-retrieval-service';
 
@@ -16,7 +16,7 @@ export interface SynthesizedSectionResult extends SectionQueryResult {
 }
 
 /**
- * GET /api/leads/[id]/sections/[sectionId]
+ * GET /api/qualifications/[id]/sections/[sectionId]
  *
  * Fetch RAG data for a specific lead section and synthesize into visualization
  *
@@ -38,7 +38,9 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const rawMode = searchParams.get('raw') === 'true';
 
-    console.error(`[Section API] GET /leads/${leadId}/sections/${sectionId} (raw=${rawMode})`);
+    console.error(
+      `[Section API] GET /qualifications/${leadId}/sections/${sectionId} (raw=${rawMode})`
+    );
 
     // Get RAG query template for this section
     const template = getRAGQueryTemplate(sectionId);
@@ -58,7 +60,7 @@ export async function GET(
 
     // Query RAG
     const results = await queryRagForLead({
-      leadId,
+      qualificationId: leadId,
       sectionId,
       question: template,
       maxResults: 10,

@@ -6,7 +6,7 @@
  * Shows complexity badges and hours per feature.
  */
 
-import { CalcSheetFeaturesTable } from '@/components/leads/calc-sheet-client';
+import { CalcSheetFeaturesTable } from '@/components/qualifications/calc-sheet-client';
 
 interface CalcSheetFeaturesPageProps {
   params: Promise<{ id: string }>;

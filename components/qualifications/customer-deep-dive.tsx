@@ -118,7 +118,7 @@ export function CustomerDeepDive({ leadId, quickScanId }: CustomerDeepDiveProps)
   const [isExpanded, setIsExpanded] = useState(true);
 
   const { data, error, isLoading, mutate } = useSWR<ApiResponse>(
-    quickScanId ? `/api/leads/${leadId}/quick-scan-data` : null,
+    quickScanId ? `/api/qualifications/${leadId}/quick-scan-data` : null,
     fetcher,
     {
       revalidateOnFocus: false,

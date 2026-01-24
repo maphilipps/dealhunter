@@ -3,14 +3,14 @@ import { NextRequest } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, quickScans } from '@/lib/db/schema';
+import { preQualifications, quickScans } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { generateFactsVisualizationWithAI } from '@/lib/json-render/visualization-agent';
 
 export const runtime = 'nodejs';
 
 /**
- * GET /api/rfps/[id]/facts-visualization
+ * GET /api/pre-qualifications/[id]/facts-visualization
  * Generate Facts Tab visualization from QuickScan and ExtractedData
  */
 export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -28,8 +28,8 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     // Get bid and verify ownership
     const [bid] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, bidId), eq(rfps.userId, session.user.id)));
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, bidId), eq(preQualifications.userId, session.user.id)));
 
     if (!bid) {
       return new Response(JSON.stringify({ error: 'Bid not found' }), {

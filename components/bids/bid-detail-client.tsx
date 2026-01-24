@@ -33,18 +33,18 @@ import {
 } from '@/lib/bids/ten-questions';
 import { getBitEvaluationResult, retriggerBitEvaluation } from '@/lib/bit-evaluation/actions';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
-import type { BidOpportunity, QuickScan } from '@/lib/db/schema';
+import type { PreQualification, QuickScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { startQuickScan, getQuickScanResult, retriggerQuickScan } from '@/lib/quick-scan/actions';
 
 interface BidDetailClientProps {
-  bid: BidOpportunity;
+  bid: PreQualification;
 }
 
 export function BidDetailClient({ bid }: BidDetailClientProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const isOverviewPage = pathname === `/rfps/${bid.id}`;
+  const isOverviewPage = pathname === `/pre-qualifications/${bid.id}`;
   const [isExtracting, setIsExtracting] = useState(bid.status === 'extracting');
   const [extractedData, setExtractedData] = useState<ExtractedRequirements | null>(
     bid.extractedRequirements
@@ -400,7 +400,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 max-w-full overflow-hidden">
         <div className="space-y-6 min-w-0">
           <ActivityStream
-            streamUrl={`/api/rfps/${bid.id}/extraction/stream`}
+            streamUrl={`/api/pre-qualifications/${bid.id}/extraction/stream`}
             title="AI-Extraktion"
             onComplete={() => {
               toast.success('Extraktion abgeschlossen!');
@@ -595,7 +595,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
                         Die BID/NO-BID Entscheidung wird vom Bereichsleiter nach dem Routing
                         getroffen.
                       </p>
-                      <Link href={`/rfps/${bid.id}/routing`}>
+                      <Link href={`/pre-qualifications/${bid.id}/routing`}>
                         <Button className="w-full bg-indigo-600 hover:bg-indigo-700">
                           <ArrowRight className="h-4 w-4 mr-2" />
                           Timeline & BL-Routing
@@ -610,7 +610,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           {/* BIT Evaluation Progress (evaluating status) */}
           {bid.status === 'evaluating' && (
             <ActivityStream
-              streamUrl={`/api/rfps/${bid.id}/evaluate/stream`}
+              streamUrl={`/api/pre-qualifications/${bid.id}/evaluate/stream`}
               title="BIT/NO BIT Evaluierung"
               onComplete={() => {
                 toast.success('BIT Evaluierung abgeschlossen!');

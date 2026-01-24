@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import { auth } from '@/lib/auth';
 import type { CMSMatchingResult } from '@/lib/cms-matching/schema';
-import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
+import { getCachedRfpWithRelations } from '@/lib/pre-qualifications/cached-queries';
 
 function getPriorityBadgeVariant(priority: string): 'default' | 'secondary' | 'outline' {
   switch (priority) {

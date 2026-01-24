@@ -15,7 +15,7 @@ export interface LeadNavigationSection {
   id: string;
   label: string;
   icon: string; // Lucide icon name
-  route: string; // Relative to /leads/[id]/
+  route: string; // Relative to /qualifications/[id]/
   ragQueryTemplate?: string; // Template for RAG queries
   synthesizerAgent?: string; // Agent name for content synthesis
   collapsed?: boolean; // If true, renders as collapsible group
@@ -25,7 +25,7 @@ export interface LeadNavigationSection {
 export interface LeadNavigationSubSection {
   id: string;
   label: string;
-  route: string; // Relative to /leads/[id]/
+  route: string; // Relative to /qualifications/[id]/
   ragQueryTemplate?: string;
   synthesizerAgent?: string;
 }
@@ -48,7 +48,7 @@ export interface LeadNavigationSubSection {
  * 12. Costs & Budget - Cost estimation
  * 13. BID/NO-BID Decision - Final decision page
  */
-export const LEAD_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
+export const QUALIFICATION_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
   {
     id: 'overview',
     label: 'Übersicht',
@@ -392,7 +392,7 @@ export const LEAD_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
 
 /**
  * Get a section or subsection by its route
- * @param route - Route path (relative to /leads/[id]/)
+ * @param route - Route path (relative to /qualifications/[id]/)
  * @returns LeadNavigationSection or LeadNavigationSubSection or undefined
  */
 export function getSectionByRoute(
@@ -402,14 +402,14 @@ export function getSectionByRoute(
   const normalizedRoute = route.replace(/^\/+|\/+$/g, '');
 
   // Search top-level sections
-  const section = LEAD_NAVIGATION_SECTIONS.find(s => {
+  const section = QUALIFICATION_NAVIGATION_SECTIONS.find(s => {
     const sectionRoute = s.route.replace(/^\/+|\/+$/g, '');
     return sectionRoute === normalizedRoute;
   });
   if (section) return section;
 
   // Search subsections
-  for (const s of LEAD_NAVIGATION_SECTIONS) {
+  for (const s of QUALIFICATION_NAVIGATION_SECTIONS) {
     if (s.subsections) {
       const subsection = s.subsections.find(sub => {
         const subRoute = sub.route.replace(/^\/+|\/+$/g, '');
@@ -431,11 +431,11 @@ export function getSectionById(
   id: string
 ): LeadNavigationSection | LeadNavigationSubSection | undefined {
   // Search top-level sections
-  const section = LEAD_NAVIGATION_SECTIONS.find(s => s.id === id);
+  const section = QUALIFICATION_NAVIGATION_SECTIONS.find(s => s.id === id);
   if (section) return section;
 
   // Search subsections
-  for (const s of LEAD_NAVIGATION_SECTIONS) {
+  for (const s of QUALIFICATION_NAVIGATION_SECTIONS) {
     if (s.subsections) {
       const subsection = s.subsections.find(sub => sub.id === id);
       if (subsection) return subsection;
@@ -450,7 +450,7 @@ export function getSectionById(
  * @returns Array of all navigation sections
  */
 export function getAllSections(): LeadNavigationSection[] {
-  return LEAD_NAVIGATION_SECTIONS;
+  return QUALIFICATION_NAVIGATION_SECTIONS;
 }
 
 /**
@@ -458,12 +458,12 @@ export function getAllSections(): LeadNavigationSection[] {
  * @returns Array of section IDs
  */
 export function getAllSectionIds(): string[] {
-  return LEAD_NAVIGATION_SECTIONS.map(section => section.id);
+  return QUALIFICATION_NAVIGATION_SECTIONS.map(section => section.id);
 }
 
 /**
  * Check if a route is a valid lead section route
- * @param route - Route path (relative to /leads/[id]/)
+ * @param route - Route path (relative to /qualifications/[id]/)
  * @returns boolean
  */
 export function isValidSectionRoute(route: string): boolean {
@@ -475,7 +475,7 @@ export function getRAGQueryTemplate(sectionId: string): string | undefined {
   if (!section) return undefined;
 
   if (!section.ragQueryTemplate && 'route' in section) {
-    const parent = LEAD_NAVIGATION_SECTIONS.find(s =>
+    const parent = QUALIFICATION_NAVIGATION_SECTIONS.find(s =>
       s.subsections?.some(sub => sub.id === section.id)
     );
     if (parent?.ragQueryTemplate) {

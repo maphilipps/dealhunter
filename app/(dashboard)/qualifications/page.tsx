@@ -2,7 +2,7 @@ import { Eye } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { LeadsEmptyStateClient } from '@/components/leads/leads-empty-state-client';
+import { LeadsEmptyStateClient } from '@/components/qualifications/qualifications-empty-state-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { auth } from '@/lib/auth';
-import { getLeads } from '@/lib/leads/actions';
+import { getLeads } from '@/lib/qualifications/actions';
 
 export default async function LeadsPage() {
   const session = await auth();
@@ -24,9 +24,9 @@ export default async function LeadsPage() {
     redirect('/login');
   }
 
-  // Redirect BD users to RFPs page - they work with RFPs, not leads
+  // Redirect BD users to Pre-Qualifications page - they work with Pre-Qualifications, not leads
   if (session.user.role === 'bd') {
-    redirect('/rfps');
+    redirect('/pre-qualifications');
   }
 
   const result = await getLeads();
@@ -129,7 +129,7 @@ export default async function LeadsPage() {
                           : '-'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/leads/${lead.id}`}>
+                      <Link href={`/qualifications/${lead.id}`}>
                         <Button variant="ghost" size="sm">
                           <Eye className="h-4 w-4" />
                         </Button>

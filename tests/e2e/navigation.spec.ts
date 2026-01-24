@@ -58,7 +58,7 @@ test.describe('Navigation: Sidebar Links', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify navigation
-    await expect(page).toHaveURL('/rfps');
+    await expect(page).toHaveURL('/pre-qualifications');
   });
 
   test('TC-1.4: RFPs → Neuer RFP navigates correctly', async ({ page }) => {
@@ -71,7 +71,7 @@ test.describe('Navigation: Sidebar Links', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify navigation
-    await expect(page).toHaveURL('/rfps/new');
+    await expect(page).toHaveURL('/pre-qualifications/new');
   });
 
   test('TC-1.5: Accounts Link navigates correctly', async ({ page }) => {
@@ -225,8 +225,8 @@ test.describe('Navigation: Sidebar Links', () => {
       await quickActions.click();
       await page.waitForLoadState('networkidle');
 
-      // Should navigate to /rfps/new
-      await expect(page).toHaveURL('/rfps/new');
+      // Should navigate to /pre-qualifications/new
+      await expect(page).toHaveURL('/pre-qualifications/new');
     }
   });
 });
@@ -296,7 +296,7 @@ test.describe('Navigation: Breadcrumbs', () => {
 
   test('TC-2.4: Active Page disabled in Breadcrumb', async ({ page }) => {
     // Navigate to RFPs
-    await page.goto('/rfps');
+    await page.goto('/pre-qualifications');
     await page.waitForLoadState('networkidle');
 
     // Check breadcrumb

@@ -153,13 +153,13 @@ function cosineSimilarity(a: number[], b: number[]): number {
 
 // Query RAG for lead data using vector similarity search
 export async function queryLeadRag(
-  leadId: string,
+  qualificationId: string,
   query: string,
   agentFilter?: string,
   maxResults = 10
 ): Promise<{ content: string; metadata: unknown; similarity?: number }[]> {
   console.log(
-    `[RAG] queryLeadRag called: leadId=${leadId}, query="${query.slice(0, 50)}...", filter=${agentFilter || 'none'}`
+    `[RAG] queryLeadRag called: qualificationId=${qualificationId}, query="${query.slice(0, 50)}...", filter=${agentFilter || 'none'}`
   );
 
   // Generate embedding for the query
@@ -171,8 +171,11 @@ export async function queryLeadRag(
 
   // Build where condition
   const baseCondition = agentFilter
-    ? and(eq(dealEmbeddings.leadId, leadId), like(dealEmbeddings.agentName, `%${agentFilter}%`))
-    : eq(dealEmbeddings.leadId, leadId);
+    ? and(
+        eq(dealEmbeddings.qualificationId, qualificationId),
+        like(dealEmbeddings.agentName, `%${agentFilter}%`)
+      )
+    : eq(dealEmbeddings.qualificationId, qualificationId);
 
   // If we have a query embedding, do vector search
   if (queryEmbedding) {
@@ -186,7 +189,9 @@ export async function queryLeadRag(
       .from(dealEmbeddings)
       .where(and(baseCondition, isNotNull(dealEmbeddings.embedding)));
 
-    console.log(`[RAG] Found ${candidates.length} candidates with embeddings for lead ${leadId}`);
+    console.log(
+      `[RAG] Found ${candidates.length} candidates with embeddings for lead ${qualificationId}`
+    );
 
     // Calculate similarity scores and sort
     const scored = candidates
@@ -305,7 +310,7 @@ function convertToReadableText(data: unknown, indent = 0): string {
 
 // Store agent output with sections - stores BOTH JSON and readable text
 export async function storeAuditAgentOutput(
-  leadId: string,
+  qualificationId: string,
   agentName: string,
   output: AuditAgentOutput
 ): Promise<void> {
@@ -357,7 +362,7 @@ export async function storeAuditAgentOutput(
 
   // Store main output as FULL TEXT (for RAG search)
   await db.insert(dealEmbeddings).values({
-    leadId,
+    qualificationId,
     agentName,
     chunkType: 'audit_output_text',
     content: fullTextContent,
@@ -371,7 +376,7 @@ export async function storeAuditAgentOutput(
 
   // Store main output as JSON (for structured access) - includes visualizations
   await db.insert(dealEmbeddings).values({
-    leadId,
+    qualificationId,
     agentName,
     chunkType: 'audit_output_json',
     content: JSON.stringify(outputWithVisualizations, null, 2),
@@ -407,7 +412,7 @@ export async function storeAuditAgentOutput(
 
     // Store section as TEXT
     await db.insert(dealEmbeddings).values({
-      leadId,
+      qualificationId,
       agentName,
       chunkType: 'audit_section_text',
       chunkIndex: i,
@@ -427,7 +432,7 @@ export async function storeAuditAgentOutput(
         : JSON.stringify(section.content, null, 2);
 
     await db.insert(dealEmbeddings).values({
-      leadId,
+      qualificationId,
       agentName,
       chunkType: 'audit_section_json',
       chunkIndex: i,
@@ -443,7 +448,7 @@ export async function storeAuditAgentOutput(
 }
 
 // Get all audit navigation for a lead (deprecated - use navigation.ts)
-async function getAuditNavigationLegacy(leadId: string): Promise<
+async function getAuditNavigationLegacy(qualificationId: string): Promise<
   {
     category: string;
     title: string;
@@ -454,7 +459,10 @@ async function getAuditNavigationLegacy(leadId: string): Promise<
     .select({ metadata: dealEmbeddings.metadata })
     .from(dealEmbeddings)
     .where(
-      and(eq(dealEmbeddings.leadId, leadId), eq(dealEmbeddings.chunkType, 'audit_output_json'))
+      and(
+        eq(dealEmbeddings.qualificationId, qualificationId),
+        eq(dealEmbeddings.chunkType, 'audit_output_json')
+      )
     );
 
   const navigation: Map<string, { title: string; items: { slug: string; title: string }[] }> =
@@ -476,7 +484,7 @@ async function getAuditNavigationLegacy(leadId: string): Promise<
 
 // Get a specific section (returns JSON for UI rendering)
 export async function getAuditSection(
-  leadId: string,
+  qualificationId: string,
   category: string,
   slug: string
 ): Promise<AuditSection | null> {
@@ -487,7 +495,10 @@ export async function getAuditSection(
     })
     .from(dealEmbeddings)
     .where(
-      and(eq(dealEmbeddings.leadId, leadId), eq(dealEmbeddings.chunkType, 'audit_section_json'))
+      and(
+        eq(dealEmbeddings.qualificationId, qualificationId),
+        eq(dealEmbeddings.chunkType, 'audit_section_json')
+      )
     );
 
   for (const row of results) {
@@ -507,11 +518,16 @@ export async function getAuditSection(
 }
 
 // Get all text content for RAG queries (for LLM context)
-export async function getAllAuditText(leadId: string): Promise<string[]> {
+export async function getAllAuditText(qualificationId: string): Promise<string[]> {
   const results = await db
     .select({ content: dealEmbeddings.content })
     .from(dealEmbeddings)
-    .where(and(eq(dealEmbeddings.leadId, leadId), like(dealEmbeddings.chunkType, 'audit_%_text')));
+    .where(
+      and(
+        eq(dealEmbeddings.qualificationId, qualificationId),
+        like(dealEmbeddings.chunkType, 'audit_%_text')
+      )
+    );
 
   return results.map(r => r.content);
 }

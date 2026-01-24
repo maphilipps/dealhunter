@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, websiteAudits, businessUnits, rfps } from '@/lib/db/schema';
+import { qualifications, websiteAudits, businessUnits, preQualifications } from '@/lib/db/schema';
 
 interface ContentType {
   type?: string;
@@ -46,7 +46,7 @@ export default async function QuickScanResultsPage({
   }
 
   // Get lead with related data
-  const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+  const [lead] = await db.select().from(qualifications).where(eq(qualifications.id, id)).limit(1);
 
   if (!lead) {
     return (
@@ -58,13 +58,21 @@ export default async function QuickScanResultsPage({
   }
 
   // Get related RFP for decision makers
-  const [rfp] = lead.rfpId
-    ? await db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1)
+  const [rfp] = lead.preQualificationId
+    ? await db
+        .select()
+        .from(preQualifications)
+        .where(eq(preQualifications.id, lead.preQualificationId))
+        .limit(1)
     : [null];
 
   // Get website audit data
   const [audit] = lead.websiteUrl
-    ? await db.select().from(websiteAudits).where(eq(websiteAudits.leadId, lead.id)).limit(1)
+    ? await db
+        .select()
+        .from(websiteAudits)
+        .where(eq(websiteAudits.qualificationId, lead.id))
+        .limit(1)
     : [null];
 
   // Get business unit
@@ -100,7 +108,7 @@ export default async function QuickScanResultsPage({
       <div>
         <div className="flex items-center gap-2">
           <Link
-            href={`/leads/${id}`}
+            href={`/qualifications/${id}`}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             {lead.customerName}
@@ -401,7 +409,7 @@ export default async function QuickScanResultsPage({
               </p>
               <div className="mt-4">
                 <Button asChild>
-                  <Link href={`/leads/${id}`}>Lead bearbeiten</Link>
+                  <Link href={`/qualifications/${id}`}>Lead bearbeiten</Link>
                 </Button>
               </div>
             </div>
@@ -449,10 +457,10 @@ export default async function QuickScanResultsPage({
       {/* Actions */}
       <div className="flex gap-2">
         <Button asChild variant="outline">
-          <Link href={`/leads/${id}`}>Zurück zur Übersicht</Link>
+          <Link href={`/qualifications/${id}`}>Zurück zur Übersicht</Link>
         </Button>
         <Button asChild>
-          <Link href={`/leads/${id}/website-audit`}>Website Audit ansehen</Link>
+          <Link href={`/qualifications/${id}/website-audit`}>Website Audit ansehen</Link>
         </Button>
       </div>
     </div>

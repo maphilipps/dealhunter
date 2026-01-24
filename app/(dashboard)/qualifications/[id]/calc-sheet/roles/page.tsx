@@ -5,7 +5,7 @@
  * Displays role cards with FTE allocation and responsibilities.
  */
 
-import { CalcSheetRolesTable } from '@/components/leads/calc-sheet-client';
+import { CalcSheetRolesTable } from '@/components/qualifications/calc-sheet-client';
 
 interface CalcSheetRolesPageProps {
   params: Promise<{ id: string }>;

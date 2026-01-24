@@ -1,5 +1,5 @@
 import { runDeliverablesAgent } from './deliverables-agent';
-import { runLegalRfpAgent } from './legal-rfp-agent';
+import { runLegalRfpAgent } from './legal-pre-qualification-agent';
 import { runSummaryAgent } from './summary-agent';
 import { runTechStackAgent } from './techstack-agent';
 import { runTimingAgent } from './timing-agent';

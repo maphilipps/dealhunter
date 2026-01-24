@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads } from '@/lib/db/schema';
+import { qualifications } from '@/lib/db/schema';
 import { getAuditSection, getAuditNavigation } from '@/lib/deep-scan/experts';
 
 // Type guard for json-render tree validation
@@ -37,9 +37,9 @@ export default async function AuditSectionPage({
 
   // Verify lead exists
   const [lead] = await db
-    .select({ id: leads.id, customerName: leads.customerName })
-    .from(leads)
-    .where(eq(leads.id, id))
+    .select({ id: qualifications.id, customerName: qualifications.customerName })
+    .from(qualifications)
+    .where(eq(qualifications.id, id))
     .limit(1);
 
   if (!lead) {
@@ -62,7 +62,7 @@ export default async function AuditSectionPage({
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" asChild>
-            <Link href={`/leads/${id}/audit`}>
+            <Link href={`/qualifications/${id}/audit`}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Zurück
             </Link>
@@ -76,7 +76,7 @@ export default async function AuditSectionPage({
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {categoryNav.items.map(item => (
             <Card key={item.slug} className="hover:border-primary transition-colors">
-              <Link href={`/leads/${id}/audit/${category}/${item.slug}`}>
+              <Link href={`/qualifications/${id}/audit/${category}/${item.slug}`}>
                 <CardHeader>
                   <CardTitle className="text-lg">{item.title}</CardTitle>
                 </CardHeader>
@@ -109,7 +109,7 @@ export default async function AuditSectionPage({
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link href={`/leads/${id}/audit/${category}`}>
+          <Link href={`/qualifications/${id}/audit/${category}`}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Zurück
           </Link>

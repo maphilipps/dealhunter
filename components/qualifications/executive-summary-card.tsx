@@ -186,7 +186,7 @@ export function ExecutiveSummaryCard({
 
   // SWR for automatic caching and deduplication (client-swr-dedup)
   const { data, error, isLoading, mutate } = useSWR<SectionApiResponse>(
-    `/api/leads/${leadId}/sections/overview`,
+    `/api/qualifications/${leadId}/sections/overview`,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -360,13 +360,15 @@ export function ExecutiveSummaryCard({
         {/* Quick Actions */}
         <div className="flex items-center gap-2 pt-2 border-t">
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/leads/${leadId}/decision`}>
+            <Link href={`/qualifications/${leadId}/decision`}>
               <FileText className="mr-2 h-4 w-4" />
               Zur Entscheidung
             </Link>
           </Button>
           <Button variant="ghost" size="sm" asChild>
-            <Link href={`/leads/${leadId}/zusammenfassung`}>Detaillierte Zusammenfassung</Link>
+            <Link href={`/qualifications/${leadId}/zusammenfassung`}>
+              Detaillierte Zusammenfassung
+            </Link>
           </Button>
         </div>
       </CardContent>

@@ -117,7 +117,7 @@ export function CMSComparisonView({
   const { data, error, isLoading, mutate } = useSWR<
     { data: CMSComparisonData | null; status: string; message?: string },
     Error
-  >(`/api/leads/${leadId}/cms-advocates`, fetcher, {
+  >(`/api/qualifications/${leadId}/cms-advocates`, fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 30000,
   });
@@ -125,7 +125,7 @@ export function CMSComparisonView({
   const runAdvocateAnalysis = useCallback(async () => {
     setIsRunning(true);
     try {
-      const response = await fetch(`/api/leads/${leadId}/cms-advocates/run`, {
+      const response = await fetch(`/api/qualifications/${leadId}/cms-advocates/run`, {
         method: 'POST',
       });
       if (!response.ok) throw new Error('Failed to run analysis');
@@ -182,7 +182,7 @@ export function CMSComparisonView({
             Die AI empfiehlt <strong>{comparisonData.summary.recommendedCMS}</strong>. Bitte wählen
             Sie das CMS für dieses Projekt aus, um fortzufahren.
             <Button variant="link" className="p-0 h-auto ml-2" asChild>
-              <Link href={`/leads/${leadId}/decision`}>Zur Entscheidung</Link>
+              <Link href={`/qualifications/${leadId}/decision`}>Zur Entscheidung</Link>
             </Button>
           </AlertDescription>
         </Alert>

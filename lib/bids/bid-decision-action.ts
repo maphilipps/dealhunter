@@ -5,7 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
+import { preQualifications } from '@/lib/db/schema';
 import { handleBidDecision } from '@/lib/workflow/orchestrator';
 
 /**
@@ -33,8 +33,8 @@ export async function makeBidDecision(
     // 1. Fetch RFP and verify ownership
     const [rfp] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, rfpId), eq(rfps.userId, session.user.id)));
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, rfpId), eq(preQualifications.userId, session.user.id)));
 
     if (!rfp) {
       return { success: false, error: 'RFP nicht gefunden' };
@@ -59,7 +59,7 @@ export async function makeBidDecision(
     // 4. Create audit log
     await createAuditLog({
       action: 'bid_override', // Using existing enum value
-      entityType: 'rfp',
+      entityType: 'pre_qualification',
       entityId: rfpId,
       previousValue: 'pending',
       newValue: decision,

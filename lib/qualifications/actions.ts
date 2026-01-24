@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, leads, businessUnits } from '@/lib/db/schema';
+import { preQualifications, qualifications, businessUnits } from '@/lib/db/schema';
 
 export interface ConvertRfpToLeadInput {
   rfpId: string;
@@ -64,14 +64,14 @@ export async function getLeads() {
 
     if (session.user.role === 'admin') {
       // Admin sees all leads
-      userLeads = await db.select().from(leads).orderBy(desc(leads.createdAt));
+      userLeads = await db.select().from(qualifications).orderBy(desc(qualifications.createdAt));
     } else if (session.user.role === 'bl' && user.businessUnitId) {
       // BL sees only their BU leads
       userLeads = await db
         .select()
-        .from(leads)
-        .where(eq(leads.businessUnitId, user.businessUnitId))
-        .orderBy(desc(leads.createdAt));
+        .from(qualifications)
+        .where(eq(qualifications.businessUnitId, user.businessUnitId))
+        .orderBy(desc(qualifications.createdAt));
     } else {
       // BD role should work with RFPs, not leads
       return { success: true, leads: [] };
@@ -105,7 +105,11 @@ export async function convertRfpToLead(
     }
 
     // Get RFP
-    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);
+    const [rfp] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, rfpId))
+      .limit(1);
 
     if (!rfp) {
       return {
@@ -167,7 +171,11 @@ export async function convertRfpToLead(
     }
 
     // Check if lead already exists for this RFP
-    const existingLead = await db.select().from(leads).where(eq(leads.rfpId, rfpId)).limit(1);
+    const existingLead = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.preQualificationId, rfpId))
+      .limit(1);
 
     if (existingLead.length > 0) {
       return {
@@ -190,9 +198,9 @@ export async function convertRfpToLead(
 
     // Create Lead
     const [newLead] = await db
-      .insert(leads)
+      .insert(qualifications)
       .values({
-        rfpId: rfp.id,
+        preQualificationId: rfp.id,
         status: 'routed',
         customerName: (extractedReqs.customerName as string | undefined) || 'Unbekannter Kunde',
         websiteUrl: rfp.websiteUrl || websiteUrl,
@@ -212,7 +220,7 @@ export async function convertRfpToLead(
     // Create audit trail
     await createAuditLog({
       action: 'create',
-      entityType: 'rfp',
+      entityType: 'pre_qualification',
       entityId: rfpId,
       previousValue: null,
       newValue: JSON.stringify({
@@ -224,8 +232,8 @@ export async function convertRfpToLead(
     });
 
     // Revalidate cache
-    revalidatePath(`/rfps/${rfpId}`);
-    revalidatePath('/rfps');
+    revalidatePath(`/pre-qualifications/${rfpId}`);
+    revalidatePath('/pre-qualifications');
     revalidatePath('/leads');
 
     return {
@@ -304,7 +312,11 @@ export async function submitBLDecision(input: BLDecisionInput): Promise<BLDecisi
     const { leadId, vote, confidenceScore, reasoning } = validationResult.data;
 
     // Get lead
-    const [lead] = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, leadId))
+      .limit(1);
 
     if (!lead) {
       return {
@@ -334,7 +346,7 @@ export async function submitBLDecision(input: BLDecisionInput): Promise<BLDecisi
 
     // Update lead with decision
     await db
-      .update(leads)
+      .update(qualifications)
       .set({
         blVote: vote,
         blConfidenceScore: confidenceScore,
@@ -344,12 +356,12 @@ export async function submitBLDecision(input: BLDecisionInput): Promise<BLDecisi
         status: newStatus,
         updatedAt: new Date(),
       })
-      .where(eq(leads.id, leadId));
+      .where(eq(qualifications.id, leadId));
 
     // Create audit trail
     await createAuditLog({
       action: 'update',
-      entityType: 'rfp',
+      entityType: 'qualification',
       entityId: leadId,
       previousValue: JSON.stringify({
         status: lead.status,
@@ -375,8 +387,8 @@ export async function submitBLDecision(input: BLDecisionInput): Promise<BLDecisi
     }
 
     // Revalidate cache
-    revalidatePath(`/leads/${leadId}`);
-    revalidatePath(`/leads/${leadId}/decision`);
+    revalidatePath(`/qualifications/${leadId}`);
+    revalidatePath(`/qualifications/${leadId}/decision`);
     revalidatePath('/leads');
 
     return {
@@ -416,26 +428,30 @@ export async function updateLeadWebsiteUrl(
     }
 
     // Verify lead exists
-    const [lead] = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, leadId))
+      .limit(1);
     if (!lead) {
       return { success: false, error: 'Lead nicht gefunden' };
     }
 
     // Update website URL
-    await db.update(leads).set({ websiteUrl }).where(eq(leads.id, leadId));
+    await db.update(qualifications).set({ websiteUrl }).where(eq(qualifications.id, leadId));
 
     // Create audit log
     await createAuditLog({
       action: 'update',
-      entityType: 'lead',
+      entityType: 'qualification',
       entityId: leadId,
       previousValue: JSON.stringify({ websiteUrl: lead.websiteUrl }),
       newValue: JSON.stringify({ websiteUrl }),
       reason: 'Website URL aktualisiert',
     });
 
-    revalidatePath(`/leads/${leadId}`);
-    revalidatePath(`/leads/${leadId}/audit`);
+    revalidatePath(`/qualifications/${leadId}`);
+    revalidatePath(`/qualifications/${leadId}/audit`);
 
     return { success: true };
   } catch (error) {
@@ -500,7 +516,11 @@ async function checkAuditDirectoryExists(domain: string): Promise<string | null>
 export async function getAuditStatus(leadId: string): Promise<AuditStatus> {
   try {
     // Get lead
-    const [lead] = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, leadId))
+      .limit(1);
 
     if (!lead) {
       return {
@@ -632,9 +652,9 @@ export async function checkAndIngestAuditData(leadId: string): Promise<IngestAud
     }
 
     // Revalidate the lead page to show updated audit status
-    revalidatePath(`/leads/${leadId}`);
-    revalidatePath(`/leads/${leadId}/audit`);
-    revalidatePath(`/leads/${leadId}/rag-data`);
+    revalidatePath(`/qualifications/${leadId}`);
+    revalidatePath(`/qualifications/${leadId}/audit`);
+    revalidatePath(`/qualifications/${leadId}/rag-data`);
 
     return {
       success: true,

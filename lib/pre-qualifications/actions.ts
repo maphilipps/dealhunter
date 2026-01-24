@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, quickScans } from '@/lib/db/schema';
+import { preQualifications, quickScans } from '@/lib/db/schema';
 
 interface ReloadTimelineResult {
   success: boolean;
@@ -27,7 +27,11 @@ export async function reloadTimeline(rfpId: string): Promise<ReloadTimelineResul
     }
 
     // Get RFP and verify ownership
-    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);
+    const [rfp] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, rfpId))
+      .limit(1);
 
     if (!rfp) {
       return { success: false, error: 'RFP nicht gefunden' };
@@ -101,8 +105,8 @@ export async function reloadTimeline(rfpId: string): Promise<ReloadTimelineResul
     }
 
     // Revalidate the routing page
-    revalidatePath(`/rfps/${rfpId}/routing`);
-    revalidatePath(`/rfps/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${rfpId}/routing`);
+    revalidatePath(`/pre-qualifications/${rfpId}`);
 
     return { success: true };
   } catch (error) {

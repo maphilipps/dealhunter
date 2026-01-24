@@ -61,8 +61,10 @@ export function SectionPageTemplate({
     setError(null);
 
     try {
-      console.log(`[SectionPageTemplate] Fetching /api/leads/${leadId}/sections/${sectionId}`);
-      const response = await fetch(`/api/leads/${leadId}/sections/${sectionId}`);
+      console.log(
+        `[SectionPageTemplate] Fetching /api/qualifications/${leadId}/sections/${sectionId}`
+      );
+      const response = await fetch(`/api/qualifications/${leadId}/sections/${sectionId}`);
 
       if (!response.ok) {
         const errorText = await response.text();

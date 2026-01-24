@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 import type { SectionQueryResult } from '@/lib/rag/lead-retrieval-service';
 
 /**
- * POST /api/leads/[id]/sections/[sectionId]/research
+ * POST /api/qualifications/[id]/sections/[sectionId]/research
  *
  * Trigger web research for a section to enrich RAG data
  *

@@ -12,7 +12,7 @@ import { QuickStats } from '@/components/bids/quick-stats';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface BidOpportunity {
+interface PreQualificationItem {
   id: string;
   status: string;
   decision: string;
@@ -33,7 +33,7 @@ interface Stats {
 }
 
 interface DashboardData {
-  opportunities: BidOpportunity[];
+  opportunities: PreQualificationItem[];
   stats: Stats;
 }
 
@@ -88,7 +88,7 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">AI-powered BD decision platform</p>
         </div>
         <Button asChild>
-          <Link href="/rfps/new">
+          <Link href="/pre-qualifications/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             New RFP
           </Link>

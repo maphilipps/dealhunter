@@ -3,13 +3,13 @@ import { NextRequest } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, deepMigrationAnalyses } from '@/lib/db/schema';
+import { preQualifications, deepMigrationAnalyses } from '@/lib/db/schema';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/rfps/[id]/deep-analysis/results
+ * GET /api/pre-qualifications/[id]/deep-analysis/results
  *
  * Retrieves the completed analysis results for a bid opportunity.
  *
@@ -43,8 +43,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     // Once userId is added to deepMigrationAnalyses, this can be simplified
     const [bid] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, id), eq(rfps.userId, session.user.id)))
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, id), eq(preQualifications.userId, session.user.id)))
       .limit(1);
 
     if (!bid) {
@@ -59,7 +59,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       .select()
       .from(deepMigrationAnalyses)
       .where(
-        and(eq(deepMigrationAnalyses.rfpId, id), eq(deepMigrationAnalyses.status, 'completed'))
+        and(
+          eq(deepMigrationAnalyses.preQualificationId, id),
+          eq(deepMigrationAnalyses.status, 'completed')
+        )
       )
       .orderBy(desc(deepMigrationAnalyses.createdAt))
       .limit(1);

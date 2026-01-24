@@ -105,7 +105,7 @@ export function DeepScanProvider({ children }: DeepScanProviderProps) {
   // Start deep scan for the lead
   const startDeepScan = useCallback(
     (scanLeadId: string) => {
-      const url = `/api/leads/${scanLeadId}/deep-scan/stream`;
+      const url = `/api/qualifications/${scanLeadId}/deep-scan/stream`;
       stream.start(url);
     },
     [stream]

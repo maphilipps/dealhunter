@@ -5,7 +5,7 @@ import { runDuplicateCheckAgent } from '@/lib/bids/duplicate-check-agent';
 import { extractedRequirementsSchema } from '@/lib/extraction/schema';
 
 /**
- * POST /api/rfps/duplicate-check
+ * POST /api/pre-qualifications/duplicate-check
  *
  * Check for duplicate RFPs using AI-powered duplicate detection
  */

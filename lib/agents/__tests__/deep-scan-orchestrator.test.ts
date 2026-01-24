@@ -6,7 +6,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { LEAD_NAVIGATION_SECTIONS } from '@/lib/leads/navigation-config';
+import { QUALIFICATION_NAVIGATION_SECTIONS } from '@/lib/qualifications/navigation-config';
 
 // Mock RAG services
 vi.mock('@/lib/rag/raw-embedding-service', () => ({
@@ -25,9 +25,9 @@ describe('deep-scan-orchestrator', () => {
   describe('runDeepScan', () => {
     it('should execute all 14 agents in parallel', () => {
       // This test requires actual DB setup
-      // Validates that all sections from LEAD_NAVIGATION_SECTIONS are processed
+      // Validates that all sections from QUALIFICATION_NAVIGATION_SECTIONS are processed
 
-      expect(LEAD_NAVIGATION_SECTIONS).toHaveLength(14);
+      expect(QUALIFICATION_NAVIGATION_SECTIONS).toHaveLength(14);
 
       // Each section should have:
       // - id
@@ -35,7 +35,7 @@ describe('deep-scan-orchestrator', () => {
       // - RAG query template (optional)
       // - Synthesizer agent (optional)
 
-      LEAD_NAVIGATION_SECTIONS.forEach(section => {
+      QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
         expect(section.id).toBeTruthy();
         expect(section.label).toBeTruthy();
         expect(section.route).toBeDefined();
@@ -123,7 +123,7 @@ describe('deep-scan-orchestrator', () => {
 
     it('should aggregate section results from leadSectionData', () => {
       // Validates that progress includes all section results
-      const mockSectionResults = LEAD_NAVIGATION_SECTIONS.map(section => ({
+      const mockSectionResults = QUALIFICATION_NAVIGATION_SECTIONS.map(section => ({
         sectionId: section.id,
         sectionLabel: section.label,
         status: 'success' as const,
@@ -161,7 +161,7 @@ describe('deep-scan-orchestrator', () => {
       ];
 
       expectedSections.forEach(sectionId => {
-        const section = LEAD_NAVIGATION_SECTIONS.find(s => s.id === sectionId);
+        const section = QUALIFICATION_NAVIGATION_SECTIONS.find(s => s.id === sectionId);
         expect(section).toBeTruthy();
       });
     });

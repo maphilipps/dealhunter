@@ -5,7 +5,7 @@
  * Grouped by phase with role assignments and hours.
  */
 
-import { CalcSheetTasksTable } from '@/components/leads/calc-sheet-client';
+import { CalcSheetTasksTable } from '@/components/qualifications/calc-sheet-client';
 
 interface CalcSheetTasksPageProps {
   params: Promise<{ id: string }>;

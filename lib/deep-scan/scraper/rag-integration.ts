@@ -108,7 +108,7 @@ function structureToText(page: ScrapedPage): string {
  * Embed a single scraped page into the lead embeddings table
  * Stores FULL content with chunking for large pages
  */
-export async function embedScrapedPage(leadId: string, page: ScrapedPage): Promise<void> {
+export async function embedScrapedPage(qualificationId: string, page: ScrapedPage): Promise<void> {
   // ═══════════════════════════════════════════════════════════════
   // 1. STORE FULL PAGE TEXT (chunked if necessary)
   // ═══════════════════════════════════════════════════════════════
@@ -138,7 +138,7 @@ ${page.text}`;
     const withEmbeddings = await generateRawChunkEmbeddings(chunks);
 
     await db.insert(dealEmbeddings).values({
-      leadId,
+      qualificationId,
       agentName: 'scraper',
       chunkType: 'page_text',
       chunkIndex: i,
@@ -176,7 +176,7 @@ ${page.text}`;
     const structEmbeddings = await generateRawChunkEmbeddings(structChunks);
 
     await db.insert(dealEmbeddings).values({
-      leadId,
+      qualificationId,
       agentName: 'scraper',
       chunkType: 'page_structure_text',
       chunkIndex: 0,
@@ -190,7 +190,7 @@ ${page.text}`;
   // 3. STORE STRUCTURE AS JSON (for programmatic access)
   // ═══════════════════════════════════════════════════════════════
   await db.insert(dealEmbeddings).values({
-    leadId,
+    qualificationId,
     agentName: 'scraper',
     chunkType: 'page_structure_json',
     chunkIndex: 0,
@@ -207,7 +207,7 @@ ${page.text}`;
       .join('\n');
 
     await db.insert(dealEmbeddings).values({
-      leadId,
+      qualificationId,
       agentName: 'scraper',
       chunkType: 'tech_detection',
       chunkIndex: 0,
@@ -228,7 +228,7 @@ ${page.text}`;
       .join('\n');
 
     await db.insert(dealEmbeddings).values({
-      leadId,
+      qualificationId,
       agentName: 'scraper',
       chunkType: 'external_requests',
       chunkIndex: 0,
@@ -244,10 +244,10 @@ ${page.text}`;
   // 6. STORE SCREENSHOTS
   // ═══════════════════════════════════════════════════════════════
   if (page.screenshot) {
-    await storeScreenshot(leadId, page.url, page.screenshot, false);
+    await storeScreenshot(qualificationId, page.url, page.screenshot, false);
   }
   if (page.screenshotMobile) {
-    await storeScreenshot(leadId, page.url, page.screenshotMobile, true);
+    await storeScreenshot(qualificationId, page.url, page.screenshotMobile, true);
   }
 }
 
@@ -256,13 +256,13 @@ ${page.text}`;
  * Creates comprehensive summaries for RAG
  */
 export async function embedScrapedData(
-  leadId: string,
+  qualificationId: string,
   pages: ScrapedPage[],
   techStack: TechIndicator[]
 ): Promise<void> {
   // Embed each page with full content
   for (const page of pages) {
-    await embedScrapedPage(leadId, page);
+    await embedScrapedPage(qualificationId, page);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -307,7 +307,7 @@ export async function embedScrapedData(
   const overviewEmbeddings = await generateRawChunkEmbeddings(overviewChunks);
 
   await db.insert(dealEmbeddings).values({
-    leadId,
+    qualificationId,
     agentName: 'scraper',
     chunkType: 'website_overview',
     chunkIndex: 0,
@@ -363,7 +363,7 @@ export async function embedScrapedData(
     const withEmbeddings = await generateRawChunkEmbeddings(techChunks);
 
     await db.insert(dealEmbeddings).values({
-      leadId,
+      qualificationId,
       agentName: 'scraper',
       chunkType: 'tech_stack_summary',
       chunkIndex: 0,
@@ -401,7 +401,7 @@ export async function embedScrapedData(
     const formContent = formParts.join('\n');
 
     await db.insert(dealEmbeddings).values({
-      leadId,
+      qualificationId,
       agentName: 'scraper',
       chunkType: 'forms_summary',
       chunkIndex: 0,
@@ -426,7 +426,7 @@ export async function embedScrapedData(
   }));
 
   await db.insert(dealEmbeddings).values({
-    leadId,
+    qualificationId,
     agentName: 'scraper',
     chunkType: 'page_index_json',
     chunkIndex: 0,
@@ -443,13 +443,13 @@ export async function embedScrapedData(
  * Store screenshot separately (large binary data)
  */
 export async function storeScreenshot(
-  leadId: string,
+  qualificationId: string,
   pageUrl: string,
   screenshotBase64: string,
   isMobile: boolean = false
 ): Promise<void> {
   await db.insert(dealEmbeddings).values({
-    leadId,
+    qualificationId,
     agentName: 'scraper',
     chunkType: isMobile ? 'screenshot_mobile' : 'screenshot',
     chunkIndex: 0,

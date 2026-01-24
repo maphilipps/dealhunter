@@ -178,7 +178,7 @@ async function calcSheetFetcher(url: string): Promise<CalcSheetResponse> {
  */
 function useCalcSheet(leadId: string) {
   const { data, error, isLoading, mutate } = useSWR<CalcSheetResponse, Error>(
-    `/api/leads/${leadId}/calc-sheet`,
+    `/api/qualifications/${leadId}/calc-sheet`,
     calcSheetFetcher,
     {
       revalidateOnFocus: false,

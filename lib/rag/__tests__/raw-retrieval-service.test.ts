@@ -35,7 +35,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(isEmbeddingEnabled).mockReturnValue(false);
 
       const result = await queryRawChunks({
-        rfpId: 'rfp-123',
+        preQualificationId: 'rfp-123',
         question: 'Budget',
       });
 
@@ -54,7 +54,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(generateQueryEmbedding).mockResolvedValue(Array(3072).fill(0.1));
 
       const result = await queryRawChunks({
-        rfpId: 'rfp-123',
+        preQualificationId: 'rfp-123',
         question: 'Budget',
       });
 
@@ -65,7 +65,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(generateQueryEmbedding).mockResolvedValue(null);
 
       const result = await queryRawChunks({
-        rfpId: 'rfp-123',
+        preQualificationId: 'rfp-123',
         question: 'Budget',
       });
 
@@ -112,7 +112,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(generateQueryEmbedding).mockResolvedValue(similarEmbedding);
 
       const result = await queryRawChunks({
-        rfpId: 'rfp-123',
+        preQualificationId: 'rfp-123',
         question: 'Budget',
       });
 
@@ -135,7 +135,7 @@ describe('raw-retrieval-service', () => {
       const mockChunks = [
         {
           id: 'chunk-1',
-          rfpId: 'rfp-123',
+          preQualificationId: 'rfp-123',
           chunkIndex: 0,
           content: 'Medium similar',
           tokenCount: 50,
@@ -145,7 +145,7 @@ describe('raw-retrieval-service', () => {
         },
         {
           id: 'chunk-2',
-          rfpId: 'rfp-123',
+          preQualificationId: 'rfp-123',
           chunkIndex: 1,
           content: 'High similar',
           tokenCount: 50,
@@ -165,7 +165,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(generateQueryEmbedding).mockResolvedValue(baseEmbedding);
 
       const result = await queryRawChunks({
-        rfpId: 'rfp-123',
+        preQualificationId: 'rfp-123',
         question: 'Budget',
       });
 
@@ -205,7 +205,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(generateQueryEmbedding).mockResolvedValue(similarEmbedding);
 
       const result = await queryRawChunks({
-        rfpId: 'rfp-123',
+        preQualificationId: 'rfp-123',
         question: 'Content',
         maxResults: 3,
       });
@@ -217,7 +217,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(generateQueryEmbedding).mockRejectedValue(new Error('API error'));
 
       const result = await queryRawChunks({
-        rfpId: 'rfp-123',
+        preQualificationId: 'rfp-123',
         question: 'Budget',
       });
 

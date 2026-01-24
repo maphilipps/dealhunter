@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition, useEffect } from 'react';
 
 import { ActivityStream } from '@/components/ai-elements/activity-stream';
-import { DeepScanResultsPreview } from '@/components/leads/deep-scan-results-preview';
+import { DeepScanResultsPreview } from '@/components/qualifications/deep-scan-results-preview';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useDeepScan } from '@/contexts/deep-scan-context';
-import { updateLeadWebsiteUrl } from '@/lib/leads/actions';
+import { updateLeadWebsiteUrl } from '@/lib/qualifications/actions';
 
 interface DeepScanClientProps {
   leadId: string;
@@ -161,7 +161,7 @@ export function DeepScanClient({
       {/* Activity Stream - connected to Context */}
       {showStream && (
         <ActivityStream
-          streamUrl={`/api/leads/${leadId}/deep-scan/stream`}
+          streamUrl={`/api/qualifications/${leadId}/deep-scan/stream`}
           title="DeepScan Audit"
           autoStart={true}
           grouped={true}
@@ -193,7 +193,9 @@ export function DeepScanClient({
                         variant="outline"
                         size="sm"
                         onClick={() =>
-                          router.push(`/leads/${leadId}/audit/${section.category}/${item.slug}`)
+                          router.push(
+                            `/qualifications/${leadId}/audit/${section.category}/${item.slug}`
+                          )
                         }
                       >
                         {item.title}

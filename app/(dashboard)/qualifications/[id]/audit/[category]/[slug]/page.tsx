@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/lib/db';
-import { leads, dealEmbeddings } from '@/lib/db/schema';
+import { qualifications, dealEmbeddings } from '@/lib/db/schema';
 import { CATEGORY_CONFIG } from '@/lib/deep-scan/experts/types';
 
 interface PageProps {
@@ -21,12 +21,12 @@ export default async function AuditDetailPage({ params }: PageProps) {
   // Fetch lead
   const [lead] = await db
     .select({
-      id: leads.id,
-      customerName: leads.customerName,
-      websiteUrl: leads.websiteUrl,
+      id: qualifications.id,
+      customerName: qualifications.customerName,
+      websiteUrl: qualifications.websiteUrl,
     })
-    .from(leads)
-    .where(eq(leads.id, id))
+    .from(qualifications)
+    .where(eq(qualifications.id, id))
     .limit(1);
 
   if (!lead) {
@@ -45,7 +45,10 @@ export default async function AuditDetailPage({ params }: PageProps) {
     })
     .from(dealEmbeddings)
     .where(
-      and(eq(dealEmbeddings.leadId, id), eq(dealEmbeddings.chunkType, slug.replace(/-/g, '_')))
+      and(
+        eq(dealEmbeddings.qualificationId, id),
+        eq(dealEmbeddings.chunkType, slug.replace(/-/g, '_'))
+      )
     )
     .orderBy(dealEmbeddings.chunkIndex);
 

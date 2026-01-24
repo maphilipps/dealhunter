@@ -9,7 +9,7 @@ import type { TeamSuggestion, TeamAssignment } from './schema';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, employees, users } from '@/lib/db/schema';
+import { preQualifications, employees, users } from '@/lib/db/schema';
 import { canTransitionTo } from '@/lib/workflow/bl-review-status';
 
 // Validation schemas
@@ -50,7 +50,11 @@ export async function suggestTeamForBid(bidId: string): Promise<SuggestTeamResul
 
   try {
     // Get bid
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, parsed.data.bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, parsed.data.bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -135,7 +139,11 @@ export async function assignTeam(
 
   try {
     // Get bid
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, parsed.data.bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, parsed.data.bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -183,13 +191,13 @@ export async function assignTeam(
 
     // Update bid with team assignment
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         assignedTeam: JSON.stringify(teamAssignment),
         status: 'team_assigned',
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, parsed.data.bidId));
+      .where(eq(preQualifications.id, parsed.data.bidId));
 
     // Revalidate cache for updated views
     revalidatePath(`/bl-review/${parsed.data.bidId}`);
@@ -224,7 +232,11 @@ export async function getTeamAssignment(bidId: string) {
   }
 
   try {
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, parsed.data.bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, parsed.data.bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };

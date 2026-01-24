@@ -31,7 +31,7 @@ export function AuditStatusBadge({ leadId, variant = 'badge' }: AuditStatusBadge
   useEffect(() => {
     async function fetchStatus() {
       try {
-        const response = await fetch(`/api/leads/${leadId}/audit/status`);
+        const response = await fetch(`/api/qualifications/${leadId}/audit/status`);
         if (response.ok) {
           const data = await response.json();
           setStatus(data);
@@ -49,13 +49,13 @@ export function AuditStatusBadge({ leadId, variant = 'badge' }: AuditStatusBadge
   async function handleIngest() {
     setIsIngesting(true);
     try {
-      const response = await fetch(`/api/leads/${leadId}/audit/status`, {
+      const response = await fetch(`/api/qualifications/${leadId}/audit/status`, {
         method: 'POST',
       });
 
       if (response.ok) {
         // Refresh status after successful ingestion
-        const statusResponse = await fetch(`/api/leads/${leadId}/audit/status`);
+        const statusResponse = await fetch(`/api/qualifications/${leadId}/audit/status`);
         if (statusResponse.ok) {
           const data = await statusResponse.json();
           setStatus(data);

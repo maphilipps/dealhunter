@@ -35,7 +35,7 @@ import {
 } from '@/lib/agents/expert-agents/deliverables-schema';
 import { auth } from '@/lib/auth';
 import { extractedRequirementsSchema } from '@/lib/extraction/schema';
-import { getCachedRfp } from '@/lib/rfps/cached-queries';
+import { getCachedRfp } from '@/lib/pre-qualifications/cached-queries';
 
 const categoryLabels: Record<string, string> = {
   proposal_document: 'Proposal Dokumente',

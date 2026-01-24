@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { backgroundJobs, leads } from '@/lib/db/schema';
+import { backgroundJobs, qualifications } from '@/lib/db/schema';
 
 /**
- * GET /api/leads/[id]/background-job
+ * GET /api/qualifications/[id]/background-job
  *
  * Fetch the latest background job for a lead
  * Used for real-time polling of job progress
@@ -24,7 +24,11 @@ export async function GET(
     const { id: leadId } = await context.params;
 
     // Verify lead exists
-    const [lead] = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, leadId))
+      .limit(1);
 
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
@@ -36,7 +40,7 @@ export async function GET(
     const [latestJob] = await db
       .select()
       .from(backgroundJobs)
-      .where(eq(backgroundJobs.rfpId, lead.rfpId))
+      .where(eq(backgroundJobs.preQualificationId, lead.preQualificationId))
       .orderBy(desc(backgroundJobs.createdAt))
       .limit(1);
 
@@ -58,7 +62,7 @@ export async function GET(
 
     return NextResponse.json({ job }, { status: 200 });
   } catch (error) {
-    console.error('[GET /api/leads/:id/background-job] Error:', error);
+    console.error('[GET /api/qualifications/:id/background-job] Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

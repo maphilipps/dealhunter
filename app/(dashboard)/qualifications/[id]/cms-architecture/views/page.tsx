@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-import { SectionPageTemplate } from '@/components/leads/section-page-template';
+import { SectionPageTemplate } from '@/components/qualifications/section-page-template';
 import { auth } from '@/lib/auth';
 
 export default async function ViewsPage({ params }: { params: Promise<{ id: string }> }) {

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { DeepScanClient } from './client';
 
 import { db } from '@/lib/db';
-import { leads, rfps } from '@/lib/db/schema';
+import { qualifications, preQualifications } from '@/lib/db/schema';
 import { getAuditNavigation } from '@/lib/deep-scan/experts';
 
 export default async function AuditPage({ params }: { params: Promise<{ id: string }> }) {
@@ -12,13 +12,13 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
 
   const [lead] = await db
     .select({
-      id: leads.id,
-      customerName: leads.customerName,
-      websiteUrl: leads.websiteUrl,
-      rfpId: leads.rfpId,
+      id: qualifications.id,
+      customerName: qualifications.customerName,
+      websiteUrl: qualifications.websiteUrl,
+      preQualificationId: qualifications.preQualificationId,
     })
-    .from(leads)
-    .where(eq(leads.id, id))
+    .from(qualifications)
+    .where(eq(qualifications.id, id))
     .limit(1);
 
   if (!lead) {
@@ -27,11 +27,11 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
 
   // Get suggested URLs from RFP
   let suggestedUrls: { url: string; description?: string }[] = [];
-  if (lead.rfpId) {
+  if (lead.preQualificationId) {
     const [rfp] = await db
-      .select({ extractedRequirements: rfps.extractedRequirements })
-      .from(rfps)
-      .where(eq(rfps.id, lead.rfpId))
+      .select({ extractedRequirements: preQualifications.extractedRequirements })
+      .from(preQualifications)
+      .where(eq(preQualifications.id, lead.preQualificationId))
       .limit(1);
 
     if (rfp?.extractedRequirements) {

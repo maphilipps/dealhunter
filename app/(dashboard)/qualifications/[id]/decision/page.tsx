@@ -5,7 +5,7 @@ import { DecisionPageClient } from './decision-page-client';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads } from '@/lib/db/schema';
+import { qualifications } from '@/lib/db/schema';
 
 /**
  * DEA-152: Decision Page - BID/NO-BID Final Decision
@@ -26,7 +26,7 @@ export default async function DecisionPage({ params }: { params: Promise<{ id: s
   }
 
   // Get lead
-  const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+  const [lead] = await db.select().from(qualifications).where(eq(qualifications.id, id)).limit(1);
 
   if (!lead) {
     return (

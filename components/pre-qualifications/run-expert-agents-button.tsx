@@ -7,7 +7,6 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 
-
 interface RunExpertAgentsButtonProps {
   rfpId: string;
   hasResults?: boolean;
@@ -20,7 +19,7 @@ export function RunExpertAgentsButton({ rfpId, hasResults }: RunExpertAgentsButt
   const handleClick = () => {
     startTransition(async () => {
       try {
-        const response = await fetch(`/api/rfps/${rfpId}/run-expert-agents`, {
+        const response = await fetch(`/api/pre-qualifications/${rfpId}/run-expert-agents`, {
           method: 'POST',
         });
 

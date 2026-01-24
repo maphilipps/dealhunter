@@ -1,7 +1,7 @@
 /**
  * CMS Advocates Run API
  *
- * POST /api/leads/[id]/cms-advocates/run
+ * POST /api/qualifications/[id]/cms-advocates/run
  *
  * Triggers the CMS Advocate orchestrator to analyze and compare CMS options
  * for the given lead's requirements.
@@ -12,7 +12,7 @@ import { NextResponse } from 'next/server';
 
 import { runCMSAdvocateOrchestrator } from '@/lib/agents/cms-advocates';
 import { db } from '@/lib/db';
-import { leads } from '@/lib/db/schema';
+import { qualifications } from '@/lib/db/schema';
 import { queryRagForLead, type LeadRAGResult } from '@/lib/rag/lead-retrieval-service';
 
 export const maxDuration = 120; // 2 minutes for parallel advocate analysis
@@ -22,7 +22,11 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
   try {
     // 1. Get lead (lead has rfpId reference)
-    const lead = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+    const lead = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, leadId))
+      .limit(1);
 
     if (!lead.length) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
@@ -30,13 +34,13 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
     const leadData = lead[0];
 
-    if (!leadData.rfpId) {
+    if (!leadData.preQualificationId) {
       return NextResponse.json({ error: 'No RFP associated with lead' }, { status: 400 });
     }
 
     // 2. Extract requirements from RAG
     const requirementsData = await queryRagForLead({
-      leadId,
+      qualificationId: leadId,
       question: 'project requirements features functionality technical requirements',
     });
 
@@ -54,7 +58,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     // 4. Run orchestrator
     const result = await runCMSAdvocateOrchestrator({
       leadId,
-      rfpId: leadData.rfpId,
+      rfpId: leadData.preQualificationId,
       requirements,
       customerProfile,
     });
@@ -276,7 +280,7 @@ function extractRequirementsFromRAG(ragData: LeadRAGResult[]): Array<{
 }
 
 function inferCompanySize(
-  lead: typeof leads.$inferSelect
+  lead: typeof qualifications.$inferSelect
 ): 'small' | 'medium' | 'large' | 'enterprise' {
   // Try to infer from customer name
   const customerName = (lead.customerName || '').toLowerCase();
@@ -311,7 +315,7 @@ function inferTechMaturity(ragData: LeadRAGResult[]): 'low' | 'medium' | 'high' 
   return 'medium';
 }
 
-function inferBudget(lead: typeof leads.$inferSelect): 'low' | 'medium' | 'high' {
+function inferBudget(lead: typeof qualifications.$inferSelect): 'low' | 'medium' | 'high' {
   // Try to infer from lead budget field
   const budgetStr = lead.budget || '';
 

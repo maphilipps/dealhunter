@@ -6,7 +6,7 @@ import { runDuplicateCheckAgent } from './duplicate-check-agent';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
+import { preQualifications } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { onAgentComplete } from '@/lib/workflow/orchestrator';
 
@@ -32,8 +32,8 @@ export async function runDuplicateCheck(rfpId: string): Promise<{
     // 1. Fetch RFP and verify ownership
     const [rfp] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, rfpId), eq(rfps.userId, session.user.id)));
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, rfpId), eq(preQualifications.userId, session.user.id)));
 
     if (!rfp) {
       return { success: false, error: 'RFP nicht gefunden' };
@@ -57,13 +57,13 @@ export async function runDuplicateCheck(rfpId: string): Promise<{
 
     // 4. Save duplicate check result to RFP
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         duplicateCheckResult: JSON.stringify(duplicateResult),
         status: duplicateResult.hasDuplicates ? 'duplicate_warning' : 'duplicate_checking',
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, rfpId));
+      .where(eq(preQualifications.id, rfpId));
 
     // 5. If no duplicates, trigger next agent (Quick Scan)
     let nextAgent: string | undefined;

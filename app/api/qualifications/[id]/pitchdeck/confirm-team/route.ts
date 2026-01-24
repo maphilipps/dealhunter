@@ -6,7 +6,14 @@ import { z } from 'zod';
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, pitchdecks, pitchdeckTeamMembers, users, employees, rfps } from '@/lib/db/schema';
+import {
+  qualifications,
+  pitchdecks,
+  pitchdeckTeamMembers,
+  users,
+  employees,
+  preQualifications,
+} from '@/lib/db/schema';
 import { sendTeamNotificationEmails, TeamMemberNotification } from '@/lib/notifications/email';
 
 // ============================================================================
@@ -30,7 +37,7 @@ const idSchema = z.object({
 });
 
 // ============================================================================
-// POST /api/leads/[id]/pitchdeck/confirm-team
+// POST /api/qualifications/[id]/pitchdeck/confirm-team
 // ============================================================================
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -64,7 +71,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // 4. Get Lead
-    const [lead] = await db.select().from(leads).where(eq(leads.id, parsedId.data.id)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, parsedId.data.id))
+      .limit(1);
 
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
@@ -74,7 +85,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const [pitchdeck] = await db
       .select()
       .from(pitchdecks)
-      .where(eq(pitchdecks.leadId, parsedId.data.id))
+      .where(eq(pitchdecks.qualificationId, parsedId.data.id))
       .limit(1);
 
     if (!pitchdeck) {
@@ -137,7 +148,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // 9. Get RFP and Employee data for email notifications
-    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1);
+    const [rfp] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, lead.preQualificationId))
+      .limit(1);
 
     if (!rfp) {
       return NextResponse.json({ error: 'RFP not found' }, { status: 404 });
@@ -223,7 +238,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }));
 
         // Send emails with Pitchdeck-specific link
-        const pitchdeckUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/leads/${lead.id}/pitchdeck`;
+        const pitchdeckUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/qualifications/${lead.id}/pitchdeck`;
 
         await sendTeamNotificationEmails({
           bidId: rfp.id, // Keep for consistency, not used when projectUrl is provided
@@ -249,8 +264,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       try {
         await createAuditLog({
           action: 'update',
-          entityType: 'rfp',
-          entityId: lead.rfpId,
+          entityType: 'pre_qualification',
+          entityId: lead.preQualificationId,
           previousValue: JSON.stringify({
             pitchdeckStatus: pitchdeck.status,
             teamConfirmed: false,
@@ -278,7 +293,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       { status: 200 }
     );
   } catch (error) {
-    console.error('POST /api/leads/[id]/pitchdeck/confirm-team error:', error);
+    console.error('POST /api/qualifications/[id]/pitchdeck/confirm-team error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',

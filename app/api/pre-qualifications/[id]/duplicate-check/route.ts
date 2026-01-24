@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { runDuplicateCheckAgent } from '@/lib/bids/duplicate-check-agent';
 import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
+import { preQualifications } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { onAgentComplete } from '@/lib/workflow/orchestrator';
 
@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * POST /api/rfps/[id]/duplicate-check
+ * POST /api/pre-qualifications/[id]/duplicate-check
  *
  * Run Duplicate Check Agent for an RFP
  * Called automatically by workflow orchestrator or manually by user
@@ -30,8 +30,8 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
     // 2. Fetch RFP and verify ownership
     const [rfp] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, id), eq(rfps.userId, session.user.id)));
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, id), eq(preQualifications.userId, session.user.id)));
 
     if (!rfp) {
       return NextResponse.json({ error: 'RFP not found' }, { status: 404 });
@@ -53,13 +53,13 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
 
     // 5. Save duplicate check result to RFP
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         duplicateCheckResult: JSON.stringify(duplicateResult),
         status: duplicateResult.hasDuplicates ? 'duplicate_warning' : 'duplicate_checking',
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, id));
+      .where(eq(preQualifications.id, id));
 
     // 6. If no duplicates, trigger next agent (Extract)
     if (!duplicateResult.hasDuplicates) {

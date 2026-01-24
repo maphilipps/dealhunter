@@ -5,7 +5,7 @@
  * Displays: Project info, total features, hours, FTE, estimated budget.
  */
 
-import { CalcSheetOverview } from '@/components/leads/calc-sheet-client';
+import { CalcSheetOverview } from '@/components/qualifications/calc-sheet-client';
 
 interface CalcSheetPageProps {
   params: Promise<{ id: string }>;

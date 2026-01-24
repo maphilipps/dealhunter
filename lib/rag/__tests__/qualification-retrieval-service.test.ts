@@ -26,14 +26,14 @@ vi.mock('@/lib/db', () => ({
 }));
 
 // Mock navigation config
-vi.mock('@/lib/leads/navigation-config', () => ({
+vi.mock('@/lib/qualifications/navigation-config', () => ({
   getRAGQueryTemplate: vi.fn(),
 }));
 
 import { generateQueryEmbedding } from '../embedding-service';
 
 import { db } from '@/lib/db';
-import { getRAGQueryTemplate } from '@/lib/leads/navigation-config';
+import { getRAGQueryTemplate } from '@/lib/qualifications/navigation-config';
 
 describe('lead-retrieval-service', () => {
   beforeEach(() => {
@@ -66,7 +66,7 @@ describe('lead-retrieval-service', () => {
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       const result = await queryRagForLead({
-        leadId: 'lead-123',
+        qualificationId: 'lead-123',
         question: 'What is the current CMS?',
       });
 
@@ -84,7 +84,7 @@ describe('lead-retrieval-service', () => {
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       const result = await queryRagForLead({
-        leadId: 'lead-nonexistent',
+        qualificationId: 'lead-nonexistent',
         question: 'Test',
       });
 
@@ -95,7 +95,7 @@ describe('lead-retrieval-service', () => {
       const mockEmbeddings = [
         {
           id: 'chunk-1',
-          leadId: 'lead-123',
+          qualificationId: 'lead-123',
           agentName: 'tech_agent',
           chunkType: 'tech_stack',
           content: 'WordPress 6.0',
@@ -118,7 +118,7 @@ describe('lead-retrieval-service', () => {
       );
 
       await queryRagForLead({
-        leadId: 'lead-123',
+        qualificationId: 'lead-123',
         sectionId: 'technology',
         question: '',
       });
@@ -130,7 +130,7 @@ describe('lead-retrieval-service', () => {
       const mockEmbeddings = [
         {
           id: 'chunk-1',
-          leadId: 'lead-123',
+          qualificationId: 'lead-123',
           agentName: 'tech_agent',
           chunkType: 'tech_stack',
           content: 'Tech info',
@@ -142,7 +142,7 @@ describe('lead-retrieval-service', () => {
         },
         {
           id: 'chunk-2',
-          leadId: 'lead-123',
+          qualificationId: 'lead-123',
           agentName: 'commercial_agent',
           chunkType: 'budget',
           content: 'Budget info',
@@ -161,7 +161,7 @@ describe('lead-retrieval-service', () => {
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       const result = await queryRagForLead({
-        leadId: 'lead-123',
+        qualificationId: 'lead-123',
         question: 'Test',
         agentNameFilter: 'tech_agent',
       });
@@ -174,7 +174,7 @@ describe('lead-retrieval-service', () => {
       const mockEmbeddings = [
         {
           id: 'chunk-1',
-          leadId: 'lead-123',
+          qualificationId: 'lead-123',
           agentName: 'tech_agent',
           chunkType: 'tech_stack',
           content: 'Tech info',
@@ -186,7 +186,7 @@ describe('lead-retrieval-service', () => {
         },
         {
           id: 'chunk-2',
-          leadId: 'lead-123',
+          qualificationId: 'lead-123',
           agentName: 'commercial_agent',
           chunkType: 'budget',
           content: 'Budget info',
@@ -198,7 +198,7 @@ describe('lead-retrieval-service', () => {
         },
         {
           id: 'chunk-3',
-          leadId: 'lead-123',
+          qualificationId: 'lead-123',
           agentName: 'risk_agent',
           chunkType: 'risks',
           content: 'Risk info',
@@ -217,7 +217,7 @@ describe('lead-retrieval-service', () => {
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       const result = await queryRagForLead({
-        leadId: 'lead-123',
+        qualificationId: 'lead-123',
         question: 'Test',
         agentNameFilter: ['tech_agent', 'commercial_agent'],
       });
@@ -232,7 +232,7 @@ describe('lead-retrieval-service', () => {
       const mockEmbeddings = [
         {
           id: 'chunk-1',
-          leadId: 'lead-123',
+          qualificationId: 'lead-123',
           agentName: 'tech_agent',
           chunkType: 'tech_stack',
           content: 'Tech info',
@@ -251,7 +251,7 @@ describe('lead-retrieval-service', () => {
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       const result = await queryRagForLead({
-        leadId: 'lead-123',
+        qualificationId: 'lead-123',
         question: 'Test',
         agentNameFilter: 'nonexistent_agent',
       });
@@ -268,7 +268,7 @@ describe('lead-retrieval-service', () => {
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       const result = await queryRagForLead({
-        leadId: 'lead-123',
+        qualificationId: 'lead-123',
         question: 'Test',
       });
 
@@ -372,7 +372,7 @@ describe('lead-retrieval-service', () => {
       const allEmbeddings = [
         {
           id: 'chunk-1',
-          leadId: 'lead-123',
+          qualificationId: 'lead-123',
           agentName: 'tech_agent',
           chunkType: 'tech_stack',
           content: 'Tech info',
@@ -384,7 +384,7 @@ describe('lead-retrieval-service', () => {
         },
         {
           id: 'chunk-2',
-          leadId: 'lead-123',
+          qualificationId: 'lead-123',
           agentName: 'commercial_agent',
           chunkType: 'budget',
           content: 'Budget info',

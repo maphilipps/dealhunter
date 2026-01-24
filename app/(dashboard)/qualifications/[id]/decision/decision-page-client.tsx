@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle2, ThumbsDown, ThumbsUp, TrendingUp, XCircle } 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 
-import { ProjectPlanCard } from '@/components/leads/project-plan-card';
+import { ProjectPlanCard } from '@/components/qualifications/project-plan-card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,11 +21,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Lead } from '@/lib/db/schema';
-import { submitBLDecision } from '@/lib/leads/actions';
+import type { Qualification } from '@/lib/db/schema';
+import { submitBLDecision } from '@/lib/qualifications/actions';
 
 interface DecisionPageClientProps {
-  lead: Lead;
+  lead: Qualification;
 }
 
 interface DecisionAnalysis {
@@ -68,7 +68,7 @@ export function DecisionPageClient({ lead }: DecisionPageClientProps) {
       setError(null);
 
       try {
-        const response = await fetch(`/api/leads/${lead.id}/sections/decision`);
+        const response = await fetch(`/api/qualifications/${lead.id}/sections/decision`);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch decision analysis: ${response.statusText}`);
@@ -150,7 +150,7 @@ export function DecisionPageClient({ lead }: DecisionPageClientProps) {
           </CardContent>
         </Card>
 
-        <Button variant="outline" onClick={() => router.push(`/leads/${lead.id}`)}>
+        <Button variant="outline" onClick={() => router.push(`/qualifications/${lead.id}`)}>
           Zurück zur Lead-Übersicht
         </Button>
       </div>
@@ -200,7 +200,7 @@ export function DecisionPageClient({ lead }: DecisionPageClientProps) {
             <Button
               variant="outline"
               className="mt-4"
-              onClick={() => router.push(`/leads/${lead.id}`)}
+              onClick={() => router.push(`/qualifications/${lead.id}`)}
             >
               Zurück zur Übersicht
             </Button>
@@ -229,7 +229,7 @@ export function DecisionPageClient({ lead }: DecisionPageClientProps) {
       });
 
       if (result.success) {
-        router.push(`/leads/${lead.id}`);
+        router.push(`/qualifications/${lead.id}`);
         router.refresh();
       } else {
         setError(result.error || 'Fehler beim Speichern der Entscheidung');
@@ -292,7 +292,7 @@ export function DecisionPageClient({ lead }: DecisionPageClientProps) {
               </Button>
             </div>
             <Separator />
-            <Button variant="outline" onClick={() => router.push(`/leads/${lead.id}`)}>
+            <Button variant="outline" onClick={() => router.push(`/qualifications/${lead.id}`)}>
               Zurück zur Übersicht
             </Button>
           </CardContent>

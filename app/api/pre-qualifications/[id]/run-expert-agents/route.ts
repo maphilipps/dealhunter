@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { runExpertAgents } from '@/lib/agents/expert-agents/orchestrator';
 import { auth } from '@/lib/auth';
-import { getCachedRfp } from '@/lib/rfps/cached-queries';
+import { getCachedRfp } from '@/lib/pre-qualifications/cached-queries';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();

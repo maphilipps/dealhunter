@@ -9,7 +9,7 @@ import {
   pitchdecks,
   pitchdeckDeliverables,
   pitchdeckTeamMembers,
-  leads,
+  qualifications,
   employees,
   type PitchdeckDeliverable,
   type Employee,
@@ -87,7 +87,11 @@ registry.register({
   inputSchema: createPitchdeckInputSchema,
   async execute(input, context: ToolContext) {
     // Verify lead exists
-    const [lead] = await db.select().from(leads).where(eq(leads.id, input.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, input.leadId))
+      .limit(1);
 
     if (!lead) {
       return { success: false, error: 'Lead not found' };
@@ -102,7 +106,7 @@ registry.register({
     const [existing] = await db
       .select()
       .from(pitchdecks)
-      .where(eq(pitchdecks.leadId, input.leadId))
+      .where(eq(pitchdecks.qualificationId, input.leadId))
       .limit(1);
 
     if (existing) {
@@ -112,7 +116,7 @@ registry.register({
     const [newPitchdeck] = await db
       .insert(pitchdecks)
       .values({
-        leadId: input.leadId,
+        qualificationId: input.leadId,
         status: 'draft',
       })
       .returning();
@@ -143,7 +147,11 @@ registry.register({
     }
 
     // Get lead to check BU access
-    const [lead] = await db.select().from(leads).where(eq(leads.id, pitchdeck.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .limit(1);
 
     if (!lead) {
       return { success: false, error: 'Associated lead not found' };
@@ -203,7 +211,11 @@ registry.register({
   inputSchema: listPitchdecksInputSchema,
   async execute(input, context: ToolContext) {
     // Get lead to check BU access
-    const [lead] = await db.select().from(leads).where(eq(leads.id, input.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, input.leadId))
+      .limit(1);
 
     if (!lead) {
       return { success: false, error: 'Lead not found' };
@@ -217,7 +229,7 @@ registry.register({
     const results = await db
       .select()
       .from(pitchdecks)
-      .where(eq(pitchdecks.leadId, input.leadId))
+      .where(eq(pitchdecks.qualificationId, input.leadId))
       .orderBy(desc(pitchdecks.createdAt));
 
     return {
@@ -246,7 +258,11 @@ registry.register({
     }
 
     // Get lead to check BU access
-    const [lead] = await db.select().from(leads).where(eq(leads.id, existing.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, existing.qualificationId))
+      .limit(1);
 
     if (!lead) {
       return { success: false, error: 'Associated lead not found' };
@@ -295,7 +311,11 @@ registry.register({
     }
 
     // Get lead to check BU access
-    const [lead] = await db.select().from(leads).where(eq(leads.id, pitchdeck.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .limit(1);
 
     if (!lead) {
       return { success: false, error: 'Associated lead not found' };
@@ -354,7 +374,11 @@ registry.register({
       return { success: false, error: 'Associated pitchdeck not found' };
     }
 
-    const [lead] = await db.select().from(leads).where(eq(leads.id, pitchdeck.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .limit(1);
 
     if (!lead) {
       return { success: false, error: 'Associated lead not found' };
@@ -417,7 +441,11 @@ registry.register({
     }
 
     // Get lead to check BU access
-    const [lead] = await db.select().from(leads).where(eq(leads.id, pitchdeck.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .limit(1);
 
     if (!lead) {
       return { success: false, error: 'Associated lead not found' };
@@ -491,7 +519,11 @@ registry.register({
       return { success: false, error: 'Associated pitchdeck not found' };
     }
 
-    const [lead] = await db.select().from(leads).where(eq(leads.id, pitchdeck.leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .limit(1);
 
     if (!lead) {
       return { success: false, error: 'Associated lead not found' };

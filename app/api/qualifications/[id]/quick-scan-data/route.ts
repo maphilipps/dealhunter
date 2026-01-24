@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, quickScans, rfps } from '@/lib/db/schema';
+import { qualifications, quickScans, preQualifications } from '@/lib/db/schema';
 
 /**
- * GET /api/leads/[id]/quick-scan-data
+ * GET /api/qualifications/[id]/quick-scan-data
  *
  * Fetch Quick Scan data for a lead, including:
  * - Tech stack detection results
@@ -26,12 +26,12 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     // Fetch lead to get quickScanId
     const [lead] = await db
       .select({
-        id: leads.id,
-        quickScanId: leads.quickScanId,
-        rfpId: leads.rfpId,
+        id: qualifications.id,
+        quickScanId: qualifications.quickScanId,
+        preQualificationId: qualifications.preQualificationId,
       })
-      .from(leads)
-      .where(eq(leads.id, leadId))
+      .from(qualifications)
+      .where(eq(qualifications.id, leadId))
       .limit(1);
 
     if (!lead) {
@@ -41,11 +41,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     // If no quickScanId, try to get from RFP
     let quickScanId = lead.quickScanId;
 
-    if (!quickScanId && lead.rfpId) {
+    if (!quickScanId && lead.preQualificationId) {
       const [rfp] = await db
-        .select({ quickScanId: rfps.quickScanId })
-        .from(rfps)
-        .where(eq(rfps.id, lead.rfpId))
+        .select({ quickScanId: preQualifications.quickScanId })
+        .from(preQualifications)
+        .where(eq(preQualifications.id, lead.preQualificationId))
         .limit(1);
 
       quickScanId = rfp?.quickScanId ?? null;

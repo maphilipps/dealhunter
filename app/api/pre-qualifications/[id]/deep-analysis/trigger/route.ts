@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, deepMigrationAnalyses } from '@/lib/db/schema';
+import { preQualifications, deepMigrationAnalyses } from '@/lib/db/schema';
 import { inngest } from '@/lib/inngest/client';
 
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
@@ -18,8 +18,8 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
   // Verify bid ownership
   const [bid] = await db
     .select()
-    .from(rfps)
-    .where(and(eq(rfps.id, id), eq(rfps.userId, session.user.id)))
+    .from(preQualifications)
+    .where(and(eq(preQualifications.id, id), eq(preQualifications.userId, session.user.id)))
     .limit(1);
 
   if (!bid) {
@@ -37,7 +37,12 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
   const [existing] = await db
     .select()
     .from(deepMigrationAnalyses)
-    .where(and(eq(deepMigrationAnalyses.rfpId, id), eq(deepMigrationAnalyses.status, 'running')))
+    .where(
+      and(
+        eq(deepMigrationAnalyses.preQualificationId, id),
+        eq(deepMigrationAnalyses.status, 'running')
+      )
+    )
     .limit(1);
 
   if (existing) {

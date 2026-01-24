@@ -17,12 +17,12 @@ import type { RAGResult } from './retrieval-service';
 import { db } from '@/lib/db';
 import type { ChunkCategory } from '@/lib/db/schema';
 import { dealEmbeddings } from '@/lib/db/schema';
-import { getRAGQueryTemplate } from '@/lib/leads/navigation-config';
+import { getRAGQueryTemplate } from '@/lib/qualifications/navigation-config';
 
 const SIMILARITY_THRESHOLD = 0.3; // text-embedding-3-large has lower similarity scores
 
 export interface LeadRAGQuery {
-  leadId: string;
+  qualificationId: string;
   sectionId?: string; // Optional: if provided, uses section's RAG template
   question: string;
   agentNameFilter?: string | string[]; // Filter by specific agent(s)
@@ -102,10 +102,12 @@ export async function queryRagForLead(query: LeadRAGQuery): Promise<LeadRAGResul
       }
     }
 
-    console.log(`[Lead-RAG] Query for lead ${query.leadId}: "${question.substring(0, 50)}..."`);
+    console.log(
+      `[Lead-RAG] Query for qualification ${query.qualificationId}: "${question.substring(0, 50)}..."`
+    );
 
     // 2. Build filter conditions
-    const conditions = [eq(dealEmbeddings.leadId, query.leadId)];
+    const conditions = [eq(dealEmbeddings.qualificationId, query.qualificationId)];
 
     // Category filter (DEA-140)
     if (query.chunkCategories && query.chunkCategories.length > 0) {
@@ -294,7 +296,7 @@ export async function batchQuerySections(
 
       // Query RAG
       const queryResults = await queryRagForLead({
-        leadId,
+        qualificationId: leadId,
         sectionId,
         question: template,
         maxResults: maxResultsPerSection,
@@ -358,7 +360,7 @@ export async function queryMultipleAgents(
   // Run queries in parallel
   const queries = agentNames.map(async agentName => {
     const agentResults = await queryRagForLead({
-      leadId,
+      qualificationId: leadId,
       question,
       agentNameFilter: agentName,
       maxResults: maxResultsPerAgent,

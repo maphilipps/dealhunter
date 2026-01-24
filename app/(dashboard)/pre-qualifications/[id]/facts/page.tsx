@@ -6,7 +6,7 @@ import { ScreenshotGallery } from './screenshot-gallery';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
-import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
+import { getCachedRfpWithRelations } from '@/lib/pre-qualifications/cached-queries';
 
 interface ContentVolumeData {
   totalPages?: number;

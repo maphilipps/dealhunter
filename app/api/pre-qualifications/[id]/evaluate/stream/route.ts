@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 import { runBitEvaluationWithStreaming } from '@/lib/bit-evaluation/agent';
 import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
+import { preQualifications } from '@/lib/db/schema';
 import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
@@ -32,8 +32,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     // 2. Fetch bid data and verify ownership
     const [bid] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, id), eq(rfps.userId, session.user.id)));
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, id), eq(preQualifications.userId, session.user.id)));
 
     if (!bid) {
       return new Response(JSON.stringify({ error: 'Not found' }), {
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 
       // Update database with result using optimistic locking
       const updated = await db
-        .update(rfps)
+        .update(preQualifications)
         .set({
           decisionEvaluation: JSON.stringify(result),
           decision:
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
           version: currentVersion + 1,
           updatedAt: new Date(),
         })
-        .where(and(eq(rfps.id, id), eq(rfps.version, currentVersion)))
+        .where(and(eq(preQualifications.id, id), eq(preQualifications.version, currentVersion)))
         .returning();
 
       // Check if update succeeded (version conflict detection)

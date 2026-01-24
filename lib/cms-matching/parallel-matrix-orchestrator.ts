@@ -18,7 +18,7 @@ import {
 import type { RequirementMatch, CMSMatchingResult } from './schema';
 
 import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
+import { preQualifications } from '@/lib/db/schema';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
 
 /**
@@ -439,9 +439,9 @@ export async function saveMatrixToRfp(rfpId: string, matrix: RequirementMatrix):
   try {
     // Load current quick scan results
     const rfp = await db
-      .select({ quickScanResults: rfps.quickScanResults })
-      .from(rfps)
-      .where(eq(rfps.id, rfpId))
+      .select({ quickScanResults: preQualifications.quickScanResults })
+      .from(preQualifications)
+      .where(eq(preQualifications.id, rfpId))
       .limit(1);
 
     // Parse existing results or create new object
@@ -453,12 +453,12 @@ export async function saveMatrixToRfp(rfpId: string, matrix: RequirementMatrix):
 
     // Save updated results
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         quickScanResults: JSON.stringify(currentResults),
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, rfpId));
+      .where(eq(preQualifications.id, rfpId));
 
     console.log(`[Matrix] Saved matrix to RFP ${rfpId}`);
   } catch (error) {

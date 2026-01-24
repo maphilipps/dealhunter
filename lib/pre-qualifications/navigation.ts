@@ -101,7 +101,7 @@ export function getRfpNavigationSections(rfpId: string): NavigationSection[] {
         {
           title: 'Übersicht',
           icon: LayoutDashboard,
-          url: `/rfps/${rfpId}`,
+          url: `/pre-qualifications/${rfpId}`,
           alwaysEnabled: true, // Overview is always accessible
         },
       ],
@@ -112,23 +112,23 @@ export function getRfpNavigationSections(rfpId: string): NavigationSection[] {
         {
           title: 'Timing',
           icon: Clock,
-          url: `/rfps/${rfpId}/timing`,
+          url: `/pre-qualifications/${rfpId}/timing`,
         },
         {
           title: 'Deliverables',
           icon: FileText,
-          url: `/rfps/${rfpId}/deliverables`,
+          url: `/pre-qualifications/${rfpId}/deliverables`,
         },
         {
           title: 'Referenzen',
           icon: Trophy,
-          url: `/rfps/${rfpId}/references`,
+          url: `/pre-qualifications/${rfpId}/references`,
           alwaysEnabled: true, // References may come from RFP extraction, not quickScan
         },
         {
           title: 'Legal',
           icon: Scale,
-          url: `/rfps/${rfpId}/legal`,
+          url: `/pre-qualifications/${rfpId}/legal`,
           alwaysEnabled: true, // Legal may come from RFP extraction, not quickScan
         },
       ],
@@ -139,17 +139,17 @@ export function getRfpNavigationSections(rfpId: string): NavigationSection[] {
         {
           title: 'Tech Stack',
           icon: Code,
-          url: `/rfps/${rfpId}/tech`,
+          url: `/pre-qualifications/${rfpId}/tech`,
         },
         {
           title: 'Facts',
           icon: Info,
-          url: `/rfps/${rfpId}/facts`,
+          url: `/pre-qualifications/${rfpId}/facts`,
         },
         {
           title: 'Kontakte',
           icon: Users,
-          url: `/rfps/${rfpId}/contacts`,
+          url: `/pre-qualifications/${rfpId}/contacts`,
         },
       ],
     },
@@ -159,13 +159,13 @@ export function getRfpNavigationSections(rfpId: string): NavigationSection[] {
         {
           title: 'BL Routing',
           icon: GitBranch,
-          url: `/rfps/${rfpId}/routing`,
+          url: `/pre-qualifications/${rfpId}/routing`,
           alwaysEnabled: true, // Routing is ALWAYS accessible (manual routing)
         },
         {
           title: 'CMS Matrix',
           icon: Grid3X3,
-          url: `/rfps/${rfpId}/routing/cms-matrix`,
+          url: `/pre-qualifications/${rfpId}/routing/cms-matrix`,
           alwaysEnabled: true,
         },
       ],

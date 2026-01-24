@@ -45,7 +45,7 @@ export function ProjectPlanCard({ leadId }: ProjectPlanCardProps) {
     async function fetchProjectPlan() {
       setLoading(true);
       try {
-        const response = await fetch(`/api/leads/${leadId}/sections/costs`);
+        const response = await fetch(`/api/qualifications/${leadId}/sections/costs`);
 
         if (!response.ok) {
           setData(null);

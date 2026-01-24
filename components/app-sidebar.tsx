@@ -62,26 +62,26 @@ const allNavItems: Array<{
     roles: ['bd', 'bl', 'admin'],
   },
   {
-    title: 'RFPs',
-    url: '/rfps',
+    title: 'Pre-Qualifications',
+    url: '/pre-qualifications',
     icon: FileText,
     roles: ['bd', 'bl', 'admin'],
     items: [
       {
-        title: 'Alle RFPs',
-        url: '/rfps',
+        title: 'Alle Pre-Qualifications',
+        url: '/pre-qualifications',
       },
       {
-        title: 'Neuer RFP',
-        url: '/rfps/new',
+        title: 'Neue Pre-Qualification',
+        url: '/pre-qualifications/new',
       },
       {
         title: 'In Prüfung',
-        url: '/rfps?status=pending',
+        url: '/pre-qualifications?status=pending',
       },
       {
         title: 'Genehmigt',
-        url: '/rfps?status=approved',
+        url: '/pre-qualifications?status=approved',
       },
     ],
   },
@@ -185,7 +185,7 @@ const allProjects: Array<{
 }> = [
   {
     name: 'Quick Actions',
-    url: '/rfps/new',
+    url: '/pre-qualifications/new',
     icon: PlusCircle,
     roles: ['bd', 'bl', 'admin'],
   },

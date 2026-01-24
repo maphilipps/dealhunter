@@ -2,7 +2,7 @@ import { Plus, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { RfpsEmptyStateClient } from '@/components/rfps/rfps-empty-state-client';
+import { PreQualificationsEmptyStateClient } from '@/components/pre-qualifications/pre-qualifications-empty-state-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +37,7 @@ export default async function BidsPage() {
             Verwalten Sie Ihre Angebotsanfragen und Ausschreibungen
           </p>
         </div>
-        <Link href="/rfps/new">
+        <Link href="/pre-qualifications/new">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
             Neuer RFP
@@ -93,7 +93,7 @@ export default async function BidsPage() {
         </CardHeader>
         <CardContent>
           {bids.length === 0 ? (
-            <RfpsEmptyStateClient />
+            <PreQualificationsEmptyStateClient />
           ) : (
             <Table>
               <TableHeader>
@@ -150,7 +150,7 @@ export default async function BidsPage() {
                         {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('de-DE') : '-'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Link href={`/rfps/${bid.id}`}>
+                        <Link href={`/pre-qualifications/${bid.id}`}>
                           <Button variant="ghost" size="sm">
                             <Eye className="h-4 w-4" />
                           </Button>

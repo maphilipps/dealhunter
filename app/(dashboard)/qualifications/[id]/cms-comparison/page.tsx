@@ -1,10 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
-import { CMSComparisonView } from '@/components/leads/cms-comparison-client';
+import { CMSComparisonView } from '@/components/qualifications/cms-comparison-client';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, technologies } from '@/lib/db/schema';
+import { qualifications, technologies } from '@/lib/db/schema';
 
 export default async function CmsComparisonPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,12 +17,12 @@ export default async function CmsComparisonPage({ params }: { params: Promise<{ 
   // Fetch lead with selected CMS info
   const [lead] = await db
     .select({
-      selectedCmsId: leads.selectedCmsId,
+      selectedCmsId: qualifications.selectedCmsId,
       selectedCmsName: technologies.name,
     })
-    .from(leads)
-    .leftJoin(technologies, eq(leads.selectedCmsId, technologies.id))
-    .where(eq(leads.id, id))
+    .from(qualifications)
+    .leftJoin(technologies, eq(qualifications.selectedCmsId, technologies.id))
+    .where(eq(qualifications.id, id))
     .limit(1);
 
   return (

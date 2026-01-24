@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
-import { getCachedRfp } from '@/lib/rfps/cached-queries';
+import { getCachedRfp } from '@/lib/pre-qualifications/cached-queries';
 import { parseJsonField } from '@/lib/utils/json';
 
 export default async function ReferencesPage({ params }: { params: Promise<{ id: string }> }) {

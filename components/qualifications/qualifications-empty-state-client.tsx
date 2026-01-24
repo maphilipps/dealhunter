@@ -53,17 +53,17 @@ export function LeadsEmptyStateClient({ userRole }: LeadsEmptyStateClientProps) 
             label: 'RFP hochladen',
             description: 'Laden Sie ein RFP hoch, um den Qualifizierungsprozess zu starten',
             onClick: () => {
-              router.push('/rfps/new');
+              router.push('/pre-qualifications/new');
             },
             variant: 'default' as const,
           },
           {
             id: 'view-rfps',
             icon: <FileText className="h-5 w-5" />,
-            label: 'RFPs anzeigen',
-            description: 'Alle RFPs und deren Qualifizierungsstatus anzeigen',
+            label: 'Pre-Qualifications anzeigen',
+            description: 'Alle Pre-Qualifications und deren Status anzeigen',
             onClick: () => {
-              router.push('/rfps');
+              router.push('/pre-qualifications');
             },
             variant: 'outline' as const,
           },

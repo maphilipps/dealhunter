@@ -9,12 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
-  leads,
+  qualifications,
   pitchdecks,
   pitchdeckDeliverables,
   pitchdeckTeamMembers,
   employees,
-  rfps,
+  preQualifications,
 } from '@/lib/db/schema';
 
 export default async function PitchdeckPage({ params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +26,7 @@ export default async function PitchdeckPage({ params }: { params: Promise<{ id: 
   }
 
   // Get lead
-  const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+  const [lead] = await db.select().from(qualifications).where(eq(qualifications.id, id)).limit(1);
 
   if (!lead) {
     return (
@@ -39,11 +39,15 @@ export default async function PitchdeckPage({ params }: { params: Promise<{ id: 
 
   // Only accessible for BID decisions
   if (lead.blVote !== 'BID') {
-    redirect(`/leads/${id}`);
+    redirect(`/qualifications/${id}`);
   }
 
   // Get pitchdeck
-  const [pitchdeck] = await db.select().from(pitchdecks).where(eq(pitchdecks.leadId, id)).limit(1);
+  const [pitchdeck] = await db
+    .select()
+    .from(pitchdecks)
+    .where(eq(pitchdecks.qualificationId, id))
+    .limit(1);
 
   if (!pitchdeck) {
     return (
@@ -98,7 +102,11 @@ export default async function PitchdeckPage({ params }: { params: Promise<{ id: 
   }>;
 
   // Get RFP to extract deadline
-  const [rfp] = await db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1);
+  const [rfp] = await db
+    .select()
+    .from(preQualifications)
+    .where(eq(preQualifications.id, lead.preQualificationId))
+    .limit(1);
 
   // Extract RFP deadline from RFP
   let rfpDeadline: Date | null = null;

@@ -486,7 +486,7 @@ test.describe('Accounts: Account-RFP Linking', () => {
     await page.waitForLoadState('networkidle');
 
     // Now create an RFP and link to this account
-    await page.goto('/rfps/new');
+    await page.goto('/pre-qualifications/new');
     await page.waitForLoadState('networkidle');
 
     // Check if account dropdown/select exists
@@ -512,7 +512,7 @@ test.describe('Accounts: Account-RFP Linking', () => {
     await page.click('button[type="submit"]');
 
     // Wait for redirect to RFP detail
-    await expect(page).toHaveURL(/\/rfps\/[a-z0-9-]+/);
+    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+/);
   });
 
   test('TC-6.2: View Linked RFPs in Account Detail', async ({ page }) => {
@@ -524,7 +524,7 @@ test.describe('Accounts: Account-RFP Linking', () => {
     await page.waitForLoadState('networkidle');
 
     // Create RFP linked to this account
-    await page.goto('/rfps/new');
+    await page.goto('/pre-qualifications/new');
     await page.waitForLoadState('networkidle');
 
     const accountSelect = page.locator('select[name="accountId"]');
@@ -567,7 +567,7 @@ test.describe('Accounts: Account-RFP Linking', () => {
     await page.waitForLoadState('networkidle');
 
     // Create linked RFP
-    await page.goto('/rfps/new');
+    await page.goto('/pre-qualifications/new');
     await page.waitForLoadState('networkidle');
 
     const accountSelect = page.locator('select[name="accountId"]');

@@ -6,7 +6,7 @@ import { useTransition } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { reloadTimeline } from '@/lib/rfps/actions';
+import { reloadTimeline } from '@/lib/pre-qualifications/actions';
 
 interface ReloadTimelineButtonProps {
   rfpId: string;

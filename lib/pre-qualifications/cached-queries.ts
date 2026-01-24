@@ -7,14 +7,18 @@ import { eq } from 'drizzle-orm';
 import { cache } from 'react';
 
 import { db } from '@/lib/db';
-import { rfps, accounts, users, quickScans } from '@/lib/db/schema';
+import { preQualifications, accounts, users, quickScans } from '@/lib/db/schema';
 
 /**
  * Get RFP by ID with request-level caching
  * This prevents duplicate queries in layout + page
  */
 export const getCachedRfp = cache(async (id: string) => {
-  const [rfp] = await db.select().from(rfps).where(eq(rfps.id, id)).limit(1);
+  const [rfp] = await db
+    .select()
+    .from(preQualifications)
+    .where(eq(preQualifications.id, id))
+    .limit(1);
   return rfp;
 });
 

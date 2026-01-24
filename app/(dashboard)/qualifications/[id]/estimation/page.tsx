@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/table';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, ptEstimations } from '@/lib/db/schema';
+import { qualifications, ptEstimations } from '@/lib/db/schema';
 import type { Phase, DisciplineAllocation } from '@/lib/estimations/pt-calculator';
 
 export default async function PTEstimationDetailPage({
@@ -47,7 +47,7 @@ export default async function PTEstimationDetailPage({
   }
 
   // Get lead
-  const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+  const [lead] = await db.select().from(qualifications).where(eq(qualifications.id, id)).limit(1);
 
   if (!lead) {
     return (
@@ -62,7 +62,7 @@ export default async function PTEstimationDetailPage({
   const [estimation] = await db
     .select()
     .from(ptEstimations)
-    .where(eq(ptEstimations.leadId, id))
+    .where(eq(ptEstimations.qualificationId, id))
     .limit(1);
 
   if (!estimation) {
@@ -70,7 +70,7 @@ export default async function PTEstimationDetailPage({
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/leads/${id}`}>
+            <Link href={`/qualifications/${id}`}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Zurück zu Lead Overview
             </Link>
@@ -111,7 +111,7 @@ export default async function PTEstimationDetailPage({
         <div>
           <div className="flex items-center gap-4 mb-2">
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/leads/${id}`}>
+              <Link href={`/qualifications/${id}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Zurück zu Lead Overview
               </Link>

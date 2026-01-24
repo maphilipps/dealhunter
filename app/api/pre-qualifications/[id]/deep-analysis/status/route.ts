@@ -3,13 +3,13 @@ import { NextRequest } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, deepMigrationAnalyses } from '@/lib/db/schema';
+import { preQualifications, deepMigrationAnalyses } from '@/lib/db/schema';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/rfps/[id]/deep-analysis/status
+ * GET /api/pre-qualifications/[id]/deep-analysis/status
  *
  * Retrieves the current status of the deep migration analysis for a bid.
  *
@@ -44,8 +44,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     // Once userId is added to deepMigrationAnalyses, this can be simplified
     const [bid] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, id), eq(rfps.userId, session.user.id)))
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, id), eq(preQualifications.userId, session.user.id)))
       .limit(1);
 
     if (!bid) {
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const [analysis] = await db
       .select()
       .from(deepMigrationAnalyses)
-      .where(eq(deepMigrationAnalyses.rfpId, id))
+      .where(eq(deepMigrationAnalyses.preQualificationId, id))
       .orderBy(desc(deepMigrationAnalyses.createdAt))
       .limit(1);
 

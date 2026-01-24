@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SuggestedActions } from '@/components/ui/suggested-actions';
 
-export function RfpsEmptyStateClient() {
+export function PreQualificationsEmptyStateClient() {
   const router = useRouter();
 
   const suggestions = [
@@ -23,7 +23,7 @@ export function RfpsEmptyStateClient() {
       label: 'RFP hochladen',
       description: 'PDF oder Text hochladen und AI-Extraktion starten',
       onClick: () => {
-        router.push('/rfps/new');
+        router.push('/pre-qualifications/new');
       },
       variant: 'default' as const,
     },
@@ -69,7 +69,7 @@ export function RfpsEmptyStateClient() {
         actions={[
           {
             label: 'Neuer RFP',
-            onClick: () => router.push('/rfps/new'),
+            onClick: () => router.push('/pre-qualifications/new'),
             variant: 'default',
             icon: <Upload className="h-4 w-4" />,
           },

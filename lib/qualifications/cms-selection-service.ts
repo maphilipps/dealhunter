@@ -1,7 +1,7 @@
 /**
  * CMS Selection Service (DEA-151)
  *
- * Provides BU-specific CMS filtering and selection for leads.
+ * Provides BU-specific CMS filtering and selection for qualifications.
  * Each Business Unit has its own set of supported CMS options.
  *
  * Features:
@@ -14,7 +14,7 @@
 import { eq, and } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { leads, technologies, businessUnits } from '@/lib/db/schema';
+import { qualifications, technologies, businessUnits } from '@/lib/db/schema';
 import { queryRagForLead, formatLeadContext } from '@/lib/rag/lead-retrieval-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -199,7 +199,7 @@ async function extractCMSRequirements(
 ): Promise<CMSRequirements> {
   // Query RAG for technology and CMS preferences
   const ragResults = await queryRagForLead({
-    leadId,
+    qualificationId: leadId,
     question:
       'CMS requirements, headless, content management, editorial workflow, multilingual, ecommerce',
     maxResults: 5,
@@ -388,14 +388,14 @@ export async function getCMSOptionsForLead(leadId: string): Promise<CMSSelection
   // 1. Fetch lead with BU
   const leadData = await db
     .select({
-      leadId: leads.id,
-      businessUnitId: leads.businessUnitId,
-      requirements: leads.requirements,
-      budget: leads.budget,
-      selectedCmsId: leads.selectedCmsId,
+      leadId: qualifications.id,
+      businessUnitId: qualifications.businessUnitId,
+      requirements: qualifications.requirements,
+      budget: qualifications.budget,
+      selectedCmsId: qualifications.selectedCmsId,
     })
-    .from(leads)
-    .where(eq(leads.id, leadId));
+    .from(qualifications)
+    .where(eq(qualifications.id, leadId));
 
   if (leadData.length === 0) {
     throw new Error(`Lead ${leadId} not found`);
@@ -481,9 +481,9 @@ export async function getCMSOptionsForLead(leadId: string): Promise<CMSSelection
 export async function selectCMSForLead(leadId: string, cmsId: string): Promise<void> {
   // Verify CMS exists and is valid for the lead's BU
   const lead = await db
-    .select({ businessUnitId: leads.businessUnitId })
-    .from(leads)
-    .where(eq(leads.id, leadId));
+    .select({ businessUnitId: qualifications.businessUnitId })
+    .from(qualifications)
+    .where(eq(qualifications.id, leadId));
 
   if (lead.length === 0) {
     throw new Error(`Lead ${leadId} not found`);
@@ -506,12 +506,12 @@ export async function selectCMSForLead(leadId: string, cmsId: string): Promise<v
 
   // Update lead
   await db
-    .update(leads)
+    .update(qualifications)
     .set({
       selectedCmsId: cmsId,
       updatedAt: new Date(),
     })
-    .where(eq(leads.id, leadId));
+    .where(eq(qualifications.id, leadId));
 }
 
 /**
@@ -519,12 +519,12 @@ export async function selectCMSForLead(leadId: string, cmsId: string): Promise<v
  */
 export async function clearCMSSelection(leadId: string): Promise<void> {
   await db
-    .update(leads)
+    .update(qualifications)
     .set({
       selectedCmsId: null,
       updatedAt: new Date(),
     })
-    .where(eq(leads.id, leadId));
+    .where(eq(qualifications.id, leadId));
 }
 
 /**
@@ -548,9 +548,9 @@ export async function compareCMSOptions(
 
   // Extract requirements for display
   const lead = await db
-    .select({ requirements: leads.requirements, budget: leads.budget })
-    .from(leads)
-    .where(eq(leads.id, leadId));
+    .select({ requirements: qualifications.requirements, budget: qualifications.budget })
+    .from(qualifications)
+    .where(eq(qualifications.id, leadId));
 
   const requirements = await extractCMSRequirements(
     leadId,

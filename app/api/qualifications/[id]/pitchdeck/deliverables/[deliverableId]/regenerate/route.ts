@@ -6,10 +6,15 @@ import { createAuditLog } from '@/lib/admin/audit-actions';
 import { generateCompleteSolution, type SolutionInput } from '@/lib/agents/solution-agent';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, pitchdeckDeliverables, pitchdecks, rfps } from '@/lib/db/schema';
+import {
+  qualifications,
+  pitchdeckDeliverables,
+  pitchdecks,
+  preQualifications,
+} from '@/lib/db/schema';
 
 // ============================================================================
-// POST /api/leads/[id]/pitchdeck/deliverables/[deliverableId]/regenerate
+// POST /api/qualifications/[id]/pitchdeck/deliverables/[deliverableId]/regenerate
 // DEA-159 (PA-024): Regenerate solution sketches for a single deliverable
 // ============================================================================
 
@@ -57,7 +62,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Pitchdeck not found' }, { status: 404 });
     }
 
-    if (pitchdeck.leadId !== leadId) {
+    if (pitchdeck.qualificationId !== leadId) {
       return NextResponse.json(
         { error: 'Deliverable does not belong to this lead' },
         { status: 400 }
@@ -65,14 +70,22 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     }
 
     // 5. Get lead
-    const [lead] = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, leadId))
+      .limit(1);
 
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
     // 6. Get RFP for context
-    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, lead.rfpId)).limit(1);
+    const [rfp] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, lead.preQualificationId))
+      .limit(1);
 
     if (!rfp) {
       return NextResponse.json({ error: 'RFP not found' }, { status: 404 });
@@ -141,8 +154,8 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       try {
         await createAuditLog({
           action: 'update',
-          entityType: 'rfp',
-          entityId: lead.rfpId,
+          entityType: 'pre_qualification',
+          entityId: lead.preQualificationId,
           previousValue: JSON.stringify({
             deliverableId,
             deliverableName: deliverable.deliverableName,
@@ -189,7 +202,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     );
   } catch (error) {
     console.error(
-      'POST /api/leads/[id]/pitchdeck/deliverables/[deliverableId]/regenerate error:',
+      'POST /api/qualifications/[id]/pitchdeck/deliverables/[deliverableId]/regenerate error:',
       error
     );
     return NextResponse.json(

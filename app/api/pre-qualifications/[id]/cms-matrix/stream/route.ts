@@ -2,7 +2,7 @@
  * CMS Matrix Stream API
  *
  * Startet die parallele Anforderungsmatrix-Recherche und streamt Fortschritt.
- * POST /api/rfps/[id]/cms-matrix/stream
+ * POST /api/pre-qualifications/[id]/cms-matrix/stream
  */
 
 import { eq } from 'drizzle-orm';
@@ -15,7 +15,7 @@ import {
 } from '@/lib/cms-matching/parallel-matrix-orchestrator';
 import type { RequirementMatch } from '@/lib/cms-matching/schema';
 import { db } from '@/lib/db';
-import { rfps, technologies } from '@/lib/db/schema';
+import { preQualifications, technologies } from '@/lib/db/schema';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
 
 export const runtime = 'nodejs';
@@ -181,7 +181,11 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   void (async () => {
     try {
       // 1. Load RFP
-      const rfp = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);
+      const rfp = await db
+        .select()
+        .from(preQualifications)
+        .where(eq(preQualifications.id, rfpId))
+        .limit(1);
 
       if (!rfp.length) {
         await sendEvent({
@@ -317,9 +321,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const { id: rfpId } = await params;
 
   const rfp = await db
-    .select({ quickScanResults: rfps.quickScanResults })
-    .from(rfps)
-    .where(eq(rfps.id, rfpId))
+    .select({ quickScanResults: preQualifications.quickScanResults })
+    .from(preQualifications)
+    .where(eq(preQualifications.id, rfpId))
     .limit(1);
 
   if (!rfp.length) {

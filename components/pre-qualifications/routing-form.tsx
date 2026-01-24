@@ -74,9 +74,9 @@ export function RoutingForm({ rfpId, blRecommendation, allBusinessUnits }: Routi
         if (result.success) {
           // Redirect zum Lead falls einer erstellt wurde, sonst zum RFP
           if (result.leadId) {
-            router.push(`/leads/${result.leadId}`);
+            router.push(`/qualifications/${result.leadId}`);
           } else {
-            router.push(`/rfps/${rfpId}`);
+            router.push(`/pre-qualifications/${rfpId}`);
           }
           router.refresh();
         } else {

@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads } from '@/lib/db/schema';
+import { qualifications } from '@/lib/db/schema';
 import {
   getCheckpointState,
   saveCheckpoint,
@@ -135,12 +135,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // Verify lead exists
   const [lead] = await db
     .select({
-      id: leads.id,
-      websiteUrl: leads.websiteUrl,
-      deepScanStatus: leads.deepScanStatus,
+      id: qualifications.id,
+      websiteUrl: qualifications.websiteUrl,
+      deepScanStatus: qualifications.deepScanStatus,
     })
-    .from(leads)
-    .where(eq(leads.id, id))
+    .from(qualifications)
+    .where(eq(qualifications.id, id))
     .limit(1);
 
   if (!lead) {

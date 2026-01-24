@@ -84,7 +84,7 @@ function ExpertResultCard({ expertName, sectionId, confidence, leadId }: ExpertR
   const handleNavigate = () => {
     if (sectionId) {
       // Navigate to the expert's section in the audit
-      router.push(`/leads/${leadId}/audit/${sectionId}`);
+      router.push(`/qualifications/${leadId}/audit/${sectionId}`);
     }
   };
 

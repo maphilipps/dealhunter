@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
+import { preQualifications } from '@/lib/db/schema';
 import { runExtractionWithStreaming } from '@/lib/extraction/agent';
 import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
@@ -32,8 +32,8 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     // 2. Fetch bid data and verify ownership
     const [bid] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, id), eq(rfps.userId, session.user.id)));
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, id), eq(preQualifications.userId, session.user.id)));
 
     if (!bid) {
       return new Response(JSON.stringify({ error: 'Not found' }), {
@@ -73,12 +73,12 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
 
     // 4. Update status to extracting (non-blocking - don't await)
     // This allows the stream to start immediately while the DB update happens in background
-    db.update(rfps)
+    db.update(preQualifications)
       .set({
         status: 'extracting',
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, id))
+      .where(eq(preQualifications.id, id))
       .catch(error => {
         console.error('Failed to update status to extracting:', error);
       });
@@ -91,10 +91,10 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         // Parse metadata if available
         const metadata = bid.metadata ? (JSON.parse(bid.metadata) as Record<string, unknown>) : {};
 
-        // Run extraction with streaming callbacks (rfpId enables RAG-based extraction)
+        // Run extraction with streaming callbacks (preQualificationId enables RAG-based extraction)
         const result = await runExtractionWithStreaming(
           {
-            rfpId: id,
+            preQualificationId: id,
             rawText: bid.rawInput,
             inputType: bid.inputType as 'pdf' | 'email' | 'freetext',
             metadata,
@@ -105,13 +105,13 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         if (result.success) {
           // Save extracted requirements and update status to reviewing
           await db
-            .update(rfps)
+            .update(preQualifications)
             .set({
               extractedRequirements: JSON.stringify(result.requirements),
               status: 'reviewing',
               updatedAt: new Date(),
             })
-            .where(eq(rfps.id, id));
+            .where(eq(preQualifications.id, id));
 
           // Emit completion event
           emit({
@@ -125,12 +125,12 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         } else {
           // Update status back to draft on error
           await db
-            .update(rfps)
+            .update(preQualifications)
             .set({
               status: 'draft',
               updatedAt: new Date(),
             })
-            .where(eq(rfps.id, id));
+            .where(eq(preQualifications.id, id));
 
           emit({
             type: AgentEventType.ERROR,
@@ -146,12 +146,12 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
 
         // Update status to extraction_failed for better error tracking
         await db
-          .update(rfps)
+          .update(preQualifications)
           .set({
             status: 'extraction_failed',
             updatedAt: new Date(),
           })
-          .where(eq(rfps.id, id))
+          .where(eq(preQualifications.id, id))
           .catch(dbError => {
             console.error('Failed to update status to extraction_failed:', dbError);
           });

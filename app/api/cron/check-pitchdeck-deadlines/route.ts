@@ -5,7 +5,7 @@ import { NextResponse, after } from 'next/server';
 
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { db } from '@/lib/db';
-import { leads, pitchdecks, rfps } from '@/lib/db/schema';
+import { qualifications, pitchdecks, preQualifications } from '@/lib/db/schema';
 
 // ============================================================================
 // GET /api/cron/check-pitchdeck-deadlines
@@ -60,12 +60,12 @@ export async function GET(request: Request) {
     const activePitchdecks = await db
       .select({
         pitchdeck: pitchdecks,
-        lead: leads,
-        rfp: rfps,
+        lead: qualifications,
+        rfp: preQualifications,
       })
       .from(pitchdecks)
-      .innerJoin(leads, eq(pitchdecks.leadId, leads.id))
-      .innerJoin(rfps, eq(leads.rfpId, rfps.id))
+      .innerJoin(qualifications, eq(pitchdecks.qualificationId, qualifications.id))
+      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
       .where(
         and(
           ne(pitchdecks.status, 'submitted'),

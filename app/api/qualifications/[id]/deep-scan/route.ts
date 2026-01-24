@@ -1,11 +1,11 @@
 /**
  * Deep Scan API Endpoint (DEA-145)
  *
- * POST /api/leads/[id]/deep-scan
+ * POST /api/qualifications/[id]/deep-scan
  * - Manually trigger deep scan for a lead
  * - Re-trigger if needed (overwrites previous results)
  *
- * GET /api/leads/[id]/deep-scan
+ * GET /api/qualifications/[id]/deep-scan
  * - Get current deep scan progress
  */
 
@@ -15,7 +15,7 @@ import { runDeepScan, getDeepScanProgress } from '@/lib/agents/deep-scan-orchest
 import { auth } from '@/lib/auth';
 
 /**
- * GET /api/leads/[id]/deep-scan
+ * GET /api/qualifications/[id]/deep-scan
  * Get current deep scan progress
  */
 export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ id: s
 }
 
 /**
- * POST /api/leads/[id]/deep-scan
+ * POST /api/qualifications/[id]/deep-scan
  * Trigger deep scan for a lead
  */
 export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {

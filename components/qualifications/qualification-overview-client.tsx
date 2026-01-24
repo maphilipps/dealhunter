@@ -23,7 +23,7 @@ export function LeadOverviewClient({ leadId, leadStatus }: LeadOverviewClientPro
 
   async function handleStartDeepScan() {
     try {
-      const response = await fetch(`/api/leads/${leadId}/deep-scan`, {
+      const response = await fetch(`/api/qualifications/${leadId}/deep-scan`, {
         method: 'POST',
       });
 

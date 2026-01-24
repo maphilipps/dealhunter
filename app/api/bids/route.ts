@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, accounts } from '@/lib/db/schema';
+import { preQualifications, accounts } from '@/lib/db/schema';
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,15 +23,19 @@ export async function GET(request: NextRequest) {
     const conditions = [];
 
     if (status && status !== 'all') {
-      conditions.push(eq(rfps.status, status as (typeof rfps.status.enumValues)[0]));
+      conditions.push(
+        eq(preQualifications.status, status as (typeof preQualifications.status.enumValues)[0])
+      );
     }
 
     if (source && source !== 'all') {
-      conditions.push(eq(rfps.source, source as (typeof rfps.source.enumValues)[0]));
+      conditions.push(
+        eq(preQualifications.source, source as (typeof preQualifications.source.enumValues)[0])
+      );
     }
 
     if (accountId) {
-      conditions.push(eq(rfps.accountId, accountId));
+      conditions.push(eq(preQualifications.accountId, accountId));
     }
 
     // Add account name search to database query (DEA-114)
@@ -50,26 +54,26 @@ export async function GET(request: NextRequest) {
     // Execute query with filters
     let query = db
       .select({
-        id: rfps.id,
-        status: rfps.status,
-        decision: rfps.decision,
-        source: rfps.source,
-        accountId: rfps.accountId,
+        id: preQualifications.id,
+        status: preQualifications.status,
+        decision: preQualifications.decision,
+        source: preQualifications.source,
+        accountId: preQualifications.accountId,
         accountName: accounts.name,
-        websiteUrl: rfps.websiteUrl,
-        extractedRequirements: rfps.extractedRequirements,
-        createdAt: rfps.createdAt,
-        updatedAt: rfps.updatedAt,
+        websiteUrl: preQualifications.websiteUrl,
+        extractedRequirements: preQualifications.extractedRequirements,
+        createdAt: preQualifications.createdAt,
+        updatedAt: preQualifications.updatedAt,
       })
-      .from(rfps)
-      .leftJoin(accounts, eq(rfps.accountId, accounts.id))
+      .from(preQualifications)
+      .leftJoin(accounts, eq(preQualifications.accountId, accounts.id))
       .$dynamic();
 
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }
 
-    let results = await query.orderBy(desc(rfps.createdAt));
+    let results = await query.orderBy(desc(preQualifications.createdAt));
 
     // Apply additional search filter in-memory for JSON fields (DEA-114)
     // Note: accountName search is already done at database level above

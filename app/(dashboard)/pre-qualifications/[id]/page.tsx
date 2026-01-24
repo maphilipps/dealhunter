@@ -10,7 +10,7 @@ import {
 import { notFound, redirect } from 'next/navigation';
 
 import { BidDetailClient } from '@/components/bids/bid-detail-client';
-import { RunExpertAgentsButton } from '@/components/rfps/run-expert-agents-button';
+import { RunExpertAgentsButton } from '@/components/pre-qualifications/run-expert-agents-button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,7 @@ import { Progress } from '@/components/ui/progress';
 import { getAgentResult, hasExpertAgentResults } from '@/lib/agents/expert-agents';
 import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schema';
 import { auth } from '@/lib/auth';
-import { getCachedRfp } from '@/lib/rfps/cached-queries';
+import { getCachedRfp } from '@/lib/pre-qualifications/cached-queries';
 
 export default async function BidDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

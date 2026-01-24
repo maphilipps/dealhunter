@@ -8,7 +8,7 @@ import {
 } from './embedding-service';
 
 import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
+import { preQualifications } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 // Re-export embedding generation for use in other modules
@@ -192,23 +192,23 @@ export async function checkForDuplicates(
 
   // Exclude self if updating
   if (excludeRfpId) {
-    conditions.push(ne(rfps.id, excludeRfpId));
+    conditions.push(ne(preQualifications.id, excludeRfpId));
   }
 
   // Only check RFPs that have extracted requirements
-  conditions.push(isNotNull(rfps.extractedRequirements));
+  conditions.push(isNotNull(preQualifications.extractedRequirements));
 
   // Fetch potential duplicates (including embeddings)
   const existingRfps = await db
     .select({
-      id: rfps.id,
-      accountId: rfps.accountId,
-      websiteUrl: rfps.websiteUrl,
-      extractedRequirements: rfps.extractedRequirements,
-      descriptionEmbedding: rfps.descriptionEmbedding,
-      createdAt: rfps.createdAt,
+      id: preQualifications.id,
+      accountId: preQualifications.accountId,
+      websiteUrl: preQualifications.websiteUrl,
+      extractedRequirements: preQualifications.extractedRequirements,
+      descriptionEmbedding: preQualifications.descriptionEmbedding,
+      createdAt: preQualifications.createdAt,
     })
-    .from(rfps)
+    .from(preQualifications)
     .where(conditions.length > 0 ? and(...conditions) : undefined);
 
   // Check each existing RFP for duplicates

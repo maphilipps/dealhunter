@@ -3,7 +3,14 @@ import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 
 import { db } from '../lib/db';
-import { users, businessUnits, accounts, rfps, leads, quickScans } from '../lib/db/schema';
+import {
+  users,
+  businessUnits,
+  accounts,
+  preQualifications,
+  qualifications,
+  quickScans,
+} from '../lib/db/schema';
 import { embedAgentOutput } from '../lib/rag/embedding-service';
 
 // Erweiterte DAX + MDAX Konzerne
@@ -277,7 +284,7 @@ async function seedMassiveData() {
 
       // Create RFP
       const [rfp] = await db
-        .insert(rfps)
+        .insert(preQualifications)
         .values({
           userId: testUser.id,
           source: source as any,
@@ -298,7 +305,7 @@ async function seedMassiveData() {
       const [quickScan] = await db
         .insert(quickScans)
         .values({
-          rfpId: rfp.id,
+          preQualificationId: rfp.id,
           websiteUrl: account.website || 'https://example.com',
           status: 'completed',
           cms: tech.cms,
@@ -317,7 +324,10 @@ async function seedMassiveData() {
         .returning();
 
       // Update RFP with Quick Scan ID
-      await db.update(rfps).set({ quickScanId: quickScan.id }).where(eq(rfps.id, rfp.id));
+      await db
+        .update(preQualifications)
+        .set({ quickScanId: quickScan.id })
+        .where(eq(preQualifications.id, rfp.id));
 
       createdRFPs.push({ rfp, quickScan, decision, bu: tech.bu });
       rfpCount++;
@@ -350,9 +360,9 @@ async function seedMassiveData() {
     const leadStatus = blVote === 'BID' ? 'bid_voted' : 'archived';
 
     const [lead] = await db
-      .insert(leads)
+      .insert(qualifications)
       .values({
-        rfpId: rfp.id,
+        preQualificationId: rfp.id,
         status: leadStatus as any,
         customerName: requirements.projectName || 'Unknown Customer',
         websiteUrl: rfp.websiteUrl,
@@ -436,7 +446,7 @@ async function seedMassiveData() {
   console.log('  BL PHP: bl-php@adesso.de / test123');
   console.log('  BL WEM: bl-wem@adesso.de / test123');
   console.log('\n📍 URLs:');
-  console.log('  RFPs: http://localhost:3000/rfps');
+  console.log('  Pre-Qualifications: http://localhost:3000/pre-qualifications');
   console.log('  Leads: http://localhost:3000/leads');
 }
 

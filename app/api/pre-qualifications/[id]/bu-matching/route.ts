@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const quickScanResults = await db
       .select()
       .from(quickScans)
-      .where(eq(quickScans.rfpId, id))
+      .where(eq(quickScans.preQualificationId, id))
       .limit(1);
 
     if (quickScanResults.length === 0) {

@@ -6,14 +6,13 @@
  * Focuses on: liability, insurance, penalties, IP, contract terms, etc.
  */
 
-
 import {
   queryRfpDocument,
   storeAgentResult,
   createAgentOutput,
   formatContextFromRAG,
 } from './base';
-import { LegalRfpAnalysisSchema, type LegalRfpAnalysis } from './legal-rfp-schema';
+import { LegalRfpAnalysisSchema, type LegalRfpAnalysis } from './legal-pre-qualification-schema';
 import type { ExpertAgentInput, ExpertAgentOutput } from './types';
 
 import { generateStructuredOutput } from '@/lib/ai/config';

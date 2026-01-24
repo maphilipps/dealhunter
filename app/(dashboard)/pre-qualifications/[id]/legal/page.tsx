@@ -29,7 +29,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { getAgentResult, type LegalRfpAnalysis } from '@/lib/agents/expert-agents';
 import { auth } from '@/lib/auth';
-import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
+import { getCachedRfpWithRelations } from '@/lib/pre-qualifications/cached-queries';
 import { parseJsonField } from '@/lib/utils/json';
 
 interface LegalCompliance {

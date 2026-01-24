@@ -14,7 +14,7 @@ import {
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { WebsiteAuditClient } from '@/components/leads/website-audit-client';
+import { WebsiteAuditClient } from '@/components/qualifications/website-audit-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/table';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, websiteAudits } from '@/lib/db/schema';
+import { qualifications, websiteAudits } from '@/lib/db/schema';
 
 export default async function WebsiteAuditDetailPage({
   params,
@@ -45,7 +45,7 @@ export default async function WebsiteAuditDetailPage({
   }
 
   // Get lead
-  const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+  const [lead] = await db.select().from(qualifications).where(eq(qualifications.id, id)).limit(1);
 
   if (!lead) {
     return (
@@ -60,7 +60,7 @@ export default async function WebsiteAuditDetailPage({
   const [audit] = await db
     .select()
     .from(websiteAudits)
-    .where(eq(websiteAudits.leadId, id))
+    .where(eq(websiteAudits.qualificationId, id))
     .limit(1);
 
   if (!audit) {
@@ -68,7 +68,7 @@ export default async function WebsiteAuditDetailPage({
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/leads/${id}`}>← Zurück zu Lead Overview</Link>
+            <Link href={`/qualifications/${id}`}>← Zurück zu Lead Overview</Link>
           </Button>
         </div>
 
@@ -153,7 +153,7 @@ export default async function WebsiteAuditDetailPage({
         <div>
           <div className="flex items-center gap-4 mb-2">
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/leads/${id}`}>← Zurück zu Lead Overview</Link>
+              <Link href={`/qualifications/${id}`}>← Zurück zu Lead Overview</Link>
             </Button>
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Website Audit</h1>

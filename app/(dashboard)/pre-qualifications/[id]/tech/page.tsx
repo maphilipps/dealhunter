@@ -28,7 +28,7 @@ import {
 import { getAgentResult } from '@/lib/agents/expert-agents';
 import type { TechStackAnalysis } from '@/lib/agents/expert-agents/techstack-schema';
 import { auth } from '@/lib/auth';
-import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
+import { getCachedRfpWithRelations } from '@/lib/pre-qualifications/cached-queries';
 
 // Labels for categories and requirement types
 const categoryLabels: Record<string, string> = {

@@ -3,13 +3,16 @@ import { ArrowLeft, Users, AlertTriangle, Info } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { StaffingGanttChart, type StaffingEntry } from '@/components/leads/staffing-gantt-chart';
+import {
+  StaffingGanttChart,
+  type StaffingEntry,
+} from '@/components/qualifications/staffing-gantt-chart';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads } from '@/lib/db/schema';
+import { qualifications } from '@/lib/db/schema';
 
 export default async function StaffingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,7 +23,7 @@ export default async function StaffingPage({ params }: { params: Promise<{ id: s
   }
 
   // Get lead
-  const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+  const [lead] = await db.select().from(qualifications).where(eq(qualifications.id, id)).limit(1);
 
   if (!lead) {
     return (
@@ -78,7 +81,7 @@ export default async function StaffingPage({ params }: { params: Promise<{ id: s
         <div>
           <div className="flex items-center gap-4 mb-2">
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/leads/${id}`}>
+              <Link href={`/qualifications/${id}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Zurück zu Lead Overview
               </Link>

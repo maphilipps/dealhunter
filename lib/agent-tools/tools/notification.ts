@@ -6,7 +6,14 @@ import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { leads, users, rfps, teamAssignments, employees, leadSectionData } from '@/lib/db/schema';
+import {
+  qualifications,
+  users,
+  preQualifications,
+  teamAssignments,
+  employees,
+  qualificationSectionData,
+} from '@/lib/db/schema';
 import { sendTeamNotificationEmails } from '@/lib/notifications/email';
 
 /**
@@ -35,10 +42,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Get lead (authorize via rfp.userId)
     const [leadData] = await db
-      .select({ lead: leads, rfp: rfps })
-      .from(leads)
-      .innerJoin(rfps, eq(leads.rfpId, rfps.id))
-      .where(and(eq(leads.id, input.leadId), eq(rfps.userId, context.userId)))
+      .select({ lead: qualifications, rfp: preQualifications })
+      .from(qualifications)
+      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
+      .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!leadData) {
@@ -56,7 +63,7 @@ registry.register({
       })
       .from(teamAssignments)
       .innerJoin(employees, eq(teamAssignments.employeeId, employees.id))
-      .where(eq(teamAssignments.rfpId, rfp.id));
+      .where(eq(teamAssignments.preQualificationId, rfp.id));
 
     if (assignments.length === 0) {
       return { success: false, error: 'No team members assigned to this lead' };
@@ -83,7 +90,7 @@ registry.register({
         projectDescription: input.message || lead.projectDescription || 'No description available',
         teamMembers: teamDetails,
         blLeaderName: blLeader?.name || 'Unknown',
-        projectUrl: `/leads/${lead.id}`, // Override to use lead URL instead of RFP
+        projectUrl: `/qualifications/${lead.id}`, // Override to use lead URL instead of RFP
       });
 
       return {
@@ -140,10 +147,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Get lead (authorize via rfp.userId)
     const [leadData] = await db
-      .select({ lead: leads, rfp: rfps })
-      .from(leads)
-      .innerJoin(rfps, eq(leads.rfpId, rfps.id))
-      .where(and(eq(leads.id, input.leadId), eq(rfps.userId, context.userId)))
+      .select({ lead: qualifications, rfp: preQualifications })
+      .from(qualifications)
+      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
+      .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!leadData) {
@@ -166,12 +173,15 @@ registry.register({
       return { success: false, error: 'Scheduled time must be in the future' };
     }
 
-    // Get existing reminders from leadSectionData (sectionId="_reminders")
+    // Get existing reminders from qualificationSectionData (sectionId="_reminders")
     const [existingSection] = await db
       .select()
-      .from(leadSectionData)
+      .from(qualificationSectionData)
       .where(
-        and(eq(leadSectionData.leadId, input.leadId), eq(leadSectionData.sectionId, '_reminders'))
+        and(
+          eq(qualificationSectionData.qualificationId, input.leadId),
+          eq(qualificationSectionData.sectionId, '_reminders')
+        )
       )
       .limit(1);
 
@@ -195,15 +205,15 @@ registry.register({
     // Upsert reminders section
     if (existingSection) {
       await db
-        .update(leadSectionData)
+        .update(qualificationSectionData)
         .set({
           content: JSON.stringify(updatedReminders),
           updatedAt: new Date(),
         })
-        .where(eq(leadSectionData.id, existingSection.id));
+        .where(eq(qualificationSectionData.id, existingSection.id));
     } else {
-      await db.insert(leadSectionData).values({
-        leadId: input.leadId,
+      await db.insert(qualificationSectionData).values({
+        qualificationId: input.leadId,
         sectionId: '_reminders',
         content: JSON.stringify(updatedReminders),
         confidence: 100,
@@ -246,22 +256,25 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Get lead (authorize via rfp.userId)
     const [leadData] = await db
-      .select({ lead: leads, rfp: rfps })
-      .from(leads)
-      .innerJoin(rfps, eq(leads.rfpId, rfps.id))
-      .where(and(eq(leads.id, input.leadId), eq(rfps.userId, context.userId)))
+      .select({ lead: qualifications, rfp: preQualifications })
+      .from(qualifications)
+      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
+      .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!leadData) {
       return { success: false, error: 'Lead not found or no access' };
     }
 
-    // Get reminders from leadSectionData
+    // Get reminders from qualificationSectionData
     const [remindersSection] = await db
       .select()
-      .from(leadSectionData)
+      .from(qualificationSectionData)
       .where(
-        and(eq(leadSectionData.leadId, input.leadId), eq(leadSectionData.sectionId, '_reminders'))
+        and(
+          eq(qualificationSectionData.qualificationId, input.leadId),
+          eq(qualificationSectionData.sectionId, '_reminders')
+        )
       )
       .limit(1);
 
@@ -302,22 +315,25 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Get lead (authorize via rfp.userId)
     const [leadData] = await db
-      .select({ lead: leads, rfp: rfps })
-      .from(leads)
-      .innerJoin(rfps, eq(leads.rfpId, rfps.id))
-      .where(and(eq(leads.id, input.leadId), eq(rfps.userId, context.userId)))
+      .select({ lead: qualifications, rfp: preQualifications })
+      .from(qualifications)
+      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
+      .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!leadData) {
       return { success: false, error: 'Lead not found or no access' };
     }
 
-    // Get reminders from leadSectionData
+    // Get reminders from qualificationSectionData
     const [remindersSection] = await db
       .select()
-      .from(leadSectionData)
+      .from(qualificationSectionData)
       .where(
-        and(eq(leadSectionData.leadId, input.leadId), eq(leadSectionData.sectionId, '_reminders'))
+        and(
+          eq(qualificationSectionData.qualificationId, input.leadId),
+          eq(qualificationSectionData.sectionId, '_reminders')
+        )
       )
       .limit(1);
 
@@ -348,14 +364,14 @@ registry.register({
       status: 'cancelled',
     };
 
-    // Update leadSectionData
+    // Update qualificationSectionData
     await db
-      .update(leadSectionData)
+      .update(qualificationSectionData)
       .set({
         content: JSON.stringify(updatedReminders),
         updatedAt: new Date(),
       })
-      .where(eq(leadSectionData.id, remindersSection.id));
+      .where(eq(qualificationSectionData.id, remindersSection.id));
 
     return {
       success: true,

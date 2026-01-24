@@ -19,11 +19,11 @@ import { ScrapedFactsPhase } from './phases/scraped-facts-phase';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type { QuickScan, Rfp } from '@/lib/db/schema';
+import type { QuickScan, PreQualification } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 interface WorkflowStepperProps {
-  rfp: Rfp;
+  rfp: PreQualification;
   quickScan: QuickScan | null;
   extractedData?: ExtractedRequirements | null;
 }

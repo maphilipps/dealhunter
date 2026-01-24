@@ -3,10 +3,10 @@ import { redirect } from 'next/navigation';
 
 import { LeadLayoutClient } from './layout-client';
 
-import { LeadSidebarRight } from '@/components/leads/lead-sidebar-right';
+import { LeadSidebarRight } from '@/components/qualifications/qualification-sidebar-right';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads } from '@/lib/db/schema';
+import { qualifications } from '@/lib/db/schema';
 
 export default async function LeadDashboardLayout({
   children,
@@ -22,7 +22,7 @@ export default async function LeadDashboardLayout({
     redirect('/login');
   }
 
-  const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+  const [lead] = await db.select().from(qualifications).where(eq(qualifications.id, id)).limit(1);
 
   if (!lead) {
     return (

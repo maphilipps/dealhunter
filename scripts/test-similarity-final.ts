@@ -65,7 +65,7 @@ async function test() {
       embedding: dealEmbeddings.embedding,
     })
     .from(dealEmbeddings)
-    .where(eq(dealEmbeddings.leadId, leadId));
+    .where(eq(dealEmbeddings.qualificationId, leadId));
 
   console.log('Total chunks:', chunks.length);
 

@@ -23,7 +23,7 @@ import {
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { useDeepScan, SECTION_TO_EXPERT_MAP, ALL_EXPERTS } from '@/contexts/deep-scan-context';
-import { LEAD_NAVIGATION_SECTIONS } from '@/lib/leads/navigation-config';
+import { QUALIFICATION_NAVIGATION_SECTIONS } from '@/lib/qualifications/navigation-config';
 
 interface LeadSidebarRightProps {
   leadId: string;
@@ -158,11 +158,11 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {LEAD_NAVIGATION_SECTIONS.map(section => {
+              {QUALIFICATION_NAVIGATION_SECTIONS.map(section => {
                 const IconComponent = (Icons as unknown as Record<string, Icons.LucideIcon>)[
                   section.icon
                 ];
-                const sectionRoute = `/leads/${leadId}${section.route ? `/${section.route}` : ''}`;
+                const sectionRoute = `/qualifications/${leadId}${section.route ? `/${section.route}` : ''}`;
                 const isActive = pathname === sectionRoute;
                 const sectionStatus = getSectionStatus(section.id);
                 const hasSubsections = section.subsections && section.subsections.length > 0;
@@ -188,7 +188,7 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
                         <CollapsibleContent>
                           <SidebarMenuSub>
                             {section.subsections?.map(subsection => {
-                              const subsectionRoute = `/leads/${leadId}/${subsection.route}`;
+                              const subsectionRoute = `/qualifications/${leadId}/${subsection.route}`;
                               const isSubActive = pathname === subsectionRoute;
                               return (
                                 <SidebarMenuSubItem key={subsection.id}>

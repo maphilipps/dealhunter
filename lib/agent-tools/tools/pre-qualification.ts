@@ -5,7 +5,7 @@ import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { rfps, documents, quickScans } from '@/lib/db/schema';
+import { preQualifications, documents, quickScans } from '@/lib/db/schema';
 
 const listRfpsInputSchema = z.object({
   status: z
@@ -39,16 +39,21 @@ registry.register({
     if (input.status) {
       results = await db
         .select()
-        .from(rfps)
-        .where(and(eq(rfps.userId, context.userId), eq(rfps.status, input.status)))
-        .orderBy(desc(rfps.createdAt))
+        .from(preQualifications)
+        .where(
+          and(
+            eq(preQualifications.userId, context.userId),
+            eq(preQualifications.status, input.status)
+          )
+        )
+        .orderBy(desc(preQualifications.createdAt))
         .limit(input.limit);
     } else {
       results = await db
         .select()
-        .from(rfps)
-        .where(eq(rfps.userId, context.userId))
-        .orderBy(desc(rfps.createdAt))
+        .from(preQualifications)
+        .where(eq(preQualifications.userId, context.userId))
+        .orderBy(desc(preQualifications.createdAt))
         .limit(input.limit);
     }
 
@@ -68,8 +73,8 @@ registry.register({
   async execute(input, context: ToolContext) {
     const [rfp] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, input.id), eq(rfps.userId, context.userId)))
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, input.id), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!rfp) {
@@ -96,7 +101,7 @@ registry.register({
   inputSchema: createRfpInputSchema,
   async execute(input, context: ToolContext) {
     const [rfp] = await db
-      .insert(rfps)
+      .insert(preQualifications)
       .values({
         userId: context.userId,
         source: input.source,
@@ -148,8 +153,8 @@ registry.register({
   async execute(input, context: ToolContext) {
     const [existing] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, input.id), eq(rfps.userId, context.userId)))
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, input.id), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!existing) {
@@ -166,9 +171,9 @@ registry.register({
       updateData.assignedBusinessUnitId = input.assignedBusinessUnitId;
 
     const [updated] = await db
-      .update(rfps)
+      .update(preQualifications)
       .set(updateData)
-      .where(eq(rfps.id, input.id))
+      .where(eq(preQualifications.id, input.id))
       .returning();
 
     return { success: true, data: updated };
@@ -187,8 +192,8 @@ registry.register({
   async execute(input, context: ToolContext) {
     const [existing] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, input.id), eq(rfps.userId, context.userId)))
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, input.id), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!existing) {
@@ -196,9 +201,9 @@ registry.register({
     }
 
     const [archived] = await db
-      .update(rfps)
+      .update(preQualifications)
       .set({ status: 'archived', updatedAt: new Date() })
-      .where(eq(rfps.id, input.id))
+      .where(eq(preQualifications.id, input.id))
       .returning();
 
     return { success: true, data: { id: archived.id, status: 'archived' } };
@@ -217,8 +222,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     const [rfp] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, input.rfpId), eq(rfps.userId, context.userId)))
+      .from(preQualifications)
+      .where(
+        and(eq(preQualifications.id, input.rfpId), eq(preQualifications.userId, context.userId))
+      )
       .limit(1);
 
     if (!rfp) {
@@ -251,8 +258,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     const [rfp] = await db
       .select()
-      .from(rfps)
-      .where(and(eq(rfps.id, input.rfpId), eq(rfps.userId, context.userId)))
+      .from(preQualifications)
+      .where(
+        and(eq(preQualifications.id, input.rfpId), eq(preQualifications.userId, context.userId))
+      )
       .limit(1);
 
     if (!rfp) {
@@ -269,7 +278,7 @@ registry.register({
         uploadedAt: documents.uploadedAt,
       })
       .from(documents)
-      .where(eq(documents.rfpId, input.rfpId))
+      .where(eq(documents.preQualificationId, input.rfpId))
       .orderBy(desc(documents.uploadedAt));
 
     return { success: true, data: docs };

@@ -20,7 +20,7 @@ export default auth(req => {
    * - /api/auth/*: NextAuth.js handles its own authentication
    *
    * Security Model:
-   * - User access control happens at trigger endpoints (e.g., /api/rfps/[id]/deep-analysis/trigger)
+   * - User access control happens at trigger endpoints (e.g., /api/pre-qualifications/[id]/deep-analysis/trigger)
    * - Webhook endpoints validate signatures to ensure requests come from trusted services
    * - This implements "defense in depth" where multiple layers validate security
    */

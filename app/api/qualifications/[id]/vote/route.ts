@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, businessUnits, users } from '@/lib/db/schema';
+import { qualifications, businessUnits, users } from '@/lib/db/schema';
 
 // ============================================================================
 // Zod Schema for Vote Request
@@ -27,7 +27,7 @@ const idSchema = z.object({
 });
 
 // ============================================================================
-// POST /api/leads/[id]/vote
+// POST /api/qualifications/[id]/vote
 // ============================================================================
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -63,7 +63,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { vote, confidence, reasoning } = parsedBody.data;
 
     // 4. Get Lead
-    const [lead] = await db.select().from(leads).where(eq(leads.id, parsedId.data.id)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, parsedId.data.id))
+      .limit(1);
 
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
@@ -127,7 +131,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // 7. Update Lead with Vote
     const [updatedLead] = await db
-      .update(leads)
+      .update(qualifications)
       .set({
         blVote: vote,
         blVotedAt: new Date(),
@@ -136,7 +140,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         blConfidenceScore: confidence,
         updatedAt: new Date(),
       })
-      .where(eq(leads.id, parsedId.data.id))
+      .where(eq(qualifications.id, parsedId.data.id))
       .returning();
 
     // 8. Create Audit Trail in Background (Non-Blocking)
@@ -144,8 +148,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       try {
         await createAuditLog({
           action: 'update',
-          entityType: 'rfp',
-          entityId: lead.rfpId,
+          entityType: 'pre_qualification',
+          entityId: lead.preQualificationId,
           previousValue: JSON.stringify({
             blVote: null,
             status: lead.status,
@@ -175,7 +179,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       { status: 200 }
     );
   } catch (error) {
-    console.error('POST /api/leads/[id]/vote error:', error);
+    console.error('POST /api/qualifications/[id]/vote error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',

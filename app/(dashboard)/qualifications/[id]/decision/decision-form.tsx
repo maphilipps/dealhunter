@@ -9,11 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
-import type { Lead } from '@/lib/db/schema';
-import { submitBLDecision } from '@/lib/leads/actions';
+import type { Qualification } from '@/lib/db/schema';
+import { submitBLDecision } from '@/lib/qualifications/actions';
 
 interface DecisionFormProps {
-  lead: Lead;
+  lead: Qualification;
 }
 
 export default function DecisionForm({ lead }: DecisionFormProps) {
@@ -69,7 +69,7 @@ export default function DecisionForm({ lead }: DecisionFormProps) {
         </Card>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.push(`/leads/${lead.id}`)}>
+          <Button variant="outline" onClick={() => router.push(`/qualifications/${lead.id}`)}>
             Zurück zur Lead-Übersicht
           </Button>
         </div>
@@ -101,7 +101,7 @@ export default function DecisionForm({ lead }: DecisionFormProps) {
         </Card>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.push(`/leads/${lead.id}`)}>
+          <Button variant="outline" onClick={() => router.push(`/qualifications/${lead.id}`)}>
             Zurück zur Lead-Übersicht
           </Button>
         </div>
@@ -132,7 +132,7 @@ export default function DecisionForm({ lead }: DecisionFormProps) {
       });
 
       if (result.success) {
-        router.push(`/leads/${lead.id}`);
+        router.push(`/qualifications/${lead.id}`);
         router.refresh();
       } else {
         setError(result.error || 'Ein Fehler ist aufgetreten');
@@ -255,7 +255,7 @@ export default function DecisionForm({ lead }: DecisionFormProps) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push(`/leads/${lead.id}`)}
+                onClick={() => router.push(`/qualifications/${lead.id}`)}
                 disabled={isPending}
               >
                 Abbrechen

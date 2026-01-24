@@ -1,7 +1,7 @@
 /**
  * API Route: Calc-Sheet Generator
  *
- * GET /api/leads/[id]/calc-sheet
+ * GET /api/qualifications/[id]/calc-sheet
  * Generates or retrieves calc-sheet data for a lead.
  * Uses RAG data if available, otherwise generates via AI.
  */

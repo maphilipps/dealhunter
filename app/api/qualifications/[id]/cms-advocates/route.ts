@@ -1,7 +1,7 @@
 /**
  * CMS Advocates API
  *
- * GET /api/leads/[id]/cms-advocates
+ * GET /api/qualifications/[id]/cms-advocates
  *
  * Retrieves existing CMS advocate analysis results from RAG.
  * If no data exists, returns a structure indicating no analysis has been run.
@@ -12,7 +12,7 @@ import { NextResponse } from 'next/server';
 
 import { synthesizeCMSComparison } from '@/lib/agents/cms-comparison-synthesizer-agent';
 import { db } from '@/lib/db';
-import { leads } from '@/lib/db/schema';
+import { qualifications } from '@/lib/db/schema';
 import { queryRagForLead } from '@/lib/rag/lead-retrieval-service';
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -20,7 +20,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   try {
     // 1. Verify lead exists
-    const lead = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+    const lead = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, leadId))
+      .limit(1);
 
     if (!lead.length) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
@@ -28,7 +32,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
     // 2. Query RAG for CMS advocate data
     const ragResults = await queryRagForLead({
-      leadId,
+      qualificationId: leadId,
       question:
         'CMS Advocate Vergleich Empfehlung Fit-Score Drupal Magnolia Ibexa FirstSpirit Sulu',
       agentNameFilter: 'cms_advocate_orchestrator',

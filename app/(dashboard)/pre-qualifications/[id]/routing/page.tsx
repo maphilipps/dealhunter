@@ -2,8 +2,8 @@ import { AlertCircle, AlertTriangle, Calendar, Clock, RefreshCw, Sparkles } from
 import { notFound, redirect } from 'next/navigation';
 
 import { TenQuestionsCard } from '@/components/bids/ten-questions-card';
-import { ReloadTimelineButton } from '@/components/rfps/reload-timeline-button';
-import { RoutingForm } from '@/components/rfps/routing-form';
+import { ReloadTimelineButton } from '@/components/pre-qualifications/reload-timeline-button';
+import { RoutingForm } from '@/components/pre-qualifications/routing-form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +24,7 @@ import {
 import { db } from '@/lib/db';
 import { businessUnits } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
-import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
+import { getCachedRfpWithRelations } from '@/lib/pre-qualifications/cached-queries';
 import { analyzeTimelineRisk, getRiskIcon } from '@/lib/timeline/risk-analyzer';
 import type { ProjectTimeline, RiskAnalysis } from '@/lib/timeline/schema';
 
@@ -191,7 +191,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
               Line zuweisen.
             </p>
             <a
-              href={`/rfps/${rfp.id}`}
+              href={`/pre-qualifications/${rfp.id}`}
               className="inline-flex items-center gap-2 text-sm font-medium underline"
             >
               <RefreshCw className="h-4 w-4" />

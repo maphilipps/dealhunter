@@ -221,9 +221,11 @@ describe('navigation-config', () => {
       });
     });
 
-    it('should follow naming convention *-synthesizer (except calc-sheet)', () => {
+    it('should follow naming convention *-synthesizer (except calc-sheet, audit)', () => {
       LEAD_NAVIGATION_SECTIONS.forEach(section => {
-        if (section.id === 'rag-data' || section.id === 'calc-sheet') return;
+        // Skip sections without synthesizer or with special agent names
+        if (section.id === 'rag-data' || section.id === 'calc-sheet' || section.id === 'audit')
+          return;
         const agent = getSynthesizerAgent(section.id);
         expect(agent).toMatch(/-synthesizer$/);
       });

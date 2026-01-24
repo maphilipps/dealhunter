@@ -49,7 +49,7 @@ export function AuditTrailTable() {
   });
 
   useEffect(() => {
-    fetchLogs();
+    void fetchLogs();
   }, [filters]);
 
   async function fetchLogs() {

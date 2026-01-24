@@ -4,8 +4,8 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Calendar, AlertTriangle } from 'lucide-react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getDeadlineStatus } from '@/lib/pitchdeck/timeline-calculator';
 
 interface PitchdeckTimelineProps {

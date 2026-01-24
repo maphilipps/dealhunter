@@ -69,7 +69,7 @@ export function SimilarityTester({ rfpId, leadId }: SimilarityTesterProps) {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !isLoading) {
-      handleSearch();
+      void handleSearch();
     }
   };
 

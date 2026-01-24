@@ -67,8 +67,9 @@ export function canTransitionTo(
       return { allowed: true };
 
     default: {
+      // Ensure all cases are handled - TypeScript will error if a phase is missing
       const _exhaustiveCheck: never = nextPhase;
-      return { allowed: false, reason: `Unbekannte Phase: ${nextPhase}` };
+      return { allowed: false, reason: 'Unbekannte Phase' };
     }
   }
 }

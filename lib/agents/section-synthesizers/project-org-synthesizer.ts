@@ -7,9 +7,10 @@
 
 import { z } from 'zod';
 
+import { SectionSynthesizerBase, type SectionResult } from '../section-synthesizer-base';
+
 import { db } from '@/lib/db';
 import { employees } from '@/lib/db/schema';
-import { SectionSynthesizerBase, type SectionResult } from '../section-synthesizer-base';
 
 /**
  * Project Org Output Schema

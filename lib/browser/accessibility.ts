@@ -3,10 +3,11 @@
  * Alternative to @axe-core/playwright
  */
 
-import { execa } from 'execa';
 import { access, readFile, unlink } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
+
+import { execa } from 'execa';
 
 import type { AccessibilityResult, AccessibilityViolation } from './types';
 

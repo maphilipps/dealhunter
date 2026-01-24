@@ -53,27 +53,29 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
   useEffect(() => {
     if (!isPolling || !analysis) return;
 
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/rfps/${bidId}/deep-analysis/status`);
-        const result = await response.json();
+    const pollInterval = setInterval(() => {
+      void (async () => {
+        try {
+          const response = await fetch(`/api/rfps/${bidId}/deep-analysis/status`);
+          const result = await response.json();
 
-        if (result.success && result.analysis) {
-          setAnalysis(result.analysis);
+          if (result.success && result.analysis) {
+            setAnalysis(result.analysis);
 
-          if (result.analysis.status === 'completed') {
-            setIsPolling(false);
-            toast.success('Deep Analysis abgeschlossen!');
-            router.refresh();
-          } else if (result.analysis.status === 'failed') {
-            setIsPolling(false);
-            toast.error('Deep Analysis fehlgeschlagen');
+            if (result.analysis.status === 'completed') {
+              setIsPolling(false);
+              toast.success('Deep Analysis abgeschlossen!');
+              router.refresh();
+            } else if (result.analysis.status === 'failed') {
+              setIsPolling(false);
+              toast.error('Deep Analysis fehlgeschlagen');
+            }
           }
+        } catch (error) {
+          console.error('Error polling analysis status:', error);
         }
-      } catch (error) {
-        console.error('Polling error:', error);
-      }
-    }, 5000);
+      })();
+    }, 3000);
 
     return () => clearInterval(pollInterval);
   }, [isPolling, analysis, bidId, router]);

@@ -137,12 +137,12 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
   }, [leadId]);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
 
   const handleRefresh = () => {
     startTransition(() => {
-      loadData();
+      void loadData();
     });
   };
 
@@ -403,7 +403,7 @@ function LeadEmbeddingsBrowser({ leadId }: { leadId: string }) {
 
   // Load filter options
   useEffect(() => {
-    Promise.all([getLeadEmbeddingAgents(leadId), getLeadEmbeddingTypes(leadId)]).then(
+    void Promise.all([getLeadEmbeddingAgents(leadId), getLeadEmbeddingTypes(leadId)]).then(
       ([agentsResult, typesResult]) => {
         if (agentsResult.success) setAvailableAgents(agentsResult.data);
         if (typesResult.success) setAvailableTypes(typesResult.data);
@@ -434,7 +434,7 @@ function LeadEmbeddingsBrowser({ leadId }: { leadId: string }) {
   }, [leadId, agentFilter, typeFilter, debouncedSearch, page]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [fetchData]);
 
   const items = data?.items || [];

@@ -5,9 +5,10 @@
  * Used for capability discovery and next-step guidance.
  */
 
-import { cn } from '@/lib/utils';
 import { Button } from './button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card';
+
+import { cn } from '@/lib/utils';
 
 export interface SuggestedAction {
   id: string;

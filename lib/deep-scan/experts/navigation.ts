@@ -1,7 +1,9 @@
+import { eq, and, sql } from 'drizzle-orm';
+
+import { CATEGORY_CONFIG, type AuditCategory } from './types';
+
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
-import { CATEGORY_CONFIG, type AuditCategory } from './types';
 
 interface NavigationItem {
   slug: string;

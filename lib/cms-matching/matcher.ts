@@ -17,12 +17,13 @@ import { generateObject, type LanguageModel } from 'ai';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { CMS_INDUSTRY_AFFINITY, getCmsAffinityScore } from '@/lib/config/business-rules';
 import type { ContentArchitectureResult } from '../agents/content-architecture-agent';
 import type { MigrationComplexityResult } from '../agents/migration-complexity-agent';
 import { openai } from '../ai/providers';
 import { db } from '../db';
 import { technologies, cmsMatchResults, type Technology } from '../db/schema';
+
+import { CMS_INDUSTRY_AFFINITY, getCmsAffinityScore } from '@/lib/config/business-rules';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES

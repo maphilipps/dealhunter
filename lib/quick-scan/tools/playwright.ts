@@ -17,8 +17,8 @@ import {
   wait,
   type BrowserSession,
 } from '@/lib/browser';
-import { dismissCookieBanner } from '@/lib/browser/cookie-banner';
 import { runAccessibilityAudit } from '@/lib/browser/accessibility';
+import { dismissCookieBanner } from '@/lib/browser/cookie-banner';
 import { getPerformanceMetrics } from '@/lib/browser/performance';
 
 // ========================================

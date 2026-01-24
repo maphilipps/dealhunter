@@ -2,8 +2,8 @@ import OpenAI from 'openai';
 
 import { companyIntelligenceSchema, type CompanyIntelligence } from '../schema';
 
-import { searchAndContents } from '@/lib/search/web-search';
 import { getStockData, searchStockSymbol } from '@/lib/integrations/yahoo-finance';
+import { searchAndContents } from '@/lib/search/web-search';
 
 // Security: Prompt Injection Protection
 import { wrapUserContent } from '@/lib/security/prompt-sanitizer';

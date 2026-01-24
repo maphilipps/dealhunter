@@ -6,12 +6,15 @@
  */
 
 import { eq, and } from 'drizzle-orm';
+
+import { parseAuditDirectory, getAuditStats } from './audit-file-parser';
+
+import { isEmbeddingEnabled } from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
 import { leads, dealEmbeddings } from '@/lib/db/schema';
-import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
-import { isEmbeddingEnabled } from '@/lib/ai/embedding-config';
-import { parseAuditDirectory, getAuditStats } from './audit-file-parser';
 import { estimateTokens } from '@/lib/rag/raw-chunk-service';
+import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
+
 
 const AGENT_NAME = 'audit_ingestion';
 // Use character limit (~1.5-2 chars/token for JSON, 8192 max = ~12000 chars, use 10000 to be safe)

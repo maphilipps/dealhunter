@@ -1,8 +1,8 @@
 import { extractedRequirementsSchema, type ExtractedRequirements } from './schema';
 import { suggestWebsiteUrls } from './url-suggestion-agent';
-import { embedAgentOutput } from '@/lib/rag/embedding-service';
 
 import { openai } from '@/lib/ai/config';
+import { embedAgentOutput } from '@/lib/rag/embedding-service';
 import { embedRawText } from '@/lib/rag/raw-embedding-service';
 import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
@@ -446,7 +446,7 @@ function formatDisplayValue(value: unknown, field: FieldDefinition): string {
   }
 
   // String - truncate if too long
-  const str = String(value);
+  const str = typeof value === 'string' ? value : String(value as any);
   return str.length > 50 ? str.substring(0, 47) + '...' : str;
 }
 

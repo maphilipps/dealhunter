@@ -96,7 +96,7 @@ export default function AnalyticsPage() {
       }
     }
 
-    fetchAnalytics();
+    void fetchAnalytics();
   }, []);
 
   if (isLoading) {

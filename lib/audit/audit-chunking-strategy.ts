@@ -7,6 +7,7 @@
  */
 
 import type { ParsedAuditFile } from './audit-file-parser';
+
 import { estimateTokens } from '@/lib/rag/raw-chunk-service';
 
 export interface AuditChunk {
@@ -43,7 +44,7 @@ function chunkJsonFile(file: ParsedAuditFile): AuditChunk[] {
   if (!file.parsed) return [];
 
   const chunks: AuditChunk[] = [];
-  const data = file.parsed as Record<string, unknown>;
+  const data = file.parsed;
   let chunkIndex = 0;
 
   const createChunk = (section: string, content: unknown): void => {
@@ -130,7 +131,7 @@ function chunkJsonFile(file: ParsedAuditFile): AuditChunk[] {
     if (devCosts?.phases && Array.isArray(devCosts.phases)) {
       for (const phase of devCosts.phases) {
         const p = phase as Record<string, unknown>;
-        createChunk(`Phase ${p.phase}: ${p.name}`, phase);
+        createChunk(`Phase ${String(p.phase)}: ${String(p.name)}`, phase);
       }
       if (devCosts.totals) {
         createChunk('Development Totals', devCosts.totals);

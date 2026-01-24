@@ -105,7 +105,7 @@ export default function EditEmployeePage() {
 
       setIsLoading(false);
     }
-    loadData();
+    void loadData();
   }, [id, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {

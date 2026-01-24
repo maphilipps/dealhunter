@@ -140,8 +140,8 @@ Start your response with { and end with }. Ensure all required fields are presen
     const closeBrackets = (repairedJson.match(/\]/g) || []).length;
 
     // Remove trailing incomplete elements (after last comma)
-    repairedJson = repairedJson.replace(/,\s*"[^"]*"?\s*:?\s*[^,\]\}]*$/, '');
-    repairedJson = repairedJson.replace(/,\s*\{[^\}]*$/, '');
+    repairedJson = repairedJson.replace(/,\s*"[^"]*"?\s*:?\s*[^,\]}]*$/, '');
+    repairedJson = repairedJson.replace(/,\s*\{[^}]*$/, '');
     repairedJson = repairedJson.replace(/,\s*$/, '');
 
     // Close unclosed brackets

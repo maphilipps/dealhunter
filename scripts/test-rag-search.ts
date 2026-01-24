@@ -1,6 +1,7 @@
+import { eq, and, like, count, desc } from 'drizzle-orm';
+
 import { db } from '../lib/db';
 import { dealEmbeddings } from '../lib/db/schema';
-import { eq, and, like, count, desc } from 'drizzle-orm';
 
 async function test() {
   const leadId = 's4i39tt1ystbewlzhkqgain1';

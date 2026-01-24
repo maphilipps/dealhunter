@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+
 import { runExpertAgents } from '@/lib/agents/expert-agents/orchestrator';
+import { auth } from '@/lib/auth';
 import { getCachedRfp } from '@/lib/rfps/cached-queries';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

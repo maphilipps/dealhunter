@@ -73,7 +73,7 @@ export function ChunkBrowser({ rfpId, mode }: ChunkBrowserProps) {
   // Load filter options for agent mode
   useEffect(() => {
     if (mode === 'agent') {
-      Promise.all([getAgentNames(rfpId), getChunkTypes(rfpId)]).then(
+      void Promise.all([getAgentNames(rfpId), getChunkTypes(rfpId)]).then(
         ([agentsResult, typesResult]) => {
           if (agentsResult.success) setAvailableAgents(agentsResult.data);
           if (typesResult.success) setAvailableTypes(typesResult.data);
@@ -120,7 +120,7 @@ export function ChunkBrowser({ rfpId, mode }: ChunkBrowserProps) {
   }, [rfpId, mode, page, agentFilter, typeFilter, debouncedSearch]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [fetchData]);
 
   const handlePageChange = (newPage: number) => {

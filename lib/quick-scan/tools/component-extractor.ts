@@ -245,7 +245,7 @@ function analyzeForm(html: string, formPatterns: RegExp[]): FormComponent | null
   let formHtml = html;
 
   for (const pattern of formPatterns) {
-    const formMatch = html.match(new RegExp(`<form[^>]*${pattern.source}[^>]*>.*?<\/form>`, 'is'));
+    const formMatch = html.match(new RegExp(`<form[^>]*${pattern.source}[^>]*>.*?</form>`, 'is'));
     if (formMatch) {
       formHtml = formMatch[0];
       break;

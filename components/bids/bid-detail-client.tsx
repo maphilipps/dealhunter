@@ -72,7 +72,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   const [autoStartState, setAutoStartState] = useState<'idle' | 'starting' | 'polling'>('idle');
 
   const handleRefresh = async () => {
-    router.refresh();
+    void router.refresh();
     setRefreshKey(prev => prev + 1);
   };
 
@@ -95,20 +95,22 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         toast.success('Änderungen gespeichert! Quick Scan wird gestartet...');
 
         // Start Quick Scan automatically
-        setTimeout(async () => {
-          const scanResult = await startQuickScan(bid.id);
-          if (scanResult.success) {
-            toast.success('Quick Scan erfolgreich gestartet!');
-            router.refresh();
+        setTimeout(() => {
+          void (async () => {
+            const scanResult = await startQuickScan(bid.id);
+            if (scanResult.success) {
+              toast.success('Quick Scan erfolgreich gestartet!');
+              void router.refresh();
 
-            setTimeout(() => {
-              checkQuickScanCompletion();
-            }, 2000);
-          } else if (scanResult.needsWebsiteUrl) {
-            toast.error('Bitte Website-URL in den Anforderungen angeben');
-          } else {
-            toast.error(scanResult.error || 'Quick Scan konnte nicht gestartet werden');
-          }
+              setTimeout(() => {
+                void void checkQuickScanCompletion();
+              }, 2000);
+            } else if (scanResult.needsWebsiteUrl) {
+              toast.error('Bitte Website-URL in den Anforderungen angeben');
+            } else {
+              toast.error(scanResult.error || 'Quick Scan konnte nicht gestartet werden');
+            }
+          })();
         }, 500);
       } else {
         toast.error(result.error || 'Speichern fehlgeschlagen');
@@ -126,11 +128,11 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
       toast.success(
         'Quick Scan abgeschlossen! Bitte prüfen Sie die 10 Fragen und treffen Sie eine BIT/NO BIT Entscheidung.'
       );
-      router.refresh();
+      void router.refresh();
     } else if (scanResult.success && scanResult.quickScan?.status === 'running') {
       // Quick Scan still running, poll again
       setTimeout(() => {
-        checkQuickScanCompletion();
+        void checkQuickScanCompletion();
       }, 3000);
     }
   };
@@ -174,10 +176,10 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
       if (scanResult.success) {
         setNeedsWebsiteUrl(false);
         toast.success('Quick Scan gestartet!');
-        router.refresh();
+        void router.refresh();
 
         setTimeout(() => {
-          checkQuickScanCompletion();
+          void checkQuickScanCompletion();
         }, 2000);
       } else {
         toast.error(scanResult.error || 'Quick Scan konnte nicht gestartet werden');
@@ -202,7 +204,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         // Clear current result so the ActivityStream is shown
         setBitEvaluationResult(null);
         // Refresh server components to show updated state
-        router.refresh();
+        void router.refresh();
       } else {
         toast.error(result.error || 'BIT Re-Evaluierung fehlgeschlagen');
         setIsRetriggeringBit(false);
@@ -224,7 +226,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
       if (result.success) {
         toast.success('Quick Scan gestartet - bitte warten...');
         // Refresh server components to show updated state
-        router.refresh();
+        void router.refresh();
       } else {
         toast.error(result.error || 'Quick Scan Re-Trigger fehlgeschlagen');
         setIsRetriggeringQuickScan(false);
@@ -276,7 +278,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
       }
     };
 
-    loadQuickScan();
+    void loadQuickScan();
   }, [bid.id, bid.status, extractedData, refreshKey]);
 
   // Load BIT evaluation result if status is decision_made or later
@@ -294,7 +296,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
       ].includes(bid.status)
     ) {
       setIsLoadingBitEvaluation(true);
-      getBitEvaluationResult(bid.id).then(result => {
+      void getBitEvaluationResult(bid.id).then(result => {
         if (result.success && result.result) {
           setBitEvaluationResult(prevResult => {
             // Only update if result actually changed
@@ -349,10 +351,10 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             if (result.success) {
               setAutoStartState('polling');
               toast.success('Quick Scan automatisch gestartet!');
-              router.refresh();
+              void router.refresh();
               // Start polling for completion
               setTimeout(() => {
-                checkQuickScanCompletion();
+                void checkQuickScanCompletion();
               }, 2000);
             } else if (result.needsWebsiteUrl) {
               // Reset ref so user can manually trigger after adding URL
@@ -405,7 +407,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             onComplete={() => {
               toast.success('Extraktion abgeschlossen!');
               setIsExtracting(false);
-              router.refresh();
+              void router.refresh();
             }}
             onError={error => {
               toast.error(error || 'Extraktion fehlgeschlagen');
@@ -614,7 +616,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
               title="BIT/NO BIT Evaluierung"
               onComplete={() => {
                 toast.success('BIT Evaluierung abgeschlossen!');
-                handleRefresh();
+                void handleRefresh();
               }}
               autoStart={true}
             />
@@ -715,17 +717,23 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
               if (bid.baselineComparisonResult) {
                 try {
                   baselineResult = JSON.parse(bid.baselineComparisonResult);
-                } catch {}
+                } catch {
+                  // Ignore parse error
+                }
               }
               if (bid.projectPlanningResult) {
                 try {
                   projectPlan = JSON.parse(bid.projectPlanningResult);
-                } catch {}
+                } catch {
+                  // Ignore parse error
+                }
               }
               if (bid.teamNotifications) {
                 try {
                   notificationResults = JSON.parse(bid.teamNotifications);
-                } catch {}
+                } catch {
+                  // Ignore parse error
+                }
               }
 
               return (

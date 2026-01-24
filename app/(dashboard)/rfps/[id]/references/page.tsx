@@ -5,9 +5,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { getCachedRfp } from '@/lib/rfps/cached-queries';
 import { parseJsonField } from '@/lib/utils/json';
-import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 export default async function ReferencesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

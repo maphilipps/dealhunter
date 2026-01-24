@@ -232,7 +232,7 @@ export const fetchWebsiteStep = wrapToolWithProgress<BootstrapInput, WebsiteData
         result.wappalyzerResults = Array.isArray(wappalyzerResult)
           ? (wappalyzerResult as WappalyzerTechnology[])
           : [];
-      } catch (e) {
+      } catch (_e) {
         console.error('Wappalyzer error:', e);
         result.wappalyzerResults = [];
       }

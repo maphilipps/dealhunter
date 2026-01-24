@@ -21,7 +21,7 @@ export default function TechnologiesPage() {
       }
       setIsLoading(false);
     }
-    loadData();
+    void loadData();
   }, []);
 
   if (isLoading) {

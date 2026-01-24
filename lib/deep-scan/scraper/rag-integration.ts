@@ -1,10 +1,11 @@
+import type { ScrapedPage, TechIndicator } from './types';
+
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
 import {
   generateRawChunkEmbeddings,
   type RawChunkWithEmbedding,
 } from '@/lib/rag/raw-embedding-service';
-import type { ScrapedPage, TechIndicator } from './types';
 
 const MAX_CHUNK_SIZE = 6000; // Characters per chunk
 const CHUNK_OVERLAP = 200; // Overlap between chunks

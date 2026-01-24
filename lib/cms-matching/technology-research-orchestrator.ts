@@ -93,27 +93,21 @@ async function runWithConcurrency<T, R>(
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    const promise = fn(item, i).then(result => {
-      results[i] = result;
-      completed++;
-      onProgress?.(completed, items.length);
-    });
+    
+    const task = async () => {
+      try {
+        results[i] = await fn(item, i);
+      } finally {
+        const pIndex = executing.findIndex(p => p === promise);
+        if (pIndex !== -1) executing.splice(pIndex, 1);
+      }
+    };
 
+    const promise = task();
     executing.push(promise);
 
     if (executing.length >= concurrency) {
       await Promise.race(executing);
-      // Remove completed promises
-      for (let j = executing.length - 1; j >= 0; j--) {
-        const p = executing[j];
-        const settled = await Promise.race([
-          p.then(() => true).catch(() => true),
-          Promise.resolve(false),
-        ]);
-        if (settled) {
-          executing.splice(j, 1);
-        }
-      }
     }
   }
 

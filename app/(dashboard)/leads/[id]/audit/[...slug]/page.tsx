@@ -1,16 +1,16 @@
-import { notFound, redirect } from 'next/navigation';
 import { eq } from 'drizzle-orm';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { notFound, redirect } from 'next/navigation';
 
+import { QuickScanRenderer, RenderTree } from '@/components/json-render/quick-scan-registry';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads } from '@/lib/db/schema';
 import { getAuditSection, getAuditNavigation } from '@/lib/deep-scan/experts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-import { QuickScanRenderer, RenderTree } from '@/components/json-render/quick-scan-registry';
 
 // Type guard for json-render tree validation
 function isValidRenderTree(value: unknown): value is RenderTree {
@@ -128,7 +128,7 @@ export default async function AuditSectionPage({
         <CardContent>
           {/* Prefer json-render visualization if available */}
           {section.visualization && isValidRenderTree(section.visualization) ? (
-            <QuickScanRenderer tree={section.visualization as RenderTree} />
+            <QuickScanRenderer tree={section.visualization} />
           ) : (
             <SectionContent content={content} />
           )}

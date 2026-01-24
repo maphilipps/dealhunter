@@ -11,10 +11,11 @@
 
 import { eq } from 'drizzle-orm';
 
-import { runAccessibilityAudit } from '@/lib/browser';
 
 import { db } from '../db';
 import { websiteAudits } from '../db/schema';
+
+import { runAccessibilityAudit } from '@/lib/browser';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES

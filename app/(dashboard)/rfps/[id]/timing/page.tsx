@@ -16,8 +16,8 @@ import { getAgentResult } from '@/lib/agents/expert-agents';
 import type { TimingAnalysis } from '@/lib/agents/expert-agents/timing-schema';
 import { auth } from '@/lib/auth';
 import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
-import { parseJsonField } from '@/lib/utils/json';
 import type { ProjectTimeline } from '@/lib/timeline/schema';
+import { parseJsonField } from '@/lib/utils/json';
 
 export default async function TimingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

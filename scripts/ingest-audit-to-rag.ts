@@ -18,17 +18,17 @@
 // Load environment variables
 import 'dotenv/config';
 
-import { parseArgs } from 'util';
 import { existsSync } from 'fs';
 import { resolve } from 'path';
+import { parseArgs } from 'util';
 
+import { parseAuditDirectory, getAuditStats } from '@/lib/audit/audit-file-parser';
 import {
   ingestAuditToRAG,
   findLeadByName,
   getAllLeads,
   type IngestionProgress,
 } from '@/lib/audit/audit-rag-ingestion';
-import { parseAuditDirectory, getAuditStats } from '@/lib/audit/audit-file-parser';
 
 // Parse command line arguments
 const { values } = parseArgs({

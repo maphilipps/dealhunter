@@ -49,7 +49,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     };
 
     // Start Orchestrator in Background
-    (async () => {
+    void (async () => {
       try {
         const result = await runTechnologyResearchOrchestrator(id, featureNames, {
           autoReview: body.autoReview ?? true,

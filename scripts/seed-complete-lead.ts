@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import bcrypt from 'bcryptjs';
 import { createId } from '@paralleldrive/cuid2';
+import bcrypt from 'bcryptjs';
 
 import { db } from '../lib/db';
 import {

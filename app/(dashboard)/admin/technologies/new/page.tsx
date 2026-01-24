@@ -17,7 +17,7 @@ export default function NewTechnologyPage() {
       }
       setIsLoading(false);
     }
-    loadData();
+    void loadData();
   }, []);
 
   if (isLoading) {

@@ -3,9 +3,9 @@
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
+import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, quickScans } from '@/lib/db/schema';
-import { auth } from '@/lib/auth';
 
 interface ReloadTimelineResult {
   success: boolean;

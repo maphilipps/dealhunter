@@ -80,7 +80,7 @@ interface ResultsData {
   features: FeaturesData | Record<string, never>;
   blRecommendation: BlRecommendationData;
   accessibilityAudit?: AccessibilityAuditData | null;
-  seoAudit?: unknown | null;
+  seoAudit?: unknown;
   legalCompliance?: LegalComplianceData | null;
   performanceIndicators?: PerformanceData | null;
   companyIntelligence?: CompanyIntelligenceData | null;

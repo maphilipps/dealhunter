@@ -1,8 +1,5 @@
-import { db } from '@/lib/db';
-import { dealEmbeddings } from '@/lib/db/schema';
 import { eq, and, like, isNotNull } from 'drizzle-orm';
-import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
-import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
+
 import type { AuditAgentOutput, AuditSection } from './types';
 import {
   techExpertToVisualization,
@@ -16,6 +13,11 @@ import {
   projectExpertToVisualization,
   genericSectionToVisualization,
 } from '../output-to-json-render';
+
+import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
+import { db } from '@/lib/db';
+import { dealEmbeddings } from '@/lib/db/schema';
+import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 /**
  * Generate visualization for a section based on agent type and content
@@ -200,7 +202,7 @@ export async function queryLeadRag(
         }
         return {
           content: r.content,
-          metadata: r.metadata ? JSON.parse(r.metadata as string) : null,
+          metadata: r.metadata ? JSON.parse(r.metadata) : null,
           similarity,
         };
       })
@@ -231,7 +233,7 @@ export async function queryLeadRag(
         }
         return {
           content: r.content,
-          metadata: r.metadata ? JSON.parse(r.metadata as string) : null,
+          metadata: r.metadata ? JSON.parse(r.metadata) : null,
           similarity,
         };
       })
@@ -254,7 +256,7 @@ export async function queryLeadRag(
 
   return results.map(r => ({
     content: r.content,
-    metadata: r.metadata ? JSON.parse(r.metadata as string) : null,
+    metadata: r.metadata ? JSON.parse(r.metadata) : null,
   }));
 }
 
@@ -440,8 +442,8 @@ export async function storeAuditAgentOutput(
   }
 }
 
-// Get all audit navigation for a lead
-export async function getAuditNavigation(leadId: string): Promise<
+// Get all audit navigation for a lead (deprecated - use navigation.ts)
+async function getAuditNavigationLegacy(leadId: string): Promise<
   {
     category: string;
     title: string;
@@ -460,7 +462,7 @@ export async function getAuditNavigation(leadId: string): Promise<
 
   for (const row of results) {
     if (!row.metadata) continue;
-    const meta = JSON.parse(row.metadata as string);
+    const meta = JSON.parse(row.metadata);
     if (meta.navigation && meta.category) {
       navigation.set(meta.category, meta.navigation);
     }
@@ -490,7 +492,7 @@ export async function getAuditSection(
 
   for (const row of results) {
     if (!row.metadata) continue;
-    const meta = JSON.parse(row.metadata as string);
+    const meta = JSON.parse(row.metadata);
     if (meta.category === category && meta.slug === slug) {
       return {
         slug: meta.slug,

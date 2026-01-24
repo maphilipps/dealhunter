@@ -16,15 +16,12 @@ export type {
 } from './base';
 
 // Sprint 1.3: Initial Synthesizers
-import { OverviewSynthesizer, overviewSynthesizer } from './overview-synthesizer';
 export { OverviewSynthesizer, overviewSynthesizer };
 export type { OverviewOutput } from './overview-synthesizer';
 
-import { TechnologySynthesizer, technologySynthesizer } from './technology-synthesizer';
 export { TechnologySynthesizer, technologySynthesizer };
 export type { TechnologyOutput } from './technology-synthesizer';
 
-import { WebsiteAnalysisSynthesizer, websiteAnalysisSynthesizer } from './website-analysis-synthesizer';
 export { WebsiteAnalysisSynthesizer, websiteAnalysisSynthesizer };
 export type { WebsiteAnalysisOutput } from './website-analysis-synthesizer';
 
@@ -51,6 +48,12 @@ import { IntegrationsSynthesizer, integrationsSynthesizer } from './integrations
 export { IntegrationsSynthesizer, integrationsSynthesizer };
 
 import { MigrationSynthesizer, migrationSynthesizer } from './migration-synthesizer';
+import { OverviewSynthesizer, overviewSynthesizer } from './overview-synthesizer';
+import { TechnologySynthesizer, technologySynthesizer } from './technology-synthesizer';
+import {
+  WebsiteAnalysisSynthesizer,
+  websiteAnalysisSynthesizer,
+} from './website-analysis-synthesizer';
 export { MigrationSynthesizer, migrationSynthesizer };
 
 // Registry for easy lookup

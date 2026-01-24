@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { registry } from '../../registry';
 import type { ToolContext } from '../../types';
@@ -23,8 +23,8 @@ describe('Staffing Tools', () => {
   const mockContext: ToolContext = {
     userId: 'test-user-id',
     userRole: 'bl',
-    sessionId: 'test-session',
-    timestamp: new Date().toISOString(),
+    userEmail: 'test@example.com',
+    userName: 'Test User',
   };
 
   const mockEmployee = {
@@ -117,9 +117,9 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data).toBeDefined();
-      expect(result.data.skillMatchScore).toBeGreaterThanOrEqual(30); // CMS match + availability
-      expect(result.data.matchingSkills).toContain('Drupal');
+      expect(result.data as any).toBeDefined();
+      expect((result.data as any).skillMatchScore).toBeGreaterThanOrEqual(30); // CMS match + availability
+      expect((result.data as any).matchingSkills).toContain('Drupal');
     });
 
     it('should calculate score for framework match', async () => {
@@ -143,8 +143,8 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.skillMatchScore).toBeGreaterThanOrEqual(20); // Framework match + availability
-      expect(result.data.matchingSkills).toContain('Next.js');
+      expect((result.data as any).skillMatchScore).toBeGreaterThanOrEqual(20); // Framework match + availability
+      expect((result.data as any).matchingSkills).toContain('Next.js');
     });
 
     it('should calculate score for multiple integrations', async () => {
@@ -168,9 +168,9 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.skillMatchScore).toBeGreaterThanOrEqual(30); // 2x15 points + availability
-      expect(result.data.matchingSkills).toContain('TypeScript');
-      expect(result.data.matchingSkills).toContain('React');
+      expect((result.data as any).skillMatchScore).toBeGreaterThanOrEqual(30); // 2x15 points + availability
+      expect((result.data as any).matchingSkills).toContain('TypeScript');
+      expect((result.data as any).matchingSkills).toContain('React');
     });
 
     it('should calculate score for complexity skills - animations', async () => {
@@ -196,8 +196,8 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.skillMatchScore).toBeGreaterThanOrEqual(10); // Animation skills + availability
-      expect(result.data.matchingSkills).toContain('animations');
+      expect((result.data as any).skillMatchScore).toBeGreaterThanOrEqual(10); // Animation skills + availability
+      expect((result.data as any).matchingSkills).toContain('animations');
     });
 
     it('should track missing skills', async () => {
@@ -222,8 +222,8 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.missingSkills).toContain('WordPress');
-      expect(result.data.missingSkills).toContain('Angular');
+      expect((result.data as any).missingSkills).toContain('WordPress');
+      expect((result.data as any).missingSkills).toContain('Angular');
     });
 
     it('should apply availability modifier - available', async () => {
@@ -248,7 +248,7 @@ describe('Staffing Tools', () => {
 
       expect(result.success).toBe(true);
       // Score should include +10 for availability
-      expect(result.data.skillMatchScore).toBe(40); // 30 (CMS) + 10 (available)
+      expect((result.data as any).skillMatchScore).toBe(40); // 30 (CMS) + 10 (available)
     });
 
     it('should apply availability modifier - on_project', async () => {
@@ -273,7 +273,7 @@ describe('Staffing Tools', () => {
 
       expect(result.success).toBe(true);
       // Score should include +5 for on_project
-      expect(result.data.skillMatchScore).toBe(25); // 20 (framework) + 5 (on_project)
+      expect((result.data as any).skillMatchScore).toBe(25); // 20 (framework) + 5 (on_project)
     });
 
     it('should apply availability modifier - unavailable (negative)', async () => {
@@ -298,7 +298,7 @@ describe('Staffing Tools', () => {
 
       expect(result.success).toBe(true);
       // Score should include -10 for unavailable
-      expect(result.data.skillMatchScore).toBe(10); // 20 (framework) - 10 (unavailable)
+      expect((result.data as any).skillMatchScore).toBe(10); // 20 (framework) - 10 (unavailable)
     });
 
     it('should cap score at 100', async () => {
@@ -348,7 +348,7 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.skillMatchScore).toBeLessThanOrEqual(100);
+      expect((result.data as any).skillMatchScore).toBeLessThanOrEqual(100);
     });
 
     it('should not go below 0 score', async () => {
@@ -378,7 +378,7 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.skillMatchScore).toBeGreaterThanOrEqual(0);
+      expect((result.data as any).skillMatchScore).toBeGreaterThanOrEqual(0);
     });
 
     it('should deduplicate matching skills', async () => {
@@ -403,7 +403,7 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      const typeScriptCount = result.data.matchingSkills.filter(
+      const typeScriptCount = (result.data as any).matchingSkills.filter(
         (s: string) => s === 'TypeScript'
       ).length;
       expect(typeScriptCount).toBe(1);
@@ -454,14 +454,14 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.matches).toBeDefined();
-      expect(result.data.totalFound).toBeGreaterThanOrEqual(0);
+      expect((result.data as any).matches).toBeDefined();
+      expect((result.data as any).totalFound).toBeGreaterThanOrEqual(0);
 
       // Verify sorting (highest score first)
-      if (result.data.matches.length > 1) {
-        for (let i = 0; i < result.data.matches.length - 1; i++) {
-          expect(result.data.matches[i].matchScore).toBeGreaterThanOrEqual(
-            result.data.matches[i + 1].matchScore
+      if ((result.data as any).matches.length > 1) {
+        for (let i = 0; i < (result.data as any).matches.length - 1; i++) {
+          expect((result.data as any).matches[i].matchScore).toBeGreaterThanOrEqual(
+            (result.data as any).matches[i + 1].matchScore
           );
         }
       }
@@ -490,7 +490,7 @@ describe('Staffing Tools', () => {
 
       expect(result.success).toBe(true);
       // With high threshold, we expect fewer or no matches
-      result.data.matches.forEach((match: { matchScore: number }) => {
+      (result.data as any).matches.forEach((match: { matchScore: number }) => {
         expect(match.matchScore).toBeGreaterThanOrEqual(90);
       });
     });
@@ -516,8 +516,8 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.matches).toHaveLength(0);
-      expect(result.data.totalFound).toBe(0);
+      expect((result.data as any).matches).toHaveLength(0);
+      expect((result.data as any).totalFound).toBe(0);
     });
 
     it('should respect limit parameter', async () => {
@@ -548,7 +548,7 @@ describe('Staffing Tools', () => {
 
       expect(result.success).toBe(true);
       // Should not exceed limit
-      expect(result.data.matches.length).toBeLessThanOrEqual(10);
+      expect((result.data as any).matches.length).toBeLessThanOrEqual(10);
     });
 
     it('should allow admin role', async () => {
@@ -625,10 +625,10 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.employees).toHaveLength(2);
-      expect(result.data.availableCount).toBe(1);
-      expect(result.data.onProjectCount).toBe(1);
-      expect(result.data.unavailableCount).toBe(0);
+      expect((result.data as any).employees).toHaveLength(2);
+      expect((result.data as any).availableCount).toBe(1);
+      expect((result.data as any).onProjectCount).toBe(1);
+      expect((result.data as any).unavailableCount).toBe(0);
     });
 
     it('should count availability statuses correctly', async () => {
@@ -664,9 +664,9 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.availableCount).toBe(1);
-      expect(result.data.onProjectCount).toBe(1);
-      expect(result.data.unavailableCount).toBe(1);
+      expect((result.data as any).availableCount).toBe(1);
+      expect((result.data as any).onProjectCount).toBe(1);
+      expect((result.data as any).unavailableCount).toBe(1);
     });
 
     it('should skip non-existent employees', async () => {
@@ -695,7 +695,7 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.employees).toHaveLength(1);
+      expect((result.data as any).employees).toHaveLength(1);
     });
 
     it('should include employee details', async () => {
@@ -716,14 +716,14 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.employees[0]).toMatchObject({
+      expect((result.data as any).employees[0]).toMatchObject({
         employeeId: 'emp-1',
         name: 'John Doe',
         email: 'john@example.com',
         availabilityStatus: 'available',
       });
-      expect(result.data.employees[0].skills).toBeDefined();
-      expect(result.data.employees[0].roles).toBeDefined();
+      expect((result.data as any).employees[0].skills).toBeDefined();
+      expect((result.data as any).employees[0].roles).toBeDefined();
     });
 
     it('should handle empty employee list', async () => {
@@ -736,10 +736,10 @@ describe('Staffing Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.employees).toHaveLength(0);
-      expect(result.data.availableCount).toBe(0);
-      expect(result.data.onProjectCount).toBe(0);
-      expect(result.data.unavailableCount).toBe(0);
+      expect((result.data as any).employees).toHaveLength(0);
+      expect((result.data as any).availableCount).toBe(0);
+      expect((result.data as any).onProjectCount).toBe(0);
+      expect((result.data as any).unavailableCount).toBe(0);
     });
   });
 });

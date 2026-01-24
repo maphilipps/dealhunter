@@ -84,26 +84,29 @@ async function runWithConcurrency<T, R>(
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    
-    // Define the task wrapper
-    const task = async () => {
+
+    // Create a promise that removes itself from the executing array upon completion
+    let promiseToRemove: Promise<void> | null = null;
+    const promise = (async () => {
       try {
         results[i] = await fn(item, i);
       } finally {
-        // Remove this promise from executing array when done
-        // We can't reference 'promise' variable directly here safely in all cases before initialization
-        // so we'll handle removal via reference check in the array
-        const pIndex = executing.findIndex(p => p === promise);
-        if (pIndex !== -1) executing.splice(pIndex, 1);
+        // This will be executed when the promise settles (resolves or rejects)
+        // We use a functional approach to remove the specific promise instance
+        if (promiseToRemove) {
+          const index = executing.indexOf(promiseToRemove);
+          if (index !== -1) executing.splice(index, 1);
+        }
       }
-    };
+    })();
+    promiseToRemove = promise;
+    void promise; // Mark as handled
 
-    // Execute and assign
-    const promise = task();
     executing.push(promise);
 
     if (executing.length >= concurrency) {
-      await Promise.race(executing);
+      const racePromise = Promise.race(executing);
+      await racePromise;
     }
   }
 

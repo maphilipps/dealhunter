@@ -88,26 +88,27 @@ async function runWithConcurrency<T, R>(
   onProgress?: (completed: number, total: number) => void
 ): Promise<R[]> {
   const results: R[] = [];
-  let completed = 0;
+  const completed = 0;
   const executing: Promise<void>[] = [];
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    
-    const task = async () => {
+
+    const promise = (async () => {
       try {
         results[i] = await fn(item, i);
       } finally {
         const pIndex = executing.findIndex(p => p === promise);
         if (pIndex !== -1) executing.splice(pIndex, 1);
       }
-    };
+    })();
+    void promise; // Mark as handled
 
-    const promise = task();
     executing.push(promise);
 
     if (executing.length >= concurrency) {
-      await Promise.race(executing);
+      const racePromise = Promise.race(executing);
+      await racePromise;
     }
   }
 

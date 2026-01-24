@@ -174,7 +174,7 @@ export function CompetitorValidationTable({ data }: CompetitorValidationTablePro
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleApprove(comp.id, comp.companyName)}
+                        onClick={() => void handleApprove(comp.id, comp.companyName)}
                         disabled={isSubmitting}
                       >
                         <Check className="h-4 w-4 mr-1" />
@@ -183,7 +183,7 @@ export function CompetitorValidationTable({ data }: CompetitorValidationTablePro
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleRejectClick(comp.id)}
+                        onClick={() => void handleRejectClick(comp.id)}
                         disabled={isSubmitting}
                       >
                         <X className="h-4 w-4 mr-1" />
@@ -221,7 +221,10 @@ export function CompetitorValidationTable({ data }: CompetitorValidationTablePro
             <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
               Abbrechen
             </Button>
-            <Button onClick={handleRejectSubmit} disabled={isSubmitting || !feedback.trim()}>
+            <Button
+              onClick={() => void handleRejectSubmit()}
+              disabled={isSubmitting || !feedback.trim()}
+            >
               {isSubmitting ? 'Ablehne...' : 'Ablehnen'}
             </Button>
           </DialogFooter>

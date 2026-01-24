@@ -26,7 +26,6 @@ import type { OverviewData } from '@/components/rfp-overview';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { auth } from '@/lib/auth';
 import type { BaselineComparisonResult } from '@/lib/baseline-comparison/schema';
@@ -112,8 +111,6 @@ export default async function BLReviewDetailPage({
 
   // Parse JSON data safely - using Record<string, unknown> for components that expect generic objects
   const extractedData = safeJsonParseOrNull<Record<string, unknown>>(bid.extractedRequirements);
-  // Type-safe version for local rendering
-  const extractedDataTyped = extractedData as ExtractedData | null;
   const decisionData = safeJsonParseOrNull<BitEvaluationResult>(bid.decisionData);
   // Extract overview-level decision data for display
   const decisionOverview: BitDecisionOverview | null = decisionData
@@ -175,7 +172,7 @@ export default async function BLReviewDetailPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {extractedDataTyped?.customerName || 'Unbekannter Kunde'}
+            {(extractedData as ExtractedData | null)?.customerName || 'Unbekannter Kunde'}
           </h1>
           <div className="flex items-center gap-3 mt-2 text-muted-foreground">
             {businessUnit && (
@@ -285,22 +282,28 @@ export default async function BLReviewDetailPage({
                 <CardTitle>Kundeninformationen</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {extractedDataTyped?.customerName && (
+                {(extractedData as ExtractedData | null)?.customerName && (
                   <div>
                     <p className="text-sm text-muted-foreground">Kunde</p>
-                    <p className="font-medium">{extractedDataTyped.customerName}</p>
+                    <p className="font-medium">
+                      {(extractedData as ExtractedData | null)!.customerName as string}
+                    </p>
                   </div>
                 )}
-                {extractedDataTyped?.industry && (
+                {(extractedData as ExtractedData | null)?.industry && (
                   <div>
                     <p className="text-sm text-muted-foreground">Branche</p>
-                    <p className="font-medium">{extractedDataTyped.industry}</p>
+                    <p className="font-medium">
+                      {(extractedData as ExtractedData | null)!.industry as string}
+                    </p>
                   </div>
                 )}
-                {extractedDataTyped?.projectDescription && (
+                {(extractedData as ExtractedData | null)?.projectDescription && (
                   <div>
                     <p className="text-sm text-muted-foreground">Projektbeschreibung</p>
-                    <p className="text-sm">{extractedDataTyped.projectDescription}</p>
+                    <p className="text-sm">
+                      {(extractedData as ExtractedData | null)!.projectDescription as string}
+                    </p>
                   </div>
                 )}
               </CardContent>

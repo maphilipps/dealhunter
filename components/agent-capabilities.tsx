@@ -72,7 +72,7 @@ export function AgentCapabilities() {
         if (!response.ok) {
           throw new Error('Failed to fetch capabilities');
         }
-        const result = await response.json();
+        const result = (await response.json()) as CapabilitiesData;
         setData(result);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');

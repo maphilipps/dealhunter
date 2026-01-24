@@ -81,15 +81,17 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     // All JSON columns are validated by the agents, so we can safely parse them
     return Response.json({
       contentArchitecture: analysis.contentArchitecture
-        ? JSON.parse(analysis.contentArchitecture)
+        ? (JSON.parse(analysis.contentArchitecture) as Record<string, unknown>)
         : null,
       migrationComplexity: analysis.migrationComplexity
-        ? JSON.parse(analysis.migrationComplexity)
+        ? (JSON.parse(analysis.migrationComplexity) as Record<string, unknown>)
         : null,
       accessibilityAudit: analysis.accessibilityAudit
-        ? JSON.parse(analysis.accessibilityAudit)
+        ? (JSON.parse(analysis.accessibilityAudit) as Record<string, unknown>)
         : null,
-      ptEstimation: analysis.ptEstimation ? JSON.parse(analysis.ptEstimation) : null,
+      ptEstimation: analysis.ptEstimation
+        ? (JSON.parse(analysis.ptEstimation) as Record<string, unknown>)
+        : null,
     });
   } catch (error) {
     console.error('[API] Failed to fetch analysis results:', error);

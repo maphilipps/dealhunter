@@ -39,6 +39,11 @@ type AuditLog = {
   userEmail: string | null;
 };
 
+type FetchLogsResponse = {
+  success: boolean;
+  auditLogs: AuditLog[];
+};
+
 export function AuditTrailTable() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +55,7 @@ export function AuditTrailTable() {
 
   useEffect(() => {
     void fetchLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   async function fetchLogs() {
@@ -61,7 +67,7 @@ export function AuditTrailTable() {
       if (filters.entityId) queryParams.set('entityId', filters.entityId);
 
       const response = await fetch(`/api/admin/audit?${queryParams}`);
-      const data = await response.json();
+      const data = (await response.json()) as FetchLogsResponse;
 
       if (data.success) {
         setLogs(data.auditLogs);
@@ -89,8 +95,8 @@ export function AuditTrailTable() {
   function formatValue(value: string | null) {
     if (!value) return '-';
     try {
-      const parsed = JSON.parse(value);
-      if (typeof parsed === 'object') {
+      const parsed = JSON.parse(value) as unknown;
+      if (typeof parsed === 'object' && parsed !== null) {
         return JSON.stringify(parsed, null, 2);
       }
       return String(parsed);

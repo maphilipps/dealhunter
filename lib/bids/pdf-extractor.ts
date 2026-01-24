@@ -53,6 +53,7 @@ async function extractTextSinglePass(buffer: Buffer): Promise<string> {
   const base64Data = buffer.toString('base64');
   const openai = getOpenAIClient();
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const completion = await openai.chat.completions.create({
     model: modelNames.quality,
     messages: [
@@ -187,6 +188,7 @@ export async function extractTextFromPdfPages(
   const base64Data = buffer.toString('base64');
   const openai = getOpenAIClient();
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const completion = await openai.chat.completions.create({
     model: modelNames.quality,
     messages: [

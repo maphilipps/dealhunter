@@ -356,6 +356,7 @@ export async function startExtraction(bidId: string) {
       rfpId: bidId,
       rawText: bid.rawInput,
       inputType: bid.inputType as 'pdf' | 'email' | 'freetext',
+
       metadata,
     });
 

@@ -78,11 +78,13 @@ export default async function ReferencesPage() {
                 <div className="mt-4">
                   <span className="text-muted-foreground text-sm">Technologien:</span>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {JSON.parse(ref.technologies || '[]').map((tech: string, i: number) => (
-                      <Badge key={i} variant="outline">
-                        {tech}
-                      </Badge>
-                    ))}
+                    {(JSON.parse(ref.technologies || '[]') as string[]).map(
+                      (tech: string, i: number) => (
+                        <Badge key={i} variant="outline">
+                          {tech}
+                        </Badge>
+                      )
+                    )}
                   </div>
                 </div>
               </CardContent>

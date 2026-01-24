@@ -29,7 +29,7 @@ export const teamNotificationFunction = inngest.createFunction(
 
     // Step 1: Initialize job tracking
     const jobRecord = await step.run('init-job', async () => {
-      console.log('[Inngest] Starting team notification for bid:', bidId);
+      console.warn('[Inngest] Starting team notification for bid:', bidId);
 
       const [job] = await db
         .insert(backgroundJobs)

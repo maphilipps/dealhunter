@@ -24,10 +24,38 @@ export async function getAuditLogs(filters?: {
       conditions.push(eq(auditTrails.entityId, filters.entityId));
     }
     if (filters?.entityType) {
-      conditions.push(eq(auditTrails.entityType, filters.entityType as any));
+      conditions.push(
+        eq(
+          auditTrails.entityType,
+          filters.entityType as
+            | 'rfp'
+            | 'lead'
+            | 'business_unit'
+            | 'employee'
+            | 'reference'
+            | 'competency'
+            | 'competitor'
+            | 'team_assignment'
+            | 'pitchdeck'
+        )
+      );
     }
     if (filters?.action) {
-      conditions.push(eq(auditTrails.action, filters.action as any));
+      conditions.push(
+        eq(
+          auditTrails.action,
+          filters.action as
+            | 'bl_override'
+            | 'bid_override'
+            | 'team_change'
+            | 'status_change'
+            | 'create'
+            | 'update'
+            | 'delete'
+            | 'validate'
+            | 'reject'
+        )
+      );
     }
     if (filters?.userId) {
       conditions.push(eq(auditTrails.userId, filters.userId));
@@ -89,14 +117,17 @@ export type AuditEntityType =
   | 'team_assignment'
   | 'pitchdeck';
 
+// Flexible value type for audit logs - can be a simple value or an object
+type AuditValue = string | number | boolean | null | Record<string, unknown>;
+
 export async function createAuditLog(data: {
   action: AuditAction;
   entityType: AuditEntityType;
   entityId: string;
-  previousValue?: any;
-  newValue?: any;
+  previousValue?: AuditValue;
+  newValue?: AuditValue;
   reason?: string;
-  changes?: Record<string, any> | null; // Deprecated, for backwards compatibility
+  changes?: Record<string, unknown> | null; // Deprecated, for backwards compatibility
 }) {
   const session = await auth();
 

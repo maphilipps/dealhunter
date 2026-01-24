@@ -14,6 +14,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
+export interface ExtractedRequirements {
+  [key: string]: unknown;
+}
+
 export interface BidOpportunity {
   id: string;
   status: string;
@@ -23,7 +27,7 @@ export interface BidOpportunity {
   projectName?: string;
   createdAt: Date;
   websiteUrl?: string;
-  extractedRequirements?: any;
+  extractedRequirements?: string | ExtractedRequirements;
 }
 
 interface PipelineOverviewProps {
@@ -69,14 +73,17 @@ export function PipelineOverview({ opportunities }: PipelineOverviewProps) {
           </TableHeader>
           <TableBody>
             {opportunities.map(opp => {
+              const extractedReqs =
+                typeof opp.extractedRequirements === 'string'
+                  ? (JSON.parse(opp.extractedRequirements) as ExtractedRequirements)
+                  : opp.extractedRequirements;
               const customerName =
                 opp.accountName ||
-                (opp.extractedRequirements && JSON.parse(opp.extractedRequirements).customerName) ||
+                (extractedReqs?.customerName as string | undefined) ||
                 'Unknown Customer';
               const projectName =
                 opp.projectName ||
-                (opp.extractedRequirements &&
-                  JSON.parse(opp.extractedRequirements).projectDescription) ||
+                (extractedReqs?.projectDescription as string | undefined) ||
                 'Untitled Project';
 
               return (

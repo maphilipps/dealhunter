@@ -103,10 +103,10 @@ export function CompetitorValidationTable({ data }: CompetitorValidationTablePro
           </TableHeader>
           <TableBody>
             {data.map(comp => {
-              const industries = JSON.parse(comp.industry || '[]');
-              const strengths = JSON.parse(comp.strengths || '[]');
-              const weaknesses = JSON.parse(comp.weaknesses || '[]');
-              const markets = JSON.parse(comp.typicalMarkets || '[]');
+              const industries = JSON.parse(comp.industry || '[]') as string[];
+              const strengths = JSON.parse(comp.strengths || '[]') as string[];
+              const weaknesses = JSON.parse(comp.weaknesses || '[]') as string[];
+              const markets = JSON.parse(comp.typicalMarkets || '[]') as string[];
 
               return (
                 <TableRow key={comp.id}>
@@ -134,7 +134,7 @@ export function CompetitorValidationTable({ data }: CompetitorValidationTablePro
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
-                      {industries.slice(0, 2).map((ind: string) => (
+                      {industries.slice(0, 2).map(ind => (
                         <Badge key={ind} variant="secondary" className="text-xs">
                           {ind}
                         </Badge>
@@ -154,7 +154,7 @@ export function CompetitorValidationTable({ data }: CompetitorValidationTablePro
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
-                      {markets.slice(0, 2).map((market: string) => (
+                      {markets.slice(0, 2).map(market => (
                         <Badge key={market} variant="outline" className="text-xs">
                           {market}
                         </Badge>

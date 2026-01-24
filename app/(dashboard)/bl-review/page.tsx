@@ -13,7 +13,6 @@ import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';

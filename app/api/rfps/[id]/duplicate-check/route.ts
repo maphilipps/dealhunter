@@ -42,7 +42,7 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
       return NextResponse.json({ error: 'RFP must be extracted first' }, { status: 400 });
     }
 
-    const extractedReqs: ExtractedRequirements = JSON.parse(rfp.extractedRequirements);
+    const extractedReqs = JSON.parse(rfp.extractedRequirements) as ExtractedRequirements;
 
     // 4. Run Duplicate Check Agent
     const duplicateResult = await runDuplicateCheckAgent({

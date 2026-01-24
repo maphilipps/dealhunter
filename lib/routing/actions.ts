@@ -114,7 +114,7 @@ export async function assignBusinessUnit(
         action: 'bl_override',
         entityType: 'rfp',
         entityId: bidId,
-        previousValue: aiRecommendation,
+        previousValue: (aiRecommendation as string | null) ?? undefined,
         newValue: businessLineName,
         reason: overrideReason,
       });

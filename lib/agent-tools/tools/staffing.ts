@@ -5,7 +5,7 @@ import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { employees, businessUnits } from '@/lib/db/schema';
+import { employees } from '@/lib/db/schema';
 
 /**
  * Calculate skill match score for an employee against required skills
@@ -34,7 +34,7 @@ registry.register({
     'Calculate skill match score (0-100) for an employee against required skills using enhanced matching algorithm',
   category: 'staffing',
   inputSchema: calculateSkillMatchInputSchema,
-  async execute(input, context: ToolContext) {
+  async execute(input, _context: ToolContext) {
     const [employee] = await db
       .select()
       .from(employees)

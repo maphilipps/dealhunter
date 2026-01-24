@@ -1,10 +1,20 @@
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
-import { reviewFeatureResearch, deepReviewFeature } from '@/lib/cms-matching/review-agent';
+import {
+  reviewFeatureResearch,
+  deepReviewFeature,
+  type FeatureData,
+} from '@/lib/cms-matching/review-agent';
 import { db } from '@/lib/db';
 import { technologies } from '@/lib/db/schema';
+
+const reviewFeaturesRequestSchema = z.object({
+  mode: z.enum(['quick', 'deep']).optional(),
+  featureNames: z.array(z.string()).optional(),
+});
 
 /**
  * POST /api/admin/technologies/[id]/review-features
@@ -24,12 +34,17 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   const { id } = await context.params;
 
   try {
-    const body = await request.json().catch(() => ({}));
-    const mode = body.mode || 'quick';
-    const featureNames: string[] | undefined = body.featureNames;
+    const body: unknown = await request.json().catch(() => ({}));
+    const parsed = reviewFeaturesRequestSchema.safeParse(body);
+
+    const mode = parsed.success && parsed.data.mode ? parsed.data.mode : 'quick';
+    const featureNames: string[] | undefined = parsed.success
+      ? parsed.data.featureNames
+      : undefined;
 
     // Technologie laden
-    const [tech] = await db.select().from(technologies).where(eq(technologies.id, id));
+    const techResult = await db.select().from(technologies).where(eq(technologies.id, id)).limit(1);
+    const tech = techResult[0];
 
     if (!tech) {
       return NextResponse.json({ error: 'Technologie nicht gefunden' }, { status: 404 });
@@ -39,10 +54,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Keine Features zum Reviewen vorhanden' }, { status: 400 });
     }
 
-    const features = JSON.parse(tech.features);
+    const features = JSON.parse(tech.features) as Record<string, FeatureData>;
 
     // Filter auf bestimmte Features wenn angegeben
-    const featuresToReview = featureNames
+    const featuresToReview: Record<string, FeatureData> = featureNames
       ? Object.fromEntries(
           Object.entries(features).filter(([name]) =>
             featureNames.some(fn => fn.toLowerCase() === name.toLowerCase())
@@ -92,15 +107,15 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     } else {
       // Quick Review: Regelbasiert
       reviewResult = await reviewFeatureResearch({
-        technologyName: tech.name,
+        technologyName: tech.name ?? '',
         technologyId: id,
-        features: featuresToReview,
+        features: featuresToReview as Record<string, FeatureData>,
       });
       reviewResult = { ...reviewResult, mode: 'quick' };
     }
 
     // Korrigierte Features in DB speichern
-    const updatedFeatures = { ...features };
+    const updatedFeatures: Record<string, FeatureData> = { ...features };
     for (const reviewed of reviewResult.features) {
       if (reviewed.corrections.length > 0) {
         const original = updatedFeatures[reviewed.featureName];
@@ -111,7 +126,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
             supportType: reviewed.reviewedSupportType,
             moduleName: reviewed.reviewedModuleName,
             confidence: reviewed.confidence,
-            notes: original.notes,
             reasoning: `[Reviewed] ${reviewed.reasoning}`,
             reviewedAt: reviewResult.reviewedAt,
             reviewIssues: reviewed.issues,

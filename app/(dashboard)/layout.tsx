@@ -3,9 +3,7 @@ import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
 import { AppSidebar } from '@/components/app-sidebar';
-import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
-import { Separator } from '@/components/ui/separator';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';

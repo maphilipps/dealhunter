@@ -5,6 +5,9 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { backgroundJobs, rfps } from '@/lib/db/schema';
 
+type BackgroundJobType = 'deep-analysis' | 'team-notification' | 'cleanup';
+type BackgroundJobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+
 /**
  * GET /api/jobs - List background jobs for current user
  * Query params:
@@ -22,8 +25,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const rfpId = searchParams.get('rfpId');
-    const jobType = searchParams.get('jobType');
-    const status = searchParams.get('status');
+    const jobType = searchParams.get('jobType') as BackgroundJobType | null;
+    const status = searchParams.get('status') as BackgroundJobStatus | null;
     const limit = parseInt(searchParams.get('limit') || '50', 10);
 
     // Build query conditions
@@ -34,11 +37,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (jobType) {
-      conditions.push(eq(backgroundJobs.jobType, jobType as any));
+      conditions.push(eq(backgroundJobs.jobType, jobType));
     }
 
     if (status) {
-      conditions.push(eq(backgroundJobs.status, status as any));
+      conditions.push(eq(backgroundJobs.status, status));
     }
 
     // Fetch jobs with RFP details

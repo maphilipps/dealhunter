@@ -13,8 +13,8 @@ import {
 
 describe('navigation-config', () => {
   describe('LEAD_NAVIGATION_SECTIONS', () => {
-    it('should have exactly 13 sections', () => {
-      expect(LEAD_NAVIGATION_SECTIONS).toHaveLength(13);
+    it('should have 14 sections', () => {
+      expect(LEAD_NAVIGATION_SECTIONS).toHaveLength(14);
     });
 
     it('should have all required section IDs', () => {
@@ -27,11 +27,12 @@ describe('navigation-config', () => {
         'hosting',
         'integrations',
         'migration',
-        'staffing',
-        'references',
-        'legal',
+        'project-org',
         'costs',
+        'calc-sheet',
         'decision',
+        'audit',
+        'rag-data',
       ];
 
       const actualIds = LEAD_NAVIGATION_SECTIONS.map(s => s.id);
@@ -62,17 +63,18 @@ describe('navigation-config', () => {
       });
     });
 
-    it('should have RAG query templates for all sections', () => {
+    it('should have RAG query templates for all main sections (except debug)', () => {
       LEAD_NAVIGATION_SECTIONS.forEach(section => {
+        if (section.id === 'rag-data') return;
         expect(section.ragQueryTemplate).toBeTruthy();
         expect(section.ragQueryTemplate!.length).toBeGreaterThan(10);
       });
     });
 
-    it('should have synthesizer agents for all sections', () => {
+    it('should have synthesizer agents for all standard sections', () => {
       LEAD_NAVIGATION_SECTIONS.forEach(section => {
+        if (section.id === 'rag-data') return;
         expect(section.synthesizerAgent).toBeTruthy();
-        expect(section.synthesizerAgent).toContain('synthesizer');
       });
     });
   });
@@ -127,9 +129,9 @@ describe('navigation-config', () => {
   });
 
   describe('getAllSections', () => {
-    it('should return all 13 sections', () => {
+    it('should return all 14 sections', () => {
       const sections = getAllSections();
-      expect(sections).toHaveLength(13);
+      expect(sections).toHaveLength(14);
     });
 
     it('should return the same reference as LEAD_NAVIGATION_SECTIONS', () => {
@@ -139,16 +141,16 @@ describe('navigation-config', () => {
   });
 
   describe('getAllSectionIds', () => {
-    it('should return array of 13 section IDs', () => {
+    it('should return array of 14 section IDs', () => {
       const ids = getAllSectionIds();
-      expect(ids).toHaveLength(13);
+      expect(ids).toHaveLength(14);
     });
 
     it('should return correct IDs in order', () => {
       const ids = getAllSectionIds();
       expect(ids[0]).toBe('overview');
       expect(ids[1]).toBe('technology');
-      expect(ids[12]).toBe('decision');
+      expect(ids[11]).toBe('decision');
     });
 
     it('should match the IDs from LEAD_NAVIGATION_SECTIONS', () => {
@@ -188,8 +190,9 @@ describe('navigation-config', () => {
       expect(template).toBeUndefined();
     });
 
-    it('should return templates for all sections', () => {
+    it('should return templates for all sections (except debug)', () => {
       LEAD_NAVIGATION_SECTIONS.forEach(section => {
+        if (section.id === 'rag-data') return;
         const template = getRAGQueryTemplate(section.id);
         expect(template).toBeDefined();
         expect(template).toBe(section.ragQueryTemplate);
@@ -209,16 +212,18 @@ describe('navigation-config', () => {
       expect(agent).toBeUndefined();
     });
 
-    it('should return agents for all sections', () => {
+    it('should return agents for all sections (except debug)', () => {
       LEAD_NAVIGATION_SECTIONS.forEach(section => {
+        if (section.id === 'rag-data') return;
         const agent = getSynthesizerAgent(section.id);
         expect(agent).toBeDefined();
         expect(agent).toBe(section.synthesizerAgent);
       });
     });
 
-    it('should follow naming convention *-synthesizer', () => {
+    it('should follow naming convention *-synthesizer (except calc-sheet)', () => {
       LEAD_NAVIGATION_SECTIONS.forEach(section => {
+        if (section.id === 'rag-data' || section.id === 'calc-sheet') return;
         const agent = getSynthesizerAgent(section.id);
         expect(agent).toMatch(/-synthesizer$/);
       });

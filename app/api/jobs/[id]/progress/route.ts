@@ -37,60 +37,76 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Create SSE stream
     const stream = new ReadableStream({
-      async start(controller) {
+      start(controller) {
         const encoder = new TextEncoder();
 
         // Helper to send SSE message
-        const send = (data: any) => {
+        type JobProgressData = {
+          id: string;
+          jobType: string;
+          status: string;
+          progress: number | null;
+          currentStep: string | null;
+          errorMessage: string | null;
+          updatedAt: Date | null;
+          done?: boolean;
+        };
+        const send = (data: JobProgressData) => {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
         };
 
         // Poll for updates every 1 second
         const pollInterval = setInterval(() => {
           void (async () => {
-          try {
-            const [currentJob] = await db
-              .select()
-              .from(backgroundJobs)
-              .where(eq(backgroundJobs.id, id))
-              .limit(1);
+            try {
+              const [currentJob] = await db
+                .select()
+                .from(backgroundJobs)
+                .where(eq(backgroundJobs.id, id))
+                .limit(1);
 
-            if (!currentJob) {
-              clearInterval(pollInterval);
-              controller.close();
-              return;
-            }
+              if (!currentJob) {
+                clearInterval(pollInterval);
+                controller.close();
+                return;
+              }
 
-            // Send current status
-            send({
-              id: currentJob.id,
-              jobType: currentJob.jobType,
-              status: currentJob.status,
-              progress: currentJob.progress,
-              currentStep: currentJob.currentStep,
-              errorMessage: currentJob.errorMessage,
-              updatedAt: currentJob.updatedAt,
-            });
-
-            // Close stream if job is done
-            if (
-              currentJob.status === 'completed' ||
-              currentJob.status === 'failed' ||
-              currentJob.status === 'cancelled'
-            ) {
-              clearInterval(pollInterval);
-              // Send final message
+              // Send current status
               send({
-                ...currentJob,
-                done: true,
+                id: currentJob.id,
+                jobType: currentJob.jobType,
+                status: currentJob.status,
+                progress: currentJob.progress,
+                currentStep: currentJob.currentStep,
+                errorMessage: currentJob.errorMessage,
+                updatedAt: currentJob.updatedAt,
               });
-              controller.close();
+
+              // Close stream if job is done
+              if (
+                currentJob.status === 'completed' ||
+                currentJob.status === 'failed' ||
+                currentJob.status === 'cancelled'
+              ) {
+                clearInterval(pollInterval);
+                // Send final message
+                send({
+                  id: currentJob.id,
+                  jobType: currentJob.jobType,
+                  status: currentJob.status,
+                  progress: currentJob.progress,
+                  currentStep: currentJob.currentStep,
+                  errorMessage: currentJob.errorMessage,
+                  updatedAt: currentJob.updatedAt,
+                  done: true,
+                });
+                controller.close();
+              }
+            } catch (error) {
+              console.error('Error polling job status:', error);
+              clearInterval(pollInterval);
+              controller.error(error);
             }
-          } catch (error) {
-            console.error('Error polling job status:', error);
-            clearInterval(pollInterval);
-            controller.error(error);
-          }
           })();
         }, 1000);
 

@@ -11,6 +11,7 @@
  * - Company Research Agent
  */
 
+import { tool } from 'ai';
 import { z } from 'zod';
 
 import { crawlNavigation, quickNavigationScan } from '@/lib/quick-scan/tools/navigation-crawler';
@@ -19,8 +20,6 @@ import { fetchGitHubRepoInfo, findGitHubUrl, KNOWN_GITHUB_REPOS } from '@/lib/se
 import { searchAndContents, getContents, isExaSearchAvailable } from '@/lib/search/web-search';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
-
-// Import existing tools
 
 // ========================================
 // Types
@@ -53,7 +52,7 @@ export interface PageContent {
 export interface SiteCrawlResult {
   pages: PageContent[];
   totalUrls: number;
-  siteTree: any;
+  siteTree: unknown;
   errors: string[];
 }
 
@@ -616,8 +615,6 @@ export function createIntelligentTools(ctx: IntelligentToolsContext = {}): Intel
 // ========================================
 // AI SDK Tool Wrappers
 // ========================================
-
-import { tool } from 'ai';
 
 /**
  * Web Search Tool für AI SDK (EXA mit DuckDuckGo Fallback)

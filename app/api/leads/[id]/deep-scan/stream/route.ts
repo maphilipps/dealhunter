@@ -287,11 +287,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           // Process results
           phase2Results.forEach((result, i) => {
             if (result.status === 'fulfilled') {
-              results[result.value.name] = result.value;
+              results[result.value.name] = result.value as { success: boolean; error?: string };
             } else {
+              const errorReason = result.reason as Error | unknown;
               results[phase2ToRun[i].name] = {
                 success: false,
-                error: result.reason?.message || 'Unknown error',
+                error: errorReason instanceof Error ? errorReason.message : 'Unknown error',
               };
             }
           });

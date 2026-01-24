@@ -15,7 +15,6 @@ import { leads, dealEmbeddings } from '@/lib/db/schema';
 import { estimateTokens } from '@/lib/rag/raw-chunk-service';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
-
 const AGENT_NAME = 'audit_ingestion';
 // Use character limit (~1.5-2 chars/token for JSON, 8192 max = ~12000 chars, use 10000 to be safe)
 const MAX_CHARS_PER_CHUNK = 10000;
@@ -144,7 +143,6 @@ export async function findLeadByName(projectName: string): Promise<string | null
   for (const lead of existingLeads) {
     const leadCustomer = (lead.customerName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     if (leadCustomer.includes(normalizedName) || normalizedName.includes(leadCustomer)) {
-      console.log(`[Audit Ingestion] Found existing lead: ${lead.customerName} (${lead.id})`);
       return lead.id;
     }
   }
@@ -181,7 +179,6 @@ async function deleteExistingAuditChunks(leadId: string): Promise<number> {
     await db
       .delete(dealEmbeddings)
       .where(and(eq(dealEmbeddings.leadId, leadId), eq(dealEmbeddings.agentName, AGENT_NAME)));
-    console.log(`[Audit Ingestion] Deleted ${existing.length} existing audit chunks`);
   }
 
   return existing.length;
@@ -232,11 +229,6 @@ export async function ingestAuditToRAG(
     const audit = await parseAuditDirectory(auditPath);
     const auditStats = getAuditStats(audit);
 
-    console.log(
-      `[Audit Ingestion] Parsed ${auditStats.totalFiles} files from ${audit.projectName}`
-    );
-    console.log(`[Audit Ingestion] Categories: ${auditStats.categories.join(', ')}`);
-
     // 2. Delete existing audit chunks (idempotent)
     await deleteExistingAuditChunks(leadId);
 
@@ -260,7 +252,6 @@ export async function ingestAuditToRAG(
 
       // Skip empty files
       if (!content || content.trim().length === 0) {
-        console.log(`[Audit Ingestion] Skipping empty file: ${file.filename}`);
         continue;
       }
       const tokenCount = estimateTokens(content);
@@ -326,8 +317,6 @@ export async function ingestAuditToRAG(
       total: chunksCreated,
       message: 'Ingestion complete!',
     });
-
-    console.log(`[Audit Ingestion] Complete! ${embeddingsGenerated} embeddings generated.`);
 
     return {
       success: true,

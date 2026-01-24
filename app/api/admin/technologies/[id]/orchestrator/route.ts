@@ -1,8 +1,16 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { runTechnologyResearchOrchestrator } from '@/lib/cms-matching/technology-research-orchestrator';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
+
+const orchestratorRequestSchema = z.object({
+  featureNames: z.array(z.string()),
+  autoReview: z.boolean().optional(),
+  reviewMode: z.enum(['quick', 'deep']).optional(),
+  maxConcurrency: z.number().optional(),
+});
 
 /**
  * POST /api/admin/technologies/[id]/orchestrator
@@ -27,8 +35,20 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   const { id } = await context.params;
 
   try {
-    const body = await request.json();
-    const featureNames: string[] = body.featureNames || [];
+    const body: unknown = await request.json();
+    const parsed = orchestratorRequestSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request body', details: parsed.error.flatten() }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const { featureNames, autoReview, reviewMode, maxConcurrency } = parsed.data;
 
     if (featureNames.length === 0) {
       return new Response(JSON.stringify({ error: 'featureNames ist erforderlich' }), {
@@ -45,16 +65,16 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     // Event Emitter für Orchestrator
     const emit = (event: AgentEvent) => {
       const data = `data: ${JSON.stringify(event)}\n\n`;
-      writer.write(encoder.encode(data)).catch(console.error);
+      void writer.write(encoder.encode(data)).catch(console.error);
     };
 
     // Start Orchestrator in Background
     void (async () => {
       try {
         const result = await runTechnologyResearchOrchestrator(id, featureNames, {
-          autoReview: body.autoReview ?? true,
-          reviewMode: body.reviewMode || 'quick',
-          maxConcurrency: body.maxConcurrency || 3,
+          autoReview: autoReview ?? true,
+          reviewMode: reviewMode ?? 'quick',
+          maxConcurrency: maxConcurrency ?? 3,
           saveToDb: true,
           emit,
         });

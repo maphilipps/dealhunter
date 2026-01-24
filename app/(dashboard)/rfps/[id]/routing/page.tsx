@@ -16,13 +16,30 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { auth } from '@/lib/auth';
-import { buildQuestionsWithStatus } from '@/lib/bids/ten-questions';
+import {
+  buildQuestionsWithStatus,
+  type QuestionWithStatus,
+  type ProjectType,
+} from '@/lib/bids/ten-questions';
 import { db } from '@/lib/db';
 import { businessUnits } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { getCachedRfpWithRelations } from '@/lib/rfps/cached-queries';
 import { analyzeTimelineRisk, getRiskIcon } from '@/lib/timeline/risk-analyzer';
 import type { ProjectTimeline, RiskAnalysis } from '@/lib/timeline/schema';
+
+interface TimelinePhase {
+  name: string;
+  durationDays: number;
+  startDay: number;
+  endDay: number;
+}
+
+interface TimelineRisk {
+  factor: string;
+  impact: string;
+  likelihood: string;
+}
 
 export default async function RoutingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -48,7 +65,14 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
   const allBusinessUnits = await db.select().from(businessUnits);
 
   // Parse available data (graceful - may be null)
-  const timeline = quickScan?.timeline ? (JSON.parse(quickScan.timeline) as ProjectTimeline) : null;
+  let timeline: ProjectTimeline | null = null;
+  if (quickScan?.timeline) {
+    try {
+      timeline = JSON.parse(quickScan.timeline) as ProjectTimeline;
+    } catch {
+      timeline = null;
+    }
+  }
 
   const blRecommendation = quickScan?.recommendedBusinessUnit
     ? {
@@ -59,9 +83,14 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
     : null;
 
   // Get extracted requirements
-  const extractedReqs = rfp.extractedRequirements
-    ? (JSON.parse(rfp.extractedRequirements) as ExtractedRequirements)
-    : null;
+  let extractedReqs: ExtractedRequirements | null = null;
+  if (rfp.extractedRequirements) {
+    try {
+      extractedReqs = JSON.parse(rfp.extractedRequirements) as ExtractedRequirements;
+    } catch {
+      extractedReqs = null;
+    }
+  }
   const rfpDeadline: string | undefined = extractedReqs?.submissionDeadline;
 
   // Analyze risk (only if timeline available)
@@ -70,16 +99,30 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
     : null;
 
   // Get 10 Questions from Quick Scan (if available)
-  const tenQuestionsData = quickScan?.tenQuestions ? JSON.parse(quickScan.tenQuestions) : null;
+  let tenQuestionsData: unknown = null;
+  if (quickScan?.tenQuestions) {
+    try {
+      tenQuestionsData = JSON.parse(quickScan.tenQuestions);
+    } catch {
+      tenQuestionsData = null;
+    }
+  }
   const questionsResult =
-    tenQuestionsData && quickScan
+    tenQuestionsData &&
+    quickScan &&
+    typeof tenQuestionsData === 'object' &&
+    tenQuestionsData !== null &&
+    'questions' in tenQuestionsData &&
+    'answeredCount' in tenQuestionsData &&
+    'totalCount' in tenQuestionsData
       ? {
-          questions: tenQuestionsData.questions,
+          questions: (tenQuestionsData as Record<string, unknown>).questions,
           summary: {
-            answered: tenQuestionsData.answeredCount,
-            total: tenQuestionsData.totalCount,
+            answered: (tenQuestionsData as Record<string, unknown>).answeredCount,
+            total: (tenQuestionsData as Record<string, unknown>).totalCount,
           },
-          projectType: tenQuestionsData.projectType || 'migration',
+          projectType:
+            ((tenQuestionsData as Record<string, unknown>).projectType as string) || 'migration',
         }
       : quickScan && extractedReqs
         ? buildQuestionsWithStatus(quickScan, extractedReqs)
@@ -227,10 +270,10 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
       {/* 10 Questions Card - only show if data available */}
       {questionsResult && (
         <TenQuestionsCard
-          questions={questionsResult.questions}
-          projectType={questionsResult.projectType}
-          answeredCount={questionsResult.summary.answered}
-          totalCount={questionsResult.summary.total}
+          questions={questionsResult.questions as QuestionWithStatus[]}
+          projectType={questionsResult.projectType as ProjectType}
+          answeredCount={questionsResult.summary.answered as number}
+          totalCount={questionsResult.summary.total as number}
         />
       )}
 
@@ -338,24 +381,14 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {timeline.phases.map(
-                    (
-                      phase: {
-                        name: string;
-                        durationDays: number;
-                        startDay: number;
-                        endDay: number;
-                      },
-                      idx: number
-                    ) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-medium">{phase.name}</TableCell>
-                        <TableCell className="text-right">{phase.durationDays}</TableCell>
-                        <TableCell className="text-right">Tag {phase.startDay + 1}</TableCell>
-                        <TableCell className="text-right">Tag {phase.endDay + 1}</TableCell>
-                      </TableRow>
-                    )
-                  )}
+                  {timeline.phases.map((phase: TimelinePhase, idx: number) => (
+                    <TableRow key={idx}>
+                      <TableCell className="font-medium">{phase.name}</TableCell>
+                      <TableCell className="text-right">{phase.durationDays}</TableCell>
+                      <TableCell className="text-right">Tag {phase.startDay + 1}</TableCell>
+                      <TableCell className="text-right">Tag {phase.endDay + 1}</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>
@@ -399,24 +432,22 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
               <div>
                 <h4 className="mb-2 font-semibold">Identifizierte Risiken</h4>
                 <div className="space-y-2">
-                  {timeline.risks.map(
-                    (risk: { factor: string; impact: string; likelihood: string }, idx: number) => (
-                      <div key={idx} className="flex items-start gap-2 rounded-lg border p-3">
-                        <AlertTriangle className="mt-0.5 h-4 w-4 text-yellow-600" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{risk.factor}</p>
-                          <div className="mt-1 flex gap-2">
-                            <Badge variant="outline" className="text-xs">
-                              Impact: {risk.impact}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              Likelihood: {risk.likelihood}
-                            </Badge>
-                          </div>
+                  {timeline.risks.map((risk: TimelineRisk, idx: number) => (
+                    <div key={idx} className="flex items-start gap-2 rounded-lg border p-3">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 text-yellow-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{risk.factor}</p>
+                        <div className="mt-1 flex gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            Impact: {risk.impact}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Likelihood: {risk.likelihood}
+                          </Badge>
                         </div>
                       </div>
-                    )
-                  )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

@@ -103,7 +103,7 @@ export function CompetencyValidationTable({ data }: CompetencyValidationTablePro
           </TableHeader>
           <TableBody>
             {data.map(comp => {
-              const certifications = JSON.parse(comp.certifications || '[]');
+              const certifications = JSON.parse(comp.certifications || '[]') as string[];
               return (
                 <TableRow key={comp.id}>
                   <TableCell className="font-medium">

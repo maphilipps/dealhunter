@@ -13,8 +13,6 @@ import {
   CartesianGrid,
   LineChart,
   Line,
-  Legend,
-  ResponsiveContainer,
 } from 'recharts';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -87,8 +85,15 @@ export default function AnalyticsPage() {
       try {
         const response = await fetch('/api/analytics/overview');
         if (!response.ok) throw new Error('Failed to fetch analytics');
-        const analyticsData = await response.json();
-        setData(analyticsData);
+        const analyticsData = (await response.json()) as unknown;
+        if (
+          analyticsData &&
+          typeof analyticsData === 'object' &&
+          'summary' in analyticsData &&
+          'bidDecision' in analyticsData
+        ) {
+          setData(analyticsData as AnalyticsData);
+        }
       } catch (error) {
         console.error('Error fetching analytics:', error);
       } finally {
@@ -228,7 +233,10 @@ export default function AnalyticsPage() {
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
-                  label={entry => `${entry.name}: ${entry.value}`}
+                  label={(entry: unknown) => {
+                    const e = entry as { name?: string; value?: number };
+                    return `${e.name}: ${e.value}`;
+                  }}
                 >
                   {bidDecisionData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -257,7 +265,10 @@ export default function AnalyticsPage() {
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
-                  label={entry => `${entry.name}: ${entry.value}`}
+                  label={(entry: unknown) => {
+                    const e = entry as { name?: string; value?: number };
+                    return `${e.name}: ${e.value}`;
+                  }}
                 >
                   {sourceData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -286,7 +297,10 @@ export default function AnalyticsPage() {
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
-                  label={entry => `${entry.name}: ${entry.value}`}
+                  label={(entry: unknown) => {
+                    const e = entry as { name?: string; value?: number };
+                    return `${e.name}: ${e.value}`;
+                  }}
                 >
                   {stageData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -351,8 +365,9 @@ export default function AnalyticsPage() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="date"
-                tickFormatter={value => {
-                  const date = new Date(value);
+                tickFormatter={(value: unknown) => {
+                  const dateStr = typeof value === 'string' ? value : String(value);
+                  const date = new Date(dateStr);
                   return `${date.getMonth() + 1}/${date.getDate()}`;
                 }}
               />

@@ -21,12 +21,11 @@ import {
   type LegalAssessment,
   type ContractAnalysis,
   type ReferenceMatch,
-  type CoordinatorOutput,
 } from './schema';
 
 // Intelligent Agent Framework - NEW
 import { quickEvaluate, BIT_EVALUATION_SCHEMA } from '@/lib/agent-tools/evaluator';
-import { BIT_EVALUATION_WEIGHTS, calculateWeightedBitScore } from '@/lib/config/business-rules';
+import { calculateWeightedBitScore } from '@/lib/config/business-rules';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
@@ -256,6 +255,7 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
 /**
  * Generate final BIT decision using AI
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function generateBitDecision(context: {
   scores: {
     capability: number;

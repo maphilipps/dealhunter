@@ -80,13 +80,18 @@ export function parseJsonlPatches(jsonl: string): JsonRenderTree {
 
   for (const line of lines) {
     try {
-      const patch = JSON.parse(line);
+      const patch = JSON.parse(line) as { op?: string; path?: string; value?: unknown };
 
       if (patch.op === 'set' && patch.path === '/root') {
-        tree.root = patch.value;
-      } else if (patch.op === 'add' && patch.path.startsWith('/elements/')) {
+        tree.root = patch.value as string | null;
+      } else if (patch.op === 'add' && patch.path?.startsWith('/elements/')) {
         const key = patch.path.replace('/elements/', '');
-        tree.elements[key] = patch.value;
+        tree.elements[key] = patch.value as {
+          key: string;
+          type: string;
+          props: Record<string, unknown>;
+          children?: string[];
+        };
       }
     } catch {
       // Skip invalid JSON lines silently

@@ -1,4 +1,4 @@
-import { eq, desc, and, count } from 'drizzle-orm';
+import { eq, desc, count } from 'drizzle-orm';
 
 import { listToolsForAgent, getToolsByCategory } from '@/lib/agent-tools';
 import { db } from '@/lib/db';
@@ -123,8 +123,8 @@ export async function buildAgentContext(userId: string): Promise<AgentContext> {
         let customerName: string | undefined;
         if (r.extractedRequirements) {
           try {
-            const reqs = JSON.parse(r.extractedRequirements);
-            customerName = reqs.customerName;
+            const reqs = JSON.parse(r.extractedRequirements) as Record<string, unknown>;
+            customerName = reqs.customerName as string | undefined;
           } catch {
             // Ignore parse error
           }

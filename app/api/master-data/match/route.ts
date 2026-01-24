@@ -1,4 +1,4 @@
-import { eq, and, like, sql } from 'drizzle-orm';
+import { eq, and, type SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -134,7 +134,7 @@ async function matchReferences(params: {
   const { technologies, industry, limit } = params;
 
   // Build WHERE clause
-  const conditions: any[] = [eq(references.isValidated, true)];
+  const conditions: SQL[] = [eq(references.isValidated, true)];
 
   if (industry) {
     conditions.push(eq(references.industry, industry));
@@ -152,7 +152,7 @@ async function matchReferences(params: {
     const reasons: string[] = [];
 
     // Parse technologies JSON
-    const refTechs = ref.technologies ? JSON.parse(ref.technologies) : [];
+    const refTechs = ref.technologies ? (JSON.parse(ref.technologies) as string[]) : [];
 
     // Technology matches (weighted heavily)
     const techMatches = technologies.filter(t =>
@@ -286,7 +286,7 @@ async function matchCompetitors(params: {
 
     // Industry match
     if (industry && comp.industry) {
-      const industries = JSON.parse(comp.industry);
+      const industries = JSON.parse(comp.industry) as string[];
       if (industries.includes(industry)) {
         score += 5;
         reasons.push(`Active in ${industry}`);
@@ -302,9 +302,9 @@ async function matchCompetitors(params: {
     return {
       id: comp.id,
       companyName: comp.companyName,
-      strengths: comp.strengths ? JSON.parse(comp.strengths) : [],
-      weaknesses: comp.weaknesses ? JSON.parse(comp.weaknesses) : [],
-      typicalMarkets: comp.typicalMarkets ? JSON.parse(comp.typicalMarkets) : [],
+      strengths: comp.strengths ? (JSON.parse(comp.strengths) as string[]) : [],
+      weaknesses: comp.weaknesses ? (JSON.parse(comp.weaknesses) as string[]) : [],
+      typicalMarkets: comp.typicalMarkets ? (JSON.parse(comp.typicalMarkets) as string[]) : [],
       matchScore: score,
       matchReasons: reasons,
     };

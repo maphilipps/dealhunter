@@ -6,11 +6,17 @@ import { useState, useEffect } from 'react';
 
 import { BusinessUnitList } from '@/components/admin/business-unit-list';
 import { Button } from '@/components/ui/button';
-import { getBusinessUnits } from '@/lib/admin/business-units-actions';
+import {
+  getBusinessUnits,
+  type getBusinessUnits as GetBusinessUnitsType,
+} from '@/lib/admin/business-units-actions';
+
+type GetBusinessUnitsResult = Awaited<ReturnType<typeof GetBusinessUnitsType>>;
+type BusinessUnit = NonNullable<GetBusinessUnitsResult['businessUnits']>[number];
 
 export default function BusinessUnitsPage() {
   const router = useRouter();
-  const [businessUnits, setBusinessUnits] = useState<any[]>([]);
+  const [businessUnits, setBusinessUnits] = useState<BusinessUnit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

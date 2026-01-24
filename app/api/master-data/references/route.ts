@@ -1,4 +1,4 @@
-import { eq, and, or, like, desc, sql } from 'drizzle-orm';
+import { eq, and, or, like, desc, sql, type SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -41,14 +41,14 @@ const querySchema = z.object({
 // GET /api/master-data/references
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const parsed = querySchema.safeParse(Object.fromEntries(searchParams));
 
     if (!parsed.success) {
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     // Build WHERE clause
-    const conditions: any[] = [];
+    const conditions: SQL[] = [];
 
     // Only show validated references to non-admins
     if (session.user.role !== 'admin') {
@@ -82,13 +82,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      conditions.push(
-        or(
-          like(references.projectName, `%${search}%`),
-          like(references.customerName, `%${search}%`),
-          like(references.scope, `%${search}%`)
-        )
+      const searchCondition = or(
+        like(references.projectName, `%${search}%`),
+        like(references.customerName, `%${search}%`),
+        like(references.scope, `%${search}%`)
       );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
+    const body = (await request.json()) as unknown;
     const parsed = createReferenceSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -189,7 +190,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Prepare update data
-    const updateData: any = { ...updates, updatedAt: new Date(), version: existing.version + 1 };
+    const updateData: Record<string, unknown> = {
+      ...updates,
+      updatedAt: new Date(),
+      version: existing.version + 1,
+    };
 
     if (updates.technologies) {
       updateData.technologies = JSON.stringify(updates.technologies);

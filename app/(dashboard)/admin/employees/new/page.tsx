@@ -43,7 +43,7 @@ export default function NewEmployeePage() {
           </p>
         </div>
 
-        <EmployeeForm businessUnits={businessUnits} competencies={competencies} />
+        <EmployeeForm businessUnits={businessUnits} _competencies={competencies} />
       </div>
     </div>
   );

@@ -2,10 +2,15 @@ import { formatDistanceToNow } from 'date-fns';
 import { Building2, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
-import { StatusBadge } from './status-badge';
+import { StatusBadge, type RfpStatus } from './status-badge';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+export interface ExtractedRequirements {
+  customerName?: string;
+  [key: string]: unknown;
+}
 
 export interface BidOpportunity {
   id: string;
@@ -16,7 +21,7 @@ export interface BidOpportunity {
   accountName?: string;
   projectName?: string;
   createdAt: Date;
-  extractedRequirements?: any;
+  extractedRequirements?: string | ExtractedRequirements;
 }
 
 interface AccountGroup {
@@ -33,10 +38,13 @@ export function AccountGroupedList({ opportunities }: AccountGroupedListProps) {
   // Group opportunities by account
   const grouped = opportunities.reduce(
     (acc, opp) => {
+      const extractedReqs =
+        typeof opp.extractedRequirements === 'string'
+          ? (JSON.parse(opp.extractedRequirements) as ExtractedRequirements)
+          : opp.extractedRequirements;
+
       const customerName =
-        opp.accountName ||
-        (opp.extractedRequirements && JSON.parse(opp.extractedRequirements).customerName) ||
-        'Unknown Customer';
+        opp.accountName || (extractedReqs && extractedReqs.customerName) || 'Unknown Customer';
       const accountId = opp.accountId || null;
       const key = accountId || customerName;
 
@@ -109,11 +117,12 @@ export function AccountGroupedList({ opportunities }: AccountGroupedListProps) {
 
             <div className="space-y-2 pl-6">
               {group.opportunities.map(opp => {
+                const extractedReqs =
+                  typeof opp.extractedRequirements === 'string'
+                    ? (JSON.parse(opp.extractedRequirements) as Record<string, string>)
+                    : (opp.extractedRequirements as Record<string, string> | undefined);
                 const projectName =
-                  opp.projectName ||
-                  (opp.extractedRequirements &&
-                    JSON.parse(opp.extractedRequirements).projectDescription) ||
-                  'Untitled Project';
+                  opp.projectName || extractedReqs?.projectDescription || 'Untitled Project';
 
                 return (
                   <Link
@@ -124,7 +133,7 @@ export function AccountGroupedList({ opportunities }: AccountGroupedListProps) {
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium line-clamp-1">{projectName}</p>
-                        <StatusBadge status={opp.status as any} />
+                        <StatusBadge status={opp.status as RfpStatus} />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Badge variant="outline" className="capitalize text-xs">

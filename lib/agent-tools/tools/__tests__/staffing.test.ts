@@ -4,7 +4,7 @@ import { registry } from '../../registry';
 import type { ToolContext } from '../../types';
 
 import { db } from '@/lib/db';
-import { employees, businessUnits } from '@/lib/db/schema';
+import type { employees } from '@/lib/db/schema';
 
 // Import the staffing tools to register them
 import '../staffing';

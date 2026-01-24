@@ -34,7 +34,7 @@ export function EmployeeList({ employees }: { employees: Employee[] | undefined 
       } else {
         toast.error(result.error || 'Fehler beim Löschen');
       }
-    } catch (error) {
+    } catch {
       toast.error('Ein Fehler ist aufgetreten');
     }
   };
@@ -53,8 +53,8 @@ export function EmployeeList({ employees }: { employees: Employee[] | undefined 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {employees.map(emp => {
-        const skills = JSON.parse(emp.skills || '[]');
-        const roles = JSON.parse(emp.roles || '[]');
+        const skills = JSON.parse(emp.skills || '[]') as string[];
+        const roles = JSON.parse(emp.roles || '[]') as string[];
 
         return (
           <Card key={emp.id}>
@@ -89,7 +89,7 @@ export function EmployeeList({ employees }: { employees: Employee[] | undefined 
               <div>
                 <span className="text-muted-foreground">Skills:</span>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {skills.map((skill: string, i: number) => (
+                  {skills.map((skill, i) => (
                     <Badge key={i} variant="secondary" className="text-xs">
                       {skill}
                     </Badge>
@@ -99,7 +99,7 @@ export function EmployeeList({ employees }: { employees: Employee[] | undefined 
               <div>
                 <span className="text-muted-foreground">Rollen:</span>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {roles.map((role: string, i: number) => (
+                  {roles.map((role, i) => (
                     <Badge key={i} variant="outline" className="text-xs">
                       {role}
                     </Badge>

@@ -10,6 +10,11 @@ import {
   type LeadRAGResult,
 } from '../lead-retrieval-service';
 
+// Mock embedding service
+vi.mock('../embedding-service', () => ({
+  generateQueryEmbedding: vi.fn(),
+}));
+
 // Mock retrieval service
 vi.mock('../retrieval-service', () => ({
   queryRAG: vi.fn(),
@@ -28,6 +33,7 @@ vi.mock('@/lib/leads/navigation-config', () => ({
 }));
 
 import { queryRAG } from '../retrieval-service';
+import { generateQueryEmbedding } from '../embedding-service';
 
 import { db } from '@/lib/db';
 import { getRAGQueryTemplate } from '@/lib/leads/navigation-config';
@@ -35,6 +41,7 @@ import { getRAGQueryTemplate } from '@/lib/leads/navigation-config';
 describe('lead-retrieval-service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(generateQueryEmbedding).mockResolvedValue(new Array(3072).fill(0.1));
   });
 
   describe('queryRagForLead', () => {

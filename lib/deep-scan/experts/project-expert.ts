@@ -90,7 +90,7 @@ const ProjectPlanSchema = z.object({
         name: z.string(),
         target: z.string().default(''),
         measurement: z.string().default(''),
-        frequency: z.enum(['weekly', 'sprint', 'monthly', 'phase', 'project']).catch('monthly'),
+        frequency: z.enum(['weekly', 'sprint', 'monthly', 'phase', 'project']).default('monthly'),
       })
     )
     .default([]),

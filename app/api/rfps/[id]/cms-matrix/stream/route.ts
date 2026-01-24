@@ -178,7 +178,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   };
 
   // Run research in background
-  (async () => {
+  void (async () => {
     try {
       // 1. Load RFP
       const rfp = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);

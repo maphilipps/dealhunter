@@ -407,6 +407,7 @@ async function saveRequirementResearchToTechnology(
     }
 
     // Parse or initialize features
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const currentFeatures: Record<string, RequirementResearchResult> = tech[0].features
       ? JSON.parse(tech[0].features)
       : {};

@@ -198,7 +198,9 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       }
 
       // 2. Parse Quick Scan Results
-      const quickScanData = rfp[0].quickScanResults ? JSON.parse(rfp[0].quickScanResults) : {};
+      const quickScanData: Record<string, unknown> = rfp[0].quickScanResults
+        ? (JSON.parse(rfp[0].quickScanResults) as Record<string, unknown>)
+        : {};
 
       // 3. Extract Requirements
       const requirements = extractRequirementsFromQuickScan(quickScanData);
@@ -255,11 +257,16 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       });
 
       // 5. Run Parallel Matrix Research
-      const matrix = await runParallelMatrixResearch(requirements, cmsOptions, (event) => void sendEvent(event), {
-        useCache: true,
-        saveToDb: true,
-        maxConcurrency: 5,
-      });
+      const matrix = await runParallelMatrixResearch(
+        requirements,
+        cmsOptions,
+        event => void sendEvent(event),
+        {
+          useCache: true,
+          saveToDb: true,
+          maxConcurrency: 5,
+        }
+      );
 
       // 6. Save to RFP
       await saveMatrixToRfp(rfpId, matrix);
@@ -319,10 +326,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     return Response.json({ error: 'RFP not found' }, { status: 404 });
   }
 
-  const quickScanData = rfp[0].quickScanResults ? JSON.parse(rfp[0].quickScanResults) : {};
+  const quickScanData: Record<string, unknown> = rfp[0].quickScanResults
+    ? (JSON.parse(rfp[0].quickScanResults) as Record<string, unknown>)
+    : {};
 
   return Response.json({
-    matrix: quickScanData.cmsMatchingMatrix || null,
-    cmsMatchingResult: quickScanData.cmsMatchingResult || null,
+    matrix: (quickScanData.cmsMatchingMatrix as Record<string, unknown> | null) || null,
+    cmsMatchingResult: (quickScanData.cmsMatchingResult as Record<string, unknown> | null) || null,
   });
 }

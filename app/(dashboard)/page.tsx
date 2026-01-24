@@ -22,7 +22,7 @@ interface BidOpportunity {
   projectName?: string;
   createdAt: Date;
   websiteUrl?: string;
-  extractedRequirements?: any;
+  extractedRequirements?: Record<string, unknown>;
 }
 
 interface Stats {
@@ -38,7 +38,8 @@ interface DashboardData {
 }
 
 // Fetcher function for SWR
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = (url: string): Promise<DashboardData> =>
+  fetch(url).then(res => res.json()) as Promise<DashboardData>;
 
 export default function DashboardPage() {
   // Filter state
@@ -54,7 +55,7 @@ export default function DashboardPage() {
   const cacheKey = `/api/bids?${params.toString()}`;
 
   // Fetch data with SWR
-  const { data, error, isLoading } = useSWR<DashboardData>(cacheKey, fetcher, {
+  const { data, error, isLoading } = useSWR<DashboardData | undefined>(cacheKey, fetcher, {
     dedupingInterval: 2000, // Deduplicate requests within 2 seconds
     refreshInterval: 0, // Don't auto-refresh
     revalidateOnFocus: false, // Don't refresh on window focus
@@ -63,9 +64,10 @@ export default function DashboardPage() {
 
   // Handle error state
   if (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-red-500">Error loading dashboard: {error.message}</p>
+        <p className="text-red-500">Error loading dashboard: {errorMessage}</p>
       </div>
     );
   }

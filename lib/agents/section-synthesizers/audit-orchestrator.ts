@@ -172,7 +172,7 @@ Prioritize findings by:
       .replace(/```\n?/g, '')
       .trim();
 
-    const rawResult = JSON.parse(cleanedResponse);
+    const rawResult = JSON.parse(cleanedResponse) as Record<string, unknown>;
     const output: AuditOutput = auditOutputSchema.parse(rawResult);
 
     // Calculate confidence

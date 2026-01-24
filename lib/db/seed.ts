@@ -31,8 +31,6 @@ const randomSubset = <T>(arr: T[], min = 1, max = 3): T[] => {
 };
 
 async function seed() {
-  console.log('🌱 Starting comprehensive database seed...');
-
   const hashedPassword = await bcrypt.hash('admin123', 10);
   const adminUser = {
     email: 'admin@adesso.de',
@@ -406,8 +404,6 @@ async function seed() {
       });
     }
   }
-
-  console.log('✅ Database seed completed successfully!');
 }
 
 seed()

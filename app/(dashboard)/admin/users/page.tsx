@@ -10,9 +10,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getUsers, updateUserRole, deleteUser } from '@/lib/admin/users-actions';
 
+type User = {
+  id: string;
+  email: string;
+  name: string;
+  role: 'bd' | 'bl' | 'admin';
+  createdAt: Date | null;
+};
+
 export default function UsersPage() {
   const router = useRouter();
-  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -117,7 +125,9 @@ export default function UsersPage() {
                       <span className="text-muted-foreground">Rolle ändern:</span>
                       <select
                         value={user.role}
-                        onChange={e => handleRoleChange(user.id, e.target.value as any)}
+                        onChange={e =>
+                          handleRoleChange(user.id, e.target.value as 'bd' | 'bl' | 'admin')
+                        }
                         className="rounded-md border border-input bg-background px-3 py-1 text-sm"
                       >
                         <option value="bd">BD</option>

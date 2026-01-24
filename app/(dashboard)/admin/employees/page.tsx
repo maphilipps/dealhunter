@@ -15,12 +15,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { getEmployees, importEmployeesFromCSV } from '@/lib/admin/employees-actions';
+import {
+  getEmployees,
+  type getEmployees as GetEmployeesType,
+  importEmployeesFromCSV,
+} from '@/lib/admin/employees-actions';
+
+type GetEmployeesResult = Awaited<ReturnType<typeof GetEmployeesType>>;
+type Employee = NonNullable<GetEmployeesResult['employees']>[number];
 
 export default function EmployeesPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -36,7 +43,7 @@ export default function EmployeesPage() {
     void loadData();
   }, []);
 
-  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCSVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -58,7 +65,7 @@ export default function EmployeesPage() {
         } else {
           toast.error(result.error || 'Fehler beim Import');
         }
-      } catch (error) {
+      } catch {
         toast.error('Ein Fehler ist aufgetreten');
       } finally {
         setIsImporting(false);

@@ -48,7 +48,7 @@ export default async function CompetitorsPage() {
             </TableRow>
           ) : (
             competitors.map(comp => {
-              const industries = comp.industry ? JSON.parse(comp.industry) : [];
+              const industries = comp.industry ? (JSON.parse(comp.industry) as string[]) : [];
 
               return (
                 <TableRow key={comp.id}>

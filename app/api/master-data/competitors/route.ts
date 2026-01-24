@@ -1,4 +1,4 @@
-import { eq, and, or, like, desc, sql } from 'drizzle-orm';
+import { eq, and, or, like, desc, sql, type SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -46,14 +46,14 @@ const querySchema = z.object({
 // GET /api/master-data/competitors
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const parsed = querySchema.safeParse(Object.fromEntries(searchParams));
 
     if (!parsed.success) {
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     const { status, search, page = 1, limit = 50 } = parsed.data;
     const offset = (page - 1) * limit;
 
-    const conditions: any[] = [];
+    const conditions: SQL[] = [];
 
     if (session.user.role !== 'admin') {
       conditions.push(eq(competitors.isValidated, true));
@@ -77,12 +77,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      conditions.push(
-        or(
-          like(competitors.companyName, `%${search}%`),
-          like(competitors.description, `%${search}%`)
-        )
+      const searchCondition = or(
+        like(competitors.companyName, `%${search}%`),
+        like(competitors.description, `%${search}%`)
       );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
+    const body = (await request.json()) as unknown;
     const parsed = createCompetitorSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -188,7 +189,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const updateData: any = { ...updates, updatedAt: new Date(), version: existing.version + 1 };
+    const updateData: Record<string, unknown> = {
+      ...updates,
+      updatedAt: new Date(),
+      version: existing.version + 1,
+    };
 
     if (updates.industry) {
       updateData.industry = JSON.stringify(updates.industry);

@@ -198,7 +198,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             const requirements = JSON.parse(rfp.extractedRequirements) as Record<string, unknown>;
             customerName = (requirements.customerName as string) || customerName;
             projectDescription = (requirements.projectDescription as string) || projectDescription;
-          } catch (_e) {
+          } catch {
             console.error('Could not parse RFP extractedRequirements');
           }
         }
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           projectUrl: pitchdeckUrl, // Override URL to point to Pitchdeck tab
         });
 
-        console.log(
+        console.error(
           `✅ Team notification emails sent to ${teamNotifications.length} members for pitchdeck ${pitchdeck.id}`
         );
       } catch (error) {

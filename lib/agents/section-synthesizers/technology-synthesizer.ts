@@ -84,7 +84,7 @@ export class TechnologySynthesizer extends SectionSynthesizerBase {
   readonly sectionTitle = 'Aktuelle Technologie';
 
   async synthesize(input: SectionSynthesizerInput): Promise<SectionSynthesizerOutput> {
-    const { leadId, context, forceRegenerate } = input;
+    const { leadId, forceRegenerate } = input;
 
     try {
       // Check if we should use cached data
@@ -200,7 +200,7 @@ Antworte mit validem JSON ohne Markdown-Code-Blöcke.`;
         .replace(/```\n?/g, '')
         .trim();
 
-      const rawResult = JSON.parse(cleanedResponse);
+      const rawResult = JSON.parse(cleanedResponse) as Record<string, unknown>;
       const validatedContent = technologyOutputSchema.parse(rawResult);
 
       // Calculate confidence and metadata

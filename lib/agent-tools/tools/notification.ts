@@ -1,5 +1,5 @@
 import { createId } from '@paralleldrive/cuid2';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { registry } from '../registry';
@@ -7,7 +7,7 @@ import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
 import { leads, users, rfps, teamAssignments, employees, leadSectionData } from '@/lib/db/schema';
-import { sendBLAssignmentEmail, sendTeamNotificationEmails } from '@/lib/notifications/email';
+import { sendTeamNotificationEmails } from '@/lib/notifications/email';
 
 /**
  * Sprint 4.1: Notification Tools
@@ -149,8 +149,6 @@ registry.register({
     if (!leadData) {
       return { success: false, error: 'Lead not found or no access' };
     }
-
-    const lead = leadData.lead;
 
     // Determine recipient
     const recipientUserId = input.recipientUserId || context.userId;

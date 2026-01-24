@@ -50,7 +50,7 @@ export async function generateRfpEmbedding(requirements: ExtractedRequirements):
     dimensions: EMBEDDING_DIMENSIONS,
   });
 
-  return response.data[0].embedding;
+  return response.data[0].embedding as number[];
 }
 
 /**

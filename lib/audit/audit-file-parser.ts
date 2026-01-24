@@ -85,6 +85,7 @@ async function parseAuditFile(filePath: string): Promise<ParsedAuditFile> {
   if (ext === '.json') {
     sourceType = 'json';
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       parsed = JSON.parse(content);
     } catch {
       console.warn(`[Audit Parser] Failed to parse JSON: ${filename}`);

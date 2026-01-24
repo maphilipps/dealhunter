@@ -107,7 +107,7 @@ export abstract class SectionSynthesizerBase {
   protected async generateContent(
     userPrompt: string,
     systemPrompt: string,
-    temperature: number = 0.3
+    temperature = 0.3
   ): Promise<string> {
     const result = await generateText({
       model: openai('gpt-4o-2024-11-20'),

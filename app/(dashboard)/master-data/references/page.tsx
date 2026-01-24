@@ -44,7 +44,9 @@ export default async function ReferencesPage() {
             </TableRow>
           ) : (
             references.map(ref => {
-              const technologies = ref.technologies ? JSON.parse(ref.technologies) : [];
+              const technologies = ref.technologies
+                ? (JSON.parse(ref.technologies) as string[])
+                : [];
 
               return (
                 <TableRow key={ref.id}>

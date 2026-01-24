@@ -174,7 +174,7 @@ Antworte mit JSON gemäß Schema.`;
       .replace(/```\n?/g, '')
       .trim();
 
-    const rawResult = JSON.parse(cleanedResponse);
+    const rawResult = JSON.parse(cleanedResponse) as Record<string, unknown>;
     const analysisOutput: CMSArchitectureOutput = cmsArchitectureOutputSchema.parse(rawResult);
 
     // Step 5: Calculate confidence and extract sources

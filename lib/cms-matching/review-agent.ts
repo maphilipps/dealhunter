@@ -51,7 +51,7 @@ const reviewResultSchema = z.object({
 export type FeatureReview = z.infer<typeof featureReviewSchema>;
 export type ReviewResult = z.infer<typeof reviewResultSchema>;
 
-interface FeatureData {
+export interface FeatureData {
   score: number;
   confidence: number;
   notes: string;
@@ -61,6 +61,10 @@ interface FeatureData {
   moduleName?: string;
   sourceUrls?: string[];
   reasoning?: string;
+  // Fields added during review
+  reviewedAt?: string;
+  reviewIssues?: string[];
+  reviewCorrections?: string[];
 }
 
 interface ReviewInput {

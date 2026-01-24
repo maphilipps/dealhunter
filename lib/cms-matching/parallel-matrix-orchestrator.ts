@@ -100,7 +100,7 @@ async function runWithConcurrency<T, R>(
       }
     })();
     promiseToRemove = promise;
-    void promise; // Mark as handled
+    void promise;
 
     executing.push(promise);
 

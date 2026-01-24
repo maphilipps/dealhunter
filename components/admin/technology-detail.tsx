@@ -93,6 +93,64 @@ interface FeatureData {
   reasoning?: string;
 }
 
+interface FeatureResearchResult {
+  name: string;
+  score: number;
+}
+
+interface FeatureResearchSummary {
+  total: number;
+  successful: number;
+  failed: number;
+}
+
+interface FeatureResearchResponse {
+  success: boolean;
+  error?: string;
+  summary: FeatureResearchSummary;
+  results: FeatureResearchResult[];
+  allFeatures: Record<string, FeatureData>;
+}
+
+interface OrchestratorEventData {
+  agent: string;
+  message: string;
+  metadata?: {
+    successfulResearch: number;
+    featuresImproved: number;
+    featuresFlagged: number;
+    overallConfidence: number;
+  };
+  result?: {
+    tasks: unknown[];
+    metadata: {
+      successfulResearch: number;
+      featuresImproved: number;
+      featuresFlagged: number;
+      overallConfidence: number;
+    };
+  };
+}
+
+interface SSEEvent {
+  type: string;
+  timestamp: number;
+  data: OrchestratorEventData;
+}
+
+interface FeatureReviewReview {
+  featuresImproved: number;
+  featuresFlagged: number;
+  overallConfidence: number;
+}
+
+interface FeatureReviewResponse {
+  success: boolean;
+  error?: string;
+  review: FeatureReviewReview;
+  updatedFeatures: Record<string, FeatureData>;
+}
+
 export function TechnologyDetail({ technology }: TechnologyDetailProps) {
   const router = useRouter();
   const [isResearching, setIsResearching] = useState(false);
@@ -126,7 +184,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
         method: 'POST',
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as { success: boolean; error?: string };
 
       if (result.success) {
         toast.success('Recherche abgeschlossen');
@@ -174,7 +232,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
         body: JSON.stringify({ featureNames }),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as FeatureResearchResponse;
 
       if (result.success) {
         const { summary } = result;
@@ -256,7 +314,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const event = JSON.parse(line.slice(6));
+              const event = JSON.parse(line.slice(6)) as SSEEvent;
               if (event.data?.agent && event.data?.message) {
                 setOrchestratorEvents(prev => [
                   ...prev,
@@ -279,7 +337,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
                 // Reload features
                 const techResponse = await fetch(`/api/admin/technologies/${technology.id}`);
                 if (techResponse.ok) {
-                  const techData = await techResponse.json();
+                  const techData = (await techResponse.json()) as { features?: string };
                   if (techData.features) {
                     setLocalFeatures(JSON.parse(techData.features));
                   }
@@ -319,7 +377,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
         body: JSON.stringify({ mode }),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as FeatureReviewResponse;
 
       if (result.success) {
         const { review } = result;
@@ -354,7 +412,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
   const parseJsonArray = (json: string | null): string[] => {
     if (!json) return [];
     try {
-      return JSON.parse(json);
+      return JSON.parse(json) as string[];
     } catch {
       return [];
     }
@@ -363,7 +421,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
   const parseJsonObject = (json: string | null): Record<string, number> => {
     if (!json) return {};
     try {
-      return JSON.parse(json);
+      return JSON.parse(json) as Record<string, number>;
     } catch {
       return {};
     }
@@ -372,7 +430,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
   const parseFeatures = (json: string | null): Record<string, FeatureData> => {
     if (!json) return {};
     try {
-      return JSON.parse(json);
+      return JSON.parse(json) as Record<string, FeatureData>;
     } catch {
       return {};
     }

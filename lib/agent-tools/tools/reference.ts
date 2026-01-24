@@ -17,7 +17,7 @@ registry.register({
   description: 'List all references, optionally filtered by validation status',
   category: 'reference',
   inputSchema: listReferencesInputSchema,
-  async execute(input, context: ToolContext) {
+  async execute(input, _context: ToolContext) {
     let results;
     if (input.status) {
       results = await db

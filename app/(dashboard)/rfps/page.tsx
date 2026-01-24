@@ -1,4 +1,4 @@
-import { Plus, FileText, Eye } from 'lucide-react';
+import { Plus, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
@@ -113,8 +113,13 @@ export default async function BidsPage() {
                   let customerName = 'Unbekannt';
                   try {
                     if (bid.extractedRequirements) {
-                      const extracted = JSON.parse(bid.extractedRequirements);
-                      customerName = extracted.customerName || 'Unbekannt';
+                      const extracted = JSON.parse(bid.extractedRequirements) as Record<
+                        string,
+                        unknown
+                      >;
+                      if (typeof extracted.customerName === 'string') {
+                        customerName = extracted.customerName;
+                      }
                     }
                   } catch {
                     // Ignore parse errors

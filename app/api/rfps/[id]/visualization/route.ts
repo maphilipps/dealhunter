@@ -1,10 +1,19 @@
 import { eq, and } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { rfps, quickScans } from '@/lib/db/schema';
 import { generateQuickScanVisualization } from '@/lib/json-render/visualization-agent';
+import type { QuickScanResult } from '@/lib/quick-scan/agent';
+
+const visualizationRequestSchema = z.object({
+  results: z.custom<QuickScanResult>(data => {
+    // Validation happens in the agent function
+    return data !== null && typeof data === 'object';
+  }),
+});
 
 export const runtime = 'nodejs';
 
@@ -50,7 +59,8 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       });
     }
 
-    return new Response(JSON.stringify({ tree: JSON.parse(quickScan.visualizationTree) }), {
+    const visualizationTree = JSON.parse(quickScan.visualizationTree) as Record<string, unknown>;
+    return new Response(JSON.stringify({ tree: visualizationTree }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -80,14 +90,17 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   const { id: bidId } = await context.params;
 
   try {
-    const { results } = await request.json();
+    const body = (await request.json()) as unknown;
+    const parsed = visualizationRequestSchema.safeParse(body);
 
-    if (!results) {
+    if (!parsed.success || !parsed.data.results) {
       return new Response(JSON.stringify({ error: 'Missing results' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    const { results } = parsed.data as { results: QuickScanResult };
 
     // Get bid and verify ownership
     const [bid] = await db

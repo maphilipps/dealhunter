@@ -50,7 +50,6 @@ export async function storeAgentResult(
   metadata?: Record<string, unknown>
 ): Promise<{ success: boolean; error?: string }> {
   if (!isEmbeddingEnabled()) {
-    console.log(`[${agentName}] Embeddings disabled, skipping result storage`);
     return { success: true };
   }
 
@@ -84,7 +83,6 @@ export async function storeAgentResult(
       metadata: metadata ? JSON.stringify(metadata) : null,
     });
 
-    console.log(`[${agentName}] Stored result for RFP ${rfpId} (chunk ${nextChunkIndex})`);
     return { success: true };
   } catch (error) {
     console.error(`[${agentName}] Failed to store result:`, error);

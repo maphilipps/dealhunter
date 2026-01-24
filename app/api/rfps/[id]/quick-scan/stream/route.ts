@@ -75,7 +75,10 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
 
     // If scan is already completed, return the activity log as events
     if (quickScan.status === 'completed' && quickScan.activityLog) {
-      const activityLog = JSON.parse(quickScan.activityLog);
+      const activityLog = JSON.parse(quickScan.activityLog) as Array<{
+        agent?: string;
+        message: string;
+      }>;
       const stream = createAgentEventStream(async emit => {
         emit({ type: AgentEventType.START });
 
@@ -109,7 +112,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
 
       // Parse extracted requirements if available
       const extractedReqs = bid.extractedRequirements
-        ? JSON.parse(bid.extractedRequirements)
+        ? (JSON.parse(bid.extractedRequirements) as Record<string, unknown>)
         : null;
 
       // Run quick scan with streaming callbacks
@@ -123,7 +126,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       );
 
       // Debug-Logging for QuickScan 2.0 fields before DB save
-      console.log('[QuickScan Stream] Saving to DB:', {
+      console.error('[QuickScan Stream] Saving to DB:', {
         quickScanId: quickScan.id,
         hasContentTypes: !!result.contentTypes,
         hasMigrationComplexity: !!result.migrationComplexity,
@@ -132,14 +135,19 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       });
 
       // DEA-108: Merge new results with existing data (ergänzen, nicht ersetzen)
-      // Parse existing data for merging
-      const existingTechStack = quickScan.techStack ? JSON.parse(quickScan.techStack) : null;
+      // Parse existing data for merging - use same types as result
+      type ResultTechStack = typeof result.techStack;
+      type ResultDecisionMakers = typeof result.decisionMakers;
+
+      const existingTechStack = quickScan.techStack
+        ? (JSON.parse(quickScan.techStack) as Partial<ResultTechStack>)
+        : null;
       const existingDecisionMakers = quickScan.decisionMakers
-        ? JSON.parse(quickScan.decisionMakers)
+        ? (JSON.parse(quickScan.decisionMakers) as ResultDecisionMakers)
         : null;
 
       // Merge tech stack arrays - new data takes precedence for single values, arrays are combined
-      const mergedTechStack = {
+      const mergedTechStack: ResultTechStack = {
         ...existingTechStack,
         ...result.techStack,
         // Merge arrays by combining and deduping
@@ -177,24 +185,24 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       if (existingDecisionMakers?.decisionMakers && result.decisionMakers?.decisionMakers) {
         const existingEmails = new Set(
           existingDecisionMakers.decisionMakers
-            .map((d: { email?: string }) => d.email)
-            .filter(Boolean)
+            .map(d => d.email)
+            .filter((email): email is string => Boolean(email))
         );
         const newContacts = result.decisionMakers.decisionMakers.filter(
-          (d: { email?: string }) => !d.email || !existingEmails.has(d.email)
+          d => !d.email || !existingEmails.has(d.email)
         );
         mergedDecisionMakers = {
           ...result.decisionMakers,
           decisionMakers: [...existingDecisionMakers.decisionMakers, ...newContacts],
         };
-        console.log('[QuickScan Stream] Merged decision makers:', {
+        console.error('[QuickScan Stream] Merged decision makers:', {
           existing: existingDecisionMakers.decisionMakers.length,
           new: newContacts.length,
           total: mergedDecisionMakers.decisionMakers.length,
         });
       }
 
-      console.log('[QuickScan Stream] Data merge complete - ergänzt, nicht ersetzt');
+      console.error('[QuickScan Stream] Data merge complete - ergänzt, nicht ersetzt');
 
       // Generate Timeline Estimate (Phase 1)
       emit({
@@ -202,14 +210,16 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         data: { agent: 'Timeline Agent', message: 'Generiere Projekt-Timeline...' },
       });
 
-      let timeline: any = null;
+      let timeline: Record<string, unknown> | null = null;
       let timelineGeneratedAt: Date | null = null;
 
       try {
         timeline = await generateTimelineFromQuickScan({
           projectName:
-            extractedReqs?.projectTitle || extractedReqs?.projectDescription || 'Projekt',
-          projectDescription: extractedReqs?.projectDescription,
+            (extractedReqs?.projectTitle as string | undefined) ||
+            (extractedReqs?.projectDescription as string | undefined) ||
+            'Projekt',
+          projectDescription: extractedReqs?.projectDescription as string | undefined,
           websiteUrl: quickScan.websiteUrl,
           extractedRequirements: extractedReqs,
           quickScanResult: {
@@ -261,9 +271,9 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
           status: 'completed',
           // Use merged tech stack (existing + new)
           techStack: JSON.stringify(mergedTechStack),
-          cms: mergedTechStack.cms || null,
-          framework: mergedTechStack.framework || null,
-          hosting: mergedTechStack.hosting || null,
+          cms: (mergedTechStack.cms as string | undefined) || null,
+          framework: (mergedTechStack.framework as string | undefined) || null,
+          hosting: (mergedTechStack.hosting as string | undefined) || null,
           contentVolume: JSON.stringify(result.contentVolume),
           features: JSON.stringify(result.features),
           recommendedBusinessUnit: result.blRecommendation.primaryBusinessLine,
@@ -314,7 +324,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       // DEA-107: Embed Quick Scan result for RAG knowledge base
       try {
         await embedAgentOutput(id, 'quick_scan', result as unknown as Record<string, unknown>);
-        console.log('[QuickScan Stream] Embedded Quick Scan result for RAG');
+        console.error('[QuickScan Stream] Embedded Quick Scan result for RAG');
       } catch (error) {
         console.error('[QuickScan Stream] Failed to embed Quick Scan result:', error);
         // Don't block on embedding failure
@@ -344,7 +354,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
           },
         });
 
-        console.log(
+        console.error(
           '[QuickScan Stream] Expert Agents completed:',
           expertResult.success ? 'success' : 'partial'
         );

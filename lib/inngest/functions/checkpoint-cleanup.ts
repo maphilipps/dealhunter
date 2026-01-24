@@ -19,13 +19,9 @@ export const checkpointCleanupFunction = inngest.createFunction(
     cron: '0 3 * * *', // Run daily at 3 AM
   },
   async () => {
-    console.log('[Inngest] Starting checkpoint cleanup job');
-
     try {
       const daysOld = parseInt(process.env.CHECKPOINT_RETENTION_DAYS || '7', 10);
       const deletedCount = await cleanupOldCheckpoints(daysOld);
-
-      console.log(`[Inngest] Checkpoint cleanup complete: ${deletedCount} files deleted`);
 
       return {
         success: true,

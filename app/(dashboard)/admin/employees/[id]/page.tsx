@@ -12,6 +12,16 @@ import { Label } from '@/components/ui/label';
 import { getBusinessUnits } from '@/lib/admin/business-units-actions';
 import { getEmployee, updateEmployee } from '@/lib/admin/employees-actions';
 
+type BusinessUnit = {
+  id: string;
+  name: string;
+  leaderName: string;
+  leaderEmail: string;
+  keywords: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+};
+
 function TagInput({
   items,
   setItems,
@@ -71,7 +81,7 @@ export default function EditEmployeePage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [businessUnits, setBusinessUnits] = useState<any[]>([]);
+  const [businessUnits, setBusinessUnits] = useState<BusinessUnit[]>([]);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -91,8 +101,10 @@ export default function EditEmployeePage() {
         setName(emp.name);
         setEmail(emp.email);
         setBusinessUnitId(emp.businessUnitId);
-        setSkills(JSON.parse(emp.skills || '[]'));
-        setRoles(JSON.parse(emp.roles || '[]'));
+        const parsedSkills = JSON.parse(emp.skills || '[]') as string[];
+        const parsedRoles = JSON.parse(emp.roles || '[]') as string[];
+        setSkills(parsedSkills);
+        setRoles(parsedRoles);
         setAvailability(emp.availabilityStatus);
       } else {
         toast.error('Mitarbeiter nicht gefunden');
@@ -138,7 +150,7 @@ export default function EditEmployeePage() {
       } else {
         toast.error(result.error || 'Fehler beim Aktualisieren');
       }
-    } catch (error) {
+    } catch {
       toast.error('Ein Fehler ist aufgetreten');
     } finally {
       setIsSubmitting(false);
@@ -227,7 +239,9 @@ export default function EditEmployeePage() {
               <select
                 id="availability"
                 value={availability}
-                onChange={e => setAvailability(e.target.value as any)}
+                onChange={e =>
+                  setAvailability(e.target.value as 'available' | 'on_project' | 'unavailable')
+                }
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="available">Verfügbar</option>

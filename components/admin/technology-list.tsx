@@ -70,7 +70,7 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
         method: 'POST',
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as { success: boolean; error?: string };
 
       if (result.success) {
         toast.success(`Recherche für ${name} abgeschlossen`);
@@ -104,7 +104,10 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {technologies.map(tech => {
-        const entityCounts = JSON.parse(tech.baselineEntityCounts || '{}');
+        const entityCounts = JSON.parse(tech.baselineEntityCounts || '{}') as Record<
+          string,
+          number
+        >;
         const hasBaseline = tech.baselineHours && tech.baselineHours > 0;
         const isResearching = researchingIds.has(tech.id);
 
@@ -219,7 +222,7 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
                       .slice(0, 4)
                       .map(([entity, count], i) => (
                         <Badge key={i} variant="secondary" className="text-xs">
-                          {entity}: {count as number}
+                          {entity}: {count}
                         </Badge>
                       ))}
                     {Object.keys(entityCounts).length > 4 && (

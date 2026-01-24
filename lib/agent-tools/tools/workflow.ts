@@ -238,13 +238,13 @@ registry.register({
         return { success: false, error: 'Lead not found or no access' };
       }
 
-      const lead = leadData.lead;
+      const _lead = leadData.lead;
 
       query = db
         .select()
         .from(backgroundJobs)
         .where(
-          and(eq(backgroundJobs.userId, context.userId), eq(backgroundJobs.rfpId, lead.rfpId))
+          and(eq(backgroundJobs.userId, context.userId), eq(backgroundJobs.rfpId, _lead.rfpId))
         );
     }
 

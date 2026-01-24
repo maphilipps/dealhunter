@@ -117,14 +117,14 @@ export function ReferenceValidationTable({ data }: ReferenceValidationTableProps
           </TableHeader>
           <TableBody>
             {data.map(ref => {
-              const technologies = JSON.parse(ref.technologies || '[]');
+              const technologies = JSON.parse(ref.technologies || '[]') as string[];
               return (
                 <TableRow key={ref.id}>
                   <TableCell className="font-medium">{ref.projectName}</TableCell>
                   <TableCell>{ref.customerName}</TableCell>
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
-                      {technologies.slice(0, 2).map((tech: string) => (
+                      {technologies.slice(0, 2).map(tech => (
                         <Badge key={tech} variant="secondary" className="text-xs">
                           {tech}
                         </Badge>

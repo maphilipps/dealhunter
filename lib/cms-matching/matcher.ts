@@ -23,7 +23,7 @@ import { openai } from '../ai/providers';
 import { db } from '../db';
 import { technologies, cmsMatchResults, type Technology } from '../db/schema';
 
-import { CMS_INDUSTRY_AFFINITY, getCmsAffinityScore } from '@/lib/config/business-rules';
+import { CMS_INDUSTRY_AFFINITY } from '@/lib/config/business-rules';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES

@@ -19,7 +19,7 @@ const DuplicateCheckRequestSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Parse and validate request body
-    const body = await request.json();
+    const body = (await request.json()) as unknown;
     const parsed = DuplicateCheckRequestSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
     // Run duplicate check agent
     const result = await runDuplicateCheckAgent({
       extractedRequirements,
-      accountId,
-      excludeRfpId,
+      accountId: accountId ?? undefined,
+      excludeRfpId: excludeRfpId ?? undefined,
     });
 
     return NextResponse.json(result);

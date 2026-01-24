@@ -93,7 +93,6 @@ export async function runFileBasedDeepScan(leadId: string): Promise<AuditScanRes
 
   const agentPromises = Object.entries(EXPERT_AGENTS).map(async ([name, agent]) => {
     try {
-      console.log(`[DeepScan] Running expert: ${name}`);
       const result = await agent(agentInput);
       return { name, status: 'fulfilled' as const, value: result };
     } catch (error) {
@@ -183,8 +182,6 @@ export async function runFileBasedDeepScan(leadId: string): Promise<AuditScanRes
 
   // 6. Generate VitePress Config (Placeholder for now)
   // We would generate docs/.vitepress/config.js here based on allSubpages
-
-  console.log(`[DeepScan] Completed audit for ${domain} at ${auditPath}`);
 
   return {
     auditPath,

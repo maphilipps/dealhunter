@@ -14,7 +14,9 @@ const openai = new OpenAI({
 });
 
 export interface CapabilityAgentInput {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   extractedRequirements: any; // From extraction phase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   quickScanResults?: any; // Tech stack detection
   useWebSearch?: boolean; // Web Search für Technologie-Recherche
 }

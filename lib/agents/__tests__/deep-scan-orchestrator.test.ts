@@ -23,11 +23,11 @@ vi.mock('@/lib/rag/raw-embedding-service', () => ({
 
 describe('deep-scan-orchestrator', () => {
   describe('runDeepScan', () => {
-    it('should execute all 13 agents in parallel', () => {
+    it('should execute all 14 agents in parallel', () => {
       // This test requires actual DB setup
       // Validates that all sections from LEAD_NAVIGATION_SECTIONS are processed
 
-      expect(LEAD_NAVIGATION_SECTIONS).toHaveLength(13);
+      expect(LEAD_NAVIGATION_SECTIONS).toHaveLength(14);
 
       // Each section should have:
       // - id
@@ -55,9 +55,9 @@ describe('deep-scan-orchestrator', () => {
       // Validates progress tracking structure
       const mockProgress = {
         leadId: 'test-lead-123',
-        totalAgents: 13,
-        completedAgents: 13,
-        successfulAgents: 12,
+        totalAgents: 14,
+        completedAgents: 14,
+        successfulAgents: 13,
         failedAgents: 1,
         results: [],
         startedAt: new Date(),
@@ -65,7 +65,7 @@ describe('deep-scan-orchestrator', () => {
         status: 'completed' as const,
       };
 
-      expect(mockProgress.totalAgents).toBe(13);
+      expect(mockProgress.totalAgents).toBe(14);
       expect(mockProgress.completedAgents).toBe(
         mockProgress.successfulAgents + mockProgress.failedAgents
       );
@@ -133,7 +133,7 @@ describe('deep-scan-orchestrator', () => {
         executionTimeMs: 1000,
       }));
 
-      expect(mockSectionResults).toHaveLength(13);
+      expect(mockSectionResults).toHaveLength(14);
       mockSectionResults.forEach(result => {
         expect(result.sectionId).toBeTruthy();
         expect(result.status).toBe('success');
@@ -142,8 +142,8 @@ describe('deep-scan-orchestrator', () => {
   });
 
   describe('Agent Registry', () => {
-    it('should have agents for all 13 sections', () => {
-      // Each section needs a corresponding agent
+    it('should have agents for all sections (except debug)', () => {
+      // Each main section needs a corresponding agent
       const expectedSections = [
         'overview',
         'technology',
@@ -153,11 +153,11 @@ describe('deep-scan-orchestrator', () => {
         'hosting',
         'integrations',
         'migration',
-        'staffing',
-        'references',
-        'legal',
+        'project-org',
         'costs',
+        'calc-sheet',
         'decision',
+        'audit',
       ];
 
       expectedSections.forEach(sectionId => {
@@ -194,8 +194,8 @@ describe('deep-scan-orchestrator', () => {
     it('should mark scan as failed if all agents fail', () => {
       // If failedAgents === totalAgents, status should be 'failed'
       const mockProgress = {
-        totalAgents: 13,
-        failedAgents: 13,
+        totalAgents: 14,
+        failedAgents: 14,
         successfulAgents: 0,
       };
 
@@ -207,9 +207,9 @@ describe('deep-scan-orchestrator', () => {
     it('should mark scan as completed if some agents succeed', () => {
       // If at least one agent succeeds, status should be 'completed'
       const mockProgress = {
-        totalAgents: 13,
+        totalAgents: 14,
         failedAgents: 2,
-        successfulAgents: 11,
+        successfulAgents: 12,
       };
 
       const finalStatus =

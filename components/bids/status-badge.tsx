@@ -1,11 +1,12 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-type RfpStatus =
+export type RfpStatus =
   | 'draft'
   | 'extracting'
   | 'reviewing'
   | 'quick_scanning'
+  | 'questions_ready'
   | 'bit_pending'
   | 'evaluating'
   | 'decision_made'
@@ -45,6 +46,11 @@ const statusConfig: Record<
     label: 'Scanning',
     variant: 'default',
     className: 'bg-blue-50 text-blue-700 border-blue-300',
+  },
+  questions_ready: {
+    label: 'Questions Ready',
+    variant: 'secondary',
+    className: 'bg-purple-50 text-purple-700 border-purple-300',
   },
   bit_pending: {
     label: 'Awaiting Decision',

@@ -31,11 +31,7 @@ import {
   calculateAnsweredQuestionsCount,
   buildQuestionsWithStatus,
 } from '@/lib/bids/ten-questions';
-import {
-  startBitEvaluation,
-  getBitEvaluationResult,
-  retriggerBitEvaluation,
-} from '@/lib/bit-evaluation/actions';
+import { getBitEvaluationResult, retriggerBitEvaluation } from '@/lib/bit-evaluation/actions';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 import type { BidOpportunity, QuickScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
@@ -50,8 +46,10 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   const pathname = usePathname();
   const isOverviewPage = pathname === `/rfps/${bid.id}`;
   const [isExtracting, setIsExtracting] = useState(bid.status === 'extracting');
-  const [extractedData, setExtractedData] = useState(
-    bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null
+  const [extractedData, setExtractedData] = useState<ExtractedRequirements | null>(
+    bid.extractedRequirements
+      ? (JSON.parse(bid.extractedRequirements) as ExtractedRequirements)
+      : null
   );
   const [quickScan, setQuickScan] = useState<QuickScan | null>(null);
   const [isLoadingQuickScan, setIsLoadingQuickScan] = useState(false);
@@ -64,14 +62,14 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   const [isRetriggeringQuickScan, setIsRetriggeringQuickScan] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [duplicateCheck, setDuplicateCheck] = useState<DuplicateCheckResult | null>(
-    bid.duplicateCheckResult ? JSON.parse(bid.duplicateCheckResult) : null
+    bid.duplicateCheckResult ? (JSON.parse(bid.duplicateCheckResult) as DuplicateCheckResult) : null
   );
 
   // Phase 1.1: Ref to prevent double-start race condition in React Strict Mode
   const hasAutoStartedQuickScanRef = useRef(false);
   const [autoStartState, setAutoStartState] = useState<'idle' | 'starting' | 'polling'>('idle');
 
-  const handleRefresh = async () => {
+  const handleRefresh = () => {
     void router.refresh();
     setRefreshKey(prev => prev + 1);
   };
@@ -168,7 +166,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         return;
       }
 
-      setExtractedData(updatedRequirements);
+      setExtractedData(updatedRequirements as ExtractedRequirements);
       toast.success('URLs gespeichert! Quick Scan wird gestartet...');
 
       // Start Quick Scan
@@ -523,7 +521,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           {/* Website URL Input (when needed) */}
           {needsWebsiteUrl && extractedData && (
             <WebsiteUrlInput
-              customerName={extractedData.customerName}
+              customerName={extractedData.customerName ?? ''}
               industry={extractedData.industry}
               projectDescription={extractedData.projectDescription}
               technologies={extractedData.technologies}

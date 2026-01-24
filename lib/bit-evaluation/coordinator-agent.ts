@@ -1,9 +1,6 @@
 import { z } from 'zod';
 
-
 import {
-  coordinatorOutputSchema,
-  decisionNodeSchema,
   type CoordinatorOutput,
   type DecisionNode,
   type CapabilityMatch,

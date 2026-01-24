@@ -69,6 +69,7 @@ export async function triggerBaselineComparison(
 
     if (tech?.baselineEntityCounts) {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         baselineEntityCounts = JSON.parse(tech.baselineEntityCounts);
       } catch {
         // Use default
@@ -87,6 +88,7 @@ export async function triggerBaselineComparison(
   // Parse content architecture
   let contentArchitecture: ContentArchitecture;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     contentArchitecture = JSON.parse(analysis.contentArchitecture);
   } catch {
     return { success: false, error: 'Content-Architektur-Daten ungültig' };

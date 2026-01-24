@@ -441,6 +441,10 @@ function formatDisplayValue(value: unknown, field: FieldDefinition): string {
     return 'Gefunden';
   }
 
+  if (typeof value === 'object' && value !== null) {
+    return 'Gefunden';
+  }
+
   // String - truncate if too long
   const str = String(value);
   return str.length > 50 ? str.substring(0, 47) + '...' : str;

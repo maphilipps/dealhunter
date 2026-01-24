@@ -114,7 +114,8 @@ export async function scrapeSite(
           }
         }
       } catch (err) {
-        errors.push(`Failed to scrape ${pageUrl}: ${err}`);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        errors.push(`Failed to scrape ${pageUrl}: ${errorMessage}`);
       }
     }
 

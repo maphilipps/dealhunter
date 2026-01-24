@@ -298,7 +298,7 @@ function convertToReadableText(data: unknown, indent = 0): string {
     return lines.join('\n');
   }
 
-  return String(data);
+  return typeof data === 'object' && data !== null ? JSON.stringify(data) : String(data);
 }
 
 // Store agent output with sections - stores BOTH JSON and readable text

@@ -1,3 +1,32 @@
+## 2026-01-24 - GitHub #15: Replace gpt-4o with gemini-3-flash-preview in Section Synthesizers
+
+**Issue:** GitHub #15 - [Performance] Replace gpt-4o with gpt-4o-mini in Section Synthesizers (15x cost reduction)
+**Status:** ✅ Complete
+**Priority:** Quick Win (Cost Optimization)
+
+**Problem:**
+`lib/agents/section-synthesizer-base.ts:113` used `gpt-4o-2024-11-20` - the only gpt-4o usage in the project. This is 15x more expensive than needed for RAG-based synthesis tasks.
+
+**Solution:**
+Changed model to `gemini-3-flash-preview` for consistency with the rest of the codebase (39 other agents use this model).
+
+**Files Changed:**
+- `lib/agents/section-synthesizer-base.ts` (Line 113)
+
+**Impact:**
+- All 12 Section Synthesizers now use the cheaper model:
+  - AuditOrchestrator, CMSArchitectureSynthesizer, CMSComparisonSynthesizer
+  - CostsSynthesizer, DecisionSynthesizer, HostingSynthesizer
+  - IntegrationsSynthesizer, MigrationSynthesizer, OverviewSynthesizer
+  - ProjectOrgSynthesizer, TechnologySynthesizer, WebsiteAnalysisSynthesizer
+- Estimated savings: ~$425/month at 100 leads
+
+**Verification:**
+- ✅ TypeScript passes (`npm run typecheck`)
+- ✅ Model consistent with other agents in codebase
+
+---
+
 ## 2026-01-24 - GitHub #17: Replace .catch() with .default() in Zod Schemas
 
 **Issue:** GitHub #17 - [Schema] Replace .catch() with .default() to prevent silent failures

@@ -7,7 +7,7 @@ import { runBitEvaluation } from './agent';
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps } from '@/lib/db/schema';
+import { preQualifications } from '@/lib/db/schema';
 import { getQuickScanResult } from '@/lib/quick-scan/actions';
 
 /**
@@ -23,7 +23,11 @@ export async function startBitEvaluation(bidId: string) {
 
   try {
     // Get the bid opportunity
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -39,7 +43,10 @@ export async function startBitEvaluation(bidId: string) {
     }
 
     // Update status to evaluating
-    await db.update(rfps).set({ status: 'evaluating' }).where(eq(rfps.id, bidId));
+    await db
+      .update(preQualifications)
+      .set({ status: 'evaluating' })
+      .where(eq(preQualifications.id, bidId));
 
     // Get quick scan results if available
 
@@ -75,7 +82,7 @@ export async function startBitEvaluation(bidId: string) {
           : ('pending' as const);
 
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         status: 'decision_made',
         decision: decisionValue,
@@ -84,7 +91,7 @@ export async function startBitEvaluation(bidId: string) {
           ? JSON.stringify(evaluationResult.alternative)
           : null,
       })
-      .where(eq(rfps.id, bidId));
+      .where(eq(preQualifications.id, bidId));
 
     return {
       success: true,
@@ -95,9 +102,9 @@ export async function startBitEvaluation(bidId: string) {
 
     // Revert status on error
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({ status: 'quick_scanning' })
-      .where(eq(rfps.id, bidId))
+      .where(eq(preQualifications.id, bidId))
       .catch(() => {}); // Ignore errors in error handler
 
     return { success: false, error: 'Evaluierung fehlgeschlagen' };
@@ -117,7 +124,11 @@ export async function retriggerBitEvaluation(bidId: string) {
 
   try {
     // Get the bid opportunity
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -135,7 +146,7 @@ export async function retriggerBitEvaluation(bidId: string) {
     // Reset evaluation data and set status to 'evaluating'
     // The actual evaluation will be executed via the streaming endpoint
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         status: 'evaluating',
         decision: 'pending',
@@ -143,7 +154,7 @@ export async function retriggerBitEvaluation(bidId: string) {
         decisionEvaluation: null,
         alternativeRecommendation: null,
       })
-      .where(eq(rfps.id, bidId));
+      .where(eq(preQualifications.id, bidId));
 
     return {
       success: true,
@@ -166,7 +177,11 @@ export async function getBitEvaluationResult(bidId: string) {
   }
 
   try {
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -211,7 +226,11 @@ export async function confirmLowConfidenceDecision(bidId: string, confirm: boole
   }
 
   try {
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -225,14 +244,14 @@ export async function confirmLowConfidenceDecision(bidId: string, confirm: boole
       // User rejected low confidence decision
       // Revert to reviewing state for re-evaluation or manual override
       await db
-        .update(rfps)
+        .update(preQualifications)
         .set({
           status: 'reviewing',
           decision: 'pending',
           decisionData: null,
           alternativeRecommendation: null,
         })
-        .where(eq(rfps.id, bidId));
+        .where(eq(preQualifications.id, bidId));
 
       return { success: true, confirmed: false };
     }
@@ -266,7 +285,11 @@ export async function overrideBidDecision(
   }
 
   try {
-    const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+    const [bid] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, bidId))
+      .limit(1);
 
     if (!bid) {
       return { success: false, error: 'Bid nicht gefunden' };
@@ -280,7 +303,7 @@ export async function overrideBidDecision(
     // DEA-25: Create audit log for bid override
     await createAuditLog({
       action: 'bid_override',
-      entityType: 'rfp',
+      entityType: 'pre_qualification',
       entityId: bidId,
       previousValue: bid.decision,
       newValue: newDecision,
@@ -289,13 +312,13 @@ export async function overrideBidDecision(
 
     // Update bid decision
     await db
-      .update(rfps)
+      .update(preQualifications)
       .set({
         decision: newDecision,
         status: 'decision_made',
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, bidId));
+      .where(eq(preQualifications.id, bidId));
 
     return { success: true };
   } catch (error) {

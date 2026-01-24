@@ -100,9 +100,9 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
         getLeadEmbeddingsStats(leadId),
       ];
 
-      // Only fetch RFP stats if we have an RFP
+      // Only fetch pre-qualification stats if we have a pre-qualification
       if (foundRfpId) {
-        promises.push(getRAGStats({ rfpId: foundRfpId }));
+        promises.push(getRAGStats({ preQualificationId: foundRfpId }));
       }
 
       const results = await Promise.all(promises);
@@ -416,7 +416,7 @@ function LeadEmbeddingsBrowser({ leadId }: { leadId: string }) {
     setIsLoading(true);
     try {
       const result = await getLeadEmbeddings({
-        leadId,
+        qualificationId: leadId,
         agentName: agentFilter,
         chunkType: typeFilter,
         search: debouncedSearch || undefined,

@@ -22,7 +22,12 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { leads, leadSectionData, quickScans, dealEmbeddings } from '@/lib/db/schema';
+import {
+  qualifications,
+  qualificationSectionData,
+  quickScans,
+  dealEmbeddings,
+} from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -113,13 +118,13 @@ export async function runDecisionAgent(leadId: string, rfpId: string): Promise<D
   // 1. Fetch lead data
   const [leadData] = await db
     .select({
-      customerName: leads.customerName,
-      industry: leads.industry,
-      projectDescription: leads.projectDescription,
-      quickScanId: leads.quickScanId,
+      customerName: qualifications.customerName,
+      industry: qualifications.industry,
+      projectDescription: qualifications.projectDescription,
+      quickScanId: qualifications.quickScanId,
     })
-    .from(leads)
-    .where(eq(leads.id, leadId))
+    .from(qualifications)
+    .where(eq(qualifications.id, leadId))
     .limit(1);
 
   if (!leadData) {
@@ -155,13 +160,13 @@ export async function runDecisionAgent(leadId: string, rfpId: string): Promise<D
   // 3. Fetch all section data from Deep Scan
   const sectionResults = await db
     .select({
-      sectionId: leadSectionData.sectionId,
-      content: leadSectionData.content,
-      confidence: leadSectionData.confidence,
-      sources: leadSectionData.sources,
+      sectionId: qualificationSectionData.sectionId,
+      content: qualificationSectionData.content,
+      confidence: qualificationSectionData.confidence,
+      sources: qualificationSectionData.sources,
     })
-    .from(leadSectionData)
-    .where(eq(leadSectionData.leadId, leadId));
+    .from(qualificationSectionData)
+    .where(eq(qualificationSectionData.qualificationId, leadId));
 
   // Parse section data
   const sectionDataMap: Record<string, { content: unknown; confidence: number | null }> = {};
@@ -283,8 +288,8 @@ ${result.reasoning}`;
 
   if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
     await db.insert(dealEmbeddings).values({
-      leadId,
-      rfpId,
+      qualificationId: leadId,
+      preQualificationId: rfpId,
       agentName: 'decision',
       chunkType: 'analysis',
       chunkIndex: 0,

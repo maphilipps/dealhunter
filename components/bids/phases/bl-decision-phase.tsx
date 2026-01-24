@@ -41,7 +41,7 @@ export function BLDecisionPhase({ quickScan, rfpId }: BLDecisionPhaseProps) {
     setSubmitting(true);
     try {
       // TODO: Implement actual decision submission API
-      const res = await fetch(`/api/rfps/${rfpId}/decision`, {
+      const res = await fetch(`/api/pre-qualifications/${rfpId}/decision`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision, reasoning }),

@@ -11,13 +11,13 @@
  * const [lead] = await db
  *   .select(LEAD_PUBLIC_FIELDS)
  *   .from(leads)
- *   .where(eq(leads.id, id));
+ *   .where(eq(qualifications.id, id));
  * ```
  */
 
 import {
-  leads,
-  rfps,
+  qualifications,
+  preQualifications,
   accounts,
   businessUnits,
   websiteAudits,
@@ -31,22 +31,22 @@ import {
  * Excludes: internal metadata, timestamps used only for server-side logic
  */
 export const LEAD_PUBLIC_FIELDS = {
-  id: leads.id,
-  customerName: leads.customerName,
-  industry: leads.industry,
-  budget: leads.budget,
-  websiteUrl: leads.websiteUrl,
-  projectDescription: leads.projectDescription,
-  status: leads.status,
-  blVote: leads.blVote,
-  blConfidenceScore: leads.blConfidenceScore,
-  blReasoning: leads.blReasoning,
-  blVotedAt: leads.blVotedAt,
-  createdAt: leads.createdAt,
-  businessUnitId: leads.businessUnitId,
-  rfpId: leads.rfpId,
-  quickScanId: leads.quickScanId,
-  selectedCmsId: leads.selectedCmsId,
+  id: qualifications.id,
+  customerName: qualifications.customerName,
+  industry: qualifications.industry,
+  budget: qualifications.budget,
+  websiteUrl: qualifications.websiteUrl,
+  projectDescription: qualifications.projectDescription,
+  status: qualifications.status,
+  blVote: qualifications.blVote,
+  blConfidenceScore: qualifications.blConfidenceScore,
+  blReasoning: qualifications.blReasoning,
+  blVotedAt: qualifications.blVotedAt,
+  createdAt: qualifications.createdAt,
+  businessUnitId: qualifications.businessUnitId,
+  preQualificationId: qualifications.preQualificationId,
+  quickScanId: qualifications.quickScanId,
+  selectedCmsId: qualifications.selectedCmsId,
 } as const;
 
 /**
@@ -55,22 +55,22 @@ export const LEAD_PUBLIC_FIELDS = {
  */
 export const LEAD_INTERNAL_FIELDS = {
   ...LEAD_PUBLIC_FIELDS,
-  updatedAt: leads.updatedAt,
+  updatedAt: qualifications.updatedAt,
 } as const;
 
 /**
  * RFP fields safe for public/client access
  */
 export const RFP_PUBLIC_FIELDS = {
-  id: rfps.id,
-  status: rfps.status,
-  stage: rfps.stage,
-  source: rfps.source,
-  inputType: rfps.inputType,
-  decision: rfps.decision,
-  accountId: rfps.accountId,
-  assignedBusinessUnitId: rfps.assignedBusinessUnitId,
-  createdAt: rfps.createdAt,
+  id: preQualifications.id,
+  status: preQualifications.status,
+  stage: preQualifications.stage,
+  source: preQualifications.source,
+  inputType: preQualifications.inputType,
+  decision: preQualifications.decision,
+  accountId: preQualifications.accountId,
+  assignedBusinessUnitId: preQualifications.assignedBusinessUnitId,
+  createdAt: preQualifications.createdAt,
 } as const;
 
 /**
@@ -100,7 +100,7 @@ export const BUSINESS_UNIT_PUBLIC_FIELDS = {
  */
 export const WEBSITE_AUDIT_PUBLIC_FIELDS = {
   id: websiteAudits.id,
-  leadId: websiteAudits.leadId,
+  qualificationId: websiteAudits.qualificationId,
   status: websiteAudits.status,
   performanceScore: websiteAudits.performanceScore,
   accessibilityScore: websiteAudits.accessibilityScore,
@@ -114,7 +114,7 @@ export const WEBSITE_AUDIT_PUBLIC_FIELDS = {
  */
 export const PT_ESTIMATION_PUBLIC_FIELDS = {
   id: ptEstimations.id,
-  leadId: ptEstimations.leadId,
+  qualificationId: ptEstimations.qualificationId,
   totalPT: ptEstimations.totalPT,
   durationMonths: ptEstimations.durationMonths,
   confidenceLevel: ptEstimations.confidenceLevel,
@@ -126,7 +126,7 @@ export const PT_ESTIMATION_PUBLIC_FIELDS = {
  */
 export const CMS_MATCH_PUBLIC_FIELDS = {
   id: cmsMatchResults.id,
-  leadId: cmsMatchResults.leadId,
+  qualificationId: cmsMatchResults.qualificationId,
   technologyId: cmsMatchResults.technologyId,
   rank: cmsMatchResults.rank,
   totalScore: cmsMatchResults.totalScore,
@@ -143,7 +143,7 @@ export const CMS_MATCH_PUBLIC_FIELDS = {
  */
 export const REFERENCE_MATCH_PUBLIC_FIELDS = {
   id: referenceMatches.id,
-  leadId: referenceMatches.leadId,
+  qualificationId: referenceMatches.qualificationId,
   referenceId: referenceMatches.referenceId,
   rank: referenceMatches.rank,
   totalScore: referenceMatches.totalScore,

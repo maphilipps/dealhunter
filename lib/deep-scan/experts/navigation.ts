@@ -29,7 +29,12 @@ export async function getAuditNavigation(leadId: string): Promise<NavigationSect
       content: dealEmbeddings.content,
     })
     .from(dealEmbeddings)
-    .where(and(eq(dealEmbeddings.leadId, leadId), sql`${dealEmbeddings.agentName} LIKE 'audit_%'`));
+    .where(
+      and(
+        eq(dealEmbeddings.qualificationId, leadId),
+        sql`${dealEmbeddings.agentName} LIKE 'audit_%'`
+      )
+    );
 
   if (chunks.length === 0) {
     return [];

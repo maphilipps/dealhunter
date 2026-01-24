@@ -17,7 +17,7 @@ import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
 
 export interface RAGQuery {
-  rfpId: string;
+  preQualificationId: string;
   question: string;
   techStackFilter?: string; // e.g., "Drupal"
   maxResults?: number; // default: 5
@@ -68,7 +68,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
  *
  * Strategy:
  * 1. Generate embedding for query
- * 2. Fetch all chunks for this RFP
+ * 2. Fetch all chunks for this pre-qualification
  * 3. Calculate cosine similarity for each chunk
  * 4. Filter by threshold (>0.7)
  * 5. Optional tech stack filter
@@ -85,11 +85,11 @@ export async function queryRAG(query: RAGQuery): Promise<RAGResult[]> {
       return [];
     }
 
-    // 2. Fetch all chunks for this RFP
+    // 2. Fetch all chunks for this pre-qualification
     const chunks = await db
       .select()
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.rfpId, query.rfpId));
+      .where(eq(dealEmbeddings.preQualificationId, query.preQualificationId));
 
     if (chunks.length === 0) {
       return [];
@@ -147,14 +147,16 @@ export async function queryRAG(query: RAGQuery): Promise<RAGResult[]> {
 }
 
 /**
- * Get embedding status for an RFP
+ * Get embedding status for a pre-qualification
  * Useful for debugging which agents have embedded data
  */
-export async function getEmbeddingStatus(rfpId: string): Promise<Record<string, boolean>> {
+export async function getEmbeddingStatus(
+  preQualificationId: string
+): Promise<Record<string, boolean>> {
   const embeddings = await db
     .select({ agentName: dealEmbeddings.agentName })
     .from(dealEmbeddings)
-    .where(eq(dealEmbeddings.rfpId, rfpId));
+    .where(eq(dealEmbeddings.preQualificationId, preQualificationId));
 
   const agentNames = Array.from(new Set(embeddings.map(e => e.agentName)));
 

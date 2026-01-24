@@ -75,7 +75,11 @@ const defaultShortcuts: Shortcut[] = [
 ];
 
 const defaultQuickLinks: QuickLink[] = [
-  { label: 'RFPs verwalten', href: '/rfps', description: 'Alle RFPs anzeigen und verwalten' },
+  {
+    label: 'Pre-Qualifications verwalten',
+    href: '/pre-qualifications',
+    description: 'Alle Pre-Qualifications anzeigen und verwalten',
+  },
   { label: 'Leads Dashboard', href: '/leads', description: 'Aktuelle Leads und Status' },
   {
     label: 'Analytics',

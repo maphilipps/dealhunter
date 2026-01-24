@@ -200,7 +200,7 @@ export default async function AccountDetailPage({ params }: Props) {
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/rfps/${opp.id}`}>Details</Link>
+                        <Link href={`/pre-qualifications/${opp.id}`}>Details</Link>
                       </Button>
                     </TableCell>
                   </TableRow>

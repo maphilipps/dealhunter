@@ -15,13 +15,13 @@ import { test, expect, Page } from '@playwright/test';
  * Helper function to create an RFP with website URL and text
  */
 async function createRFPWithUrl(page: Page, text: string, url: string = 'https://www.example.com') {
-  await page.goto('/rfps/new');
+  await page.goto('/pre-qualifications/new');
   await page.fill('#website-url', url);
   await page.fill('#additional-text', text);
   await page.click('button:has-text("RFP erstellen")');
 
   // Wait for redirect to RFP detail page
-  await expect(page).toHaveURL(/\/rfps\/[a-z0-9-]+$/);
+  await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
   await page.waitForSelector('text=Client Name', { timeout: 15000 });
 }
 
@@ -29,12 +29,12 @@ async function createRFPWithUrl(page: Page, text: string, url: string = 'https:/
  * Helper function to create an RFP without URL (text only)
  */
 async function createRFPWithoutUrl(page: Page, text: string) {
-  await page.goto('/rfps/new');
+  await page.goto('/pre-qualifications/new');
   await page.fill('#additional-text', text);
   await page.click('button:has-text("RFP erstellen")');
 
   // Wait for redirect to RFP detail page
-  await expect(page).toHaveURL(/\/rfps\/[a-z0-9-]+$/);
+  await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
   await page.waitForSelector('text=Client Name', { timeout: 15000 });
 }
 

@@ -27,10 +27,10 @@ export async function Header() {
             <Link href="/dashboard" className="text-sm font-medium hover:underline">
               Dashboard
             </Link>
-            <Link href="/rfps/new" className="text-sm font-medium hover:underline">
+            <Link href="/pre-qualifications/new" className="text-sm font-medium hover:underline">
               Neuer Bid
             </Link>
-            <Link href="/rfps" className="text-sm font-medium hover:underline">
+            <Link href="/pre-qualifications" className="text-sm font-medium hover:underline">
               Alle Bids
             </Link>
             <Link href="/accounts" className="text-sm font-medium hover:underline">

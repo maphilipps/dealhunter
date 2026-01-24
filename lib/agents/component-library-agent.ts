@@ -491,7 +491,7 @@ ${result.sources.join(', ')}`;
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
       await db.insert(dealEmbeddings).values({
-        rfpId,
+        preQualificationId: rfpId,
         agentName: 'component_library',
         chunkType: 'analysis',
         chunkIndex: 0,

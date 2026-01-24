@@ -48,7 +48,7 @@ export async function sendBLAssignmentEmail(
     }
 
     // Create review link
-    const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/rfps/${bidId}`;
+    const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pre-qualifications/${bidId}`;
 
     // Send email using Resend
     await getResendClient().emails.send({
@@ -171,10 +171,10 @@ export async function sendTeamNotificationEmails(
   } = input;
 
   const results: TeamNotificationResult[] = [];
-  // Use custom URL if provided, otherwise fallback to default /rfps/ URL
+  // Use custom URL if provided, otherwise fallback to default /pre-qualifications/ URL
   const projectUrl =
     customProjectUrl ||
-    `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/rfps/${bidId}`;
+    `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pre-qualifications/${bidId}`;
 
   for (const member of teamMembers) {
     try {

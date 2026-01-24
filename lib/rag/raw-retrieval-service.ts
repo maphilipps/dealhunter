@@ -15,7 +15,7 @@ import { db } from '@/lib/db';
 import { rawChunks } from '@/lib/db/schema';
 
 export interface RawRAGQuery {
-  rfpId: string;
+  preQualificationId: string;
   question: string;
   maxResults?: number; // default: 5
 }
@@ -72,7 +72,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
  * Strategy:
  * 1. Check if embeddings are enabled
  * 2. Generate embedding for query
- * 3. Fetch all raw chunks for this RFP
+ * 3. Fetch all raw chunks for this pre-qualification
  * 4. Calculate cosine similarity for each chunk
  * 5. Filter by threshold (>0.7)
  * 6. Sort by similarity DESC
@@ -95,8 +95,11 @@ export async function queryRawChunks(query: RawRAGQuery): Promise<RawRAGResult[]
       return [];
     }
 
-    // 2. Fetch all raw chunks for this RFP
-    const chunks = await db.select().from(rawChunks).where(eq(rawChunks.rfpId, query.rfpId));
+    // 2. Fetch all raw chunks for this pre-qualification
+    const chunks = await db
+      .select()
+      .from(rawChunks)
+      .where(eq(rawChunks.preQualificationId, query.preQualificationId));
 
     if (chunks.length === 0) {
       return [];
@@ -151,12 +154,12 @@ export async function queryRawChunks(query: RawRAGQuery): Promise<RawRAGResult[]
  * Query multiple topics in parallel and combine results
  * Useful for collecting diverse context for extraction
  *
- * @param rfpId - The RFP ID to query
+ * @param preQualificationId - The pre-qualification ID to query
  * @param topics - Array of topic queries
  * @returns Combined and deduplicated results
  */
 export async function queryMultipleTopics(
-  rfpId: string,
+  preQualificationId: string,
   topics: Array<{ topic: string; maxResults?: number }>
 ): Promise<Map<string, RawRAGResult[]>> {
   const results = new Map<string, RawRAGResult[]>();
@@ -173,7 +176,7 @@ export async function queryMultipleTopics(
   // Run queries in parallel
   const queries = topics.map(async ({ topic, maxResults }) => {
     const topicResults = await queryRawChunks({
-      rfpId,
+      preQualificationId,
       question: topic,
       maxResults: maxResults || 3,
     });

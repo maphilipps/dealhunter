@@ -21,7 +21,12 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { leads, quickScans, leadSectionData, dealEmbeddings } from '@/lib/db/schema';
+import {
+  qualifications,
+  quickScans,
+  qualificationSectionData,
+  dealEmbeddings,
+} from '@/lib/db/schema';
 import { calculatePTEstimation, type PTEstimationResult } from '@/lib/estimations/pt-calculator';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -131,12 +136,12 @@ export async function runCostsAgent(leadId: string, rfpId: string): Promise<Cost
   // 1. Fetch lead data
   const [leadData] = await db
     .select({
-      customerName: leads.customerName,
-      selectedCmsId: leads.selectedCmsId,
-      quickScanId: leads.quickScanId,
+      customerName: qualifications.customerName,
+      selectedCmsId: qualifications.selectedCmsId,
+      quickScanId: qualifications.quickScanId,
     })
-    .from(leads)
-    .where(eq(leads.id, leadId))
+    .from(qualifications)
+    .where(eq(qualifications.id, leadId))
     .limit(1);
 
   if (!leadData) {
@@ -173,11 +178,11 @@ export async function runCostsAgent(leadId: string, rfpId: string): Promise<Cost
   // 3. Fetch existing section data for content architecture and migration complexity
   const sectionResults = await db
     .select({
-      sectionId: leadSectionData.sectionId,
-      content: leadSectionData.content,
+      sectionId: qualificationSectionData.sectionId,
+      content: qualificationSectionData.content,
     })
-    .from(leadSectionData)
-    .where(eq(leadSectionData.leadId, leadId));
+    .from(qualificationSectionData)
+    .where(eq(qualificationSectionData.qualificationId, leadId));
 
   const sectionDataMap: Record<string, unknown> = {};
   for (const section of sectionResults) {
@@ -354,8 +359,8 @@ ${result.assumptions.map(a => `- ${a}`).join('\n')}`;
 
   if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
     await db.insert(dealEmbeddings).values({
-      leadId,
-      rfpId,
+      qualificationId: leadId,
+      preQualificationId: rfpId,
       agentName: 'costs',
       chunkType: 'analysis',
       chunkIndex: 0,

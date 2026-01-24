@@ -4,10 +4,10 @@ import { Loader2, ArrowRight, CheckCircle2, AlertCircle, Clock } from 'lucide-re
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Rfp } from '@/lib/db/schema';
+import type { PreQualification } from '@/lib/db/schema';
 
 interface WorkflowStatusProps {
-  rfp: Rfp;
+  rfp: PreQualification;
 }
 
 /**

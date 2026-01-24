@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, businessUnits, users } from '@/lib/db/schema';
+import { preQualifications, businessUnits, users } from '@/lib/db/schema';
 import { safeJsonParseOrNull } from '@/lib/utils/parse';
 
 // Cached data fetching functions for per-request deduplication
@@ -39,11 +39,11 @@ const getAssignedRfpsForBusinessUnits = cache(async (businessUnitIds: string[]) 
   if (businessUnitIds.length === 0) return [];
   return await db
     .select()
-    .from(rfps)
+    .from(preQualifications)
     .where(
       and(
-        inArray(rfps.assignedBusinessUnitId, businessUnitIds),
-        inArray(rfps.status, [
+        inArray(preQualifications.assignedBusinessUnitId, businessUnitIds),
+        inArray(preQualifications.status, [
           'routed',
           'full_scanning',
           'bl_reviewing',
@@ -53,7 +53,7 @@ const getAssignedRfpsForBusinessUnits = cache(async (businessUnitIds: string[]) 
         ])
       )
     )
-    .orderBy(desc(rfps.updatedAt));
+    .orderBy(desc(preQualifications.updatedAt));
 });
 
 export default async function BLReviewPage() {

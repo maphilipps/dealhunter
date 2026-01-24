@@ -54,7 +54,7 @@ export interface CMSMatchScore {
 }
 
 export interface CMSMatcherInput {
-  leadId: string;
+  qualificationId: string;
   industry?: string | null;
   budget?: string | null;
   pageCount: number;
@@ -129,11 +129,11 @@ const SIZE_AFFINITY = {
  * @returns Top 3 CMS matches with scores and reasoning
  */
 export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult> {
-  console.error(`[CMS Matcher] Starting CMS matching for lead ${input.leadId}`);
+  console.error(`[CMS Matcher] Starting CMS matching for lead ${input.qualificationId}`);
 
   try {
     const {
-      leadId,
+      qualificationId,
       industry,
       budget,
       pageCount,
@@ -187,7 +187,7 @@ export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult
     });
 
     // 4. Save results to database
-    await saveCMSMatchResults(leadId, rankedMatches);
+    await saveCMSMatchResults(qualificationId, rankedMatches);
 
     return {
       success: true,
@@ -496,16 +496,19 @@ ${input.matchedFeatures.map(f => `- ${f.feature}: ${f.supported ? '✓' : '✗'}
 /**
  * Save CMS match results to database
  */
-async function saveCMSMatchResults(leadId: string, matches: CMSMatchScore[]): Promise<void> {
-  console.error(`[CMS Matcher] Saving ${matches.length} match results for lead ${leadId}`);
+async function saveCMSMatchResults(
+  qualificationId: string,
+  matches: CMSMatchScore[]
+): Promise<void> {
+  console.error(`[CMS Matcher] Saving ${matches.length} match results for lead ${qualificationId}`);
 
   // Delete existing results for this lead
-  await db.delete(cmsMatchResults).where(eq(cmsMatchResults.leadId, leadId));
+  await db.delete(cmsMatchResults).where(eq(cmsMatchResults.qualificationId, qualificationId));
 
   // Insert new results
   for (const match of matches) {
     await db.insert(cmsMatchResults).values({
-      leadId,
+      qualificationId,
       technologyId: match.technologyId,
       totalScore: match.totalScore,
       featureScore: match.featureScore,

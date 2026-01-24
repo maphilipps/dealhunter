@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { backgroundJobs, rfps } from '@/lib/db/schema';
+import { backgroundJobs, preQualifications } from '@/lib/db/schema';
 
 type BackgroundJobType = 'deep-analysis' | 'team-notification' | 'cleanup';
 type BackgroundJobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(backgroundJobs.userId, session.user.id)];
 
     if (rfpId) {
-      conditions.push(eq(backgroundJobs.rfpId, rfpId));
+      conditions.push(eq(backgroundJobs.preQualificationId, rfpId));
     }
 
     if (jobType) {
@@ -48,10 +48,10 @@ export async function GET(request: NextRequest) {
     const jobs = await db
       .select({
         job: backgroundJobs,
-        rfp: rfps,
+        rfp: preQualifications,
       })
       .from(backgroundJobs)
-      .leftJoin(rfps, eq(backgroundJobs.rfpId, rfps.id))
+      .leftJoin(preQualifications, eq(backgroundJobs.preQualificationId, preQualifications.id))
       .where(and(...conditions))
       .orderBy(desc(backgroundJobs.createdAt))
       .limit(limit);

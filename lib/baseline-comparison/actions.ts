@@ -7,7 +7,7 @@ import type { BaselineComparisonResult } from './schema';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, deepMigrationAnalyses, technologies } from '@/lib/db/schema';
+import { preQualifications, deepMigrationAnalyses, technologies } from '@/lib/db/schema';
 import type { ContentArchitecture } from '@/lib/deep-analysis/schemas';
 
 export interface TriggerBaselineComparisonResult {
@@ -29,7 +29,11 @@ export async function triggerBaselineComparison(
   }
 
   // Get bid with deep analysis
-  const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+  const [bid] = await db
+    .select()
+    .from(preQualifications)
+    .where(eq(preQualifications.id, bidId))
+    .limit(1);
 
   if (!bid) {
     return { success: false, error: 'Bid nicht gefunden' };
@@ -43,7 +47,7 @@ export async function triggerBaselineComparison(
   const [analysis] = await db
     .select()
     .from(deepMigrationAnalyses)
-    .where(eq(deepMigrationAnalyses.rfpId, bidId))
+    .where(eq(deepMigrationAnalyses.preQualificationId, bidId))
     .limit(1);
 
   if (!analysis || analysis.status !== 'completed') {
@@ -107,13 +111,13 @@ export async function triggerBaselineComparison(
 
   // Save result to bid
   await db
-    .update(rfps)
+    .update(preQualifications)
     .set({
       baselineComparisonResult: JSON.stringify(result),
       baselineComparisonCompletedAt: new Date(),
       updatedAt: new Date(),
     })
-    .where(eq(rfps.id, bidId));
+    .where(eq(preQualifications.id, bidId));
 
   return { success: true, result };
 }
@@ -134,12 +138,12 @@ export async function getBaselineComparisonResult(bidId: string): Promise<{
 
   const [bid] = await db
     .select({
-      userId: rfps.userId,
-      baselineComparisonResult: rfps.baselineComparisonResult,
-      baselineComparisonCompletedAt: rfps.baselineComparisonCompletedAt,
+      userId: preQualifications.userId,
+      baselineComparisonResult: preQualifications.baselineComparisonResult,
+      baselineComparisonCompletedAt: preQualifications.baselineComparisonCompletedAt,
     })
-    .from(rfps)
-    .where(eq(rfps.id, bidId))
+    .from(preQualifications)
+    .where(eq(preQualifications.id, bidId))
     .limit(1);
 
   if (!bid) {

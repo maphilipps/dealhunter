@@ -20,7 +20,6 @@ import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
 
-
 const EXPERT_AGENT_NAMES = [
   'timing_expert',
   'deliverables_expert',
@@ -91,7 +90,10 @@ async function getExpertAgentOutputs(rfpId: string): Promise<string> {
     })
     .from(dealEmbeddings)
     .where(
-      and(eq(dealEmbeddings.rfpId, rfpId), inArray(dealEmbeddings.agentName, EXPERT_AGENT_NAMES))
+      and(
+        eq(dealEmbeddings.preQualificationId, rfpId),
+        inArray(dealEmbeddings.agentName, EXPERT_AGENT_NAMES)
+      )
     );
 
   if (results.length === 0) {

@@ -8,10 +8,10 @@ import { crawlWebsite } from './website-crawler';
 import { analyzeContentArchitecture } from '@/lib/agents/content-architecture-agent';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { leads, websiteAudits } from '@/lib/db/schema';
+import { qualifications, websiteAudits } from '@/lib/db/schema';
 
 export interface StartFullScanInput {
-  leadId: string;
+  qualificationId: string;
 }
 
 export interface StartFullScanResult {
@@ -40,10 +40,10 @@ export async function startFullScan(input: StartFullScanInput): Promise<StartFul
   }
 
   try {
-    const { leadId } = input;
+    const { qualificationId } = input;
 
     // Validate input
-    if (!leadId) {
+    if (!qualificationId) {
       return {
         success: false,
         error: 'Lead ID ist erforderlich',
@@ -51,7 +51,11 @@ export async function startFullScan(input: StartFullScanInput): Promise<StartFul
     }
 
     // Get Lead
-    const [lead] = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, qualificationId))
+      .limit(1);
 
     if (!lead) {
       return {
@@ -72,7 +76,7 @@ export async function startFullScan(input: StartFullScanInput): Promise<StartFul
     const existingAudit = await db
       .select()
       .from(websiteAudits)
-      .where(eq(websiteAudits.leadId, leadId))
+      .where(eq(websiteAudits.qualificationId, qualificationId))
       .limit(1);
 
     if (existingAudit.length > 0 && existingAudit[0].status === 'completed') {
@@ -100,7 +104,7 @@ export async function startFullScan(input: StartFullScanInput): Promise<StartFul
       const [newAudit] = await db
         .insert(websiteAudits)
         .values({
-          leadId: lead.id,
+          qualificationId: lead.id,
           websiteUrl: lead.websiteUrl,
           status: 'running',
           startedAt: new Date(),
@@ -111,12 +115,12 @@ export async function startFullScan(input: StartFullScanInput): Promise<StartFul
 
     // Update lead status
     await db
-      .update(leads)
+      .update(qualifications)
       .set({
         status: 'full_scanning',
         updatedAt: new Date(),
       })
-      .where(eq(leads.id, leadId));
+      .where(eq(qualifications.id, qualificationId));
 
     // Perform crawl (in background - this is async)
     performFullScanAsync(auditId, lead.websiteUrl).catch(error => {
@@ -124,7 +128,7 @@ export async function startFullScan(input: StartFullScanInput): Promise<StartFul
     });
 
     // Revalidate cache
-    revalidatePath(`/leads/${leadId}`);
+    revalidatePath(`/qualifications/${qualificationId}`);
     revalidatePath('/leads');
 
     return {
@@ -233,15 +237,15 @@ async function performFullScanAsync(auditId: string, websiteUrl: string): Promis
 
     if (audit) {
       await db
-        .update(leads)
+        .update(qualifications)
         .set({
           status: 'bl_reviewing',
           updatedAt: new Date(),
         })
-        .where(eq(leads.id, audit.leadId));
+        .where(eq(qualifications.id, audit.qualificationId));
 
       // Revalidate paths
-      revalidatePath(`/leads/${audit.leadId}`);
+      revalidatePath(`/qualifications/${audit.qualificationId}`);
       revalidatePath('/leads');
     }
 

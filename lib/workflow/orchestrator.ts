@@ -19,7 +19,7 @@
 import { eq } from 'drizzle-orm';
 
 import { db } from '../db';
-import { rfps, type Rfp } from '../db/schema';
+import { preQualifications, type PreQualification } from '../db/schema';
 import type { ExtractedRequirements } from '../extraction/schema';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -29,7 +29,7 @@ import type { ExtractedRequirements } from '../extraction/schema';
 /**
  * RFP Status types from schema
  */
-export type RFPStatus = Rfp['status'];
+export type RFPStatus = PreQualification['status'];
 
 /**
  * Agent names in Phase 1 workflow
@@ -39,7 +39,7 @@ export type Phase1Agent = 'DuplicateCheck' | 'Extract' | 'QuickScan' | 'Timeline
 /**
  * Trigger conditions for status transitions
  */
-type TriggerCondition = (rfp: Rfp) => boolean | Promise<boolean>;
+type TriggerCondition = (rfp: PreQualification) => boolean | Promise<boolean>;
 
 /**
  * Trigger rule definition
@@ -205,7 +205,11 @@ export async function triggerNextAgent(
   }
 
   // Load RFP data
-  const [rfp] = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);
+  const [rfp] = await db
+    .select()
+    .from(preQualifications)
+    .where(eq(preQualifications.id, rfpId))
+    .limit(1);
 
   if (!rfp) {
     console.error(`[Orchestrator] RFP not found: ${rfpId}`);
@@ -298,12 +302,12 @@ export async function handleBidDecision(
 
   // Update decision in RFP
   await db
-    .update(rfps)
+    .update(preQualifications)
     .set({
       decision,
       updatedAt: new Date(),
     })
-    .where(eq(rfps.id, rfpId));
+    .where(eq(preQualifications.id, rfpId));
 
   // NO-BID → Archive
   if (decision === 'no_bid') {
@@ -326,12 +330,12 @@ export async function handleBidDecision(
  */
 async function updateRfpStatus(rfpId: string, status: RFPStatus): Promise<void> {
   await db
-    .update(rfps)
+    .update(preQualifications)
     .set({
       status,
       updatedAt: new Date(),
     })
-    .where(eq(rfps.id, rfpId));
+    .where(eq(preQualifications.id, rfpId));
 
   console.error(`[Orchestrator] Updated RFP ${rfpId} status to: ${status}`);
 }
@@ -349,7 +353,11 @@ export async function getWorkflowStatus(rfpId: string): Promise<{
   canProceed: boolean;
   blockReason?: string;
 }> {
-  const [rfp] = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);
+  const [rfp] = await db
+    .select()
+    .from(preQualifications)
+    .where(eq(preQualifications.id, rfpId))
+    .limit(1);
 
   if (!rfp) {
     throw new Error(`RFP not found: ${rfpId}`);

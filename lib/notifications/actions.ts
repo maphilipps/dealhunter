@@ -10,7 +10,7 @@ import {
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rfps, businessUnits, employees } from '@/lib/db/schema';
+import { preQualifications, businessUnits, employees } from '@/lib/db/schema';
 import type { ProjectPlan } from '@/lib/project-planning/schema';
 
 export interface SendTeamNotificationsResult {
@@ -42,7 +42,11 @@ export async function sendTeamNotifications(bidId: string): Promise<SendTeamNoti
   }
 
   // Get bid with all needed data
-  const [bid] = await db.select().from(rfps).where(eq(rfps.id, bidId)).limit(1);
+  const [bid] = await db
+    .select()
+    .from(preQualifications)
+    .where(eq(preQualifications.id, bidId))
+    .limit(1);
 
   if (!bid) {
     return { success: false, error: 'Bid nicht gefunden' };
@@ -153,14 +157,14 @@ export async function sendTeamNotifications(bidId: string): Promise<SendTeamNoti
 
   // Save notification results to bid
   await db
-    .update(rfps)
+    .update(preQualifications)
     .set({
       teamNotifications: JSON.stringify(results),
       teamNotifiedAt: new Date(),
       status: success ? 'notified' : bid.status,
       updatedAt: new Date(),
     })
-    .where(eq(rfps.id, bidId));
+    .where(eq(preQualifications.id, bidId));
 
   return { success, results };
 }
@@ -181,12 +185,12 @@ export async function getNotificationStatus(bidId: string): Promise<{
 
   const [bid] = await db
     .select({
-      userId: rfps.userId,
-      teamNotifications: rfps.teamNotifications,
-      teamNotifiedAt: rfps.teamNotifiedAt,
+      userId: preQualifications.userId,
+      teamNotifications: preQualifications.teamNotifications,
+      teamNotifiedAt: preQualifications.teamNotifiedAt,
     })
-    .from(rfps)
-    .where(eq(rfps.id, bidId))
+    .from(preQualifications)
+    .where(eq(preQualifications.id, bidId))
     .limit(1);
 
   if (!bid) {

@@ -15,7 +15,7 @@ import { revalidatePath } from 'next/cache';
 
 import { db } from '../db';
 import { type AgentError, type AgentName, getSkipStatus, canSkipAgent } from './agent-wrapper';
-import { rfps, type Rfp } from '../db/schema';
+import { preQualifications, type PreQualification } from '../db/schema';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVER ACTIONS
@@ -33,18 +33,22 @@ import { rfps, type Rfp } from '../db/schema';
 export async function retryAgent(
   rfpId: string,
   agentName: AgentName
-): Promise<{ success: boolean; rfp?: Rfp; error?: string }> {
+): Promise<{ success: boolean; preQualification?: PreQualification; error?: string }> {
   try {
-    // Fetch current RFP
-    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);
+    // Fetch current PreQualification
+    const [preQualification] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, rfpId))
+      .limit(1);
 
-    if (!rfp) {
-      return { success: false, error: 'RFP not found' };
+    if (!preQualification) {
+      return { success: false, error: 'PreQualification not found' };
     }
 
     // Parse agent errors
-    const agentErrors: AgentError[] = rfp.agentErrors
-      ? (JSON.parse(rfp.agentErrors) as AgentError[])
+    const agentErrors: AgentError[] = preQualification.agentErrors
+      ? (JSON.parse(preQualification.agentErrors) as AgentError[])
       : [];
 
     // Find error for this agent
@@ -58,22 +62,25 @@ export async function retryAgent(
     const updatedErrors = agentErrors.filter(e => e.id !== agentError.id);
 
     // Determine new status based on agent
-    const newStatus = getRetryStatus(agentName, rfp.status) as typeof rfp.status;
+    const newStatus = getRetryStatus(
+      agentName,
+      preQualification.status
+    ) as typeof preQualification.status;
 
-    // Update RFP
-    const [updatedRfp] = await db
-      .update(rfps)
+    // Update PreQualification
+    const [updatedPreQualification] = await db
+      .update(preQualifications)
       .set({
         status: newStatus,
         agentErrors: JSON.stringify(updatedErrors),
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, rfpId))
+      .where(eq(preQualifications.id, rfpId))
       .returning();
 
-    revalidatePath(`/rfps/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${rfpId}`);
 
-    return { success: true, rfp: updatedRfp };
+    return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
     console.error('[retryAgent] Error:', error);
     return {
@@ -95,23 +102,27 @@ export async function retryAgent(
 export async function skipAgent(
   rfpId: string,
   agentName: AgentName
-): Promise<{ success: boolean; rfp?: Rfp; error?: string }> {
+): Promise<{ success: boolean; preQualification?: PreQualification; error?: string }> {
   try {
     // Check if agent can be skipped
     if (!canSkipAgent(agentName)) {
       return { success: false, error: `Agent ${agentName} cannot be skipped` };
     }
 
-    // Fetch current RFP
-    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);
+    // Fetch current PreQualification
+    const [preQualification] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, rfpId))
+      .limit(1);
 
-    if (!rfp) {
-      return { success: false, error: 'RFP not found' };
+    if (!preQualification) {
+      return { success: false, error: 'PreQualification not found' };
     }
 
     // Parse agent errors
-    const agentErrors: AgentError[] = rfp.agentErrors
-      ? (JSON.parse(rfp.agentErrors) as AgentError[])
+    const agentErrors: AgentError[] = preQualification.agentErrors
+      ? (JSON.parse(preQualification.agentErrors) as AgentError[])
       : [];
 
     // Find error for this agent
@@ -136,20 +147,20 @@ export async function skipAgent(
       return { success: false, error: `Cannot determine next status for skipping ${agentName}` };
     }
 
-    // Update RFP
-    const [updatedRfp] = await db
-      .update(rfps)
+    // Update PreQualification
+    const [updatedPreQualification] = await db
+      .update(preQualifications)
       .set({
-        status: newStatus as typeof rfp.status,
+        status: newStatus as typeof preQualification.status,
         agentErrors: JSON.stringify(agentErrors),
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, rfpId))
+      .where(eq(preQualifications.id, rfpId))
       .returning();
 
-    revalidatePath(`/rfps/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${rfpId}`);
 
-    return { success: true, rfp: updatedRfp };
+    return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
     console.error('[skipAgent] Error:', error);
     return {
@@ -169,33 +180,37 @@ export async function skipAgent(
  */
 export async function switchToManualMode(
   rfpId: string
-): Promise<{ success: boolean; rfp?: Rfp; error?: string }> {
+): Promise<{ success: boolean; preQualification?: PreQualification; error?: string }> {
   try {
-    // Fetch current RFP
-    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);
+    // Fetch current PreQualification
+    const [preQualification] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, rfpId))
+      .limit(1);
 
-    if (!rfp) {
-      return { success: false, error: 'RFP not found' };
+    if (!preQualification) {
+      return { success: false, error: 'PreQualification not found' };
     }
 
     // Check if currently in extraction_failed state
-    if (rfp.status !== 'extraction_failed') {
-      return { success: false, error: 'RFP must be in extraction_failed state' };
+    if (preQualification.status !== 'extraction_failed') {
+      return { success: false, error: 'PreQualification must be in extraction_failed state' };
     }
 
     // Update to manual extraction mode
-    const [updatedRfp] = await db
-      .update(rfps)
+    const [updatedPreQualification] = await db
+      .update(preQualifications)
       .set({
         status: 'manual_extraction',
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, rfpId))
+      .where(eq(preQualifications.id, rfpId))
       .returning();
 
-    revalidatePath(`/rfps/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${rfpId}`);
 
-    return { success: true, rfp: updatedRfp };
+    return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
     console.error('[switchToManualMode] Error:', error);
     return {
@@ -217,18 +232,22 @@ export async function switchToManualMode(
 export async function resolveAgentError(
   rfpId: string,
   errorId: string
-): Promise<{ success: boolean; rfp?: Rfp; error?: string }> {
+): Promise<{ success: boolean; preQualification?: PreQualification; error?: string }> {
   try {
-    // Fetch current RFP
-    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);
+    // Fetch current PreQualification
+    const [preQualification] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, rfpId))
+      .limit(1);
 
-    if (!rfp) {
-      return { success: false, error: 'RFP not found' };
+    if (!preQualification) {
+      return { success: false, error: 'PreQualification not found' };
     }
 
     // Parse agent errors
-    const agentErrors: AgentError[] = rfp.agentErrors
-      ? (JSON.parse(rfp.agentErrors) as AgentError[])
+    const agentErrors: AgentError[] = preQualification.agentErrors
+      ? (JSON.parse(preQualification.agentErrors) as AgentError[])
       : [];
 
     // Find error
@@ -245,19 +264,19 @@ export async function resolveAgentError(
       resolvedAt: new Date().toISOString(),
     };
 
-    // Update RFP
-    const [updatedRfp] = await db
-      .update(rfps)
+    // Update PreQualification
+    const [updatedPreQualification] = await db
+      .update(preQualifications)
       .set({
         agentErrors: JSON.stringify(agentErrors),
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, rfpId))
+      .where(eq(preQualifications.id, rfpId))
       .returning();
 
-    revalidatePath(`/rfps/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${rfpId}`);
 
-    return { success: true, rfp: updatedRfp };
+    return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
     console.error('[resolveAgentError] Error:', error);
     return {
@@ -279,36 +298,40 @@ export async function resolveAgentError(
 export async function saveAgentError(
   rfpId: string,
   agentError: AgentError
-): Promise<{ success: boolean; rfp?: Rfp; error?: string }> {
+): Promise<{ success: boolean; preQualification?: PreQualification; error?: string }> {
   try {
-    // Fetch current RFP
-    const [rfp] = await db.select().from(rfps).where(eq(rfps.id, rfpId)).limit(1);
+    // Fetch current PreQualification
+    const [preQualification] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, rfpId))
+      .limit(1);
 
-    if (!rfp) {
-      return { success: false, error: 'RFP not found' };
+    if (!preQualification) {
+      return { success: false, error: 'PreQualification not found' };
     }
 
     // Parse existing errors
-    const agentErrors: AgentError[] = rfp.agentErrors
-      ? (JSON.parse(rfp.agentErrors) as AgentError[])
+    const agentErrors: AgentError[] = preQualification.agentErrors
+      ? (JSON.parse(preQualification.agentErrors) as AgentError[])
       : [];
 
     // Add new error
     agentErrors.push(agentError);
 
-    // Update RFP
-    const [updatedRfp] = await db
-      .update(rfps)
+    // Update PreQualification
+    const [updatedPreQualification] = await db
+      .update(preQualifications)
       .set({
         agentErrors: JSON.stringify(agentErrors),
         updatedAt: new Date(),
       })
-      .where(eq(rfps.id, rfpId))
+      .where(eq(preQualifications.id, rfpId))
       .returning();
 
-    revalidatePath(`/rfps/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${rfpId}`);
 
-    return { success: true, rfp: updatedRfp };
+    return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
     console.error('[saveAgentError] Error:', error);
     return {

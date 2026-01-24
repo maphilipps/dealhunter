@@ -15,10 +15,8 @@ vi.mock('../embedding-service', () => ({
   generateQueryEmbedding: vi.fn(),
 }));
 
-// Mock retrieval service
-vi.mock('../retrieval-service', () => ({
-  queryRAG: vi.fn(),
-}));
+// Note: queryRAG is not used by the current implementation -
+// queryRagForLead queries dealEmbeddings directly
 
 // Mock database
 vi.mock('@/lib/db', () => ({
@@ -32,7 +30,6 @@ vi.mock('@/lib/leads/navigation-config', () => ({
   getRAGQueryTemplate: vi.fn(),
 }));
 
-import { queryRAG } from '../retrieval-service';
 import { generateQueryEmbedding } from '../embedding-service';
 
 import { db } from '@/lib/db';
@@ -45,25 +42,28 @@ describe('lead-retrieval-service', () => {
   });
 
   describe('queryRagForLead', () => {
-    it('should map Lead ID to RFP ID and query RAG', async () => {
-      const mockSelect = vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => [{ rfpId: 'rfp-123' }]),
-        })),
-      }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      vi.mocked(db.select).mockImplementation(mockSelect as any);
-
-      vi.mocked(queryRAG).mockResolvedValue([
+    it('should query dealEmbeddings directly by leadId', async () => {
+      // Mock the chainable db.select().from().where() pattern
+      const mockEmbeddings = [
         {
-          chunkId: 'chunk-1',
+          id: 'chunk-1',
+          leadId: 'lead-123',
           agentName: 'tech_agent',
           chunkType: 'tech_stack',
           content: 'WordPress 6.0',
-          similarity: 0.9,
-          metadata: {},
+          embedding: JSON.stringify(new Array(3072).fill(0.1)),
+          metadata: '{}',
+          chunkCategory: null,
+          confidence: null,
+          validatedAt: null,
         },
-      ]);
+      ];
+
+      const mockWhere = vi.fn().mockResolvedValue(mockEmbeddings);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      const mockSelect = vi.fn(() => ({ from: mockFrom }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       const result = await queryRagForLead({
         leadId: 'lead-123',
@@ -74,20 +74,12 @@ describe('lead-retrieval-service', () => {
       expect(result[0].content).toBe('WordPress 6.0');
       expect(result[0].sources).toBeDefined();
       expect(result[0].sources[0].agentName).toBe('tech_agent');
-      expect(queryRAG).toHaveBeenCalledWith(
-        expect.objectContaining({
-          rfpId: 'rfp-123',
-          question: 'What is the current CMS?',
-        })
-      );
     });
 
-    it('should return empty array when lead not found', async () => {
-      const mockSelect = vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => []),
-        })),
-      }));
+    it('should return empty array when no embeddings found', async () => {
+      const mockWhere = vi.fn().mockResolvedValue([]);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      const mockSelect = vi.fn(() => ({ from: mockFrom }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
@@ -97,23 +89,33 @@ describe('lead-retrieval-service', () => {
       });
 
       expect(result).toEqual([]);
-      expect(queryRAG).not.toHaveBeenCalled();
     });
 
     it('should use section RAG template when sectionId provided', async () => {
-      const mockSelect = vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => [{ rfpId: 'rfp-123' }]),
-        })),
-      }));
+      const mockEmbeddings = [
+        {
+          id: 'chunk-1',
+          leadId: 'lead-123',
+          agentName: 'tech_agent',
+          chunkType: 'tech_stack',
+          content: 'WordPress 6.0',
+          embedding: JSON.stringify(new Array(3072).fill(0.1)),
+          metadata: '{}',
+          chunkCategory: null,
+          confidence: null,
+          validatedAt: null,
+        },
+      ];
+
+      const mockWhere = vi.fn().mockResolvedValue(mockEmbeddings);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      const mockSelect = vi.fn(() => ({ from: mockFrom }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       vi.mocked(getRAGQueryTemplate).mockReturnValue(
         'What is the current technology stack including CMS, framework, hosting?'
       );
-
-      vi.mocked(queryRAG).mockResolvedValue([]);
 
       await queryRagForLead({
         leadId: 'lead-123',
@@ -122,40 +124,41 @@ describe('lead-retrieval-service', () => {
       });
 
       expect(getRAGQueryTemplate).toHaveBeenCalledWith('technology');
-      expect(queryRAG).toHaveBeenCalledWith(
-        expect.objectContaining({
-          question: 'What is the current technology stack including CMS, framework, hosting?',
-        })
-      );
     });
 
     it('should filter by single agent name', async () => {
-      const mockSelect = vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => [{ rfpId: 'rfp-123' }]),
-        })),
-      }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      vi.mocked(db.select).mockImplementation(mockSelect as any);
-
-      vi.mocked(queryRAG).mockResolvedValue([
+      const mockEmbeddings = [
         {
-          chunkId: 'chunk-1',
+          id: 'chunk-1',
+          leadId: 'lead-123',
           agentName: 'tech_agent',
           chunkType: 'tech_stack',
           content: 'Tech info',
-          similarity: 0.9,
-          metadata: {},
+          embedding: JSON.stringify(new Array(3072).fill(0.1)),
+          metadata: '{}',
+          chunkCategory: null,
+          confidence: null,
+          validatedAt: null,
         },
         {
-          chunkId: 'chunk-2',
+          id: 'chunk-2',
+          leadId: 'lead-123',
           agentName: 'commercial_agent',
           chunkType: 'budget',
           content: 'Budget info',
-          similarity: 0.8,
-          metadata: {},
+          embedding: JSON.stringify(new Array(3072).fill(0.1)),
+          metadata: '{}',
+          chunkCategory: null,
+          confidence: null,
+          validatedAt: null,
         },
-      ]);
+      ];
+
+      const mockWhere = vi.fn().mockResolvedValue(mockEmbeddings);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      const mockSelect = vi.fn(() => ({ from: mockFrom }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       const result = await queryRagForLead({
         leadId: 'lead-123',
@@ -168,40 +171,50 @@ describe('lead-retrieval-service', () => {
     });
 
     it('should filter by multiple agent names', async () => {
-      const mockSelect = vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => [{ rfpId: 'rfp-123' }]),
-        })),
-      }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      vi.mocked(db.select).mockImplementation(mockSelect as any);
-
-      vi.mocked(queryRAG).mockResolvedValue([
+      const mockEmbeddings = [
         {
-          chunkId: 'chunk-1',
+          id: 'chunk-1',
+          leadId: 'lead-123',
           agentName: 'tech_agent',
           chunkType: 'tech_stack',
           content: 'Tech info',
-          similarity: 0.9,
-          metadata: {},
+          embedding: JSON.stringify(new Array(3072).fill(0.1)),
+          metadata: '{}',
+          chunkCategory: null,
+          confidence: null,
+          validatedAt: null,
         },
         {
-          chunkId: 'chunk-2',
+          id: 'chunk-2',
+          leadId: 'lead-123',
           agentName: 'commercial_agent',
           chunkType: 'budget',
           content: 'Budget info',
-          similarity: 0.8,
-          metadata: {},
+          embedding: JSON.stringify(new Array(3072).fill(0.1)),
+          metadata: '{}',
+          chunkCategory: null,
+          confidence: null,
+          validatedAt: null,
         },
         {
-          chunkId: 'chunk-3',
+          id: 'chunk-3',
+          leadId: 'lead-123',
           agentName: 'risk_agent',
           chunkType: 'risks',
           content: 'Risk info',
-          similarity: 0.75,
-          metadata: {},
+          embedding: JSON.stringify(new Array(3072).fill(0.1)),
+          metadata: '{}',
+          chunkCategory: null,
+          confidence: null,
+          validatedAt: null,
         },
-      ]);
+      ];
+
+      const mockWhere = vi.fn().mockResolvedValue(mockEmbeddings);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      const mockSelect = vi.fn(() => ({ from: mockFrom }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       const result = await queryRagForLead({
         leadId: 'lead-123',
@@ -216,24 +229,26 @@ describe('lead-retrieval-service', () => {
     });
 
     it('should fallback to all results if agent filter yields no results', async () => {
-      const mockSelect = vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => [{ rfpId: 'rfp-123' }]),
-        })),
-      }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      vi.mocked(db.select).mockImplementation(mockSelect as any);
-
-      vi.mocked(queryRAG).mockResolvedValue([
+      const mockEmbeddings = [
         {
-          chunkId: 'chunk-1',
+          id: 'chunk-1',
+          leadId: 'lead-123',
           agentName: 'tech_agent',
           chunkType: 'tech_stack',
           content: 'Tech info',
-          similarity: 0.9,
-          metadata: {},
+          embedding: JSON.stringify(new Array(3072).fill(0.1)),
+          metadata: '{}',
+          chunkCategory: null,
+          confidence: null,
+          validatedAt: null,
         },
-      ]);
+      ];
+
+      const mockWhere = vi.fn().mockResolvedValue(mockEmbeddings);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      const mockSelect = vi.fn(() => ({ from: mockFrom }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       const result = await queryRagForLead({
         leadId: 'lead-123',
@@ -246,13 +261,9 @@ describe('lead-retrieval-service', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      const mockSelect = vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => {
-            throw new Error('DB error');
-          }),
-        })),
-      }));
+      const mockWhere = vi.fn().mockRejectedValue(new Error('DB error'));
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      const mockSelect = vi.fn(() => ({ from: mockFrom }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
@@ -267,28 +278,30 @@ describe('lead-retrieval-service', () => {
 
   describe('batchQuerySections', () => {
     it('should query multiple sections in parallel', async () => {
-      const mockSelect = vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => [{ rfpId: 'rfp-123' }]),
-        })),
-      }));
+      const mockEmbeddings = [
+        {
+          id: 'chunk-1',
+          leadId: 'lead-123',
+          agentName: 'tech_agent',
+          chunkType: 'tech_stack',
+          content: 'Tech info',
+          embedding: JSON.stringify(new Array(3072).fill(0.1)),
+          metadata: '{}',
+          chunkCategory: null,
+          confidence: null,
+          validatedAt: null,
+        },
+      ];
+
+      const mockWhere = vi.fn().mockResolvedValue(mockEmbeddings);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      const mockSelect = vi.fn(() => ({ from: mockFrom }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       vi.mocked(getRAGQueryTemplate)
         .mockReturnValueOnce('Tech stack template')
         .mockReturnValueOnce('Budget template');
-
-      vi.mocked(queryRAG).mockResolvedValue([
-        {
-          chunkId: 'chunk-1',
-          agentName: 'tech_agent',
-          chunkType: 'tech_stack',
-          content: 'Tech info',
-          similarity: 0.9,
-          metadata: {},
-        },
-      ]);
 
       const result = await batchQuerySections('lead-123', ['technology', 'costs']);
 
@@ -309,26 +322,28 @@ describe('lead-retrieval-service', () => {
     });
 
     it('should calculate confidence scores for each section', async () => {
-      const mockSelect = vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => [{ rfpId: 'rfp-123' }]),
-        })),
-      }));
+      const mockEmbeddings = [
+        {
+          id: 'chunk-1',
+          leadId: 'lead-123',
+          agentName: 'tech_agent',
+          chunkType: 'tech_stack',
+          content: 'Tech info',
+          embedding: JSON.stringify(new Array(3072).fill(0.1)),
+          metadata: '{}',
+          chunkCategory: null,
+          confidence: null,
+          validatedAt: null,
+        },
+      ];
+
+      const mockWhere = vi.fn().mockResolvedValue(mockEmbeddings);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      const mockSelect = vi.fn(() => ({ from: mockFrom }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       vi.mocked(getRAGQueryTemplate).mockReturnValue('Test template');
-
-      vi.mocked(queryRAG).mockResolvedValue([
-        {
-          chunkId: 'chunk-1',
-          agentName: 'tech_agent',
-          chunkType: 'tech_stack',
-          content: 'Tech info',
-          similarity: 0.9,
-          metadata: {},
-        },
-      ]);
 
       const result = await batchQuerySections('lead-123', ['technology']);
 
@@ -336,16 +351,13 @@ describe('lead-retrieval-service', () => {
     });
 
     it('should mark sections with no data', async () => {
-      const mockSelect = vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => [{ rfpId: 'rfp-123' }]),
-        })),
-      }));
+      const mockWhere = vi.fn().mockResolvedValue([]);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      const mockSelect = vi.fn(() => ({ from: mockFrom }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       vi.mocked(getRAGQueryTemplate).mockReturnValue('Test template');
-      vi.mocked(queryRAG).mockResolvedValue([]);
 
       const result = await batchQuerySections('lead-123', ['technology']);
 
@@ -356,35 +368,39 @@ describe('lead-retrieval-service', () => {
 
   describe('queryMultipleAgents', () => {
     it('should query multiple agents in parallel', async () => {
-      const mockSelect = vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => [{ rfpId: 'rfp-123' }]),
-        })),
-      }));
+      // This test returns all embeddings each time, and queryRagForLead filters by agentNameFilter
+      const allEmbeddings = [
+        {
+          id: 'chunk-1',
+          leadId: 'lead-123',
+          agentName: 'tech_agent',
+          chunkType: 'tech_stack',
+          content: 'Tech info',
+          embedding: JSON.stringify(new Array(3072).fill(0.1)),
+          metadata: '{}',
+          chunkCategory: null,
+          confidence: null,
+          validatedAt: null,
+        },
+        {
+          id: 'chunk-2',
+          leadId: 'lead-123',
+          agentName: 'commercial_agent',
+          chunkType: 'budget',
+          content: 'Budget info',
+          embedding: JSON.stringify(new Array(3072).fill(0.1)),
+          metadata: '{}',
+          chunkCategory: null,
+          confidence: null,
+          validatedAt: null,
+        },
+      ];
+
+      const mockWhere = vi.fn().mockResolvedValue(allEmbeddings);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      const mockSelect = vi.fn(() => ({ from: mockFrom }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.select).mockImplementation(mockSelect as any);
-
-      vi.mocked(queryRAG)
-        .mockResolvedValueOnce([
-          {
-            chunkId: 'chunk-1',
-            agentName: 'tech_agent',
-            chunkType: 'tech_stack',
-            content: 'Tech info',
-            similarity: 0.9,
-            metadata: {},
-          },
-        ])
-        .mockResolvedValueOnce([
-          {
-            chunkId: 'chunk-2',
-            agentName: 'commercial_agent',
-            chunkType: 'budget',
-            content: 'Budget info',
-            similarity: 0.8,
-            metadata: {},
-          },
-        ]);
 
       const result = await queryMultipleAgents('lead-123', 'Test question', [
         'tech_agent',

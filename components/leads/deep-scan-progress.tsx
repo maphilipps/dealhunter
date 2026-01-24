@@ -7,15 +7,16 @@
 
 'use client';
 
-import { useJobProgress } from '@/hooks/use-job-progress';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle2, XCircle, PlayCircle, StopCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { useJobProgress } from '@/hooks/use-job-progress';
 
 export interface DeepScanProgressProps {
   jobId: string;
@@ -69,7 +70,7 @@ export function DeepScanProgress({
 
     setIsCancelling(true);
     try {
-      await onCancel();
+      onCancel();
       router.refresh();
     } catch (error) {
       console.error('Failed to cancel job:', error);

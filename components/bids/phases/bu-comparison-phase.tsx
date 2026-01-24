@@ -82,7 +82,7 @@ export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) 
         setLoading(false);
       }
     }
-    fetchBUMatches();
+    void fetchBUMatches();
   }, [rfpId]);
 
   if (loading) {

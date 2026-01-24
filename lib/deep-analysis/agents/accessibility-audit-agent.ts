@@ -4,9 +4,10 @@
  * Expected duration: 10-14 minutes
  */
 
+import { AccessibilityAuditSchema, type AccessibilityAudit } from '../schemas';
+
 import { runAccessibilityAudit } from '@/lib/browser';
 
-import { AccessibilityAuditSchema, type AccessibilityAudit } from '../schemas';
 
 interface AggregatedViolation {
   id: string;

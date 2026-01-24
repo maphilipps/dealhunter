@@ -3,6 +3,8 @@
  * Crawls the full navigation structure of a website
  */
 
+import type { SiteTree, SiteTreeNode } from '../schema';
+
 import {
   openPage,
   closeBrowser,
@@ -12,7 +14,6 @@ import {
   type BrowserSession,
 } from '@/lib/browser';
 
-import type { SiteTree, SiteTreeNode } from '../schema';
 
 // ========================================
 // Types

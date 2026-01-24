@@ -83,7 +83,9 @@ export function QuickScanResults({
           // Still running, continue polling
           attempts++;
           if (attempts < maxAttempts) {
-            setTimeout(poll, interval);
+            setTimeout(() => {
+              void poll();
+            }, interval);
           } else {
             setIsPolling(false);
             toast.error('Zeitüberschreitung beim Warten auf Quick Scan Ergebnisse');
@@ -93,14 +95,16 @@ export function QuickScanResults({
           console.error('Polling error:', error);
           attempts++;
           if (attempts < maxAttempts) {
-            setTimeout(poll, interval);
+            setTimeout(() => {
+              void poll();
+            }, interval);
           } else {
             setIsPolling(false);
           }
         }
       };
 
-      poll();
+      void poll();
     },
     [bidId, onRefresh]
   );
@@ -140,7 +144,7 @@ export function QuickScanResults({
           onComplete={() => {
             // Start polling for completion instead of just refreshing
             toast.info('Stream beendet, prüfe Ergebnisse...');
-            pollForCompletion();
+            void pollForCompletion();
           }}
         />
 

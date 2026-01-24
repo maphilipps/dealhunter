@@ -12,9 +12,8 @@
  * - Results stored in RAG for semantic retrieval
  */
 
-import { openPage, closeBrowser, screenshot, evaluate, createSession, wait } from '@/lib/browser';
-
 import { getOpenAIDirectClient } from '@/lib/ai/config';
+import { openPage, closeBrowser, screenshot, evaluate, createSession, wait } from '@/lib/browser';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';

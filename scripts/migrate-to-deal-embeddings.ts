@@ -15,9 +15,10 @@
  *   npx tsx scripts/migrate-to-deal-embeddings.ts
  */
 
+import { createId } from '@paralleldrive/cuid2';
+
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
-import { createId } from '@paralleldrive/cuid2';
 
 // Old table references removed - migration already complete
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

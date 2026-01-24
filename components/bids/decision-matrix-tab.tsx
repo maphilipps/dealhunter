@@ -80,7 +80,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
     };
 
     if (quickScan?.status === 'completed') {
-      loadSavedEvaluation();
+      void loadSavedEvaluation();
     }
   }, [quickScan?.id, quickScan?.status]);
 
@@ -113,7 +113,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
     };
 
     if (quickScan?.status === 'completed') {
-      loadBusinessUnits();
+      void loadBusinessUnits();
     }
   }, [quickScan?.status, quickScan?.recommendedBusinessUnit, quickScan?.cms]);
 
@@ -340,7 +340,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
                     </div>
                     <Button
                       onClick={() => {
-                        handleStartEvaluation(false);
+                        void handleStartEvaluation(false);
                       }}
                       variant="outline"
                       size="sm"
@@ -378,7 +378,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      handleStartEvaluation(true);
+                      void handleStartEvaluation(true);
                     }}
                     disabled={isEvaluating}
                   >

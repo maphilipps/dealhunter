@@ -1,22 +1,24 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-import { db } from '@/lib/db';
-import { leads } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { runPerformanceExpert } from './experts/performance-expert';
-import { runMigrationExpert } from './experts/migration-expert';
-import { runWebsiteExpert } from './experts/website-expert';
-import { runTechExpert } from './experts/tech-expert';
+
 import { runArchitectureExpert } from './experts/architecture-expert';
-import { runHostingExpert } from './experts/hosting-expert';
-import { runIntegrationsExpert } from './experts/integrations-expert';
-import { runProjectExpert } from './experts/project-expert';
 import { runCostsExpert } from './experts/costs-expert';
 import { runDecisionExpert } from './experts/decision-expert';
+import { runHostingExpert } from './experts/hosting-expert';
+import { runIntegrationsExpert } from './experts/integrations-expert';
+import { runMigrationExpert } from './experts/migration-expert';
+import { runPerformanceExpert } from './experts/performance-expert';
+import { runProjectExpert } from './experts/project-expert';
+import { runTechExpert } from './experts/tech-expert';
 import type { AuditAgentInput, AuditAgentOutput } from './experts/types';
-import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import { runWebsiteExpert } from './experts/website-expert';
 import { AgentFile, NavigationSubpage, AuditScanResult } from './types';
+
+import { db } from '@/lib/db';
+import { leads } from '@/lib/db/schema';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
 
 // Expert agent type with emit parameter (optional for file-based usage)
 type ExpertAgentFn = (input: AuditAgentInput, emit?: EventEmitter) => Promise<AuditAgentOutput>;

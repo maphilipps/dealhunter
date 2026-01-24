@@ -4,7 +4,6 @@
  * Extracts all timing and deadline information from RFP documents via RAG.
  */
 
-import { generateStructuredOutput } from '@/lib/ai/config';
 
 import {
   queryRfpDocument,
@@ -14,6 +13,8 @@ import {
 } from './base';
 import { TimingAnalysisSchema, type TimingAnalysis } from './timing-schema';
 import type { ExpertAgentInput, ExpertAgentOutput } from './types';
+
+import { generateStructuredOutput } from '@/lib/ai/config';
 
 const TIMING_QUERIES = [
   'submission deadline response due date RFP closing proposal due',

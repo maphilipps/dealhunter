@@ -189,7 +189,7 @@ export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixP
   // Load existing matrix on mount
   useEffect(() => {
     if (!initialMatrix) {
-      loadMatrix();
+      void loadMatrix();
     }
   }, [rfpId, initialMatrix]);
 

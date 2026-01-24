@@ -125,7 +125,9 @@ export async function buildAgentContext(userId: string): Promise<AgentContext> {
           try {
             const reqs = JSON.parse(r.extractedRequirements);
             customerName = reqs.customerName;
-          } catch {}
+          } catch {
+            // Ignore parse error
+          }
         }
         return { id: r.id, status: r.status, customerName };
       }),

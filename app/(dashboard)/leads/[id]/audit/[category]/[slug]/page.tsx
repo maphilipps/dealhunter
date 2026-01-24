@@ -1,10 +1,10 @@
-import { notFound } from 'next/navigation';
 import { eq, and } from 'drizzle-orm';
+import { notFound } from 'next/navigation';
 
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/lib/db';
 import { leads, dealEmbeddings } from '@/lib/db/schema';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { CATEGORY_CONFIG } from '@/lib/deep-scan/experts/types';
 
 interface PageProps {

@@ -13,18 +13,18 @@
  * Pattern: Template Method - Base class defines workflow, subclasses implement specifics.
  */
 
+import { eq, and } from 'drizzle-orm';
 import OpenAI from 'openai';
 
+import type { ToolContext } from '@/lib/agent-tools/types';
+import { db } from '@/lib/db';
+import { leadSectionData } from '@/lib/db/schema';
+import { getRAGQueryTemplate } from '@/lib/leads/navigation-config';
 import {
   queryRagForLead,
   type LeadRAGQuery,
   type LeadRAGResult,
 } from '@/lib/rag/lead-retrieval-service';
-import type { ToolContext } from '@/lib/agent-tools/types';
-import { db } from '@/lib/db';
-import { leadSectionData } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { getRAGQueryTemplate } from '@/lib/leads/navigation-config';
 
 // Lazy-initialized OpenAI client
 let openaiInstance: OpenAI | null = null;

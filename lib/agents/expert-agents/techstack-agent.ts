@@ -6,7 +6,6 @@
  * the customer's explicit requirements, not what they currently use.
  */
 
-import { generateStructuredOutput } from '@/lib/ai/config';
 
 import {
   queryRfpDocument,
@@ -16,6 +15,8 @@ import {
 } from './base';
 import { TechStackAnalysisSchema, type TechStackAnalysis } from './techstack-schema';
 import type { ExpertAgentInput, ExpertAgentOutput } from './types';
+
+import { generateStructuredOutput } from '@/lib/ai/config';
 
 const TECHSTACK_QUERIES = [
   'technology stack platform CMS content management system Drupal WordPress',

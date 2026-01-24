@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Play, RefreshCw, Globe, Check, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState, useTransition, useEffect } from 'react';
 
+import { ActivityStream } from '@/components/ai-elements/activity-stream';
+import { DeepScanResultsPreview } from '@/components/leads/deep-scan-results-preview';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ActivityStream } from '@/components/ai-elements/activity-stream';
-import { DeepScanResultsPreview } from '@/components/leads/deep-scan-results-preview';
 import { useDeepScan } from '@/contexts/deep-scan-context';
 import { updateLeadWebsiteUrl } from '@/lib/leads/actions';
 

@@ -9,52 +9,49 @@
 import { SectionSynthesizerBase } from './base';
 export { SectionSynthesizerBase };
 export type {
+  RAGQueryOptions,
+  SectionMetadata,
   SectionSynthesizerInput,
   SectionSynthesizerOutput,
-  SectionMetadata,
-  RAGQueryOptions,
 } from './base';
 
 // Sprint 1.3: Initial Synthesizers
-import { overviewSynthesizer, OverviewSynthesizer } from './overview-synthesizer';
-export { overviewSynthesizer, OverviewSynthesizer };
+import { OverviewSynthesizer, overviewSynthesizer } from './overview-synthesizer';
+export { OverviewSynthesizer, overviewSynthesizer };
 export type { OverviewOutput } from './overview-synthesizer';
 
-import { technologySynthesizer, TechnologySynthesizer } from './technology-synthesizer';
-export { technologySynthesizer, TechnologySynthesizer };
+import { TechnologySynthesizer, technologySynthesizer } from './technology-synthesizer';
+export { TechnologySynthesizer, technologySynthesizer };
 export type { TechnologyOutput } from './technology-synthesizer';
 
-import {
-  websiteAnalysisSynthesizer,
-  WebsiteAnalysisSynthesizer,
-} from './website-analysis-synthesizer';
-export { websiteAnalysisSynthesizer, WebsiteAnalysisSynthesizer };
+import { WebsiteAnalysisSynthesizer, websiteAnalysisSynthesizer } from './website-analysis-synthesizer';
+export { WebsiteAnalysisSynthesizer, websiteAnalysisSynthesizer };
 export type { WebsiteAnalysisOutput } from './website-analysis-synthesizer';
 
 // Sprint 2.2: Additional Synthesizers
 import {
-  cmsArchitectureSynthesizer,
   CMSArchitectureSynthesizer,
+  cmsArchitectureSynthesizer,
 } from './cms-architecture-synthesizer';
-export { cmsArchitectureSynthesizer, CMSArchitectureSynthesizer };
+export { CMSArchitectureSynthesizer, cmsArchitectureSynthesizer };
 
-import { cmsComparisonSynthesizer, CMSComparisonSynthesizer } from './cms-comparison-synthesizer';
-export { cmsComparisonSynthesizer, CMSComparisonSynthesizer };
+import { CMSComparisonSynthesizer, cmsComparisonSynthesizer } from './cms-comparison-synthesizer';
+export { CMSComparisonSynthesizer, cmsComparisonSynthesizer };
 
-import { hostingSynthesizer, HostingSynthesizer } from './hosting-synthesizer';
-export { hostingSynthesizer, HostingSynthesizer };
+import { CostsSynthesizer, costsSynthesizer } from './costs-synthesizer';
+export { CostsSynthesizer, costsSynthesizer };
 
-import { integrationsSynthesizer, IntegrationsSynthesizer } from './integrations-synthesizer';
-export { integrationsSynthesizer, IntegrationsSynthesizer };
+import { DecisionSynthesizer, decisionSynthesizer } from './decision-synthesizer';
+export { DecisionSynthesizer, decisionSynthesizer };
 
-import { migrationSynthesizer, MigrationSynthesizer } from './migration-synthesizer';
-export { migrationSynthesizer, MigrationSynthesizer };
+import { HostingSynthesizer, hostingSynthesizer } from './hosting-synthesizer';
+export { HostingSynthesizer, hostingSynthesizer };
 
-import { costsSynthesizer, CostsSynthesizer } from './costs-synthesizer';
-export { costsSynthesizer, CostsSynthesizer };
+import { IntegrationsSynthesizer, integrationsSynthesizer } from './integrations-synthesizer';
+export { IntegrationsSynthesizer, integrationsSynthesizer };
 
-import { decisionSynthesizer, DecisionSynthesizer } from './decision-synthesizer';
-export { decisionSynthesizer, DecisionSynthesizer };
+import { MigrationSynthesizer, migrationSynthesizer } from './migration-synthesizer';
+export { MigrationSynthesizer, migrationSynthesizer };
 
 // Registry for easy lookup
 export const SYNTHESIZER_REGISTRY = {

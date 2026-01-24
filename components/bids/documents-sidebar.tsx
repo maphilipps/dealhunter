@@ -37,7 +37,7 @@ export function DocumentsSidebar({ bidId }: DocumentsSidebarProps) {
       setIsLoading(false);
     }
 
-    loadDocuments();
+    void loadDocuments();
   }, [bidId]);
 
   const formatFileSize = (bytes: number): string => {

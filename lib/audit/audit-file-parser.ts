@@ -53,18 +53,18 @@ function extractProjectName(files: ParsedAuditFile[]): string | null {
   for (const file of files) {
     if (file.parsed) {
       // Check common locations for project name
-      const data = file.parsed as Record<string, unknown>;
+      const data = file.parsed;
 
       // project_summary.project_name (cost_estimation.json)
       const summary = data.project_summary as Record<string, unknown> | undefined;
-      if (summary?.project_name) return String(summary.project_name);
+      if (typeof summary?.project_name === 'string') return summary.project_name;
 
       // project_overview.name (drupal_architecture.json)
       const overview = data.project_overview as Record<string, unknown> | undefined;
-      if (overview?.name) return String(overview.name);
+      if (typeof overview?.name === 'string') return overview.name;
 
       // Direct project_name
-      if (data.project_name) return String(data.project_name);
+      if (typeof data.project_name === 'string') return data.project_name;
     }
   }
 

@@ -47,7 +47,7 @@ export function BUMatchingTab({ quickScan, bidId }: BUMatchingTabProps) {
       }
     }
 
-    loadMatches();
+    void loadMatches();
   }, [bidId]);
 
   if (isLoading) {

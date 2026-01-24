@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { PlayCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 import { JobProgressCard } from '@/components/background-jobs/job-progress-card';
-import { useBackgroundJobStatus } from '@/hooks/use-background-job-status';
 import { Button } from '@/components/ui/button';
-import { PlayCircle } from 'lucide-react';
+import { useBackgroundJobStatus } from '@/hooks/use-background-job-status';
 
 interface LeadOverviewClientProps {
   leadId: string;

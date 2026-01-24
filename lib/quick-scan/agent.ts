@@ -465,7 +465,9 @@ export async function runQuickScan(input: QuickScanInput): Promise<QuickScanResu
     try {
       const context = await buildAgentContext(input.userId);
       contextSection = formatContextForPrompt(context);
-    } catch {}
+    } catch {
+      // Ignore context errors
+    }
   }
 
   try {
@@ -779,7 +781,7 @@ async function fetchWebsiteData(url: string): Promise<WebsiteData> {
         headers: result.headers,
       });
       result.wappalyzerResults = Array.isArray(wappalyzerResult) ? wappalyzerResult : [];
-    } catch (e) {
+    } catch (_e) {
       console.error('Wappalyzer error:', e);
       result.wappalyzerResults = [];
     }
@@ -2598,7 +2600,9 @@ export async function runQuickScanWithStreaming(
     try {
       const context = await buildAgentContext(input.userId);
       contextSection = formatContextForPrompt(context);
-    } catch {}
+    } catch {
+      // Ignore context errors
+    }
   }
 
   const emitThought = (agent: string, thought: string, details?: string) => {

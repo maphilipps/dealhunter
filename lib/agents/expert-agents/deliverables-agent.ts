@@ -6,7 +6,6 @@
 
 import { createId } from '@paralleldrive/cuid2';
 
-import { generateStructuredOutput } from '@/lib/ai/config';
 
 import {
   queryRfpDocument,
@@ -20,6 +19,8 @@ import {
   type Deliverable,
 } from './deliverables-schema';
 import type { ExpertAgentInput, ExpertAgentOutput } from './types';
+
+import { generateStructuredOutput } from '@/lib/ai/config';
 
 const DELIVERABLES_QUERIES = [
   'submission requirements mandatory components proposal shall include vendor must provide',

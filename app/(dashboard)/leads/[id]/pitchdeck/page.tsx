@@ -108,7 +108,7 @@ export default async function PitchdeckPage({ params }: { params: Promise<{ id: 
       if (requirements.deadline) {
         rfpDeadline = new Date(requirements.deadline);
       }
-    } catch (e) {
+    } catch (_e) {
       // Invalid JSON or missing deadline - rfpDeadline stays null
       console.error('Failed to parse extractedRequirements:', e);
     }

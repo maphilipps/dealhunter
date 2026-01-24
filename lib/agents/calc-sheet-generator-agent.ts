@@ -15,14 +15,14 @@
  * @see adesso Calculator 2.01 - Default Template CMS 1.xlsm
  */
 
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { dealEmbeddings, leads, quickScans } from '@/lib/db/schema';
+import { dealEmbeddings, leads } from '@/lib/db/schema';
 import type { ChunkCategory } from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
-import { eq } from 'drizzle-orm';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES & SCHEMAS
@@ -316,7 +316,7 @@ async function gatherContext(leadId: string): Promise<ContextData> {
     // Get Quick Scan data
     if (lead.quickScan) {
       const qs = lead.quickScan;
-      context.cms = qs.cms || 'Unbekannt';
+      context.cms = qs.cms || '';
       context.pageCount = qs.pageCount || 0;
 
       if (qs.techStack) {
@@ -356,9 +356,9 @@ async function gatherContext(leadId: string): Promise<ContextData> {
       try {
         const metadata = chunk.metadata ? JSON.parse(chunk.metadata) : {};
         if (metadata.components) {
-          context.components = metadata.components.map(
-            (c: { name?: string }) => c.name || 'Unbekannt'
-          );
+          context.components = metadata.components
+            .map((c: { name?: string }) => c.name)
+            .filter(Boolean);
         }
       } catch {
         // Ignore parse errors
@@ -373,7 +373,7 @@ async function gatherContext(leadId: string): Promise<ContextData> {
         if (metadata.contentTypes) {
           context.contentTypes = [
             ...context.contentTypes,
-            ...metadata.contentTypes.map((ct: { name?: string }) => ct.name || 'Unbekannt'),
+            ...metadata.contentTypes.map((ct: { name?: string }) => ct.name).filter(Boolean),
           ];
         }
       } catch {
@@ -383,7 +383,7 @@ async function gatherContext(leadId: string): Promise<ContextData> {
 
     // Calculate confidence based on available data
     let confidence = 30; // Base confidence
-    if (context.cms && context.cms !== 'Unbekannt') confidence += 15;
+    if (context.cms && context.cms.trim() !== '') confidence += 15;
     if (context.pageCount > 0) confidence += 10;
     if (context.techStack.length > 0) confidence += 10;
     if (context.contentTypes.length > 0) confidence += 15;
@@ -397,6 +397,42 @@ async function gatherContext(leadId: string): Promise<ContextData> {
     console.error('[Calc-Sheet Generator] Error gathering context:', error);
     return context;
   }
+}
+
+/**
+ * Sanitize calc-sheet by replacing "Unbekannt" placeholders with derived names
+ */
+function sanitizeCalcSheet(calcSheet: CalcSheet): CalcSheet {
+  return {
+    ...calcSheet,
+    features: calcSheet.features.map(f => ({
+      ...f,
+      name: sanitizeName(f.name, f.description, 'Feature'),
+    })),
+    roles: calcSheet.roles.map(r => ({
+      ...r,
+      title: sanitizeName(r.title, r.responsibilities.join(', '), 'Rolle'),
+    })),
+    risks: calcSheet.risks.map(r => ({
+      ...r,
+      name: sanitizeName(r.name, r.description || r.mitigation, 'Risiko'),
+    })),
+  };
+}
+
+/**
+ * Sanitize a single name by deriving from fallback source if needed
+ */
+function sanitizeName(name: string, fallbackSource: string, prefix: string): string {
+  const forbidden = ['Unbekanntes Feature', 'Unbekannte Rolle', 'Unbekanntes Risiko', ''];
+
+  if (forbidden.includes(name) || !name?.trim()) {
+    // Derive name from fallback source (first 5 words)
+    const derived = fallbackSource?.trim().split(/\s+/).slice(0, 5).join(' ');
+    return derived || `${prefix}-${Date.now().toString(36)}`;
+  }
+
+  return name;
 }
 
 /**
@@ -456,6 +492,13 @@ Für jeden Feature:
 - Leite aus Komponenten → Paragraph Features ab
 - Füge Standard-Features hinzu (Navigation, Search, Forms, etc.)
 
+KRITISCHE NAMENSGEBUNG:
+- Jedes Feature MUSS einen konkreten, beschreibenden Namen haben (z.B. "News-Artikel Content Type", "Video-Paragraph-Komponente")
+- Jede Rolle MUSS einen konkreten Jobtitel haben (z.B. "Senior Drupal Developer", "UX Designer")
+- Jedes Risiko MUSS einen konkreten Namen haben (z.B. "Datenmigration aus Legacy-System", "Browser-Kompatibilität")
+- VERBOTEN: "Unbekanntes Feature", "Unbekannte Rolle", "Unbekanntes Risiko", generische Platzhalter
+- Bei fehlendem Kontext: Namen aus Beschreibung/Mitigation ableiten oder sinnvolle Standardnamen verwenden
+
 Antworte im JSON-Format.`;
 
   const calcSheet = await generateStructuredOutput({
@@ -485,7 +528,8 @@ Antworte im JSON-Format.`;
     calcSheet.summary.estimatedDuration = `${months} Monate`;
   }
 
-  return calcSheet;
+  // Sanitize calc-sheet to remove any "Unbekannt" placeholders
+  return sanitizeCalcSheet(calcSheet);
 }
 
 /**

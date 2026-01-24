@@ -1,11 +1,11 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { CheckCircle, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDeepScan, EXPERT_TO_SECTION_MAP } from '@/contexts/deep-scan-context';
 
 interface DeepScanResultsPreviewProps {

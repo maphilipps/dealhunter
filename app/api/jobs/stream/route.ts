@@ -5,12 +5,13 @@
  * Returns Server-Sent Events stream for multiple job progress updates.
  */
 
-import { createMultiJobStream } from '@/lib/realtime/event-stream';
-import { db } from '@/lib/db';
-import { backgroundJobs } from '@/lib/db/schema';
 import { inArray } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
+
 import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { backgroundJobs } from '@/lib/db/schema';
+import { createMultiJobStream } from '@/lib/realtime/event-stream';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs'; // SSE requires Node.js runtime

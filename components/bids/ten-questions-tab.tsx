@@ -154,7 +154,7 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
       id: 2,
       question: 'Wie hoch ist das Auftragsvolumen bzw. Budget?',
       answer: extractedData?.budgetRange
-        ? `Budget: ${extractedData.budgetRange}`
+        ? `Budget: ${extractedData.budgetRange.min ? (extractedData.budgetRange.min / 1000).toFixed(0) + 'k' : '?'} - ${extractedData.budgetRange.max ? (extractedData.budgetRange.max / 1000).toFixed(0) + 'k' : '?'} ${extractedData.budgetRange.currency}`
         : companyIntelligence?.financials?.revenueClass
           ? `Umsatzklasse: ${companyIntelligence.financials.revenueClass}${companyIntelligence.financials.publiclyTraded ? ' (börsennotiert)' : ''}`
           : contentVolume &&

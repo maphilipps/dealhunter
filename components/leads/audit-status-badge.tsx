@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Database, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,7 @@ export function AuditStatusBadge({ leadId, variant = 'badge' }: AuditStatusBadge
       }
     }
 
-    fetchStatus();
+    void fetchStatus();
   }, [leadId]);
 
   async function handleIngest() {

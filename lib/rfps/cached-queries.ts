@@ -3,8 +3,9 @@
  * Uses React cache() to deduplicate DB queries across layout and pages
  */
 
-import { cache } from 'react';
 import { eq } from 'drizzle-orm';
+import { cache } from 'react';
+
 import { db } from '@/lib/db';
 import { rfps, accounts, users, quickScans } from '@/lib/db/schema';
 

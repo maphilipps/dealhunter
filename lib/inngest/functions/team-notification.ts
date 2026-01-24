@@ -98,7 +98,7 @@ export const teamNotificationFunction = inngest.createFunction(
               totalHours: planData.totalHours || 0,
               startPhase: planData.timeline?.[0]?.phase || 'Kick-off',
             };
-          } catch (e) {
+          } catch (_e) {
             console.warn('Could not parse project planning result');
           }
         }
@@ -109,7 +109,7 @@ export const teamNotificationFunction = inngest.createFunction(
           try {
             const teamData = JSON.parse(bidData.assignedTeam);
             blLeaderName = teamData.blLeaderName || 'Bereichsleiter';
-          } catch (e) {
+          } catch (_e) {
             console.warn('Could not parse assigned team data');
           }
         }
@@ -141,7 +141,7 @@ export const teamNotificationFunction = inngest.createFunction(
             const requirements = JSON.parse(bid.extractedRequirements);
             customerName = requirements.customerName || customerName;
             projectDescription = requirements.projectDescription || projectDescription;
-          } catch (e) {
+          } catch (_e) {
             console.warn('Could not parse extracted requirements');
           }
         }

@@ -10,10 +10,6 @@
 import { count, eq, like, sql, and, desc } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
-import { db } from '@/lib/db';
-import { dealEmbeddings, rawChunks, leadSectionData, leads } from '@/lib/db/schema';
-
 import type {
   ActionResult,
   RAGStats,
@@ -28,6 +24,11 @@ import type {
   SimilaritySearchParams,
   SimilarityResult,
 } from './types';
+
+import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
+import { db } from '@/lib/db';
+import { dealEmbeddings, rawChunks, leadSectionData, leads } from '@/lib/db/schema';
+
 
 // ============================================================================
 // Validation Schemas
@@ -507,7 +508,7 @@ export async function searchSimilar(
           metadata: dealEmbeddings.metadata,
         })
         .from(dealEmbeddings)
-        .where(eq(dealEmbeddings.rfpId, rfpId!));
+        .where(eq(dealEmbeddings.rfpId, rfpId));
 
       for (const chunk of agentChunks) {
         const chunkEmbedding = safeParseJSON<number[]>(chunk.embedding, []);

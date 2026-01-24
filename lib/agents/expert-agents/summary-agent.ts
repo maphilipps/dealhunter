@@ -7,10 +7,6 @@
 
 import { eq, and, inArray } from 'drizzle-orm';
 
-import { generateStructuredOutput } from '@/lib/ai/config';
-import { db } from '@/lib/db';
-import { dealEmbeddings } from '@/lib/db/schema';
-
 import {
   queryRfpDocument,
   storeAgentResult,
@@ -19,6 +15,11 @@ import {
 } from './base';
 import { ManagementSummarySchema, type ManagementSummary } from './summary-schema';
 import type { ExpertAgentInput, ExpertAgentOutput } from './types';
+
+import { generateStructuredOutput } from '@/lib/ai/config';
+import { db } from '@/lib/db';
+import { dealEmbeddings } from '@/lib/db/schema';
+
 
 const EXPERT_AGENT_NAMES = [
   'timing_expert',

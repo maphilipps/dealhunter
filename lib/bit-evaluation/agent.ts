@@ -1,6 +1,5 @@
 import OpenAI from 'openai';
 
-import { BIT_EVALUATION_WEIGHTS, calculateWeightedBitScore } from '@/lib/config/business-rules';
 import { runCapabilityAgent } from './agents/capability-agent';
 import { runCompetitionAgent } from './agents/competition-agent';
 import { runContractAgent } from './agents/contract-agent';
@@ -27,6 +26,7 @@ import {
 
 // Intelligent Agent Framework - NEW
 import { quickEvaluate, BIT_EVALUATION_SCHEMA } from '@/lib/agent-tools/evaluator';
+import { BIT_EVALUATION_WEIGHTS, calculateWeightedBitScore } from '@/lib/config/business-rules';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
 

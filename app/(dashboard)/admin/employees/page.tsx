@@ -33,7 +33,7 @@ export default function EmployeesPage() {
       }
       setIsLoading(false);
     }
-    loadData();
+    void loadData();
   }, []);
 
   const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

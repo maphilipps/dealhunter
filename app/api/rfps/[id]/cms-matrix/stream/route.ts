@@ -255,7 +255,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       });
 
       // 5. Run Parallel Matrix Research
-      const matrix = await runParallelMatrixResearch(requirements, cmsOptions, sendEvent, {
+      const matrix = await runParallelMatrixResearch(requirements, cmsOptions, (event) => void sendEvent(event), {
         useCache: true,
         saveToDb: true,
         maxConcurrency: 5,

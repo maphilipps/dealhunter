@@ -81,7 +81,7 @@ export function WebsiteUrlInput({
   useEffect(() => {
     if (autoLoadSuggestions && customerName && !hasLoadedRef.current) {
       hasLoadedRef.current = true;
-      loadSuggestions();
+      void loadSuggestions();
     }
   }, [autoLoadSuggestions, customerName]);
 

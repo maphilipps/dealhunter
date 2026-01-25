@@ -6,6 +6,7 @@ import { cache } from 'react';
 
 import { AuditStatusBadge } from '@/components/qualifications/audit-status-badge';
 import { CustomerDeepDive } from '@/components/qualifications/customer-deep-dive';
+import { DeepScanOverviewClient } from '@/components/qualifications/deep-scan-overview-client';
 import { ExecutiveSummaryCard } from '@/components/qualifications/executive-summary-card';
 import { LeadOverviewClient } from '@/components/qualifications/qualification-overview-client';
 import { Badge } from '@/components/ui/badge';
@@ -153,6 +154,9 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
         </div>
         <AuditStatusBadge leadId={id} variant="badge" />
       </div>
+
+      {/* DeepScan Status Banner */}
+      <DeepScanOverviewClient />
 
       {/* Executive Summary Card (Phase 1.1) - Prominent first element */}
       <ExecutiveSummaryCard

@@ -221,7 +221,7 @@ ${result.migrationRisk.factors.map(f => `- ${f}`).join('\n')}`;
       chunkType: 'analysis',
       chunkIndex: 0,
       content: chunkText,
-      embedding: JSON.stringify(chunksWithEmbeddings[0].embedding),
+      embedding: chunksWithEmbeddings[0].embedding,
       metadata: JSON.stringify({
         recommendedProvider: result.recommendation.provider,
         monthlyEstimate: result.recommendation.estimatedMonthlyCost,

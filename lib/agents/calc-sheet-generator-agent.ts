@@ -609,7 +609,7 @@ ${riskList}`;
         chunkType: 'calc_sheet',
         chunkIndex: 0,
         content: chunkText,
-        embedding: JSON.stringify(chunksWithEmbeddings[0].embedding),
+        embedding: chunksWithEmbeddings[0].embedding,
         chunkCategory: 'estimate' as ChunkCategory,
         confidence: 70,
         requiresValidation: true,

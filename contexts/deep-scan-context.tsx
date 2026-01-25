@@ -1,89 +1,55 @@
 'use client';
 
-import { createContext, useContext, useCallback, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useCallback, useMemo, useState, type ReactNode } from 'react';
 
-import { useAgentStream } from '@/hooks/use-agent-stream';
-import type { AgentEvent } from '@/lib/streaming/event-types';
+import {
+  useBackgroundJobStatus,
+  isJobInProgress,
+  type BackgroundJob,
+} from '@/hooks/use-background-job-status';
+import {
+  SECTION_TO_EXPERT,
+  ALL_EXPERTS,
+  EXPERT_DISPLAY_NAMES,
+} from '@/lib/deep-scan/section-expert-mapping';
 
 // ============================================================================
 // Types
 // ============================================================================
 
+export type DeepScanStatus = 'idle' | 'pending' | 'running' | 'completed' | 'failed';
 export type ExpertStatus = 'pending' | 'running' | 'complete' | 'error';
 
-export interface ExpertState {
-  status: ExpertStatus;
-  progress?: string;
-  result?: unknown;
-  confidence?: number;
-}
-
 export interface DeepScanContextValue {
-  // Stream state
-  isStreaming: boolean;
-  events: AgentEvent[];
-  error: string | null;
-  decision: unknown;
+  // Job state from polling
+  job: BackgroundJob | null;
+  isLoading: boolean;
+  error: Error | null;
 
-  // Agent states (keyed by agent name from stream)
-  agentStates: Record<string, ExpertState>;
+  // Computed status
+  status: DeepScanStatus;
+  isInProgress: boolean;
+  currentPhase: 'scraping' | 'phase2' | 'phase3' | 'completed' | null;
+  currentExpert: string | null;
+  progress: number;
 
-  // Computed helpers
-  activeAgent: string | null;
+  // Expert tracking
   completedExperts: string[];
   pendingExperts: string[];
+  sectionConfidences: Record<string, number>;
 
   // Helper functions
   getExpertStatus: (expertName: string) => ExpertStatus;
-  getExpertResult: (expertName: string) => unknown;
+  getSectionConfidence: (sectionId: string) => number | null;
 
   // Actions
-  startDeepScan: (leadId: string) => void;
-  stopDeepScan: () => void;
+  startDeepScan: (
+    forceReset?: boolean,
+    selectedExperts?: string[]
+  ) => Promise<{ success: boolean; error?: string }>;
+  startSelectiveScan: (sectionIds: string[]) => Promise<{ success: boolean; error?: string }>;
+  refetch: () => void;
 }
-
-// ============================================================================
-// Expert Name Mapping
-// ============================================================================
-
-/**
- * Maps agent names from SSE stream to sidebar section names
- * Stream uses names like "Tech Expert", sidebar expects "technology"
- */
-const EXPERT_TO_SECTION_MAP: Record<string, string> = {
-  'Tech Expert': 'technology',
-  'Website Expert': 'website-analysis',
-  'Architecture Expert': 'cms-architecture',
-  'Hosting Expert': 'hosting',
-  'Integrations Expert': 'integrations',
-  'Migration Expert': 'migration',
-  'Project Expert': 'project-org',
-  'Costs Expert': 'costs',
-  'Decision Expert': 'decision',
-  'Performance Expert': 'performance',
-};
-
-/**
- * Maps sidebar section names back to stream agent names
- */
-const SECTION_TO_EXPERT_MAP: Record<string, string> = Object.fromEntries(
-  Object.entries(EXPERT_TO_SECTION_MAP).map(([k, v]) => [v, k])
-);
-
-/**
- * All known experts in execution order
- */
-const ALL_EXPERTS = [
-  'Tech Expert',
-  'Website Expert',
-  'Architecture Expert',
-  'Hosting Expert',
-  'Integrations Expert',
-  'Migration Expert',
-  'Project Expert',
-  'Costs Expert',
-  'Decision Expert',
-];
 
 // ============================================================================
 // Context
@@ -97,123 +63,186 @@ const DeepScanContext = createContext<DeepScanContextValue | null>(null);
 
 interface DeepScanProviderProps {
   children: ReactNode;
+  leadId: string;
 }
 
-export function DeepScanProvider({ children }: DeepScanProviderProps) {
-  const stream = useAgentStream();
+export function DeepScanProvider({ children, leadId }: DeepScanProviderProps) {
+  const [startError, setStartError] = useState<string | null>(null);
 
-  // Start deep scan for the lead
-  const startDeepScan = useCallback(
-    (scanLeadId: string) => {
-      const url = `/api/qualifications/${scanLeadId}/deep-scan/stream`;
-      stream.start(url);
-    },
-    [stream]
-  );
+  // Poll for job status
+  const { job, isLoading, error, refetch, reset } = useBackgroundJobStatus({
+    leadId,
+    jobType: 'deep-scan',
+    pollingInterval: 10000, // 10 seconds
+    enabled: true,
+  });
 
-  // Stop the scan
-  const stopDeepScan = useCallback(() => {
-    stream.abort();
-  }, [stream]);
-
-  // Compute active agent (last one with 'running' status)
-  const activeAgent = useMemo(() => {
-    for (const [name, state] of Object.entries(stream.agentStates)) {
-      if (state.status === 'running') {
-        return name;
-      }
+  // Compute status from job
+  const status = useMemo<DeepScanStatus>(() => {
+    if (!job) return 'idle';
+    switch (job.status) {
+      case 'pending':
+        return 'pending';
+      case 'running':
+        return 'running';
+      case 'completed':
+        return 'completed';
+      case 'failed':
+      case 'cancelled':
+        return 'failed';
+      default:
+        return 'idle';
     }
-    return null;
-  }, [stream.agentStates]);
+  }, [job]);
 
-  // Compute completed experts list
-  const completedExperts = useMemo(() => {
-    return Object.entries(stream.agentStates)
-      .filter(([, state]) => state.status === 'complete')
-      .map(([name]) => name);
-  }, [stream.agentStates]);
+  const isInProgress = useMemo(() => isJobInProgress(job), [job]);
 
-  // Compute pending experts (not started yet)
-  const pendingExperts = useMemo(() => {
-    const started = new Set(Object.keys(stream.agentStates));
-    return ALL_EXPERTS.filter(name => !started.has(name));
-  }, [stream.agentStates]);
-
-  // Get expert status by name (accepts both stream name and section name)
+  // Get expert status by name (accepts both internal name and section ID)
   const getExpertStatus = useCallback(
     (expertName: string): ExpertStatus => {
-      // Try direct match first (stream name)
-      let state = stream.agentStates[expertName];
+      if (!job) return 'pending';
 
-      // Try section name mapping
-      if (!state) {
-        const streamName = SECTION_TO_EXPERT_MAP[expertName];
-        if (streamName) {
-          state = stream.agentStates[streamName];
-        }
+      // Map section ID to expert name if needed
+      const internalName = SECTION_TO_EXPERT[expertName] || expertName;
+
+      // Check if completed
+      if (job.completedExperts.includes(internalName)) {
+        return 'complete';
       }
 
-      if (!state) {
-        // Not in stream yet - check if streaming
-        if (stream.isStreaming) {
-          return 'pending';
-        }
+      // Check if currently running
+      if (job.currentExpert === internalName) {
+        return 'running';
+      }
+
+      // Check if in pending list
+      if (job.pendingExperts.includes(internalName)) {
         return 'pending';
       }
 
-      return state.status as ExpertStatus;
-    },
-    [stream.agentStates, stream.isStreaming]
-  );
-
-  // Get expert result by name
-  const getExpertResult = useCallback(
-    (expertName: string): unknown => {
-      // Try direct match first
-      let state = stream.agentStates[expertName];
-
-      // Try section name mapping
-      if (!state) {
-        const streamName = SECTION_TO_EXPERT_MAP[expertName];
-        if (streamName) {
-          state = stream.agentStates[streamName];
-        }
+      // Default to pending if job is still running
+      if (isInProgress) {
+        return 'pending';
       }
 
-      return state?.result ?? null;
+      // Job is done but expert wasn't completed - likely an error
+      return 'error';
     },
-    [stream.agentStates]
+    [job, isInProgress]
+  );
+
+  // Get confidence for a section
+  const getSectionConfidence = useCallback(
+    (sectionId: string): number | null => {
+      if (!job?.sectionConfidences) return null;
+      return job.sectionConfidences[sectionId] ?? null;
+    },
+    [job]
+  );
+
+  // Start a new deep scan
+  const startDeepScan = useCallback(
+    async (
+      forceReset = false,
+      selectedExperts?: string[]
+    ): Promise<{ success: boolean; error?: string }> => {
+      setStartError(null);
+
+      try {
+        const response = await fetch(`/api/qualifications/${leadId}/deep-scan/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ forceReset, selectedExperts }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          const errorMsg = data.error || 'Failed to start deep scan';
+          setStartError(errorMsg);
+          return { success: false, error: errorMsg };
+        }
+
+        // Reset local state and start polling
+        reset();
+        refetch();
+
+        return { success: true };
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+        setStartError(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+    },
+    [leadId, reset, refetch]
+  );
+
+  // Start a selective re-scan
+  const startSelectiveScan = useCallback(
+    async (sectionIds: string[]): Promise<{ success: boolean; error?: string }> => {
+      setStartError(null);
+
+      try {
+        const response = await fetch(`/api/qualifications/${leadId}/deep-scan/selective`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sectionIds }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          const errorMsg = data.error || 'Failed to start selective scan';
+          setStartError(errorMsg);
+          return { success: false, error: errorMsg };
+        }
+
+        // Reset local state and start polling
+        reset();
+        refetch();
+
+        return { success: true };
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+        setStartError(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+    },
+    [leadId, reset, refetch]
   );
 
   // Memoize context value
   const value = useMemo<DeepScanContextValue>(
     () => ({
-      isStreaming: stream.isStreaming,
-      events: stream.events,
-      error: stream.error,
-      decision: stream.decision,
-      agentStates: stream.agentStates as Record<string, ExpertState>,
-      activeAgent,
-      completedExperts,
-      pendingExperts,
+      job,
+      isLoading,
+      error: error || (startError ? new Error(startError) : null),
+      status,
+      isInProgress,
+      currentPhase: job?.currentPhase ?? null,
+      currentExpert: job?.currentExpert ?? null,
+      progress: job?.progress ?? 0,
+      completedExperts: job?.completedExperts ?? [],
+      pendingExperts: job?.pendingExperts ?? [],
+      sectionConfidences: job?.sectionConfidences ?? {},
       getExpertStatus,
-      getExpertResult,
+      getSectionConfidence,
       startDeepScan,
-      stopDeepScan,
+      startSelectiveScan,
+      refetch,
     }),
     [
-      stream.isStreaming,
-      stream.events,
-      stream.error,
-      stream.decision,
-      stream.agentStates,
-      activeAgent,
-      completedExperts,
-      pendingExperts,
+      job,
+      isLoading,
+      error,
+      startError,
+      status,
+      isInProgress,
       getExpertStatus,
-      getExpertResult,
+      getSectionConfidence,
       startDeepScan,
-      stopDeepScan,
+      startSelectiveScan,
+      refetch,
     ]
   );
 
@@ -233,7 +262,8 @@ export function useDeepScan() {
 }
 
 // ============================================================================
-// Utilities (exported for use in sidebar)
+// Utilities (exported for use in components)
 // ============================================================================
 
-export { EXPERT_TO_SECTION_MAP, SECTION_TO_EXPERT_MAP, ALL_EXPERTS };
+// Re-export for consumers that import from this context
+export { SECTION_TO_EXPERT, ALL_EXPERTS, EXPERT_DISPLAY_NAMES };

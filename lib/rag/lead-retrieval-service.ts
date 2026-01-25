@@ -160,7 +160,7 @@ export async function queryRagForLead(query: LeadRAGQuery): Promise<LeadRAGResul
       resultsWithSimilarity = chunks
         .filter(chunk => chunk.embedding !== null)
         .map(chunk => {
-          const chunkEmbedding = JSON.parse(chunk.embedding!) as number[];
+          const chunkEmbedding = chunk.embedding!;
           const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
           const metadata = chunk.metadata ? JSON.parse(chunk.metadata) : {};
 

@@ -590,7 +590,7 @@ ${recommendationDetails || 'No recommendations available.'}`;
         chunkType: 'analysis',
         chunkIndex: 0,
         content: chunkText,
-        embedding: JSON.stringify(chunksWithEmbeddings[0].embedding),
+        embedding: chunksWithEmbeddings[0].embedding,
         metadata: JSON.stringify({
           leadId,
           topMatchesCount: result.topMatchesCount,

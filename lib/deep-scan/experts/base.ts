@@ -198,12 +198,7 @@ export async function queryLeadRag(
       .map(r => {
         let similarity = 0;
         if (r.embedding) {
-          try {
-            const embeddingVector = JSON.parse(r.embedding) as number[];
-            similarity = cosineSimilarity(queryEmbedding, embeddingVector);
-          } catch {
-            // Invalid embedding format
-          }
+          similarity = cosineSimilarity(queryEmbedding, r.embedding);
         }
         return {
           content: r.content,
@@ -229,12 +224,7 @@ export async function queryLeadRag(
       .map(r => {
         let similarity = 0;
         if (r.embedding) {
-          try {
-            const embeddingVector = JSON.parse(r.embedding) as number[];
-            similarity = cosineSimilarity(queryEmbedding, embeddingVector);
-          } catch {
-            // Invalid embedding format
-          }
+          similarity = cosineSimilarity(queryEmbedding, r.embedding);
         }
         return {
           content: r.content,
@@ -366,7 +356,7 @@ export async function storeAuditAgentOutput(
     agentName,
     chunkType: 'audit_output_text',
     content: fullTextContent,
-    embedding: withEmbeddings?.[0] ? JSON.stringify(withEmbeddings[0].embedding) : null,
+    embedding: withEmbeddings?.[0]?.embedding ?? null,
     metadata: JSON.stringify({
       category: output.category,
       confidence: output.confidence,
@@ -417,7 +407,7 @@ export async function storeAuditAgentOutput(
       chunkType: 'audit_section_text',
       chunkIndex: i,
       content: sectionText,
-      embedding: sectionEmbeddings?.[0] ? JSON.stringify(sectionEmbeddings[0].embedding) : null,
+      embedding: sectionEmbeddings?.[0]?.embedding ?? null,
       metadata: JSON.stringify({
         category: output.category,
         slug: section.slug,

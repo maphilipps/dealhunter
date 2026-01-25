@@ -36,19 +36,19 @@ export function DeepScanClient({
 
   // Use DeepScan context for stream state
   const deepScan = useDeepScan();
-  const isScanning = deepScan.isStreaming;
+  const isScanning = deepScan.status === 'running' || deepScan.status === 'pending';
   const hasResults = existingNavigation.length > 0 || deepScan.completedExperts.length > 0;
 
   // Show stream when scanning
   useEffect(() => {
-    if (deepScan.isStreaming) {
+    if (deepScan.status === 'running') {
       setShowStream(true);
     }
-  }, [deepScan.isStreaming]);
+  }, [deepScan.status]);
 
   const handleStart = () => {
     setShowStream(true);
-    deepScan.startDeepScan(leadId);
+    deepScan.startDeepScan();
   };
 
   const handleComplete = () => {

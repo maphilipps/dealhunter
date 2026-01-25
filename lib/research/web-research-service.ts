@@ -237,7 +237,7 @@ export async function performWebResearch(query: WebResearchQuery): Promise<WebRe
         chunkIndex: startIndex + idx + 1,
         content: chunk.content,
         tokenCount: chunk.tokenCount,
-        embedding: JSON.stringify(chunk.embedding),
+        embedding: chunk.embedding,
         metadata: JSON.stringify({
           ...chunk.metadata,
           source: 'web_research',

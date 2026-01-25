@@ -34,7 +34,7 @@ export default async function LeadDashboardLayout({
   }
 
   return (
-    <LeadLayoutClient>
+    <LeadLayoutClient leadId={id}>
       <div className="flex h-full w-full gap-4">
         <div className="flex-1 overflow-auto">{children}</div>
         {/* Right Sidebar: Lead-specific Navigation - sticky for scroll persistence */}
@@ -44,6 +44,7 @@ export default async function LeadDashboardLayout({
             customerName={lead.customerName}
             status={lead.status}
             blVote={lead.blVote}
+            deepScanStatus={lead.deepScanStatus}
           />
         </div>
       </div>

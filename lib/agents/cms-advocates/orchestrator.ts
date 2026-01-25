@@ -328,7 +328,7 @@ ${result.comparison.finalRecommendation.nextSteps.map(s => `- ${s}`).join('\n')}
         chunkType: 'analysis',
         chunkIndex: 0,
         content: chunkText,
-        embedding: JSON.stringify(chunksWithEmbeddings[0].embedding),
+        embedding: chunksWithEmbeddings[0].embedding,
         metadata: JSON.stringify({
           recommendedCMS: result.comparison.summary.recommendedCMS,
           recommendationStrength: result.comparison.summary.recommendationStrength,

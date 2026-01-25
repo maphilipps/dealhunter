@@ -1,8 +1,24 @@
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, integer, timestamp, boolean, index, customType } from 'drizzle-orm/pg-core';
 
-export const users = sqliteTable('users', {
+// pgvector Typ für 3072-dimensionale Embeddings (text-embedding-3-large)
+const vector3072 = customType<{ data: number[]; dpiData: string }>({
+  dataType() {
+    return 'vector(3072)';
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(',')}]`;
+  },
+  fromDriver(value: unknown): number[] {
+    // pgvector returns '[1,2,3]' format
+    if (typeof value !== 'string') return [];
+    const cleaned = value.replace(/^\[/, '').replace(/\]$/, '');
+    return cleaned.split(',').map(Number);
+  },
+});
+
+export const users = pgTable('users', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
@@ -13,11 +29,11 @@ export const users = sqliteTable('users', {
     .notNull()
     .default('bd'),
   businessUnitId: text('business_unit_id').references(() => businessUnits.id),
-  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  deletedAt: timestamp('deleted_at'),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
 });
 
-export const preQualifications = sqliteTable(
+export const preQualifications = pgTable(
   'pre_qualifications',
   {
     id: text('id')
@@ -82,24 +98,22 @@ export const preQualifications = sqliteTable(
 
     // Routing
     assignedBusinessUnitId: text('assigned_business_unit_id'),
-    assignedBLNotifiedAt: integer('assigned_bl_notified_at', { mode: 'timestamp' }),
+    assignedBLNotifiedAt: timestamp('assigned_bl_notified_at'),
 
     // Extended Evaluation
     extendedEvaluation: text('extended_evaluation'), // JSON
 
     // Team
     assignedTeam: text('assigned_team'), // JSON
-    teamNotifiedAt: integer('team_notified_at', { mode: 'timestamp' }),
+    teamNotifiedAt: timestamp('team_notified_at'),
 
     // Baseline Comparison (Phase 6)
     baselineComparisonResult: text('baseline_comparison_result'), // JSON - kategorisierte Baseline-Items
-    baselineComparisonCompletedAt: integer('baseline_comparison_completed_at', {
-      mode: 'timestamp',
-    }),
+    baselineComparisonCompletedAt: timestamp('baseline_comparison_completed_at'),
 
     // Project Planning (Phase 7)
     projectPlanningResult: text('project_planning_result'), // JSON - Timeline + Disziplinen-Matrix
-    projectPlanningCompletedAt: integer('project_planning_completed_at', { mode: 'timestamp' }),
+    projectPlanningCompletedAt: timestamp('project_planning_completed_at'),
 
     // Team Notifications (Phase 9)
     teamNotifications: text('team_notifications'), // JSON Array - Versandstatus pro Team-Mitglied
@@ -109,7 +123,7 @@ export const preQualifications = sqliteTable(
 
     // Duplicate Check
     duplicateCheckResult: text('duplicate_check_result'), // JSON - result of duplicate detection
-    descriptionEmbedding: text('description_embedding'), // JSON array - text-embedding-3-large (3072 dimensions)
+    descriptionEmbedding: vector3072('description_embedding'), // text-embedding-3-large (3072 dimensions)
 
     // Error Handling (DEA-91)
     agentErrors: text('agent_errors'), // JSON array - AgentError[] for error tracking
@@ -126,18 +140,20 @@ export const preQualifications = sqliteTable(
     version: integer('version').notNull().default(1),
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
     // CRITICAL: Performance Indexes (TODO-029 Fix)
-    assignedBusinessUnitIdx: index('pre_qualifications_assigned_bu_idx').on(table.assignedBusinessUnitId),
+    assignedBusinessUnitIdx: index('pre_qualifications_assigned_bu_idx').on(
+      table.assignedBusinessUnitId
+    ),
     statusIdx: index('pre_qualifications_status_idx').on(table.status),
     userIdIdx: index('pre_qualifications_user_id_idx').on(table.userId),
   })
 );
 
-export const references = sqliteTable(
+export const references = pgTable(
   'references',
   {
     id: text('id')
@@ -173,15 +189,15 @@ export const references = sqliteTable(
       .notNull()
       .default('pending'),
     adminFeedback: text('admin_feedback'), // Rejection reason
-    isValidated: integer('is_validated', { mode: 'boolean' }).notNull().default(false),
-    validatedAt: integer('validated_at', { mode: 'timestamp' }),
+    isValidated: boolean('is_validated').notNull().default(false),
+    validatedAt: timestamp('validated_at'),
 
     // Audit (Optimistic Locking - NEW for Epic 11)
     version: integer('version').notNull().default(1),
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
     // CRITICAL: Performance Indexes (PERF-001 Fix)
@@ -202,7 +218,7 @@ export type NewPreQualification = typeof preQualifications.$inferInsert;
 export type Reference = typeof references.$inferSelect;
 export type NewReference = typeof references.$inferInsert;
 
-export const competencies = sqliteTable(
+export const competencies = pgTable(
   'competencies',
   {
     id: text('id')
@@ -231,15 +247,15 @@ export const competencies = sqliteTable(
       .notNull()
       .default('pending'),
     adminFeedback: text('admin_feedback'),
-    isValidated: integer('is_validated', { mode: 'boolean' }).notNull().default(false),
-    validatedAt: integer('validated_at', { mode: 'timestamp' }),
+    isValidated: boolean('is_validated').notNull().default(false),
+    validatedAt: timestamp('validated_at'),
 
     // Audit (Optimistic Locking - NEW for Epic 11)
     version: integer('version').notNull().default(1),
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
     // CRITICAL: Performance Indexes (PERF-001 Fix)
@@ -256,7 +272,7 @@ export const competencies = sqliteTable(
 export type Competency = typeof competencies.$inferSelect;
 export type NewCompetency = typeof competencies.$inferInsert;
 
-export const businessUnits = sqliteTable('business_units', {
+export const businessUnits = pgTable('business_units', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
@@ -272,14 +288,14 @@ export const businessUnits = sqliteTable('business_units', {
   keywords: text('keywords').notNull(), // JSON array of strings
 
   // Timestamps
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
 });
 
 export type BusinessUnit = typeof businessUnits.$inferSelect;
 export type NewBusinessUnit = typeof businessUnits.$inferInsert;
 
-export const technologies = sqliteTable('technologies', {
+export const technologies = pgTable('technologies', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
@@ -298,7 +314,7 @@ export const technologies = sqliteTable('technologies', {
   baselineEntityCounts: text('baseline_entity_counts'), // JSON
 
   // Default Flag
-  isDefault: integer('is_default', { mode: 'boolean' }).notNull().default(false),
+  isDefault: boolean('is_default').notNull().default(false),
 
   // === Extended Metadata ===
 
@@ -333,18 +349,18 @@ export const technologies = sqliteTable('technologies', {
   adessoReferenceCount: integer('adesso_reference_count'),
 
   // Research Metadata
-  lastResearchedAt: integer('last_researched_at', { mode: 'timestamp' }),
+  lastResearchedAt: timestamp('last_researched_at'),
   researchStatus: text('research_status'), // pending, completed, failed
 
   // Timestamps
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
 });
 
 export type Technology = typeof technologies.$inferSelect;
 export type NewTechnology = typeof technologies.$inferInsert;
 
-export const employees = sqliteTable(
+export const employees = pgTable(
   'employees',
   {
     id: text('id')
@@ -370,8 +386,8 @@ export const employees = sqliteTable(
       .default('available'),
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
     // CRITICAL: Performance Indexes (TODO-029 Fix)
@@ -382,7 +398,7 @@ export const employees = sqliteTable(
 export type Employee = typeof employees.$inferSelect;
 export type NewEmployee = typeof employees.$inferInsert;
 
-export const auditTrails = sqliteTable(
+export const auditTrails = pgTable(
   'audit_trails',
   {
     id: text('id')
@@ -430,7 +446,7 @@ export const auditTrails = sqliteTable(
     changes: text('changes'), // JSON - deprecated, use previousValue/newValue
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
   },
   table => ({
     userIdx: index('audit_trails_user_idx').on(table.userId),
@@ -444,7 +460,7 @@ export const auditTrails = sqliteTable(
 export type AuditTrail = typeof auditTrails.$inferSelect;
 export type NewAuditTrail = typeof auditTrails.$inferInsert;
 
-export const accounts = sqliteTable('accounts', {
+export const accounts = pgTable('accounts', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
@@ -459,14 +475,14 @@ export const accounts = sqliteTable('accounts', {
   notes: text('notes'),
 
   // Timestamps
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
 });
 
 export type Account = typeof accounts.$inferSelect;
 export type NewAccount = typeof accounts.$inferInsert;
 
-export const quickScans = sqliteTable(
+export const quickScans = pgTable(
   'quick_scans',
   {
     id: text('id')
@@ -526,16 +542,16 @@ export const quickScans = sqliteTable(
 
     // CMS Evaluation (persisted after matching)
     cmsEvaluation: text('cms_evaluation'), // JSON - CMSMatchingResult
-    cmsEvaluationCompletedAt: integer('cms_evaluation_completed_at', { mode: 'timestamp' }),
+    cmsEvaluationCompletedAt: timestamp('cms_evaluation_completed_at'),
 
     // Timeline Estimate (Phase 1 - Quick Scan)
     timeline: text('timeline'), // JSON - ProjectTimeline from Timeline Agent
-    timelineGeneratedAt: integer('timeline_generated_at', { mode: 'timestamp' }),
+    timelineGeneratedAt: timestamp('timeline_generated_at'),
 
     // Timestamps
-    startedAt: integer('started_at', { mode: 'timestamp' }),
-    completedAt: integer('completed_at', { mode: 'timestamp' }),
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
   },
   table => ({
     preQualificationIdx: index('quick_scans_pre_qualification_idx').on(table.preQualificationId),
@@ -545,7 +561,7 @@ export const quickScans = sqliteTable(
 export type QuickScan = typeof quickScans.$inferSelect;
 export type NewQuickScan = typeof quickScans.$inferInsert;
 
-export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
+export const deepMigrationAnalyses = pgTable('deep_migration_analyses', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
@@ -561,8 +577,8 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
   status: text('status', {
     enum: ['pending', 'running', 'completed', 'failed', 'cancelled'],
   }).notNull(),
-  startedAt: integer('started_at', { mode: 'timestamp' }),
-  completedAt: integer('completed_at', { mode: 'timestamp' }),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
   errorMessage: text('error_message'),
 
   // Input Context
@@ -579,14 +595,14 @@ export const deepMigrationAnalyses = sqliteTable('deep_migration_analyses', {
 
   // Metadata
   version: integer('version').notNull().default(1), // For re-runs
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
 });
 
 export type DeepMigrationAnalysis = typeof deepMigrationAnalyses.$inferSelect;
 export type NewDeepMigrationAnalysis = typeof deepMigrationAnalyses.$inferInsert;
 
-export const documents = sqliteTable(
+export const documents = pgTable(
   'documents',
   {
     id: text('id')
@@ -613,8 +629,8 @@ export const documents = sqliteTable(
       .default('initial_upload'),
 
     // Timestamps
-    uploadedAt: integer('uploaded_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    uploadedAt: timestamp('uploaded_at').$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
   },
   table => ({
     preQualificationIdx: index('documents_pre_qualification_idx').on(table.preQualificationId),
@@ -624,7 +640,7 @@ export const documents = sqliteTable(
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;
 
-export const competitors = sqliteTable(
+export const competitors = pgTable(
   'competitors',
   {
     id: text('id')
@@ -656,15 +672,15 @@ export const competitors = sqliteTable(
       .notNull()
       .default('pending'),
     adminFeedback: text('admin_feedback'), // Rejection reason
-    isValidated: integer('is_validated', { mode: 'boolean' }).notNull().default(false),
-    validatedAt: integer('validated_at', { mode: 'timestamp' }),
+    isValidated: boolean('is_validated').notNull().default(false),
+    validatedAt: timestamp('validated_at'),
 
     // Audit (Optimistic Locking)
     version: integer('version').notNull().default(1),
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
     // CRITICAL: Performance Indexes (PERF-001 Fix)
@@ -682,7 +698,7 @@ export const competitors = sqliteTable(
 export type Competitor = typeof competitors.$inferSelect;
 export type NewCompetitor = typeof competitors.$inferInsert;
 
-export const teamAssignments = sqliteTable(
+export const teamAssignments = pgTable(
   'team_assignments',
   {
     id: text('id')
@@ -703,11 +719,13 @@ export const teamAssignments = sqliteTable(
     }).notNull(),
 
     // Timestamps
-    assignedAt: integer('assigned_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    notifiedAt: integer('notified_at', { mode: 'timestamp' }),
+    assignedAt: timestamp('assigned_at').$defaultFn(() => new Date()),
+    notifiedAt: timestamp('notified_at'),
   },
   table => ({
-    preQualificationIdx: index('team_assignments_pre_qualification_idx').on(table.preQualificationId),
+    preQualificationIdx: index('team_assignments_pre_qualification_idx').on(
+      table.preQualificationId
+    ),
     employeeIdx: index('team_assignments_employee_idx').on(table.employeeId),
   })
 );
@@ -715,7 +733,7 @@ export const teamAssignments = sqliteTable(
 export type TeamAssignment = typeof teamAssignments.$inferSelect;
 export type NewTeamAssignment = typeof teamAssignments.$inferInsert;
 
-export const subjectiveAssessments = sqliteTable(
+export const subjectiveAssessments = pgTable(
   'subjective_assessments',
   {
     id: text('id')
@@ -744,11 +762,13 @@ export const subjectiveAssessments = sqliteTable(
     version: integer('version').notNull().default(1),
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
-    preQualificationIdx: index('subjective_assessments_pre_qualification_idx').on(table.preQualificationId),
+    preQualificationIdx: index('subjective_assessments_pre_qualification_idx').on(
+      table.preQualificationId
+    ),
     userIdx: index('subjective_assessments_user_idx').on(table.userId),
   })
 );
@@ -756,7 +776,7 @@ export const subjectiveAssessments = sqliteTable(
 export type SubjectiveAssessment = typeof subjectiveAssessments.$inferSelect;
 export type NewSubjectiveAssessment = typeof subjectiveAssessments.$inferInsert;
 
-export const backgroundJobs = sqliteTable(
+export const backgroundJobs = pgTable(
   'background_jobs',
   {
     id: text('id')
@@ -765,12 +785,14 @@ export const backgroundJobs = sqliteTable(
 
     // Job Details
     jobType: text('job_type', {
-      enum: ['deep-analysis', 'team-notification', 'cleanup'],
+      enum: ['deep-analysis', 'deep-scan', 'team-notification', 'cleanup'],
     }).notNull(),
     inngestRunId: text('inngest_run_id'), // Inngest execution ID for tracking
+    bullmqJobId: text('bullmq_job_id'), // BullMQ job ID for tracking
 
     // References
     preQualificationId: text('pre_qualification_id').references(() => preQualifications.id),
+    qualificationId: text('qualification_id').references(() => qualifications.id),
     userId: text('user_id')
       .notNull()
       .references(() => users.id),
@@ -786,6 +808,12 @@ export const backgroundJobs = sqliteTable(
     progress: integer('progress').notNull().default(0),
     currentStep: text('current_step'), // Description of current operation
 
+    // Deep Scan specific fields
+    currentExpert: text('current_expert'), // Currently running expert name
+    completedExperts: text('completed_experts'), // JSON array of completed expert names
+    pendingExperts: text('pending_experts'), // JSON array of pending expert names (for selective re-scan)
+    sectionConfidences: text('section_confidences'), // JSON object: { sectionId: confidence }
+
     // Results
     result: text('result'), // JSON - success result data
     errorMessage: text('error_message'),
@@ -795,13 +823,16 @@ export const backgroundJobs = sqliteTable(
     maxAttempts: integer('max_attempts').notNull().default(3),
 
     // Timestamps
-    startedAt: integer('started_at', { mode: 'timestamp' }),
-    completedAt: integer('completed_at', { mode: 'timestamp' }),
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
-    preQualificationIdx: index('background_jobs_pre_qualification_idx').on(table.preQualificationId),
+    preQualificationIdx: index('background_jobs_pre_qualification_idx').on(
+      table.preQualificationId
+    ),
+    qualificationIdx: index('background_jobs_qualification_idx').on(table.qualificationId),
     statusIdx: index('background_jobs_status_idx').on(table.status),
     jobTypeIdx: index('background_jobs_job_type_idx').on(table.jobType),
     createdAtIdx: index('background_jobs_created_at_idx').on(table.createdAt),
@@ -980,7 +1011,7 @@ export const auditTrailsRelations = relations(auditTrails, ({ one }) => ({
 
 // ===== Phase 2: Qualification Management (DEA-66) =====
 
-export const qualifications = sqliteTable(
+export const qualifications = pgTable(
   'qualifications',
   {
     id: text('id')
@@ -1024,14 +1055,14 @@ export const qualifications = sqliteTable(
 
     // BL Decision
     blVote: text('bl_vote', { enum: ['BID', 'NO-BID'] }),
-    blVotedAt: integer('bl_voted_at', { mode: 'timestamp' }),
+    blVotedAt: timestamp('bl_voted_at'),
     blVotedByUserId: text('bl_voted_by_user_id').references(() => users.id),
     blReasoning: text('bl_reasoning'),
     blConfidenceScore: integer('bl_confidence_score'), // 0-100
 
     // Request More Info
-    moreInfoRequested: integer('more_info_requested', { mode: 'boolean' }).notNull().default(false),
-    moreInfoRequestedAt: integer('more_info_requested_at', { mode: 'timestamp' }),
+    moreInfoRequested: boolean('more_info_requested').notNull().default(false),
+    moreInfoRequestedAt: timestamp('more_info_requested_at'),
     moreInfoNotes: text('more_info_notes'),
 
     // Deep Scan Status (DEA-139)
@@ -1040,22 +1071,22 @@ export const qualifications = sqliteTable(
     })
       .notNull()
       .default('pending'),
-    deepScanStartedAt: integer('deep_scan_started_at', { mode: 'timestamp' }),
-    deepScanCompletedAt: integer('deep_scan_completed_at', { mode: 'timestamp' }),
+    deepScanStartedAt: timestamp('deep_scan_started_at'),
+    deepScanCompletedAt: timestamp('deep_scan_completed_at'),
 
     // Deep Scan Checkpoints (Robust Resume Support)
     deepScanCurrentPhase: text('deep_scan_current_phase'), // 'scraping' | 'phase2' | 'phase3'
     deepScanCompletedExperts: text('deep_scan_completed_experts'), // JSON array: ['website', 'tech', ...]
-    deepScanLastCheckpoint: integer('deep_scan_last_checkpoint', { mode: 'timestamp' }),
+    deepScanLastCheckpoint: timestamp('deep_scan_last_checkpoint'),
     deepScanError: text('deep_scan_error'), // Last error for debugging
 
     // CMS Selection (DEA-151)
     selectedCmsId: text('selected_cms_id').references(() => technologies.id),
 
     // Timestamps
-    routedAt: integer('routed_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    routedAt: timestamp('routed_at').$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
     preQualificationIdx: index('qualifications_pre_qualification_idx').on(table.preQualificationId),
@@ -1068,7 +1099,7 @@ export const qualifications = sqliteTable(
 export type Qualification = typeof qualifications.$inferSelect;
 export type NewQualification = typeof qualifications.$inferInsert;
 
-export const qualificationSectionData = sqliteTable(
+export const qualificationSectionData = pgTable(
   'qualification_section_data',
   {
     id: text('id')
@@ -1089,19 +1120,24 @@ export const qualificationSectionData = sqliteTable(
     sources: text('sources'), // JSON - array of source references
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
-    qualificationSectionIdx: index('qualification_section_data_qualification_section_idx').on(table.qualificationId, table.sectionId),
-    qualificationIdx: index('qualification_section_data_qualification_idx').on(table.qualificationId),
+    qualificationSectionIdx: index('qualification_section_data_qualification_section_idx').on(
+      table.qualificationId,
+      table.sectionId
+    ),
+    qualificationIdx: index('qualification_section_data_qualification_idx').on(
+      table.qualificationId
+    ),
   })
 );
 
 export type QualificationSectionData = typeof qualificationSectionData.$inferSelect;
 export type NewQualificationSectionData = typeof qualificationSectionData.$inferInsert;
 
-export const websiteAudits = sqliteTable(
+export const websiteAudits = pgTable(
   'website_audits',
   {
     id: text('id')
@@ -1175,9 +1211,9 @@ export const websiteAudits = sqliteTable(
     rawAuditData: text('raw_audit_data'), // JSON
 
     // Timestamps
-    startedAt: integer('started_at', { mode: 'timestamp' }),
-    completedAt: integer('completed_at', { mode: 'timestamp' }),
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
   },
   table => ({
     qualificationIdx: index('website_audits_qualification_idx').on(table.qualificationId),
@@ -1188,7 +1224,7 @@ export const websiteAudits = sqliteTable(
 export type WebsiteAudit = typeof websiteAudits.$inferSelect;
 export type NewWebsiteAudit = typeof websiteAudits.$inferInsert;
 
-export const cmsMatchResults = sqliteTable(
+export const cmsMatchResults = pgTable(
   'cms_match_results',
   {
     id: text('id')
@@ -1219,10 +1255,10 @@ export const cmsMatchResults = sqliteTable(
 
     // Recommendation
     rank: integer('rank').notNull(), // 1 = best match
-    isRecommended: integer('is_recommended', { mode: 'boolean' }).notNull().default(false),
+    isRecommended: boolean('is_recommended').notNull().default(false),
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
   },
   table => ({
     qualificationIdx: index('cms_match_results_qualification_idx').on(table.qualificationId),
@@ -1234,7 +1270,7 @@ export const cmsMatchResults = sqliteTable(
 export type CmsMatchResult = typeof cmsMatchResults.$inferSelect;
 export type NewCmsMatchResult = typeof cmsMatchResults.$inferInsert;
 
-export const baselineComparisons = sqliteTable(
+export const baselineComparisons = pgTable(
   'baseline_comparisons',
   {
     id: text('id')
@@ -1275,7 +1311,7 @@ export const baselineComparisons = sqliteTable(
     recommendations: text('recommendations'), // JSON - optimization suggestions
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
   },
   table => ({
     qualificationIdx: index('baseline_comparisons_qualification_idx').on(table.qualificationId),
@@ -1286,7 +1322,7 @@ export const baselineComparisons = sqliteTable(
 export type BaselineComparison = typeof baselineComparisons.$inferSelect;
 export type NewBaselineComparison = typeof baselineComparisons.$inferInsert;
 
-export const ptEstimations = sqliteTable(
+export const ptEstimations = pgTable(
   'pt_estimations',
   {
     id: text('id')
@@ -1322,7 +1358,7 @@ export const ptEstimations = sqliteTable(
     assumptions: text('assumptions'), // JSON array
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
   },
   table => ({
     qualificationIdx: index('pt_estimations_qualification_idx').on(table.qualificationId),
@@ -1332,7 +1368,7 @@ export const ptEstimations = sqliteTable(
 export type PtEstimation = typeof ptEstimations.$inferSelect;
 export type NewPtEstimation = typeof ptEstimations.$inferInsert;
 
-export const referenceMatches = sqliteTable(
+export const referenceMatches = pgTable(
   'reference_matches',
   {
     id: text('id')
@@ -1361,7 +1397,7 @@ export const referenceMatches = sqliteTable(
     rank: integer('rank').notNull(),
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
   },
   table => ({
     qualificationIdx: index('reference_matches_qualification_idx').on(table.qualificationId),
@@ -1373,7 +1409,7 @@ export const referenceMatches = sqliteTable(
 export type ReferenceMatch = typeof referenceMatches.$inferSelect;
 export type NewReferenceMatch = typeof referenceMatches.$inferInsert;
 
-export const competitorMatches = sqliteTable(
+export const competitorMatches = pgTable(
   'competitor_matches',
   {
     id: text('id')
@@ -1394,11 +1430,11 @@ export const competitorMatches = sqliteTable(
     reasoning: text('reasoning'),
 
     // Intelligence
-    likelyInvolved: integer('likely_involved', { mode: 'boolean' }).notNull().default(false),
+    likelyInvolved: boolean('likely_involved').notNull().default(false),
     encounterHistory: text('encounter_history'), // JSON - past encounters
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
   },
   table => ({
     qualificationIdx: index('competitor_matches_qualification_idx').on(table.qualificationId),
@@ -1479,7 +1515,7 @@ export type ChunkCategory = (typeof CHUNK_CATEGORIES)[number];
 // ============================================================================
 // Replaces both rfpEmbeddings and leadEmbeddings with a single unified table.
 // Either preQualificationId OR qualificationId must be set (constraint enforced at application level).
-export const dealEmbeddings = sqliteTable(
+export const dealEmbeddings = pgTable(
   'deal_embeddings',
   {
     id: text('id')
@@ -1487,8 +1523,12 @@ export const dealEmbeddings = sqliteTable(
       .$defaultFn(() => createId()),
 
     // Foreign Keys - At least one must be set
-    preQualificationId: text('pre_qualification_id').references(() => preQualifications.id, { onDelete: 'cascade' }),
-    qualificationId: text('qualification_id').references(() => qualifications.id, { onDelete: 'cascade' }),
+    preQualificationId: text('pre_qualification_id').references(() => preQualifications.id, {
+      onDelete: 'cascade',
+    }),
+    qualificationId: text('qualification_id').references(() => qualifications.id, {
+      onDelete: 'cascade',
+    }),
 
     // Agent & Chunk Metadata
     agentName: text('agent_name').notNull(), // 'extract', 'quick_scan', 'scraper', 'audit_website_expert', etc.
@@ -1500,29 +1540,40 @@ export const dealEmbeddings = sqliteTable(
     metadata: text('metadata'), // JSON - additional chunk metadata
 
     // Vector Embedding
-    embedding: text('embedding'), // JSON array - 3072 dimensions (text-embedding-3-large), nullable for screenshots
+    embedding: vector3072('embedding'), // 3072 dimensions (text-embedding-3-large), nullable for screenshots
 
     // === RAG Architektur: Fakten vs. Ausarbeitungen ===
     chunkCategory: text('chunk_category', {
       enum: ['fact', 'elaboration', 'recommendation', 'risk', 'estimate'],
     }).default('elaboration'),
     confidence: integer('confidence').default(50), // 0-100 scale
-    requiresValidation: integer('requires_validation', { mode: 'boolean' }).default(false),
-    validatedAt: integer('validated_at', { mode: 'timestamp' }),
+    requiresValidation: boolean('requires_validation').default(false),
+    validatedAt: timestamp('validated_at'),
     validatedBy: text('validated_by'), // User ID
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
     // PreQualification-specific indexes
-    preQualificationIdx: index('deal_embeddings_pre_qualification_idx').on(table.preQualificationId),
-    preQualificationChunkIdx: index('deal_embeddings_pre_qualification_chunk_idx').on(table.preQualificationId, table.chunkType),
-    preQualificationAgentIdx: index('deal_embeddings_pre_qualification_agent_idx').on(table.preQualificationId, table.agentName),
+    preQualificationIdx: index('deal_embeddings_pre_qualification_idx').on(
+      table.preQualificationId
+    ),
+    preQualificationChunkIdx: index('deal_embeddings_pre_qualification_chunk_idx').on(
+      table.preQualificationId,
+      table.chunkType
+    ),
+    preQualificationAgentIdx: index('deal_embeddings_pre_qualification_agent_idx').on(
+      table.preQualificationId,
+      table.agentName
+    ),
     // Qualification-specific indexes
     qualificationIdx: index('deal_embeddings_qualification_idx').on(table.qualificationId),
-    qualificationAgentIdx: index('deal_embeddings_qualification_agent_idx').on(table.qualificationId, table.agentName),
+    qualificationAgentIdx: index('deal_embeddings_qualification_agent_idx').on(
+      table.qualificationId,
+      table.agentName
+    ),
     qualificationCategoryIdx: index('deal_embeddings_qualification_category_idx').on(
       table.qualificationId,
       table.chunkCategory
@@ -1545,7 +1596,7 @@ export const dealEmbeddingsRelations = relations(dealEmbeddings, ({ one }) => ({
 }));
 
 // RAW PDF Chunks - Original document text for RAG-based extraction (DEA-108)
-export const rawChunks = sqliteTable(
+export const rawChunks = pgTable(
   'raw_chunks',
   {
     id: text('id')
@@ -1561,13 +1612,13 @@ export const rawChunks = sqliteTable(
     tokenCount: integer('token_count').notNull(), // Estimated token count
 
     // Vector
-    embedding: text('embedding').notNull(), // JSON array - 3072 dimensions (text-embedding-3-large)
+    embedding: vector3072('embedding').notNull(), // 3072 dimensions (text-embedding-3-large)
 
     // Additional Metadata
     metadata: text('metadata'), // JSON - position, type, etc.
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
   },
   table => ({
     preQualificationIdx: index('raw_chunks_pre_qualification_idx').on(table.preQualificationId),
@@ -1619,7 +1670,7 @@ export const competitorMatchesRelations = relations(competitorMatches, ({ one })
 
 // ===== Pitchdeck Assembly (DEA-155) =====
 
-export const pitchdecks = sqliteTable(
+export const pitchdecks = pgTable(
   'pitchdecks',
   {
     id: text('id')
@@ -1639,15 +1690,15 @@ export const pitchdecks = sqliteTable(
       .default('draft'),
 
     // Team Confirmation
-    teamConfirmedAt: integer('team_confirmed_at', { mode: 'timestamp' }),
+    teamConfirmedAt: timestamp('team_confirmed_at'),
     teamConfirmedByUserId: text('team_confirmed_by_user_id').references(() => users.id),
 
     // Submission
-    submittedAt: integer('submitted_at', { mode: 'timestamp' }),
+    submittedAt: timestamp('submitted_at'),
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
     qualificationIdx: index('pitchdecks_qualification_idx').on(table.qualificationId),
@@ -1658,7 +1709,7 @@ export const pitchdecks = sqliteTable(
 export type Pitchdeck = typeof pitchdecks.$inferSelect;
 export type NewPitchdeck = typeof pitchdecks.$inferInsert;
 
-export const pitchdeckDeliverables = sqliteTable(
+export const pitchdeckDeliverables = pgTable(
   'pitchdeck_deliverables',
   {
     id: text('id')
@@ -1679,7 +1730,7 @@ export const pitchdeckDeliverables = sqliteTable(
       .default('open'),
 
     // Timeline
-    internalDeadline: integer('internal_deadline', { mode: 'timestamp' }),
+    internalDeadline: timestamp('internal_deadline'),
 
     // Assignment
     assignedToEmployeeId: text('assigned_to_employee_id').references(() => employees.id),
@@ -1691,11 +1742,11 @@ export const pitchdeckDeliverables = sqliteTable(
     visualIdeas: text('visual_ideas'), // Visualization ideas
 
     // Generation Timestamp
-    generatedAt: integer('generated_at', { mode: 'timestamp' }),
+    generatedAt: timestamp('generated_at'),
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
     pitchdeckIdx: index('pitchdeck_deliverables_pitchdeck_idx').on(table.pitchdeckId),
@@ -1706,7 +1757,7 @@ export const pitchdeckDeliverables = sqliteTable(
 export type PitchdeckDeliverable = typeof pitchdeckDeliverables.$inferSelect;
 export type NewPitchdeckDeliverable = typeof pitchdeckDeliverables.$inferInsert;
 
-export const pitchdeckTeamMembers = sqliteTable(
+export const pitchdeckTeamMembers = pgTable(
   'pitchdeck_team_members',
   {
     id: text('id')
@@ -1729,7 +1780,7 @@ export const pitchdeckTeamMembers = sqliteTable(
     }).notNull(),
 
     // Timestamps
-    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
   },
   table => ({
     pitchdeckIdx: index('pitchdeck_team_members_pitchdeck_idx').on(table.pitchdeckId),

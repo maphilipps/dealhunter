@@ -137,7 +137,7 @@ export async function embedRawText(
         chunkIndex: chunk.chunkIndex,
         content: chunk.content,
         tokenCount: chunk.tokenCount,
-        embedding: JSON.stringify(chunk.embedding),
+        embedding: chunk.embedding,
         metadata: JSON.stringify(chunk.metadata),
       }))
     );

@@ -120,14 +120,12 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
       system: options.system,
       prompt: options.prompt,
       temperature: options.temperature ?? defaultSettings.deterministic.temperature,
-      maxTokens: options.maxTokens ?? defaultSettings.deterministic.maxTokens,
+      maxOutputTokens: options.maxTokens ?? defaultSettings.deterministic.maxTokens,
       maxRetries: 3, // Built-in retry for rate limits
     });
 
     // Log token usage for monitoring
-    console.log(
-      `[AI] Generated object with ${modelName}: ${usage.totalTokens} tokens`
-    );
+    console.log(`[AI] Generated object with ${modelName}: ${usage.totalTokens} tokens`);
 
     return object as z.infer<T>;
   } catch (error) {

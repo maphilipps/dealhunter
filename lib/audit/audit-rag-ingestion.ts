@@ -311,9 +311,7 @@ export async function ingestAuditToRAG(
           chunkType,
           chunkIndex: globalChunkIndex++,
           content: chunkContent,
-          embedding: withEmbedding?.[0]?.embedding
-            ? JSON.stringify(withEmbedding[0].embedding)
-            : null,
+          embedding: withEmbedding?.[0]?.embedding ?? null,
           metadata: JSON.stringify({
             sourceFile: file.filename,
             sourceType: file.sourceType,

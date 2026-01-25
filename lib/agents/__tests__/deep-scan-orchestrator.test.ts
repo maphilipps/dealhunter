@@ -148,7 +148,7 @@ describe('deep-scan-orchestrator', () => {
         'overview',
         'technology',
         'website-analysis',
-        'cms-architecture',
+        'target-architecture',
         'cms-comparison',
         'hosting',
         'integrations',

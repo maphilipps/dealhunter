@@ -7,12 +7,26 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 
 import { z } from 'zod';
+import { createOpenAI } from '@ai-sdk/openai';
+import { generateObject } from 'ai';
 
 // Lazy-initialized OpenAI clients to reduce bundle size
 // Only the OpenAI SDK is imported (not multiple providers)
 // This implements Vercel React Best Practice: bundle-conditional
 let openaiInstance: any = null;
 let openaiDirectInstance: any = null;
+
+// Initialize AI SDK OpenAI provider
+export const aiHubOpenAI = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+});
+
+// Direct OpenAI provider for specific models if needed
+export const directOpenAI = createOpenAI({
+  apiKey: process.env.OPENAI_EMBEDDING_API_KEY, // Use specific key if needed
+  baseURL: 'https://api.openai.com/v1',
+});
 
 /**
  * Get or create the AI Hub client (for Claude models via adesso AI Hub)
@@ -67,6 +81,8 @@ export const modelNames = {
   quality: 'gemini-3-flash-preview',
   premium: 'gemini-3-flash-preview',
   'sonnet-4-5': 'gemini-3-flash-preview',
+  // Fast synthesizer model for section synthesis (lower latency)
+  synthesizer: 'claude-haiku-*',
 } as const;
 
 export const defaultSettings = {
@@ -94,95 +110,27 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
   temperature?: number;
   maxTokens?: number;
 }): Promise<z.infer<T>> {
-  const modelName = modelNames[options.model ?? 'default'];
+  const modelKey = options.model ?? 'default';
+  const modelName = modelNames[modelKey];
 
-  // Enhance system prompt to explicitly request JSON output
-  const jsonSystemPrompt = `${options.system}
-
-CRITICAL: You MUST respond with valid JSON only. No markdown, no explanations, no code blocks.
-Start your response with { and end with }. Ensure all required fields are present.`;
-
-  const completion = await openai.chat.completions.create({
-    model: modelName,
-    messages: [
-      { role: 'system', content: jsonSystemPrompt },
-      { role: 'user', content: options.prompt },
-    ],
-    temperature: options.temperature ?? defaultSettings.deterministic.temperature,
-    max_tokens: options.maxTokens ?? defaultSettings.deterministic.maxTokens,
-  });
-
-  const responseText = completion.choices[0]?.message?.content || '{}';
-
-  // Clean response: remove markdown code blocks and trim
-  let cleanedResponse = responseText
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '')
-    .trim();
-
-  // Try to extract JSON if response contains other text
-  const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    cleanedResponse = jsonMatch[0];
-  }
-
-  let rawResult: Record<string, unknown>;
   try {
-    rawResult = JSON.parse(cleanedResponse);
-  } catch (parseError) {
-    // Try to repair truncated JSON by closing open brackets
-    let repairedJson = cleanedResponse;
+    const { object, usage } = await generateObject({
+      model: aiHubOpenAI(modelName),
+      schema: options.schema as any,
+      system: options.system,
+      prompt: options.prompt,
+      temperature: options.temperature ?? defaultSettings.deterministic.temperature,
+      maxOutputTokens: options.maxTokens ?? defaultSettings.deterministic.maxTokens,
+      maxRetries: 3, // Built-in retry for rate limits
+    });
 
-    // Count open brackets and close them
-    const openBraces = (repairedJson.match(/\{/g) || []).length;
-    const closeBraces = (repairedJson.match(/\}/g) || []).length;
-    const openBrackets = (repairedJson.match(/\[/g) || []).length;
-    const closeBrackets = (repairedJson.match(/\]/g) || []).length;
+    // Log token usage for monitoring
+    console.log(`[AI] Generated object with ${modelName}: ${usage.totalTokens} tokens`);
 
-    // Remove trailing incomplete elements (after last comma)
-    repairedJson = repairedJson.replace(/,\s*"[^"]*"?\s*:?\s*[^,\]}]*$/, '');
-    repairedJson = repairedJson.replace(/,\s*\{[^}]*$/, '');
-    repairedJson = repairedJson.replace(/,\s*$/, '');
-
-    // Close unclosed brackets
-    for (let i = 0; i < openBrackets - closeBrackets; i++) {
-      repairedJson += ']';
-    }
-    for (let i = 0; i < openBraces - closeBraces; i++) {
-      repairedJson += '}';
-    }
-
-    try {
-      rawResult = JSON.parse(repairedJson);
-      console.warn('[generateStructuredOutput] Repaired truncated JSON successfully');
-    } catch {
-      console.error(
-        '[generateStructuredOutput] JSON parse failed. Response:',
-        cleanedResponse.slice(0, 500)
-      );
-      console.error('[generateStructuredOutput] Parse error:', parseError);
-      rawResult = {};
-    }
+    return object as z.infer<T>;
+  } catch (error) {
+    console.error('[generateStructuredOutput] Error:', error);
+    // Propagate error for the caller to handle, now with better types from AI SDK
+    throw error;
   }
-
-  // Normalize common field name aliases
-  const fieldAliases: Record<string, string> = {
-    legal_requirements: 'requirements',
-    tech_requirements: 'requirements',
-    deliverable_items: 'deliverables',
-    timeline_milestones: 'milestones',
-  };
-
-  for (const [alias, canonical] of Object.entries(fieldAliases)) {
-    if (alias in rawResult && !(canonical in rawResult)) {
-      rawResult[canonical] = rawResult[alias];
-      delete rawResult[alias];
-    }
-  }
-
-  const cleanedResult = Object.fromEntries(
-    Object.entries(rawResult).filter(([_, v]) => v !== null)
-  );
-
-  return options.schema.parse(cleanedResult);
 }

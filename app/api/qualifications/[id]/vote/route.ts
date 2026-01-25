@@ -100,7 +100,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Authorization: User must be 'bl' role AND assigned to this business unit
     if (currentUser.role !== 'bl' && currentUser.role !== 'admin') {
       return NextResponse.json(
-        { error: 'Forbidden: Only Business Line Leads can vote on leads' },
+        { error: 'Forbidden: Only Business Line Leaders can vote on qualifications' },
         { status: 403 }
       );
     }

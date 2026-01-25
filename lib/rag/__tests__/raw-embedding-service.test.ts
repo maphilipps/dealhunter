@@ -121,8 +121,8 @@ describe('raw-embedding-service', () => {
     });
 
     it('should batch large chunk arrays', async () => {
-      // Create 150 chunks (more than EMBEDDING_BATCH_SIZE of 100)
-      const mockChunks: RawChunk[] = Array(150)
+      // Create 2500 chunks (more than EMBEDDING_BATCH_SIZE of 2048)
+      const mockChunks: RawChunk[] = Array(2500)
         .fill(null)
         .map((_, i) => ({
           chunkIndex: i,
@@ -138,14 +138,12 @@ describe('raw-embedding-service', () => {
       const mockEmbedding = Array(3072).fill(0.1);
       const mockClient = {
         embeddings: {
-          create: vi.fn().mockResolvedValue({
-            data: Array(100)
-              .fill(null)
-              .map((_, i) => ({ embedding: mockEmbedding, index: i })),
+          create: vi.fn().mockImplementation(({ input }) => ({
+            data: input.map((_: string, i: number) => ({ embedding: mockEmbedding, index: i })),
             model: 'text-embedding-3-large',
-            usage: { prompt_tokens: 100, total_tokens: 100 },
+            usage: { prompt_tokens: input.length, total_tokens: input.length },
             object: 'list',
-          }),
+          })),
         },
       };
       vi.mocked(getEmbeddingClient).mockReturnValue(
@@ -154,10 +152,10 @@ describe('raw-embedding-service', () => {
 
       const result = await generateRawChunkEmbeddings(mockChunks);
 
-      // Should have been called twice (100 + 50)
+      // Should have been called twice (2048 + 452)
       expect(mockClient.embeddings.create).toHaveBeenCalledTimes(2);
       expect(result).not.toBeNull();
-      expect(result).toHaveLength(150);
+      expect(result).toHaveLength(2500);
     });
   });
 

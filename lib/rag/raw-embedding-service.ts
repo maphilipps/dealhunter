@@ -21,8 +21,8 @@ import {
 import { db } from '@/lib/db';
 import { rawChunks } from '@/lib/db/schema';
 
-// Batch size for embedding API calls (OpenAI supports up to 2048 inputs)
-const EMBEDDING_BATCH_SIZE = 100;
+// Batch size for embedding API calls (OpenAI maximum is 2048 inputs)
+const EMBEDDING_BATCH_SIZE = 2048;
 
 export interface RawChunkWithEmbedding extends RawChunk {
   embedding: number[];

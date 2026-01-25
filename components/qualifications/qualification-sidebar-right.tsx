@@ -269,9 +269,10 @@ export function LeadSidebarRight({
                     );
                   };
 
-                  // Content to render (collapsible or single item)
+                  // Content to render (collapsible, always-expanded, or single item)
                   const content =
                     hasSubsections && section.collapsed ? (
+                      // Collapsible section (can be toggled)
                       <Collapsible
                         key={section.id}
                         open={isOpen}
@@ -323,7 +324,63 @@ export function LeadSidebarRight({
                           </CollapsibleContent>
                         </SidebarMenuItem>
                       </Collapsible>
+                    ) : hasSubsections && !section.collapsed ? (
+                      // Always-expanded section (subsections always visible)
+                      <SidebarMenuItem key={section.id}>
+                        <BlockedWrapper>
+                          {isClickable ? (
+                            <SidebarMenuButton asChild isActive={isActive}>
+                              <Link href={sectionRoute}>
+                                {IconComponent && <IconComponent className="h-4 w-4" />}
+                                <span>{section.label}</span>
+                                {getStatusBadge(sectionStatus)}
+                              </Link>
+                            </SidebarMenuButton>
+                          ) : (
+                            <SidebarMenuButton isActive={false}>
+                              {IconComponent && <IconComponent className="h-4 w-4" />}
+                              <span>{section.label}</span>
+                              {getStatusBadge(sectionStatus)}
+                            </SidebarMenuButton>
+                          )}
+                        </BlockedWrapper>
+                        <SidebarMenuSub>
+                          {section.subsections?.map(subsection => {
+                            const subsectionRoute = `/qualifications/${leadId}/${subsection.route}`;
+                            const isSubActive = pathname === subsectionRoute;
+                            const isSubClickable = isSectionClickable(subsection.id);
+
+                            if (!isSubClickable) {
+                              return (
+                                <SidebarMenuSubItem key={subsection.id}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="opacity-50 cursor-not-allowed px-2 py-1.5">
+                                        <span className="text-sm">{subsection.label}</span>
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">
+                                      <p>DeepScan erforderlich</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </SidebarMenuSubItem>
+                              );
+                            }
+
+                            return (
+                              <SidebarMenuSubItem key={subsection.id}>
+                                <SidebarMenuSubButton asChild isActive={isSubActive}>
+                                  <Link href={subsectionRoute}>
+                                    <span>{subsection.label}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            );
+                          })}
+                        </SidebarMenuSub>
+                      </SidebarMenuItem>
                     ) : (
+                      // Single item without subsections
                       <SidebarMenuItem key={section.id}>
                         <BlockedWrapper>
                           {isClickable ? (

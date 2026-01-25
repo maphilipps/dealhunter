@@ -112,15 +112,15 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     const Icon = icon ? iconMap[icon] : null;
 
     return (
-      <Card className={cn(variantStyles[variant], 'mb-4')}>
-        <CardHeader>
+      <Card className={cn(variantStyles[variant], 'mb-6')}>
+        <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
             {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
             <CardTitle>{title}</CardTitle>
           </div>
           {description && <CardDescription>{description}</CardDescription>}
         </CardHeader>
-        {children && <CardContent>{children}</CardContent>}
+        {children && <CardContent className="space-y-4">{children}</CardContent>}
       </Card>
     );
   },
@@ -357,9 +357,9 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     };
 
     const gapClasses = {
-      sm: 'gap-2',
-      md: 'gap-4',
-      lg: 'gap-6',
+      sm: 'gap-3',
+      md: 'gap-5',
+      lg: 'gap-8',
     };
 
     return (
@@ -387,9 +387,9 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     };
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         {title && <p className="font-medium text-sm">{title}</p>}
-        <ul className="list-disc list-inside space-y-1">
+        <ul className="list-disc list-inside space-y-2">
           {items.map((item, idx) => (
             <li key={idx} className="text-sm text-muted-foreground">
               {item}
@@ -438,15 +438,15 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     };
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">{title}</h3>
-            {description && <p className="text-sm text-muted-foreground">{description}</p>}
+            {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
           </div>
           {badge && <Badge variant={badgeVariant}>{badge}</Badge>}
         </div>
-        {children}
+        {children && <div className="space-y-3">{children}</div>}
       </div>
     );
   },
@@ -2415,12 +2415,16 @@ export function QuickScanRenderer({ tree }: RenderTreeProps): React.ReactElement
     const childElements = element.children
       ?.map(childKey => {
         const child = renderElement(childKey);
-        return child ? <div key={childKey}>{child}</div> : null;
+        return child ? (
+          <div key={childKey} className="mb-4 last:mb-0">
+            {child}
+          </div>
+        ) : null;
       })
       .filter(Boolean) as React.ReactElement[];
 
     return <Component element={element}>{childElements}</Component>;
   };
 
-  return <div className="space-y-4">{renderElement(tree.root)}</div>;
+  return <div className="space-y-6">{renderElement(tree.root)}</div>;
 }

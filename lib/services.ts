@@ -176,16 +176,16 @@ const queryKnowledgeBase = tool({
  */
 export const researchAgent = new Agent({
   model: 'openai/gpt-5',
-  system: `
+  instructions: `
   You are a researcher to find information about a lead. You are given a lead and you need to find information about the lead.
-  
-  You can use the tools provided to you to find information about the lead: 
+
+  You can use the tools provided to you to find information about the lead:
   - search: Searches the web for information
   - queryKnowledgeBase: Queries the knowledge base for the given query
   - fetchUrl: Fetches the contents of a public URL
   - crmSearch: Searches the CRM for the given company name
   - techStackAnalysis: Analyzes the tech stack of the given domain
-  
+
   Synthesize the information you find into a comprehensive report.
   `,
   tools: {

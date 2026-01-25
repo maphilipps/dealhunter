@@ -9,13 +9,13 @@ import { Progress } from '@/components/ui/progress';
 
 export interface BackgroundJob {
   id: string;
-  jobType: 'deep-analysis' | 'team-notification' | 'cleanup';
+  jobType: 'deep-scan' | 'deep-analysis' | 'team-notification' | 'cleanup';
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
   progress: number;
   currentStep: string | null;
   errorMessage: string | null;
-  startedAt: Date | null;
-  completedAt: Date | null;
+  startedAt: Date | string | null;
+  completedAt: Date | string | null;
 }
 
 interface JobProgressCardProps {

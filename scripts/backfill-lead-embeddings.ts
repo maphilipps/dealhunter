@@ -42,7 +42,7 @@ async function main() {
   const allChunksWithoutEmbeddings = await db
     .select()
     .from(dealEmbeddings)
-    .where(or(isNull(dealEmbeddings.embedding), eq(dealEmbeddings.embedding, '')));
+    .where(isNull(dealEmbeddings.embedding));
 
   console.log(`\nFound ${allChunksWithoutEmbeddings.length} chunks without embeddings`);
 
@@ -102,7 +102,7 @@ async function main() {
 
         await db
           .update(dealEmbeddings)
-          .set({ embedding: JSON.stringify(embedding) })
+          .set({ embedding: embedding })
           .where(eq(dealEmbeddings.id, chunk.id));
 
         processed++;

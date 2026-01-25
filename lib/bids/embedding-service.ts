@@ -92,18 +92,13 @@ export function similarityToPercentage(similarity: number): number {
 }
 
 /**
- * Parse embedding from JSON string stored in database
+ * Parse embedding from database (pgvector returns number[] directly)
  */
-export function parseEmbedding(embeddingJson: string | null): number[] | null {
-  if (!embeddingJson) return null;
+export function parseEmbedding(embedding: number[] | null): number[] | null {
+  if (!embedding) return null;
 
-  try {
-    const parsed = JSON.parse(embeddingJson);
-    if (Array.isArray(parsed) && parsed.length === EMBEDDING_DIMENSIONS) {
-      return parsed;
-    }
-    return null;
-  } catch {
-    return null;
+  if (Array.isArray(embedding) && embedding.length === EMBEDDING_DIMENSIONS) {
+    return embedding;
   }
+  return null;
 }

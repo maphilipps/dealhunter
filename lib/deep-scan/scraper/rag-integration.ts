@@ -143,7 +143,7 @@ ${page.text}`;
       chunkType: 'page_text',
       chunkIndex: i,
       content: chunkContent,
-      embedding: withEmbeddings?.[0] ? JSON.stringify(withEmbeddings[0].embedding) : null,
+      embedding: withEmbeddings?.[0]?.embedding ?? null,
       metadata: JSON.stringify({
         url: page.url,
         title: page.title,
@@ -181,7 +181,7 @@ ${page.text}`;
       chunkType: 'page_structure_text',
       chunkIndex: 0,
       content: `Seitenstruktur: ${page.title}\n${structureText}`,
-      embedding: structEmbeddings?.[0] ? JSON.stringify(structEmbeddings[0].embedding) : null,
+      embedding: structEmbeddings?.[0]?.embedding ?? null,
       metadata: JSON.stringify({ url: page.url }),
     });
   }
@@ -312,7 +312,7 @@ export async function embedScrapedData(
     chunkType: 'website_overview',
     chunkIndex: 0,
     content: overviewText,
-    embedding: overviewEmbeddings?.[0] ? JSON.stringify(overviewEmbeddings[0].embedding) : null,
+    embedding: overviewEmbeddings?.[0]?.embedding ?? null,
     metadata: JSON.stringify({
       totalPages: pages.length,
       pagesWithForms: pages.filter(p => p.structure.forms.length > 0).length,
@@ -368,9 +368,7 @@ export async function embedScrapedData(
       chunkType: 'tech_stack_summary',
       chunkIndex: 0,
       content: techContent,
-      embedding: withEmbeddings?.[0]?.embedding
-        ? JSON.stringify(withEmbeddings[0].embedding)
-        : null,
+      embedding: withEmbeddings?.[0]?.embedding ?? null,
       metadata: JSON.stringify({ techStack, categories: Object.keys(byCategory) }),
     });
   }

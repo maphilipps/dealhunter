@@ -1,15 +1,18 @@
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { backgroundJobs, qualifications } from '@/lib/db/schema';
+import { backgroundJobs, qualifications, users } from '@/lib/db/schema';
 
 /**
  * GET /api/qualifications/[id]/background-job
  *
  * Fetch the latest background job for a lead
  * Used for real-time polling of job progress
+ *
+ * Query params:
+ * - type: 'deep-scan' | 'deep-analysis' | undefined (filter by job type)
  */
 export async function GET(
   request: NextRequest,
@@ -22,6 +25,7 @@ export async function GET(
     }
 
     const { id: leadId } = await context.params;
+    const jobType = request.nextUrl.searchParams.get('type');
 
     // Verify lead exists
     const [lead] = await db
@@ -34,18 +38,95 @@ export async function GET(
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
+    // Authorization: Verify user has access to this lead's business unit
+    const [currentUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1);
+
+    if (!currentUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 });
+    }
+
+    // Admins can access all leads; BL/BD must match business unit
+    if (currentUser.role !== 'admin' && currentUser.businessUnitId !== lead.businessUnitId) {
+      return NextResponse.json(
+        { error: 'Forbidden: You can only access leads in your Business Unit' },
+        { status: 403 }
+      );
+    }
+
+    // Build query conditions
+    // Search by qualificationId (new) or preQualificationId (legacy)
+    const whereConditions = or(
+      eq(backgroundJobs.qualificationId, leadId),
+      eq(backgroundJobs.preQualificationId, lead.preQualificationId)
+    );
+
     // Get latest background job for this lead
-    // Note: backgroundJobs.rfpId is nullable, so we need to handle that
-    // For leads, we need to join via rfpId since backgroundJobs references rfps
-    const [latestJob] = await db
+    const query = db
       .select()
       .from(backgroundJobs)
-      .where(eq(backgroundJobs.preQualificationId, lead.preQualificationId))
+      .where(
+        jobType
+          ? and(
+              whereConditions,
+              eq(backgroundJobs.jobType, jobType as 'deep-scan' | 'deep-analysis')
+            )
+          : whereConditions
+      )
       .orderBy(desc(backgroundJobs.createdAt))
       .limit(1);
 
+    const [latestJob] = await query;
+
     if (!latestJob) {
       return NextResponse.json({ job: null }, { status: 200 });
+    }
+
+    // Parse JSON fields for deep-scan jobs
+    let completedExperts: string[] = [];
+    let pendingExperts: string[] = [];
+    let sectionConfidences: Record<string, number> = {};
+
+    if (latestJob.jobType === 'deep-scan') {
+      try {
+        completedExperts = latestJob.completedExperts ? JSON.parse(latestJob.completedExperts) : [];
+        pendingExperts = latestJob.pendingExperts ? JSON.parse(latestJob.pendingExperts) : [];
+        sectionConfidences = latestJob.sectionConfidences
+          ? JSON.parse(latestJob.sectionConfidences)
+          : {};
+      } catch {
+        // JSON parse errors - use defaults
+      }
+    }
+
+    // Determine current phase based on completed experts
+    let currentPhase: 'scraping' | 'phase2' | 'phase3' | 'completed' = 'scraping';
+    if (completedExperts.includes('scraper')) {
+      currentPhase = 'phase2';
+    }
+    if (
+      completedExperts.some(e =>
+        [
+          'tech',
+          'website',
+          'performance',
+          'architecture',
+          'hosting',
+          'integrations',
+          'migration',
+        ].includes(e)
+      )
+    ) {
+      currentPhase = 'phase2';
+    }
+    if (completedExperts.some(e => ['project', 'costs', 'decision'].includes(e))) {
+      currentPhase = 'phase3';
+    }
+    if (latestJob.status === 'completed') {
+      currentPhase = 'completed';
     }
 
     // Transform DB record to API response
@@ -58,6 +139,13 @@ export async function GET(
       errorMessage: latestJob.errorMessage,
       startedAt: latestJob.startedAt,
       completedAt: latestJob.completedAt,
+      // Deep scan specific fields
+      currentExpert: latestJob.currentExpert,
+      currentPhase,
+      completedExperts,
+      pendingExperts,
+      sectionConfidences,
+      bullmqJobId: latestJob.bullmqJobId,
     };
 
     return NextResponse.json({ job }, { status: 200 });

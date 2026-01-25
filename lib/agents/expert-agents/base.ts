@@ -81,7 +81,7 @@ export async function storeAgentResult(
       chunkType: `${agentName}_result`,
       chunkIndex: nextChunkIndex,
       content,
-      embedding: JSON.stringify(embedding),
+      embedding: embedding,
       metadata: metadata ? JSON.stringify(metadata) : null,
     });
 

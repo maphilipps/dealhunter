@@ -1,1 +1,0 @@
-ALTER TABLE `bid_opportunities` ADD `account_id` text REFERENCES accounts(id);

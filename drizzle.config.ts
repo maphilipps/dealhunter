@@ -1,11 +1,14 @@
 import type { Config } from 'drizzle-kit';
-import path from 'path';
+
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required for migrations');
+}
 
 export default {
   schema: './lib/db/schema.ts',
   out: './drizzle',
-  dialect: 'sqlite',
+  dialect: 'postgresql',
   dbCredentials: {
-    url: path.join(process.cwd(), 'local.db'),
+    url: process.env.DATABASE_URL,
   },
 } satisfies Config;

@@ -480,8 +480,8 @@ export async function searchSimilar(
         .where(eq(dealEmbeddings.qualificationId, qualificationId));
 
       for (const chunk of qualificationChunks) {
-        const chunkEmbedding = safeParseJSON<number[]>(chunk.embedding, []);
-        if (chunkEmbedding.length === 0) continue;
+        const chunkEmbedding = chunk.embedding;
+        if (!chunkEmbedding || chunkEmbedding.length === 0) continue;
 
         const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
 
@@ -516,8 +516,8 @@ export async function searchSimilar(
         .where(eq(dealEmbeddings.preQualificationId, preQualificationId));
 
       for (const chunk of agentChunks) {
-        const chunkEmbedding = safeParseJSON<number[]>(chunk.embedding, []);
-        if (chunkEmbedding.length === 0) continue;
+        const chunkEmbedding = chunk.embedding;
+        if (!chunkEmbedding || chunkEmbedding.length === 0) continue;
 
         const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
 
@@ -549,8 +549,8 @@ export async function searchSimilar(
           .where(eq(rawChunks.preQualificationId, preQualificationId));
 
         for (const chunk of rawChunkItems) {
-          const chunkEmbedding = safeParseJSON<number[]>(chunk.embedding, []);
-          if (chunkEmbedding.length === 0) continue;
+          const chunkEmbedding = chunk.embedding;
+          if (!chunkEmbedding || chunkEmbedding.length === 0) continue;
 
           const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
 

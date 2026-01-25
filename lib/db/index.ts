@@ -1,19 +1,28 @@
-import path from 'path';
-
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import * as sqliteVec from 'sqlite-vec';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 
 import * as schema from './schema';
 
-// Use absolute path to avoid SQLITE_READONLY_DBMOVED errors
-const dbPath = path.join(process.cwd(), 'local.db');
-const sqlite = new Database(dbPath);
+// Require DATABASE_URL - no hardcoded credentials
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required');
+}
 
-// CRITICAL: Enable FK enforcement for data integrity (DEA-151)
-sqlite.pragma('foreign_keys = ON');
+// PostgreSQL Connection Pool
+// Pool size should accommodate parallel expert execution (14 experts + app connections)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: parseInt(process.env.DB_POOL_SIZE || '50', 10), // Configurable, default 50 for parallel experts
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000, // Increased timeout for high-load scenarios
+});
 
-// Load sqlite-vec extension for vector similarity search (DEA-107)
-sqliteVec.load(sqlite);
+export const db = drizzle(pool, { schema });
 
-export const db = drizzle(sqlite, { schema });
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  await pool.end();
+});
+
+// Export pool for direct queries (e.g., pgvector operations)
+export { pool };

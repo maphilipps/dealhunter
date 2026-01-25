@@ -78,5 +78,5 @@ export const config = {
   ],
 };
 
-// Force Node.js runtime for middleware (required for better-sqlite3)
+// Force Node.js runtime for middleware
 export const runtime = 'nodejs';

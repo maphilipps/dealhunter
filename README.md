@@ -16,48 +16,75 @@ Dealhunter automates the complete RFP (Request for Proposal) evaluation workflow
 
 ## Quick Start
 
+### Option 1: Full Docker Setup (Empfohlen für Produktion)
+
+Alles in Docker starten - ein Befehl für die komplette Umgebung:
+
 ```bash
-# 1. Install dependencies
-npm install
-
-# 2. Set up environment
+# 1. Environment-Datei erstellen
 cp .env.example .env.local
-# Edit .env.local and add your API keys
+# Edit .env.local und API-Keys eintragen
 
-# 3. Start PostgreSQL + Redis (via Docker)
-docker compose up -d postgres redis
+# 2. Alles starten
+docker compose up -d
 
-# 4. Initialize database and load seed data
-npm run db:push
-npm run db:seed
-
-# 5. Start development server
-npm run dev
-
-# Optional: Start background worker (for DeepScan jobs)
-docker compose up -d worker
-# Or run locally: npx tsx workers/deep-scan.ts
+# 3. Datenbank initialisieren (nur beim ersten Start)
+docker compose exec app npm run db:push
+docker compose exec app npm run db:seed
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Option 2: Development Setup (mit Hot Reload)
+
+Für Entwicklung mit schnellem Code-Reload:
+
+```bash
+# 1. Dependencies installieren
+npm install
+
+# 2. Environment-Datei erstellen
+cp .env.example .env.local
+# Edit .env.local und API-Keys eintragen
+
+# 3. Infrastruktur starten (PostgreSQL + Redis)
+docker compose up -d postgres redis
+
+# 4. Datenbank initialisieren
+npm run db:push
+npm run db:seed
+
+# 5. Development Server starten
+npm run dev
+
+# Optional: Background Worker starten
+docker compose up -d worker
+# Oder lokal: npx tsx workers/deep-scan.ts
+```
 
 ### Docker Services
 
 | Service  | Port | Description              |
 | -------- | ---- | ------------------------ |
+| app      | 3000 | Next.js Web Application  |
 | postgres | 5433 | PostgreSQL 16 + pgvector |
 | redis    | 6379 | Redis 7 (BullMQ queue)   |
 | worker   | -    | Background job processor |
 
 ```bash
-# View logs
+# Logs anzeigen
+docker compose logs -f app
 docker compose logs -f worker
 
-# Redis CLI (with auth)
+# Redis CLI (mit Auth)
 docker compose exec redis redis-cli -a dealhunter
 
-# Stop all services
+# Alle Services stoppen
 docker compose down
+
+# Services neu bauen (nach Code-Änderungen)
+docker compose build app worker
+docker compose up -d
 ```
 
 ## Testbenutzer

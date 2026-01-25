@@ -2,7 +2,6 @@
 
 import {
   BarChart3,
-  Building2,
   Database,
   FileText,
   Home,
@@ -17,7 +16,7 @@ import * as React from 'react';
 import { NavMain } from '@/components/nav-main';
 import { NavProjects } from '@/components/nav-projects';
 import { NavUser } from '@/components/nav-user';
-import { TeamSwitcher } from '@/components/team-switcher';
+import { AppLogo } from '@/components/team-switcher';
 import {
   Sidebar,
   SidebarContent,
@@ -35,14 +34,12 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   };
 }
 
-// Dealhunter navigation data
-const teams = [
-  {
-    name: 'adesso SE',
-    logo: Building2,
-    plan: 'Enterprise',
-  },
-];
+// Dealhunter app branding
+const appBranding = {
+  name: 'Dealhunter',
+  logo: '/logo.png',
+  subtitle: 'Pre-Qualification Tool',
+};
 
 type UserRole = 'bd' | 'bl' | 'admin';
 
@@ -205,7 +202,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   return (
     <Sidebar {...props} collapsible="icon">
       <SidebarHeader>
-        <TeamSwitcher teams={teams} />
+        <AppLogo {...appBranding} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />

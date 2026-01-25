@@ -1,0 +1,39 @@
+name: dealhunter
+type: generic
+nodejs_version: "22"
+webserver_type: generic
+
+database:
+  type: postgres
+  version: "16"
+
+# Avoid conflict with local PostgreSQL on 5432
+host_db_port: "5437"
+
+php_version: "8.3"
+
+hooks:
+  post-start:
+    # Enable pgvector extension in pgvector container
+    - exec-host: docker exec ddev-dealhunter-pgvector psql -U ddev_user -d ddev_embedding_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+    - exec: npm install
+    - exec: npm run db:push
+
+web_extra_daemons:
+  - name: "nextjs"
+    command: "npm run dev -- -H 0.0.0.0"
+    directory: /var/www/html
+
+  - name: "worker"
+    command: "npx tsx --watch workers/deep-scan.ts"
+    directory: /var/www/html
+
+web_extra_exposed_ports:
+  - name: "NextJS"
+    container_port: 3000
+    http_port: 80
+    https_port: 443
+
+web_environment:
+  - NODE_ENV=development
+  - NEXT_TELEMETRY_DISABLED=1

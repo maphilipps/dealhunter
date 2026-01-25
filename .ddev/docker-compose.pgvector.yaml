@@ -1,0 +1,21 @@
+# Custom pgvector config (port changed to avoid conflict with local PostgreSQL)
+services:
+  pgvector:
+    container_name: ddev-${DDEV_SITENAME}-pgvector
+    image: pgvector/pgvector:${PGVECTOR_IMAGE_TAG:-pg17}
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_USER: ddev_user
+      POSTGRES_PASSWORD: ddev_password
+      POSTGRES_DB: ddev_embedding_db
+    restart: "no"
+    # These labels ensure this service is discoverable by DDEV.
+    labels:
+      com.ddev.site-name: ${DDEV_SITENAME}
+      com.ddev.approot: ${DDEV_APPROOT}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

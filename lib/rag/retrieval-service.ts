@@ -3,7 +3,7 @@
  *
  * Hybrid retrieval strategy:
  * 1. Generate query embedding
- * 2. Vector similarity search via sqlite-vec
+ * 2. Vector similarity search via pgvector
  * 3. Optional tech stack filtering
  * 4. Threshold filtering (similarity > 0.7)
  * 5. Ranking by similarity

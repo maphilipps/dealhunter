@@ -22,7 +22,7 @@ describe('navigation-config', () => {
         'overview',
         'technology',
         'website-analysis',
-        'cms-architecture',
+        'target-architecture',
         'cms-comparison',
         'hosting',
         'integrations',

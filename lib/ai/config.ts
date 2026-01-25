@@ -116,7 +116,7 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
   try {
     const { object, usage } = await generateObject({
       model: aiHubOpenAI(modelName),
-      schema: options.schema,
+      schema: options.schema as any,
       system: options.system,
       prompt: options.prompt,
       temperature: options.temperature ?? defaultSettings.deterministic.temperature,

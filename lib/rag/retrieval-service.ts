@@ -3,7 +3,7 @@
  *
  * Hybrid retrieval strategy:
  * 1. Generate query embedding
- * 2. Vector similarity search via sqlite-vec
+ * 2. Vector similarity search via pgvector
  * 3. Optional tech stack filtering
  * 4. Threshold filtering (similarity > 0.7)
  * 5. Ranking by similarity
@@ -99,7 +99,7 @@ export async function queryRAG(query: RAGQuery): Promise<RAGResult[]> {
     const resultsWithSimilarity = chunks
       .filter(chunk => chunk.embedding !== null)
       .map(chunk => {
-        const chunkEmbedding = JSON.parse(chunk.embedding!) as number[];
+        const chunkEmbedding = chunk.embedding!;
         const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
 
         const metadata = chunk.metadata ? JSON.parse(chunk.metadata) : {};

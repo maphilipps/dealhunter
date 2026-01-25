@@ -107,7 +107,7 @@ export async function queryRawChunks(query: RawRAGQuery): Promise<RawRAGResult[]
 
     // 3. Calculate similarity for each chunk
     const allResults = chunks.map(chunk => {
-      const chunkEmbedding = JSON.parse(chunk.embedding) as number[];
+      const chunkEmbedding = chunk.embedding;
       const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
 
       const metadata = chunk.metadata

@@ -75,7 +75,7 @@ async function test() {
       id: c.id,
       agentName: c.agentName,
       content: c.content.slice(0, 100),
-      similarity: cosineSimilarity(queryEmbedding, JSON.parse(c.embedding!)),
+      similarity: cosineSimilarity(queryEmbedding, c.embedding!),
     }))
     .filter(r => r.similarity >= threshold)
     .sort((a, b) => b.similarity - a.similarity)

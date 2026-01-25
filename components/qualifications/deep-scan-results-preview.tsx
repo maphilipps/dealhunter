@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useDeepScan, EXPERT_TO_SECTION_MAP } from '@/contexts/deep-scan-context';
+import { useDeepScan } from '@/contexts/deep-scan-context';
+import { EXPERT_TO_SECTIONS, getQualityBadge } from '@/lib/deep-scan/section-expert-mapping';
 
 interface DeepScanResultsPreviewProps {
   leadId: string;
@@ -21,19 +22,20 @@ export function DeepScanResultsPreview({ leadId }: DeepScanResultsPreviewProps) 
 
   // Get completed experts with their results
   const completedExperts = deepScan.completedExperts.map(expertName => {
-    const state = deepScan.agentStates[expertName];
-    const sectionId = EXPERT_TO_SECTION_MAP[expertName];
+    const sections = EXPERT_TO_SECTIONS[expertName] || [];
+    const confidence = deepScan.sectionConfidences[expertName];
     return {
       name: expertName,
-      sectionId,
-      result: state?.result,
-      confidence: state?.confidence,
+      sections,
+      confidence,
     };
   });
 
   if (completedExperts.length === 0) {
     return null;
   }
+
+  const isRunning = deepScan.status === 'running' || deepScan.status === 'pending';
 
   return (
     <Card>
@@ -43,7 +45,7 @@ export function DeepScanResultsPreview({ leadId }: DeepScanResultsPreviewProps) 
           Analyse-Ergebnisse
         </CardTitle>
         <CardDescription>
-          {deepScan.isStreaming
+          {isRunning
             ? `${completedExperts.length} Experten abgeschlossen`
             : 'Alle Experten abgeschlossen - Ergebnisse verfügbar'}
         </CardDescription>
@@ -54,9 +56,8 @@ export function DeepScanResultsPreview({ leadId }: DeepScanResultsPreviewProps) 
             <ExpertResultCard
               key={expert.name}
               expertName={expert.name}
-              sectionId={expert.sectionId}
+              sections={expert.sections}
               confidence={expert.confidence}
-              result={expert.result}
               leadId={leadId}
             />
           ))}
@@ -68,25 +69,25 @@ export function DeepScanResultsPreview({ leadId }: DeepScanResultsPreviewProps) 
 
 interface ExpertResultCardProps {
   expertName: string;
-  sectionId?: string;
+  sections: string[];
   confidence?: number;
-  result?: unknown;
   leadId: string;
 }
 
-function ExpertResultCard({ expertName, sectionId, confidence, leadId }: ExpertResultCardProps) {
+function ExpertResultCard({ expertName, sections, confidence, leadId }: ExpertResultCardProps) {
   const router = useRouter();
 
   // Extract a summary from the expert name
-  const displayName = expertName.replace(' Expert', '');
+  const displayName = expertName.charAt(0).toUpperCase() + expertName.slice(1);
 
-  // Navigate to the audit section
+  // Navigate to the first section of this expert
   const handleNavigate = () => {
-    if (sectionId) {
-      // Navigate to the expert's section in the audit
-      router.push(`/qualifications/${leadId}/audit/${sectionId}`);
+    if (sections.length > 0) {
+      router.push(`/qualifications/${leadId}/audit/${sections[0]}`);
     }
   };
+
+  const qualityBadge = confidence !== undefined ? getQualityBadge(confidence) : null;
 
   return (
     <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={handleNavigate}>
@@ -94,12 +95,18 @@ function ExpertResultCard({ expertName, sectionId, confidence, leadId }: ExpertR
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <h4 className="font-medium text-sm">{displayName}</h4>
-            {confidence !== undefined && (
+            {qualityBadge && (
               <Badge
-                variant={confidence >= 70 ? 'default' : confidence >= 40 ? 'secondary' : 'outline'}
+                variant={
+                  qualityBadge.variant === 'success'
+                    ? 'default'
+                    : qualityBadge.variant === 'destructive'
+                      ? 'destructive'
+                      : 'secondary'
+                }
                 className="mt-1"
               >
-                {confidence}% Confidence
+                {confidence}% - {qualityBadge.label}
               </Badge>
             )}
           </div>

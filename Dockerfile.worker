@@ -1,0 +1,30 @@
+# Worker Dockerfile for BullMQ Deep Scan Jobs
+#
+# This Dockerfile creates a lightweight Node.js worker image
+# that processes deep scan jobs from the Redis queue.
+#
+# Connects to:
+# - PostgreSQL (via DATABASE_URL) for data persistence
+# - Redis (via REDIS_URL) for job queue
+#
+# Build: docker build -f Dockerfile.worker -t sydney-worker .
+# Run: docker run --env-file .env sydney-worker
+
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install all dependencies (including devDependencies for tsx)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Set environment
+ENV NODE_ENV=production
+
+# Run worker with tsx (TypeScript execution)
+CMD ["npx", "tsx", "workers/deep-scan.ts"]

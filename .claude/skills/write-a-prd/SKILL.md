@@ -19,6 +19,7 @@ This skill uses a **deep, continuous interview process** to gather all requireme
 Interview the user in depth about **literally everything**. Cover these categories but don't limit yourself to them:
 
 ### Technical Implementation
+
 - Architecture decisions and tradeoffs
 - Data models and schema implications
 - API design choices
@@ -28,6 +29,7 @@ Interview the user in depth about **literally everything**. Cover these categori
 - Migration paths from current state
 
 ### UI & UX
+
 - User flows and edge cases
 - Loading states and feedback
 - Error states and recovery
@@ -36,6 +38,7 @@ Interview the user in depth about **literally everything**. Cover these categori
 - Animation and interaction patterns
 
 ### Concerns & Risks
+
 - Security implications
 - Scalability bottlenecks
 - Backwards compatibility
@@ -44,6 +47,7 @@ Interview the user in depth about **literally everything**. Cover these categori
 - Failure modes and fallbacks
 
 ### Tradeoffs
+
 - Build vs buy decisions
 - Complexity vs flexibility
 - Speed vs completeness
@@ -51,18 +55,21 @@ Interview the user in depth about **literally everything**. Cover these categori
 - Short-term vs long-term
 
 ### Scope & Boundaries
+
 - What's explicitly IN scope
 - What's explicitly OUT of scope
 - MVP vs full feature set
 - Dependencies on other work
 
 ### Testing Strategy
+
 - What needs unit tests
 - What needs integration tests
 - What needs E2E tests
 - Edge cases to cover
 
 **Interview Rules:**
+
 - **NO OBVIOUS QUESTIONS** - Don't ask things clearly stated in the spec or that any competent developer would already know
 - **BE SPECIFIC** - Ask about concrete scenarios, not abstract concepts
 - **GO DEEP** - Follow up on answers to uncover hidden assumptions
@@ -72,6 +79,7 @@ Interview the user in depth about **literally everything**. Cover these categori
 Use `AskUserQuestionTool` with 2-4 targeted questions per round. After each answer, determine if you need more clarity and continue the interview loop.
 
 **Exit the interview loop ONLY when:**
+
 - All ambiguities are resolved
 - All edge cases are addressed
 - All tradeoffs are explicitly decided

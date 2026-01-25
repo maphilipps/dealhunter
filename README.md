@@ -16,23 +16,76 @@ Dealhunter automates the complete RFP (Request for Proposal) evaluation workflow
 
 ## Quick Start
 
+### Option 1: Full Docker Setup (Empfohlen für Produktion)
+
+Alles in Docker starten - ein Befehl für die komplette Umgebung:
+
 ```bash
-# 1. Install dependencies
-npm install
-
-# 2. Set up environment
+# 1. Environment-Datei erstellen
 cp .env.example .env.local
-# Edit .env.local and add your API keys
+# Edit .env.local und API-Keys eintragen
 
-# 3. Initialize database and load seed data
-npm run db:push
-npm run db:seed
+# 2. Alles starten
+docker compose up -d
 
-# 4. Start development server
-npm run dev
+# 3. Datenbank initialisieren (nur beim ersten Start)
+docker compose exec app npm run db:push
+docker compose exec app npm run db:seed
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Option 2: Development Setup (mit Hot Reload)
+
+Für Entwicklung mit schnellem Code-Reload:
+
+```bash
+# 1. Dependencies installieren
+npm install
+
+# 2. Environment-Datei erstellen
+cp .env.example .env.local
+# Edit .env.local und API-Keys eintragen
+
+# 3. Infrastruktur starten (PostgreSQL + Redis)
+docker compose up -d postgres redis
+
+# 4. Datenbank initialisieren
+npm run db:push
+npm run db:seed
+
+# 5. Development Server starten
+npm run dev
+
+# Optional: Background Worker starten
+docker compose up -d worker
+# Oder lokal: npx tsx workers/deep-scan.ts
+```
+
+### Docker Services
+
+| Service  | Port | Description              |
+| -------- | ---- | ------------------------ |
+| app      | 3000 | Next.js Web Application  |
+| postgres | 5433 | PostgreSQL 16 + pgvector |
+| redis    | 6379 | Redis 7 (BullMQ queue)   |
+| worker   | -    | Background job processor |
+
+```bash
+# Logs anzeigen
+docker compose logs -f app
+docker compose logs -f worker
+
+# Redis CLI (mit Auth)
+docker compose exec redis redis-cli -a dealhunter
+
+# Alle Services stoppen
+docker compose down
+
+# Services neu bauen (nach Code-Änderungen)
+docker compose build app worker
+docker compose up -d
+```
 
 ## Testbenutzer
 
@@ -132,10 +185,11 @@ git push --no-verify
 - **Framework:** Next.js 16 (App Router)
 - **UI:** ShadCN UI + Tailwind CSS v4
 - **AI:** Vercel AI SDK v5 + adesso AI Hub
-- **Database:** Drizzle ORM (SQLite)
+- **Database:** PostgreSQL 16 + pgvector (via Drizzle ORM)
+- **Job Queue:** BullMQ + Redis
 - **Auth:** NextAuth.js v5
 - **Embeddings:** text-embedding-3-large via adesso AI Hub (3072 dimensions)
-- **Vector Search:** SQLite vec0 extension (planned for future implementation)
+- **Vector Search:** pgvector with IVFFlat indexes
 
 ## AI Hub Requirement
 
@@ -150,22 +204,28 @@ The application is configured to automatically use the AI Hub via environment va
 
 ## Database Schema
 
-The application uses SQLite with Drizzle ORM. Key tables include:
+The application uses PostgreSQL 16 with pgvector and Drizzle ORM. Key tables include:
 
-- **Core Tables:** `users`, `rfps` (bids), `business_units`, `technologies`, `employees`, `accounts`
-- **Scan Tables:** `quick_scans`, `deep_migration_analyses`
+- **Core Tables:** `users`, `qualifications`, `pre_qualifications`, `business_units`, `technologies`, `employees`, `accounts`
+- **Scan Tables:** `quick_scans`, `deep_scan_results`, `background_jobs`
 - **Master Data:** `references`, `competencies`, `competitors`
+- **RAG Tables:** `deal_embeddings`, `raw_chunks` (vector embeddings)
 - **Support Tables:** `team_assignments`, `subjective_assessments`, `audit_trails`, `documents`
 
-### Vector Search (Future)
+### Vector Search
 
-For duplicate detection and semantic search, the application is designed to use SQLite's vec0 extension:
+The application uses pgvector for semantic search and duplicate detection:
 
 - **Embedding Model:** `text-embedding-3-large` (3072 dimensions)
-- **Expected Scale:** < 10,000 RFPs
-- **Use Cases:** Duplicate RFP detection, semantic similarity matching
+- **Index Type:** IVFFlat (fast build, good for < 1M vectors)
+- **Use Cases:** RAG retrieval, semantic similarity, duplicate detection
 
-**Note:** Vec0 extension needs to be installed separately when vector search features are implemented. The schema is already prepared for embedding storage in JSON columns.
+```sql
+-- Example: Find similar documents
+SELECT * FROM deal_embeddings
+ORDER BY embedding <=> '[...]'  -- cosine distance
+LIMIT 10;
+```
 
 ## Architecture
 
@@ -222,11 +282,19 @@ lib/
 ## Umgebungsvariablen
 
 ```bash
-# .env.local erstellen
+# .env.local erstellen (siehe .env.example für alle Optionen)
+
+# Required
 OPENAI_API_KEY=your-api-key
 OPENAI_BASE_URL=https://adesso-ai-hub.3asabc.de/v1
-DATABASE_URL=file:./local.db
-AUTH_SECRET=your-secret-key
+DATABASE_URL=postgresql://dealhunter:dealhunter@localhost:5433/dealhunter
+REDIS_URL=redis://:dealhunter@localhost:6379
+AUTH_SECRET=your-secret-key  # openssl rand -base64 32
+
+# Optional (for full functionality)
+GEMINI_API_KEY=your-gemini-key      # For fast analysis agents
+EXA_API_KEY=your-exa-key            # For semantic web search
+OPENAI_EMBEDDING_API_KEY=your-key   # For embeddings (if different from main key)
 ```
 
 ## Troubleshooting
@@ -235,13 +303,23 @@ AUTH_SECRET=your-secret-key
 
 #### Database Connection Failed
 
-**Error:** `Error: Database connection failed`
+**Error:** `Error: Database connection failed` or `ECONNREFUSED`
 
 **Solution:**
 
 ```bash
-# Recreate database
-rm local.db
+# 1. Ensure PostgreSQL is running
+docker compose up -d postgres
+
+# 2. Wait for healthy status
+docker compose ps  # Should show "healthy"
+
+# 3. Check DATABASE_URL in .env.local
+# Should be: postgresql://dealhunter:dealhunter@localhost:5433/dealhunter
+
+# 4. Reset database if needed
+docker compose down -v  # Warning: deletes data!
+docker compose up -d postgres
 npm run db:push
 npm run db:seed
 ```

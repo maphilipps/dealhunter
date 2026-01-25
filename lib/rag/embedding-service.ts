@@ -101,7 +101,7 @@ export async function embedAgentOutput(
         chunkIndex: chunk.chunkIndex,
         content: chunk.content,
         metadata: JSON.stringify(chunk.metadata),
-        embedding: JSON.stringify(chunk.embedding),
+        embedding: chunk.embedding,
       }))
     );
 

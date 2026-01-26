@@ -19,7 +19,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
   LEAD_PUBLIC_FIELDS,
-  Pre-Qualification_PUBLIC_FIELDS,
+  PreQualification_PUBLIC_FIELDS,
   BUSINESS_UNIT_PUBLIC_FIELDS,
   WEBSITE_AUDIT_PUBLIC_FIELDS,
   PT_ESTIMATION_PUBLIC_FIELDS,
@@ -55,7 +55,7 @@ const getLeadWithDetails = cache(async (id: string) => {
       // Get related Pre-Qualification (depends on lead.preQualificationId) - only public fields
       lead.preQualificationId
         ? db
-            .select(Pre-Qualification_PUBLIC_FIELDS)
+            .select(PreQualification_PUBLIC_FIELDS)
             .from(preQualifications)
             .where(eq(preQualifications.id, lead.preQualificationId))
             .limit(1)

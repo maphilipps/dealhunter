@@ -2,12 +2,12 @@ import OpenAI from 'openai';
 
 import { QUICK_SCAN_VISUALIZATION_SYSTEM_PROMPT } from './quick-scan-catalog';
 
+import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
 import { buildQuestionsWithStatus } from '@/lib/bids/ten-questions';
 import type { QuickScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import type { QuickScanResult } from '@/lib/quick-scan/agent';
 import { parseJsonField } from '@/lib/quick-scan/utils';
-import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({

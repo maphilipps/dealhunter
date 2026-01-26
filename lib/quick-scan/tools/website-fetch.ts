@@ -1,8 +1,9 @@
 import wappalyzer from 'simple-wappalyzer';
 
+import type { WebsiteData } from '../workflow/types';
+
 import { validateUrlForFetch } from '@/lib/utils/url-validation';
 
-import type { WebsiteData } from '../workflow/types';
 
 interface WappalyzerTechnology {
   name: string;

@@ -3,6 +3,7 @@
 // Final step that creates the Business Line recommendation
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { generateStructuredOutput } from '../../../ai/config';
 import {
   blRecommendationSchema,
   type BLRecommendation,
@@ -13,7 +14,6 @@ import {
 import { wrapTool } from '../tool-wrapper';
 import type { BusinessUnit } from '../types';
 
-import { generateStructuredOutput } from '../../../ai/config';
 
 
 // ═══════════════════════════════════════════════════════════════════════════════

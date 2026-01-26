@@ -17,7 +17,7 @@ import type { ExpertAgentInput, ExpertAgentOutput } from './types';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 
-const LEGAL_Pre-Qualification_QUERIES = [
+const LEGAL_PreQualification_QUERIES = [
   'terms conditions contract agreement liability warranty',
   'GDPR privacy data protection compliance certification ISO SOC2',
   'insurance liability indemnification indemnity',
@@ -96,7 +96,7 @@ export async function runLegalRfpAgent(
 
   try {
     const ragResults = await Promise.all(
-      LEGAL_Pre-Qualification_QUERIES.map(query => queryRfpDocument(preQualificationId, query, 5))
+      LEGAL_PreQualification_QUERIES.map(query => queryRfpDocument(preQualificationId, query, 5))
     );
 
     const allResults = ragResults.flat();

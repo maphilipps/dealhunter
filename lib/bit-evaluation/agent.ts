@@ -25,10 +25,10 @@ import {
 
 // Intelligent Agent Framework - NEW
 import { quickEvaluate, BIT_EVALUATION_SCHEMA } from '@/lib/agent-tools/evaluator';
+import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
 import { calculateWeightedBitScore } from '@/lib/config/business-rules';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
-import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({

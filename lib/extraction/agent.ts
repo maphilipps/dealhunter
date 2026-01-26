@@ -1,6 +1,5 @@
 import { extractedRequirementsSchema, type ExtractedRequirements } from './schema';
 import { suggestWebsiteUrls } from './url-suggestion-agent';
-
 import { openai } from '../ai/config';
 import { embedAgentOutput } from '../rag/embedding-service';
 import { embedRawText } from '../rag/raw-embedding-service';

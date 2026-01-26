@@ -4,7 +4,16 @@ import { registry } from './registry';
 import type { ToolContext } from './types';
 
 // Import primitive tools (using relative paths for worker compatibility)
-import { fetchWebsiteData } from '../quick-scan/tools/website-fetch';
+import type {
+  TechStack,
+  ContentVolume,
+  Features,
+  SEOAudit,
+  LegalCompliance,
+  CompanyIntelligence,
+  BLRecommendation,
+} from '../quick-scan/schema';
+import { gatherCompanyIntelligence } from '../quick-scan/tools/company-research';
 import {
   classifyContentTypes,
   estimateContentTypesFromUrls,
@@ -20,6 +29,7 @@ import {
 import { crawlNavigation, quickNavigationScan } from '../quick-scan/tools/navigation-crawler';
 import { countPages, quickPageCount } from '../quick-scan/tools/page-counter';
 import { runPlaywrightAudit } from '../quick-scan/tools/playwright';
+import { fetchWebsiteData } from '../quick-scan/tools/website-fetch';
 import {
   analyzeTechStack,
   analyzeContentVolume,
@@ -27,18 +37,8 @@ import {
   runSeoAudit,
   runLegalCompliance,
 } from '../quick-scan/workflow/steps/analysis';
-import { gatherCompanyIntelligence } from '../quick-scan/tools/company-research';
-import { generateBLRecommendation } from '../quick-scan/workflow/steps/synthesis';
 import { loadBusinessUnitsFromDB } from '../quick-scan/workflow/steps/bootstrap';
-import type {
-  TechStack,
-  ContentVolume,
-  Features,
-  SEOAudit,
-  LegalCompliance,
-  CompanyIntelligence,
-  BLRecommendation,
-} from '../quick-scan/schema';
+import { generateBLRecommendation } from '../quick-scan/workflow/steps/synthesis';
 
 /**
  * QuickScan 2.0 Agent Tools
@@ -172,7 +172,7 @@ registry.register({
     try {
       const websiteData = await fetchWebsiteData(input.url);
       const result = analyzeTechStack(websiteData);
-      return { success: true, data: result as TechStack };
+      return { success: true, data: result };
     } catch (error) {
       return {
         success: false,
@@ -195,7 +195,7 @@ registry.register({
     try {
       const websiteData = await fetchWebsiteData(input.url);
       const result = analyzeContentVolume(websiteData);
-      return { success: true, data: result as ContentVolume };
+      return { success: true, data: result };
     } catch (error) {
       return {
         success: false,
@@ -218,7 +218,7 @@ registry.register({
     try {
       const websiteData = await fetchWebsiteData(input.url);
       const result = detectFeatures(websiteData);
-      return { success: true, data: result as Features };
+      return { success: true, data: result };
     } catch (error) {
       return {
         success: false,
@@ -241,7 +241,7 @@ registry.register({
     try {
       const websiteData = await fetchWebsiteData(input.url);
       const result = runSeoAudit(websiteData.html);
-      return { success: true, data: result as SEOAudit };
+      return { success: true, data: result };
     } catch (error) {
       return {
         success: false,
@@ -264,7 +264,7 @@ registry.register({
     try {
       const websiteData = await fetchWebsiteData(input.url);
       const result = runLegalCompliance(websiteData.html);
-      return { success: true, data: result as LegalCompliance };
+      return { success: true, data: result };
     } catch (error) {
       return {
         success: false,
@@ -689,7 +689,7 @@ registry.register({
     try {
       const websiteData = await fetchWebsiteData(input.url);
       const result = await gatherCompanyIntelligence(input.companyName, input.url, websiteData.html);
-      return { success: true, data: result as CompanyIntelligence };
+      return { success: true, data: result };
     } catch (error) {
       return {
         success: false,
@@ -729,7 +729,7 @@ registry.register({
         businessUnits,
         extractedRequirements: input.extractedRequirements,
       });
-      return { success: true, data: result as BLRecommendation };
+      return { success: true, data: result };
     } catch (error) {
       return {
         success: false,

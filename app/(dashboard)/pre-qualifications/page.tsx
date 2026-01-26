@@ -2,8 +2,8 @@ import { Plus, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { PreQualificationsEmptyStateClient } from '@/components/pre-qualifications/pre-qualifications-empty-state-client';
 import { DeletePreQualificationButton } from '@/components/pre-qualifications/delete-prequalification-button';
+import { PreQualificationsEmptyStateClient } from '@/components/pre-qualifications/pre-qualifications-empty-state-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

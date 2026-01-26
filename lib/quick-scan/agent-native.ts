@@ -19,12 +19,11 @@ import {
   type MigrationComplexity,
   type DecisionMakersResearch,
 } from './schema';
-
 import { registry, createRagWriteTool, createBatchRagWriteTool, createVisualizationWriteTool } from '../agent-tools';
 import type { ToolContext } from '../agent-tools';
 import { buildAgentContext, formatContextForPrompt } from '../agent-tools/context-builder';
-import { getOpenAIProvider } from '../ai/providers';
 import { modelNames, defaultSettings } from '../ai/config';
+import { getOpenAIProvider } from '../ai/providers';
 
 const completionSchema = extendedQuickScan2Schema.extend({
   rawScanData: z.any().optional(),
@@ -193,20 +192,20 @@ export async function runQuickScanAgentNative(
   const payload = completion.input as QuickScanCompletion;
 
   const output: QuickScanResult = {
-    techStack: payload.techStack as TechStack,
-    contentVolume: payload.contentVolume as ContentVolume,
-    features: payload.features as Features,
-    blRecommendation: payload.blRecommendation as BLRecommendation,
-    navigationStructure: payload.navigationStructure as NavigationStructure | undefined,
-    accessibilityAudit: payload.accessibilityAudit as AccessibilityAudit | undefined,
-    seoAudit: payload.seoAudit as SEOAudit | undefined,
-    legalCompliance: payload.legalCompliance as LegalCompliance | undefined,
-    performanceIndicators: payload.performanceIndicators as PerformanceIndicators | undefined,
-    screenshots: payload.screenshots as Screenshots | undefined,
-    companyIntelligence: payload.companyIntelligence as CompanyIntelligence | undefined,
-    contentTypes: payload.contentTypes as ContentTypeDistribution | undefined,
-    migrationComplexity: payload.migrationComplexity as MigrationComplexity | undefined,
-    decisionMakers: payload.decisionMakers as DecisionMakersResearch | undefined,
+    techStack: payload.techStack,
+    contentVolume: payload.contentVolume,
+    features: payload.features,
+    blRecommendation: payload.blRecommendation,
+    navigationStructure: payload.navigationStructure,
+    accessibilityAudit: payload.accessibilityAudit,
+    seoAudit: payload.seoAudit,
+    legalCompliance: payload.legalCompliance,
+    performanceIndicators: payload.performanceIndicators,
+    screenshots: payload.screenshots,
+    companyIntelligence: payload.companyIntelligence,
+    contentTypes: payload.contentTypes,
+    migrationComplexity: payload.migrationComplexity,
+    decisionMakers: payload.decisionMakers,
     rawScanData: payload.rawScanData as Record<string, unknown> | undefined,
     multiPageAnalysis: payload.multiPageAnalysis as QuickScanResult['multiPageAnalysis'],
     activityLog,

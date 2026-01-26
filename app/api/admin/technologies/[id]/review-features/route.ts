@@ -109,7 +109,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       reviewResult = await reviewFeatureResearch({
         technologyName: tech.name ?? '',
         technologyId: id,
-        features: featuresToReview as Record<string, FeatureData>,
+        features: featuresToReview,
       });
       reviewResult = { ...reviewResult, mode: 'quick' };
     }

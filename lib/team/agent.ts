@@ -2,8 +2,8 @@ import OpenAI from 'openai';
 
 import { teamSuggestionSchema, type TeamSuggestion } from './schema';
 
-import type { Employee } from '@/lib/db/schema';
 import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
+import type { Employee } from '@/lib/db/schema';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({

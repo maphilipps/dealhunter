@@ -9,7 +9,6 @@
 
 import type { Chunk } from './chunk-service';
 import { chunkAgentOutput } from './chunk-service';
-
 import {
   EMBEDDING_DIMENSIONS,
   EMBEDDING_MODEL,

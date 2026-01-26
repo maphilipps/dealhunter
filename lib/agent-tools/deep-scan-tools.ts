@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 import { registry } from './registry';
 
-import { storeAuditAgentOutput } from '@/lib/deep-scan/experts/base';
 import { runArchitectureExpert } from '@/lib/deep-scan/experts/architecture-expert';
+import { storeAuditAgentOutput } from '@/lib/deep-scan/experts/base';
 import { runCostsExpert } from '@/lib/deep-scan/experts/costs-expert';
 import { runDecisionExpert } from '@/lib/deep-scan/experts/decision-expert';
 import { runHostingExpert } from '@/lib/deep-scan/experts/hosting-expert';

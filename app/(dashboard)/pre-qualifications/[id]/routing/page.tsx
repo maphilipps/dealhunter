@@ -175,7 +175,9 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
                 </Badge>
               )}
             </div>
-            {missingData.timeline && <ReloadTimelineButton rfpId={preQualification.id} />}
+            {missingData.timeline && (
+              <ReloadTimelineButton preQualificationId={preQualification.id} />
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -477,7 +479,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
                 <li>Keine ausreichenden Projekt-Informationen in der Ausschreibung</li>
                 <li>Der Quick Scan konnte die Timeline nicht extrahieren</li>
               </ul>
-              <ReloadTimelineButton rfpId={preQualification.id} />
+              <ReloadTimelineButton preQualificationId={preQualification.id} />
             </div>
           </CardContent>
         </Card>
@@ -491,7 +493,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
         </CardHeader>
         <CardContent>
           <RoutingForm
-            rfpId={preQualification.id}
+            preQualificationId={preQualification.id}
             blRecommendation={blRecommendation}
             allBusinessUnits={allBusinessUnits}
           />

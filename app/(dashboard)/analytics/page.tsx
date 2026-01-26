@@ -154,7 +154,7 @@ export default function AnalyticsPage() {
     proactive: { label: 'Proactive', color: COLORS.proactive },
     cold: { label: 'Cold', color: COLORS.cold },
     warm: { label: 'Warm', color: COLORS.warm },
-    preQualification: { label: 'Pre-Qualification', color: COLORS.rfp },
+    preQualification: { label: 'Pre-Qualification', color: COLORS.preQualification },
   };
 
   return (

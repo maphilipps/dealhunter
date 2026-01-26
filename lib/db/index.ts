@@ -17,12 +17,22 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000, // Increased timeout for high-load scenarios
 });
 
+// Handle pool errors
+pool.on('error', (err) => {
+  console.error('[DB Pool] Unexpected error on idle client:', err);
+});
+
 export const db = drizzle(pool, { schema });
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
+const shutdown = async () => {
+  console.log('[DB] Closing pool...');
   await pool.end();
-});
+  console.log('[DB] Pool closed');
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
 
 // Export pool for direct queries (e.g., pgvector operations)
 export { pool };

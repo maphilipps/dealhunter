@@ -2,7 +2,7 @@
 
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Calendar, Clock, Users, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { AlertTriangle, Calendar, CheckCircle2, Clock, Info, Users } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';

@@ -128,7 +128,7 @@ export interface SimilarityResult {
 }
 
 export interface SimilaritySearchParams {
-  rfpId?: string;
+  preQualificationId?: string;
   leadId?: string;
   query: string;
   threshold?: number;

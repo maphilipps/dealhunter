@@ -22,7 +22,6 @@ import {
   Send,
   ArrowRight,
   Users,
-  Linkedin,
   Mail,
   Phone,
   GitBranch,

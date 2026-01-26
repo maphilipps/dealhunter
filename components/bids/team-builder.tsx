@@ -10,7 +10,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -54,13 +54,9 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [sendNotifications, setSendNotifications] = useState(true);
   const [isAssigning, setIsAssigning] = useState(false);
+  const hasLoadedRef = useRef(false);
 
-  // Load AI suggestion on mount
-  useEffect(() => {
-    void loadTeamSuggestion();
-  }, [bidId]);
-
-  const loadTeamSuggestion = async () => {
+  const loadTeamSuggestion = useCallback(async () => {
     setIsLoading(true);
     toast.info('Lade Team-Empfehlung...');
 
@@ -74,12 +70,20 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
       } else {
         toast.error(result.error || 'Fehler beim Laden der Empfehlung');
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Ein Fehler ist aufgetreten');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [bidId]);
+
+  // Load AI suggestion on mount
+  useEffect(() => {
+    if (!hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      void loadTeamSuggestion();
+    }
+  }, [loadTeamSuggestion]);
 
   const handleRemoveMember = (memberId: string) => {
     setSelectedMembers(prev => prev.filter(m => m.employeeId !== memberId));
@@ -163,7 +167,7 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
       }
 
       router.refresh();
-    } catch (error) {
+    } catch (_error) {
       toast.error('Ein Fehler ist aufgetreten');
       setIsAssigning(false);
     }

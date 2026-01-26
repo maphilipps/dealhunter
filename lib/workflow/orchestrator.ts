@@ -172,7 +172,7 @@ export function getNextStatusAfterAgent(agentName: Phase1Agent): PreQualificatio
  * This is the main orchestration function - called after agent completion
  * or user actions (e.g., BID decision, duplicate override)
  *
- * @param rfpId - Pre-Qualification ID
+ * @param preQualificationId - Pre-Qualification ID
  * @param currentStatus - Current Pre-Qualification status
  * @param context - Additional context (e.g., user override flag)
  */
@@ -217,7 +217,7 @@ export async function triggerNextAgent(
   }
 
   // Apply context updates (e.g., user override, decision)
-  const contextualRfp = { ...rfp };
+  const contextualRfp = { ...preQualification };
   if (context?.userOverride && preQualification.duplicateCheckResult) {
     const result = JSON.parse(preQualification.duplicateCheckResult) as Record<string, unknown>;
     result.userOverride = true;
@@ -256,7 +256,7 @@ export async function triggerNextAgent(
  * Called by agents after successful completion
  * Updates status and triggers next agent
  *
- * @param rfpId - Pre-Qualification ID
+ * @param preQualificationId - Pre-Qualification ID
  * @param agentName - Agent that just completed
  */
 export async function onAgentComplete(

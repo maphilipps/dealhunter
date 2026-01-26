@@ -18,7 +18,7 @@ export function PreQualificationsEmptyStateClient() {
 
   const suggestions = [
     {
-      id: 'upload-rfp',
+      id: 'upload-preQualification',
       icon: <Upload className="h-5 w-5" />,
       label: 'Pre-Qualification hochladen',
       description: 'PDF oder Text hochladen und AI-Extraktion starten',

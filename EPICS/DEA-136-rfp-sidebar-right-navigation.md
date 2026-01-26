@@ -172,7 +172,7 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
 
 ## RFP Sidebar Right Component
 
-**Datei**: `/components/bids/rfp-sidebar-right.tsx` (NEU)
+**Datei**: `/components/bids/preQualification-sidebar-right.tsx` (NEU)
 
 **Features**:
 
@@ -214,8 +214,8 @@ Umstrukturierung der RFP Detail Seite von Card-basiert zu **Sidebar Right Naviga
    - SidebarProvider mit AppSidebar links, RfpSidebarRight rechts
    - Header mit RFP Title
 
-2. **RFP Sidebar Right erstellen**: `/components/bids/rfp-sidebar-right.tsx`
-   - Props: `rfpId`, `title`, `status`
+2. **RFP Sidebar Right erstellen**: `/components/bids/preQualification-sidebar-right.tsx`
+   - Props: `preQualificationId`, `title`, `status`
    - Navigation Sections wie oben definiert
 
 ### Phase 2: Unterseiten erstellen
@@ -274,7 +274,7 @@ app/(dashboard)/rfps/[id]/
 | Datei                                              | Beschreibung             |
 | -------------------------------------------------- | ------------------------ |
 | `/app/(dashboard)/rfps/[id]/layout.tsx`            | Layout mit Sidebar Right |
-| `/components/bids/rfp-sidebar-right.tsx`           | RFP Navigation Sidebar   |
+| `/components/bids/preQualification-sidebar-right.tsx`           | RFP Navigation Sidebar   |
 | `/app/(dashboard)/rfps/[id]/timing/page.tsx`       | Timing Unterseite        |
 | `/app/(dashboard)/rfps/[id]/deliverables/page.tsx` | Deliverables Unterseite  |
 | `/app/(dashboard)/rfps/[id]/references/page.tsx`   | References Unterseite    |
@@ -354,4 +354,4 @@ http://localhost:3000/rfps/xztqrqoudardauod4yfr6a3e/routing
 **Issue**: DEA-136
 **URL**: https://linear.app/adessocms/issue/DEA-136
 **Estimate**: 8 Story Points
-**Labels**: `enhancement`, `ui-restructure`, `rfp-detail`
+**Labels**: `enhancement`, `ui-restructure`, `preQualification-detail`

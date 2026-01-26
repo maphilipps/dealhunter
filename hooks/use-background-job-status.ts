@@ -55,7 +55,7 @@ export interface UseBackgroundJobStatusResult {
   /** Whether tab is currently visible */
   isVisible: boolean;
   /** Manually trigger a fetch */
-  refetch: () => void;
+  refetch: () => Promise<void>;
   /** Reset state (e.g., before starting new job) */
   reset: () => void;
 }

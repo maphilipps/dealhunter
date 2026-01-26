@@ -55,14 +55,14 @@ Eine neue **"RAG Data"** Seite in der Lead-Detail-Navigation, die alle gespeiche
 ### Module-Struktur
 
 1. **RAG Stats Service** (neues Modul)
-   - Funktion: `getRAGStats(rfpId/leadId)`
+   - Funktion: `getRAGStats(preQualificationId/leadId)`
    - Output: Aggregierte Statistiken (Chunk-Counts pro Agent, pro Type, Total Tokens)
    - Nutzt bestehende `getEmbeddingStatus()` als Basis
 
 2. **RAG Data Query Service** (Erweiterung bestehend)
    - Erweiterte Funktionen für Pagination, Filtering, Search
-   - `getChunksByAgent(rfpId, agentName, options: { limit, offset, search })`
-   - `getRawChunks(rfpId, options: { limit, offset, search })`
+   - `getChunksByAgent(preQualificationId, agentName, options: { limit, offset, search })`
+   - `getRawChunks(preQualificationId, options: { limit, offset, search })`
    - `getSectionData(leadId, options: { sectionId? })`
 
 3. **RAG Data Page** (neue Route)

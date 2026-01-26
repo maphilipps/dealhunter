@@ -1,10 +1,12 @@
-import { eq, desc } from 'drizzle-orm';
-import { Globe, TrendingUp, Package, FileText, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
+import { desc, eq } from 'drizzle-orm';
+import { AlertTriangle, CheckCircle2, FileText, Globe, Package, TrendingUp } from 'lucide-react';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+
 import { AuditStatusBadge } from '@/components/qualifications/audit-status-badge';
+import { BulkVisualizationGenerator } from '@/components/qualifications/bulk-visualization-generator';
 import { CustomerDeepDive } from '@/components/qualifications/customer-deep-dive';
 import { DeleteQualificationButton } from '@/components/qualifications/delete-qualification-button';
 import { DeepScanOverviewClient } from '@/components/qualifications/deep-scan-overview-client';
@@ -161,6 +163,9 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
 
       {/* DeepScan Status Banner */}
       <DeepScanOverviewClient />
+
+      {/* Bulk Visualization Generator */}
+      <BulkVisualizationGenerator leadId={id} />
 
       {/* Executive Summary Card (Phase 1.1) - Prominent first element */}
       <ExecutiveSummaryCard

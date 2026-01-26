@@ -26,7 +26,7 @@ async function main() {
     id: preQualificationId,
     userId: user.id,
     source: 'reactive',
-    stage: 'rfp',
+    stage: 'preQualification',
     status: 'draft',
     decision: 'pending',
     inputType: 'freetext',

@@ -48,7 +48,7 @@ export function DeepScanClient({
 
   const handleStart = () => {
     setShowStream(true);
-    deepScan.startDeepScan();
+    void deepScan.startDeepScan();
   };
 
   const handleComplete = () => {

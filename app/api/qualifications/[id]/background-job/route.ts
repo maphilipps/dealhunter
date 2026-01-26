@@ -28,22 +28,26 @@ export async function GET(
     const jobType = request.nextUrl.searchParams.get('type');
 
     // Verify lead exists
-    const [lead] = await db
+    const leads = await db
       .select()
       .from(qualifications)
       .where(eq(qualifications.id, leadId))
       .limit(1);
+
+    const lead = leads[0];
 
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
     // Authorization: Verify user has access to this lead's business unit
-    const [currentUser] = await db
+    const currentUsers = await db
       .select()
       .from(users)
       .where(eq(users.id, session.user.id))
       .limit(1);
+
+    const currentUser = currentUsers[0];
 
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 401 });
@@ -79,7 +83,8 @@ export async function GET(
       .orderBy(desc(backgroundJobs.createdAt))
       .limit(1);
 
-    const [latestJob] = await query;
+    const jobs = await query;
+    const latestJob = jobs[0];
 
     if (!latestJob) {
       return NextResponse.json({ job: null }, { status: 200 });
@@ -92,11 +97,20 @@ export async function GET(
 
     if (latestJob.jobType === 'deep-scan') {
       try {
-        completedExperts = latestJob.completedExperts ? JSON.parse(latestJob.completedExperts) : [];
-        pendingExperts = latestJob.pendingExperts ? JSON.parse(latestJob.pendingExperts) : [];
-        sectionConfidences = latestJob.sectionConfidences
-          ? JSON.parse(latestJob.sectionConfidences)
-          : {};
+        if (latestJob.completedExperts) {
+          const parsed = JSON.parse(latestJob.completedExperts) as unknown;
+          completedExperts = Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+        }
+        if (latestJob.pendingExperts) {
+          const parsed = JSON.parse(latestJob.pendingExperts) as unknown;
+          pendingExperts = Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+        }
+        if (latestJob.sectionConfidences) {
+          const parsed = JSON.parse(latestJob.sectionConfidences) as unknown;
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            sectionConfidences = parsed as Record<string, number>;
+          }
+        }
       } catch {
         // JSON parse errors - use defaults
       }

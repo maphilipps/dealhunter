@@ -109,7 +109,7 @@ export type IntegrationsAnalysis = z.infer<typeof IntegrationsAnalysisSchema>;
  * Run integrations agent
  *
  * @param leadId - Lead ID
- * @param rfpId - Pre-Qualification ID
+ * @param preQualificationId - Pre-Qualification ID
  * @returns Integrations analysis
  */
 export async function runIntegrationsAgent(

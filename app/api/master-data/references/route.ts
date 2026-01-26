@@ -169,7 +169,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
+    const body = (await request.json()) as unknown;
     const parsed = updateReferenceSchema.safeParse(body);
 
     if (!parsed.success) {

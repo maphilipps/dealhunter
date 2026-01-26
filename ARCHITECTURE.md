@@ -464,7 +464,7 @@ erDiagram
 
     QUICK_SCANS {
         string id PK
-        string rfpId FK
+        string preQualificationId FK
         json technologies
         string businessUnitId FK
         float confidence
@@ -474,7 +474,7 @@ erDiagram
 
     EVALUATIONS {
         string id PK
-        string rfpId FK
+        string preQualificationId FK
         string recommendation
         float confidence
         json scores
@@ -484,7 +484,7 @@ erDiagram
 
     DOCUMENTS {
         string id PK
-        string rfpId FK
+        string preQualificationId FK
         string filename
         string mimeType
         string url
@@ -509,7 +509,7 @@ erDiagram
 
     AUDIT_LOGS {
         string id PK
-        string rfpId FK
+        string preQualificationId FK
         string userId FK
         string action
         json previousValue

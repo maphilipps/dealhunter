@@ -6,11 +6,11 @@ tags: [code-review, performance, dea-186, database]
 dependencies: []
 ---
 
-# Missing Database Index on rawChunks.rfpId
+# Missing Database Index on rawChunks.preQualificationId
 
 ## Problem Statement
 
-There is no database index on the `rawChunks.rfpId` column, causing every RAG query to perform a full table scan. This will cause significant performance degradation at scale.
+There is no database index on the `rawChunks.preQualificationId` column, causing every RAG query to perform a full table scan. This will cause significant performance degradation at scale.
 
 **Why it matters:**
 
@@ -28,7 +28,7 @@ There is no database index on the `rawChunks.rfpId` column, causing every RAG qu
 **Query Pattern:**
 
 ```typescript
-const chunks = await db.select().from(rawChunks).where(eq(rawChunks.rfpId, query.rfpId)); // No LIMIT, full scan
+const chunks = await db.select().from(rawChunks).where(eq(rawChunks.preQualificationId, query.preQualificationId)); // No LIMIT, full scan
 ```
 
 **Performance Impact:**
@@ -39,7 +39,7 @@ const chunks = await db.select().from(rawChunks).where(eq(rawChunks.rfpId, query
 | 100,000| ~10s | ~1ms |
 
 **Schema Review:**
-The `rawChunks` table in `lib/db/schema.ts` does not define an index on `rfpId`.
+The `rawChunks` table in `lib/db/schema.ts` does not define an index on `preQualificationId`.
 
 ## Proposed Solutions
 
@@ -52,8 +52,8 @@ The `rawChunks` table in `lib/db/schema.ts` does not define an index on `rfpId`.
 
 ```typescript
 // drizzle migration
-CREATE INDEX idx_rawchunks_rfpid ON rawChunks(rfpId);
-CREATE INDEX idx_rawchunks_rfpid_chunkindex ON rawChunks(rfpId, chunkIndex);
+CREATE INDEX idx_rawchunks_rfpid ON rawChunks(preQualificationId);
+CREATE INDEX idx_rawchunks_rfpid_chunkindex ON rawChunks(preQualificationId, chunkIndex);
 ```
 
 Or in Drizzle schema:
@@ -65,8 +65,8 @@ export const rawChunks = sqliteTable(
     // ... existing columns
   },
   table => ({
-    rfpIdIdx: index('idx_rawchunks_rfpid').on(table.rfpId),
-    rfpIdChunkIdx: index('idx_rawchunks_rfpid_chunk').on(table.rfpId, table.chunkIndex),
+    rfpIdIdx: index('idx_rawchunks_rfpid').on(table.preQualificationId),
+    rfpIdChunkIdx: index('idx_rawchunks_rfpid_chunk').on(table.preQualificationId, table.chunkIndex),
   })
 );
 ```
@@ -95,12 +95,12 @@ Update schema and run `npm run db:push`.
 
 **Database Changes:**
 
-- Add index `idx_rawchunks_rfpid` on `rawChunks(rfpId)`
-- Optional: Add composite index on `(rfpId, chunkIndex)`
+- Add index `idx_rawchunks_rfpid` on `rawChunks(preQualificationId)`
+- Optional: Add composite index on `(preQualificationId, chunkIndex)`
 
 ## Acceptance Criteria
 
-- [ ] Add index on rawChunks.rfpId in schema
+- [ ] Add index on rawChunks.preQualificationId in schema
 - [ ] Run db:push or create migration
 - [ ] Verify index exists with `.schema` command
 - [ ] Benchmark query performance improvement

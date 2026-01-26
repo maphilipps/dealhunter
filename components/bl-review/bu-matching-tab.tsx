@@ -39,13 +39,13 @@ export function BUMatchingTab({
       }
     : null;
 
-  const handleReassign = async () => {
+  const handleReassign = () => {
     setIsReassigning(true);
     try {
       // TODO: Implement reassignment action
       toast.info('BU-Neuzuweisung wird implementiert...');
       router.refresh();
-    } catch (error) {
+    } catch (_error) {
       toast.error('Fehler bei der Neuzuweisung');
     } finally {
       setIsReassigning(false);

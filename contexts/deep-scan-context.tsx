@@ -48,7 +48,7 @@ export interface DeepScanContextValue {
     selectedExperts?: string[]
   ) => Promise<{ success: boolean; error?: string }>;
   startSelectiveScan: (sectionIds: string[]) => Promise<{ success: boolean; error?: string }>;
-  refetch: () => void;
+  refetch: () => Promise<void>;
 }
 
 // ============================================================================
@@ -165,7 +165,7 @@ export function DeepScanProvider({ children, leadId }: DeepScanProviderProps) {
 
         // Reset local state and start polling
         reset();
-        refetch();
+        void refetch();
 
         return { success: true };
       } catch (err) {
@@ -199,7 +199,7 @@ export function DeepScanProvider({ children, leadId }: DeepScanProviderProps) {
 
         // Reset local state and start polling
         reset();
-        refetch();
+        void refetch();
 
         return { success: true };
       } catch (err) {

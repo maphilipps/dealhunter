@@ -48,7 +48,7 @@ export function QualificationsEmptyStateClient({ userRole }: QualificationsEmpty
         ]
       : [
           {
-            id: 'create-rfp',
+            id: 'create-preQualification',
             icon: <Upload className="h-5 w-5" />,
             label: 'Pre-Qualification hochladen',
             description: 'Laden Sie ein Pre-Qualification hoch, um den Qualifizierungsprozess zu starten',

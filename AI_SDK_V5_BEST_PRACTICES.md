@@ -220,10 +220,10 @@ When you need manual control:
 ```typescript
 // ✅ DO: Use Promise.allSettled for resilient parallel execution
 const results = await Promise.allSettled([
-  fetchCompetitorData(rfpId),
-  analyzeCapabilities(rfpId),
-  checkCompliance(rfpId),
-  assessRisk(rfpId),
+  fetchCompetitorData(preQualificationId),
+  analyzeCapabilities(preQualificationId),
+  checkCompliance(preQualificationId),
+  assessRisk(preQualificationId),
 ]);
 
 const processedResults = results.map((result, index) => {
@@ -242,10 +242,10 @@ const processedResults = results.map((result, index) => {
 // ❌ AVOID: Promise.all fails fast
 try {
   const results = await Promise.all([
-    fetchCompetitorData(rfpId), // Takes 5s
-    analyzeCapabilities(rfpId), // Takes 3s
-    checkCompliance(rfpId), // Fails at 1s → ALL rejected
-    assessRisk(rfpId),
+    fetchCompetitorData(preQualificationId), // Takes 5s
+    analyzeCapabilities(preQualificationId), // Takes 3s
+    checkCompliance(preQualificationId), // Fails at 1s → ALL rejected
+    assessRisk(preQualificationId),
   ]);
 } catch (error) {
   // Lost all successful results!
@@ -266,12 +266,12 @@ type AgentResult<T> =
       agent: string;
     };
 
-async function runParallelAgents(rfpId: string): Promise<AgentResult[]> {
+async function runParallelAgents(preQualificationId: string): Promise<AgentResult[]> {
   const agents = [
-    { name: 'tech', fn: () => analyzeTech(rfpId) },
-    { name: 'commercial', fn: () => analyzeCommercial(rfpId) },
-    { name: 'legal', fn: () => analyzeLegal(rfpId) },
-    { name: 'risk', fn: () => assessRisk(rfpId) },
+    { name: 'tech', fn: () => analyzeTech(preQualificationId) },
+    { name: 'commercial', fn: () => analyzeCommercial(preQualificationId) },
+    { name: 'legal', fn: () => analyzeLegal(preQualificationId) },
+    { name: 'risk', fn: () => assessRisk(preQualificationId) },
   ];
 
   const results = await Promise.allSettled(agents.map(agent => agent.fn()));

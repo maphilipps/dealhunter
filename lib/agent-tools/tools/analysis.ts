@@ -276,7 +276,7 @@ registry.register({
   category: 'analysis',
   inputSchema: updateReferenceMatchInputSchema,
   async execute(input, context: ToolContext) {
-    // Fetch existing match and verify access via lead → rfp
+    // Fetch existing match and verify access via lead → preQualification
     const [existing] = await db
       .select({ match: referenceMatches, lead: qualifications, preQualification: preQualifications })
       .from(referenceMatches)
@@ -316,7 +316,7 @@ registry.register({
   category: 'analysis',
   inputSchema: deleteReferenceMatchInputSchema,
   async execute(input, context: ToolContext) {
-    // Fetch existing match and verify access via lead → rfp
+    // Fetch existing match and verify access via lead → preQualification
     const [existing] = await db
       .select({ match: referenceMatches, lead: qualifications, preQualification: preQualifications })
       .from(referenceMatches)
@@ -399,7 +399,7 @@ registry.register({
   category: 'analysis',
   inputSchema: updateCompetitorMatchInputSchema,
   async execute(input, context: ToolContext) {
-    // Fetch existing match and verify access via lead → rfp
+    // Fetch existing match and verify access via lead → preQualification
     const [existing] = await db
       .select({ match: competitorMatches, lead: qualifications, preQualification: preQualifications })
       .from(competitorMatches)
@@ -435,7 +435,7 @@ registry.register({
   category: 'analysis',
   inputSchema: deleteCompetitorMatchInputSchema,
   async execute(input, context: ToolContext) {
-    // Fetch existing match and verify access via lead → rfp
+    // Fetch existing match and verify access via lead → preQualification
     const [existing] = await db
       .select({ match: competitorMatches, lead: qualifications, preQualification: preQualifications })
       .from(competitorMatches)

@@ -52,7 +52,7 @@ export function LowConfidenceDialog({
       } else {
         toast.error(result.error || 'Bestätigung fehlgeschlagen');
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Ein Fehler ist aufgetreten');
     } finally {
       setIsConfirming(false);
@@ -73,7 +73,7 @@ export function LowConfidenceDialog({
       } else {
         toast.error(result.error || 'Zurücksetzen fehlgeschlagen');
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Ein Fehler ist aufgetreten');
     } finally {
       setIsConfirming(false);

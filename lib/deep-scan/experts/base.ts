@@ -295,7 +295,8 @@ function convertToReadableText(data: unknown, indent = 0): string {
     return lines.join('\n');
   }
 
-  return typeof data === 'object' && data !== null ? JSON.stringify(data) : String(data);
+  const serialized = JSON.stringify(data);
+  return serialized ?? '';
 }
 
 export function buildAuditSectionId(category: string, slug: string): string {

@@ -71,12 +71,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Parse request body
     let sectionIds: string[] = [];
     try {
-      const body = await request.json();
-      sectionIds = body.sectionIds || [];
+      const body = (await request.json()) as { sectionIds?: unknown };
+      const rawSectionIds = body.sectionIds;
 
-      if (!Array.isArray(sectionIds) || sectionIds.length === 0) {
+      if (Array.isArray(rawSectionIds)) {
+        sectionIds = rawSectionIds.filter((item): item is string => typeof item === 'string');
+      }
+
+      if (sectionIds.length === 0) {
         return NextResponse.json(
-          { error: 'sectionIds must be a non-empty array' },
+          { error: 'sectionIds must be a non-empty array of strings' },
           { status: 400 }
         );
       }
@@ -95,7 +99,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Verify lead exists and get website URL
-    const [lead] = await db
+    const leads = await db
       .select({
         id: qualifications.id,
         preQualificationId: qualifications.preQualificationId,
@@ -107,16 +111,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .where(eq(qualifications.id, leadId))
       .limit(1);
 
+    const lead = leads[0];
+
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
     // Authorization: Verify user has access to this lead's business unit
-    const [currentUser] = await db
+    const currentUsers = await db
       .select()
       .from(users)
       .where(eq(users.id, session.user.id))
       .limit(1);
+
+    const currentUser = currentUsers[0];
 
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 401 });
@@ -149,7 +157,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Check if a job is already running
-    const [existingJob] = await db
+    const existingJobs = await db
       .select()
       .from(backgroundJobs)
       .where(
@@ -160,6 +168,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         )
       )
       .limit(1);
+
+    const existingJob = existingJobs[0];
 
     if (existingJob) {
       return NextResponse.json(

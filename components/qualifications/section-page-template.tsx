@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, Loader2, RefreshCw, TrendingUp } from 'lucide-react';
+import { AlertCircle, Loader2, RefreshCw, Sparkles, TrendingUp } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { QuickScanRenderer, type RenderTree } from '@/components/json-render/quick-scan-registry';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
 
 /**
  * Extended Section Result with visualization tree (matches API response)
@@ -55,6 +56,11 @@ export function SectionPageTemplate({
   const [visualizationTree, setVisualizationTree] = useState<RenderTree | null>(null);
   const [synthesisMethod, setSynthesisMethod] = useState<'ai' | 'fallback' | null>(null);
   const [hasData, setHasData] = useState(false);
+
+  // Visualization generation state
+  const [isGeneratingViz, setIsGeneratingViz] = useState(false);
+  const [refinementPrompt, setRefinementPrompt] = useState('');
+  const [vizError, setVizError] = useState<string | null>(null);
 
   const fetchSectionData = useCallback(async () => {
     setLoading(true);
@@ -113,6 +119,40 @@ export function SectionPageTemplate({
   const handleRefresh = () => {
     void fetchSectionData();
   };
+
+  // Generate visualization handler
+  const handleGenerateVisualization = useCallback(async () => {
+    setIsGeneratingViz(true);
+    setVizError(null);
+
+    try {
+      const response = await fetch(`/api/qualifications/${leadId}/sections/${sectionId}/visualize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          refinementPrompt: refinementPrompt.trim() || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Visualisierung konnte nicht generiert werden');
+      }
+
+      if (data.visualizationTree) {
+        setVisualizationTree(data.visualizationTree);
+        setConfidence(data.confidence || 50);
+        setSynthesisMethod('ai');
+        setRefinementPrompt('');
+      }
+    } catch (err) {
+      console.error('[SectionPageTemplate] Generate viz error:', err);
+      setVizError(err instanceof Error ? err.message : 'Fehler bei der Visualisierung');
+    } finally {
+      setIsGeneratingViz(false);
+    }
+  }, [leadId, sectionId, refinementPrompt]);
 
   return (
     <div className="space-y-6">
@@ -207,18 +247,49 @@ export function SectionPageTemplate({
         <QuickScanRenderer tree={visualizationTree} />
       )}
 
-      {/* Data exists but no visualization tree - show debug info */}
+      {/* Data exists but no visualization tree - show generation UI */}
       {!loading && !error && hasData && !visualizationTree && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Visualisierung nicht verfügbar</AlertTitle>
-          <AlertDescription>
-            Die RAG-Daten wurden geladen, aber die AI-Synthese hat keine Visualisierung erzeugt.
-            <Button variant="link" className="ml-2 h-auto p-0" onClick={handleRefresh}>
-              Erneut versuchen
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Visualisierung generieren
+            </CardTitle>
+            <CardDescription>
+              Generiere eine KI-gestützte Visualisierung basierend auf den Analysedaten.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {vizError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{vizError}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="Optional: Verfeinerung, z.B. 'Fokus auf technische Details'..."
+                value={refinementPrompt}
+                onChange={e => setRefinementPrompt(e.target.value)}
+                disabled={isGeneratingViz}
+                rows={1}
+                className="min-h-[40px] resize-none"
+              />
+              <Button
+                onClick={handleGenerateVisualization}
+                disabled={isGeneratingViz}
+                className="shrink-0"
+              >
+                {isGeneratingViz ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

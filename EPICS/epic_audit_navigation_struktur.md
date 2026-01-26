@@ -1002,8 +1002,8 @@ export async function buildDashboard(synthesizerOutput: SectionData): Promise<Js
 ```tsx
 // components/bids/facts-tab.tsx
 
-export function FactsTab({ rfpId }: { rfpId: string }) {
-  const { auditData, isLoading } = useAuditData(rfpId);
+export function FactsTab({ preQualificationId }: { preQualificationId: string }) {
+  const { auditData, isLoading } = useAuditData(preQualificationId);
 
   if (isLoading) return <LoadingSkeleton />;
 
@@ -1101,8 +1101,8 @@ User klickt auf "CMS-Vergleich" (state: locked)
 ```tsx
 // components/audit/audit-sidebar-navigation.tsx
 
-export function AuditSidebarNavigation({ rfpId }: { rfpId: string }) {
-  const { navItems, researchStatus } = useAuditNavigation(rfpId);
+export function AuditSidebarNavigation({ preQualificationId }: { preQualificationId: string }) {
+  const { navItems, researchStatus } = useAuditNavigation(preQualificationId);
 
   return (
     <Accordion type="multiple" defaultValue={['website', 'tech']}>
@@ -1191,8 +1191,8 @@ function NavLink({ to, label, state, disabled }: NavLinkProps) {
 ```tsx
 // components/bids/facts-tab.tsx
 
-export function FactsTab({ rfpId }: { rfpId: string }) {
-  const { sections, loading } = useAuditSections(rfpId);
+export function FactsTab({ preQualificationId }: { preQualificationId: string }) {
+  const { sections, loading } = useAuditSections(preQualificationId);
 
   return (
     <div className="space-y-6">
@@ -1274,20 +1274,20 @@ export function FactsTab({ rfpId }: { rfpId: string }) {
 ```tsx
 // components/quick-scan/audit-sidebar-navigation.tsx
 
-export function AuditSidebarNavigation({ rfpId }: { rfpId: string }) {
+export function AuditSidebarNavigation({ preQualificationId }: { preQualificationId: string }) {
   return (
     <aside className="w-80 space-y-4 sticky top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
       {/* 1. Dokumente (bestehend) */}
-      <DocumentsSidebar bidId={rfpId} />
+      <DocumentsSidebar bidId={preQualificationId} />
 
       {/* 2. Deliverables (verschoben) */}
-      <DeliverablesSidebarCard rfpId={rfpId} />
+      <DeliverablesSidebarCard preQualificationId={preQualificationId} />
 
       {/* 3. Research Status */}
-      <ResearchStatusCard rfpId={rfpId} />
+      <ResearchStatusCard preQualificationId={preQualificationId} />
 
       {/* 4. Audit Navigation */}
-      <AuditNavigationAccordion rfpId={rfpId} />
+      <AuditNavigationAccordion preQualificationId={preQualificationId} />
     </aside>
   );
 }
@@ -1317,7 +1317,7 @@ import {
   List,
 } from 'lucide-react';
 
-export function AuditNavigationAccordion({ rfpId }: { rfpId: string }) {
+export function AuditNavigationAccordion({ preQualificationId }: { preQualificationId: string }) {
   return (
     <Card>
       <CardHeader>
@@ -1601,7 +1601,7 @@ Falls Accordion zu eng wirkt, **Tabs-Variante**:
   <TabsList>
     <TabsTrigger value="website">Website</TabsTrigger>
     <TabsTrigger value="tech">Tech</TabsTrigger>
-    <TabsTrigger value="rfp">RFP</TabsTrigger>
+    <TabsTrigger value="preQualification">RFP</TabsTrigger>
   </TabsList>
 
   <TabsContent value="website">
@@ -1614,7 +1614,7 @@ Falls Accordion zu eng wirkt, **Tabs-Variante**:
     {/* ... */}
   </TabsContent>
 
-  <TabsContent value="rfp">
+  <TabsContent value="preQualification">
     <NavLink to="timeline" label="Timeline" />
     {/* ... */}
   </TabsContent>

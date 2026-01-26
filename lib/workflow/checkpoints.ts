@@ -12,14 +12,18 @@
  * - Debug mode (keep checkpoints for inspection)
  */
 
+import 'server-only';
+
 import fs from 'fs/promises';
+import os from 'os';
 import path from 'path';
 
 import { createId } from '@paralleldrive/cuid2';
 import { z } from 'zod';
 
-// Checkpoint directory (outside .gitignore)
-const CHECKPOINT_DIR = process.env.CHECKPOINT_DIR || path.join(process.cwd(), 'tmp', 'checkpoints');
+// Checkpoint directory (keep outside repo to avoid bundler scanning the project tree)
+const DEFAULT_CHECKPOINT_DIR = path.join(os.tmpdir(), 'dealhunter-checkpoints');
+const CHECKPOINT_DIR = process.env.CHECKPOINT_DIR || DEFAULT_CHECKPOINT_DIR;
 
 /**
  * Workflow State Schema

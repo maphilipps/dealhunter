@@ -12,14 +12,12 @@ import { ActivityStream } from '@/components/ai-elements/activity-stream';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { QuickScan } from '@/lib/db/schema';
-import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { getQuickScanResult } from '@/lib/quick-scan/actions';
 
 interface QuickScanResultsProps {
   quickScan: QuickScan;
   bidId: string;
   onRefresh?: () => void;
-  extractedData?: ExtractedRequirements | null;
 }
 
 /**
@@ -32,14 +30,13 @@ export function QuickScanResults({
   quickScan: initialQuickScan,
   bidId,
   onRefresh,
-  extractedData,
 }: QuickScanResultsProps) {
   const [quickScan, setQuickScan] = useState(initialQuickScan);
   const [isPolling, setIsPolling] = useState(false);
 
   // Poll for QuickScan completion after stream ends
   const pollForCompletion = useCallback(
-    async (maxAttempts = 20, interval = 2000) => {
+    (maxAttempts = 20, interval = 2000) => {
       setIsPolling(true);
       let attempts = 0;
 

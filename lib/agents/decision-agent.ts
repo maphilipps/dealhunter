@@ -111,7 +111,7 @@ const CATEGORIES = [
  * Run decision agent
  *
  * @param leadId - Lead ID
- * @param rfpId - Pre-Qualification ID
+ * @param preQualificationId - Pre-Qualification ID
  * @returns Decision analysis with BID/NO-BID recommendation
  */
 export async function runDecisionAgent(leadId: string, preQualificationId: string): Promise<DecisionAnalysis> {

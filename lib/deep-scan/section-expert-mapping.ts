@@ -10,6 +10,8 @@
  * 3. Quality badges per section based on expert confidence
  */
 
+import { getDependentExperts } from './expert-dependencies';
+
 /**
  * Maps each navigation section ID to its responsible expert
  */
@@ -150,10 +152,7 @@ export function getAffectedSections(expertName: string, includeDependents = fals
   const sections = getSectionsForExpert(expertName);
 
   if (includeDependents) {
-    // Import dynamically to avoid circular dependency
-    // In practice, this would be pre-computed or the function would live elsewhere
-    const { getDependentExperts } = require('./expert-dependencies');
-    const dependents = getDependentExperts(expertName) as string[];
+    const dependents = getDependentExperts(expertName);
 
     for (const dependent of dependents) {
       sections.push(...getSectionsForExpert(dependent));

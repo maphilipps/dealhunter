@@ -46,14 +46,14 @@ describe.skip('POST /api/qualifications/[id]/pitchdeck/confirm-team', () => {
   const mockAdminUserId = 'user-admin-1';
   const mockBdUserId = 'user-bd-1';
   const mockPitchdeckId = 'pitchdeck-123';
-  const mockRfpId = 'rfp-123';
+  const mockRfpId = 'preQualification-123';
   const mockEmployeeId1 = 'emp-1';
   const mockEmployeeId2 = 'emp-2';
   const mockBusinessUnitId = 'bu-1';
 
   const mockLead = {
     id: mockLeadId,
-    rfpId: mockRfpId,
+    preQualificationId: mockRfpId,
     businessUnitId: mockBusinessUnitId,
     projectDescription: 'Test project',
   };

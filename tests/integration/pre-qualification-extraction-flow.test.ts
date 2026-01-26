@@ -14,17 +14,17 @@ beforeEach(() => server.resetHandlers());
 
 describe('RFP Extraction Flow', () => {
   it('should create RFP with initial draft status', () => {
-    const rfp = factories.rfp();
+    const preQualification = factories.preQualification();
 
-    expect(rfp).toHaveProperty('id');
-    expect(rfp.status).toBe('draft');
-    expect(rfp.decision).toBe('pending');
+    expect(preQualification).toHaveProperty('id');
+    expect(preQualification.status).toBe('draft');
+    expect(preQualification.decision).toBe('pending');
   });
 
   it('should transition from draft to extracting status', () => {
-    const rfp = factories.rfp();
+    const preQualification = factories.preQualification();
     const updatedRfp = {
-      ...rfp,
+      ...preQualification,
       status: 'extracting' as const,
     };
 
@@ -51,13 +51,13 @@ describe('RFP Extraction Flow', () => {
   });
 
   it('should transition from extracting to reviewing after extraction', () => {
-    const rfp = factories.rfp({
+    const preQualification = factories.preQualification({
       status: 'extracting',
       extractedRequirements: JSON.stringify(factories.extractedRequirements()),
     });
 
     const updatedRfp = {
-      ...rfp,
+      ...preQualification,
       status: 'reviewing' as const,
     };
 
@@ -68,7 +68,7 @@ describe('RFP Extraction Flow', () => {
 
 describe('Quick Scan Flow', () => {
   it('should perform quick scan after extraction', () => {
-    const rfp = factories.rfp({
+    const preQualification = factories.preQualification({
       status: 'reviewing',
       extractedRequirements: JSON.stringify(factories.extractedRequirements()),
     });
@@ -83,13 +83,13 @@ describe('Quick Scan Flow', () => {
   });
 
   it('should transition to bit_pending after quick scan', () => {
-    const rfp = factories.rfp({
+    const preQualification = factories.preQualification({
       status: 'quick_scanning',
       quickScanResults: JSON.stringify(factories.quickScanResults()),
     });
 
     const updatedRfp = {
-      ...rfp,
+      ...preQualification,
       status: 'bit_pending' as const,
     };
 
@@ -108,14 +108,14 @@ describe('Decision Flow', () => {
   });
 
   it('should transition to decision_made after evaluation', () => {
-    const rfp = factories.rfp({
+    const preQualification = factories.preQualification({
       status: 'evaluating',
       decision: 'bid',
       decisionData: JSON.stringify(factories.decisionData()),
     });
 
     const updatedRfp = {
-      ...rfp,
+      ...preQualification,
       status: 'decision_made' as const,
     };
 
@@ -124,13 +124,13 @@ describe('Decision Flow', () => {
   });
 
   it('should archive RFP on no_bid decision', () => {
-    const rfp = factories.rfp({
+    const preQualification = factories.preQualification({
       status: 'evaluating',
       decision: 'no_bid',
     });
 
     const updatedRfp = {
-      ...rfp,
+      ...preQualification,
       status: 'archived' as const,
     };
 

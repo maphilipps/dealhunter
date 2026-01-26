@@ -628,7 +628,7 @@ registry.register({
                   id: v.id,
                   impact: v.impact,
                   description: v.description,
-                  help: v.help,
+                  helpUrl: v.helpUrl,
                 })),
                 pagesAudited: 1,
                 auditedUrls: [input.url],
@@ -637,14 +637,7 @@ registry.register({
           navigation: result.navigation || null,
           performance: result.performance
             ? {
-                score: result.performance.score,
-                firstContentfulPaint: result.performance.fcp,
-                largestContentfulPaint: result.performance.lcp,
-                cumulativeLayoutShift: result.performance.cls,
-                timeToInteractive: result.performance.tti,
-                totalBlockingTime: result.performance.tbt,
-                speedIndex: result.performance.speedIndex,
-                diagnostics: result.performance.diagnostics || [],
+                htmlSize: Math.round(result.performance.totalSize / 1024),
                 resourceCount: result.performance.resourceCount,
                 estimatedLoadTime:
                   result.performance.loadTime < 2000

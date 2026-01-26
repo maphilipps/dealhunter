@@ -17,7 +17,7 @@ interface WorkflowStatusProps {
  * Shows agent timeline with completed, running, and pending states.
  */
 export function WorkflowStatus({ preQualification }: WorkflowStatusProps) {
-  const { status } = rfp;
+  const { status } = preQualification;
 
   // Define workflow steps
   const steps = [

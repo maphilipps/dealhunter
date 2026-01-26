@@ -78,7 +78,7 @@ registry.register({
       roleLabel: a.assignment.role, // Human-readable label (same for now)
     }));
 
-    // Get BL leader name (rfp owner)
+    // Get BL leader name (preQualification owner)
     const [blLeader] = await db.select().from(users).where(eq(users.id, preQualification.userId)).limit(1);
 
     // Send notifications

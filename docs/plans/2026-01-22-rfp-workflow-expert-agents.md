@@ -98,7 +98,7 @@
 import { z } from 'zod';
 
 export interface ExpertAgentInput {
-  rfpId: string;
+  preQualificationId: string;
   leadId?: string;
 }
 
@@ -134,11 +134,11 @@ import { db } from '@/lib/db';
 import { rfpEmbeddings } from '@/lib/db/schema';
 
 export async function queryRfpDocument(
-  rfpId: string,
+  preQualificationId: string,
   query: string,
   maxResults = 10
 ): Promise<{ context: string; chunks: Array<{ content: string; relevance: number }> }> {
-  const chunks = await queryRawChunks(rfpId, query, maxResults);
+  const chunks = await queryRawChunks(preQualificationId, query, maxResults);
   const context = formatRAGContext(chunks);
   return {
     context,
@@ -147,7 +147,7 @@ export async function queryRfpDocument(
 }
 
 export async function storeAgentResult(
-  rfpId: string,
+  preQualificationId: string,
   agentName: string,
   content: string,
   metadata: Record<string, unknown>
@@ -164,7 +164,7 @@ export async function storeAgentResult(
 
   if (withEmbeddings?.[0]) {
     await db.insert(rfpEmbeddings).values({
-      rfpId,
+      preQualificationId,
       agentName,
       chunkType: 'analysis',
       chunkIndex: 0,
@@ -274,12 +274,12 @@ const TIMING_QUERIES = [
 export async function runTimingAgent(
   input: ExpertAgentInput
 ): Promise<ExpertAgentOutput<TimingAnalysis>> {
-  console.error(`[Timing Agent] Starting analysis for RFP ${input.rfpId}`);
+  console.error(`[Timing Agent] Starting analysis for RFP ${input.preQualificationId}`);
 
   try {
     // Query RAG with timing-specific queries
     const ragResults = await Promise.all(
-      TIMING_QUERIES.map(q => queryRfpDocument(input.rfpId, q, 5))
+      TIMING_QUERIES.map(q => queryRfpDocument(input.preQualificationId, q, 5))
     );
 
     const combinedContext = ragResults.map(r => r.context).join('\n\n---\n\n');
@@ -307,7 +307,7 @@ ${combinedContext}`;
 
     // Store in RAG
     const content = formatTimingForRAG(result);
-    await storeAgentResult(input.rfpId, 'timing_expert', content, {
+    await storeAgentResult(input.preQualificationId, 'timing_expert', content, {
       submissionDeadline: result.submissionDeadline?.date,
       urgencyLevel: result.urgencyLevel,
       milestonesCount: result.milestones.length,
@@ -446,11 +446,11 @@ const DELIVERABLES_QUERIES = [
 export async function runDeliverablesAgent(
   input: ExpertAgentInput
 ): Promise<ExpertAgentOutput<DeliverablesAnalysis>> {
-  console.error(`[Deliverables Agent] Starting analysis for RFP ${input.rfpId}`);
+  console.error(`[Deliverables Agent] Starting analysis for RFP ${input.preQualificationId}`);
 
   try {
     const ragResults = await Promise.all(
-      DELIVERABLES_QUERIES.map(q => queryRfpDocument(input.rfpId, q, 5))
+      DELIVERABLES_QUERIES.map(q => queryRfpDocument(input.preQualificationId, q, 5))
     );
 
     const combinedContext = ragResults.map(r => r.context).join('\n\n---\n\n');
@@ -488,7 +488,7 @@ WICHTIG:
 
     // Store in RAG
     const content = formatDeliverablesForRAG(result);
-    await storeAgentResult(input.rfpId, 'deliverables_expert', content, {
+    await storeAgentResult(input.preQualificationId, 'deliverables_expert', content, {
       totalCount: result.totalCount,
       mandatoryCount: result.mandatoryCount,
       submissionMethod: result.primarySubmissionMethod,
@@ -646,11 +646,11 @@ const TECHSTACK_QUERIES = [
 export async function runTechStackAgent(
   input: ExpertAgentInput
 ): Promise<ExpertAgentOutput<TechStackAnalysis>> {
-  console.error(`[TechStack Agent] Starting analysis for RFP ${input.rfpId}`);
+  console.error(`[TechStack Agent] Starting analysis for RFP ${input.preQualificationId}`);
 
   try {
     const ragResults = await Promise.all(
-      TECHSTACK_QUERIES.map(q => queryRfpDocument(input.rfpId, q, 5))
+      TECHSTACK_QUERIES.map(q => queryRfpDocument(input.preQualificationId, q, 5))
     );
 
     const combinedContext = ragResults.map(r => r.context).join('\n\n---\n\n');
@@ -679,7 +679,7 @@ WICHTIG:
 
     // Store in RAG
     const content = formatTechStackForRAG(result);
-    await storeAgentResult(input.rfpId, 'techstack_expert', content, {
+    await storeAgentResult(input.preQualificationId, 'techstack_expert', content, {
       cmsFlexibility: result.cmsRequirements.flexibility,
       complexityScore: result.complexityScore,
       requirementsCount: result.requirements.length,
@@ -752,13 +752,13 @@ git commit -m "feat(agents): add techstack expert agent for RFP document analysi
 **Files:**
 
 - Modify: `lib/agents/legal-check-agent.ts`
-- Create: `lib/agents/expert-agents/legal-rfp-agent.ts`
-- Create: `lib/agents/expert-agents/legal-rfp-schema.ts`
+- Create: `lib/agents/expert-agents/legal-preQualification-agent.ts`
+- Create: `lib/agents/expert-agents/legal-preQualification-schema.ts`
 
 ### Step 1: Create Legal RFP Schema
 
 ```typescript
-// lib/agents/expert-agents/legal-rfp-schema.ts
+// lib/agents/expert-agents/legal-preQualification-schema.ts
 import { z } from 'zod';
 
 export const LegalRequirementSchema = z.object({
@@ -821,10 +821,10 @@ export type LegalRfpAnalysis = z.infer<typeof LegalRfpAnalysisSchema>;
 ### Step 2: Implement Legal RFP Agent
 
 ```typescript
-// lib/agents/expert-agents/legal-rfp-agent.ts
+// lib/agents/expert-agents/legal-preQualification-agent.ts
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { queryRfpDocument, storeAgentResult } from './base';
-import { LegalRfpAnalysisSchema, type LegalRfpAnalysis } from './legal-rfp-schema';
+import { LegalRfpAnalysisSchema, type LegalRfpAnalysis } from './legal-preQualification-schema';
 import type { ExpertAgentInput, ExpertAgentOutput } from './types';
 
 const LEGAL_QUERIES = [
@@ -840,11 +840,11 @@ const LEGAL_QUERIES = [
 export async function runLegalRfpAgent(
   input: ExpertAgentInput
 ): Promise<ExpertAgentOutput<LegalRfpAnalysis>> {
-  console.error(`[Legal RFP Agent] Starting analysis for RFP ${input.rfpId}`);
+  console.error(`[Legal RFP Agent] Starting analysis for RFP ${input.preQualificationId}`);
 
   try {
     const ragResults = await Promise.all(
-      LEGAL_QUERIES.map(q => queryRfpDocument(input.rfpId, q, 5))
+      LEGAL_QUERIES.map(q => queryRfpDocument(input.preQualificationId, q, 5))
     );
 
     const combinedContext = ragResults.map(r => r.context).join('\n\n---\n\n');
@@ -874,7 +874,7 @@ BEWERTUNG:
 
     // Store in RAG
     const content = formatLegalForRAG(result);
-    await storeAgentResult(input.rfpId, 'legal_rfp_expert', content, {
+    await storeAgentResult(input.preQualificationId, 'legal_rfp_expert', content, {
       overallRiskLevel: result.overallRiskLevel,
       dealBreakersCount: result.dealBreakers.length,
       requirementsCount: result.requirements.length,
@@ -937,7 +937,7 @@ function formatLegalForRAG(analysis: LegalRfpAnalysis): string {
 ### Step 3: Commit
 
 ```bash
-git add lib/agents/expert-agents/legal-rfp-*
+git add lib/agents/expert-agents/legal-preQualification-*
 git commit -m "feat(agents): add legal RFP expert agent (document-focused)"
 ```
 
@@ -1029,7 +1029,7 @@ import { eq, and, inArray } from 'drizzle-orm';
 export async function runSummaryAgent(
   input: ExpertAgentInput
 ): Promise<ExpertAgentOutput<ManagementSummary>> {
-  console.error(`[Summary Agent] Starting analysis for RFP ${input.rfpId}`);
+  console.error(`[Summary Agent] Starting analysis for RFP ${input.preQualificationId}`);
 
   try {
     // Read outputs from other expert agents
@@ -1038,7 +1038,7 @@ export async function runSummaryAgent(
       .from(rfpEmbeddings)
       .where(
         and(
-          eq(rfpEmbeddings.rfpId, input.rfpId),
+          eq(rfpEmbeddings.preQualificationId, input.preQualificationId),
           inArray(rfpEmbeddings.agentName, [
             'timing_expert',
             'deliverables_expert',
@@ -1055,7 +1055,7 @@ export async function runSummaryAgent(
 
     // Also get some raw document context for headline
     const rawContext = await queryRfpDocument(
-      input.rfpId,
+      input.preQualificationId,
       'executive summary introduction scope objectives',
       5
     );
@@ -1083,7 +1083,7 @@ ADESSO-KONTEXT:
 
     // Store in RAG
     const content = formatSummaryForRAG(result);
-    await storeAgentResult(input.rfpId, 'summary_expert', content, {
+    await storeAgentResult(input.preQualificationId, 'summary_expert', content, {
       fitScore: result.assessment.fitScore,
       recommendation: result.assessment.recommendation,
       urgencyLevel: result.assessment.urgencyLevel,
@@ -1161,7 +1161,7 @@ git commit -m "feat(agents): add summary expert agent for management overview"
 import { runTimingAgent } from './timing-agent';
 import { runDeliverablesAgent } from './deliverables-agent';
 import { runTechStackAgent } from './techstack-agent';
-import { runLegalRfpAgent } from './legal-rfp-agent';
+import { runLegalRfpAgent } from './legal-preQualification-agent';
 import { runSummaryAgent } from './summary-agent';
 import type { ExpertAgentInput } from './types';
 
@@ -1179,7 +1179,7 @@ export interface OrchestratorResult {
 }
 
 export async function runExpertAgents(input: ExpertAgentInput): Promise<OrchestratorResult> {
-  console.error(`[Expert Orchestrator] Starting all agents for RFP ${input.rfpId}`);
+  console.error(`[Expert Orchestrator] Starting all agents for RFP ${input.preQualificationId}`);
 
   const errors: string[] = [];
 
@@ -1249,13 +1249,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
 
   // Verify ownership
-  const rfp = await getCachedRfp(id);
-  if (!rfp || rfp.userId !== session.user.id) {
+  const preQualification = await getCachedRfp(id);
+  if (!preQualification || preQualification.userId !== session.user.id) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
   try {
-    const result = await runExpertAgents({ rfpId: id });
+    const result = await runExpertAgents({ preQualificationId: id });
     return NextResponse.json(result);
   } catch (error) {
     console.error('[Expert Agents API] Error:', error);
@@ -1289,7 +1289,7 @@ import { rfpEmbeddings } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export async function getAgentResult<T>(
-  rfpId: string,
+  preQualificationId: string,
   agentName: string
 ): Promise<{ data: T | null; metadata: Record<string, unknown> | null }> {
   const results = await db
@@ -1298,7 +1298,7 @@ export async function getAgentResult<T>(
       metadata: rfpEmbeddings.metadata,
     })
     .from(rfpEmbeddings)
-    .where(and(eq(rfpEmbeddings.rfpId, rfpId), eq(rfpEmbeddings.agentName, agentName)))
+    .where(and(eq(rfpEmbeddings.preQualificationId, preQualificationId), eq(rfpEmbeddings.agentName, agentName)))
     .orderBy(rfpEmbeddings.createdAt)
     .limit(1);
 
@@ -1384,7 +1384,7 @@ git commit -m "feat(ui): update timing page with expert agent data"
 
 ## Execution Options
 
-**Plan complete and saved to `docs/plans/2026-01-22-rfp-workflow-expert-agents.md`**
+**Plan complete and saved to `docs/plans/2026-01-22-preQualification-workflow-expert-agents.md`**
 
 **Two execution options:**
 

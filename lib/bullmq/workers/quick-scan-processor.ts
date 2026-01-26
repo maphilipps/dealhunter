@@ -375,7 +375,11 @@ export async function processQuickScanJob(job: Job<QuickScanJobData>): Promise<Q
     });
 
     try {
-      await embedAgentOutput(preQualificationId, 'quick_scan', result as Record<string, unknown>);
+      await embedAgentOutput(
+        preQualificationId,
+        'quick_scan',
+        result as unknown as Record<string, unknown>
+      );
       console.error('[QuickScan Worker] Embedded Quick Scan result for RAG');
     } catch (error) {
       console.error('[QuickScan Worker] Failed to embed Quick Scan result:', error);
@@ -409,13 +413,29 @@ export async function processQuickScanJob(job: Job<QuickScanJobData>): Promise<Q
     return { success: true };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Quick Scan failed';
-    console.error(`[QuickScan Worker] Job ${job.id} failed:`, errorMsg);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorName = error instanceof Error ? error.name : 'Error';
+
+    console.error(`[QuickScan Worker] Job ${job.id} failed:`, {
+      message: errorMsg,
+      name: errorName,
+      stack: errorStack,
+      preQualificationId,
+      websiteUrl,
+    });
+
+    const fullErrorDetails = JSON.stringify({
+      message: errorMsg,
+      name: errorName,
+      stack: errorStack,
+      timestamp: new Date().toISOString(),
+    });
 
     await updateBackgroundJob(dbJobId, {
       status: 'failed',
       progress: 100,
       currentStep: 'Failed',
-      errorMessage: errorMsg,
+      errorMessage: fullErrorDetails,
       result: JSON.stringify({ success: false, error: errorMsg }),
       completedAt: new Date(),
     });

@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { queryRagAction } from '@/lib/rag/actions';
 
 interface TimelineCardProps {
-  rfpId: string;
+  preQualificationId: string;
 }
 
 /**
@@ -20,7 +20,7 @@ interface TimelineCardProps {
  * Nutzt RAG Query um Projekt-Phasen und Timeline aus QuickScan-Daten zu generieren.
  * Zeigt horizontale Timeline mit Milestones, Total Duration, Confidence.
  */
-export function TimelineCard({ rfpId }: TimelineCardProps) {
+export function TimelineCard({ preQualificationId }: TimelineCardProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timelineData, setTimelineData] = useState<{
@@ -36,7 +36,7 @@ export function TimelineCard({ rfpId }: TimelineCardProps) {
         setError(null);
 
         const response = await queryRagAction(
-          rfpId,
+          preQualificationId,
           'Welche Projekt-Phasen und Timeline werden für die Migration geschätzt? ' +
             'Liste alle Phasen mit Wochen-Angaben, Tasks und Milestones. ' +
             'Gib auch die Gesamt-Dauer in Wochen an.',
@@ -64,7 +64,7 @@ export function TimelineCard({ rfpId }: TimelineCardProps) {
     }
 
     loadTimeline();
-  }, [rfpId]);
+  }, [preQualificationId]);
 
   // Loading State
   if (isLoading) {

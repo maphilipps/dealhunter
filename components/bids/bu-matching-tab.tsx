@@ -37,7 +37,7 @@ export function BUMatchingTab({ quickScan, bidId }: BUMatchingTabProps) {
           throw new Error('Fehler beim Laden der BU Matches');
         }
 
-        const data = await response.json();
+        const data = (await response.json()) as { matches?: BUMatchResult[] };
         setMatches(data.matches || []);
       } catch (err) {
         console.error('Error loading BU matches:', err);

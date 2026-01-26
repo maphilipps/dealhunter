@@ -184,7 +184,7 @@ async function searchCompanyInfo(
  * Run customer research agent
  *
  * @param leadId - Lead ID
- * @param rfpId - Pre-Qualification ID
+ * @param preQualificationId - Pre-Qualification ID
  * @returns Customer research results
  */
 export async function runCustomerResearchAgent(

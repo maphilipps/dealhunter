@@ -15,6 +15,7 @@ import { QUEUE_NAMES, getDeepScanBackoffDelay, closeQueues } from '../lib/bullmq
 import { processDeepScanJob } from '../lib/bullmq/workers/deep-scan-processor';
 import { processPreQualJob } from '../lib/bullmq/workers/prequal-processing-worker';
 import { processQuickScanJob } from '../lib/bullmq/workers/quick-scan-processor';
+import { processVisualizationJob } from '../lib/bullmq/workers/visualization-processor';
 
 /**
  * Worker concurrency settings
@@ -22,6 +23,7 @@ import { processQuickScanJob } from '../lib/bullmq/workers/quick-scan-processor'
 const DEEP_SCAN_CONCURRENCY = parseInt(process.env.DEEP_SCAN_CONCURRENCY || '2', 10);
 const PREQUAL_CONCURRENCY = parseInt(process.env.PREQUAL_CONCURRENCY || '3', 10);
 const QUICK_SCAN_CONCURRENCY = parseInt(process.env.QUICK_SCAN_CONCURRENCY || '3', 10);
+const VISUALIZATION_CONCURRENCY = parseInt(process.env.VISUALIZATION_CONCURRENCY || '2', 10);
 
 /**
  * Create and start all workers
@@ -64,7 +66,12 @@ async function main() {
   });
 
   deepScanWorker.on('failed', (job, error) => {
-    console.error(`[DeepScan] Job ${job?.id} failed:`, error.message);
+    console.error(`[DeepScan] Job ${job?.id} failed:`, {
+      message: error.message,
+      stack: error.stack,
+      jobData: job?.data,
+      attemptsMade: job?.attemptsMade,
+    });
   });
 
   workers.push(deepScanWorker);
@@ -95,7 +102,12 @@ async function main() {
   });
 
   prequalWorker.on('failed', (job, error) => {
-    console.error(`[PreQual] Job ${job?.id} failed:`, error.message);
+    console.error(`[PreQual] Job ${job?.id} failed:`, {
+      message: error.message,
+      stack: error.stack,
+      jobData: job?.data,
+      attemptsMade: job?.attemptsMade,
+    });
   });
 
   prequalWorker.on('progress', (job, progress) => {
@@ -130,21 +142,66 @@ async function main() {
   });
 
   quickScanWorker.on('failed', (job, error) => {
-    console.error(`[QuickScan] Job ${job?.id} failed:`, error.message);
+    console.error(`[QuickScan] Job ${job?.id} failed:`, {
+      message: error.message,
+      stack: error.stack,
+      jobData: job?.data,
+      attemptsMade: job?.attemptsMade,
+    });
   });
 
   workers.push(quickScanWorker);
+
+  // ============================================================================
+  // Visualization Worker
+  // ============================================================================
+  const visualizationWorker = new Worker(
+    QUEUE_NAMES.VISUALIZATION,
+    async job => {
+      console.log(`[Visualization] Processing job ${job.id}`);
+      return processVisualizationJob(job);
+    },
+    {
+      connection: connectionOptions,
+      concurrency: VISUALIZATION_CONCURRENCY,
+    }
+  );
+
+  visualizationWorker.on('ready', () => {
+    console.log(`[Visualization] Ready (concurrency: ${VISUALIZATION_CONCURRENCY})`);
+  });
+
+  visualizationWorker.on('completed', (job, result) => {
+    console.log(
+      `[Visualization] Job ${job.id} completed. Generated: ${result.generated}/${result.total}`
+    );
+  });
+
+  visualizationWorker.on('failed', (job, error) => {
+    console.error(`[Visualization] Job ${job?.id} failed:`, {
+      message: error.message,
+      stack: error.stack,
+      jobData: job?.data,
+      attemptsMade: job?.attemptsMade,
+    });
+  });
+
+  workers.push(visualizationWorker);
 
   // ============================================================================
   // Shared Event Handlers
   // ============================================================================
   for (const worker of workers) {
     worker.on('error', error => {
-      console.error(`[Worker] Error:`, error);
+      console.error(`[Worker] Error:`, {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
     });
 
     worker.on('stalled', jobId => {
-      console.warn(`[Worker] Job ${jobId} stalled`);
+      console.warn(`[Worker] Job ${jobId} stalled - may be stuck or lost connection`);
     });
   }
 

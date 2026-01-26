@@ -505,7 +505,7 @@ test.describe('Accounts: Account-RFP Linking', () => {
     // Fill in RFP data
     await page.fill('textarea[name="rawInput"]', 'Test RFP for account linking');
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
 
     // Submit
@@ -534,7 +534,7 @@ test.describe('Accounts: Account-RFP Linking', () => {
 
     await page.fill('textarea[name="rawInput"]', 'Linked RFP test');
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
@@ -577,7 +577,7 @@ test.describe('Accounts: Account-RFP Linking', () => {
 
     await page.fill('textarea[name="rawInput"]', 'Blocking deletion test');
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
     await page.waitForLoadState('networkidle');

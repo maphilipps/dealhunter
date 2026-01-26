@@ -21,7 +21,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const { id: leadId } = await params;
 
   try {
-    // 1. Get lead (lead has rfpId reference)
+    // 1. Get lead (lead has preQualificationId reference)
     const lead = await db
       .select()
       .from(qualifications)

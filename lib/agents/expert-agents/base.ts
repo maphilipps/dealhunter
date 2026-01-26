@@ -16,7 +16,7 @@ import { queryRawChunks, type RawRAGResult } from '../../rag/raw-retrieval-servi
 /**
  * Query Pre-Qualification document for relevant content using RAG
  *
- * @param rfpId - The Pre-Qualification ID to query
+ * @param preQualificationId - The Pre-Qualification ID to query
  * @param query - The semantic query to search for
  * @param maxResults - Maximum number of results (default: 5)
  * @returns Array of relevant chunks sorted by similarity
@@ -36,7 +36,7 @@ export async function queryRfpDocument(
 /**
  * Store agent result in rfpEmbeddings table for cross-agent knowledge sharing
  *
- * @param rfpId - The Pre-Qualification ID to associate with
+ * @param preQualificationId - The Pre-Qualification ID to associate with
  * @param agentName - Name of the agent storing the result
  * @param content - The text content to store (will be embedded)
  * @param metadata - Optional additional metadata
@@ -62,7 +62,7 @@ export async function storeAgentResult(
       };
     }
 
-    // Get next chunk index for this agent+rfp combination (unified dealEmbeddings table)
+    // Get next chunk index for this agent+preQualification combination (unified dealEmbeddings table)
     const existingChunks = await db
       .select({ chunkIndex: dealEmbeddings.chunkIndex })
       .from(dealEmbeddings)

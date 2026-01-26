@@ -68,7 +68,9 @@ async function main() {
   });
 
   worker.on('progress', (job, progress) => {
-    console.log(`[PreQual Worker] Job ${job.id} progress: ${progress}%`);
+    const progressLabel =
+      typeof progress === 'number' ? `${progress}%` : JSON.stringify(progress);
+    console.log(`[PreQual Worker] Job ${job.id} progress: ${progressLabel}`);
   });
 
   // Graceful shutdown
@@ -94,8 +96,12 @@ async function main() {
     }
   };
 
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => {
+    void shutdown('SIGTERM');
+  });
+  process.on('SIGINT', () => {
+    void shutdown('SIGINT');
+  });
 
   // Keep the process running
   console.log('[PreQual Worker] Worker started successfully');

@@ -130,13 +130,13 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
     }
   };
 
-  const handleToggleUrl = (index: number, _fromExtracted: boolean) => {
+  const handleToggleUrl = (index: number) => {
     const updatedUrls = [...websiteUrls];
     updatedUrls[index] = { ...updatedUrls[index], selected: !updatedUrls[index].selected };
     setData({ ...data, websiteUrls: updatedUrls });
   };
 
-  const handleRemoveUrl = (index: number, _fromExtracted: boolean) => {
+  const handleRemoveUrl = (index: number) => {
     setData({
       ...data,
       websiteUrls: websiteUrls.filter((_, i) => i !== index),
@@ -396,7 +396,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
                           type="button"
                           variant={urlItem.selected ? 'default' : 'outline'}
                           size="sm"
-                          onClick={() => handleToggleUrl(idx, true)}
+                          onClick={() => handleToggleUrl(idx)}
                         >
                           {urlItem.selected ? <Check className="h-4 w-4" /> : 'Auswählen'}
                         </Button>
@@ -404,7 +404,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
                           type="button"
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleRemoveUrl(idx, true)}
+                          onClick={() => handleRemoveUrl(idx)}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -667,8 +667,6 @@ function SubmissionDeadlineCard({
   today.setHours(0, 0, 0, 0);
 
   const deadline = data.submissionDeadline ? new Date(data.submissionDeadline) : null;
-  const projectStart = data.projectStartDate ? new Date(data.projectStartDate) : null;
-  const projectEnd = data.projectEndDate ? new Date(data.projectEndDate) : null;
 
   const daysUntilDeadline = deadline
     ? Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
@@ -1029,7 +1027,6 @@ function TimelineCard({
   };
 
   const phases = parseTimeline(timeline);
-  const hasPhases = phases.length > 0;
 
   // Calculate total duration
   const calculateDuration = (startStr: string, endStr: string) => {
@@ -1069,7 +1066,7 @@ function TimelineCard({
       </div>
 
       {/* Timeline Visualization */}
-      {hasContent ? (
+      {totalItems > 0 ? (
         <Card className="border-2 border-purple-500 bg-purple-50">
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center gap-2">

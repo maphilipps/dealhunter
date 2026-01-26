@@ -14,7 +14,7 @@ export default async function ViewsPage({ params }: { params: Promise<{ id: stri
   return (
     <SectionPageTemplate
       leadId={id}
-      sectionId="views"
+      sectionId="dynamic-content"
       title="Views & Listings"
       description="Drupal Views für Listen, Übersichten und dynamische Inhalte"
     />

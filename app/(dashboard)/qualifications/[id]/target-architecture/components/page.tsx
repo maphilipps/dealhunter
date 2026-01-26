@@ -14,7 +14,7 @@ export default async function ParagraphsPage({ params }: { params: Promise<{ id:
   return (
     <SectionPageTemplate
       leadId={id}
-      sectionId="paragraphs"
+      sectionId="component-catalog"
       title="Paragraphs"
       description="Drupal Paragraphs für flexible Content-Strukturen"
     />

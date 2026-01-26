@@ -69,7 +69,7 @@ export type MatrixEventEmitter = (event: AgentEvent) => void;
 /**
  * Concurrency Control für parallele Requests
  */
-const CONCURRENT_AGENTS = Infinity; // Keine Einschränkung - alle parallel
+const CONCURRENT_AGENTS = 10; // Limit to prevent pool exhaustion
 
 /**
  * Führt Funktionen mit begrenzter Parallelität aus
@@ -95,7 +95,9 @@ async function runWithConcurrency<T, R>(
         // We use a functional approach to remove the specific promise instance
         if (promiseToRemove) {
           const index = executing.indexOf(promiseToRemove);
-          if (index !== -1) executing.splice(index, 1);
+          if (index !== -1) {
+            void executing.splice(index, 1);
+          }
         }
       }
     })();

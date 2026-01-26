@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import type { DecisionMaker, DecisionMakersResearch } from '@/lib/quick-scan/schema';
-import { getCachedRfpWithRelations } from '@/lib/pre-qualifications/cached-queries';
+import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
 import { cn } from '@/lib/utils';
 import { parseJsonValue } from '@/lib/utils/json';
 
@@ -17,15 +17,15 @@ export default async function ContactsPage({ params }: { params: Promise<{ id: s
     redirect('/login');
   }
 
-  // Get RFP with relations (cached and parallelized)
-  const { rfp, quickScan } = await getCachedRfpWithRelations(id);
+  // Get Pre-Qualification with relations (cached and parallelized)
+  const { preQualification, quickScan } = await getCachedPreQualificationWithRelations(id);
 
-  if (!rfp) {
+  if (!preQualification) {
     notFound();
   }
 
   // Check ownership
-  if (rfp.userId !== session.user.id) {
+  if (preQualification.userId !== session.user.id) {
     notFound();
   }
 

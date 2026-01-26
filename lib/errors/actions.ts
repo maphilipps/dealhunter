@@ -26,12 +26,12 @@ import { preQualifications, type PreQualification } from '../db/schema';
  *
  * Resets the agent's error state and re-triggers the agent with the same inputs.
  *
- * @param rfpId - RFP ID
+ * @param rfpId - Pre-Qualification ID
  * @param agentName - Name of the agent to retry
- * @returns Updated RFP with new status
+ * @returns Updated Pre-Qualification with new status
  */
 export async function retryAgent(
-  rfpId: string,
+  preQualificationId: string,
   agentName: AgentName
 ): Promise<{ success: boolean; preQualification?: PreQualification; error?: string }> {
   try {
@@ -39,7 +39,7 @@ export async function retryAgent(
     const [preQualification] = await db
       .select()
       .from(preQualifications)
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .limit(1);
 
     if (!preQualification) {
@@ -75,10 +75,10 @@ export async function retryAgent(
         agentErrors: JSON.stringify(updatedErrors),
         updatedAt: new Date(),
       })
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .returning();
 
-    revalidatePath(`/pre-qualifications/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${preQualificationId}`);
 
     return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
@@ -95,12 +95,12 @@ export async function retryAgent(
  *
  * Marks the error as resolved with userAction='skip' and moves to next workflow step.
  *
- * @param rfpId - RFP ID
+ * @param rfpId - Pre-Qualification ID
  * @param agentName - Name of the agent to skip
- * @returns Updated RFP with new status
+ * @returns Updated Pre-Qualification with new status
  */
 export async function skipAgent(
-  rfpId: string,
+  preQualificationId: string,
   agentName: AgentName
 ): Promise<{ success: boolean; preQualification?: PreQualification; error?: string }> {
   try {
@@ -113,7 +113,7 @@ export async function skipAgent(
     const [preQualification] = await db
       .select()
       .from(preQualifications)
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .limit(1);
 
     if (!preQualification) {
@@ -155,10 +155,10 @@ export async function skipAgent(
         agentErrors: JSON.stringify(agentErrors),
         updatedAt: new Date(),
       })
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .returning();
 
-    revalidatePath(`/pre-qualifications/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${preQualificationId}`);
 
     return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
@@ -175,18 +175,18 @@ export async function skipAgent(
  *
  * Activates manual input form for Extract Agent after max retries.
  *
- * @param rfpId - RFP ID
- * @returns Updated RFP with manual_extraction status
+ * @param rfpId - Pre-Qualification ID
+ * @returns Updated Pre-Qualification with manual_extraction status
  */
 export async function switchToManualMode(
-  rfpId: string
+  preQualificationId: string
 ): Promise<{ success: boolean; preQualification?: PreQualification; error?: string }> {
   try {
     // Fetch current PreQualification
     const [preQualification] = await db
       .select()
       .from(preQualifications)
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .limit(1);
 
     if (!preQualification) {
@@ -205,10 +205,10 @@ export async function switchToManualMode(
         status: 'manual_extraction',
         updatedAt: new Date(),
       })
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .returning();
 
-    revalidatePath(`/pre-qualifications/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${preQualificationId}`);
 
     return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
@@ -225,12 +225,12 @@ export async function switchToManualMode(
  *
  * Used for dismissing errors after successful resolution.
  *
- * @param rfpId - RFP ID
+ * @param rfpId - Pre-Qualification ID
  * @param errorId - Error ID to resolve
- * @returns Updated RFP
+ * @returns Updated Pre-Qualification
  */
 export async function resolveAgentError(
-  rfpId: string,
+  preQualificationId: string,
   errorId: string
 ): Promise<{ success: boolean; preQualification?: PreQualification; error?: string }> {
   try {
@@ -238,7 +238,7 @@ export async function resolveAgentError(
     const [preQualification] = await db
       .select()
       .from(preQualifications)
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .limit(1);
 
     if (!preQualification) {
@@ -271,10 +271,10 @@ export async function resolveAgentError(
         agentErrors: JSON.stringify(agentErrors),
         updatedAt: new Date(),
       })
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .returning();
 
-    revalidatePath(`/pre-qualifications/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${preQualificationId}`);
 
     return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
@@ -291,12 +291,12 @@ export async function resolveAgentError(
  *
  * Helper function to save an error during agent execution.
  *
- * @param rfpId - RFP ID
+ * @param rfpId - Pre-Qualification ID
  * @param agentError - Agent error to save
- * @returns Updated RFP
+ * @returns Updated Pre-Qualification
  */
 export async function saveAgentError(
-  rfpId: string,
+  preQualificationId: string,
   agentError: AgentError
 ): Promise<{ success: boolean; preQualification?: PreQualification; error?: string }> {
   try {
@@ -304,7 +304,7 @@ export async function saveAgentError(
     const [preQualification] = await db
       .select()
       .from(preQualifications)
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .limit(1);
 
     if (!preQualification) {
@@ -326,10 +326,10 @@ export async function saveAgentError(
         agentErrors: JSON.stringify(agentErrors),
         updatedAt: new Date(),
       })
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .returning();
 
-    revalidatePath(`/pre-qualifications/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${preQualificationId}`);
 
     return { success: true, preQualification: updatedPreQualification };
   } catch (error) {

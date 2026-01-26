@@ -9,26 +9,26 @@ import { eq, and } from 'drizzle-orm';
 
 import type { ExpertAgentOutput } from './types';
 
-import { generateQueryEmbedding, isEmbeddingEnabled } from '@/lib/ai/embedding-config';
-import { db } from '@/lib/db';
-import { dealEmbeddings } from '@/lib/db/schema';
-import { queryRawChunks, type RawRAGResult } from '@/lib/rag/raw-retrieval-service';
+import { generateQueryEmbedding, isEmbeddingEnabled } from '../../ai/embedding-config';
+import { db } from '../../db';
+import { dealEmbeddings } from '../../db/schema';
+import { queryRawChunks, type RawRAGResult } from '../../rag/raw-retrieval-service';
 
 /**
- * Query RFP document for relevant content using RAG
+ * Query Pre-Qualification document for relevant content using RAG
  *
- * @param rfpId - The RFP ID to query
+ * @param rfpId - The Pre-Qualification ID to query
  * @param query - The semantic query to search for
  * @param maxResults - Maximum number of results (default: 5)
  * @returns Array of relevant chunks sorted by similarity
  */
 export async function queryRfpDocument(
-  rfpId: string,
+  preQualificationId: string,
   query: string,
   maxResults: number = 5
 ): Promise<RawRAGResult[]> {
   return queryRawChunks({
-    preQualificationId: rfpId,
+    preQualificationId: preQualificationId,
     question: query,
     maxResults,
   });
@@ -37,14 +37,14 @@ export async function queryRfpDocument(
 /**
  * Store agent result in rfpEmbeddings table for cross-agent knowledge sharing
  *
- * @param rfpId - The RFP ID to associate with
+ * @param rfpId - The Pre-Qualification ID to associate with
  * @param agentName - Name of the agent storing the result
  * @param content - The text content to store (will be embedded)
  * @param metadata - Optional additional metadata
  * @returns Success status
  */
 export async function storeAgentResult(
-  rfpId: string,
+  preQualificationId: string,
   agentName: string,
   content: string,
   metadata?: Record<string, unknown>
@@ -68,14 +68,14 @@ export async function storeAgentResult(
       .select({ chunkIndex: dealEmbeddings.chunkIndex })
       .from(dealEmbeddings)
       .where(
-        and(eq(dealEmbeddings.preQualificationId, rfpId), eq(dealEmbeddings.agentName, agentName))
+        and(eq(dealEmbeddings.preQualificationId, preQualificationId), eq(dealEmbeddings.agentName, agentName))
       );
 
     const nextChunkIndex =
       existingChunks.length > 0 ? Math.max(...existingChunks.map(c => c.chunkIndex)) + 1 : 0;
 
     await db.insert(dealEmbeddings).values({
-      preQualificationId: rfpId,
+      preQualificationId: preQualificationId,
       qualificationId: null,
       agentName,
       chunkType: `${agentName}_result`,

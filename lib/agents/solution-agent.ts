@@ -26,11 +26,11 @@ import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
 
 export interface SolutionInput {
   deliverableName: string;
-  rfpId: string;
+  preQualificationId: string;
   leadId?: string; // Optional: for RAG queries scoped to Lead
   customerName?: string;
   projectDescription?: string;
-  requirements?: string[]; // Key requirements from RFP
+  requirements?: string[]; // Key requirements from Pre-Qualification
 }
 
 export interface OutlineSection {
@@ -85,7 +85,7 @@ export interface SolutionVisualIdeas {
  * Query all Deep Scan agents for comprehensive context
  * PA-016: Enhanced RAG integration with all agent outputs
  */
-async function queryAllAgents(rfpId: string, deliverableName: string) {
+async function queryAllAgents(preQualificationId: string, deliverableName: string) {
   // Define targeted queries for each agent type
   const agentQueries = [
     {
@@ -118,7 +118,7 @@ async function queryAllAgents(rfpId: string, deliverableName: string) {
   const results = await Promise.all(
     agentQueries.map(async ({ name, query }) => {
       const chunks = await queryRAG({
-        preQualificationId: rfpId,
+        preQualificationId: preQualificationId,
         question: query,
         maxResults: 5, // Get top 5 chunks per agent type
       });
@@ -157,7 +157,7 @@ export async function generateOutline(input: SolutionInput): Promise<SolutionOut
 
   try {
     // 1. RAG Query: Retrieve comprehensive context from ALL Deep Scan agents
-    const { allChunks, contextByAgent } = await queryAllAgents(input.rfpId, input.deliverableName);
+    const { allChunks, contextByAgent } = await queryAllAgents(input.preQualificationId, input.deliverableName);
 
     // Build structured context string with agent attribution
     const rawRagContext = Object.entries(contextByAgent)
@@ -276,7 +276,7 @@ export async function generateDraft(
     }
 
     // 1. RAG Query: Retrieve comprehensive context from ALL Deep Scan agents
-    const { allChunks, contextByAgent } = await queryAllAgents(input.rfpId, input.deliverableName);
+    const { allChunks, contextByAgent } = await queryAllAgents(input.preQualificationId, input.deliverableName);
 
     // Build structured context string with agent attribution and more details
     const rawRagContext = Object.entries(contextByAgent)
@@ -413,7 +413,7 @@ export async function generateTalkingPoints(
     }
 
     // 1. RAG Query: Retrieve comprehensive insights from ALL agents
-    const { contextByAgent } = await queryAllAgents(input.rfpId, input.deliverableName);
+    const { contextByAgent } = await queryAllAgents(input.preQualificationId, input.deliverableName);
 
     // Build structured context focusing on key insights
     const rawRagContext = Object.entries(contextByAgent)
@@ -508,7 +508,7 @@ export async function generateVisualIdeas(input: SolutionInput): Promise<Solutio
 
   try {
     // 1. RAG Query: Retrieve data from ALL agents that could be visualized
-    const { contextByAgent } = await queryAllAgents(input.rfpId, input.deliverableName);
+    const { contextByAgent } = await queryAllAgents(input.preQualificationId, input.deliverableName);
 
     // Build context focusing on visualizable data
     const rawRagContext = Object.entries(contextByAgent)

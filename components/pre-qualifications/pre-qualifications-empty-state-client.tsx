@@ -1,8 +1,8 @@
 /**
- * RFPs Empty State Client Component
+ * Pre-Qualifications Empty State Client Component
  *
  * Client-side empty state with suggested actions for capability discovery.
- * Used when no RFPs are available.
+ * Used when no Pre-Qualifications are available.
  */
 
 'use client';
@@ -20,7 +20,7 @@ export function PreQualificationsEmptyStateClient() {
     {
       id: 'upload-rfp',
       icon: <Upload className="h-5 w-5" />,
-      label: 'RFP hochladen',
+      label: 'Pre-Qualification hochladen',
       description: 'PDF oder Text hochladen und AI-Extraktion starten',
       onClick: () => {
         router.push('/pre-qualifications/new');
@@ -51,7 +51,7 @@ export function PreQualificationsEmptyStateClient() {
       id: 'view-docs',
       icon: <BookOpen className="h-5 w-5" />,
       label: 'Dokumentation',
-      description: 'RFP-Workflow und BID/NO-BID Kriterien',
+      description: 'Pre-Qualification-Workflow und BID/NO-BID Kriterien',
       onClick: () => {
         router.push('/docs/workflow');
       },
@@ -63,12 +63,12 @@ export function PreQualificationsEmptyStateClient() {
     <div className="space-y-6">
       <EmptyState
         icon={<Upload className="h-12 w-12" />}
-        title="Keine RFPs vorhanden"
-        description="Laden Sie Ihr erstes RFP hoch, um den AI-gestützten Qualifizierungsprozess zu starten. Der Quick Scan analysiert automatisch die Website und gibt eine initiale BID/NO-BID Empfehlung."
+        title="Keine Pre-Qualifications vorhanden"
+        description="Laden Sie Ihr erstes Pre-Qualification hoch, um den AI-gestützten Qualifizierungsprozess zu starten. Der Quick Scan analysiert automatisch die Website und gibt eine initiale BID/NO-BID Empfehlung."
         variant="info"
         actions={[
           {
-            label: 'Neuer RFP',
+            label: 'Neuer Pre-Qualification',
             onClick: () => router.push('/pre-qualifications/new'),
             variant: 'default',
             icon: <Upload className="h-4 w-4" />,
@@ -78,7 +78,7 @@ export function PreQualificationsEmptyStateClient() {
 
       <SuggestedActions
         title="Workflow Übersicht"
-        description="So funktioniert der RFP-zu-Lead-Prozess"
+        description="So funktioniert der Pre-Qualification-zu-Lead-Prozess"
         actions={suggestions}
         columns={2}
       />

@@ -8,18 +8,18 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
 interface RunExpertAgentsButtonProps {
-  rfpId: string;
+  preQualificationId: string;
   hasResults?: boolean;
 }
 
-export function RunExpertAgentsButton({ rfpId, hasResults }: RunExpertAgentsButtonProps) {
+export function RunExpertAgentsButton({ preQualificationId, hasResults }: RunExpertAgentsButtonProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const handleClick = () => {
     startTransition(async () => {
       try {
-        const response = await fetch(`/api/pre-qualifications/${rfpId}/run-expert-agents`, {
+        const response = await fetch(`/api/pre-qualifications/${preQualificationId}/run-expert-agents`, {
           method: 'POST',
         });
 

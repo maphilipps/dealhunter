@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { PreQualification } from '@/lib/db/schema';
 
 interface WorkflowStatusProps {
-  rfp: PreQualification;
+  preQualification: PreQualification;
 }
 
 /**
@@ -16,7 +16,7 @@ interface WorkflowStatusProps {
  * Displays current workflow status and next agent in the pipeline.
  * Shows agent timeline with completed, running, and pending states.
  */
-export function WorkflowStatus({ rfp }: WorkflowStatusProps) {
+export function WorkflowStatus({ preQualification }: WorkflowStatusProps) {
   const { status } = rfp;
 
   // Define workflow steps
@@ -126,7 +126,7 @@ export function WorkflowStatus({ rfp }: WorkflowStatusProps) {
           <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-900">
             <p className="font-medium">Duplikat gefunden</p>
             <p className="mt-1 text-amber-700">
-              Ein ähnliches RFP existiert bereits. Bitte prüfen Sie die Duplikate und entscheiden
+              Ein ähnliches Pre-Qualification existiert bereits. Bitte prüfen Sie die Duplikate und entscheiden
               Sie, ob Sie fortfahren möchten.
             </p>
           </div>

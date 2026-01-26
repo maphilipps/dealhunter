@@ -40,9 +40,9 @@ registry.register({
   category: 'notification',
   inputSchema: sendTeamAlertInputSchema,
   async execute(input, context: ToolContext) {
-    // Get lead (authorize via rfp.userId)
+    // Get lead (authorize via preQualification.userId)
     const [leadData] = await db
-      .select({ lead: qualifications, rfp: preQualifications })
+      .select({ lead: qualifications, preQualification: preQualifications })
       .from(qualifications)
       .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
       .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
@@ -53,9 +53,9 @@ registry.register({
     }
 
     const lead = leadData.lead;
-    const rfp = leadData.rfp;
+    const preQualification = leadData.preQualification;
 
-    // Get team assignments for this RFP
+    // Get team assignments for this Pre-Qualification
     const assignments = await db
       .select({
         assignment: teamAssignments,
@@ -63,7 +63,7 @@ registry.register({
       })
       .from(teamAssignments)
       .innerJoin(employees, eq(teamAssignments.employeeId, employees.id))
-      .where(eq(teamAssignments.preQualificationId, rfp.id));
+      .where(eq(teamAssignments.preQualificationId, preQualification.id));
 
     if (assignments.length === 0) {
       return { success: false, error: 'No team members assigned to this lead' };
@@ -79,18 +79,18 @@ registry.register({
     }));
 
     // Get BL leader name (rfp owner)
-    const [blLeader] = await db.select().from(users).where(eq(users.id, rfp.userId)).limit(1);
+    const [blLeader] = await db.select().from(users).where(eq(users.id, preQualification.userId)).limit(1);
 
     // Send notifications
     try {
       const result = await sendTeamNotificationEmails({
-        bidId: rfp.id,
+        bidId: preQualification.id,
         projectName: lead.customerName || 'Unnamed Project',
         customerName: lead.customerName || 'Unknown Customer',
         projectDescription: input.message || lead.projectDescription || 'No description available',
         teamMembers: teamDetails,
         blLeaderName: blLeader?.name || 'Unknown',
-        projectUrl: `/qualifications/${lead.id}`, // Override to use lead URL instead of RFP
+        projectUrl: `/qualifications/${lead.id}`, // Override to use lead URL instead of Pre-Qualification
       });
 
       return {
@@ -145,9 +145,9 @@ registry.register({
   category: 'notification',
   inputSchema: scheduleReminderInputSchema,
   async execute(input, context: ToolContext) {
-    // Get lead (authorize via rfp.userId)
+    // Get lead (authorize via preQualification.userId)
     const [leadData] = await db
-      .select({ lead: qualifications, rfp: preQualifications })
+      .select({ lead: qualifications, preQualification: preQualifications })
       .from(qualifications)
       .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
       .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
@@ -254,9 +254,9 @@ registry.register({
   category: 'notification',
   inputSchema: listRemindersInputSchema,
   async execute(input, context: ToolContext) {
-    // Get lead (authorize via rfp.userId)
+    // Get lead (authorize via preQualification.userId)
     const [leadData] = await db
-      .select({ lead: qualifications, rfp: preQualifications })
+      .select({ lead: qualifications, preQualification: preQualifications })
       .from(qualifications)
       .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
       .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
@@ -313,9 +313,9 @@ registry.register({
   category: 'notification',
   inputSchema: cancelReminderInputSchema,
   async execute(input, context: ToolContext) {
-    // Get lead (authorize via rfp.userId)
+    // Get lead (authorize via preQualification.userId)
     const [leadData] = await db
-      .select({ lead: qualifications, rfp: preQualifications })
+      .select({ lead: qualifications, preQualification: preQualifications })
       .from(qualifications)
       .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
       .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))

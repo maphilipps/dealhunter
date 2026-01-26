@@ -103,7 +103,7 @@ export default async function BLReviewPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">BL Review</h1>
         <p className="mt-2 text-muted-foreground">
-          Prüfen und genehmigen Sie RFPs für Ihren Bereich
+          Prüfen und genehmigen Sie Pre-Qualifications für Ihren Bereich
         </p>
       </div>
 
@@ -116,7 +116,7 @@ export default async function BLReviewPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statusGroups.pending.length}</div>
-            <p className="text-xs text-muted-foreground">RFPs warten auf Review</p>
+            <p className="text-xs text-muted-foreground">Pre-Qualifications warten auf Review</p>
           </CardContent>
         </Card>
         <Card>
@@ -157,9 +157,9 @@ export default async function BLReviewPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-amber-500" />
-              Zu prüfende RFPs
+              Zu prüfende Pre-Qualifications
             </CardTitle>
-            <CardDescription>Diese RFPs warten auf Ihre Prüfung und Team-Zuweisung</CardDescription>
+            <CardDescription>Diese Pre-Qualifications warten auf Ihre Prüfung und Team-Zuweisung</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -217,9 +217,9 @@ export default async function BLReviewPage() {
         statusGroups.completed.length > 0) && (
         <Card>
           <CardHeader>
-            <CardTitle>Weitere RFPs</CardTitle>
+            <CardTitle>Weitere Pre-Qualifications</CardTitle>
             <CardDescription>
-              RFPs mit zugewiesenem Team oder abgeschlossene Workflows
+              Pre-Qualifications mit zugewiesenem Team oder abgeschlossene Workflows
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -282,9 +282,9 @@ export default async function BLReviewPage() {
           <CardContent className="pt-6">
             <div className="text-center py-10">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">Keine RFPs zugewiesen</h3>
+              <h3 className="mt-4 text-lg font-semibold">Keine Pre-Qualifications zugewiesen</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Es wurden noch keine RFPs an Ihren Bereich weitergeleitet.
+                Es wurden noch keine Pre-Qualifications an Ihren Bereich weitergeleitet.
               </p>
             </div>
           </CardContent>

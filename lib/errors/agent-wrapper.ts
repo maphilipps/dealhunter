@@ -58,7 +58,7 @@ export interface ErrorHandlingOptions {
  * } else {
  *   console.error(result.error);
  *   // Save error to DB for UI display
- *   await saveAgentError(rfpId, result.error, result.attempts);
+ *   await saveAgentError(preQualificationId, result.error, result.attempts);
  * }
  * ```
  *
@@ -224,7 +224,7 @@ export function formatErrorForUser(error: ClassifiedError): string {
  * Get next recommended status after agent failure
  *
  * @param agentName - Failed agent
- * @param currentStatus - Current RFP status
+ * @param currentStatus - Current Pre-Qualification status
  * @returns Next status for failed state
  */
 export function getFailedStatus(agentName: AgentName, currentStatus: string): string {

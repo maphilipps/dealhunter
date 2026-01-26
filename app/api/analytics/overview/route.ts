@@ -13,7 +13,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get all RFPs for aggregation
+    // Get all Pre-Qualifications for aggregation
     const allRfps = await db
       .select({
         id: preQualifications.id,
@@ -58,7 +58,7 @@ export async function GET(_request: NextRequest) {
     // Stage distribution
     const coldCount = allRfps.filter(r => r.stage === 'cold').length;
     const warmCount = allRfps.filter(r => r.stage === 'warm').length;
-    const rfpCount = allRfps.filter(r => r.stage === 'rfp').length;
+    const rfpCount = allRfps.filter(r => r.stage === 'pre-qualification').length;
 
     // Status funnel
     const draftCount = allRfps.filter(r => r.status === 'draft').length;
@@ -120,7 +120,7 @@ export async function GET(_request: NextRequest) {
       stage: {
         cold: coldCount,
         warm: warmCount,
-        rfp: rfpCount,
+        preQualification: rfpCount,
       },
       funnel: {
         draft: draftCount,

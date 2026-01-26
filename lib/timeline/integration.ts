@@ -51,7 +51,7 @@ export async function generateTimelineFromQuickScan(params: {
     techStack: quickScanResult.techStack?.technologies?.map(t => t.name),
     cms: quickScanResult.techStack?.cms,
 
-    // From RFP
+    // From Pre-Qualification
     rfpTimeline: extractedRequirements?.timeline,
     specialRequirements: extractedRequirements?.keyRequirements,
   };

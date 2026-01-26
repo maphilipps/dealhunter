@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { queryLeadRag, storeAuditAgentOutput, formatAuditContext } from './base';
 import type { AuditAgentInput, AuditAgentOutput, AuditSection } from './types';
+import { decisionExpertToVisualization } from '../output-to-json-render';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
@@ -264,6 +265,71 @@ GRUNDSÄTZE:
       items: sections.map(s => ({ slug: s.slug, title: s.title })),
     };
 
+    // ═══════════════════════════════════════════════════════════════
+    // AGENT-NATIVE: Store findings and visualization directly
+    // ═══════════════════════════════════════════════════════════════
+    if (input.ragTools) {
+      log('Speichere Findings und Visualisierung via Agent-Native RAG...');
+
+      // Store decision recommendation
+      await input.ragTools.storeFinding({
+        category: 'recommendation',
+        chunkType: 'bid_decision',
+        content: `BID/NO-BID Empfehlung: ${decision.recommendation}. Score: ${decision.overallScore}/100. ${decision.reasoning}`,
+        confidence: decision.confidence,
+        metadata: {
+          recommendation: decision.recommendation,
+          overallScore: decision.overallScore,
+          scores: decision.scores
+        },
+      });
+
+      // Store executive summary
+      if (decision.executiveSummary) {
+        await input.ragTools.storeFinding({
+          category: 'elaboration',
+          chunkType: 'executive_summary',
+          content: decision.executiveSummary,
+          confidence: decision.confidence,
+        });
+      }
+
+      // Store pros/cons as risk assessments
+      if (decision.cons.length > 0) {
+        const riskContent = decision.cons
+          .map(c => `${c.point} (${c.impact} impact)${c.mitigation ? ` - Mitigation: ${c.mitigation}` : ''}`)
+          .join('. ');
+
+        await input.ragTools.storeFinding({
+          category: 'risk',
+          chunkType: 'project_risks',
+          content: `Identifizierte Risiken: ${riskContent}`,
+          confidence: decision.confidence,
+          metadata: { risks: decision.cons },
+        });
+      }
+
+      // Generate and store visualization
+      const visualization = decisionExpertToVisualization({
+        recommendation: decision.recommendation as 'BID' | 'NO-BID' | 'CONDITIONAL',
+        confidence: decision.confidence,
+        reasoning: decision.reasoning,
+        pros: decision.pros.map(p => p.point),
+        cons: decision.cons.map(c => c.point),
+        nextSteps: decision.nextSteps.map(s => s.action),
+      });
+      await input.ragTools.storeVisualization({
+        sectionId: 'recommendation',
+        visualization,
+        confidence: decision.confidence,
+      });
+
+      log('Agent-Native RAG Speicherung abgeschlossen');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // LEGACY: Store via storeAuditAgentOutput (fallback)
+    // ═══════════════════════════════════════════════════════════════
     const output: AuditAgentOutput = {
       success: true,
       category: 'empfehlung',
@@ -273,7 +339,10 @@ GRUNDSÄTZE:
       analyzedAt: new Date().toISOString(),
     };
 
-    await storeAuditAgentOutput(input.leadId, 'audit_decision_expert', output);
+    // Only store via legacy path if ragTools not available
+    if (!input.ragTools) {
+      await storeAuditAgentOutput(input.leadId, 'audit_decision_expert', output);
+    }
 
     log('Entscheidungs-Synthese abgeschlossen');
 

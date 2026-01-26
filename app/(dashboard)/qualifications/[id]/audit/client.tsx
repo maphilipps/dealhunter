@@ -90,7 +90,7 @@ export function DeepScanClient({
         <CardContent className="space-y-4">
           {suggestedUrls.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Vorschläge aus dem RFP:</p>
+              <p className="text-sm font-medium">Vorschläge aus dem Pre-Qualification:</p>
               <div className="flex flex-wrap gap-2">
                 {suggestedUrls.map(suggestion => (
                   <Button

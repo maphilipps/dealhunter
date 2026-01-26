@@ -1,5 +1,5 @@
 {
   "enabledPlugins": {
-    "compound-engineering@every-marketplace": false
+    "compound-engineering@every-marketplace": true
   }
 }

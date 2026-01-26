@@ -129,10 +129,10 @@ const HOURS_PER_PT = 8;
  * Run costs agent
  *
  * @param leadId - Lead ID
- * @param rfpId - RFP ID
+ * @param rfpId - Pre-Qualification ID
  * @returns Costs analysis with budget fit
  */
-export async function runCostsAgent(leadId: string, rfpId: string): Promise<CostsAnalysis> {
+export async function runCostsAgent(leadId: string, preQualificationId: string): Promise<CostsAnalysis> {
   // 1. Fetch lead data
   const [leadData] = await db
     .select({
@@ -360,7 +360,7 @@ ${result.assumptions.map(a => `- ${a}`).join('\n')}`;
   if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
     await db.insert(dealEmbeddings).values({
       qualificationId: leadId,
-      preQualificationId: rfpId,
+      preQualificationId: preQualificationId,
       agentName: 'costs',
       chunkType: 'analysis',
       chunkIndex: 0,

@@ -58,7 +58,7 @@ interface RequirementMatrix {
 }
 
 interface RequirementsMatrixProps {
-  rfpId: string;
+  preQualificationId: string;
   initialMatrix?: RequirementMatrix | null;
 }
 
@@ -180,7 +180,7 @@ function MatrixCellDisplay({ cell }: { cell: MatrixCell | undefined }) {
  *
  * Zeigt die Anforderungsmatrix mit CMS-Vergleich
  */
-export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixProps) {
+export function RequirementsMatrix({ preQualificationId, initialMatrix }: RequirementsMatrixProps) {
   const [matrix, setMatrix] = useState<RequirementMatrix | null>(initialMatrix || null);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -191,11 +191,11 @@ export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixP
     if (!initialMatrix) {
       void loadMatrix();
     }
-  }, [rfpId, initialMatrix]);
+  }, [preQualificationId, initialMatrix]);
 
   const loadMatrix = async () => {
     try {
-      const res = await fetch(`/api/pre-qualifications/${rfpId}/cms-matrix/stream`);
+      const res = await fetch(`/api/pre-qualifications/${preQualificationId}/cms-matrix/stream`);
       if (res.ok) {
         const data = await res.json();
         if (data.matrix) {
@@ -213,7 +213,7 @@ export function RequirementsMatrix({ rfpId, initialMatrix }: RequirementsMatrixP
     setStatusMessage('Starte Matrix-Recherche...');
 
     try {
-      const res = await fetch(`/api/pre-qualifications/${rfpId}/cms-matrix/stream`, {
+      const res = await fetch(`/api/pre-qualifications/${preQualificationId}/cms-matrix/stream`, {
         method: 'POST',
       });
 

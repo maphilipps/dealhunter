@@ -74,7 +74,7 @@ const CostEstimationSchema = z.object({
       licenses: z.number().default(0),
       support: z.number().default(0),
       total: z.number().default(0),
-      period: z.literal('monthly').default('monthly'),
+      period: z.enum(['monthly', 'annual']).default('monthly'),
     })
     .default({ hosting: 0, licenses: 0, support: 0, total: 0, period: 'monthly' }),
   roi: z
@@ -192,10 +192,15 @@ CONTINGENCY:
 - Mittlere Projekte (500-2000h): 20%
 - Große Projekte (>2000h): 25%
 
+RECURRING COSTS:
+- Hosting, Support, Lizenzen angeben
+- "period": "monthly" oder "annual" je nach Abrechnungsmodell
+- Für TCO-Berechnung entsprechend hochrechnen
+
 TCO (3 Jahre):
 - Initial: Projektkosten
 - Recurring: Hosting + Support + Lizenzen
-- Formel: Initial + (Recurring * 36)
+- Formel: Initial + (Recurring * 36) wenn monthly, (Recurring * 3) wenn annual
 
 ROI-FAKTOREN:
 - Reduzierte Wartungskosten

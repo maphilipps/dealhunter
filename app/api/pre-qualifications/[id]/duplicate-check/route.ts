@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/pre-qualifications/[id]/duplicate-check
  *
- * Run Duplicate Check Agent for an RFP
+ * Run Duplicate Check Agent for an Pre-Qualification
  * Called automatically by workflow orchestrator or manually by user
  */
 export async function POST(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -27,31 +27,31 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
   const { id } = await context.params;
 
   try {
-    // 2. Fetch RFP and verify ownership
-    const [rfp] = await db
+    // 2. Fetch Pre-Qualification and verify ownership
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
       .where(and(eq(preQualifications.id, id), eq(preQualifications.userId, session.user.id)));
 
-    if (!rfp) {
-      return NextResponse.json({ error: 'RFP not found' }, { status: 404 });
+    if (!preQualification) {
+      return NextResponse.json({ error: 'Pre-Qualification not found' }, { status: 404 });
     }
 
-    // 3. Check if RFP has extracted requirements (needed for duplicate check)
-    if (!rfp.extractedRequirements) {
-      return NextResponse.json({ error: 'RFP must be extracted first' }, { status: 400 });
+    // 3. Check if Pre-Qualification has extracted requirements (needed for duplicate check)
+    if (!preQualification.extractedRequirements) {
+      return NextResponse.json({ error: 'Pre-Qualification must be extracted first' }, { status: 400 });
     }
 
-    const extractedReqs = JSON.parse(rfp.extractedRequirements) as ExtractedRequirements;
+    const extractedReqs = JSON.parse(preQualification.extractedRequirements) as ExtractedRequirements;
 
     // 4. Run Duplicate Check Agent
     const duplicateResult = await runDuplicateCheckAgent({
       extractedRequirements: extractedReqs,
-      accountId: rfp.accountId || undefined,
+      accountId: preQualification.accountId || undefined,
       excludeRfpId: id,
     });
 
-    // 5. Save duplicate check result to RFP
+    // 5. Save duplicate check result to Pre-Qualification
     await db
       .update(preQualifications)
       .set({

@@ -269,7 +269,7 @@ describe('raw-embedding-service', () => {
   });
 
   describe('deleteRawChunks', () => {
-    it('should delete chunks for RFP', async () => {
+    it('should delete chunks for Pre-Qualification', async () => {
       const mockDelete = vi.fn(() => ({ where: vi.fn() }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.delete).mockImplementation(mockDelete as any);

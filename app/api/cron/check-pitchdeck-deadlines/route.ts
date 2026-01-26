@@ -9,11 +9,11 @@ import { qualifications, pitchdecks, preQualifications } from '@/lib/db/schema';
 
 // ============================================================================
 // GET /api/cron/check-pitchdeck-deadlines
-// DEA-169 (PA-010): Auto-Submit Pitchdecks bei RFP-Deadline
+// DEA-169 (PA-010): Auto-Submit Pitchdecks bei Pre-Qualification-Deadline
 // ============================================================================
 
 /**
- * Vercel Cron Job that automatically submits pitchdecks when RFP deadline is reached.
+ * Vercel Cron Job that automatically submits pitchdecks when Pre-Qualification deadline is reached.
  * Runs daily at 9:00 AM on weekdays (configured in vercel.json).
  *
  * Security: Uses timing-safe CRON_SECRET validation to prevent timing attacks.
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
       .select({
         pitchdeck: pitchdecks,
         lead: qualifications,
-        rfp: preQualifications,
+        preQualification: preQualifications,
       })
       .from(pitchdecks)
       .innerJoin(qualifications, eq(pitchdecks.qualificationId, qualifications.id))
@@ -73,19 +73,19 @@ export async function GET(request: Request) {
         )
       );
 
-    // 3. Check each pitchdeck's RFP deadline
+    // 3. Check each pitchdeck's Pre-Qualification deadline
     for (const { pitchdeck, lead, rfp } of activePitchdecks) {
-      // Extract RFP deadline from extractedRequirements
+      // Extract Pre-Qualification deadline from extractedRequirements
       let rfpDeadline: Date | null = null;
 
-      if (rfp.extractedRequirements) {
+      if (preQualification.extractedRequirements) {
         try {
-          const requirements = JSON.parse(rfp.extractedRequirements) as { deadline?: string };
+          const requirements = JSON.parse(preQualification.extractedRequirements) as { deadline?: string };
           if (requirements.deadline) {
             rfpDeadline = new Date(requirements.deadline);
           }
         } catch {
-          console.error(`[Cron] Failed to parse extractedRequirements for RFP ${rfp.id}`);
+          console.error(`[Cron] Failed to parse extractedRequirements for Pre-Qualification ${preQualification.id}`);
           continue;
         }
       }
@@ -134,10 +134,10 @@ export async function GET(request: Request) {
               newValue: JSON.stringify({
                 status: 'submitted',
                 autoSubmittedAt: now.toISOString(),
-                reason: 'RFP deadline reached',
+                reason: 'Pre-Qualification deadline reached',
                 rfpDeadline: result.rfpDeadline.toISOString(),
               }),
-              reason: 'Auto-Submit: RFP-Deadline erreicht',
+              reason: 'Auto-Submit: Pre-Qualification-Deadline erreicht',
             });
           } catch (error) {
             console.error(

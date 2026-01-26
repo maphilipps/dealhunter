@@ -1,54 +1,18 @@
-# Docker Compose for Sydney / DealHunter
+# Docker Compose for DealHunter - Development Infrastructure
 #
-# Services:
-# - app: Next.js web application
-# - postgres: PostgreSQL with pgvector for embeddings
-# - redis: BullMQ job queue storage
-# - worker: Background job processor for deep scan
+# Only runs PostgreSQL and Redis. Next.js runs locally for faster development.
 #
 # Usage:
-# - Start all: docker compose up -d
-# - Start specific: docker compose up -d redis worker
+# - Start: docker compose up -d
 # - Stop: docker compose down
-# - Logs: docker compose logs -f app
+# - Logs: docker compose logs -f
 # - Redis CLI: docker compose exec redis redis-cli -a dealhunter
+# - Postgres CLI: docker compose exec postgres psql -U dealhunter
 #
-# Development (with hot reload):
-# - Start infrastructure: docker compose up -d postgres redis
-# - Run app locally: npm run dev
+# Then run locally:
+# - npm run dev
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: dealhunter-app
-    ports:
-      - '3000:3000'
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-dealhunter}:${POSTGRES_PASSWORD:-dealhunter}@postgres:5432/${POSTGRES_DB:-dealhunter}
-      - REDIS_URL=${REDIS_URL:-redis://:${REDIS_PASSWORD:-dealhunter}@redis:6379}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://adesso-ai-hub.3asabc.de/v1}
-      - OPENAI_EMBEDDING_API_KEY=${OPENAI_EMBEDDING_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - EXA_API_KEY=${EXA_API_KEY}
-      - AUTH_SECRET=${AUTH_SECRET}
-      - AUTH_URL=${AUTH_URL:-http://localhost:3000}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/api/health']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
   postgres:
     image: pgvector/pgvector:pg16
     container_name: dealhunter-postgres
@@ -69,7 +33,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: sydney-redis
+    container_name: dealhunter-redis
     ports:
       - '6379:6379'
     volumes:
@@ -80,25 +44,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
-
-  worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    container_name: sydney-worker
-    environment:
-      - REDIS_URL=${REDIS_URL:-redis://:${REDIS_PASSWORD:-dealhunter}@redis:6379}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-dealhunter}:${POSTGRES_PASSWORD:-dealhunter}@postgres:5432/${POSTGRES_DB:-dealhunter}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://adesso-ai-hub.3asabc.de/v1}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - EXA_API_KEY=${EXA_API_KEY}
-    depends_on:
-      redis:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
     restart: unless-stopped
 
 volumes:

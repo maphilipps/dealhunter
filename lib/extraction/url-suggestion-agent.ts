@@ -1,12 +1,13 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 
-import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
+import { createIntelligentTools } from '../agent-tools/intelligent-tools';
+import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '../ai/config';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+  apiKey: AI_HUB_API_KEY,
+  baseURL: AI_HUB_BASE_URL,
 });
 
 /**

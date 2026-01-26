@@ -1,11 +1,59 @@
+import { and, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { synthesizeSectionData } from '@/lib/agents/section-synthesizer-agent';
-import type { JsonRenderTree } from '@/lib/agents/section-synthesizer-agent';
 import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { dealEmbeddings } from '@/lib/db/schema';
 import { getRAGQueryTemplate } from '@/lib/qualifications/navigation-config';
 import { calculateConfidenceScore, queryRagForLead } from '@/lib/rag/lead-retrieval-service';
 import type { SectionQueryResult } from '@/lib/rag/lead-retrieval-service';
+
+/**
+ * JsonRenderTree type for UI visualization
+ */
+export interface JsonRenderTree {
+  root: string | null;
+  elements: Record<
+    string,
+    {
+      key: string;
+      type: string;
+      props: Record<string, unknown>;
+      children?: string[];
+    }
+  >;
+}
+
+/**
+ * Try to get a directly stored visualization from dealEmbeddings
+ * (Agent-native output - new pattern)
+ */
+async function getDirectVisualization(
+  qualificationId: string,
+  sectionId: string
+): Promise<{ tree: JsonRenderTree; confidence: number } | null> {
+  try {
+    const result = await db.query.dealEmbeddings.findFirst({
+      where: and(
+        eq(dealEmbeddings.qualificationId, qualificationId),
+        eq(dealEmbeddings.chunkType, 'visualization'),
+        sql`(metadata::jsonb)->>'sectionId' = ${sectionId}`
+      ),
+    });
+
+    if (result?.content) {
+      const tree = JSON.parse(result.content) as JsonRenderTree;
+      return {
+        tree,
+        confidence: result.confidence ?? 50,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error(`[Section API] Error fetching direct visualization:`, error);
+    return null;
+  }
+}
 
 /**
  * Extended Section Query Result with visualization tree
@@ -18,10 +66,11 @@ export interface SynthesizedSectionResult extends SectionQueryResult {
 /**
  * GET /api/qualifications/[id]/sections/[sectionId]
  *
- * Fetch RAG data for a specific lead section and synthesize into visualization
+ * Fetch RAG data for a specific lead section.
+ * Returns agent-native visualization if available.
  *
  * Query params:
- * - raw=true: Return raw RAG results without synthesis (for debugging)
+ * - raw=true: Return raw RAG results without visualization (for debugging)
  */
 export async function GET(
   request: NextRequest,
@@ -71,7 +120,7 @@ export async function GET(
     // Calculate confidence
     const confidence = calculateConfidenceScore(results);
 
-    // Raw mode: return without synthesis (for debugging)
+    // Raw mode: return without visualization (for debugging)
     if (rawMode) {
       const result: SectionQueryResult = {
         sectionId,
@@ -82,7 +131,30 @@ export async function GET(
       return NextResponse.json(result);
     }
 
-    // No results → return early with no_data status
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // AGENT-NATIVE PATH: Get directly stored visualization from agents
+    // Agents now store visualizations directly via ragTools.storeVisualization()
+    // ═══════════════════════════════════════════════════════════════════════════════
+    const directViz = await getDirectVisualization(leadId, sectionId);
+    if (directViz) {
+      console.error(
+        `[Section API] Found direct visualization for ${sectionId}, elements=${Object.keys(directViz.tree.elements || {}).length}`
+      );
+      const result: SynthesizedSectionResult = {
+        sectionId,
+        results, // Keep raw results for reference
+        confidence: directViz.confidence,
+        status: 'success',
+        visualizationTree: directViz.tree,
+        synthesisMethod: 'ai', // Agent-native is considered AI-generated
+      };
+      return NextResponse.json(result);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // NO VISUALIZATION: Return RAG data without visualization
+    // The frontend can render a fallback or re-trigger analysis
+    // ═══════════════════════════════════════════════════════════════════════════════
     if (results.length === 0) {
       console.error(`[Section API] No RAG data, returning no_data status`);
       const result: SynthesizedSectionResult = {
@@ -95,35 +167,18 @@ export async function GET(
       return NextResponse.json(result);
     }
 
-    // Synthesize RAG results into visualization tree
-    console.error(`[Section API] Synthesizing ${results.length} results...`);
-    const synthesisResult = await synthesizeSectionData({
-      sectionId,
-      ragResults: results,
-      leadId,
-    });
-
+    // Return RAG results without visualization
+    // This happens when agents haven't stored a visualization yet
     console.error(
-      `[Section API] Synthesis complete: method=${synthesisResult.synthesisMethod}, hasTree=${!!synthesisResult.tree?.root}, elements=${Object.keys(synthesisResult.tree?.elements || {}).length}`
+      `[Section API] No visualization found for ${sectionId}, returning RAG data only`
     );
-
-    // Debug: Log full tree for cms-architecture
-    if (sectionId === 'cms-architecture') {
-      console.error(
-        '[Section API] CMS-Architecture tree:',
-        JSON.stringify(synthesisResult.tree, null, 2).substring(0, 500)
-      );
-    }
-
     const result: SynthesizedSectionResult = {
       sectionId,
-      results, // Keep raw results for reference
-      confidence: synthesisResult.confidence,
+      results,
+      confidence,
       status: 'success',
-      visualizationTree: synthesisResult.tree,
-      synthesisMethod: synthesisResult.synthesisMethod,
+      synthesisMethod: 'fallback', // Indicates no visualization available
     };
-
     return NextResponse.json(result);
   } catch (error) {
     console.error('[Section API] GET error:', error);

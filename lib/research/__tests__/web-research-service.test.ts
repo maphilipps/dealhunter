@@ -20,7 +20,7 @@ describe('web-research-service', () => {
   describe('rate limiting', () => {
     it('should allow requests within rate limit', async () => {
       const rfpId = 'test-rfp-1';
-      clearRateLimit(rfpId);
+      clearRateLimit(preQualificationId);
 
       // Mock fetch to return empty results
       vi.mocked(global.fetch).mockResolvedValue({
@@ -30,7 +30,7 @@ describe('web-research-service', () => {
 
       // First request should succeed
       const result1 = await performWebResearch({
-        rfpId,
+        preQualificationId,
         sectionId: 'overview',
         question: 'Test query 1',
       });
@@ -41,7 +41,7 @@ describe('web-research-service', () => {
 
     it('should block requests exceeding rate limit', async () => {
       const rfpId = 'test-rfp-2';
-      clearRateLimit(rfpId);
+      clearRateLimit(preQualificationId);
 
       // Mock fetch to return empty results
       vi.mocked(global.fetch).mockResolvedValue({
@@ -52,7 +52,7 @@ describe('web-research-service', () => {
       // Make 5 requests (at the limit)
       for (let i = 0; i < 5; i++) {
         await performWebResearch({
-          rfpId,
+          preQualificationId,
           sectionId: 'overview',
           question: `Test query ${i}`,
         });
@@ -60,7 +60,7 @@ describe('web-research-service', () => {
 
       // 6th request should be blocked
       const result = await performWebResearch({
-        rfpId,
+        preQualificationId,
         sectionId: 'overview',
         question: 'Test query 6',
       });
@@ -71,7 +71,7 @@ describe('web-research-service', () => {
 
     it('should allow requests after rate limit window expires', async () => {
       const rfpId = 'test-rfp-3';
-      clearRateLimit(rfpId);
+      clearRateLimit(preQualificationId);
 
       // This test would require mocking timers, skipping for now
       expect(true).toBe(true);
@@ -81,7 +81,7 @@ describe('web-research-service', () => {
   describe('Exa API integration', () => {
     it('should skip Exa API when API key is not configured', async () => {
       const rfpId = 'test-rfp-4';
-      clearRateLimit(rfpId);
+      clearRateLimit(preQualificationId);
 
       // No EXA_API_KEY set
       process.env.EXA_API_KEY = '';
@@ -90,7 +90,7 @@ describe('web-research-service', () => {
       const fetchMock = vi.mocked(global.fetch);
 
       await performWebResearch({
-        rfpId,
+        preQualificationId,
         sectionId: 'overview',
         question: 'Test query',
       });
@@ -101,7 +101,7 @@ describe('web-research-service', () => {
 
     it('should use Exa API when configured', async () => {
       const rfpId = 'test-rfp-5';
-      clearRateLimit(rfpId);
+      clearRateLimit(preQualificationId);
 
       // Set Exa API key
       process.env.EXA_API_KEY = 'test-key-123';
@@ -123,7 +123,7 @@ describe('web-research-service', () => {
       } as Response);
 
       await performWebResearch({
-        rfpId,
+        preQualificationId,
         sectionId: 'overview',
         question: 'Test query',
       });
@@ -142,7 +142,7 @@ describe('web-research-service', () => {
 
     it('should fallback to native search when Exa fails', async () => {
       const rfpId = 'test-rfp-6';
-      clearRateLimit(rfpId);
+      clearRateLimit(preQualificationId);
 
       // Set Exa API key
       process.env.EXA_API_KEY = 'test-key-123';
@@ -155,7 +155,7 @@ describe('web-research-service', () => {
       } as Response);
 
       const result = await performWebResearch({
-        rfpId,
+        preQualificationId,
         sectionId: 'overview',
         question: 'Test query',
       });
@@ -169,7 +169,7 @@ describe('web-research-service', () => {
   describe('result processing', () => {
     it('should return empty results when no search results found', async () => {
       const rfpId = 'test-rfp-7';
-      clearRateLimit(rfpId);
+      clearRateLimit(preQualificationId);
 
       // Mock empty Exa response
       vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -178,7 +178,7 @@ describe('web-research-service', () => {
       } as Response);
 
       const result = await performWebResearch({
-        rfpId,
+        preQualificationId,
         sectionId: 'overview',
         question: 'Test query',
       });
@@ -190,7 +190,7 @@ describe('web-research-service', () => {
 
     it('should respect maxResults parameter', async () => {
       const rfpId = 'test-rfp-8';
-      clearRateLimit(rfpId);
+      clearRateLimit(preQualificationId);
 
       process.env.EXA_API_KEY = 'test-key';
 
@@ -210,7 +210,7 @@ describe('web-research-service', () => {
       } as Response);
 
       await performWebResearch({
-        rfpId,
+        preQualificationId,
         sectionId: 'overview',
         question: 'Test query',
         maxResults: 2,
@@ -229,7 +229,7 @@ describe('web-research-service', () => {
   describe('error handling', () => {
     it('should handle network errors gracefully', async () => {
       const rfpId = 'test-rfp-9';
-      clearRateLimit(rfpId);
+      clearRateLimit(preQualificationId);
 
       process.env.EXA_API_KEY = 'test-key';
 
@@ -238,7 +238,7 @@ describe('web-research-service', () => {
       vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
 
       const result = await performWebResearch({
-        rfpId,
+        preQualificationId,
         sectionId: 'overview',
         question: 'Test query',
       });
@@ -253,7 +253,7 @@ describe('web-research-service', () => {
 
     it('should handle malformed API responses', async () => {
       const rfpId = 'test-rfp-10';
-      clearRateLimit(rfpId);
+      clearRateLimit(preQualificationId);
 
       process.env.EXA_API_KEY = 'test-key';
 
@@ -264,7 +264,7 @@ describe('web-research-service', () => {
       } as Response);
 
       const result = await performWebResearch({
-        rfpId,
+        preQualificationId,
         sectionId: 'overview',
         question: 'Test query',
       });

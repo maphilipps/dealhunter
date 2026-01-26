@@ -1,7 +1,7 @@
 /**
  * Timing Expert Agent
  *
- * Extracts all timing and deadline information from RFP documents via RAG.
+ * Extracts all timing and deadline information from Pre-Qualification documents via RAG.
  */
 
 
@@ -17,7 +17,7 @@ import type { ExpertAgentInput, ExpertAgentOutput } from './types';
 import { generateStructuredOutput } from '@/lib/ai/config';
 
 const TIMING_QUERIES = [
-  'submission deadline response due date RFP closing proposal due',
+  'submission deadline response due date Pre-Qualification closing proposal due',
   'project timeline milestones phases schedule go-live launch',
   'Q&A clarification questions vendor briefing',
   'contract award signing kick-off start date',
@@ -26,11 +26,11 @@ const TIMING_QUERIES = [
 function buildSystemPrompt(): string {
   const today = new Date().toISOString().split('T')[0];
 
-  return `You are a Timing Expert Agent analyzing RFP documents for deadline and timeline information.
+  return `You are a Timing Expert Agent analyzing Pre-Qualification documents for deadline and timeline information.
 
 Today's date: ${today}
 
-Your task is to extract ALL timing-related information from the provided RFP context.
+Your task is to extract ALL timing-related information from the provided Pre-Qualification context.
 
 ## Instructions
 
@@ -74,11 +74,11 @@ If a date is relative (e.g., "Q2 2024", "within 6 months"), preserve it as-is.`;
 export async function runTimingAgent(
   input: ExpertAgentInput
 ): Promise<ExpertAgentOutput<TimingAnalysis>> {
-  const { rfpId } = input;
+  const { preQualificationId } = input;
 
   try {
     const ragResults = await Promise.all(
-      TIMING_QUERIES.map(query => queryRfpDocument(rfpId, query, 5))
+      TIMING_QUERIES.map(query => queryRfpDocument(preQualificationId, query, 5))
     );
 
     const allResults = ragResults.flat();
@@ -91,7 +91,7 @@ export async function runTimingAgent(
           confidence: 0,
         },
         0,
-        'No timing information found in RFP document'
+        'No timing information found in Pre-Qualification document'
       );
     }
 
@@ -99,18 +99,18 @@ export async function runTimingAgent(
       (a, b) => b.similarity - a.similarity
     );
 
-    const context = formatContextFromRAG(uniqueResults.slice(0, 15), 'RFP Timing Information');
+    const context = formatContextFromRAG(uniqueResults.slice(0, 15), 'Pre-Qualification Timing Information');
 
     const analysis = await generateStructuredOutput({
       model: 'sonnet-4-5',
       schema: TimingAnalysisSchema,
       system: buildSystemPrompt(),
-      prompt: `Analyze the following RFP content and extract all timing/deadline information:\n\n${context}`,
+      prompt: `Analyze the following Pre-Qualification content and extract all timing/deadline information:\n\n${context}`,
       temperature: 0.2,
     });
 
     const summaryContent = buildSummaryForStorage(analysis);
-    await storeAgentResult(rfpId, 'timing_expert', summaryContent, {
+    await storeAgentResult(preQualificationId, 'timing_expert', summaryContent, {
       submissionDeadline: analysis.submissionDeadline?.date,
       urgencyLevel: analysis.urgencyLevel,
       milestonesCount: analysis.milestones.length,

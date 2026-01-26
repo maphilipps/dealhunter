@@ -38,17 +38,17 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
-    // If no quickScanId, try to get from RFP
+    // If no quickScanId, try to get from Pre-Qualification
     let quickScanId = lead.quickScanId;
 
     if (!quickScanId && lead.preQualificationId) {
-      const [rfp] = await db
+      const [preQualification] = await db
         .select({ quickScanId: preQualifications.quickScanId })
         .from(preQualifications)
         .where(eq(preQualifications.id, lead.preQualificationId))
         .limit(1);
 
-      quickScanId = rfp?.quickScanId ?? null;
+      quickScanId = preQualification?.quickScanId ?? null;
     }
 
     if (!quickScanId) {
@@ -116,7 +116,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         integrations: parseJson(quickScan.integrations),
         completedAt: quickScan.completedAt?.toISOString() ?? null,
       },
-      rfpExtraction: null, // Could be extended to include RFP extraction data
+      rfpExtraction: null, // Could be extended to include Pre-Qualification extraction data
     });
   } catch (error) {
     console.error('[quick-scan-data] Error:', error);

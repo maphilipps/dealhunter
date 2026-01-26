@@ -1,11 +1,29 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // TOOL WRAPPER - QuickScan 2.0 Refactoring
 // Wraps step functions with automatic event emission, timing, and error handling
+// Agent-Native: Automatically stores findings in RAG when ragTools are available
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import type { ToolConfig, WorkflowContext, WorkflowStep, StepFunction } from './types';
 
 import { AgentEventType } from '@/lib/streaming/event-types';
+
+/**
+ * Step configuration for automatic RAG storage
+ * Steps can opt-in to automatic finding storage by providing this config
+ */
+export interface RagStorageConfig {
+  /** Semantic type for the finding (e.g., 'tech_stack', 'content_volume') */
+  chunkType: string;
+  /** Category of finding */
+  category: 'fact' | 'elaboration' | 'recommendation' | 'risk' | 'estimate';
+  /** Function to extract confidence from result (default: 75) */
+  getConfidence?: (result: unknown) => number;
+  /** Function to format result for RAG storage (default: JSON.stringify) */
+  formatContent?: (result: unknown) => string;
+  /** Whether this finding needs human validation */
+  requiresValidation?: boolean;
+}
 
 /**
  * Wraps a step function with automatic:
@@ -31,8 +49,16 @@ import { AgentEventType } from '@/lib/streaming/event-types';
  * );
  * ```
  */
+/**
+ * Extended ToolConfig with optional RAG storage configuration
+ */
+export interface ExtendedToolConfig extends ToolConfig {
+  /** Optional RAG storage configuration for automatic finding persistence */
+  ragStorage?: RagStorageConfig;
+}
+
 export function wrapTool<TInput, TOutput>(
-  config: ToolConfig,
+  config: ExtendedToolConfig,
   fn: StepFunction<TInput, TOutput>
 ): WorkflowStep<TInput, TOutput> {
   return {
@@ -68,6 +94,40 @@ export function wrapTool<TInput, TOutput>(
         );
 
         const duration = Date.now() - startTime;
+
+        // ═══════════════════════════════════════════════════════════════
+        // AGENT-NATIVE: Store finding in RAG if configured and ragTools available
+        // ═══════════════════════════════════════════════════════════════
+        if (ctx.ragTools && config.ragStorage && result != null) {
+          try {
+            const { chunkType, category, getConfidence, formatContent, requiresValidation } =
+              config.ragStorage;
+
+            const confidence = getConfidence ? getConfidence(result) : 75;
+            const content = formatContent
+              ? formatContent(result)
+              : typeof result === 'string'
+                ? result
+                : JSON.stringify(result);
+
+            // Call the callable function directly
+            await ctx.ragTools.storeFinding({
+              category,
+              chunkType,
+              content,
+              confidence,
+              requiresValidation: requiresValidation ?? false,
+              metadata: { stepId: config.name, duration },
+            });
+
+            console.log(
+              `[Workflow] Stored finding for step "${config.name}" (${chunkType}, ${confidence}%)`
+            );
+          } catch (ragError) {
+            // Don't fail the step if RAG storage fails
+            console.warn(`[Workflow] Failed to store finding for "${config.name}":`, ragError);
+          }
+        }
 
         // Emit STEP_COMPLETE event (success)
         ctx.emit({

@@ -90,7 +90,7 @@ export default function DashboardPage() {
         <Button asChild>
           <Link href="/pre-qualifications/new">
             <PlusCircle className="mr-2 h-4 w-4" />
-            New RFP
+            New Pre-Qualification
           </Link>
         </Button>
       </div>

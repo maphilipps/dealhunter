@@ -48,7 +48,7 @@ export interface AgentOutputsResult {
 }
 
 export interface AgentOutputsFilter {
-  rfpId: string;
+  preQualificationId: string;
   agentName?: string;
   chunkType?: string;
   search?: string;
@@ -82,7 +82,7 @@ export interface RawChunksResult {
 }
 
 export interface RawChunksFilter {
-  rfpId: string;
+  preQualificationId: string;
   search?: string;
   page?: number;
   pageSize?: number;

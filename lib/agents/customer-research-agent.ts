@@ -184,12 +184,12 @@ async function searchCompanyInfo(
  * Run customer research agent
  *
  * @param leadId - Lead ID
- * @param rfpId - RFP ID
+ * @param rfpId - Pre-Qualification ID
  * @returns Customer research results
  */
 export async function runCustomerResearchAgent(
   leadId: string,
-  rfpId: string
+  preQualificationId: string
 ): Promise<CustomerResearchResult> {
   // 1. Fetch lead and quick scan data
   const [leadData] = await db
@@ -355,7 +355,7 @@ Recommended Approach: ${result.recommendedApproach}`;
   if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
     await db.insert(dealEmbeddings).values({
       qualificationId: leadId,
-      preQualificationId: rfpId,
+      preQualificationId: preQualificationId,
       agentName: 'customer-research',
       chunkType: 'analysis',
       chunkIndex: 0,

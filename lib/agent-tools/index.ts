@@ -18,6 +18,8 @@ import './tools/pitchdeck';
 import './tools/audit';
 import './tools/workflow';
 import './tools/notification';
+import './scan-tools';
+import './deep-scan-tools';
 
 // QuickScan 2.0 Agent Tools
 import './quick-scan-tools';
@@ -63,3 +65,19 @@ export {
   type OptimizerContext,
   type OptimizationResult,
 } from './optimizer';
+
+// Agent-Native RAG Write Tools (Agent writes directly to knowledge base)
+export {
+  createRagWriteTool,
+  createBatchRagWriteTool,
+  type RagWriteToolContext,
+} from './tools/rag-write-tool';
+
+export {
+  createVisualizationWriteTool,
+  VisualizationHelpers,
+  type VisualizationWriteToolContext,
+} from './tools/visualization-write-tool';
+
+// RAG Read Tool (Agent queries knowledge base)
+export { createRagTool } from './tools/rag-tool';

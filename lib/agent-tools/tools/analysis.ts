@@ -223,9 +223,9 @@ registry.register({
   category: 'analysis',
   inputSchema: createReferenceMatchInputSchema,
   async execute(input, context: ToolContext) {
-    // Verify lead access via rfp.userId
+    // Verify lead access via preQualification.userId
     const [leadData] = await db
-      .select({ lead: qualifications, rfp: preQualifications })
+      .select({ lead: qualifications, preQualification: preQualifications })
       .from(qualifications)
       .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
       .where(
@@ -278,7 +278,7 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Fetch existing match and verify access via lead → rfp
     const [existing] = await db
-      .select({ match: referenceMatches, lead: qualifications, rfp: preQualifications })
+      .select({ match: referenceMatches, lead: qualifications, preQualification: preQualifications })
       .from(referenceMatches)
       .innerJoin(qualifications, eq(referenceMatches.qualificationId, qualifications.id))
       .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
@@ -318,7 +318,7 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Fetch existing match and verify access via lead → rfp
     const [existing] = await db
-      .select({ match: referenceMatches, lead: qualifications, rfp: preQualifications })
+      .select({ match: referenceMatches, lead: qualifications, preQualification: preQualifications })
       .from(referenceMatches)
       .innerJoin(qualifications, eq(referenceMatches.qualificationId, qualifications.id))
       .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
@@ -350,9 +350,9 @@ registry.register({
   category: 'analysis',
   inputSchema: createCompetitorMatchInputSchema,
   async execute(input, context: ToolContext) {
-    // Verify lead access via rfp.userId
+    // Verify lead access via preQualification.userId
     const [leadData] = await db
-      .select({ lead: qualifications, rfp: preQualifications })
+      .select({ lead: qualifications, preQualification: preQualifications })
       .from(qualifications)
       .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
       .where(
@@ -401,7 +401,7 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Fetch existing match and verify access via lead → rfp
     const [existing] = await db
-      .select({ match: competitorMatches, lead: qualifications, rfp: preQualifications })
+      .select({ match: competitorMatches, lead: qualifications, preQualification: preQualifications })
       .from(competitorMatches)
       .innerJoin(qualifications, eq(competitorMatches.qualificationId, qualifications.id))
       .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
@@ -437,7 +437,7 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Fetch existing match and verify access via lead → rfp
     const [existing] = await db
-      .select({ match: competitorMatches, lead: qualifications, rfp: preQualifications })
+      .select({ match: competitorMatches, lead: qualifications, preQualification: preQualifications })
       .from(competitorMatches)
       .innerJoin(qualifications, eq(competitorMatches.qualificationId, qualifications.id))
       .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))

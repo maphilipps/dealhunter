@@ -43,7 +43,7 @@ interface AnalyticsData {
   stage: {
     cold: number;
     warm: number;
-    rfp: number;
+    preQualification: number;
   };
   funnel: {
     draft: number;
@@ -72,7 +72,7 @@ const COLORS = {
   proactive: 'hsl(142, 71%, 45%)',
   cold: 'hsl(217, 91%, 60%)',
   warm: 'hsl(27, 96%, 61%)',
-  rfp: 'hsl(142, 76%, 36%)',
+  preQualification: 'hsl(142, 76%, 36%)',
 };
 
 export default function AnalyticsPage() {
@@ -134,7 +134,7 @@ export default function AnalyticsPage() {
   const stageData = [
     { name: 'Cold', value: data.stage.cold, fill: COLORS.cold },
     { name: 'Warm', value: data.stage.warm, fill: COLORS.warm },
-    { name: 'RFP', value: data.stage.rfp, fill: COLORS.rfp },
+    { name: 'Pre-Qualification', value: data.stage.preQualification, fill: COLORS.rfp },
   ].filter(item => item.value > 0);
 
   const funnelData = [
@@ -154,7 +154,7 @@ export default function AnalyticsPage() {
     proactive: { label: 'Proactive', color: COLORS.proactive },
     cold: { label: 'Cold', color: COLORS.cold },
     warm: { label: 'Warm', color: COLORS.warm },
-    rfp: { label: 'RFP', color: COLORS.rfp },
+    preQualification: { label: 'Pre-Qualification', color: COLORS.rfp },
   };
 
   return (
@@ -168,7 +168,7 @@ export default function AnalyticsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total RFPs</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Pre-Qualifications</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -283,7 +283,7 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Stage Distribution</CardTitle>
-            <CardDescription>Cold, Warm, RFP breakdown</CardDescription>
+            <CardDescription>Cold, Warm, Pre-Qualification breakdown</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ChartContainer config={chartConfig}>
@@ -318,7 +318,7 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Pipeline Funnel</CardTitle>
-            <CardDescription>RFP workflow stages</CardDescription>
+            <CardDescription>Pre-Qualification workflow stages</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ChartContainer config={chartConfig}>
@@ -337,7 +337,7 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Business Line Distribution</CardTitle>
-            <CardDescription>RFPs by Business Line</CardDescription>
+            <CardDescription>Pre-Qualifications by Business Line</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ChartContainer config={chartConfig}>

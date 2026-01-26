@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { PreQualificationsEmptyStateClient } from '@/components/pre-qualifications/pre-qualifications-empty-state-client';
+import { DeletePreQualificationButton } from '@/components/pre-qualifications/delete-prequalification-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +33,7 @@ export default async function BidsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">RFP Opportunities</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Pre-Qualification Opportunities</h1>
           <p className="text-muted-foreground">
             Verwalten Sie Ihre Angebotsanfragen und Ausschreibungen
           </p>
@@ -40,7 +41,7 @@ export default async function BidsPage() {
         <Link href="/pre-qualifications/new">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Neuer RFP
+            Neuer Pre-Qualification
           </Button>
         </Link>
       </div>
@@ -59,7 +60,7 @@ export default async function BidsPage() {
             <CardTitle className="text-3xl">
               {
                 bids.filter(b =>
-                  ['draft', 'extracting', 'reviewing', 'quick_scanning', 'evaluating'].includes(
+                  ['draft', 'processing', 'extracting', 'reviewing', 'quick_scanning', 'evaluating'].includes(
                     b.status
                   )
                 ).length
@@ -88,7 +89,7 @@ export default async function BidsPage() {
       {/* Bids Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Alle RFPs</CardTitle>
+          <CardTitle>Alle Pre-Qualifications</CardTitle>
           <CardDescription>Klicken Sie auf einen Bid, um Details zu sehen</CardDescription>
         </CardHeader>
         <CardContent>
@@ -137,7 +138,7 @@ export default async function BidsPage() {
                         <Badge variant="secondary">
                           {bid.stage === 'cold' && 'Cold'}
                           {bid.stage === 'warm' && 'Warm'}
-                          {bid.stage === 'rfp' && 'RFP'}
+                          {bid.stage === 'pre-qualification' && 'Pre-Qualification'}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -150,11 +151,18 @@ export default async function BidsPage() {
                         {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('de-DE') : '-'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Link href={`/pre-qualifications/${bid.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
+                        <div className="flex justify-end gap-2">
+                          <Link href={`/pre-qualifications/${bid.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <DeletePreQualificationButton
+                            rfpId={bid.id}
+                            label={customerName}
+                            size="sm"
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -175,6 +183,7 @@ function StatusBadge({ status }: { status: string }) {
   > = {
     // Initial & Extraction
     draft: { label: 'Entwurf', variant: 'secondary' },
+    processing: { label: 'Wird verarbeitet', variant: 'default' },
     extracting: { label: 'Extraktion', variant: 'default' },
     reviewing: { label: 'Review', variant: 'default' },
     // Evaluation

@@ -142,15 +142,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const addedEmployeeIds = [...newEmployeeIds].filter(id => !currentEmployeeIds.has(id));
     const removedEmployeeIds = [...currentEmployeeIds].filter(id => !newEmployeeIds.has(id));
 
-    // 10. Get RFP and Employee data for email notifications
-    const [rfp] = await db
+    // 10. Get Pre-Qualification and Employee data for email notifications
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
       .where(eq(preQualifications.id, lead.preQualificationId))
       .limit(1);
 
-    if (!rfp) {
-      return NextResponse.json({ error: 'RFP not found' }, { status: 404 });
+    if (!preQualification) {
+      return NextResponse.json({ error: 'Pre-Qualification not found' }, { status: 404 });
     }
 
     // Get employee details for new team members (for emails)
@@ -272,18 +272,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (addedTeamMembersWithDetails.length > 0) {
       after(async () => {
         try {
-          // Extract customer info from RFP
+          // Extract customer info from Pre-Qualification
           let customerName = 'Customer';
           let projectDescription = lead.projectDescription || 'Projekt-Details werden noch ergänzt';
 
-          if (rfp.extractedRequirements) {
+          if (preQualification.extractedRequirements) {
             try {
-              const requirements = JSON.parse(rfp.extractedRequirements) as Record<string, unknown>;
+              const requirements = JSON.parse(preQualification.extractedRequirements) as Record<string, unknown>;
               customerName = (requirements.customerName as string) || customerName;
               projectDescription =
                 (requirements.projectDescription as string) || projectDescription;
             } catch {
-              console.error('Could not parse RFP extractedRequirements');
+              console.error('Could not parse Pre-Qualification extractedRequirements');
             }
           }
 
@@ -312,7 +312,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           const pitchdeckUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/qualifications/${lead.id}/pitchdeck`;
 
           await sendTeamNotificationEmails({
-            bidId: rfp.id,
+            bidId: preQualification.id,
             projectName: `${customerName} - Pitchdeck`,
             customerName,
             projectDescription,

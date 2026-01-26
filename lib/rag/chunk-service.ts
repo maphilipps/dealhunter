@@ -6,13 +6,13 @@
  */
 
 export interface ChunkInput {
-  rfpId: string;
+  preQualificationId: string;
   agentName: string;
   output: Record<string, unknown>;
 }
 
 export interface Chunk {
-  rfpId: string;
+  preQualificationId: string;
   agentName: string;
   chunkType: string;
   chunkIndex: number;
@@ -38,7 +38,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
 
     if (qs.techStack) {
       chunks.push({
-        rfpId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         agentName: 'quick_scan',
         chunkType: 'tech_stack',
         chunkIndex: index++,
@@ -52,7 +52,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
 
     if (qs.performanceIndicators) {
       chunks.push({
-        rfpId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         agentName: 'quick_scan',
         chunkType: 'performance',
         chunkIndex: index++,
@@ -67,7 +67,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
 
     if (qs.contentVolume) {
       chunks.push({
-        rfpId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         agentName: 'quick_scan',
         chunkType: 'content_volume',
         chunkIndex: index++,
@@ -80,7 +80,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
 
     if (qs.accessibilityAudit) {
       chunks.push({
-        rfpId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         agentName: 'quick_scan',
         chunkType: 'accessibility',
         chunkIndex: index++,
@@ -93,7 +93,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
 
     if (qs.seoAudit) {
       chunks.push({
-        rfpId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         agentName: 'quick_scan',
         chunkType: 'seo',
         chunkIndex: index++,
@@ -104,7 +104,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
 
     if (qs.navigationStructure) {
       chunks.push({
-        rfpId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         agentName: 'quick_scan',
         chunkType: 'navigation',
         chunkIndex: index++,
@@ -115,7 +115,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
 
     if (qs.screenshots) {
       chunks.push({
-        rfpId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         agentName: 'quick_scan',
         chunkType: 'screenshots',
         chunkIndex: index++,
@@ -132,7 +132,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
 
     if (ext.customerName || ext.industry) {
       chunks.push({
-        rfpId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         agentName: 'extract',
         chunkType: 'customer',
         chunkIndex: index++,
@@ -146,7 +146,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
 
     if (ext.projectName || ext.projectDescription) {
       chunks.push({
-        rfpId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         agentName: 'extract',
         chunkType: 'project',
         chunkIndex: index++,
@@ -159,7 +159,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
 
     if (ext.technologies && Array.isArray(ext.technologies)) {
       chunks.push({
-        rfpId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         agentName: 'extract',
         chunkType: 'technologies',
         chunkIndex: index++,
@@ -172,7 +172,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
 
     if (ext.budgetRange || ext.timeline) {
       chunks.push({
-        rfpId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         agentName: 'extract',
         chunkType: 'budget_timeline',
         chunkIndex: index++,
@@ -198,7 +198,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
     ].includes(input.agentName)
   ) {
     chunks.push({
-      rfpId: input.rfpId,
+      preQualificationId: input.preQualificationId,
       agentName: input.agentName,
       chunkType: 'full_analysis',
       chunkIndex: 0,
@@ -210,7 +210,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
   // Generic fallback for unknown agents
   else {
     chunks.push({
-      rfpId: input.rfpId,
+      preQualificationId: input.preQualificationId,
       agentName: input.agentName,
       chunkType: 'generic',
       chunkIndex: 0,

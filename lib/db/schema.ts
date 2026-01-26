@@ -45,7 +45,7 @@ export const preQualifications = pgTable(
 
     // Input
     source: text('source', { enum: ['reactive', 'proactive'] }).notNull(),
-    stage: text('stage', { enum: ['cold', 'warm', 'rfp'] }).notNull(),
+    stage: text('stage', { enum: ['cold', 'warm', 'pre-qualification'] }).notNull(),
     inputType: text('input_type', {
       enum: ['pdf', 'crm', 'freetext', 'email', 'combined'],
     }).notNull(),
@@ -57,6 +57,7 @@ export const preQualifications = pgTable(
     status: text('status', {
       enum: [
         'draft', // Initial state after upload
+        'processing', // Background processing (PDF extraction, duplicate check, quickscan)
         'duplicate_checking', // Duplicate Check Agent running (DEA-90)
         'duplicate_check_failed', // Duplicate Check failed (DEA-91)
         'duplicate_warning', // Duplicate found, waiting for user override (DEA-90)
@@ -785,7 +786,7 @@ export const backgroundJobs = pgTable(
 
     // Job Details
     jobType: text('job_type', {
-      enum: ['deep-analysis', 'deep-scan', 'team-notification', 'cleanup'],
+      enum: ['deep-analysis', 'deep-scan', 'quick-scan', 'team-notification', 'cleanup'],
     }).notNull(),
     inngestRunId: text('inngest_run_id'), // Inngest execution ID for tracking
     bullmqJobId: text('bullmq_job_id'), // BullMQ job ID for tracking

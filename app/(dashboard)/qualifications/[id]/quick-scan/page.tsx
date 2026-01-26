@@ -57,8 +57,8 @@ export default async function QuickScanResultsPage({
     );
   }
 
-  // Get related RFP for decision makers
-  const [rfp] = lead.preQualificationId
+  // Get related Pre-Qualification for decision makers
+  const [preQualification] = lead.preQualificationId
     ? await db
         .select()
         .from(preQualifications)
@@ -95,8 +95,8 @@ export default async function QuickScanResultsPage({
         | null)
     : null;
   const decisionMakers =
-    rfp && 'decisionMakers' in rfp && typeof rfp.decisionMakers === 'string'
-      ? (tryParseJSON(rfp.decisionMakers) as DecisionMaker[] | null)
+    rfp && 'decisionMakers' in rfp && typeof preQualification.decisionMakers === 'string'
+      ? (tryParseJSON(preQualification.decisionMakers) as DecisionMaker[] | null)
       : null;
 
   // Check if CMS is Ibexa
@@ -376,7 +376,7 @@ export default async function QuickScanResultsPage({
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Keine Ansprechpartner-Informationen verfügbar. Diese werden während der RFP-Extraktion
+              Keine Ansprechpartner-Informationen verfügbar. Diese werden während der Pre-Qualification-Extraktion
               ermittelt.
             </p>
           )}

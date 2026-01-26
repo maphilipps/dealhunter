@@ -3,30 +3,25 @@
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 
 interface AppLogoProps {
-  name: string;
-  logo: string;
+  name?: string;
+  logo?: string;
   subtitle?: string;
 }
 
-export function AppLogo({ name, logo, subtitle }: AppLogoProps) {
+export function AppLogo({ name = 'PHP-XCOM', logo = '/logo.png', subtitle = 'DealHunter' }: AppLogoProps) {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <SidebarMenuButton size="lg" className="cursor-default hover:bg-transparent">
-          <div className="flex items-center justify-center" style={{ width: 70, height: 70 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={logo}
-              alt={`${name} logo`}
-              width={70}
-              height={70}
-              className="shrink-0 object-contain"
-              style={{ width: 70, height: 70 }}
-            />
-          </div>
-          <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-semibold">{name}</span>
-            {subtitle && <span className="truncate text-xs text-muted-foreground">{subtitle}</span>}
+        <SidebarMenuButton size="lg" className="cursor-default hover:bg-transparent h-auto py-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={logo}
+            alt={`${name} logo`}
+            className="h-12 w-auto object-contain"
+          />
+          <div className="flex flex-col gap-0.5 leading-none">
+            <span className="font-semibold">{name}</span>
+            <span className="text-xs text-sidebar-foreground/70">{subtitle}</span>
           </div>
         </SidebarMenuButton>
       </SidebarMenuItem>

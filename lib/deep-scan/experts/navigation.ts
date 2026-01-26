@@ -1,9 +1,9 @@
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, like, sql } from 'drizzle-orm';
 
 import { CATEGORY_CONFIG, type AuditCategory } from './types';
 
 import { db } from '@/lib/db';
-import { dealEmbeddings } from '@/lib/db/schema';
+import { dealEmbeddings, qualificationSectionData } from '@/lib/db/schema';
 
 interface NavigationItem {
   slug: string;
@@ -21,12 +21,69 @@ interface NavigationSection {
  * Queries dealEmbeddings for audit_* agents and builds navigation structure
  */
 export async function getAuditNavigation(leadId: string): Promise<NavigationSection[]> {
+  const cachedSections = await db
+    .select({
+      sectionId: qualificationSectionData.sectionId,
+      content: qualificationSectionData.content,
+    })
+    .from(qualificationSectionData)
+    .where(
+      and(
+        eq(qualificationSectionData.qualificationId, leadId),
+        like(qualificationSectionData.sectionId, 'audit:%:%')
+      )
+    );
+
+  if (cachedSections.length > 0) {
+    const navigationMap = new Map<string, NavigationSection>();
+
+    for (const row of cachedSections) {
+      if (!row.content) continue;
+
+      try {
+        const parsed = JSON.parse(row.content) as {
+          category?: string;
+          slug?: string;
+          title?: string;
+        };
+        if (!parsed.category || !parsed.slug || !parsed.title) {
+          continue;
+        }
+
+        const category = parsed.category as AuditCategory;
+        const config = CATEGORY_CONFIG[category];
+        if (!config) continue;
+
+        if (!navigationMap.has(category)) {
+          navigationMap.set(category, {
+            category,
+            title: config.label,
+            items: [],
+          });
+        }
+
+        const section = navigationMap.get(category)!;
+        if (!section.items.find(item => item.slug === parsed.slug)) {
+          section.items.push({ slug: parsed.slug, title: parsed.title });
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+
+    return Array.from(navigationMap.values()).sort(
+      (a, b) =>
+        (CATEGORY_CONFIG[a.category as AuditCategory]?.order || 999) -
+        (CATEGORY_CONFIG[b.category as AuditCategory]?.order || 999)
+    );
+  }
+
   // Query all audit agent outputs
   const chunks = await db
     .select({
       agentName: dealEmbeddings.agentName,
       chunkType: dealEmbeddings.chunkType,
-      content: dealEmbeddings.content,
+      metadata: dealEmbeddings.metadata,
     })
     .from(dealEmbeddings)
     .where(
@@ -44,8 +101,17 @@ export async function getAuditNavigation(leadId: string): Promise<NavigationSect
   const navigationMap = new Map<string, NavigationSection>();
 
   for (const chunk of chunks) {
+    if (chunk.chunkType !== 'audit_section_json' || !chunk.metadata) {
+      continue;
+    }
+
+    const meta = JSON.parse(chunk.metadata) as { category?: string; slug?: string; title?: string };
+    if (!meta.category || !meta.slug || !meta.title) {
+      continue;
+    }
+
     // Parse agent name to category
-    const category = extractCategory(chunk.agentName);
+    const category = (meta.category as AuditCategory) || extractCategory(chunk.agentName);
     if (!category) continue;
 
     const config = CATEGORY_CONFIG[category];
@@ -62,17 +128,12 @@ export async function getAuditNavigation(leadId: string): Promise<NavigationSect
 
     const section = navigationMap.get(category)!;
 
-    // Add item if it's a section output
-    if (chunk.chunkType.includes('section') || chunk.chunkType.includes('output')) {
-      const slug = chunk.chunkType.replace(/_/g, '-');
-
-      // Avoid duplicates
-      if (!section.items.find(item => item.slug === slug)) {
-        section.items.push({
-          slug,
-          title: formatTitle(chunk.chunkType),
-        });
-      }
+    // Avoid duplicates
+    if (!section.items.find(item => item.slug === meta.slug)) {
+      section.items.push({
+        slug: meta.slug,
+        title: meta.title,
+      });
     }
   }
 
@@ -110,11 +171,4 @@ function extractCategory(agentName: string): AuditCategory | null {
  * audit_output_json -> Output JSON
  * audit_section_text -> Section Text
  */
-function formatTitle(chunkType: string): string {
-  return chunkType
-    .replace(/audit_/g, '')
-    .replace(/_/g, ' ')
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
+// formatTitle removed; metadata title is authoritative for audit sections.

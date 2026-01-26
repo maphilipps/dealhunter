@@ -15,7 +15,7 @@ import {
 import { getAgentResult } from '@/lib/agents/expert-agents';
 import type { TimingAnalysis } from '@/lib/agents/expert-agents/timing-schema';
 import { auth } from '@/lib/auth';
-import { getCachedRfpWithRelations } from '@/lib/pre-qualifications/cached-queries';
+import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
 import type { ProjectTimeline } from '@/lib/timeline/schema';
 import { parseJsonField } from '@/lib/utils/json';
 
@@ -27,15 +27,15 @@ export default async function TimingPage({ params }: { params: Promise<{ id: str
     redirect('/login');
   }
 
-  // Get RFP with relations (cached and parallelized)
-  const { rfp, quickScan } = await getCachedRfpWithRelations(id);
+  // Get Pre-Qualification with relations (cached and parallelized)
+  const { preQualification, quickScan } = await getCachedPreQualificationWithRelations(id);
 
-  if (!rfp) {
+  if (!preQualification) {
     notFound();
   }
 
   // Check ownership
-  if (rfp.userId !== session.user.id) {
+  if (preQualification.userId !== session.user.id) {
     notFound();
   }
 
@@ -51,7 +51,7 @@ export default async function TimingPage({ params }: { params: Promise<{ id: str
     targetDeadline?: string;
     deadline?: string;
     submissionDeadline?: string;
-  } | null>(rfp.extractedRequirements, null);
+  } | null>(preQualification.extractedRequirements, null);
   const submissionDeadline: string | undefined =
     extractedReqs?.submissionDeadline || extractedReqs?.targetDeadline || extractedReqs?.deadline;
 

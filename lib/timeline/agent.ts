@@ -15,7 +15,7 @@ export interface TimelineAgentInput {
   // From extracted requirements
   projectName: string;
   projectDescription: string;
-  targetDeadline?: string; // From RFP if specified
+  targetDeadline?: string; // From Pre-Qualification if specified
   budget?: number;
 
   // From Quick Scan
@@ -28,7 +28,7 @@ export interface TimelineAgentInput {
   cms?: string;
 
   // Additional context
-  rfpTimeline?: string; // Free text from RFP
+  rfpTimeline?: string; // Free text from Pre-Qualification
   specialRequirements?: string[];
 }
 
@@ -125,27 +125,27 @@ Website: ${input.websiteUrl}
 - Komplexität: ${complexity} (Multiplikator: ${complexityMultiplier}x)
 - Geschätzte Gesamt-Tage: ${totalDays}
 
-${input.targetDeadline ? `## RFP Deadline\n${input.targetDeadline}` : ''}
-${input.rfpTimeline ? `## RFP Timeline Info\n${input.rfpTimeline}` : ''}
+${input.targetDeadline ? `## Pre-Qualification Deadline\n${input.targetDeadline}` : ''}
+${input.rfpTimeline ? `## Pre-Qualification Timeline Info\n${input.rfpTimeline}` : ''}
 ${input.specialRequirements?.length ? `## Special Requirements\n${input.specialRequirements.join('\n')}` : ''}
 `.trim();
 
   // DEA-107: Optional RAG context retrieval
   // Note: generateObject doesn't support tools, so we pre-fetch RAG context
   let ragContext = '';
-  if (input.rfpId) {
+  if (input.preQualificationId) {
     try {
       const { queryRAG } = await import('@/lib/rag/retrieval-service');
 
       // Query for relevant performance and complexity data
       const [performanceResults, contentResults] = await Promise.all([
         queryRAG({
-          preQualificationId: input.rfpId,
+          preQualificationId: input.preQualificationId,
           question: 'What are the website performance indicators and issues?',
           maxResults: 3,
         }),
         queryRAG({
-          preQualificationId: input.rfpId,
+          preQualificationId: input.preQualificationId,
           question: 'What is the content architecture and complexity?',
           maxResults: 3,
         }),

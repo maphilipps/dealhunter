@@ -35,7 +35,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     const leadData = lead[0];
 
     if (!leadData.preQualificationId) {
-      return NextResponse.json({ error: 'No RFP associated with lead' }, { status: 400 });
+      return NextResponse.json({ error: 'No Pre-Qualification associated with lead' }, { status: 400 });
     }
 
     // 2. Extract requirements from RAG
@@ -58,7 +58,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     // 4. Run orchestrator
     const result = await runCMSAdvocateOrchestrator({
       leadId,
-      rfpId: leadData.preQualificationId,
+      preQualificationId: leadData.preQualificationId,
       requirements,
       customerProfile,
     });

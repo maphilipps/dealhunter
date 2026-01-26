@@ -142,10 +142,10 @@ function getIndustryRequirements(industry: string | null): string[] {
  * 4. Store results in RAG
  *
  * @param leadId - Lead ID to analyze
- * @param rfpId - RFP ID for RAG storage
+ * @param rfpId - Pre-Qualification ID for RAG storage
  * @returns Legal check results
  */
-export async function runLegalCheckAgent(leadId: string, rfpId: string): Promise<LegalCheckResult> {
+export async function runLegalCheckAgent(leadId: string, preQualificationId: string): Promise<LegalCheckResult> {
   console.error(`[Legal Check Agent] Starting analysis for lead ${leadId}`);
 
   try {
@@ -223,7 +223,7 @@ Please provide a comprehensive legal compliance assessment including:
     );
 
     // 5. Store in RAG
-    await storeInRAG(rfpId, leadId, result);
+    await storeInRAG(preQualificationId, leadId, result);
 
     return result;
   } catch (error) {
@@ -235,7 +235,7 @@ Please provide a comprehensive legal compliance assessment including:
 /**
  * Store legal check results in RAG
  */
-async function storeInRAG(rfpId: string, leadId: string, result: LegalCheckResult): Promise<void> {
+async function storeInRAG(preQualificationId: string, leadId: string, result: LegalCheckResult): Promise<void> {
   try {
     // Build searchable content
     const criticalIssuesText =
@@ -296,7 +296,7 @@ ${recommendationsText}`;
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
       await db.insert(dealEmbeddings).values({
-        preQualificationId: rfpId,
+        preQualificationId: preQualificationId,
         agentName: 'legal_check',
         chunkType: 'analysis',
         chunkIndex: 0,

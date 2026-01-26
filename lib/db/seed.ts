@@ -260,12 +260,12 @@ async function seed() {
     const account = random(allAccounts);
     const bu = random(allBUs);
 
-    const [rfp] = await db
+    const [preQualification] = await db
       .insert(preQualifications)
       .values({
         userId: activeUserId,
         source: 'reactive',
-        stage: 'rfp',
+        stage: 'pre-qualification',
         inputType: 'pdf',
         rawInput: faker.lorem.paragraphs(2),
         status: scenario.status as any,
@@ -278,7 +278,7 @@ async function seed() {
     const [qs] = await db
       .insert(quickScans)
       .values({
-        preQualificationId: rfp.id,
+        preQualificationId: preQualification.id,
         websiteUrl: account.website || faker.internet.url(),
         status: 'completed',
         techStack: JSON.stringify({ cms: 'Typo3', frontend: 'jQuery', server: 'Apache' }),
@@ -291,12 +291,12 @@ async function seed() {
     await db
       .update(preQualifications)
       .set({ quickScanId: qs.id })
-      .where(eq(preQualifications.id, rfp.id));
+      .where(eq(preQualifications.id, preQualification.id));
 
     const [lead] = await db
       .insert(qualifications)
       .values({
-        preQualificationId: rfp.id,
+        preQualificationId: preQualification.id,
         status: scenario.status as any,
         customerName: account.name,
         websiteUrl: account.website,

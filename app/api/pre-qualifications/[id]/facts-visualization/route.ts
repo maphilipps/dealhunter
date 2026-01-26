@@ -58,7 +58,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       });
     }
 
-    // Get extracted data from rfp
+    // Get extracted data from preQualification
     let extractedData: ExtractedRequirements | null = null;
     if (bid.extractedRequirements) {
       try {

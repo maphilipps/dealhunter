@@ -16,13 +16,19 @@ import { generateObject } from 'ai';
 let openaiInstance: any = null;
 let openaiDirectInstance: any = null;
 
-// Initialize AI SDK OpenAI provider
+export const AI_HUB_API_KEY = process.env.AI_HUB_API_KEY || process.env.OPENAI_API_KEY;
+export const AI_HUB_BASE_URL =
+  process.env.AI_HUB_BASE_URL ||
+  process.env.OPENAI_BASE_URL ||
+  'https://adesso-ai-hub.3asabc.de/v1';
+
+// Initialize AI SDK OpenAI provider (AI Hub)
 export const aiHubOpenAI = createOpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+  apiKey: AI_HUB_API_KEY,
+  baseURL: AI_HUB_BASE_URL,
 });
 
-// Direct OpenAI provider for specific models if needed
+// Direct OpenAI provider for specific models if needed (embeddings only)
 export const directOpenAI = createOpenAI({
   apiKey: process.env.OPENAI_EMBEDDING_API_KEY, // Use specific key if needed
   baseURL: 'https://api.openai.com/v1',
@@ -37,8 +43,8 @@ export function getOpenAIClient() {
     // Dynamic import only when needed
     const OpenAI = require('openai').default;
     openaiInstance = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+      apiKey: AI_HUB_API_KEY,
+      baseURL: AI_HUB_BASE_URL,
     });
   }
   return openaiInstance;

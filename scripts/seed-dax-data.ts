@@ -446,7 +446,7 @@ async function seedDAXData() {
     {
       account: createdAccounts.find(a => a.name === 'BMW AG'),
       source: 'reactive',
-      stage: 'rfp',
+      stage: 'preQualification',
       inputType: 'pdf',
       websiteUrl: 'https://www.bmw.de',
       extractedRequirements: {
@@ -538,7 +538,7 @@ async function seedDAXData() {
     {
       account: createdAccounts.find(a => a.name === 'Siemens AG'),
       source: 'reactive',
-      stage: 'rfp',
+      stage: 'preQualification',
       inputType: 'email',
       websiteUrl: 'https://www.siemens.de',
       extractedRequirements: {
@@ -585,7 +585,7 @@ async function seedDAXData() {
     {
       account: createdAccounts.find(a => a.name === 'adidas AG'),
       source: 'reactive',
-      stage: 'rfp',
+      stage: 'preQualification',
       inputType: 'pdf',
       websiteUrl: 'https://www.adidas.de',
       extractedRequirements: {
@@ -676,12 +676,12 @@ async function seedDAXData() {
     // Create RFP first (without quickScanId)
     const status = rfpTemplate.decision === 'bid' ? 'timeline_estimating' : 'bit_pending';
 
-    const [rfp] = await db
+    const [preQualification] = await db
       .insert(preQualifications)
       .values({
         userId: testUser.id,
         source: rfpTemplate.source as 'reactive' | 'proactive',
-        stage: rfpTemplate.stage as 'cold' | 'warm' | 'rfp',
+        stage: rfpTemplate.stage as 'cold' | 'warm' | 'preQualification',
         inputType: rfpTemplate.inputType as 'pdf' | 'crm' | 'freetext' | 'email' | 'combined',
         rawInput: JSON.stringify(rfpTemplate.extractedRequirements),
         extractedRequirements: JSON.stringify(rfpTemplate.extractedRequirements),
@@ -699,7 +699,7 @@ async function seedDAXData() {
     const [quickScan] = await db
       .insert(quickScans)
       .values({
-        preQualificationId: rfp.id,
+        preQualificationId: preQualification.id,
         websiteUrl: rfpTemplate.websiteUrl,
         status: 'completed',
         cms: rfpTemplate.quickScanData.cms,
@@ -721,7 +721,7 @@ async function seedDAXData() {
     await db
       .update(preQualifications)
       .set({ quickScanId: quickScan.id })
-      .where(eq(preQualifications.id, rfp.id));
+      .where(eq(preQualifications.id, preQualification.id));
 
     console.log(
       `  ✓ ${rfpTemplate.extractedRequirements.projectName} (${rfpTemplate.account.name})`

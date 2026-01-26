@@ -108,7 +108,7 @@ export async function runQuickScanAgentNative(
     },
   });
 
-  const tools: Record<string, ReturnType<typeof tool>> = {
+  const tools: Record<string, unknown> = {
     listTools,
     runTool,
     completeQuickScan,

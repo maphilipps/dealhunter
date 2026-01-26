@@ -102,7 +102,7 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
   technology: async (leadId, preQualificationId) => {
     // TODO: Implement TechnologyAgent
     return Promise.resolve({
-      content: { techStack: [], currentCMS: null, leadId, rfpId },
+      content: { techStack: [], currentCMS: null, leadId, preQualificationId },
       confidence: 50,
       sources: [],
     });
@@ -158,7 +158,7 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
   'cms-architecture': async (leadId, preQualificationId) => {
     // TODO: Implement CMSArchitectureAgent
     return Promise.resolve({
-      content: { contentTypes: [], architecture: null, leadId, rfpId },
+      content: { contentTypes: [], architecture: null, leadId, preQualificationId },
       confidence: 50,
       sources: [],
     });
@@ -167,7 +167,7 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
   'cms-comparison': async (leadId, preQualificationId) => {
     // TODO: Implement CMSComparisonAgent
     return Promise.resolve({
-      content: { options: [], recommendation: null, leadId, rfpId },
+      content: { options: [], recommendation: null, leadId, preQualificationId },
       confidence: 50,
       sources: [],
     });
@@ -212,7 +212,7 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
   migration: async (leadId, preQualificationId) => {
     // TODO: Implement MigrationAgent
     return Promise.resolve({
-      content: { strategy: null, risks: [], mitigation: [], leadId, rfpId },
+      content: { strategy: null, risks: [], mitigation: [], leadId, preQualificationId },
       confidence: 50,
       sources: [],
     });
@@ -221,7 +221,7 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
   staffing: async (leadId, preQualificationId) => {
     // TODO: Implement StaffingAgent
     return Promise.resolve({
-      content: { timeline: null, resources: [], leadId, rfpId },
+      content: { timeline: null, resources: [], leadId, preQualificationId },
       confidence: 50,
       sources: [],
     });
@@ -413,7 +413,7 @@ export async function runDeepScan(leadId: string): Promise<DeepScanProgress> {
     }
 
     const lead = leadData[0];
-    const rfpId = lead.preQualificationId;
+    const preQualificationId = lead.preQualificationId;
 
     // 2. Update status to 'running'
     await db

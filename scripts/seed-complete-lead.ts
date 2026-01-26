@@ -528,12 +528,12 @@ async function seedCompleteLead() {
     },
   };
 
-  const [rfp] = await db
+  const [preQualification] = await db
     .insert(preQualifications)
     .values({
       userId: bdUser.id,
       source: 'reactive',
-      stage: 'rfp',
+      stage: 'preQualification',
       inputType: 'pdf',
       rawInput: JSON.stringify(extractedRequirements),
       extractedRequirements: JSON.stringify(extractedRequirements),
@@ -551,7 +551,7 @@ async function seedCompleteLead() {
     })
     .returning();
 
-  console.log(`  ✓ RFP created: ${rfp.id}\n`);
+  console.log(`  ✓ RFP created: ${preQualification.id}\n`);
 
   // ===========================================
   // 9. Quick Scan
@@ -624,7 +624,7 @@ async function seedCompleteLead() {
   const [quickScan] = await db
     .insert(quickScans)
     .values({
-      preQualificationId: rfp.id,
+      preQualificationId: preQualification.id,
       websiteUrl: 'https://www.stv-fst.ch',
       status: 'completed',
       cms: 'WordPress',
@@ -780,7 +780,7 @@ async function seedCompleteLead() {
   await db
     .update(preQualifications)
     .set({ quickScanId: quickScan.id })
-    .where(eq(preQualifications.id, rfp.id));
+    .where(eq(preQualifications.id, preQualification.id));
 
   console.log(`  ✓ Quick Scan completed\n`);
 
@@ -792,7 +792,7 @@ async function seedCompleteLead() {
   const [lead] = await db
     .insert(qualifications)
     .values({
-      preQualificationId: rfp.id,
+      preQualificationId: preQualification.id,
       status: 'bl_reviewing',
       customerName: 'Schweizer Tourismus Verband',
       websiteUrl: 'https://www.stv-fst.ch',

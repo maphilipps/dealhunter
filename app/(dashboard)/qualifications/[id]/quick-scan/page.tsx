@@ -8,7 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { qualifications, websiteAudits, businessUnits, preQualifications } from '@/lib/db/schema';
+import {
+  qualifications,
+  websiteAudits,
+  businessUnits,
+  preQualifications,
+  quickScans,
+} from '@/lib/db/schema';
 
 interface ContentType {
   type?: string;
@@ -31,6 +37,10 @@ interface DecisionMaker {
   department?: string;
   email?: string;
   phone?: string;
+}
+
+interface DecisionMakersPayload {
+  decisionMakers?: DecisionMaker[];
 }
 
 export default async function QuickScanResultsPage({
@@ -66,6 +76,11 @@ export default async function QuickScanResultsPage({
         .limit(1)
     : [null];
 
+  const quickScanId = lead.quickScanId || preQualification?.quickScanId;
+  const [quickScan] = quickScanId
+    ? await db.select().from(quickScans).where(eq(quickScans.id, quickScanId)).limit(1)
+    : [null];
+
   // Get website audit data
   const [audit] = lead.websiteUrl
     ? await db
@@ -94,10 +109,15 @@ export default async function QuickScanResultsPage({
         | string[]
         | null)
     : null;
-  const decisionMakers =
-    preQualification && typeof preQualification.decisionMakers === 'string'
-      ? (tryParseJSON(preQualification.decisionMakers) as DecisionMaker[] | null)
-      : null;
+  const decisionMakersRaw = quickScan?.decisionMakers
+    ? (tryParseJSON(quickScan.decisionMakers) as
+        | DecisionMakersPayload
+        | DecisionMaker[]
+        | null)
+    : null;
+  const decisionMakers = Array.isArray(decisionMakersRaw)
+    ? decisionMakersRaw
+    : decisionMakersRaw?.decisionMakers ?? null;
 
   // Check if CMS is Ibexa
   const isIbexa = audit?.cms?.toLowerCase().includes('ibexa');

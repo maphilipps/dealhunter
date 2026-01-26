@@ -1,7 +1,7 @@
 'use client';
 
 import { Loader2, Play, RefreshCw, CheckCircle2, AlertCircle, Info, Zap } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -185,19 +185,13 @@ export function RequirementsMatrix({ preQualificationId, initialMatrix }: Requir
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
+  const hasLoadedRef = useRef(false);
 
-  // Load existing matrix on mount
-  useEffect(() => {
-    if (!initialMatrix) {
-      void loadMatrix();
-    }
-  }, [preQualificationId, initialMatrix]);
-
-  const loadMatrix = async () => {
+  const loadMatrix = useCallback(async () => {
     try {
       const res = await fetch(`/api/pre-qualifications/${preQualificationId}/cms-matrix/stream`);
       if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as { matrix?: RequirementMatrix };
         if (data.matrix) {
           setMatrix(data.matrix);
         }
@@ -205,7 +199,15 @@ export function RequirementsMatrix({ preQualificationId, initialMatrix }: Requir
     } catch (error) {
       console.error('Error loading matrix:', error);
     }
-  };
+  }, [preQualificationId]);
+
+  // Load existing matrix on mount
+  useEffect(() => {
+    if (!initialMatrix && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      void loadMatrix();
+    }
+  }, [initialMatrix, loadMatrix]);
 
   const startResearch = useCallback(async () => {
     setIsLoading(true);
@@ -236,7 +238,7 @@ export function RequirementsMatrix({ preQualificationId, initialMatrix }: Requir
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const event: AgentEvent = JSON.parse(line.slice(6));
+              const event = JSON.parse(line.slice(6)) as AgentEvent;
 
               // Update UI based on event
               if (event.type === AgentEventType.AGENT_PROGRESS) {
@@ -269,7 +271,7 @@ export function RequirementsMatrix({ preQualificationId, initialMatrix }: Requir
     } finally {
       setIsLoading(false);
     }
-  }, [rfpId]);
+  }, [preQualificationId]);
 
   // Calculate overall scores per CMS
   const cmsScores = matrix?.technologies.map(tech => {
@@ -279,7 +281,7 @@ export function RequirementsMatrix({ preQualificationId, initialMatrix }: Requir
     const avgScore = techCells.length > 0 ? Math.round(totalScore / techCells.length) : 0;
 
     return { ...tech, avgScore };
-  });
+  }) as Array<RequirementMatrix['technologies'][number] & { avgScore: number }> | undefined;
 
   // Sort by average score
   cmsScores?.sort((a, b) => b.avgScore - a.avgScore);

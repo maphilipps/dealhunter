@@ -72,7 +72,7 @@ Content-Type: multipart/form-data
 {
   "success": true,
   "data": {
-    "id": "rfp-id",
+    "id": "preQualification-id",
     "title": "Extracted title",
     "description": "Extracted description",
     "status": "pending_extraction",
@@ -565,19 +565,19 @@ Subscribe to RFP lifecycle events (future feature):
 
 **Events:**
 
-- `rfp.created`
-- `rfp.extracted`
-- `rfp.quick_scan_complete`
-- `rfp.evaluation_complete`
-- `rfp.assigned`
+- `preQualification.created`
+- `preQualification.extracted`
+- `preQualification.quick_scan_complete`
+- `preQualification.evaluation_complete`
+- `preQualification.assigned`
 
 **Payload:**
 
 ```json
 {
-  "event": "rfp.evaluation_complete",
+  "event": "preQualification.evaluation_complete",
   "data": {
-    "id": "rfp-id",
+    "id": "preQualification-id",
     "recommendation": "BIT",
     "confidence": 0.85
   },
@@ -640,18 +640,18 @@ const client = new DealhunterClient({
 });
 
 // Create RFP
-const rfp = await client.rfps.create({
+const preQualification = await client.rfps.create({
   file: uploadFile,
 });
 
 // Stream Quick Scan
-const stream = await client.rfps.quickScan(rfp.id);
+const stream = await client.rfps.quickScan(preQualification.id);
 for await (const event of stream) {
   console.log(event);
 }
 
 // Get evaluation
-const evaluation = await client.rfps.getEvaluation(rfp.id);
+const evaluation = await client.rfps.getEvaluation(preQualification.id);
 ```
 
 ---
@@ -671,10 +671,10 @@ const response = await fetch('/api/submit', {
 });
 
 const { data } = await response.json();
-const rfpId = data.id;
+const preQualificationId = data.id;
 
 // Stream extraction
-const eventSource = new EventSource(`/api/rfps/${rfpId}/extraction/stream`);
+const eventSource = new EventSource(`/api/rfps/${preQualificationId}/extraction/stream`);
 
 eventSource.addEventListener('agent-complete', event => {
   const { result } = JSON.parse(event.data);
@@ -686,7 +686,7 @@ eventSource.addEventListener('agent-complete', event => {
 ### Quick Scan
 
 ```typescript
-const eventSource = new EventSource(`/api/rfps/${rfpId}/quick-scan/stream`);
+const eventSource = new EventSource(`/api/rfps/${preQualificationId}/quick-scan/stream`);
 
 eventSource.addEventListener('agent-complete', event => {
   const { result } = JSON.parse(event.data);
@@ -699,7 +699,7 @@ eventSource.addEventListener('agent-complete', event => {
 ### BID Evaluation
 
 ```typescript
-const eventSource = new EventSource(`/api/rfps/${rfpId}/evaluate/stream`);
+const eventSource = new EventSource(`/api/rfps/${preQualificationId}/evaluate/stream`);
 
 // Track sub-agents
 eventSource.addEventListener('agent-start', event => {

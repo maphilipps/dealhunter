@@ -74,13 +74,15 @@ export async function GET(request: Request) {
       );
 
     // 3. Check each pitchdeck's Pre-Qualification deadline
-    for (const { pitchdeck, lead, rfp } of activePitchdecks) {
+    for (const { pitchdeck, lead, preQualification } of activePitchdecks) {
       // Extract Pre-Qualification deadline from extractedRequirements
       let rfpDeadline: Date | null = null;
 
       if (preQualification.extractedRequirements) {
         try {
-          const requirements = JSON.parse(preQualification.extractedRequirements) as { deadline?: string };
+          const requirements = JSON.parse(preQualification.extractedRequirements) as {
+            deadline?: string;
+          };
           if (requirements.deadline) {
             rfpDeadline = new Date(requirements.deadline);
           }

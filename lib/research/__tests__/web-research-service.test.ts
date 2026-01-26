@@ -19,7 +19,7 @@ describe('web-research-service', () => {
 
   describe('rate limiting', () => {
     it('should allow requests within rate limit', async () => {
-      const rfpId = 'test-rfp-1';
+      const preQualificationId = 'test-preQualification-1';
       clearRateLimit(preQualificationId);
 
       // Mock fetch to return empty results
@@ -40,7 +40,7 @@ describe('web-research-service', () => {
     });
 
     it('should block requests exceeding rate limit', async () => {
-      const rfpId = 'test-rfp-2';
+      const preQualificationId = 'test-preQualification-2';
       clearRateLimit(preQualificationId);
 
       // Mock fetch to return empty results
@@ -70,7 +70,7 @@ describe('web-research-service', () => {
     });
 
     it('should allow requests after rate limit window expires', async () => {
-      const rfpId = 'test-rfp-3';
+      const preQualificationId = 'test-preQualification-3';
       clearRateLimit(preQualificationId);
 
       // This test would require mocking timers, skipping for now
@@ -80,7 +80,7 @@ describe('web-research-service', () => {
 
   describe('Exa API integration', () => {
     it('should skip Exa API when API key is not configured', async () => {
-      const rfpId = 'test-rfp-4';
+      const preQualificationId = 'test-preQualification-4';
       clearRateLimit(preQualificationId);
 
       // No EXA_API_KEY set
@@ -100,7 +100,7 @@ describe('web-research-service', () => {
     });
 
     it('should use Exa API when configured', async () => {
-      const rfpId = 'test-rfp-5';
+      const preQualificationId = 'test-preQualification-5';
       clearRateLimit(preQualificationId);
 
       // Set Exa API key
@@ -141,7 +141,7 @@ describe('web-research-service', () => {
     });
 
     it('should fallback to native search when Exa fails', async () => {
-      const rfpId = 'test-rfp-6';
+      const preQualificationId = 'test-preQualification-6';
       clearRateLimit(preQualificationId);
 
       // Set Exa API key
@@ -168,7 +168,7 @@ describe('web-research-service', () => {
 
   describe('result processing', () => {
     it('should return empty results when no search results found', async () => {
-      const rfpId = 'test-rfp-7';
+      const preQualificationId = 'test-preQualification-7';
       clearRateLimit(preQualificationId);
 
       // Mock empty Exa response
@@ -189,7 +189,7 @@ describe('web-research-service', () => {
     });
 
     it('should respect maxResults parameter', async () => {
-      const rfpId = 'test-rfp-8';
+      const preQualificationId = 'test-preQualification-8';
       clearRateLimit(preQualificationId);
 
       process.env.EXA_API_KEY = 'test-key';
@@ -228,7 +228,7 @@ describe('web-research-service', () => {
 
   describe('error handling', () => {
     it('should handle network errors gracefully', async () => {
-      const rfpId = 'test-rfp-9';
+      const preQualificationId = 'test-preQualification-9';
       clearRateLimit(preQualificationId);
 
       process.env.EXA_API_KEY = 'test-key';
@@ -252,7 +252,7 @@ describe('web-research-service', () => {
     });
 
     it('should handle malformed API responses', async () => {
-      const rfpId = 'test-rfp-10';
+      const preQualificationId = 'test-preQualification-10';
       clearRateLimit(preQualificationId);
 
       process.env.EXA_API_KEY = 'test-key';

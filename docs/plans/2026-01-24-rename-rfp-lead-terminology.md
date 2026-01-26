@@ -110,18 +110,18 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 **Files:**
 - Modify: `lib/db/schema.ts`
 
-**Step 1: Update rfpId references in all tables**
+**Step 1: Update preQualificationId references in all tables**
 
-For each table with `rfpId`:
-- `quickScans.rfpId` → `quickScans.preQualificationId`
-- `deepMigrationAnalyses.rfpId` → `deepMigrationAnalyses.preQualificationId`
-- `documents.rfpId` → `documents.preQualificationId`
-- `teamAssignments.rfpId` → `teamAssignments.preQualificationId`
-- `subjectiveAssessments.rfpId` → `subjectiveAssessments.preQualificationId`
-- `backgroundJobs.rfpId` → `backgroundJobs.preQualificationId`
-- `qualifications.rfpId` → `qualifications.preQualificationId`
-- `dealEmbeddings.rfpId` → `dealEmbeddings.preQualificationId`
-- `rawChunks.rfpId` → `rawChunks.preQualificationId`
+For each table with `preQualificationId`:
+- `quickScans.preQualificationId` → `quickScans.preQualificationId`
+- `deepMigrationAnalyses.preQualificationId` → `deepMigrationAnalyses.preQualificationId`
+- `documents.preQualificationId` → `documents.preQualificationId`
+- `teamAssignments.preQualificationId` → `teamAssignments.preQualificationId`
+- `subjectiveAssessments.preQualificationId` → `subjectiveAssessments.preQualificationId`
+- `backgroundJobs.preQualificationId` → `backgroundJobs.preQualificationId`
+- `qualifications.preQualificationId` → `qualifications.preQualificationId`
+- `dealEmbeddings.preQualificationId` → `dealEmbeddings.preQualificationId`
+- `rawChunks.preQualificationId` → `rawChunks.preQualificationId`
 
 **Step 2: Update leadId references in all tables**
 
@@ -145,7 +145,7 @@ All indexes with `lead_idx` suffix → `qualification_idx`
 
 ```bash
 git add lib/db/schema.ts
-git commit -m "refactor(db): rename rfpId→preQualificationId, leadId→qualificationId FKs
+git commit -m "refactor(db): rename preQualificationId→preQualificationId, leadId→qualificationId FKs
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
@@ -169,7 +169,7 @@ Replace all:
 
 Replace all:
 - `rfps: many(rfps)` → `preQualifications: many(preQualifications)`
-- `rfp: one(rfps, ...)` → `preQualification: one(preQualifications, ...)`
+- `preQualification: one(rfps, ...)` → `preQualification: one(preQualifications, ...)`
 - `leads: many(leads)` → `qualifications: many(qualifications)`
 - `lead: one(leads, ...)` → `qualification: one(qualifications, ...)`
 
@@ -179,7 +179,7 @@ Replace:
 ```typescript
 entityType: text('entity_type', {
   enum: [
-    'rfp',
+    'preQualification',
     'lead',
     ...
   ],
@@ -396,13 +396,13 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ## Task 12: Rename Agent Tool Files
 
 **Files:**
-- Modify: `lib/agent-tools/tools/rfp.ts` → `lib/agent-tools/tools/pre-qualification.ts`
+- Modify: `lib/agent-tools/tools/preQualification.ts` → `lib/agent-tools/tools/pre-qualification.ts`
 - Modify: `lib/agent-tools/tools/lead.ts` → `lib/agent-tools/tools/qualification.ts`
 
 **Step 1: Move files**
 
 ```bash
-git mv lib/agent-tools/tools/rfp.ts lib/agent-tools/tools/pre-qualification.ts
+git mv lib/agent-tools/tools/preQualification.ts lib/agent-tools/tools/pre-qualification.ts
 git mv lib/agent-tools/tools/lead.ts lib/agent-tools/tools/qualification.ts
 ```
 
@@ -410,7 +410,7 @@ git mv lib/agent-tools/tools/lead.ts lib/agent-tools/tools/qualification.ts
 
 ```bash
 git add .
-git commit -m "refactor: rename agent tool files rfp→pre-qualification, lead→qualification
+git commit -m "refactor: rename agent tool files preQualification→pre-qualification, lead→qualification
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
@@ -420,21 +420,21 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ## Task 13: Rename Expert Agents
 
 **Files:**
-- Move: `lib/agents/expert-agents/legal-rfp-agent.ts` → `lib/agents/expert-agents/legal-pre-qualification-agent.ts`
-- Move: `lib/agents/expert-agents/legal-rfp-schema.ts` → `lib/agents/expert-agents/legal-pre-qualification-schema.ts`
+- Move: `lib/agents/expert-agents/legal-preQualification-agent.ts` → `lib/agents/expert-agents/legal-pre-qualification-agent.ts`
+- Move: `lib/agents/expert-agents/legal-preQualification-schema.ts` → `lib/agents/expert-agents/legal-pre-qualification-schema.ts`
 
 **Step 1: Move files**
 
 ```bash
-git mv lib/agents/expert-agents/legal-rfp-agent.ts lib/agents/expert-agents/legal-pre-qualification-agent.ts
-git mv lib/agents/expert-agents/legal-rfp-schema.ts lib/agents/expert-agents/legal-pre-qualification-schema.ts
+git mv lib/agents/expert-agents/legal-preQualification-agent.ts lib/agents/expert-agents/legal-pre-qualification-agent.ts
+git mv lib/agents/expert-agents/legal-preQualification-schema.ts lib/agents/expert-agents/legal-pre-qualification-schema.ts
 ```
 
 **Step 2: Commit**
 
 ```bash
 git add .
-git commit -m "refactor: rename legal-rfp-agent → legal-pre-qualification-agent
+git commit -m "refactor: rename legal-preQualification-agent → legal-pre-qualification-agent
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
@@ -444,13 +444,13 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ## Task 14: Rename Test Files
 
 **Files:**
-- Move: `tests/integration/rfp-extraction-flow.test.ts` → `tests/integration/pre-qualification-extraction-flow.test.ts`
+- Move: `tests/integration/preQualification-extraction-flow.test.ts` → `tests/integration/pre-qualification-extraction-flow.test.ts`
 - Move: `lib/rag/__tests__/lead-retrieval-service.test.ts` → `lib/rag/__tests__/qualification-retrieval-service.test.ts`
 
 **Step 1: Move files**
 
 ```bash
-git mv tests/integration/rfp-extraction-flow.test.ts tests/integration/pre-qualification-extraction-flow.test.ts
+git mv tests/integration/preQualification-extraction-flow.test.ts tests/integration/pre-qualification-extraction-flow.test.ts
 git mv lib/rag/__tests__/lead-retrieval-service.test.ts lib/rag/__tests__/qualification-retrieval-service.test.ts
 ```
 
@@ -481,9 +481,9 @@ Using sed or manual replacement:
 - `\bRFPS\b` → `PRE_QUALIFICATIONS`
 
 **Note:** Be careful with:
-- `rfpId` → `preQualificationId`
+- `preQualificationId` → `preQualificationId`
 - `/rfps` (URL) → `/pre-qualifications`
-- `'rfp'` (string literal) → `'pre_qualification'`
+- `'preQualification'` (string literal) → `'pre_qualification'`
 
 **Step 2: Run TypeScript check**
 

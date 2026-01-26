@@ -24,7 +24,7 @@ import { searchSimilar } from '@/lib/rag/actions';
 import type { SimilarityResult, SimilaritySearchResult } from '@/lib/rag/types';
 
 interface SimilarityTesterProps {
-  rfpId?: string;
+  preQualificationId?: string;
   leadId?: string;
 }
 

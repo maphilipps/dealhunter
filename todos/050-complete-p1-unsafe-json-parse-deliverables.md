@@ -28,8 +28,8 @@ The deliverables page parses `extractedRequirements` from the database using `JS
 **Vulnerable Code:**
 
 ```typescript
-const extractedReqs: ExtractedRequirements | null = rfp.extractedRequirements
-  ? (JSON.parse(rfp.extractedRequirements) as ExtractedRequirements)
+const extractedReqs: ExtractedRequirements | null = preQualification.extractedRequirements
+  ? (JSON.parse(preQualification.extractedRequirements) as ExtractedRequirements)
   : null;
 ```
 
@@ -55,8 +55,8 @@ Same anti-pattern exists in multiple pages:
 ```typescript
 import { extractedRequirementsSchema } from '@/lib/extraction/schema';
 
-const parseResult = rfp.extractedRequirements
-  ? extractedRequirementsSchema.safeParse(JSON.parse(rfp.extractedRequirements))
+const parseResult = preQualification.extractedRequirements
+  ? extractedRequirementsSchema.safeParse(JSON.parse(preQualification.extractedRequirements))
   : null;
 
 if (parseResult && !parseResult.success) {
@@ -76,7 +76,7 @@ const extractedReqs = parseResult?.data ?? null;
 ```typescript
 let extractedReqs: ExtractedRequirements | null = null;
 try {
-  extractedReqs = rfp.extractedRequirements ? JSON.parse(rfp.extractedRequirements) : null;
+  extractedReqs = preQualification.extractedRequirements ? JSON.parse(preQualification.extractedRequirements) : null;
 } catch (e) {
   console.error('Failed to parse extractedRequirements:', e);
 }

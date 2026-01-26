@@ -236,7 +236,7 @@ async function seedMassiveData() {
       const projectName = `${account.name.replace(' AG', '').replace(' SE', '')} ${template.title}`;
 
       const source = Math.random() > 0.5 ? 'reactive' : 'proactive';
-      const stage = Math.random() > 0.7 ? 'rfp' : Math.random() > 0.5 ? 'warm' : 'cold';
+      const stage = Math.random() > 0.7 ? 'preQualification' : Math.random() > 0.5 ? 'warm' : 'cold';
       const inputType = ['pdf', 'email', 'crm', 'freetext'][Math.floor(Math.random() * 4)];
 
       const confidence = tech.confidence + Math.floor((Math.random() - 0.5) * 20);
@@ -283,7 +283,7 @@ async function seedMassiveData() {
             : 'bit_pending';
 
       // Create RFP
-      const [rfp] = await db
+      const [preQualification] = await db
         .insert(preQualifications)
         .values({
           userId: testUser.id,
@@ -305,7 +305,7 @@ async function seedMassiveData() {
       const [quickScan] = await db
         .insert(quickScans)
         .values({
-          preQualificationId: rfp.id,
+          preQualificationId: preQualification.id,
           websiteUrl: account.website || 'https://example.com',
           status: 'completed',
           cms: tech.cms,
@@ -327,9 +327,9 @@ async function seedMassiveData() {
       await db
         .update(preQualifications)
         .set({ quickScanId: quickScan.id })
-        .where(eq(preQualifications.id, rfp.id));
+        .where(eq(preQualifications.id, preQualification.id));
 
-      createdRFPs.push({ rfp, quickScan, decision, bu: tech.bu });
+      createdRFPs.push({ preQualification, quickScan, decision, bu: tech.bu });
       rfpCount++;
 
       if (rfpCount % 10 === 0) {
@@ -345,15 +345,15 @@ async function seedMassiveData() {
   const bidRFPs = createdRFPs.filter(r => r.decision === 'bid');
   const createdLeads: any[] = [];
 
-  for (const { rfp, quickScan, bu } of bidRFPs) {
-    const requirements = JSON.parse(rfp.extractedRequirements || '{}');
+  for (const { preQualification, quickScan, bu } of bidRFPs) {
+    const requirements = JSON.parse(preQualification.extractedRequirements || '{}');
 
     const blVote = Math.random() > 0.2 ? 'BID' : 'NO-BID'; // 80% BID rate
     const blUser = bu === 'PHP' ? blUserPHP : blUserWEM;
 
     // Skip if BL user doesn't exist
     if (!blUser) {
-      console.warn(`  ⚠️  Skipping lead for ${rfp.id} - BL user for ${bu} not found`);
+      console.warn(`  ⚠️  Skipping lead for ${preQualification.id} - BL user for ${bu} not found`);
       continue;
     }
 
@@ -362,11 +362,11 @@ async function seedMassiveData() {
     const [lead] = await db
       .insert(qualifications)
       .values({
-        preQualificationId: rfp.id,
+        preQualificationId: preQualification.id,
         status: leadStatus as any,
         customerName: requirements.projectName || 'Unknown Customer',
-        websiteUrl: rfp.websiteUrl,
-        industry: rfp.extractedRequirements ? JSON.parse(rfp.extractedRequirements).industry : null,
+        websiteUrl: preQualification.websiteUrl,
+        industry: preQualification.extractedRequirements ? JSON.parse(preQualification.extractedRequirements).industry : null,
         projectDescription: requirements.description,
         budget: requirements.budget,
         requirements: JSON.stringify(requirements.requirements),
@@ -396,10 +396,10 @@ async function seedMassiveData() {
     console.log('🧠 Generating RAG Embeddings for Agent Outputs...');
     let embeddingCount = 0;
 
-    for (const { rfp, quickScan } of createdRFPs) {
+    for (const { preQualification, quickScan } of createdRFPs) {
       try {
         // Embed Quick Scan Results
-        await embedAgentOutput(rfp.id, 'quick_scan', {
+        await embedAgentOutput(preQualification.id, 'quick_scan', {
           cms: quickScan.cms,
           framework: quickScan.framework,
           hosting: quickScan.hosting,
@@ -412,7 +412,7 @@ async function seedMassiveData() {
         });
 
         // Embed RFP Requirements
-        await embedAgentOutput(rfp.id, 'extraction', JSON.parse(rfp.extractedRequirements || '{}'));
+        await embedAgentOutput(preQualification.id, 'extraction', JSON.parse(preQualification.extractedRequirements || '{}'));
 
         embeddingCount++;
 
@@ -420,7 +420,7 @@ async function seedMassiveData() {
           console.log(`  ✓ ${embeddingCount} RFPs embedded...`);
         }
       } catch (error) {
-        console.error(`  ⚠️  Failed to embed RFP ${rfp.id}:`, error);
+        console.error(`  ⚠️  Failed to embed RFP ${preQualification.id}:`, error);
       }
     }
 

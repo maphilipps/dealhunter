@@ -17,11 +17,11 @@ export const factories = {
     ...overrides,
   }),
 
-  rfp: (overrides?: Partial<any>) => ({
+  preQualification: (overrides?: Partial<any>) => ({
     id: createId(),
     userId: createId(),
     source: 'reactive' as const,
-    stage: 'rfp' as const,
+    stage: 'preQualification' as const,
     inputType: 'pdf' as const,
     rawInput: 'Test RFP content',
     metadata: null,

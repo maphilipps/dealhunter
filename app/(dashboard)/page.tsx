@@ -38,8 +38,10 @@ interface DashboardData {
 }
 
 // Fetcher function for SWR
-const fetcher = (url: string): Promise<DashboardData> =>
-  fetch(url).then(res => res.json()) as Promise<DashboardData>;
+const fetcher = async (url: string): Promise<DashboardData> => {
+  const res = await fetch(url);
+  return res.json() as Promise<DashboardData>;
+};
 
 export default function DashboardPage() {
   // Filter state

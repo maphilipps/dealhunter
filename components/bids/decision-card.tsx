@@ -2,7 +2,6 @@
 
 import {
   CheckCircle2,
-  XCircle,
   AlertTriangle,
   ThumbsUp,
   ThumbsDown,
@@ -48,7 +47,7 @@ export function DecisionCard({ result }: DecisionCardProps) {
     //   });
     // }
     return flags;
-  }, [result.legalAssessment?.fullCheck?.allRedFlags]);
+  }, []);
 
   // Extract competitors (memoized)
   const competitors: Competitor[] = useMemo(() => {
@@ -65,7 +64,7 @@ export function DecisionCard({ result }: DecisionCardProps) {
     //   });
     // }
     return comps;
-  }, [result.competitionCheck?.competitiveAnalysis?.knownCompetitors]);
+  }, []);
 
   // Extract reference matches (memoized)
   const referenceMatches: ReferenceMatch[] = useMemo(() => {
@@ -86,7 +85,7 @@ export function DecisionCard({ result }: DecisionCardProps) {
     //   });
     // }
     return matches;
-  }, [result.referenceMatch?.similarProjectsAnalysis?.similarProjects]);
+  }, []);
 
   // Confidence breakdown (memoized)
   const confidenceBreakdown = useMemo(

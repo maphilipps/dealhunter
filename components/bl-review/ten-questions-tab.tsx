@@ -1,20 +1,20 @@
 'use client';
 
 import {
-  CheckCircle2,
-  XCircle,
+  AlertCircle,
   AlertTriangle,
-  HelpCircle,
+  Award,
+  Briefcase,
+  CheckCircle2,
+  Clock,
   Cpu,
   DollarSign,
-  Clock,
+  HelpCircle,
   Scale,
-  Award,
-  Users,
-  TrendingUp,
-  Briefcase,
-  AlertCircle,
   ThumbsUp,
+  TrendingUp,
+  Users,
+  XCircle,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';

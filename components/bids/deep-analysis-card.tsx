@@ -57,7 +57,10 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
       void (async () => {
         try {
           const response = await fetch(`/api/pre-qualifications/${bidId}/deep-analysis/status`);
-          const result = await response.json();
+          const result = (await response.json()) as {
+            success: boolean;
+            analysis?: typeof analysis;
+          };
 
           if (result.success && result.analysis) {
             setAnalysis(result.analysis);
@@ -94,14 +97,17 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
         method: 'POST',
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as { success: boolean; error?: string };
 
       if (result.success) {
         toast.success('Deep Analysis gestartet!');
         setIsPolling(true);
         // Fetch initial status
         const statusResponse = await fetch(`/api/pre-qualifications/${bidId}/deep-analysis/status`);
-        const statusResult = await statusResponse.json();
+        const statusResult = (await statusResponse.json()) as {
+          success: boolean;
+          analysis?: typeof analysis;
+        };
         if (statusResult.success && statusResult.analysis) {
           setAnalysis(statusResult.analysis);
         }

@@ -23,11 +23,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id: preQualId } = await params;
 
     // Verify pre-qualification exists and ownership
-    const [preQual] = await db
+    const preQuals = await db
       .select({ id: preQualifications.id, userId: preQualifications.userId })
       .from(preQualifications)
       .where(eq(preQualifications.id, preQualId))
       .limit(1);
+
+    const preQual = preQuals[0];
 
     if (!preQual) {
       return NextResponse.json({ error: 'Pre-qualification not found' }, { status: 404 });
@@ -38,7 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Get latest quick-scan job for this pre-qualification
-    const [job] = await db
+    const jobs = await db
       .select()
       .from(backgroundJobs)
       .where(
@@ -50,8 +52,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .orderBy(desc(backgroundJobs.createdAt))
       .limit(1);
 
+    const job = jobs[0];
+
     if (!job) {
       return NextResponse.json({ job: null, message: 'No jobs found' });
+    }
+
+    // Parse result JSON safely
+    let parsedResult: unknown = null;
+    if (job.result) {
+      try {
+        parsedResult = JSON.parse(job.result) as unknown;
+      } catch {
+        parsedResult = null;
+      }
     }
 
     // Return job status
@@ -62,7 +76,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         progress: job.progress,
         currentStep: job.currentStep,
         errorMessage: job.errorMessage,
-        result: job.result ? JSON.parse(job.result) : null,
+        result: parsedResult,
         createdAt: job.createdAt,
         updatedAt: job.updatedAt,
         completedAt: job.completedAt,

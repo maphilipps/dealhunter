@@ -24,7 +24,7 @@ function parseJson<T>(value: string | null): T | null {
   }
 }
 
-async function emitJobProgress(
+function emitJobProgress(
   emit: EventEmitter,
   job: typeof backgroundJobs.$inferSelect,
   lastCompleted: Set<string>
@@ -111,11 +111,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
 
       if (job.status === 'running') {
-        await emitJobProgress(emit, job, lastCompleted);
+        emitJobProgress(emit, job, lastCompleted);
       }
 
       if (job.status === 'completed') {
-        await emitJobProgress(emit, job, lastCompleted);
+        emitJobProgress(emit, job, lastCompleted);
         emit({
           type: AgentEventType.AGENT_COMPLETE,
           data: {

@@ -412,7 +412,8 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
   const parseJsonArray = (json: string | null): string[] => {
     if (!json) return [];
     try {
-      return JSON.parse(json) as string[];
+      const parsed: unknown = JSON.parse(json);
+      return parsed as string[];
     } catch {
       return [];
     }
@@ -421,7 +422,8 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
   const parseJsonObject = (json: string | null): Record<string, number> => {
     if (!json) return {};
     try {
-      return JSON.parse(json) as Record<string, number>;
+      const parsed: unknown = JSON.parse(json);
+      return parsed as Record<string, number>;
     } catch {
       return {};
     }

@@ -1,7 +1,7 @@
 'use client';
 
 import { Loader2, Globe, Sparkles, Plus, X, ExternalLink, Check } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +42,7 @@ export function WebsiteUrlInput({
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const hasLoadedRef = useRef(false);
 
-  const loadSuggestions = async () => {
+  const loadSuggestions = useCallback(async () => {
     if (!customerName) {
       toast.error('Kundenname nicht verfügbar');
       return;
@@ -75,7 +75,7 @@ export function WebsiteUrlInput({
     } finally {
       setIsLoadingSuggestions(false);
     }
-  };
+  }, [customerName, industry, projectDescription, technologies]);
 
   // Auto-load suggestions on mount
   useEffect(() => {
@@ -83,7 +83,7 @@ export function WebsiteUrlInput({
       hasLoadedRef.current = true;
       void loadSuggestions();
     }
-  }, [autoLoadSuggestions, customerName]);
+  }, [autoLoadSuggestions, customerName, loadSuggestions]);
 
   const handleAddManualUrl = () => {
     if (newUrl.trim()) {

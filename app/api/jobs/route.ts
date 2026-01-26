@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const rfpId = searchParams.get('rfpId');
+    const preQualificationId =
+      searchParams.get('preQualificationId') || searchParams.get('preQualificationId');
     const jobType = searchParams.get('jobType') as BackgroundJobType | null;
     const status = searchParams.get('status') as BackgroundJobStatus | null;
     const limit = parseInt(searchParams.get('limit') || '50', 10);
@@ -57,9 +58,9 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     return NextResponse.json({
-      jobs: jobs.map(({ job, rfp }) => ({
+      jobs: jobs.map(({ job, preQualification }) => ({
         ...job,
-        preQualification: rfp
+        preQualification: preQualification
           ? {
               id: preQualification.id,
               status: preQualification.status,

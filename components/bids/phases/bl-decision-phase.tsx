@@ -29,7 +29,7 @@ interface BLDecisionPhaseProps {
 
 type Decision = 'bid' | 'no-bid' | null;
 
-export function BLDecisionPhase({ quickScan, rfpId }: BLDecisionPhaseProps) {
+export function BLDecisionPhase({ quickScan, preQualificationId }: BLDecisionPhaseProps) {
   const [decision, setDecision] = useState<Decision>(null);
   const [reasoning, setReasoning] = useState('');
   const [submitting, setSubmitting] = useState(false);

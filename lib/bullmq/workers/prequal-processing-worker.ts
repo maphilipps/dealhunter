@@ -273,7 +273,10 @@ export async function processPreQualJob(
             extractedRequirements.websiteUrl = suggestion.suggestions[0].url;
           }
         } catch (error) {
-          console.error('[PreQual Worker] URL suggestion failed:', error);
+          console.error('[PreQual Worker] URL suggestion failed:', {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          });
         }
       } else {
         console.warn('[PreQual Worker] Missing customer name for URL suggestion');
@@ -324,7 +327,11 @@ export async function processPreQualJob(
         };
       }
     } catch (error) {
-      console.error(`[PreQual Worker] Duplicate check failed:`, error);
+      console.error(`[PreQual Worker] Duplicate check failed:`, {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        preQualificationId,
+      });
       // Continue anyway - duplicate check is not critical
     }
 
@@ -374,7 +381,11 @@ export async function processPreQualJob(
         console.log(`[PreQual Worker] Quick Scan enqueued: ${quickScan.id}`);
         finalStatus = 'quick_scanning';
       } catch (error) {
-        console.error(`[PreQual Worker] Quick Scan failed:`, error);
+        console.error(`[PreQual Worker] Quick Scan failed:`, {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          preQualificationId,
+        });
         // Mark QuickScan as failed but continue
         finalStatus = 'quick_scan_failed';
       }
@@ -399,9 +410,18 @@ export async function processPreQualJob(
     };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[PreQual Worker] Job ${job.id} failed:`, errorMsg);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorName = error instanceof Error ? error.name : 'Error';
 
-    // Update status to failed state
+    console.error(`[PreQual Worker] Job ${job.id} failed:`, {
+      message: errorMsg,
+      name: errorName,
+      stack: errorStack,
+      preQualificationId,
+      filesCount: job.data.files?.length || 0,
+    });
+
+    // Update status to failed state with full error details
     await db
       .update(preQualifications)
       .set({
@@ -409,6 +429,10 @@ export async function processPreQualJob(
         agentErrors: JSON.stringify([{
           agent: 'prequal-processing',
           error: errorMsg,
+          errorDetails: {
+            name: errorName,
+            stack: errorStack,
+          },
           timestamp: new Date().toISOString(),
         }]),
         updatedAt: new Date(),

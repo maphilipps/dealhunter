@@ -22,7 +22,7 @@ test.describe('BID/NO-BID Decision Display', () => {
     await page.goto('/pre-qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'Test RFP from Tech Corp for CMS relaunch');
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
@@ -51,7 +51,7 @@ test.describe('BID/NO-BID Decision Display', () => {
     await page.goto('/pre-qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'Enterprise CMS project with Drupal stack');
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
@@ -104,7 +104,7 @@ test.describe('Multi-Agent Evaluation: BID Flow', () => {
       'Enterprise Drupal CMS project for automotive client with 50+ editors'
     );
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
@@ -128,7 +128,7 @@ test.describe('Multi-Agent Evaluation: BID Flow', () => {
       'Healthcare portal with React frontend and Node.js backend'
     );
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
@@ -159,7 +159,7 @@ test.describe('Agent Results Display', () => {
       'E-commerce platform relaunch with microservices architecture'
     );
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
@@ -182,7 +182,7 @@ test.describe('Agent Results Display', () => {
     await page.goto('/pre-qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'SaaS platform with AI features and analytics');
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
@@ -209,7 +209,7 @@ test.describe('Agent Results Display', () => {
       'Digital transformation project for public sector'
     );
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
@@ -246,7 +246,7 @@ test.describe('Decision Tree Display', () => {
     await page.goto('/pre-qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'Cloud migration with AWS infrastructure');
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
@@ -275,7 +275,7 @@ test.describe('Decision Tree Display', () => {
       'Enterprise Drupal CMS with extensive content modeling and workflow requirements'
     );
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 

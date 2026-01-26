@@ -32,7 +32,7 @@ export type ReasoningProps = ComponentProps<typeof Collapsible> & {
   isStreaming?: boolean;
   open?: boolean;
   defaultOpen?: boolean;
-  onOpenChange?: (this: void, open: boolean) => void;
+  onOpenChange?: ((this: void, open: boolean) => void) | undefined;
   duration?: number;
 };
 

@@ -142,7 +142,7 @@ export function AuditTrailTable() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">Alle Types</SelectItem>
-                <SelectItem value="rfp">Pre-Qualification</SelectItem>
+                <SelectItem value="preQualification">Pre-Qualification</SelectItem>
                 <SelectItem value="business_unit">Business Unit</SelectItem>
                 <SelectItem value="employee">Employee</SelectItem>
                 <SelectItem value="reference">Reference</SelectItem>

@@ -163,7 +163,7 @@ describe('raw-embedding-service', () => {
     it('should return skipped when embeddings are disabled', async () => {
       vi.mocked(isEmbeddingEnabled).mockReturnValue(false);
 
-      const result = await embedRawText('rfp-123', 'Some text');
+      const result = await embedRawText('preQualification-123', 'Some text');
 
       expect(result.success).toBe(true);
       expect(result.skipped).toBe(true);
@@ -171,7 +171,7 @@ describe('raw-embedding-service', () => {
     });
 
     it('should return success with zero chunks for empty text', async () => {
-      const result = await embedRawText('rfp-123', '');
+      const result = await embedRawText('preQualification-123', '');
 
       expect(result.success).toBe(true);
       expect(result.stats.totalChunks).toBe(0);
@@ -202,7 +202,7 @@ describe('raw-embedding-service', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.delete).mockImplementation(mockDelete as any);
 
-      const result = await embedRawText('rfp-123', longText);
+      const result = await embedRawText('preQualification-123', longText);
 
       expect(result.success).toBe(true);
       expect(result.stats.totalChunks).toBeGreaterThanOrEqual(1);
@@ -214,7 +214,7 @@ describe('raw-embedding-service', () => {
         throw new Error('Database error');
       }) as any);
 
-      const result = await embedRawText('rfp-123', 'Some text '.repeat(100));
+      const result = await embedRawText('preQualification-123', 'Some text '.repeat(100));
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Database error');
@@ -233,7 +233,7 @@ describe('raw-embedding-service', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
-      const result = await hasRawChunks('rfp-123');
+      const result = await hasRawChunks('preQualification-123');
       expect(result).toBe(false);
     });
 
@@ -248,7 +248,7 @@ describe('raw-embedding-service', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
-      const result = await hasRawChunks('rfp-123');
+      const result = await hasRawChunks('preQualification-123');
       expect(result).toBe(true);
     });
   });
@@ -263,7 +263,7 @@ describe('raw-embedding-service', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.select).mockImplementation(mockSelect as any);
 
-      const result = await getRawChunkCount('rfp-123');
+      const result = await getRawChunkCount('preQualification-123');
       expect(result).toBe(3);
     });
   });
@@ -274,7 +274,7 @@ describe('raw-embedding-service', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(db.delete).mockImplementation(mockDelete as any);
 
-      await deleteRawChunks('rfp-123');
+      await deleteRawChunks('preQualification-123');
 
       expect(db.delete).toHaveBeenCalled();
     });

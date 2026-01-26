@@ -3,7 +3,7 @@
 import { Loader2, Sparkles, CheckCircle2, RotateCcw, ArrowRight, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 
 import { BaselineComparisonCard } from './baseline-comparison-card';
@@ -23,6 +23,7 @@ import { TeamBuilder } from './team-builder';
 import { TenQuestionsCard } from './ten-questions-card';
 import { WebsiteUrlInput } from './website-url-input';
 
+import { ActivityStream } from '@/components/ai-elements/activity-stream';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { startPreQualProcessing, updateExtractedRequirements } from '@/lib/bids/actions';
@@ -69,7 +70,6 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
 
   // Phase 1.1: Ref to prevent double-start race condition in React Strict Mode
   const hasAutoStartedQuickScanRef = useRef(false);
-  const [autoStartState, setAutoStartState] = useState<'idle' | 'starting' | 'polling'>('idle');
 
   useEffect(() => {
     const processingStates = [
@@ -133,27 +133,30 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
       } else {
         toast.error(result.error || 'Speichern fehlgeschlagen');
       }
-    } catch (error) {
+    } catch {
       toast.error('Ein Fehler ist aufgetreten');
     }
   };
 
   // Check if Quick Scan completed - BD routes to BL, BL makes BID/NO-BID decision
-  const checkQuickScanCompletion = async () => {
-    const scanResult = await getQuickScanResult(bid.id);
+  const checkQuickScanCompletion = useCallback(
+    async function checkScanStatus() {
+      const scanResult = await getQuickScanResult(bid.id);
 
-    if (scanResult.success && scanResult.quickScan?.status === 'completed') {
-      toast.success(
-        'Quick Scan abgeschlossen! Bitte prüfen Sie die 10 Fragen und treffen Sie eine BIT/NO BIT Entscheidung.'
-      );
-      void router.refresh();
-    } else if (scanResult.success && scanResult.quickScan?.status === 'running') {
-      // Quick Scan still running, poll again
-      setTimeout(() => {
-        void checkQuickScanCompletion();
-      }, 3000);
-    }
-  };
+      if (scanResult.success && scanResult.quickScan?.status === 'completed') {
+        toast.success(
+          'Quick Scan abgeschlossen! Bitte prüfen Sie die 10 Fragen und treffen Sie eine BIT/NO BIT Entscheidung.'
+        );
+        void router.refresh();
+      } else if (scanResult.success && scanResult.quickScan?.status === 'running') {
+        // Quick Scan still running, poll again
+        setTimeout(() => {
+          void checkScanStatus();
+        }, 3000);
+      }
+    },
+    [bid.id, router]
+  );
 
   // Handle URL submission when Quick Scan needs a URL
   const handleUrlSubmit = async (
@@ -202,7 +205,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
       } else {
         toast.error(scanResult.error || 'Quick Scan konnte nicht gestartet werden');
       }
-    } catch (error) {
+    } catch {
       toast.error('Ein Fehler ist aufgetreten');
     } finally {
       setIsSubmittingUrl(false);
@@ -362,12 +365,10 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
 
       if (hasUrls) {
         hasAutoStartedQuickScanRef.current = true;
-        setAutoStartState('starting');
 
         startQuickScan(bid.id)
           .then(result => {
             if (result.success) {
-              setAutoStartState('polling');
               toast.success('Quick Scan automatisch gestartet!');
               void router.refresh();
               // Start polling for completion
@@ -377,18 +378,15 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             } else if (result.needsWebsiteUrl) {
               // Reset ref so user can manually trigger after adding URL
               hasAutoStartedQuickScanRef.current = false;
-              setAutoStartState('idle');
               setNeedsWebsiteUrl(true);
             } else {
               // Reset ref on error so retry is possible
               hasAutoStartedQuickScanRef.current = false;
-              setAutoStartState('idle');
               toast.error(result.error || 'Quick Scan konnte nicht automatisch gestartet werden');
             }
           })
           .catch(() => {
             hasAutoStartedQuickScanRef.current = false;
-            setAutoStartState('idle');
           });
       }
     }
@@ -560,7 +558,6 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
               quickScan={quickScan}
               bidId={bid.id}
               onRefresh={handleRefresh}
-              extractedData={extractedData}
             />
           )}
 

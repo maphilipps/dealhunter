@@ -18,7 +18,7 @@ const pool = new Pool({
 });
 
 // Handle pool errors
-pool.on('error', (err) => {
+pool.on('error', err => {
   console.error('[DB Pool] Unexpected error on idle client:', err);
 });
 

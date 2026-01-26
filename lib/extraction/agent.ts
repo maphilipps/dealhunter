@@ -218,6 +218,72 @@ Falls kein Budget explizit genannt wird, antworte mit:
       'Beschreibe den Zeitplan/die Laufzeit kurz. Z.B. "6 Monate ab Q2 2024" oder "nicht genannt".',
   },
   {
+    name: 'submissionPortal',
+    displayName: 'Ausschreibungsportal',
+    queries: {
+      de: 'Vergabeplattform Ausschreibungsportal eVergabe Portal Angebotsabgabe Upload Login',
+      en: 'procurement portal e-procurement platform submission portal tender portal upload login',
+    },
+    extractPrompt: `Extrahiere Informationen zu einem Ausschreibungs- oder Abgabeportal.
+Antworte im JSON Format:
+{"name": "<Portal-Name oder null>", "url": "<Portal-URL oder null>", "notes": "<Hinweise zur Abgabe oder zum Portal>"}
+Falls nicht gefunden: antworte mit {"name": null, "url": null, "notes": "nicht gefunden"}`,
+    isObject: true,
+  },
+  {
+    name: 'procedureType',
+    displayName: 'Vergabeverfahren',
+    queries: {
+      de: 'Vergabeverfahren offen nicht-offen Verhandlungsverfahren Teilnahmewettbewerb Direktvergabe',
+      en: 'procurement procedure open restricted negotiated competitive dialogue participation procedure',
+    },
+    extractPrompt:
+      'Nenne das Vergabeverfahren (z.B. "Offenes Verfahren", "Nicht-offenes Verfahren", "Verhandlungsverfahren"). Wenn nicht genannt: "nicht genannt".',
+  },
+  {
+    name: 'shortlistingProcess',
+    displayName: 'Shortlisting/Teilnahmeantrag',
+    queries: {
+      de: 'Teilnahmeantrag Eignungsprüfung Shortlist Auswahlverfahren Stufe Stufenverfahren Bewerbungsphase',
+      en: 'shortlisting pre-qualification selection stage participation application phased procedure shortlist',
+    },
+    extractPrompt: `Extrahiere Angaben zu Shortlisting oder mehrstufigen Verfahren.
+Antworte im JSON Format:
+{"exists": <true|false|null>, "participationRequired": <true|false|null>, "steps": ["<Schritt 1>", "<Schritt 2>"], "shortlistingDate": "<YYYY-MM-DD oder null>", "notes": "<weitere Hinweise>"} 
+Falls nicht gefunden: antworte mit {"exists": null, "participationRequired": null, "steps": [], "shortlistingDate": null, "notes": "nicht gefunden"}`,
+    isObject: true,
+  },
+  {
+    name: 'contractType',
+    displayName: 'Vertragstyp',
+    queries: {
+      de: 'Vertragstyp EVB-IT Rahmenvertrag Vertragsart Vertragsbedingungen',
+      en: 'contract type framework agreement EVB-IT terms conditions contract form',
+    },
+    extractPrompt:
+      'Nenne den Vertragstyp (z.B. "EVB-IT", "Rahmenvertrag", "Kaufvertrag"). Wenn nicht genannt: "nicht genannt".',
+  },
+  {
+    name: 'contractModel',
+    displayName: 'Vertragsmodell',
+    queries: {
+      de: 'Werkvertrag Dienstvertrag Dienstleistung SLA Servicevertrag',
+      en: 'work contract service contract SLA service level agreement',
+    },
+    extractPrompt:
+      'Nenne das Vertragsmodell (z.B. "Werkvertrag", "Dienstvertrag", "Servicevertrag mit SLA"). Wenn nicht genannt: "nicht genannt".',
+  },
+  {
+    name: 'contractDuration',
+    displayName: 'Vertragslaufzeit',
+    queries: {
+      de: 'Vertragslaufzeit Laufzeit Dauer Jahre Monate Vertragsdauer Rahmenlaufzeit',
+      en: 'contract duration term period years months contract term framework duration',
+    },
+    extractPrompt:
+      'Nenne die Vertrags- oder Projektlaufzeit (z.B. "36 Monate", "2 Jahre"). Wenn nicht genannt: "nicht genannt".',
+  },
+  {
     name: 'contacts',
     displayName: 'Kontakte',
     queries: {
@@ -279,6 +345,56 @@ WICHTIG:
 - Bei Unterpunkten (A, B, C): Als Hauptkategorien extrahieren, Details in description
 Falls keine spezifischen Unterlagen genannt werden: antworte mit []`,
     isArray: true,
+  },
+  {
+    name: 'proposalStructure',
+    displayName: 'Angebotsstruktur',
+    queries: {
+      de: 'Teilnahmeantrag Teilnahmeunterlagen Angebotsphase Angebotsunterlagen Stufe Stufenverfahren',
+      en: 'participation application phase proposal phase submission stages deliverables',
+    },
+    extractPrompt: `Extrahiere die Angebotsstruktur nach Phasen.
+Antworte im JSON Format:
+{"participationPhase": ["<Unterlage 1>", "<Unterlage 2>"], "offerPhase": ["<Unterlage 1>", "<Unterlage 2>"]}
+Falls nicht gefunden: antworte mit {"participationPhase": [], "offerPhase": []}`,
+    isObject: true,
+  },
+  {
+    name: 'awardCriteria',
+    displayName: 'Zuschlagskriterien',
+    queries: {
+      de: 'Zuschlagskriterien Bewertung Gewichtung Punkte Kriterien Konzept Bewertungssystem',
+      en: 'award criteria evaluation weighting scoring criteria concept evaluation',
+    },
+    extractPrompt: `Extrahiere die Zuschlagskriterien.
+Antworte im JSON Format:
+{"criteria": ["<Kriterium 1>", "<Kriterium 2>"], "weights": ["<Gewichtung falls genannt>"], "requiresConcepts": <true|false|null>, "participationCriteria": ["<Kriterien Teilnahmeantrag>"], "offerCriteria": ["<Kriterien Angebot>"]}
+Falls nicht gefunden: antworte mit {"criteria": [], "weights": [], "requiresConcepts": null, "participationCriteria": [], "offerCriteria": []}`,
+    isObject: true,
+  },
+  {
+    name: 'requiredServices',
+    displayName: 'Geforderte Leistungen',
+    queries: {
+      de: 'Leistungsumfang Leistungen Tasks Scope Pflichtenheft Serviceleistungen',
+      en: 'scope of services required services tasks deliverables statement of work',
+    },
+    extractPrompt:
+      'Liste die geforderten Leistungen/Services auf. Format: kommagetrennte Liste.',
+    isArray: true,
+  },
+  {
+    name: 'referenceRequirements',
+    displayName: 'Referenzanforderungen',
+    queries: {
+      de: 'Referenzen Referenzprojekte Nachweise Projektbeispiele Branchenreferenzen',
+      en: 'references reference projects proof experience track record similar projects',
+    },
+    extractPrompt: `Extrahiere Referenzanforderungen.
+Antworte im JSON Format:
+{"count": <zahl oder null>, "requiredIndustries": ["<Branche 1>"], "requiredTechnologies": ["<Tech 1>"], "description": "<Freitext>"}
+Falls nicht gefunden: antworte mit {"count": null, "requiredIndustries": [], "requiredTechnologies": [], "description": "nicht gefunden"}`,
+    isObject: true,
   },
   {
     name: 'keyRequirements',

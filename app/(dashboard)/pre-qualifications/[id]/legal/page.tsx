@@ -59,6 +59,9 @@ interface ExtractedRequirements {
   contractualClauses?: string[];
   insuranceRequirements?: string[];
   certifications?: string[];
+  contractType?: string;
+  contractModel?: string;
+  contractDuration?: string;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -170,6 +173,31 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
         <h1 className="text-3xl font-bold tracking-tight">Legal & Compliance</h1>
         <p className="text-muted-foreground">Rechtliche Anforderungen und Compliance-Vorgaben</p>
       </div>
+
+      {/* Vertragsrahmen aus Dokumenten */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Gavel className="h-5 w-5" />
+            Verträge (Dokumente)
+          </CardTitle>
+          <CardDescription>Vertragstyp und Vertragsmodell aus den Unterlagen</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-3">
+          <div>
+            <p className="text-sm text-muted-foreground">Vertragstyp</p>
+            <p className="font-medium">{extractedReqs?.contractType || 'Nicht genannt'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Vertragsmodell</p>
+            <p className="font-medium">{extractedReqs?.contractModel || 'Nicht genannt'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Laufzeit</p>
+            <p className="font-medium">{extractedReqs?.contractDuration || 'Nicht genannt'}</p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Expert Agent Analysis */}
       {legalAgentResult && (

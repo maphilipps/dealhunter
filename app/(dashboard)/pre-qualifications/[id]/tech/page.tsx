@@ -28,6 +28,7 @@ import {
 import { getAgentResult } from '@/lib/agents/expert-agents';
 import type { TechStackAnalysis } from '@/lib/agents/expert-agents/techstack-schema';
 import { auth } from '@/lib/auth';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
 
 // Labels for categories and requirement types
@@ -201,6 +202,9 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
     ? parseJsonField<AccessibilityAuditData>(quickScan.accessibilityAudit)
     : null;
   const integrations = quickScan ? parseJsonField<IntegrationsData>(quickScan.integrations) : null;
+  const extractedReqs = preQualification.extractedRequirements
+    ? parseJsonField<ExtractedRequirements>(preQualification.extractedRequirements)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -209,6 +213,62 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
         <h1 className="text-3xl font-bold tracking-tight">Tech Stack</h1>
         <p className="text-muted-foreground">Anforderungen aus Pre-Qualification & Website-Analyse</p>
       </div>
+
+      {/* Dokumentenbasierte Tech-Vorgaben */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Code className="h-5 w-5" />
+            Tech-Vorgaben (Dokumente)
+          </CardTitle>
+          <CardDescription>Direkt aus den Unterlagen extrahiert</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Genannte Technologien</p>
+            {extractedReqs?.technologies?.length ? (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {extractedReqs.technologies.map((tech, idx) => (
+                  <Badge key={idx} variant="secondary">
+                    {tech}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Nicht genannt</p>
+            )}
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">CMS Vorgaben</p>
+            {extractedReqs?.cmsConstraints ? (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {extractedReqs.cmsConstraints.required?.map((cms, idx) => (
+                  <Badge key={`req-${idx}`} variant="destructive">
+                    {cms}
+                  </Badge>
+                ))}
+                {extractedReqs.cmsConstraints.preferred?.map((cms, idx) => (
+                  <Badge key={`pref-${idx}`} variant="secondary">
+                    {cms}
+                  </Badge>
+                ))}
+                {extractedReqs.cmsConstraints.excluded?.map((cms, idx) => (
+                  <Badge key={`ex-${idx}`} variant="outline">
+                    {cms}
+                  </Badge>
+                ))}
+                {!extractedReqs.cmsConstraints.required?.length &&
+                  !extractedReqs.cmsConstraints.preferred?.length &&
+                  !extractedReqs.cmsConstraints.excluded?.length && (
+                    <Badge variant="outline">Keine spezifischen Vorgaben</Badge>
+                  )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Nicht genannt</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Pre-Qualification Requirements Section */}
       {techStackAnalysis && (

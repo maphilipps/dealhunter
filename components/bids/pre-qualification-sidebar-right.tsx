@@ -27,6 +27,25 @@ interface PreQualificationSidebarRightProps {
   dataAvailability: QuickScanDataAvailability;
 }
 
+const ANALYSIS_INTRO = {
+  title: 'Ausschreibung analysieren (nur Dokumente).',
+  subtitle: 'Diese Navigation bildet die relevanten Detailseiten ab.',
+};
+
+const ANALYSIS_SECTIONS = [
+  {
+    group: 'Ausschreibung',
+    items: [
+      { label: 'Budget', hint: 'Budgetrahmen & Laufzeit' },
+      { label: 'Zeitplan / Verfahren', hint: 'Timeline, Shortlisting, Portal' },
+      { label: 'Verträge', hint: 'Vertragstyp & Modell' },
+      { label: 'Leistungsumfang', hint: 'Umfang & Unterlagen' },
+      { label: 'Referenzen', hint: 'Anzahl, Branchen, Technologien' },
+      { label: 'Zuschlagskriterien', hint: 'Kriterien & Gewichtung' },
+    ],
+  },
+];
+
 export function PreQualificationSidebarRight({
   preQualificationId,
   title,
@@ -40,6 +59,37 @@ export function PreQualificationSidebarRight({
     <TooltipProvider>
       <Sidebar collapsible="icon" variant="sidebar" side="right" className="hidden md:flex">
         <SidebarContent>
+          {/* Analysis Briefing */}
+          <SidebarGroup>
+            <SidebarGroupLabel>Analyseauftrag</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <div className="px-2 py-1 space-y-2 text-xs leading-relaxed text-muted-foreground">
+                <p className="text-sm font-medium text-foreground">{ANALYSIS_INTRO.title}</p>
+                <p>{ANALYSIS_INTRO.subtitle}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Websuche zur Anreicherung ist erlaubt, Quellen werden klar gekennzeichnet.
+                </p>
+                <div className="space-y-2">
+                  {ANALYSIS_SECTIONS.map(section => (
+                    <div key={section.group}>
+                      <p className="text-foreground text-xs font-semibold">{section.group}</p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        {section.items.map(item => (
+                          <li key={item.label}>
+                            <span className="text-foreground font-medium">{item.label}</span>
+                            {item.hint && (
+                              <span className="text-muted-foreground"> — {item.hint}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
           {/* Pre-Qualification Metadata */}
           <SidebarGroup>
             <SidebarGroupLabel>Pre-Qualification Details</SidebarGroupLabel>

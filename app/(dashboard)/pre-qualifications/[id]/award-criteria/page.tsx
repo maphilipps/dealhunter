@@ -4,7 +4,7 @@ import { PreQualificationSectionPageTemplate } from '@/components/pre-qualificat
 import { auth } from '@/lib/auth';
 import { getCachedPreQualification } from '@/lib/pre-qualifications/cached-queries';
 
-export default async function TimingPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AwardCriteriaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
 
@@ -18,7 +18,6 @@ export default async function TimingPage({ params }: { params: Promise<{ id: str
     notFound();
   }
 
-  // Check ownership
   if (preQualification.userId !== session.user.id) {
     notFound();
   }
@@ -26,9 +25,9 @@ export default async function TimingPage({ params }: { params: Promise<{ id: str
   return (
     <PreQualificationSectionPageTemplate
       preQualificationId={id}
-      sectionId="timing"
-      title="Zeitplan / Verfahren"
-      description="Timeline, Shortlisting und Vergabeverfahren"
+      sectionId="award-criteria"
+      title="Zuschlagskriterien"
+      description="Bewertungskriterien und Gewichtungen"
     />
   );
 }

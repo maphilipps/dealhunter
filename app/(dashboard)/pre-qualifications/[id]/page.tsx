@@ -65,8 +65,8 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
           <p className="text-muted-foreground">ID: {bid.id}</p>
         </div>
         <div className="flex items-center gap-2">
-          <RunExpertAgentsButton rfpId={id} hasResults={hasResults} />
-          <DeletePreQualificationButton rfpId={id} label={deleteLabel} />
+          <RunExpertAgentsButton preQualificationId={id} hasResults={hasResults} />
+          <DeletePreQualificationButton preQualificationId={id} label={deleteLabel} />
         </div>
       </div>
 

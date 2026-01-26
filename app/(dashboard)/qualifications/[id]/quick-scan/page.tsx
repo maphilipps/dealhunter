@@ -95,7 +95,7 @@ export default async function QuickScanResultsPage({
         | null)
     : null;
   const decisionMakers =
-    rfp && 'decisionMakers' in rfp && typeof preQualification.decisionMakers === 'string'
+    preQualification && typeof preQualification.decisionMakers === 'string'
       ? (tryParseJSON(preQualification.decisionMakers) as DecisionMaker[] | null)
       : null;
 

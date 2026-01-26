@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { ContentArchitectureSchema, type ContentArchitecture } from '../schemas';
 import { fetchSitemap, samplePages, fetchPageContent, extractPageMetadata } from '../utils/crawler';
+
 import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
 
 // Initialize OpenAI client with adesso AI Hub

@@ -61,7 +61,7 @@ export const LEAD_INTERNAL_FIELDS = {
 /**
  * Pre-Qualification fields safe for public/client access
  */
-export const Pre-Qualification_PUBLIC_FIELDS = {
+export const PreQualification_PUBLIC_FIELDS = {
   id: preQualifications.id,
   status: preQualifications.status,
   stage: preQualifications.stage,

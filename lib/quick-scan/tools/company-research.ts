@@ -1,13 +1,13 @@
 import OpenAI from 'openai';
 
-import { companyIntelligenceSchema, type CompanyIntelligence } from '../schema';
 
+import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '../../ai/config';
 import { getStockData, searchStockSymbol } from '../../integrations/yahoo-finance';
 import { searchAndContents } from '../../search/web-search';
-import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '../../ai/config';
 
 // Security: Prompt Injection Protection
 import { wrapUserContent } from '../../security/prompt-sanitizer';
+import { companyIntelligenceSchema, type CompanyIntelligence } from '../schema';
 
 // Initialize clients
 const openai = new OpenAI({

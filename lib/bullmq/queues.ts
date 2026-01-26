@@ -141,7 +141,7 @@ export function getDeepScanQueue(): Queue<DeepScanJobData, DeepScanJobResult, st
     console.log('[BullMQ] Deep Scan queue initialized');
   }
 
-  return deepScanQueue!;
+  return deepScanQueue;
 }
 
 /**
@@ -264,7 +264,7 @@ export function getPreQualProcessingQueue(): Queue<
     console.log('[BullMQ] PreQual Processing queue initialized');
   }
 
-  return prequalProcessingQueue!;
+  return prequalProcessingQueue;
 }
 
 // ============================================================================
@@ -305,7 +305,7 @@ export function getQuickScanQueue(): Queue<QuickScanJobData, QuickScanJobResult,
     console.log('[BullMQ] Quick Scan queue initialized');
   }
 
-  return quickScanQueue!;
+  return quickScanQueue;
 }
 
 /**

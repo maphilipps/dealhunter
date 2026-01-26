@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { registry } from '@/lib/agent-tools';
 import type { ToolContext } from '@/lib/agent-tools';
 import { buildAgentContext, formatContextForPrompt } from '@/lib/agent-tools/context-builder';
-import { getOpenAIProvider } from '@/lib/ai/providers';
 import { defaultSettings, modelNames } from '@/lib/ai/config';
+import { getOpenAIProvider } from '@/lib/ai/providers';
 import { saveCheckpoint, saveError, type DeepScanPhase } from '@/lib/deep-scan/checkpoint';
 import { EXPERT_TO_SECTIONS } from '@/lib/deep-scan/section-expert-mapping';
 

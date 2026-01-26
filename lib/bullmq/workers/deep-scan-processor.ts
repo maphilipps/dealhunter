@@ -1,15 +1,17 @@
 import type { Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
 
+import type { DeepScanJobData, DeepScanJobResult } from '../queues';
+
+import { db } from '@/lib/db';
+import { backgroundJobs, qualifications } from '@/lib/db/schema';
 import { runDeepScanAgentNative } from '@/lib/deep-scan/agent-native';
 import {
   getCheckpointState,
   markDeepScanStarted,
   resetCheckpoints,
 } from '@/lib/deep-scan/checkpoint';
-import { db } from '@/lib/db';
-import { backgroundJobs, qualifications } from '@/lib/db/schema';
-import type { DeepScanJobData, DeepScanJobResult } from '../queues';
+
 
 const DEFAULT_EXPERTS = [
   'scraper',

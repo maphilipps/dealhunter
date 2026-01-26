@@ -1,10 +1,11 @@
 import OpenAI from 'openai';
 
 import { competitionCheckSchema, type CompetitionCheck } from '../schema';
+
+import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
 
 // Intelligent Agent Framework - NEW
-import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
 
 // Security: Prompt Injection Protection
 import { wrapUserContent } from '@/lib/security/prompt-sanitizer';

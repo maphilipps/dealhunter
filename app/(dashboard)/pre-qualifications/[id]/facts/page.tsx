@@ -69,6 +69,35 @@ export default async function FactsPage({ params }: { params: Promise<{ id: stri
         <p className="text-muted-foreground">Analysierte Informationen über die Ziel-Website</p>
       </div>
 
+      {/* Key Facts */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-blue-600" />
+            Key Facts
+          </CardTitle>
+          <CardDescription>Kompakte Übersicht aus dem Quick Scan</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-3">
+          <div>
+            <p className="text-sm text-muted-foreground">Website</p>
+            <p className="font-medium">{quickScan?.websiteUrl || 'Nicht verfügbar'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Seiten</p>
+            <p className="font-medium">
+              {contentVolume?.totalPages !== undefined
+                ? contentVolume.totalPages.toLocaleString()
+                : 'Nicht verfügbar'}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Screenshots</p>
+            <p className="font-medium">{screenshots?.length || 0}</p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Website URL Card */}
       {quickScan?.websiteUrl && (
         <Card>

@@ -182,6 +182,89 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
         },
       });
     }
+
+    if (ext.budgetRange || ext.contractDuration) {
+      chunks.push({
+        preQualificationId: input.preQualificationId,
+        agentName: 'extract',
+        chunkType: 'budget',
+        chunkIndex: index++,
+        content: `Budget: ${JSON.stringify(ext.budgetRange || {})}\nLaufzeit: ${ext.contractDuration || 'N/A'}`,
+        metadata: {
+          sectionId: 'budget',
+        },
+      });
+    }
+
+    if (
+      ext.submissionDeadline ||
+      ext.procedureType ||
+      ext.shortlistingProcess ||
+      ext.submissionPortal
+    ) {
+      chunks.push({
+        preQualificationId: input.preQualificationId,
+        agentName: 'extract',
+        chunkType: 'timing_procedure',
+        chunkIndex: index++,
+        content: `Abgabefrist: ${ext.submissionDeadline || 'N/A'}\nVerfahren: ${ext.procedureType || 'N/A'}\nShortlisting: ${JSON.stringify(ext.shortlistingProcess || {})}\nPortal: ${JSON.stringify(ext.submissionPortal || {})}`,
+        metadata: {
+          sectionId: 'timing',
+        },
+      });
+    }
+
+    if (ext.contractType || ext.contractModel || ext.contractDuration) {
+      chunks.push({
+        preQualificationId: input.preQualificationId,
+        agentName: 'extract',
+        chunkType: 'contracts',
+        chunkIndex: index++,
+        content: `Vertragstyp: ${ext.contractType || 'N/A'}\nModell: ${ext.contractModel || 'N/A'}\nLaufzeit: ${ext.contractDuration || 'N/A'}`,
+        metadata: {
+          sectionId: 'contracts',
+        },
+      });
+    }
+
+    if (ext.requiredDeliverables || ext.proposalStructure || ext.requiredServices || ext.scope) {
+      chunks.push({
+        preQualificationId: input.preQualificationId,
+        agentName: 'extract',
+        chunkType: 'deliverables',
+        chunkIndex: index++,
+        content: `Leistungsumfang: ${ext.scope || 'N/A'}\nServices: ${JSON.stringify(ext.requiredServices || [])}\nTeilnahmeantrag: ${JSON.stringify(ext.proposalStructure?.participationPhase || [])}\nAngebot: ${JSON.stringify(ext.proposalStructure?.offerPhase || [])}\nDeliverables: ${JSON.stringify(ext.requiredDeliverables || [])}`,
+        metadata: {
+          sectionId: 'deliverables',
+        },
+      });
+    }
+
+    if (ext.referenceRequirements || ext.keyRequirements) {
+      chunks.push({
+        preQualificationId: input.preQualificationId,
+        agentName: 'extract',
+        chunkType: 'references',
+        chunkIndex: index++,
+        content: `Referenzen: ${JSON.stringify(ext.referenceRequirements || {})}\nKey Requirements: ${JSON.stringify(ext.keyRequirements || [])}`,
+        metadata: {
+          sectionId: 'references',
+        },
+      });
+    }
+
+    if (ext.awardCriteria) {
+      chunks.push({
+        preQualificationId: input.preQualificationId,
+        agentName: 'extract',
+        chunkType: 'award_criteria',
+        chunkIndex: index++,
+        content: `Zuschlagskriterien: ${JSON.stringify(ext.awardCriteria || {})}`,
+        metadata: {
+          sectionId: 'award-criteria',
+        },
+      });
+    }
   }
 
   // Deep Analysis Agents - Keep as single chunks

@@ -102,6 +102,46 @@ export const extractedRequirementsSchema = z.object({
     .string()
     .optional()
     .describe('Expected project end date (ISO date format YYYY-MM-DD)'),
+  submissionPortal: z
+    .object({
+      name: z.string().optional().describe('Name of the procurement or submission portal'),
+      url: z.string().optional().describe('Portal URL if mentioned'),
+      notes: z.string().optional().describe('Additional portal notes from the document'),
+    })
+    .optional()
+    .describe('Submission portal details if the process is handled via a portal'),
+  procedureType: z
+    .string()
+    .optional()
+    .describe('Type of procurement procedure (e.g., open, restricted, negotiated)'),
+  shortlistingProcess: z
+    .object({
+      exists: z.boolean().optional().describe('Whether a shortlisting process is described'),
+      participationRequired: z
+        .boolean()
+        .optional()
+        .describe('Whether a participation application is required'),
+      steps: z.array(z.string()).optional().describe('Described process steps'),
+      shortlistingDate: z
+        .string()
+        .optional()
+        .describe('Shortlisting or presentation date if mentioned'),
+      notes: z.string().optional().describe('Additional notes about the procedure'),
+    })
+    .optional()
+    .describe('Shortlisting or multi-stage procedure details'),
+  contractType: z
+    .string()
+    .optional()
+    .describe('Contract type or framework (e.g., EVB-IT, framework agreement)'),
+  contractModel: z
+    .string()
+    .optional()
+    .describe('Contract model (e.g., Werkvertrag, Dienstvertrag, SLA/Servicevertrag)'),
+  contractDuration: z
+    .string()
+    .optional()
+    .describe('Contract or project duration if specified'),
 
   // Required Deliverables
   requiredDeliverables: z
@@ -119,6 +159,40 @@ export const extractedRequirementsSchema = z.object({
     )
     .optional()
     .describe('List of documents/deliverables to be submitted'),
+
+  // Offer structure and evaluation
+  proposalStructure: z
+    .object({
+      participationPhase: z
+        .array(z.string())
+        .optional()
+        .describe('Deliverables required for participation/application phase'),
+      offerPhase: z
+        .array(z.string())
+        .optional()
+        .describe('Deliverables required for offer/proposal phase'),
+    })
+    .optional()
+    .describe('Structured deliverables by phase if the process is multi-stage'),
+  awardCriteria: z
+    .object({
+      criteria: z.array(z.string()).optional().describe('Award criteria list'),
+      weights: z.array(z.string()).optional().describe('Weights or scoring details'),
+      requiresConcepts: z
+        .boolean()
+        .optional()
+        .describe('Whether specific concepts are required as part of evaluation'),
+      participationCriteria: z
+        .array(z.string())
+        .optional()
+        .describe('Criteria for participation application phase'),
+      offerCriteria: z
+        .array(z.string())
+        .optional()
+        .describe('Criteria for offer/proposal phase'),
+    })
+    .optional()
+    .describe('Award and evaluation criteria details'),
 
   // Contact Information
   contactPerson: z.string().optional().describe('Name of contact person at customer'),
@@ -141,6 +215,27 @@ export const extractedRequirementsSchema = z.object({
     )
     .optional()
     .describe('List of contacts with categorization'),
+
+  // Services and references
+  requiredServices: z
+    .array(z.string())
+    .optional()
+    .describe('Required services or scopes explicitly listed'),
+  referenceRequirements: z
+    .object({
+      count: z.number().optional().describe('Number of required references'),
+      requiredIndustries: z
+        .array(z.string())
+        .optional()
+        .describe('Mandatory industries for references'),
+      requiredTechnologies: z
+        .array(z.string())
+        .optional()
+        .describe('Mandatory technologies for references'),
+      description: z.string().optional().describe('Free-text reference requirements'),
+    })
+    .optional()
+    .describe('Reference requirements (count, industry, technology, description)'),
 
   // Additional Context
   keyRequirements: z

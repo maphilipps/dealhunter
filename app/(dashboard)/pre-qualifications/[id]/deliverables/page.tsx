@@ -267,14 +267,70 @@ export default async function DeliverablesPage({ params }: { params: Promise<{ i
   const deliverables = extractedReqs?.requiredDeliverables || [];
   const mandatoryDeliverables = deliverables.filter(d => d.mandatory);
   const optionalDeliverables = deliverables.filter(d => !d.mandatory);
+  const proposalStructure = extractedReqs?.proposalStructure;
+  const requiredServices = extractedReqs?.requiredServices || [];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Deliverables & Unterlagen</h1>
-        <p className="text-muted-foreground">Einzureichende Unterlagen und Projekt-Lieferumfang</p>
+        <h1 className="text-3xl font-bold tracking-tight">Leistungsumfang</h1>
+        <p className="text-muted-foreground">Leistungen, Unterlagen und Angebotsstruktur</p>
       </div>
+
+      {/* Dokumentenbasierte Zusammenfassung */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Angebotsstruktur (Dokumente)
+            </CardTitle>
+            <Badge variant="outline">Quelle: Dokumente</Badge>
+          </div>
+          <CardDescription>Teilnahmeantrag vs. Angebotsphase</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <p className="text-sm text-muted-foreground">Teilnahmeantrag</p>
+            {proposalStructure?.participationPhase?.length ? (
+              <ul className="list-disc list-inside text-sm">
+                {proposalStructure.participationPhase.map((item, idx) => (
+                  <li key={idx}>{item}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">Keine Angaben</p>
+            )}
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Angebotsphase</p>
+            {proposalStructure?.offerPhase?.length ? (
+              <ul className="list-disc list-inside text-sm">
+                {proposalStructure.offerPhase.map((item, idx) => (
+                  <li key={idx}>{item}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">Keine Angaben</p>
+            )}
+          </div>
+          <div className="md:col-span-2">
+            <p className="text-sm text-muted-foreground">Geforderte Leistungen</p>
+            {requiredServices.length > 0 ? (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {requiredServices.map((service, idx) => (
+                  <Badge key={idx} variant="secondary">
+                    {service}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Keine Angaben</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Expert Agent Display (if available) */}
       {expertAnalysis ? (

@@ -148,6 +148,16 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
         </p>
       </div>
 
+      {/* 10 Questions Card - show early for immediate visibility */}
+      {questionsResult && (
+        <TenQuestionsCard
+          questions={questionsResult.questions as QuestionWithStatus[]}
+          projectType={questionsResult.projectType as ProjectType}
+          answeredCount={questionsResult.summary.answered as number}
+          totalCount={questionsResult.summary.total as number}
+        />
+      )}
+
       {/* Missing Data Alert - only show if quick scan ran but data is missing */}
       {quickScan && hasMissingData && (
         <Alert variant="default" className="border-amber-200 bg-amber-50">
@@ -267,16 +277,6 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
             )}
           </CardContent>
         </Card>
-      )}
-
-      {/* 10 Questions Card - only show if data available */}
-      {questionsResult && (
-        <TenQuestionsCard
-          questions={questionsResult.questions as QuestionWithStatus[]}
-          projectType={questionsResult.projectType as ProjectType}
-          answeredCount={questionsResult.summary.answered as number}
-          totalCount={questionsResult.summary.total as number}
-        />
       )}
 
       {/* Risk Warning Banner - only show if timeline and risk available */}

@@ -1,9 +1,10 @@
-import { Users, Mail, Phone, Linkedin, ExternalLink } from 'lucide-react';
+import { Users, Mail, Phone, Linkedin, ExternalLink, FileText } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
+import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
 import type { DecisionMaker, DecisionMakersResearch } from '@/lib/quick-scan/schema';
 import { cn } from '@/lib/utils';
@@ -34,8 +35,16 @@ export default async function ContactsPage({ params }: { params: Promise<{ id: s
     ? parseJsonValue<DecisionMakersResearch>(quickScan.decisionMakers)
     : null;
 
+  const extractedReqs = preQualification.extractedRequirements
+    ? parseJsonValue<ExtractedRequirements>(preQualification.extractedRequirements)
+    : null;
+  const extractedContacts = extractedReqs?.contacts || [];
+
   const decisionMakers = decisionMakersData?.decisionMakers || [];
   const researchQuality = decisionMakersData?.researchQuality;
+  const hasWebSearchSource =
+    decisionMakers.some(dm => dm.source === 'web_search') ||
+    (researchQuality?.sources || []).includes('web_search');
 
   // Email confidence colors
   const confidenceColors = {
@@ -53,12 +62,79 @@ export default async function ContactsPage({ params }: { params: Promise<{ id: s
         <p className="text-muted-foreground">Entscheider und Ansprechpartner</p>
       </div>
 
+      {/* Kontakte aus Dokumenten */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>Kontakte (Dokumente)</CardTitle>
+            </div>
+            <Badge variant="outline">Quelle: Dokumente</Badge>
+          </div>
+          <CardDescription>Explizit genannte Ansprechpartner in den Unterlagen</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {extractedContacts.length > 0 || extractedReqs?.contactPerson ? (
+            <div className="space-y-3">
+              {extractedReqs?.contactPerson && (
+                <div className="rounded-lg border p-3">
+                  <p className="font-medium">{extractedReqs.contactPerson}</p>
+                  <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-1">
+                    {extractedReqs.contactEmail && (
+                      <span className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        {extractedReqs.contactEmail}
+                      </span>
+                    )}
+                    {extractedReqs.contactPhone && (
+                      <span className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        {extractedReqs.contactPhone}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              {extractedContacts.map((contact, idx) => (
+                <div key={idx} className="rounded-lg border p-3">
+                  <p className="font-medium">{contact.name}</p>
+                  <p className="text-sm text-muted-foreground">{contact.role}</p>
+                  <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-1">
+                    {contact.email && (
+                      <span className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        {contact.email}
+                      </span>
+                    )}
+                    {contact.phone && (
+                      <span className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        {contact.phone}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Keine Kontakte in den Dokumenten gefunden.</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Enhanced Decision Makers Card */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-blue-600" />
-            <CardTitle>Entscheider & Stakeholder</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              <CardTitle>Entscheider & Stakeholder</CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">Quelle: Quick Scan</Badge>
+              {hasWebSearchSource && <Badge variant="outline">Quelle: Websuche</Badge>}
+            </div>
           </div>
           <CardDescription>
             Identifizierte Entscheidungsträger mit Web Search Integration

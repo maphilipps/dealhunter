@@ -11,9 +11,9 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 
+import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
-import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
 
 export interface RagWriteToolContext {
   qualificationId?: string;

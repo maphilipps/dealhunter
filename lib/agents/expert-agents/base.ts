@@ -8,7 +8,6 @@
 import { eq, and } from 'drizzle-orm';
 
 import type { ExpertAgentOutput } from './types';
-
 import { generateQueryEmbedding, isEmbeddingEnabled } from '../../ai/embedding-config';
 import { db } from '../../db';
 import { dealEmbeddings } from '../../db/schema';

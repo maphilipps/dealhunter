@@ -3,9 +3,9 @@
 import { eq } from 'drizzle-orm';
 
 import { auth } from '@/lib/auth';
+import { addQuickScanJob } from '@/lib/bullmq/queues';
 import { db } from '@/lib/db';
 import { preQualifications, quickScans } from '@/lib/db/schema';
-import { addQuickScanJob } from '@/lib/bullmq/queues';
 
 /**
  * Start Quick Scan for a bid opportunity

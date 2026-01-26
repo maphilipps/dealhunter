@@ -13,8 +13,8 @@ import { Worker } from 'bullmq';
 import { getConnectionOptions, closeConnection } from '../lib/bullmq/connection';
 import { QUEUE_NAMES, getDeepScanBackoffDelay, closeQueues } from '../lib/bullmq/queues';
 import { processDeepScanJob } from '../lib/bullmq/workers/deep-scan-processor';
-import { processQuickScanJob } from '../lib/bullmq/workers/quick-scan-processor';
 import { processPreQualJob } from '../lib/bullmq/workers/prequal-processing-worker';
+import { processQuickScanJob } from '../lib/bullmq/workers/quick-scan-processor';
 
 /**
  * Worker concurrency settings

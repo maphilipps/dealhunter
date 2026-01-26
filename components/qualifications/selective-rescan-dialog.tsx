@@ -8,9 +8,13 @@
 
 'use client';
 
-import { useState } from 'react';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
 
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -19,10 +23,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useDeepScan, SECTION_TO_EXPERT } from '@/contexts/deep-scan-context';
 import { getQualityLevel, type QualityLevel } from '@/hooks/use-background-job-status';
 

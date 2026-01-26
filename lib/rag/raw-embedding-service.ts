@@ -11,7 +11,6 @@
 import { eq } from 'drizzle-orm';
 
 import { chunkRawText, getChunkStats, type RawChunk } from './raw-chunk-service';
-
 import {
   EMBEDDING_DIMENSIONS,
   EMBEDDING_MODEL,

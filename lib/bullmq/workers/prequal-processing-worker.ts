@@ -15,15 +15,15 @@
 import type { Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
 
+import { runDuplicateCheckAgent } from '../../bids/duplicate-check-agent';
+import { extractTextFromPdf } from '../../bids/pdf-extractor';
 import { db } from '../../db';
 import { preQualifications, quickScans } from '../../db/schema';
 import { extractRequirements } from '../../extraction/agent';
 import type { ExtractedRequirements } from '../../extraction/schema';
 import { suggestWebsiteUrls } from '../../extraction/url-suggestion-agent';
 import { detectPII, cleanText } from '../../pii/pii-cleaner';
-import { runDuplicateCheckAgent } from '../../bids/duplicate-check-agent';
 import { addQuickScanJob } from '../queues';
-import { extractTextFromPdf } from '../../bids/pdf-extractor';
 import type { PreQualProcessingJobData, PreQualProcessingJobResult } from '../queues';
 
 /**
@@ -299,7 +299,7 @@ export async function processPreQualJob(
 
     try {
       const duplicateResult = await runDuplicateCheckAgent({
-        extractedRequirements: extractedRequirements as ExtractedRequirements,
+        extractedRequirements: extractedRequirements,
         excludeRfpId: preQualificationId,
       });
 

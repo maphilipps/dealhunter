@@ -4,8 +4,8 @@ import { notFound, redirect } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
-import type { DecisionMaker, DecisionMakersResearch } from '@/lib/quick-scan/schema';
 import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
+import type { DecisionMaker, DecisionMakersResearch } from '@/lib/quick-scan/schema';
 import { cn } from '@/lib/utils';
 import { parseJsonValue } from '@/lib/utils/json';
 

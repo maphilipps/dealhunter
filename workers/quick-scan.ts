@@ -10,8 +10,8 @@ import { Worker } from 'bullmq';
 
 import { getConnectionOptions, closeConnection } from '../lib/bullmq/connection';
 import { QUEUE_NAMES, closeQueues } from '../lib/bullmq/queues';
-import { processQuickScanJob } from '../lib/bullmq/workers/quick-scan-processor';
 import { processPreQualJob } from '../lib/bullmq/workers/prequal-processing-worker';
+import { processQuickScanJob } from '../lib/bullmq/workers/quick-scan-processor';
 
 const WORKER_CONCURRENCY = parseInt(process.env.QUICK_SCAN_CONCURRENCY || '3', 10);
 const PREQUAL_CONCURRENCY = parseInt(process.env.PREQUAL_CONCURRENCY || '3', 10);

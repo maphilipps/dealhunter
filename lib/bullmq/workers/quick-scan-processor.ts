@@ -4,9 +4,9 @@ import { and, eq } from 'drizzle-orm';
 import { runExpertAgents } from '../../agents/expert-agents';
 import { db } from '../../db';
 import { backgroundJobs, preQualifications, quickScans } from '../../db/schema';
-import { embedAgentOutput } from '../../rag/embedding-service';
 import { runQuickScanAgentNative } from '../../quick-scan/agent-native';
 import type { QuickScanResult } from '../../quick-scan/workflow-agent';
+import { embedAgentOutput } from '../../rag/embedding-service';
 import { generateTimelineFromQuickScan } from '../../timeline/integration';
 import { onAgentComplete } from '../../workflow/orchestrator';
 import type { QuickScanJobData, QuickScanJobResult } from '../queues';
@@ -325,9 +325,9 @@ export async function processQuickScanJob(job: Job<QuickScanJobData>): Promise<Q
       .set({
         status: 'completed',
         techStack: JSON.stringify(mergedTechStack),
-        cms: (mergedTechStack.cms as string | undefined) || null,
-        framework: (mergedTechStack.framework as string | undefined) || null,
-        hosting: (mergedTechStack.hosting as string | undefined) || null,
+        cms: (mergedTechStack.cms) || null,
+        framework: (mergedTechStack.framework) || null,
+        hosting: (mergedTechStack.hosting) || null,
         contentVolume: JSON.stringify(result.contentVolume),
         features: JSON.stringify(result.features),
         recommendedBusinessUnit: result.blRecommendation.primaryBusinessLine,

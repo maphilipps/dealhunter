@@ -2,7 +2,6 @@ import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
 
 import { checkForDuplicates, type DuplicateCheckResult } from './duplicate-check';
-
 import { aiHubOpenAI, modelNames } from '../ai/config';
 import type { ExtractedRequirements } from '../extraction/schema';
 

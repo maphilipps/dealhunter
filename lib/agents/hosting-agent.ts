@@ -85,7 +85,7 @@ export type HostingAnalysis = z.infer<typeof HostingAnalysisSchema>;
  * Run hosting agent
  *
  * @param leadId - Lead ID
- * @param rfpId - Pre-Qualification ID
+ * @param preQualificationId - Pre-Qualification ID
  * @returns Hosting analysis with recommendations
  */
 export async function runHostingAgent(leadId: string, preQualificationId: string): Promise<HostingAnalysis> {

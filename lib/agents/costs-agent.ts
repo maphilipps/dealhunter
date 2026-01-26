@@ -129,7 +129,7 @@ const HOURS_PER_PT = 8;
  * Run costs agent
  *
  * @param leadId - Lead ID
- * @param rfpId - Pre-Qualification ID
+ * @param preQualificationId - Pre-Qualification ID
  * @returns Costs analysis with budget fit
  */
 export async function runCostsAgent(leadId: string, preQualificationId: string): Promise<CostsAnalysis> {

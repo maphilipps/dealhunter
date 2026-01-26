@@ -10,7 +10,7 @@ import { openai } from '@/lib/ai/providers';
  */
 export interface TimelineAgentInput {
   // RAG Context (DEA-107)
-  rfpId?: string; // Enable RAG tool for cross-agent context
+  preQualificationId?: string; // Enable RAG tool for cross-agent context
 
   // From extracted requirements
   projectName: string;

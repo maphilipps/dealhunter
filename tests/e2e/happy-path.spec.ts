@@ -24,7 +24,7 @@ test.describe('Happy Path: Complete Bid Flow', () => {
       'Test RFP from Acme Corporation for website relaunch'
     );
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
 
     // Step 3: Submit and wait for extraction

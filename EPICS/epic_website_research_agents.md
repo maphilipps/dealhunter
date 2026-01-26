@@ -311,14 +311,14 @@ Format: JSON mit phases[], deadlines[], deliverables_per_phase[]"
 ```typescript
 // Pseudo-Code für Agent-Orchestration
 
-async function runQuickScan(rfpId: string) {
+async function runQuickScan(preQualificationId: string) {
   const agents = [
-    new NavigationAgent(rfpId),
-    new DeliverablesAgent(rfpId),
-    new DecisionMakersAgent(rfpId),
-    new TechStackAgent(rfpId),
-    new TimelineAgent(rfpId),
-    new PerformanceAgent(rfpId),
+    new NavigationAgent(preQualificationId),
+    new DeliverablesAgent(preQualificationId),
+    new DecisionMakersAgent(preQualificationId),
+    new TechStackAgent(preQualificationId),
+    new TimelineAgent(preQualificationId),
+    new PerformanceAgent(preQualificationId),
   ];
 
   // Parallel execution mit Status-Updates
@@ -328,7 +328,7 @@ async function runQuickScan(rfpId: string) {
   const auditReport = mergeAgentResults(results);
 
   // Persist to DB + File System
-  await saveAuditReport(rfpId, auditReport);
+  await saveAuditReport(preQualificationId, auditReport);
 
   return auditReport;
 }
@@ -393,12 +393,12 @@ interface AgentStatus {
   completedAt?: Date;
 }
 
-export function AgentStatusSidebar({ rfpId }: { rfpId: string }) {
+export function AgentStatusSidebar({ preQualificationId }: { preQualificationId: string }) {
   const [agents, setAgents] = useState<AgentStatus[]>([]);
 
   // SSE subscription für real-time updates
   useEffect(() => {
-    const eventSource = new EventSource(`/api/rfps/${rfpId}/agent-status`);
+    const eventSource = new EventSource(`/api/rfps/${preQualificationId}/agent-status`);
 
     eventSource.onmessage = event => {
       const update = JSON.parse(event.data);
@@ -406,7 +406,7 @@ export function AgentStatusSidebar({ rfpId }: { rfpId: string }) {
     };
 
     return () => eventSource.close();
-  }, [rfpId]);
+  }, [preQualificationId]);
 
   return (
     <Card>

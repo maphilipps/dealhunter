@@ -45,7 +45,7 @@ async function migrateRfpEmbeddings() {
 
     const values = batch.map(chunk => ({
       id: createId(), // New ID to avoid conflicts
-      rfpId: chunk.rfpId,
+      preQualificationId: chunk.preQualificationId,
       leadId: null,
       agentName: chunk.agentName,
       chunkType: chunk.chunkType,
@@ -91,7 +91,7 @@ async function migrateLeadEmbeddings() {
 
     const values = batch.map(chunk => ({
       id: createId(), // New ID to avoid conflicts
-      rfpId: null,
+      preQualificationId: null,
       leadId: chunk.leadId,
       agentName: chunk.agentName,
       chunkType: chunk.chunkType,

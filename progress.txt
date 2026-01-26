@@ -55,7 +55,7 @@ Replace `.catch()` with `.default()` which only applies for undefined values, bu
 - ✅ TypeScript passes (`npm run typecheck`)
 - ✅ No remaining Zod `.catch()` in agents/schemas (only Promise `.catch()` remains, which is correct)
 
-**Note:** Issue mentioned legal-rfp-schema.ts, summary-schema.ts, techstack-schema.ts - but these already use `.default()` correctly. The actual `.catch()` usages were in calc-sheet-generator-agent.ts and project-expert.ts.
+**Note:** Issue mentioned legal-preQualification-schema.ts, summary-schema.ts, techstack-schema.ts - but these already use `.default()` correctly. The actual `.catch()` usages were in calc-sheet-generator-agent.ts and project-expert.ts.
 
 ---
 
@@ -115,7 +115,7 @@ Comprehensive PRD documenting full RAG integration across all agents with Dashbo
 - Implement partial results embedding ({ partial: true, error?: string })
 
 **Phase 2: RAG Read Integration**
-- Add createRagTool(rfpId) to all Phase 2 Agents
+- Add createRagTool(preQualificationId) to all Phase 2 Agents
 - Update agent prompts to include "Use queryRAG tool to access findings from previous agents"
 - Follow Timeline Agent pattern as reference implementation
 
@@ -167,8 +167,8 @@ Agents in the Dealhunter pipeline work in isolation with manually passed fields.
 
 1. **Database Schema (`lib/db/schema.ts`)**
    - rfpEmbeddings table with vector storage (JSON format)
-   - Fields: rfpId, agentName, chunkType, chunkIndex, content, metadata, embedding (3072 dimensions)
-   - Composite indexes for fast rfpId + chunkType/agentName queries
+   - Fields: preQualificationId, agentName, chunkType, chunkIndex, content, metadata, embedding (3072 dimensions)
+   - Composite indexes for fast preQualificationId + chunkType/agentName queries
    - Cascade delete on RFP deletion
    - sqlite-vec extension already configured in lib/db/index.ts
 
@@ -197,7 +197,7 @@ Agents in the Dealhunter pipeline work in isolation with manually passed fields.
    - Top N results ranking by similarity
 
 5. **RAG Tool for AI SDK (`lib/agent-tools/tools/rag-tool.ts`)**
-   - createRagTool(rfpId) - Creates AI SDK tool scoped to RFP
+   - createRagTool(preQualificationId) - Creates AI SDK tool scoped to RFP
    - Zod schema validation for inputs
    - Natural language queries with examples
    - Optional tech stack filtering
@@ -209,14 +209,14 @@ Agents in the Dealhunter pipeline work in isolation with manually passed fields.
    - Logs embedding success/failure
 
 7. **Timeline Agent RAG Integration (`lib/timeline/agent.ts`)**
-   - Optional rfpId parameter in TimelineAgentInput
+   - Optional preQualificationId parameter in TimelineAgentInput
    - Pre-fetches RAG context for performance and content data
    - Queries: "What are the website performance indicators?" and "What is the content architecture?"
    - Appends RAG context to prompt for better timeline estimates
    - Graceful degradation if RAG fails
 
 **Key Features:**
-- ✅ Single-RFP Knowledge Base (rfpId-scoped)
+- ✅ Single-RFP Knowledge Base (preQualificationId-scoped)
 - ✅ Semantic search via OpenAI embeddings
 - ✅ Granular chunking per agent type
 - ✅ Hybrid retrieval (similarity + filters)
@@ -283,11 +283,11 @@ Implement robust error handling and retry system for all Phase 1 QUALIFICATION A
    - AgentError interface: id, agentName, timestamp, errorType, errorCategory, errorMessage, attempts, isResolved, userAction
 
 5. **Server Actions (`lib/errors/actions.ts`)**
-   - retryAgent(rfpId, agentName) - Retry failed agent
-   - skipAgent(rfpId, agentName) - Skip optional agent (QuickScan, Timeline)
-   - switchToManualMode(rfpId) - Activate manual extraction
-   - resolveAgentError(rfpId, errorId) - Mark error as resolved
-   - saveAgentError(rfpId, agentError) - Save error during execution
+   - retryAgent(preQualificationId, agentName) - Retry failed agent
+   - skipAgent(preQualificationId, agentName) - Skip optional agent (QuickScan, Timeline)
+   - switchToManualMode(preQualificationId) - Activate manual extraction
+   - resolveAgentError(preQualificationId, errorId) - Mark error as resolved
+   - saveAgentError(preQualificationId, agentError) - Save error during execution
 
 6. **Test Coverage (100% for critical modules)**
    - 34 tests for error classification (100% coverage)
@@ -531,7 +531,7 @@ Most of the codebase was already correctly configured\! Only Vercel AI SDK provi
 
 **Technical Details:**
 
-1. **Server Action:** `convertRfpToLead(rfpId)`
+1. **Server Action:** `convertRfpToLead(preQualificationId)`
    - Validates RFP exists with status='routed' and decision='bid'
    - Validates businessUnitId is assigned
    - Checks for duplicate Lead creation (prevents double creation)
@@ -664,7 +664,7 @@ All acceptance criteria met per DEA-18 requirements.
    - Added `previousValue` and `newValue` fields for change tracking
    - Added `reason` field (mandatory for overrides)
    - Action enums: bl_override, bid_override, team_change, status_change, create, update, delete, validate, reject
-   - EntityType enums: rfp, business_unit, employee, reference, competency, competitor, team_assignment
+   - EntityType enums: preQualification, business_unit, employee, reference, competency, competitor, team_assignment
    - Performance indexes on user_id, action, entity_type, entity_id, created_at
    - Foreign key reference to users table for data integrity
 
@@ -2340,7 +2340,7 @@ Instead of adding BullMQ + Redis (as originally specified), leveraged **existing
 - Inngest scheduled function
 
 **5. Job API Endpoints**
-- `GET /api/jobs` - List jobs with filters (rfpId, jobType, status)
+- `GET /api/jobs` - List jobs with filters (preQualificationId, jobType, status)
 - `GET /api/jobs/:id` - Get single job with progress
 - `DELETE /api/jobs/:id` - Cancel pending/running jobs
 - User ownership validation on all endpoints
@@ -2802,8 +2802,8 @@ The upload functionality was already present, but poor UX labeling made it appea
 
 **Files Changed:**
 - components/bids/upload-bid-form.tsx (+45 lines, -19 lines)
-- screenshots/rfp-new-improved.png (new)
-- screenshots/rfp-new-improved-bottom.png (new)
+- screenshots/preQualification-new-improved.png (new)
+- screenshots/preQualification-new-improved-bottom.png (new)
 
 **Commit:** 9e04fa0 - fix(DEA-76): Improve RFP upload form UX with clear input method labels
 **Linear:** https://linear.app/adessocms/issue/DEA-76
@@ -4704,7 +4704,7 @@ Successfully implemented real-time background job status indicators for Phase 2 
 
 3. **Background Job API Route** (`app/api/leads/[id]/background-job/route.ts`)
    - GET endpoint to fetch latest background job for a lead
-   - Joins backgroundJobs table via rfpId
+   - Joins backgroundJobs table via preQualificationId
    - Returns job status, progress, currentStep, errorMessage
    - Proper authentication and error handling
 
@@ -5177,7 +5177,7 @@ All database queries in Lead Detail Page were executed sequentially using await,
 2. **Query Dependencies Identified:**
    - Phase 1 (sequential): lead (dependency root)
    - Phase 2 (parallel):
-     - rfp (depends on lead.rfpId)
+     - preQualification (depends on lead.preQualificationId)
      - businessUnit (depends on lead.businessUnitId)
      - websiteAudit (depends on lead.id)
      - cmsMatches (depends on lead.id)

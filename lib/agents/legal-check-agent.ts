@@ -142,7 +142,7 @@ function getIndustryRequirements(industry: string | null): string[] {
  * 4. Store results in RAG
  *
  * @param leadId - Lead ID to analyze
- * @param rfpId - Pre-Qualification ID for RAG storage
+ * @param preQualificationId - Pre-Qualification ID for RAG storage
  * @returns Legal check results
  */
 export async function runLegalCheckAgent(leadId: string, preQualificationId: string): Promise<LegalCheckResult> {

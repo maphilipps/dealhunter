@@ -9,7 +9,7 @@ async function main() {
 
   const input = {
     deliverableName: 'Executive Summary',
-    rfpId: 'ea11p7to4wpqpq600v3afkif',
+    preQualificationId: 'ea11p7to4wpqpq600v3afkif',
     leadId: 'c3k4e4f0kb2djd7h4forj3z2',
     customerName: 'Locarno Film Festival',
     projectDescription:

@@ -60,7 +60,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
         toast.error(result.error || 'Routing fehlgeschlagen');
         setIsSubmitting(false);
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Ein Fehler ist aufgetreten');
       setIsSubmitting(false);
     }
@@ -94,7 +94,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
         toast.error(result.error || 'Routing fehlgeschlagen');
         setIsSubmitting(false);
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Ein Fehler ist aufgetreten');
       setIsSubmitting(false);
     }

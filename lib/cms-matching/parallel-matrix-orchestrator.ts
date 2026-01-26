@@ -437,7 +437,10 @@ export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchin
 /**
  * Speichert die Matrix am Pre-Qualification
  */
-export async function saveMatrixToRfp(preQualificationId: string, matrix: RequirementMatrix): Promise<void> {
+export async function saveMatrixToRfp(
+  preQualificationId: string,
+  matrix: RequirementMatrix
+): Promise<void> {
   try {
     // Load current quick scan results
     const preQualification = await db
@@ -447,7 +450,9 @@ export async function saveMatrixToRfp(preQualificationId: string, matrix: Requir
       .limit(1);
 
     // Parse existing results or create new object
-    const currentResults = preQualification[0]?.quickScanResults ? JSON.parse(preQualification[0].quickScanResults) : {};
+    const currentResults = preQualification[0]?.quickScanResults
+      ? JSON.parse(preQualification[0].quickScanResults)
+      : {};
 
     // Add matrix to results
     currentResults.cmsMatchingMatrix = matrix;

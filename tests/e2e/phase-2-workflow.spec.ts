@@ -16,7 +16,7 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
-  let rfpId: string;
+  let preQualificationId: string;
   let leadId: string;
 
   test.beforeEach(async ({ page }) => {
@@ -34,7 +34,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
       'RFP from Acme Corporation for website relaunch. Budget: 100-150k EUR. Website: https://example.com'
     );
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
 
     // Submit and wait for extraction
@@ -43,8 +43,8 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
 
     // Extract RFP ID from URL
     const url = page.url();
-    rfpId = url.split('/').pop() || '';
-    expect(rfpId).toBeTruthy();
+    preQualificationId = url.split('/').pop() || '';
+    expect(preQualificationId).toBeTruthy();
 
     // Wait for extraction to complete
     await page.waitForSelector('text=Client Name', { timeout: 10000 });
@@ -407,7 +407,7 @@ test.describe('Phase 2: Data Persistence & Integrity', () => {
       'Data persistence test RFP from Test Corp. Website: https://test.example.com'
     );
     await page.selectOption('select[name="source"]', 'reactive');
-    await page.selectOption('select[name="stage"]', 'rfp');
+    await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 

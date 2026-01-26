@@ -35,7 +35,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(isEmbeddingEnabled).mockReturnValue(false);
 
       const result = await queryRawChunks({
-        preQualificationId: 'rfp-123',
+        preQualificationId: 'preQualification-123',
         question: 'Budget',
       });
 
@@ -54,7 +54,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(generateQueryEmbedding).mockResolvedValue(Array(3072).fill(0.1));
 
       const result = await queryRawChunks({
-        preQualificationId: 'rfp-123',
+        preQualificationId: 'preQualification-123',
         question: 'Budget',
       });
 
@@ -65,7 +65,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(generateQueryEmbedding).mockResolvedValue(null);
 
       const result = await queryRawChunks({
-        preQualificationId: 'rfp-123',
+        preQualificationId: 'preQualification-123',
         question: 'Budget',
       });
 
@@ -82,7 +82,7 @@ describe('raw-retrieval-service', () => {
       const mockChunks = [
         {
           id: 'chunk-1',
-          preQualificationId: 'rfp-123',
+          preQualificationId: 'preQualification-123',
           chunkIndex: 0,
           content: 'Budget: 100.000 EUR',
           tokenCount: 50,
@@ -92,7 +92,7 @@ describe('raw-retrieval-service', () => {
         },
         {
           id: 'chunk-2',
-          preQualificationId: 'rfp-123',
+          preQualificationId: 'preQualification-123',
           chunkIndex: 1,
           content: 'Unrelated content',
           tokenCount: 50,
@@ -112,7 +112,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(generateQueryEmbedding).mockResolvedValue(similarEmbedding);
 
       const result = await queryRawChunks({
-        preQualificationId: 'rfp-123',
+        preQualificationId: 'preQualification-123',
         question: 'Budget',
       });
 
@@ -135,7 +135,7 @@ describe('raw-retrieval-service', () => {
       const mockChunks = [
         {
           id: 'chunk-1',
-          preQualificationId: 'rfp-123',
+          preQualificationId: 'preQualification-123',
           chunkIndex: 0,
           content: 'Medium similar',
           tokenCount: 50,
@@ -145,7 +145,7 @@ describe('raw-retrieval-service', () => {
         },
         {
           id: 'chunk-2',
-          preQualificationId: 'rfp-123',
+          preQualificationId: 'preQualification-123',
           chunkIndex: 1,
           content: 'High similar',
           tokenCount: 50,
@@ -165,7 +165,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(generateQueryEmbedding).mockResolvedValue(baseEmbedding);
 
       const result = await queryRawChunks({
-        preQualificationId: 'rfp-123',
+        preQualificationId: 'preQualification-123',
         question: 'Budget',
       });
 
@@ -182,7 +182,7 @@ describe('raw-retrieval-service', () => {
         .fill(null)
         .map((_, i) => ({
           id: `chunk-${i}`,
-          preQualificationId: 'rfp-123',
+          preQualificationId: 'preQualification-123',
           chunkIndex: i,
           content: `Content ${i}`,
           tokenCount: 50,
@@ -205,7 +205,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(generateQueryEmbedding).mockResolvedValue(similarEmbedding);
 
       const result = await queryRawChunks({
-        preQualificationId: 'rfp-123',
+        preQualificationId: 'preQualification-123',
         question: 'Content',
         maxResults: 3,
       });
@@ -217,7 +217,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(generateQueryEmbedding).mockRejectedValue(new Error('API error'));
 
       const result = await queryRawChunks({
-        preQualificationId: 'rfp-123',
+        preQualificationId: 'preQualification-123',
         question: 'Budget',
       });
 
@@ -229,7 +229,7 @@ describe('raw-retrieval-service', () => {
     it('should return empty maps when embeddings are disabled', async () => {
       vi.mocked(isEmbeddingEnabled).mockReturnValue(false);
 
-      const result = await queryMultipleTopics('rfp-123', [
+      const result = await queryMultipleTopics('preQualification-123', [
         { topic: 'Budget', maxResults: 3 },
         { topic: 'Kontakt', maxResults: 2 },
       ]);
@@ -246,7 +246,7 @@ describe('raw-retrieval-service', () => {
       const mockChunks = [
         {
           id: 'chunk-1',
-          preQualificationId: 'rfp-123',
+          preQualificationId: 'preQualification-123',
           chunkIndex: 0,
           content: 'Budget info',
           tokenCount: 50,
@@ -265,7 +265,7 @@ describe('raw-retrieval-service', () => {
       vi.mocked(db.select).mockImplementation(mockSelect as any);
       vi.mocked(generateQueryEmbedding).mockResolvedValue(similarEmbedding);
 
-      const result = await queryMultipleTopics('rfp-123', [
+      const result = await queryMultipleTopics('preQualification-123', [
         { topic: 'Budget', maxResults: 3 },
         { topic: 'Kontakt', maxResults: 2 },
       ]);

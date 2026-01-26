@@ -310,7 +310,7 @@ async function seedAudits() {
       .values({
         userId: adminUser.id,
         source: 'proactive',
-        stage: 'rfp',
+        stage: 'preQualification',
         inputType: 'freetext',
         rawInput: rawInput.substring(0, 10000),
         status: 'routed',

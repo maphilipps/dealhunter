@@ -7,7 +7,7 @@
 
 'use client';
 
-import { HelpCircle, Keyboard, Link as LinkIcon, X } from 'lucide-react';
+import { HelpCircle, Keyboard, Link as LinkIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import {
@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 export interface HelpItem {

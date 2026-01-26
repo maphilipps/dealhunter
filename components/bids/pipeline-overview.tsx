@@ -73,17 +73,17 @@ export function PipelineOverview({ opportunities }: PipelineOverviewProps) {
           </TableHeader>
           <TableBody>
             {opportunities.map(opp => {
-              const extractedReqs =
+              const extractedReqs: ExtractedRequirements | undefined =
                 typeof opp.extractedRequirements === 'string'
                   ? (JSON.parse(opp.extractedRequirements) as ExtractedRequirements)
-                  : opp.extractedRequirements;
+                  : opp.extractedRequirements || undefined;
               const customerName =
                 opp.accountName ||
-                (extractedReqs?.customerName as string | undefined) ||
+                (typeof extractedReqs?.customerName === 'string' ? extractedReqs.customerName : null) ||
                 'Unknown Customer';
               const projectName =
                 opp.projectName ||
-                (extractedReqs?.projectDescription as string | undefined) ||
+                (typeof extractedReqs?.projectDescription === 'string' ? extractedReqs.projectDescription : null) ||
                 'Untitled Project';
 
               return (

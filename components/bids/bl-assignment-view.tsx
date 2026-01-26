@@ -99,7 +99,7 @@ function parseJsonField<T>(value: string | null | undefined): T | null {
   }
 }
 
-export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignmentViewProps) {
+export function BLAssignmentView({ quickScan, extractedData, preQualificationId }: BLAssignmentViewProps) {
   const [buMatches, setBuMatches] = useState<BUMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState<string | null>(null);
@@ -117,7 +117,7 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
       try {
         const res = await fetch(`/api/pre-qualifications/${preQualificationId}/bu-matching`);
         if (res.ok) {
-          const data = await res.json();
+          const data = (await res.json()) as { matches?: BUMatch[] };
           setBuMatches(data.matches || []);
         }
       } catch (error) {
@@ -127,7 +127,7 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
       }
     }
     void fetchBUMatches();
-  }, [rfpId]);
+  }, [preQualificationId]);
 
   // Handle BL assignment
   const handleAssign = async (buId: string, buName: string) => {
@@ -145,7 +145,7 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
 
   // Get active features list
   const activeFeatures = Object.entries(features || {})
-    .filter(([, v]) => v === true)
+    .filter((entry): entry is [string, true] => entry[1] === true)
     .map(([k]) => {
       const labels: Record<string, string> = {
         ecommerce: 'E-Commerce',

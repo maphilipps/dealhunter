@@ -25,7 +25,7 @@ export function RawInputViewer({ rawInput }: RawInputViewerProps) {
       setCopied(true);
       toast.success('Text in Zwischenablage kopiert');
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Kopieren fehlgeschlagen');
     }
   };

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   // Verify ownership
   const preQualification = await getCachedPreQualification(id);
-  if (!rfp || preQualification.userId !== session.user.id) {
+  if (!preQualification || preQualification.userId !== session.user.id) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 

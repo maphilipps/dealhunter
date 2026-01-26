@@ -204,8 +204,8 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
 
         {/* Agent Outputs Tab - shows Pre-Qualification embeddings if available */}
         <TabsContent value="agent-outputs" className="mt-6">
-          {rfpId ? (
-            <ChunkBrowser rfpId={preQualificationId} mode="agent" />
+          {preQualificationId ? (
+            <ChunkBrowser preQualificationId={preQualificationId} mode="agent" />
           ) : (
             <NoDataPlaceholder message="Keine Pre-Qualification-Daten - Agent Outputs nur mit Pre-Qualification verfügbar" />
           )}
@@ -223,7 +223,7 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
 
         {/* Similarity Tester Tab */}
         <TabsContent value="similarity" className="mt-6">
-          <SimilarityTester rfpId={rfpId ?? undefined} leadId={leadId} />
+          <SimilarityTester preQualificationId={preQualificationId ?? undefined} leadId={leadId} />
         </TabsContent>
       </Tabs>
     </div>
@@ -349,7 +349,7 @@ function CombinedStatsCard({ stats, isLoading }: { stats: CombinedStats; isLoadi
       )}
 
       {/* Pre-Qualification Agent Breakdown */}
-      {rfp && preQualification.agentStats.length > 0 && (
+      {preQualification && preQualification.agentStats.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

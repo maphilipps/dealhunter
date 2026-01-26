@@ -99,7 +99,9 @@ async function runWithConcurrency<T, R>(
         results[i] = await fn(item, i);
       } finally {
         const pIndex = executing.findIndex(p => p === promise);
-        if (pIndex !== -1) executing.splice(pIndex, 1);
+        if (pIndex !== -1) {
+          void executing.splice(pIndex, 1);
+        }
       }
     })();
     void promise; // Mark as handled

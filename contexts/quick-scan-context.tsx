@@ -51,25 +51,29 @@ export function QuickScanProvider({
   useEffect(() => {
     if (!isInProgress) return;
 
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/pre-qualifications/${preQualificationId}/background-job`);
-        if (!response.ok) throw new Error('Failed to fetch job status');
+    const pollInterval = setInterval(() => {
+      void (async () => {
+        try {
+          const response = await fetch(
+            `/api/pre-qualifications/${preQualificationId}/background-job`
+          );
+          if (!response.ok) throw new Error('Failed to fetch job status');
 
-        const data = await response.json();
-        if (data.job) {
-          setJob(data.job);
+          const data = await response.json();
+          if (data.job) {
+            setJob(data.job);
 
-          // Stop polling when completed or failed
-          if (data.job.status === 'completed' || data.job.status === 'failed') {
-            clearInterval(pollInterval);
+            // Stop polling when completed or failed
+            if (data.job.status === 'completed' || data.job.status === 'failed') {
+              clearInterval(pollInterval);
+            }
           }
+        } catch (err) {
+          console.error('[QuickScan Context] Poll error:', err);
+          setError(err instanceof Error ? err : new Error('Failed to poll job status'));
+          clearInterval(pollInterval);
         }
-      } catch (err) {
-        console.error('[QuickScan Context] Poll error:', err);
-        setError(err instanceof Error ? err : new Error('Failed to poll job status'));
-        clearInterval(pollInterval);
-      }
+      })();
     }, 2000); // Poll every 2 seconds
 
     return () => clearInterval(pollInterval);

@@ -162,7 +162,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
+    const body = (await request.json()) as unknown;
     const parsed = updateCompetencySchema.safeParse(body);
 
     if (!parsed.success) {
@@ -171,7 +171,7 @@ export async function PATCH(request: NextRequest) {
 
     const { id, version, ...updates } = parsed.data;
 
-    const existing = (await db.select().from(competencies).where(eq(competencies.id, id)))[0];
+    const [existing] = await db.select().from(competencies).where(eq(competencies.id, id));
 
     if (!existing) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -191,13 +191,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const updated = (
-      await db
-        .update(competencies)
-        .set(updateData)
-        .where(and(eq(competencies.id, id), eq(competencies.version, version)))
-        .returning()
-    )[0];
+    const [updated] = await db
+      .update(competencies)
+      .set(updateData)
+      .where(and(eq(competencies.id, id), eq(competencies.version, version)))
+      .returning();
 
     if (!updated) {
       return NextResponse.json(

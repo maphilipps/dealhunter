@@ -6,11 +6,11 @@ tags: [code-review, security, validation, zod]
 dependencies: []
 ---
 
-# Missing Input Validation on leadId/rfpId Parameters
+# Missing Input Validation on leadId/preQualificationId Parameters
 
 ## Problem Statement
 
-The agent functions accept `leadId` and `rfpId` parameters without validating their format. This could allow injection attacks or cause cryptic errors on malformed input.
+The agent functions accept `leadId` and `preQualificationId` parameters without validating their format. This could allow injection attacks or cause cryptic errors on malformed input.
 
 ## Findings
 
@@ -33,9 +33,9 @@ import { z } from 'zod';
 
 const IdSchema = z.string().uuid();
 
-export async function runLegalCheckAgent(leadId: string, rfpId: string) {
+export async function runLegalCheckAgent(leadId: string, preQualificationId: string) {
   IdSchema.parse(leadId);
-  IdSchema.parse(rfpId);
+  IdSchema.parse(preQualificationId);
   // ...
 }
 ```

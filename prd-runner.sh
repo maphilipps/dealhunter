@@ -123,7 +123,7 @@ You are working on feature DEA-136: RFP Detail - Sidebar Right Navigation.
 - Update the PRD JSON file when done
 - If build fails, fix it before marking as passed
 
-**Working Directory:** /Users/marc.philipps/Sites/dealhunter/.worktrees/feature-dea-136-rfp-sidebar-right
+**Working Directory:** /Users/marc.philipps/Sites/dealhunter/.worktrees/feature-dea-136-preQualification-sidebar-right
 ")
 
     echo "$result"

@@ -26,7 +26,7 @@ import { preQualifications, type PreQualification } from '../db/schema';
  *
  * Resets the agent's error state and re-triggers the agent with the same inputs.
  *
- * @param rfpId - Pre-Qualification ID
+ * @param preQualificationId - Pre-Qualification ID
  * @param agentName - Name of the agent to retry
  * @returns Updated Pre-Qualification with new status
  */
@@ -95,7 +95,7 @@ export async function retryAgent(
  *
  * Marks the error as resolved with userAction='skip' and moves to next workflow step.
  *
- * @param rfpId - Pre-Qualification ID
+ * @param preQualificationId - Pre-Qualification ID
  * @param agentName - Name of the agent to skip
  * @returns Updated Pre-Qualification with new status
  */
@@ -175,7 +175,7 @@ export async function skipAgent(
  *
  * Activates manual input form for Extract Agent after max retries.
  *
- * @param rfpId - Pre-Qualification ID
+ * @param preQualificationId - Pre-Qualification ID
  * @returns Updated Pre-Qualification with manual_extraction status
  */
 export async function switchToManualMode(
@@ -225,7 +225,7 @@ export async function switchToManualMode(
  *
  * Used for dismissing errors after successful resolution.
  *
- * @param rfpId - Pre-Qualification ID
+ * @param preQualificationId - Pre-Qualification ID
  * @param errorId - Error ID to resolve
  * @returns Updated Pre-Qualification
  */
@@ -291,7 +291,7 @@ export async function resolveAgentError(
  *
  * Helper function to save an error during agent execution.
  *
- * @param rfpId - Pre-Qualification ID
+ * @param preQualificationId - Pre-Qualification ID
  * @param agentError - Agent error to save
  * @returns Updated Pre-Qualification
  */

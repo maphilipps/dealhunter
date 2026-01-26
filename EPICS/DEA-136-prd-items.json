@@ -253,10 +253,10 @@
       "category": "Component",
       "description": "RfpSidebarRight Component existiert und verwendet ShadCN Sidebar",
       "stepsToVerify": [
-        "Prüfe: Datei /components/bids/rfp-sidebar-right.tsx existiert",
+        "Prüfe: Datei /components/bids/preQualification-sidebar-right.tsx existiert",
         "Prüfe: Component verwendet Sidebar mit side='right'",
         "Prüfe: Component verwendet SidebarContent, SidebarGroup, SidebarMenu",
-        "Prüfe: Component akzeptiert Props: rfpId, title, status",
+        "Prüfe: Component akzeptiert Props: preQualificationId, title, status",
         "Prüfe: Component verwendet usePathname für Active State"
       ],
       "passes": true

@@ -15,6 +15,7 @@ export const QUEUE_NAMES = {
   DEEP_SCAN: 'deep-scan',
   PREQUAL_PROCESSING: 'prequal-processing',
   QUICK_SCAN: 'quick-scan',
+  VISUALIZATION: 'visualization',
 } as const;
 
 /**
@@ -395,6 +396,102 @@ export async function addPreQualProcessingJob(data: PreQualProcessingJobData) {
  */
 export async function getPreQualProcessingJob(jobId: string) {
   const queue = getPreQualProcessingQueue();
+  return queue.getJob(jobId);
+}
+
+// ============================================================================
+// Visualization Queue
+// ============================================================================
+
+/**
+ * Visualization job data structure
+ */
+export interface VisualizationJobData {
+  /** Qualification ID */
+  qualificationId: string;
+  /** Section IDs to generate visualizations for (empty = all missing) */
+  sectionIds: string[];
+  /** User who triggered the job */
+  userId: string;
+  /** Database job ID for status tracking */
+  dbJobId: string;
+  /** Optional focus prompt for all visualizations */
+  focusPrompt?: string;
+}
+
+/**
+ * Visualization job result structure
+ */
+export interface VisualizationJobResult {
+  success: boolean;
+  generated: number;
+  total: number;
+  sections: Array<{ sectionId: string; success: boolean; error?: string }>;
+  error?: string;
+}
+
+/**
+ * Visualization Queue
+ *
+ * Handles background generation of visualizations for sections.
+ */
+let visualizationQueue: Queue<VisualizationJobData, VisualizationJobResult, string> | null = null;
+
+/**
+ * Get or create the Visualization queue
+ */
+export function getVisualizationQueue(): Queue<VisualizationJobData, VisualizationJobResult, string> {
+  if (!visualizationQueue) {
+    visualizationQueue = new Queue<VisualizationJobData, VisualizationJobResult, string>(
+      QUEUE_NAMES.VISUALIZATION,
+      {
+        connection: getConnection(),
+        defaultJobOptions: {
+          attempts: 2,
+          backoff: {
+            type: 'exponential',
+            delay: 10000,
+          },
+          removeOnComplete: {
+            age: 24 * 60 * 60,
+            count: 100,
+          },
+          removeOnFail: {
+            age: 7 * 24 * 60 * 60,
+            count: 500,
+          },
+        },
+      }
+    );
+
+    console.log('[BullMQ] Visualization queue initialized');
+  }
+
+  return visualizationQueue;
+}
+
+/**
+ * Add a visualization job to the queue
+ */
+export async function addVisualizationJob(data: VisualizationJobData) {
+  const queue = getVisualizationQueue();
+
+  const job = await queue.add('process', data, {
+    jobId: data.dbJobId,
+  });
+
+  console.log(
+    `[BullMQ] Added visualization job ${job.id} for qualification ${data.qualificationId}`
+  );
+
+  return job;
+}
+
+/**
+ * Get a visualization job by ID
+ */
+export async function getVisualizationJob(jobId: string) {
+  const queue = getVisualizationQueue();
   return queue.getJob(jobId);
 }
 

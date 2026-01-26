@@ -164,7 +164,7 @@ function extractRequirementsFromQuickScan(quickScanData: Record<string, unknown>
  * POST Handler - Startet die Matrix-Recherche
  */
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id: rfpId } = await params;
+  const { id: preQualificationId } = await params;
 
   // Create streaming response
   const encoder = new TextEncoder();
@@ -318,7 +318,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
  * GET Handler - Lädt gespeicherte Matrix
  */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id: rfpId } = await params;
+  const { id: preQualificationId } = await params;
 
   const preQualification = await db
     .select({ quickScanResults: preQualifications.quickScanResults })

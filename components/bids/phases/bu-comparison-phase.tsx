@@ -63,7 +63,7 @@ function ScoreTrend({ score, baseline }: { score: number; baseline: number }) {
   return <TrendingDown className="h-4 w-4 text-red-500" />;
 }
 
-export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) {
+export function BUComparisonPhase({ quickScan, preQualificationId }: BUComparisonPhaseProps) {
   const [buMatches, setBuMatches] = useState<BUMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBU, setSelectedBU] = useState<string | null>(null);
@@ -73,7 +73,7 @@ export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) 
       try {
         const res = await fetch(`/api/pre-qualifications/${preQualificationId}/bu-matching`);
         if (res.ok) {
-          const data = await res.json();
+          const data = (await res.json()) as { matches?: BUMatch[] };
           setBuMatches(data.matches || []);
         }
       } catch (error) {
@@ -83,7 +83,7 @@ export function BUComparisonPhase({ quickScan, rfpId }: BUComparisonPhaseProps) 
       }
     }
     void fetchBUMatches();
-  }, [rfpId]);
+  }, [preQualificationId]);
 
   if (loading) {
     return (

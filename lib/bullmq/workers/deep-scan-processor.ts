@@ -156,8 +156,8 @@ export async function processDeepScanJob(job: Job<DeepScanJobData>): Promise<Dee
         completedExperts: checkpointState.completedExperts,
       },
       {
-        onProgress: async state => {
-          await progressUpdater.update(
+        onProgress: state => {
+          void progressUpdater.update(
             state.progress,
             state.currentExpert,
             state.completedExperts,
@@ -192,8 +192,24 @@ export async function processDeepScanJob(job: Job<DeepScanJobData>): Promise<Dee
     return result;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[DeepScan Worker] Job ${job.id} failed:`, errorMsg);
-    console.error('[DeepScan Worker] Error detail:', error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorName = error instanceof Error ? error.name : 'Error';
+
+    console.error(`[DeepScan Worker] Job ${job.id} failed:`, {
+      message: errorMsg,
+      name: errorName,
+      stack: errorStack,
+      qualificationId,
+      websiteUrl,
+      selectedExperts,
+    });
+
+    const fullErrorDetails = JSON.stringify({
+      message: errorMsg,
+      name: errorName,
+      stack: errorStack,
+      timestamp: new Date().toISOString(),
+    });
 
     const result: DeepScanJobResult = {
       success: false,
@@ -203,7 +219,7 @@ export async function processDeepScanJob(job: Job<DeepScanJobData>): Promise<Dee
       error: errorMsg,
     };
 
-    await finalizeJobWithTransaction(dbJobId, qualificationId, false, result, errorMsg);
+    await finalizeJobWithTransaction(dbJobId, qualificationId, false, result, fullErrorDetails);
     throw error;
   }
 }

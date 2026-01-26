@@ -30,15 +30,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     let forceReset = false;
     let selectedExperts: string[] | undefined;
     try {
-      const body = await request.json();
+      const body = (await request.json()) as { forceReset?: unknown; selectedExperts?: unknown };
       forceReset = body.forceReset === true;
-      selectedExperts = body.selectedExperts;
+
+      if (body.selectedExperts && Array.isArray(body.selectedExperts)) {
+        selectedExperts = body.selectedExperts.filter((item): item is string => typeof item === 'string');
+      }
     } catch {
       // Empty body is fine
     }
 
     // Verify lead exists and get website URL
-    const [lead] = await db
+    const leads = await db
       .select({
         id: qualifications.id,
         preQualificationId: qualifications.preQualificationId,
@@ -50,16 +53,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .where(eq(qualifications.id, leadId))
       .limit(1);
 
+    const lead = leads[0];
+
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
     // Authorization: Verify user has access to this lead's business unit
-    const [currentUser] = await db
+    const currentUsers = await db
       .select()
       .from(users)
       .where(eq(users.id, session.user.id))
       .limit(1);
+
+    const currentUser = currentUsers[0];
 
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 401 });
@@ -81,7 +88,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Check if a job is already running
-    const [existingJob] = await db
+    const existingJobs = await db
       .select()
       .from(backgroundJobs)
       .where(
@@ -92,6 +99,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         )
       )
       .limit(1);
+
+    const existingJob = existingJobs[0];
 
     if (existingJob) {
       return NextResponse.json(

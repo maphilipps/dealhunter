@@ -157,7 +157,7 @@ function calculateOverallScore(industryScore: number, technologyScore: number): 
  * 6. Store results in RAG
  *
  * @param leadId - Lead ID to analyze
- * @param rfpId - Pre-Qualification ID for RAG storage
+ * @param preQualificationId - Pre-Qualification ID for RAG storage
  * @returns Reference recommendations
  */
 export async function runReferencesAgent(leadId: string, preQualificationId: string): Promise<ReferencesResult> {

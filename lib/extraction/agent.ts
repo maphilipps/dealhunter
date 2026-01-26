@@ -134,6 +134,34 @@ Suche nach: "Introduction", "Background", "Purpose", "Scope", "Executive Summary
 Falls nicht gefunden: antworte mit "nicht gefunden".`,
   },
   {
+    name: 'projectGoal',
+    displayName: 'Projektziel',
+    queries: {
+      de: 'Ziel Zweck Absicht Vision Nutzen Ergebnis Erfolg erreichen schaffen Mehrwert Business Case',
+      en: 'goal objective purpose vision outcome success achieve deliver value business case drivers motivation why',
+    },
+    extractPrompt: `Analysiere das Dokument und extrahiere das strategische Projektziel.
+
+Suche nach:
+- Was will der Kunde mit diesem Projekt erreichen?
+- Warum wird dieses Projekt jetzt durchgeführt? (Business Drivers)
+- Welche Erfolgskriterien werden genannt?
+- Was darf auf keinen Fall schiefgehen?
+
+Antworte im JSON Format:
+{
+  "objective": "<Hauptziel in 1-2 Sätzen>",
+  "successCriteria": ["<Kriterium 1>", "<Kriterium 2>"],
+  "businessDrivers": ["<Driver 1: z.B. Legacy-Ablösung>", "<Driver 2>"],
+  "strategicContext": "<Breiterer strategischer Kontext falls vorhanden>",
+  "mustNotFail": ["<Kritisches Risiko 1>", "<Kritisches Risiko 2>"],
+  "confidence": <0-100>
+}
+
+Falls nicht genug Informationen vorhanden sind, setze confidence niedrig und fülle nur die erkennbaren Felder.`,
+    isObject: true,
+  },
+  {
     name: 'industry',
     displayName: 'Branche',
     queries: {
@@ -818,9 +846,15 @@ export async function runExtractionWithStreaming(
 
 /**
  * Legacy function for backward compatibility (non-streaming)
- * Delegates to the streaming version with a no-op emitter
+ * Now delegates to the Agent-Native implementation
  */
 export async function extractRequirements(input: ExtractionInput): Promise<ExtractionOutput> {
-  const noOpEmit: EventEmitter = () => {};
-  return runExtractionWithStreaming(input, noOpEmit);
+  // Import dynamically to avoid circular dependency
+  const { runExtractionAgentNative } = await import('./agent-native');
+  const result = await runExtractionAgentNative(input);
+  return {
+    requirements: result.requirements,
+    success: result.success,
+    error: result.error,
+  };
 }

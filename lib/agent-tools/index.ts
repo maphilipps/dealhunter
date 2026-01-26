@@ -18,6 +18,7 @@ import './tools/pitchdeck';
 import './tools/audit';
 import './tools/workflow';
 import './tools/notification';
+import './tools/extraction';
 import './scan-tools';
 import './deep-scan-tools';
 

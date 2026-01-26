@@ -149,6 +149,37 @@ export const extractedRequirementsSchema = z.object({
     .describe('List of key functional or non-functional requirements'),
   constraints: z.array(z.string()).optional().describe('Any constraints or limitations mentioned'),
 
+  // Project Goal - Strategic context for all downstream analysis
+  projectGoal: z
+    .object({
+      objective: z
+        .string()
+        .describe('What does the customer want to achieve? The primary goal of the project.'),
+      successCriteria: z
+        .array(z.string())
+        .optional()
+        .describe('How will success be measured? KPIs or acceptance criteria.'),
+      businessDrivers: z
+        .array(z.string())
+        .optional()
+        .describe('Why now? What is driving this project? (e.g., legacy replacement, growth, compliance)'),
+      strategicContext: z
+        .string()
+        .optional()
+        .describe('Broader strategic context or background'),
+      mustNotFail: z
+        .array(z.string())
+        .optional()
+        .describe('Critical constraints - what must NOT happen or fail'),
+      confidence: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe('Confidence score 0-100 for the extracted goal'),
+    })
+    .optional()
+    .describe('Structured project goal - the "North Star" for all analysis'),
+
   // Metadata
   confidenceScore: z
     .number()

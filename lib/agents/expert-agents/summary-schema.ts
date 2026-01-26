@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const ManagementSummarySchema = z.object({
   // One-liner
-  headline: z.string().max(200).default('RFP Analysis'),
+  headline: z.string().max(200).default('Pre-Qualification Analysis'),
 
   // Executive summary (2-3 sentences)
   executiveSummary: z.string().max(2000).default(''),

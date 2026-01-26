@@ -28,7 +28,7 @@ import type { ExtractedRequirements } from '@/lib/extraction/schema';
 interface BLAssignmentViewProps {
   quickScan: QuickScan;
   extractedData?: ExtractedRequirements | null;
-  rfpId: string;
+  preQualificationId: string;
 }
 
 interface TechStackData {
@@ -115,7 +115,7 @@ export function BLAssignmentView({ quickScan, extractedData, rfpId }: BLAssignme
   useEffect(() => {
     async function fetchBUMatches() {
       try {
-        const res = await fetch(`/api/pre-qualifications/${rfpId}/bu-matching`);
+        const res = await fetch(`/api/pre-qualifications/${preQualificationId}/bu-matching`);
         if (res.ok) {
           const data = await res.json();
           setBuMatches(data.matches || []);

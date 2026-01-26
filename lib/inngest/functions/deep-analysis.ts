@@ -161,7 +161,7 @@ export const deepAnalysisFunction = inngest.createFunction(
           })
           .where(eq(backgroundJobs.id, jobRecord.id));
 
-        // Update RFP status to 'full_scanning'
+        // Update Pre-Qualification status to 'full_scanning'
         await db
           .update(preQualifications)
           .set({

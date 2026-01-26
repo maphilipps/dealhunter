@@ -42,7 +42,7 @@ export function DuplicateWarning({ duplicateCheck, onDismiss }: DuplicateWarning
         className={`h-4 w-4 ${hasExactMatches ? 'text-red-600' : 'text-yellow-600'}`}
       />
       <AlertTitle className="flex items-center justify-between">
-        <span>{hasExactMatches ? 'Mögliche Duplikate gefunden!' : 'Ähnliche RFPs gefunden'}</span>
+        <span>{hasExactMatches ? 'Mögliche Duplikate gefunden!' : 'Ähnliche Pre-Qualifications gefunden'}</span>
         <Button variant="ghost" size="sm" onClick={handleDismiss} className="h-6 w-6 p-0">
           <X className="h-4 w-4" />
         </Button>
@@ -55,7 +55,7 @@ export function DuplicateWarning({ duplicateCheck, onDismiss }: DuplicateWarning
             >
               {hasExactMatches
                 ? `${duplicateCheck.exactMatches.length} exakte Übereinstimmung${duplicateCheck.exactMatches.length > 1 ? 'en' : ''} gefunden`
-                : `${duplicateCheck.similarMatches.length} ähnliche RFP${duplicateCheck.similarMatches.length > 1 ? 's' : ''} gefunden`}
+                : `${duplicateCheck.similarMatches.length} ähnliche Pre-Qualification${duplicateCheck.similarMatches.length > 1 ? 's' : ''} gefunden`}
             </p>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="h-6 px-2">
@@ -79,7 +79,7 @@ export function DuplicateWarning({ duplicateCheck, onDismiss }: DuplicateWarning
                   <ul className="space-y-2">
                     {duplicateCheck.exactMatches.map(match => (
                       <li
-                        key={match.rfpId}
+                        key={match.preQualificationId}
                         className="flex items-start justify-between p-2 rounded-md bg-red-100 dark:bg-red-900/30 text-sm"
                       >
                         <div>
@@ -95,7 +95,7 @@ export function DuplicateWarning({ duplicateCheck, onDismiss }: DuplicateWarning
                           )}
                         </div>
                         <a
-                          href={`/bids/${match.rfpId}`}
+                          href={`/bids/${match.preQualificationId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 text-xs text-red-600 hover:underline"
@@ -112,12 +112,12 @@ export function DuplicateWarning({ duplicateCheck, onDismiss }: DuplicateWarning
               {hasSimilarMatches && (
                 <div>
                   <h4 className="text-sm font-semibold mb-2 text-yellow-800 dark:text-yellow-200">
-                    Ähnliche RFPs
+                    Ähnliche Pre-Qualifications
                   </h4>
                   <ul className="space-y-2">
                     {duplicateCheck.similarMatches.map(match => (
                       <li
-                        key={match.rfpId}
+                        key={match.preQualificationId}
                         className="flex items-start justify-between p-2 rounded-md bg-yellow-100 dark:bg-yellow-900/30 text-sm"
                       >
                         <div>
@@ -136,7 +136,7 @@ export function DuplicateWarning({ duplicateCheck, onDismiss }: DuplicateWarning
                           )}
                         </div>
                         <a
-                          href={`/bids/${match.rfpId}`}
+                          href={`/bids/${match.preQualificationId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 text-xs text-yellow-600 hover:underline"

@@ -19,7 +19,7 @@ export interface OrchestratorResult {
 }
 
 export async function runExpertAgents(input: ExpertAgentInput): Promise<OrchestratorResult> {
-  console.error(`[Expert Orchestrator] Starting all agents for RFP ${input.rfpId}`);
+  console.error(`[Expert Orchestrator] Starting all agents for Pre-Qualification ${input.preQualificationId}`);
 
   const errors: string[] = [];
 

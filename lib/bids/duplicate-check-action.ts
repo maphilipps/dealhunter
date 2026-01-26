@@ -11,12 +11,12 @@ import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { onAgentComplete } from '@/lib/workflow/orchestrator';
 
 /**
- * Run Duplicate Check Agent for an RFP
+ * Run Duplicate Check Agent for an Pre-Qualification
  * Called after user confirms extracted requirements
  *
  * DEA-90: Part of automated workflow orchestration
  */
-export async function runDuplicateCheck(rfpId: string): Promise<{
+export async function runDuplicateCheck(preQualificationId: string): Promise<{
   success: boolean;
   hasDuplicates?: boolean;
   error?: string;
@@ -29,33 +29,33 @@ export async function runDuplicateCheck(rfpId: string): Promise<{
   }
 
   try {
-    // 1. Fetch RFP and verify ownership
-    const [rfp] = await db
+    // 1. Fetch Pre-Qualification and verify ownership
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
-      .where(and(eq(preQualifications.id, rfpId), eq(preQualifications.userId, session.user.id)));
+      .where(and(eq(preQualifications.id, preQualificationId), eq(preQualifications.userId, session.user.id)));
 
-    if (!rfp) {
-      return { success: false, error: 'RFP nicht gefunden' };
+    if (!preQualification) {
+      return { success: false, error: 'Pre-Qualification nicht gefunden' };
     }
 
-    // 2. Check if RFP has extracted requirements
-    if (!rfp.extractedRequirements) {
-      return { success: false, error: 'RFP muss zuerst extrahiert werden' };
+    // 2. Check if Pre-Qualification has extracted requirements
+    if (!preQualification.extractedRequirements) {
+      return { success: false, error: 'Pre-Qualification muss zuerst extrahiert werden' };
     }
 
     const extractedReqs: ExtractedRequirements = JSON.parse(
-      rfp.extractedRequirements
+      preQualification.extractedRequirements
     ) as ExtractedRequirements;
 
     // 3. Run Duplicate Check Agent
     const duplicateResult = await runDuplicateCheckAgent({
       extractedRequirements: extractedReqs,
-      accountId: rfp.accountId || undefined,
-      excludeRfpId: rfpId,
+      accountId: preQualification.accountId || undefined,
+      excludeRfpId: preQualificationId,
     });
 
-    // 4. Save duplicate check result to RFP
+    // 4. Save duplicate check result to Pre-Qualification
     await db
       .update(preQualifications)
       .set({
@@ -63,13 +63,13 @@ export async function runDuplicateCheck(rfpId: string): Promise<{
         status: duplicateResult.hasDuplicates ? 'duplicate_warning' : 'duplicate_checking',
         updatedAt: new Date(),
       })
-      .where(eq(preQualifications.id, rfpId));
+      .where(eq(preQualifications.id, preQualificationId));
 
     // 5. If no duplicates, trigger next agent (Quick Scan)
     let nextAgent: string | undefined;
 
     if (!duplicateResult.hasDuplicates) {
-      const result = await onAgentComplete(rfpId, 'DuplicateCheck');
+      const result = await onAgentComplete(preQualificationId, 'DuplicateCheck');
       nextAgent = result.nextAgent;
     }
 

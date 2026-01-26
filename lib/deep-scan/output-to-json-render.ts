@@ -1,8 +1,17 @@
 /**
  * Expert Output to json-render Visualization Mappers
  *
- * Transforms structured expert outputs into json-render trees
- * that can be rendered by QuickScanRenderer.
+ * @deprecated This module is deprecated in favor of agent-native RAG write tools.
+ * Experts should now use `ragTools.storeVisualization()` from their input context
+ * to store JsonRenderTree visualizations directly at analysis time.
+ *
+ * These mappers are still used by `storeAuditAgentOutput` in `experts/base.ts`
+ * for backward compatibility with existing expert implementations.
+ *
+ * Migration path:
+ * 1. Update experts to call `input.ragTools?.storeVisualization()` directly
+ * 2. Remove calls to `storeAuditAgentOutput` (or simplify it to not generate viz)
+ * 3. Delete these mapper functions once all experts are migrated
  *
  * @module lib/deep-scan/output-to-json-render
  */

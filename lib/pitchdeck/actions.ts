@@ -31,7 +31,7 @@ export interface CreatePitchdeckResult {
  *
  * This function:
  * 1. Creates a pitchdeck record for the qualification
- * 2. Copies deliverables from RFP extractedRequirements
+ * 2. Copies deliverables from Pre-Qualification extractedRequirements
  * 3. Sets status to 'draft'
  * 4. Creates audit trail
  *
@@ -84,17 +84,17 @@ export async function createPitchdeck(qualificationId: string): Promise<CreatePi
       };
     }
 
-    // Get RFP to extract deliverables
-    const [rfp] = await db
+    // Get Pre-Qualification to extract deliverables
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
       .where(eq(preQualifications.id, lead.preQualificationId))
       .limit(1);
 
-    if (!rfp) {
+    if (!preQualification) {
       return {
         success: false,
-        error: 'RFP nicht gefunden',
+        error: 'Pre-Qualification nicht gefunden',
       };
     }
 
@@ -111,9 +111,9 @@ export async function createPitchdeck(qualificationId: string): Promise<CreatePi
     let requiredDeliverables: { name: string; format?: string; mandatory?: boolean }[] = [];
     let rfpDeadline: Date | null = null;
 
-    if (rfp.extractedRequirements) {
+    if (preQualification.extractedRequirements) {
       try {
-        const extractedReqs = JSON.parse(rfp.extractedRequirements) as Record<string, unknown>;
+        const extractedReqs = JSON.parse(preQualification.extractedRequirements) as Record<string, unknown>;
         if (Array.isArray(extractedReqs.requiredDeliverables)) {
           requiredDeliverables = extractedReqs.requiredDeliverables as {
             name: string;
@@ -122,7 +122,7 @@ export async function createPitchdeck(qualificationId: string): Promise<CreatePi
           }[];
         }
 
-        // Extract RFP deadline if available
+        // Extract Pre-Qualification deadline if available
         if (extractedReqs.deadline) {
           if (typeof extractedReqs.deadline === 'string') {
             rfpDeadline = new Date(extractedReqs.deadline);
@@ -131,12 +131,12 @@ export async function createPitchdeck(qualificationId: string): Promise<CreatePi
           }
         }
       } catch (error) {
-        console.error('Error parsing RFP extractedRequirements:', error);
+        console.error('Error parsing Pre-Qualification extractedRequirements:', error);
         // Continue without deliverables if parsing fails
       }
     }
 
-    // Calculate internal deadlines if RFP deadline exists
+    // Calculate internal deadlines if Pre-Qualification deadline exists
     let internalDeadlines: Date[] = [];
     if (rfpDeadline && requiredDeliverables.length > 0) {
       try {
@@ -200,7 +200,7 @@ export interface SuggestPitchdeckTeamResult {
  * DEA-161 (PA-002): Generate Team Suggestions for Pitchdeck
  *
  * This function:
- * 1. Gets the pitchdeck and associated lead/RFP data
+ * 1. Gets the pitchdeck and associated lead/Pre-Qualification data
  * 2. Retrieves PT-Estimation to determine required roles
  * 3. Queries available employees from the lead's business unit
  * 4. Uses AI Staffing Agent to generate team suggestions
@@ -247,17 +247,17 @@ export async function suggestPitchdeckTeam(
       };
     }
 
-    // Get RFP for extracted requirements
-    const [rfp] = await db
+    // Get Pre-Qualification for extracted requirements
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
       .where(eq(preQualifications.id, lead.preQualificationId))
       .limit(1);
 
-    if (!rfp) {
+    if (!preQualification) {
       return {
         success: false,
-        error: 'RFP nicht gefunden',
+        error: 'Pre-Qualification nicht gefunden',
       };
     }
 
@@ -298,8 +298,8 @@ export async function suggestPitchdeckTeam(
       .limit(50);
 
     // Parse extracted requirements
-    const extractedRequirements = rfp.extractedRequirements
-      ? (JSON.parse(rfp.extractedRequirements) as Record<string, unknown>)
+    const extractedRequirements = preQualification.extractedRequirements
+      ? (JSON.parse(preQualification.extractedRequirements) as Record<string, unknown>)
       : {};
 
     // Add PT-Estimation roles context if available
@@ -314,7 +314,7 @@ export async function suggestPitchdeckTeam(
 
     // Generate team suggestion using existing AI agent
     const suggestion = await suggestTeam({
-      bidId: lead.preQualificationId, // Use RFP ID for consistency
+      bidId: lead.preQualificationId, // Use Pre-Qualification ID for consistency
       extractedRequirements,
       quickScanResults,
       assignedBusinessLine: lead.businessUnitId,
@@ -695,17 +695,17 @@ export async function generateSolutionSketches(
       };
     }
 
-    // Get RFP for context
-    const [rfp] = await db
+    // Get Pre-Qualification for context
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
       .where(eq(preQualifications.id, lead.preQualificationId))
       .limit(1);
 
-    if (!rfp) {
+    if (!preQualification) {
       return {
         success: false,
-        error: 'RFP nicht gefunden',
+        error: 'Pre-Qualification nicht gefunden',
       };
     }
 
@@ -714,9 +714,9 @@ export async function generateSolutionSketches(
     let projectDescription: string | undefined;
     let requirements: string[] = [];
 
-    if (rfp.extractedRequirements) {
+    if (preQualification.extractedRequirements) {
       try {
-        const extractedReqs = JSON.parse(rfp.extractedRequirements) as Record<string, unknown>;
+        const extractedReqs = JSON.parse(preQualification.extractedRequirements) as Record<string, unknown>;
         customerName = extractedReqs.customerName as string | undefined;
         projectDescription = extractedReqs.projectDescription as string | undefined;
 
@@ -727,14 +727,14 @@ export async function generateSolutionSketches(
           requirements = [extractedReqs.requirements];
         }
       } catch (error) {
-        console.error('Error parsing RFP extractedRequirements:', error);
+        console.error('Error parsing Pre-Qualification extractedRequirements:', error);
       }
     }
 
     // Prepare input for Solution Agent
     const solutionInput: SolutionInput = {
       deliverableName: deliverable.deliverableName,
-      rfpId: rfp.id,
+      preQualificationId: preQualification.id,
       leadId: lead.id,
       customerName: customerName || lead.customerName,
       projectDescription: projectDescription || lead.projectDescription || undefined,

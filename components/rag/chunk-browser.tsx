@@ -43,13 +43,13 @@ import type {
 type BrowserMode = 'agent' | 'raw';
 
 interface ChunkBrowserProps {
-  rfpId: string;
+  preQualificationId: string;
   mode: BrowserMode;
 }
 
 const PAGE_SIZE = 20;
 
-export function ChunkBrowser({ rfpId, mode }: ChunkBrowserProps) {
+export function ChunkBrowser({ preQualificationId, mode }: ChunkBrowserProps) {
   const [data, setData] = useState<AgentOutputsResult | RawChunksResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -73,14 +73,14 @@ export function ChunkBrowser({ rfpId, mode }: ChunkBrowserProps) {
   // Load filter options for agent mode
   useEffect(() => {
     if (mode === 'agent') {
-      void Promise.all([getAgentNames(rfpId), getChunkTypes(rfpId)]).then(
+      void Promise.all([getAgentNames(preQualificationId), getChunkTypes(preQualificationId)]).then(
         ([agentsResult, typesResult]) => {
           if (agentsResult.success) setAvailableAgents(agentsResult.data);
           if (typesResult.success) setAvailableTypes(typesResult.data);
         }
       );
     }
-  }, [rfpId, mode]);
+  }, [preQualificationId, mode]);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -90,7 +90,7 @@ export function ChunkBrowser({ rfpId, mode }: ChunkBrowserProps) {
       try {
         if (mode === 'agent') {
           const result = await getAgentOutputs({
-            rfpId,
+            preQualificationId,
             agentName: agentFilter,
             chunkType: typeFilter,
             search: debouncedSearch || undefined,
@@ -102,7 +102,7 @@ export function ChunkBrowser({ rfpId, mode }: ChunkBrowserProps) {
           }
         } else {
           const result = await getRawChunks({
-            rfpId,
+            preQualificationId,
             search: debouncedSearch || undefined,
             page,
             pageSize: PAGE_SIZE,
@@ -117,7 +117,7 @@ export function ChunkBrowser({ rfpId, mode }: ChunkBrowserProps) {
         setIsLoading(false);
       }
     });
-  }, [rfpId, mode, page, agentFilter, typeFilter, debouncedSearch]);
+  }, [preQualificationId, mode, page, agentFilter, typeFilter, debouncedSearch]);
 
   useEffect(() => {
     void fetchData();

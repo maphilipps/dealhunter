@@ -1,7 +1,7 @@
 /**
  * RAG Tool for AI SDK (DEA-107)
  *
- * Allows agents to query the knowledge base for this RFP
+ * Allows agents to query the knowledge base for this Pre-Qualification
  * via semantic search.
  */
 
@@ -11,22 +11,22 @@ import { z } from 'zod';
 import { queryRAG } from '@/lib/rag/retrieval-service';
 
 /**
- * Create a RAG tool scoped to a specific RFP
+ * Create a RAG tool scoped to a specific Pre-Qualification
  *
  * Usage in agent:
  * ```typescript
  * const result = await streamText({
  *   model: 'claude-sonnet-4.5',
  *   tools: {
- *     queryRAG: createRagTool(rfpId),
+ *     queryRAG: createRagTool(preQualificationId),
  *   },
  *   prompt: 'Evaluate technical feasibility...'
  * });
  * ```
  */
-export function createRagTool(rfpId: string) {
+export function createRagTool(preQualificationId: string) {
   return tool({
-    description: `Search the knowledge base for information about this RFP.
+    description: `Search the knowledge base for information about this Pre-Qualification.
     Use this tool to find:
     - Performance metrics (LCP, FID, CLS) from Quick Scan
     - Tech stack details (CMS, framework, libraries)
@@ -46,7 +46,7 @@ export function createRagTool(rfpId: string) {
     inputSchema: z.object({
       question: z
         .string()
-        .describe('Natural language question about the RFP (e.g., "What is the current CMS?")'),
+        .describe('Natural language question about the Pre-Qualification (e.g., "What is the current CMS?")'),
       techStackFilter: z
         .string()
         .optional()
@@ -61,7 +61,7 @@ export function createRagTool(rfpId: string) {
       techStackFilter?: string;
     }) => {
       const results = await queryRAG({
-        preQualificationId: rfpId,
+        preQualificationId: preQualificationId,
         question,
         techStackFilter,
         maxResults: 5,

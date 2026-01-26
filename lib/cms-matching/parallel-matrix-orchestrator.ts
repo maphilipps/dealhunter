@@ -433,19 +433,19 @@ export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchin
 }
 
 /**
- * Speichert die Matrix am RFP
+ * Speichert die Matrix am Pre-Qualification
  */
-export async function saveMatrixToRfp(rfpId: string, matrix: RequirementMatrix): Promise<void> {
+export async function saveMatrixToRfp(preQualificationId: string, matrix: RequirementMatrix): Promise<void> {
   try {
     // Load current quick scan results
-    const rfp = await db
+    const preQualification = await db
       .select({ quickScanResults: preQualifications.quickScanResults })
       .from(preQualifications)
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .limit(1);
 
     // Parse existing results or create new object
-    const currentResults = rfp[0]?.quickScanResults ? JSON.parse(rfp[0].quickScanResults) : {};
+    const currentResults = preQualification[0]?.quickScanResults ? JSON.parse(preQualification[0].quickScanResults) : {};
 
     // Add matrix to results
     currentResults.cmsMatchingMatrix = matrix;
@@ -458,11 +458,11 @@ export async function saveMatrixToRfp(rfpId: string, matrix: RequirementMatrix):
         quickScanResults: JSON.stringify(currentResults),
         updatedAt: new Date(),
       })
-      .where(eq(preQualifications.id, rfpId));
+      .where(eq(preQualifications.id, preQualificationId));
 
-    console.log(`[Matrix] Saved matrix to RFP ${rfpId}`);
+    console.log(`[Matrix] Saved matrix to Pre-Qualification ${preQualificationId}`);
   } catch (error) {
-    console.error('[Matrix] Error saving to RFP:', error);
+    console.error('[Matrix] Error saving to Pre-Qualification:', error);
     throw error;
   }
 }

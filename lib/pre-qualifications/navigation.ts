@@ -93,7 +93,9 @@ export function isNavigationItemEnabled(
   return dataAvailability[item.requiredField] === true;
 }
 
-export function getRfpNavigationSections(rfpId: string): NavigationSection[] {
+export function getPreQualificationNavigationSections(
+  preQualificationId: string
+): NavigationSection[] {
   return [
     {
       label: 'Overview',
@@ -101,7 +103,7 @@ export function getRfpNavigationSections(rfpId: string): NavigationSection[] {
         {
           title: 'Übersicht',
           icon: LayoutDashboard,
-          url: `/pre-qualifications/${rfpId}`,
+          url: `/pre-qualifications/${preQualificationId}`,
           alwaysEnabled: true, // Overview is always accessible
         },
       ],
@@ -112,24 +114,24 @@ export function getRfpNavigationSections(rfpId: string): NavigationSection[] {
         {
           title: 'Timing',
           icon: Clock,
-          url: `/pre-qualifications/${rfpId}/timing`,
+          url: `/pre-qualifications/${preQualificationId}/timing`,
         },
         {
           title: 'Deliverables',
           icon: FileText,
-          url: `/pre-qualifications/${rfpId}/deliverables`,
+          url: `/pre-qualifications/${preQualificationId}/deliverables`,
         },
         {
           title: 'Referenzen',
           icon: Trophy,
-          url: `/pre-qualifications/${rfpId}/references`,
-          alwaysEnabled: true, // References may come from RFP extraction, not quickScan
+          url: `/pre-qualifications/${preQualificationId}/references`,
+          alwaysEnabled: true, // References may come from Pre-Qualification extraction, not quickScan
         },
         {
           title: 'Legal',
           icon: Scale,
-          url: `/pre-qualifications/${rfpId}/legal`,
-          alwaysEnabled: true, // Legal may come from RFP extraction, not quickScan
+          url: `/pre-qualifications/${preQualificationId}/legal`,
+          alwaysEnabled: true, // Legal may come from Pre-Qualification extraction, not quickScan
         },
       ],
     },
@@ -139,17 +141,17 @@ export function getRfpNavigationSections(rfpId: string): NavigationSection[] {
         {
           title: 'Tech Stack',
           icon: Code,
-          url: `/pre-qualifications/${rfpId}/tech`,
+          url: `/pre-qualifications/${preQualificationId}/tech`,
         },
         {
           title: 'Facts',
           icon: Info,
-          url: `/pre-qualifications/${rfpId}/facts`,
+          url: `/pre-qualifications/${preQualificationId}/facts`,
         },
         {
           title: 'Kontakte',
           icon: Users,
-          url: `/pre-qualifications/${rfpId}/contacts`,
+          url: `/pre-qualifications/${preQualificationId}/contacts`,
         },
       ],
     },
@@ -159,13 +161,13 @@ export function getRfpNavigationSections(rfpId: string): NavigationSection[] {
         {
           title: 'BL Routing',
           icon: GitBranch,
-          url: `/pre-qualifications/${rfpId}/routing`,
+          url: `/pre-qualifications/${preQualificationId}/routing`,
           alwaysEnabled: true, // Routing is ALWAYS accessible (manual routing)
         },
         {
           title: 'CMS Matrix',
           icon: Grid3X3,
-          url: `/pre-qualifications/${rfpId}/routing/cms-matrix`,
+          url: `/pre-qualifications/${preQualificationId}/routing/cms-matrix`,
           alwaysEnabled: true,
         },
       ],

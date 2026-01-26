@@ -5,6 +5,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { extractTextFromPdf } from './pdf-extractor';
 
 import { auth } from '@/lib/auth';
+import { addPreQualProcessingJob } from '@/lib/bullmq/queues';
 import { db } from '@/lib/db';
 import { preQualifications, documents } from '@/lib/db/schema';
 import type { PreQualification } from '@/lib/db/schema';
@@ -110,7 +111,7 @@ export async function uploadPdfBid(formData: FormData) {
 
   const file = formData.get('file') as File | null;
   const source = (formData.get('source') as 'reactive' | 'proactive') || 'reactive';
-  const stage = (formData.get('stage') as 'cold' | 'warm' | 'rfp') || 'rfp';
+  const stage = (formData.get('stage') as 'cold' | 'warm' | 'pre-qualification') || 'pre-qualification';
   const enableDSGVO = formData.get('enableDSGVO') === 'true';
   const accountId = formData.get('accountId') as string | null;
 
@@ -203,7 +204,7 @@ export async function uploadFreetextBid(data: {
   projectDescription: string;
   customerName: string;
   source?: 'reactive' | 'proactive';
-  stage?: 'cold' | 'warm' | 'rfp';
+  stage?: 'cold' | 'warm' | 'pre-qualification';
   accountId?: string;
 }) {
   const session = await auth();
@@ -258,7 +259,7 @@ export async function uploadFreetextBid(data: {
 export async function uploadEmailBid(data: {
   emailContent: string;
   source?: 'reactive' | 'proactive';
-  stage?: 'cold' | 'warm' | 'rfp';
+  stage?: 'cold' | 'warm' | 'pre-qualification';
   accountId?: string;
 }) {
   const session = await auth();
@@ -472,7 +473,7 @@ export async function uploadCombinedBid(formData: FormData) {
   const websiteUrls = (formData.getAll('websiteUrls') as string[]).filter(url => url.trim());
   const additionalText = (formData.get('additionalText') as string)?.trim() || '';
   const source = (formData.get('source') as 'reactive' | 'proactive') || 'reactive';
-  const stage = (formData.get('stage') as 'cold' | 'warm' | 'rfp') || 'rfp';
+  const stage = (formData.get('stage') as 'cold' | 'warm' | 'pre-qualification') || 'pre-qualification';
   const enableDSGVO = formData.get('enableDSGVO') === 'true';
   const accountId = formData.get('accountId') as string | null;
 
@@ -663,6 +664,233 @@ export async function uploadCombinedBid(formData: FormData) {
 }
 
 /**
+ * Create a pending PreQualification and queue background processing
+ *
+ * This is the new async-first upload method that:
+ * 1. Creates a minimal DB entry with status='processing' (< 500ms)
+ * 2. Queues a BullMQ job for background processing
+ * 3. Returns immediately so user can navigate to detail page
+ *
+ * The background worker handles:
+ * - PDF text extraction
+ * - DSGVO/PII cleaning
+ * - Duplicate checking
+ * - Quick scan (website analysis)
+ * - Timeline generation (for BID decisions)
+ */
+export async function createPendingPreQualification(formData: FormData) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  // Verify user exists in database (for FOREIGN KEY constraint)
+  const { users } = await import('@/lib/db/schema');
+  const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+
+  if (!user) {
+    return { success: false, error: 'Benutzer nicht gefunden. Bitte melden Sie sich erneut an.' };
+  }
+
+  // Get form data
+  const files = formData.getAll('files') as File[];
+  const websiteUrls = (formData.getAll('websiteUrls') as string[]).filter(url => url.trim());
+  const additionalText = (formData.get('additionalText') as string)?.trim() || '';
+  const enableDSGVO = formData.get('enableDSGVO') === 'true';
+  const accountId = formData.get('accountId') as string | null;
+
+  // At least one input is required
+  if (files.length === 0 && websiteUrls.length === 0 && !additionalText) {
+    return {
+      success: false,
+      error: 'Mindestens eine Eingabe (PDF, URL oder Text) ist erforderlich',
+    };
+  }
+
+  // Validate accountId if provided
+  let validAccountId: string | undefined = undefined;
+  if (accountId && accountId.trim() !== '' && accountId !== 'null' && accountId !== 'none') {
+    const { accounts } = await import('@/lib/db/schema');
+    const [account] = await db.select().from(accounts).where(eq(accounts.id, accountId)).limit(1);
+    if (!account) {
+      return { success: false, error: 'Ausgewählter Account existiert nicht' };
+    }
+    validAccountId = accountId;
+  }
+
+  try {
+    const maxSize = 10 * 1024 * 1024; // 10 MB per file
+
+    // Validate all files first
+    for (const file of files) {
+      if (file.type !== 'application/pdf') {
+        return { success: false, error: `${file.name}: Nur PDF-Dateien sind erlaubt` };
+      }
+      if (file.size > maxSize) {
+        return { success: false, error: `${file.name}: Datei ist zu groß (max. 10 MB)` };
+      }
+    }
+
+    // Convert files to base64 for BullMQ (must be serializable)
+    const filesBase64: Array<{ name: string; base64: string; size: number }> = [];
+    for (const file of files) {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      filesBase64.push({
+        name: file.name,
+        base64: buffer.toString('base64'),
+        size: file.size,
+      });
+    }
+
+    // Determine input type
+    const hasFiles = files.length > 0;
+    const hasUrls = websiteUrls.length > 0;
+    const hasText = additionalText.length > 0;
+    const sourceCount = [hasFiles, hasUrls, hasText].filter(Boolean).length;
+
+    let inputType: 'pdf' | 'freetext' | 'combined' = 'freetext';
+    if (sourceCount > 1 || files.length > 1 || websiteUrls.length > 1) {
+      inputType = 'combined';
+    } else if (hasFiles) {
+      inputType = 'pdf';
+    }
+
+    // Build minimal raw input for initial storage
+    // The full processing happens in the worker
+    const rawInputParts: string[] = [];
+    if (hasUrls) {
+      rawInputParts.push(`Website-URLs: ${websiteUrls.join(', ')}`);
+    }
+    if (hasText) {
+      rawInputParts.push(`Zusätzlicher Text: ${additionalText.substring(0, 200)}...`);
+    }
+    if (hasFiles) {
+      rawInputParts.push(`PDFs: ${files.map(f => f.name).join(', ')}`);
+    }
+    const rawInput = rawInputParts.join('\n') || 'Verarbeitung läuft...';
+
+    // Create PreQualification with status='processing' (synchronous, fast)
+    const [bidOpportunity] = await db
+      .insert(preQualifications)
+      .values({
+        userId: session.user.id,
+        accountId: validAccountId,
+        source: 'reactive',
+        stage: 'pre-qualification',
+        inputType,
+        rawInput,
+        status: 'processing', // New status for background processing
+        decision: 'pending',
+      })
+      .returning();
+
+    // Save PDF files to documents table (for later reference)
+    for (const fileData of filesBase64) {
+      await db.insert(documents).values({
+        preQualificationId: bidOpportunity.id,
+        userId: session.user.id,
+        fileName: fileData.name,
+        fileType: 'application/pdf',
+        fileSize: fileData.size,
+        fileData: fileData.base64,
+        uploadSource: 'initial_upload',
+      });
+    }
+
+    // Queue BullMQ job for background processing
+    await addPreQualProcessingJob({
+      preQualificationId: bidOpportunity.id,
+      userId: session.user.id,
+      files: filesBase64,
+      websiteUrls,
+      additionalText,
+      enableDSGVO,
+      accountId: validAccountId,
+    });
+
+    console.log(
+      `[createPendingPreQualification] Created prequal ${bidOpportunity.id}, queued for processing`
+    );
+
+    return {
+      success: true,
+      bidId: bidOpportunity.id,
+      status: 'processing',
+    };
+  } catch (error) {
+    console.error('createPendingPreQualification error:', error);
+    return { success: false, error: 'Fehler beim Erstellen der PreQualification' };
+  }
+}
+
+/**
+ * Trigger background processing for an existing bid (extraction + quick scan)
+ */
+export async function startPreQualProcessing(bidId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  const [bid] = await db
+    .select()
+    .from(preQualifications)
+    .where(and(eq(preQualifications.id, bidId), eq(preQualifications.userId, session.user.id)))
+    .limit(1);
+
+  if (!bid) {
+    return { success: false, error: 'Bid nicht gefunden' };
+  }
+
+  const processingStates = [
+    'processing',
+    'extracting',
+    'duplicate_checking',
+    'quick_scanning',
+  ];
+
+  if (processingStates.includes(bid.status)) {
+    return { success: false, error: 'Verarbeitung läuft bereits' };
+  }
+
+  const docs = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.preQualificationId, bidId));
+
+  const files = docs.map(doc => ({
+    name: doc.fileName,
+    base64: doc.fileData,
+    size: doc.fileSize,
+  }));
+
+  const websiteUrls = bid.websiteUrl ? [bid.websiteUrl] : [];
+  const additionalText = bid.rawInput && bid.rawInput !== 'Verarbeitung läuft...' ? bid.rawInput : '';
+
+  await db
+    .update(preQualifications)
+    .set({
+      status: 'processing',
+      updatedAt: new Date(),
+    })
+    .where(eq(preQualifications.id, bidId));
+
+  await addPreQualProcessingJob({
+    preQualificationId: bidId,
+    userId: session.user.id,
+    files,
+    websiteUrls,
+    additionalText,
+    enableDSGVO: false,
+  });
+
+  return { success: true };
+}
+
+/**
  * Suggest website URLs based on customer information
  * Uses AI to suggest likely URLs when none are found in the document
  */
@@ -703,7 +931,7 @@ export async function suggestWebsiteUrlsAction(data: {
 
 /**
  * Forward a bid to a business leader for review
- * Updates the RFP status and assigns the business unit
+ * Updates the Pre-Qualification status and assigns the business unit
  */
 export async function forwardToBusinessLeader(bidId: string, businessUnitId: string) {
   const session = await auth();
@@ -740,7 +968,7 @@ export async function forwardToBusinessLeader(bidId: string, businessUnitId: str
       return { success: false, error: 'Business Unit nicht gefunden' };
     }
 
-    // Update RFP with business unit assignment and status
+    // Update Pre-Qualification with business unit assignment and status
     await db
       .update(preQualifications)
       .set({
@@ -787,7 +1015,7 @@ export async function makeBitDecision(bidId: string, decision: 'bid' | 'no_bid',
       return { success: false, error: 'Keine Berechtigung' };
     }
 
-    // Update RFP with decision
+    // Update Pre-Qualification with decision
     await db
       .update(preQualifications)
       .set({

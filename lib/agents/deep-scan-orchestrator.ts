@@ -62,7 +62,7 @@ export interface DeepScanProgress {
  */
 export type SectionAgent = (
   leadId: string,
-  rfpId: string
+  preQualificationId: string
 ) => Promise<{
   content: unknown;
   confidence: number;
@@ -74,15 +74,15 @@ export type SectionAgent = (
  *
  * NOTE: Agents are stubs for now - will be implemented incrementally
  * Each agent should:
- * 1. Query RAG for existing RFP data
+ * 1. Query RAG for existing Pre-Qualification data
  * 2. Perform section-specific analysis
  * 3. Optionally trigger web research if confidence is low
  * 4. Return structured data for the section
  */
 const AGENT_REGISTRY: Record<string, SectionAgent> = {
-  overview: async (leadId, rfpId) => {
+  overview: async (leadId, preQualificationId) => {
     // DEA-140 Phase 2.1: Customer Research Agent
-    const result = await runCustomerResearchAgent(leadId, rfpId);
+    const result = await runCustomerResearchAgent(leadId, preQualificationId);
     return {
       content: {
         companyProfile: result.companyProfile,
@@ -92,14 +92,14 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
         summary: result.summary,
         recommendedApproach: result.recommendedApproach,
         leadId,
-        rfpId,
+        preQualificationId,
       },
       confidence: result.confidence,
       sources: result.dataSources,
     };
   },
 
-  technology: async (leadId, rfpId) => {
+  technology: async (leadId, preQualificationId) => {
     // TODO: Implement TechnologyAgent
     return Promise.resolve({
       content: { techStack: [], currentCMS: null, leadId, rfpId },
@@ -108,7 +108,7 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
     });
   },
 
-  'website-analysis': async (leadId, rfpId) => {
+  'website-analysis': async (leadId, preQualificationId) => {
     // Fetch lead data to get website URL
     const leadData = await db
       .select()
@@ -121,7 +121,7 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
         content: {
           error: 'No website URL available for analysis',
           leadId,
-          rfpId,
+          preQualificationId,
         },
         confidence: 0,
         sources: [],
@@ -133,7 +133,7 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
     // Run component library analysis
     const componentAnalysis = await analyzeComponents({
       leadId,
-      rfpId,
+      preQualificationId,
       websiteUrl,
       maxDepth: 2,
       maxPages: 10,
@@ -148,14 +148,14 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
         totalComponents: componentAnalysis.totalComponents,
         pagesAnalyzed: componentAnalysis.pagesAnalyzed,
         leadId,
-        rfpId,
+        preQualificationId,
       },
       confidence: componentAnalysis.confidence,
       sources: componentAnalysis.sources,
     };
   },
 
-  'cms-architecture': async (leadId, rfpId) => {
+  'cms-architecture': async (leadId, preQualificationId) => {
     // TODO: Implement CMSArchitectureAgent
     return Promise.resolve({
       content: { contentTypes: [], architecture: null, leadId, rfpId },
@@ -164,7 +164,7 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
     });
   },
 
-  'cms-comparison': async (leadId, rfpId) => {
+  'cms-comparison': async (leadId, preQualificationId) => {
     // TODO: Implement CMSComparisonAgent
     return Promise.resolve({
       content: { options: [], recommendation: null, leadId, rfpId },
@@ -173,9 +173,9 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
     });
   },
 
-  hosting: async (leadId, rfpId) => {
+  hosting: async (leadId, preQualificationId) => {
     // Phase 2.4: Hosting Agent with Azure recommendations
-    const result = await runHostingAgent(leadId, rfpId);
+    const result = await runHostingAgent(leadId, preQualificationId);
     return {
       content: {
         currentInfrastructure: result.currentInfrastructure,
@@ -184,16 +184,16 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
         requirements: result.requirements,
         migrationRisk: result.migrationRisk,
         leadId,
-        rfpId,
+        preQualificationId,
       },
       confidence: result.confidence,
       sources: [],
     };
   },
 
-  integrations: async (leadId, rfpId) => {
+  integrations: async (leadId, preQualificationId) => {
     // Phase 2.5: Integrations Agent with system landscape
-    const result = await runIntegrationsAgent(leadId, rfpId);
+    const result = await runIntegrationsAgent(leadId, preQualificationId);
     return {
       content: {
         integrations: result.integrations,
@@ -202,14 +202,14 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
         integrationRisks: result.integrationRisks,
         recommendations: result.recommendations,
         leadId,
-        rfpId,
+        preQualificationId,
       },
       confidence: result.confidence,
       sources: [],
     };
   },
 
-  migration: async (leadId, rfpId) => {
+  migration: async (leadId, preQualificationId) => {
     // TODO: Implement MigrationAgent
     return Promise.resolve({
       content: { strategy: null, risks: [], mitigation: [], leadId, rfpId },
@@ -218,7 +218,7 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
     });
   },
 
-  staffing: async (leadId, rfpId) => {
+  staffing: async (leadId, preQualificationId) => {
     // TODO: Implement StaffingAgent
     return Promise.resolve({
       content: { timeline: null, resources: [], leadId, rfpId },
@@ -227,9 +227,9 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
     });
   },
 
-  references: async (leadId, rfpId) => {
+  references: async (leadId, preQualificationId) => {
     // DEA-150: References Agent with 2-factor scoring
-    const result = await runReferencesAgent(leadId, rfpId);
+    const result = await runReferencesAgent(leadId, preQualificationId);
     return {
       content: {
         recommendations: result.recommendations,
@@ -239,16 +239,16 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
         topMatchesCount: result.topMatchesCount,
         avgMatchScore: result.avgMatchScore,
         leadId,
-        rfpId,
+        preQualificationId,
       },
       confidence: result.avgMatchScore,
       sources: [],
     };
   },
 
-  legal: async (leadId, rfpId) => {
+  legal: async (leadId, preQualificationId) => {
     // DEA-149: Legal Check Agent with industry-specific compliance
-    const result = await runLegalCheckAgent(leadId, rfpId);
+    const result = await runLegalCheckAgent(leadId, preQualificationId);
     return {
       content: {
         gdprCompliance: result.gdprCompliance,
@@ -259,16 +259,16 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
         criticalIssues: result.criticalIssues,
         recommendations: result.recommendations,
         leadId,
-        rfpId,
+        preQualificationId,
       },
       confidence: result.complianceScore,
       sources: [],
     };
   },
 
-  costs: async (leadId, rfpId) => {
+  costs: async (leadId, preQualificationId) => {
     // Phase 2.3: Costs Agent with PT Calculator integration
-    const result = await runCostsAgent(leadId, rfpId);
+    const result = await runCostsAgent(leadId, preQualificationId);
     return {
       content: {
         totalHours: result.totalHours,
@@ -280,16 +280,16 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
         roi: result.roi,
         assumptions: result.assumptions,
         leadId,
-        rfpId,
+        preQualificationId,
       },
       confidence: result.confidence,
       sources: [],
     };
   },
 
-  decision: async (leadId, rfpId) => {
+  decision: async (leadId, preQualificationId) => {
     // DEA-152 Phase 2.2: Decision Agent with BID/NO-BID aggregation
-    const result = await runDecisionAgent(leadId, rfpId);
+    const result = await runDecisionAgent(leadId, preQualificationId);
     return {
       content: {
         recommendation: result.recommendation,
@@ -298,7 +298,7 @@ const AGENT_REGISTRY: Record<string, SectionAgent> = {
         categories: result.categories,
         reasoning: result.reasoning,
         leadId,
-        rfpId,
+        preQualificationId,
       },
       confidence: result.confidenceScore,
       sources: [],
@@ -313,7 +313,7 @@ async function executeSectionAgent(
   sectionId: string,
   sectionLabel: string,
   leadId: string,
-  rfpId: string
+  preQualificationId: string
 ): Promise<AgentResult> {
   const startTime = Date.now();
 
@@ -324,7 +324,7 @@ async function executeSectionAgent(
     }
 
     // Execute agent
-    const result = await agent(leadId, rfpId);
+    const result = await agent(leadId, preQualificationId);
 
     // Store result in qualificationSectionData for caching
     await db.insert(qualificationSectionData).values({
@@ -355,7 +355,7 @@ async function executeSectionAgent(
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
       await db.insert(dealEmbeddings).values({
-        preQualificationId: rfpId,
+        preQualificationId: preQualificationId,
         agentName: `deep-scan-${sectionId}`,
         chunkType: 'analysis',
         chunkIndex: 0,
@@ -405,7 +405,7 @@ export async function runDeepScan(leadId: string): Promise<DeepScanProgress> {
   const startTime = new Date();
 
   try {
-    // 1. Get Lead and RFP ID
+    // 1. Get Lead and Pre-Qualification ID
     const leadData = await db.select().from(qualifications).where(eq(qualifications.id, leadId));
 
     if (leadData.length === 0) {
@@ -426,7 +426,7 @@ export async function runDeepScan(leadId: string): Promise<DeepScanProgress> {
 
     // 3. Execute all agents in parallel
     const agentPromises = QUALIFICATION_NAVIGATION_SECTIONS.map(section =>
-      executeSectionAgent(section.id, section.label, leadId, rfpId)
+      executeSectionAgent(section.id, section.label, leadId, preQualificationId)
     );
 
     const results = await Promise.allSettled(agentPromises);

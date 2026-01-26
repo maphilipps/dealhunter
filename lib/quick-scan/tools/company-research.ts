@@ -2,16 +2,17 @@ import OpenAI from 'openai';
 
 import { companyIntelligenceSchema, type CompanyIntelligence } from '../schema';
 
-import { getStockData, searchStockSymbol } from '@/lib/integrations/yahoo-finance';
-import { searchAndContents } from '@/lib/search/web-search';
+import { getStockData, searchStockSymbol } from '../../integrations/yahoo-finance';
+import { searchAndContents } from '../../search/web-search';
+import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '../../ai/config';
 
 // Security: Prompt Injection Protection
-import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
+import { wrapUserContent } from '../../security/prompt-sanitizer';
 
 // Initialize clients
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+  apiKey: AI_HUB_API_KEY,
+  baseURL: AI_HUB_BASE_URL,
 });
 
 interface ImprintData {

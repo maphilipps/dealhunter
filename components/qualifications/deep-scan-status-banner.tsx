@@ -88,7 +88,7 @@ export function DeepScanStatusBanner({
 
   // Don't render if idle (no scan ever started)
   if (status === 'idle') {
-    return <PendingBanner onStart={handleStart} isStarting={isStarting} compact={compact} />;
+    return <PendingBanner onStart={() => handleStart(false)} isStarting={isStarting} compact={compact} />;
   }
 
   // Handlers

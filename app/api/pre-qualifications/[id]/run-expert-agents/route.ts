@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { runExpertAgents } from '@/lib/agents/expert-agents/orchestrator';
 import { auth } from '@/lib/auth';
-import { getCachedRfp } from '@/lib/pre-qualifications/cached-queries';
+import { getCachedPreQualification } from '@/lib/pre-qualifications/cached-queries';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -13,13 +13,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
 
   // Verify ownership
-  const rfp = await getCachedRfp(id);
-  if (!rfp || rfp.userId !== session.user.id) {
+  const preQualification = await getCachedPreQualification(id);
+  if (!rfp || preQualification.userId !== session.user.id) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
   try {
-    const result = await runExpertAgents({ rfpId: id });
+    const result = await runExpertAgents({ preQualificationId: id });
     return NextResponse.json(result);
   } catch (error) {
     console.error('[Expert Agents API] Error:', error);

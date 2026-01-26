@@ -49,7 +49,7 @@ const sourceMap = {
 const stageMap = {
   cold: 'Cold',
   warm: 'Warm',
-  rfp: 'RFP',
+  preQualification: 'Pre-Qualification',
 };
 
 export default async function AccountDetailPage({ params }: Props) {

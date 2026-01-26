@@ -8,14 +8,15 @@ import {
 } from '../schema';
 
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
+import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
 
 // Security: Prompt Injection Protection
 import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+  apiKey: AI_HUB_API_KEY,
+  baseURL: AI_HUB_BASE_URL,
 });
 
 export interface LegalAgentInput {

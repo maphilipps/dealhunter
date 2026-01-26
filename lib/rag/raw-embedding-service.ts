@@ -17,9 +17,9 @@ import {
   EMBEDDING_MODEL,
   getEmbeddingClient,
   isEmbeddingEnabled,
-} from '@/lib/ai/embedding-config';
-import { db } from '@/lib/db';
-import { rawChunks } from '@/lib/db/schema';
+} from '../ai/embedding-config';
+import { db } from '../db';
+import { rawChunks } from '../db/schema';
 
 // Batch size for embedding API calls (OpenAI maximum is 2048 inputs)
 const EMBEDDING_BATCH_SIZE = 2048;
@@ -91,15 +91,8 @@ export async function embedRawText(
   error?: string;
   skipped?: boolean;
 }> {
-  // Check if embeddings are enabled
-  if (!isEmbeddingEnabled()) {
-    // Silent skip - no error logging, this is expected behavior
-    return {
-      success: true,
-      stats: getChunkStats([]),
-      skipped: true,
-    };
-  }
+  const embeddingsEnabled = isEmbeddingEnabled();
+  const zeroEmbedding = new Array(EMBEDDING_DIMENSIONS).fill(0);
 
   try {
     // 1. Delete existing raw chunks for this pre-qualification (idempotent re-run)
@@ -118,26 +111,19 @@ export async function embedRawText(
       };
     }
 
-    // 3. Generate embeddings
-    const chunksWithEmbeddings = await generateRawChunkEmbeddings(chunks);
-
-    if (!chunksWithEmbeddings) {
-      // Embeddings disabled mid-way (shouldn't happen, but handle gracefully)
-      return {
-        success: true,
-        stats: getChunkStats([]),
-        skipped: true,
-      };
+    let chunksWithEmbeddings: RawChunkWithEmbedding[] | null = null;
+    if (embeddingsEnabled) {
+      chunksWithEmbeddings = await generateRawChunkEmbeddings(chunks);
     }
 
-    // 4. Store in database
+    // 4. Store in database (fallback to zero vectors if embeddings disabled)
     await db.insert(rawChunks).values(
-      chunksWithEmbeddings.map(chunk => ({
+      chunks.map((chunk, idx) => ({
         preQualificationId,
         chunkIndex: chunk.chunkIndex,
         content: chunk.content,
         tokenCount: chunk.tokenCount,
-        embedding: chunk.embedding,
+        embedding: chunksWithEmbeddings?.[idx]?.embedding ?? zeroEmbedding,
         metadata: JSON.stringify(chunk.metadata),
       }))
     );
@@ -150,6 +136,7 @@ export async function embedRawText(
     return {
       success: true,
       stats,
+      skipped: !embeddingsEnabled,
     };
   } catch (error) {
     console.error(

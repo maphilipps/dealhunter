@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { QualificationsEmptyStateClient } from '@/components/qualifications/qualifications-empty-state-client';
+import { DeleteQualificationButton } from '@/components/qualifications/delete-qualification-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +39,7 @@ export default async function QualificationsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Qualifications</h1>
         <p className="text-muted-foreground">
-          Qualifications aus dem RFP-Qualifizierungsprozess für Ihre Business Unit
+          Qualifications aus dem Pre-Qualification-Qualifizierungsprozess für Ihre Business Unit
         </p>
       </div>
 
@@ -130,11 +131,18 @@ export default async function QualificationsPage() {
                           : '-'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/qualifications/${lead.id}`}>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
+                      <div className="flex justify-end gap-2">
+                        <Link href={`/qualifications/${lead.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <DeleteQualificationButton
+                          leadId={lead.id}
+                          label={lead.customerName}
+                          size="sm"
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import { auth } from '@/lib/auth';
 import type { CMSMatchingResult } from '@/lib/cms-matching/schema';
-import { getCachedRfpWithRelations } from '@/lib/pre-qualifications/cached-queries';
+import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
 
 function getPriorityBadgeVariant(priority: string): 'default' | 'secondary' | 'outline' {
   switch (priority) {
@@ -55,13 +55,13 @@ export default async function CMSMatrixPage({ params }: { params: Promise<{ id: 
     redirect('/login');
   }
 
-  const { rfp, quickScan } = await getCachedRfpWithRelations(id);
+  const { preQualification, quickScan } = await getCachedPreQualificationWithRelations(id);
 
-  if (!rfp) {
+  if (!preQualification) {
     notFound();
   }
 
-  if (rfp.userId !== session.user.id) {
+  if (preQualification.userId !== session.user.id) {
     notFound();
   }
 

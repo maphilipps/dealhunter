@@ -11,7 +11,7 @@ type BackgroundJobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'can
 /**
  * GET /api/jobs - List background jobs for current user
  * Query params:
- * - rfpId: Filter by RFP ID
+ * - preQualificationId: Filter by Pre-Qualification ID
  * - jobType: Filter by job type (deep-analysis, team-notification, cleanup)
  * - status: Filter by status (pending, running, completed, failed, cancelled)
  * - limit: Max results (default 50)
@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
     // Build query conditions
     const conditions = [eq(backgroundJobs.userId, session.user.id)];
 
-    if (rfpId) {
-      conditions.push(eq(backgroundJobs.preQualificationId, rfpId));
+    if (preQualificationId) {
+      conditions.push(eq(backgroundJobs.preQualificationId, preQualificationId));
     }
 
     if (jobType) {
@@ -44,11 +44,11 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(backgroundJobs.status, status));
     }
 
-    // Fetch jobs with RFP details
+    // Fetch jobs with Pre-Qualification details
     const jobs = await db
       .select({
         job: backgroundJobs,
-        rfp: preQualifications,
+        preQualification: preQualifications,
       })
       .from(backgroundJobs)
       .leftJoin(preQualifications, eq(backgroundJobs.preQualificationId, preQualifications.id))
@@ -59,11 +59,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       jobs: jobs.map(({ job, rfp }) => ({
         ...job,
-        rfp: rfp
+        preQualification: rfp
           ? {
-              id: rfp.id,
-              status: rfp.status,
-              websiteUrl: rfp.websiteUrl,
+              id: preQualification.id,
+              status: preQualification.status,
+              websiteUrl: preQualification.websiteUrl,
             }
           : null,
       })),

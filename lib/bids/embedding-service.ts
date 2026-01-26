@@ -1,20 +1,21 @@
-import { openai } from '@/lib/ai/config';
+import {
+  EMBEDDING_MODEL,
+  EMBEDDING_DIMENSIONS,
+  getEmbeddingClient,
+} from '@/lib/ai/embedding-config';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 /**
  * Embedding Service for Duplicate Detection
  *
- * Uses text-embedding-3-large (3072 dimensions) via adesso AI Hub
+ * Uses text-embedding-3-large (3072 dimensions) via direct OpenAI
  */
 
-const EMBEDDING_MODEL = 'text-embedding-3-large';
-const EMBEDDING_DIMENSIONS = 3072;
-
 /**
- * Generate an embedding vector for RFP duplicate detection
+ * Generate an embedding vector for Pre-Qualification duplicate detection
  *
  * Combines customerName, projectTitle, and projectDescription into a single text
- * that represents the semantic essence of the RFP.
+ * that represents the semantic essence of the Pre-Qualification.
  */
 export async function generateRfpEmbedding(requirements: ExtractedRequirements): Promise<number[]> {
   // Construct text for embedding
@@ -43,8 +44,13 @@ export async function generateRfpEmbedding(requirements: ExtractedRequirements):
     throw new Error('No text available for embedding generation');
   }
 
-  // Generate embedding via OpenAI API (adesso AI Hub)
-  const response = await openai.embeddings.create({
+  const client = getEmbeddingClient();
+  if (!client) {
+    throw new Error('OPENAI_EMBEDDING_API_KEY not configured');
+  }
+
+  // Generate embedding via direct OpenAI API
+  const response = await client.embeddings.create({
     model: EMBEDDING_MODEL,
     input: combinedText,
     dimensions: EMBEDDING_DIMENSIONS,

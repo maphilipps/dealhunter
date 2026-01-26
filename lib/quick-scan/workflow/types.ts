@@ -31,6 +31,62 @@ export interface ToolConfig {
 // WORKFLOW CONTEXT
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Finding input for RAG storage
+ */
+export interface FindingInput {
+  category: 'fact' | 'elaboration' | 'recommendation' | 'risk' | 'estimate';
+  chunkType: string;
+  content: string;
+  confidence: number;
+  requiresValidation?: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Visualization input for RAG storage
+ */
+export interface VisualizationInput {
+  sectionId: string;
+  visualization: {
+    root: string | null;
+    elements: Record<
+      string,
+      {
+        key: string;
+        type: string;
+        props: Record<string, unknown>;
+        children?: string[];
+      }
+    >;
+  };
+  confidence: number;
+}
+
+/**
+ * RAG Write Tools for agent-native output
+ * Allows steps to store findings and visualizations directly in the knowledge base
+ * Uses callable functions instead of AI SDK tools for direct invocation
+ */
+export interface RagWriteTools {
+  /** Store a single finding in the knowledge base */
+  storeFinding: (input: FindingInput) => Promise<{ success: boolean; message: string }>;
+  /** Store a visualization (JsonRenderTree) for UI display */
+  storeVisualization: (
+    input: VisualizationInput
+  ) => Promise<{ success: boolean; message: string; sectionId?: string }>;
+  /** Batch store multiple findings at once */
+  storeFindingsBatch: (
+    findings: FindingInput[]
+  ) => Promise<{ success: boolean; message: string; storedCount: number }>;
+  /** The AI SDK tools for LLM use (optional) */
+  aiTools?: {
+    storeFinding: ReturnType<typeof import('@/lib/agent-tools').createRagWriteTool>;
+    storeVisualization: ReturnType<typeof import('@/lib/agent-tools').createVisualizationWriteTool>;
+    storeFindingsBatch: ReturnType<typeof import('@/lib/agent-tools').createBatchRagWriteTool>;
+  };
+}
+
 export interface WorkflowContext {
   /** Original input to the workflow */
   input: QuickScanInput;
@@ -44,6 +100,8 @@ export interface WorkflowContext {
   contextSection?: string;
   /** Validated URL (after redirects) */
   fullUrl: string;
+  /** RAG Write Tools for agent-native output (optional - only if preQualificationId provided) */
+  ragTools?: RagWriteTools;
 }
 
 export interface StepResult<T = unknown> {
@@ -107,6 +165,8 @@ export interface WorkflowEngineOptions {
   emit: EventEmitter;
   /** Optional user context for AI prompts */
   contextSection?: string;
+  /** Pre-Qualification ID for RAG write tools (enables agent-native output) */
+  preQualificationId?: string;
 }
 
 export interface WorkflowExecutionResult {

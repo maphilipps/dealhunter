@@ -16,16 +16,16 @@ import { DuplicateWarning } from './duplicate-warning';
 import { ExtractionPreview } from './extraction-preview';
 import { LowConfidenceDialog } from './low-confidence-dialog';
 import { NotificationCard } from './notification-card';
+import { ProcessingProgressCard } from './processing-progress-card';
 import { ProjectPlanningCard } from './project-planning-card';
 import { QuickScanResults } from './quick-scan-results';
 import { TeamBuilder } from './team-builder';
 import { TenQuestionsCard } from './ten-questions-card';
 import { WebsiteUrlInput } from './website-url-input';
 
-import { ActivityStream } from '@/components/ai-elements/activity-stream';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { updateExtractedRequirements } from '@/lib/bids/actions';
+import { startPreQualProcessing, updateExtractedRequirements } from '@/lib/bids/actions';
 import type { DuplicateCheckResult } from '@/lib/bids/duplicate-check';
 import {
   calculateAnsweredQuestionsCount,
@@ -45,7 +45,9 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   const router = useRouter();
   const pathname = usePathname();
   const isOverviewPage = pathname === `/pre-qualifications/${bid.id}`;
-  const [isExtracting, setIsExtracting] = useState(bid.status === 'extracting');
+  const [isExtracting, setIsExtracting] = useState(
+    ['processing', 'extracting', 'duplicate_checking', 'quick_scanning'].includes(bid.status)
+  );
   const [extractedData, setExtractedData] = useState<ExtractedRequirements | null>(
     bid.extractedRequirements
       ? (JSON.parse(bid.extractedRequirements) as ExtractedRequirements)
@@ -69,17 +71,35 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   const hasAutoStartedQuickScanRef = useRef(false);
   const [autoStartState, setAutoStartState] = useState<'idle' | 'starting' | 'polling'>('idle');
 
+  useEffect(() => {
+    const processingStates = [
+      'processing',
+      'extracting',
+      'duplicate_checking',
+      'quick_scanning',
+    ];
+    setIsExtracting(processingStates.includes(bid.status));
+  }, [bid.status]);
+
   const handleRefresh = () => {
     void router.refresh();
     setRefreshKey(prev => prev + 1);
   };
 
-  // Handle extraction start - now uses streaming
+  // Handle extraction start - background processing only
   const handleStartExtraction = () => {
     setIsExtracting(true);
-    toast.info('Starte AI-Extraktion...');
-    // The actual extraction happens via ActivityStream SSE endpoint
-    // When stream completes, onComplete callback refreshes the page
+    toast.info('Starte Verarbeitung im Hintergrund...');
+
+    void (async () => {
+      const result = await startPreQualProcessing(bid.id);
+      if (result.success) {
+        void router.refresh();
+      } else {
+        setIsExtracting(false);
+        toast.error(result.error || 'Verarbeitung konnte nicht gestartet werden');
+      }
+    })();
   };
 
   // Handle requirements confirmation
@@ -374,6 +394,21 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     }
   }, [bid.status, bid.id, quickScan, extractedData, router]);
 
+  // Processing state - Show progress card while background processing runs
+  if (
+    isExtracting ||
+    bid.status === 'processing' ||
+    bid.status === 'extracting' ||
+    bid.status === 'duplicate_checking' ||
+    bid.status === 'quick_scanning'
+  ) {
+    return (
+      <div className="space-y-6 max-w-full">
+        <ProcessingProgressCard bidId={bid.id} />
+      </div>
+    );
+  }
+
   // Draft state - Show start extraction button
   if (bid.status === 'draft' && !isExtracting) {
     return (
@@ -390,30 +425,6 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             </Button>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  // Extracting state - Show ActivityStream with real-time progress
-  if (isExtracting || bid.status === 'extracting') {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 max-w-full overflow-hidden">
-        <div className="space-y-6 min-w-0">
-          <ActivityStream
-            streamUrl={`/api/pre-qualifications/${bid.id}/extraction/stream`}
-            title="AI-Extraktion"
-            onComplete={() => {
-              toast.success('Extraktion abgeschlossen!');
-              setIsExtracting(false);
-              void router.refresh();
-            }}
-            onError={error => {
-              toast.error(error || 'Extraktion fehlgeschlagen');
-              setIsExtracting(false);
-            }}
-            autoStart={true}
-          />
-        </div>
       </div>
     );
   }

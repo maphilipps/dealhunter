@@ -1,11 +1,33 @@
 'use server';
 
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { preQualifications, quickScans } from '@/lib/db/schema';
+import {
+  backgroundJobs,
+  baselineComparisons,
+  cmsMatchResults,
+  competitorMatches,
+  dealEmbeddings,
+  deepMigrationAnalyses,
+  documents,
+  pitchdeckDeliverables,
+  pitchdeckTeamMembers,
+  pitchdecks,
+  preQualifications,
+  ptEstimations,
+  qualificationSectionData,
+  qualifications,
+  quickScans,
+  rawChunks,
+  referenceMatches,
+  subjectiveAssessments,
+  teamAssignments,
+  websiteAudits,
+  users,
+} from '@/lib/db/schema';
 
 interface ReloadTimelineResult {
   success: boolean;
@@ -13,12 +35,12 @@ interface ReloadTimelineResult {
 }
 
 /**
- * Reload Timeline Data for RFP
+ * Reload Timeline Data for Pre-Qualification
  *
- * Re-runs the timeline extraction for a specific RFP.
+ * Re-runs the timeline extraction for a specific Pre-Qualification.
  * This is a placeholder that will trigger a re-extraction of timeline data.
  */
-export async function reloadTimeline(rfpId: string): Promise<ReloadTimelineResult> {
+export async function reloadTimeline(preQualificationId: string): Promise<ReloadTimelineResult> {
   try {
     const session = await auth();
 
@@ -26,22 +48,22 @@ export async function reloadTimeline(rfpId: string): Promise<ReloadTimelineResul
       return { success: false, error: 'Nicht authentifiziert' };
     }
 
-    // Get RFP and verify ownership
-    const [rfp] = await db
+    // Get Pre-Qualification and verify ownership
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .limit(1);
 
-    if (!rfp) {
-      return { success: false, error: 'RFP nicht gefunden' };
+    if (!preQualification) {
+      return { success: false, error: 'Pre-Qualification nicht gefunden' };
     }
 
-    if (rfp.userId !== session.user.id) {
+    if (preQualification.userId !== session.user.id) {
       return { success: false, error: 'Keine Berechtigung' };
     }
 
-    if (!rfp.quickScanId) {
+    if (!preQualification.quickScanId) {
       return { success: false, error: 'Kein Quick Scan vorhanden' };
     }
 
@@ -50,7 +72,7 @@ export async function reloadTimeline(rfpId: string): Promise<ReloadTimelineResul
     const [quickScan] = await db
       .select()
       .from(quickScans)
-      .where(eq(quickScans.id, rfp.quickScanId))
+      .where(eq(quickScans.id, preQualification.quickScanId))
       .limit(1);
 
     if (!quickScan) {
@@ -101,12 +123,12 @@ export async function reloadTimeline(rfpId: string): Promise<ReloadTimelineResul
           timeline: JSON.stringify(placeholderTimeline),
           timelineGeneratedAt: new Date(),
         })
-        .where(eq(quickScans.id, rfp.quickScanId));
+        .where(eq(quickScans.id, preQualification.quickScanId));
     }
 
     // Revalidate the routing page
-    revalidatePath(`/pre-qualifications/${rfpId}/routing`);
-    revalidatePath(`/pre-qualifications/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${preQualificationId}/routing`);
+    revalidatePath(`/pre-qualifications/${preQualificationId}`);
 
     return { success: true };
   } catch (error) {
@@ -114,6 +136,128 @@ export async function reloadTimeline(rfpId: string): Promise<ReloadTimelineResul
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
+    };
+  }
+}
+
+export async function deletePreQualificationHard(preQualificationId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    const [preQualification] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, preQualificationId))
+      .limit(1);
+
+    if (!preQualification) {
+      return { success: false, error: 'Pre-Qualification nicht gefunden' };
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+
+    if (!user) {
+      return { success: false, error: 'Benutzer nicht gefunden' };
+    }
+
+    const isAdmin = session.user.role === 'admin';
+    const isOwner = preQualification.userId === session.user.id;
+
+    if (!isAdmin && !isOwner) {
+      return { success: false, error: 'Keine Berechtigung' };
+    }
+
+    await db.transaction(async tx => {
+      await tx
+        .update(preQualifications)
+        .set({ quickScanId: null, deepMigrationAnalysisId: null })
+        .where(eq(preQualifications.id, preQualificationId));
+
+      const qualificationRows = await tx
+        .select({ id: qualifications.id })
+        .from(qualifications)
+        .where(eq(qualifications.preQualificationId, preQualificationId));
+
+      const qualificationIds = qualificationRows.map(row => row.id);
+
+      if (qualificationIds.length > 0) {
+        const pitchdeckRows = await tx
+          .select({ id: pitchdecks.id })
+          .from(pitchdecks)
+          .where(inArray(pitchdecks.qualificationId, qualificationIds));
+
+        const pitchdeckIds = pitchdeckRows.map(row => row.id);
+
+        if (pitchdeckIds.length > 0) {
+          await tx
+            .delete(pitchdeckDeliverables)
+            .where(inArray(pitchdeckDeliverables.pitchdeckId, pitchdeckIds));
+          await tx
+            .delete(pitchdeckTeamMembers)
+            .where(inArray(pitchdeckTeamMembers.pitchdeckId, pitchdeckIds));
+          await tx.delete(pitchdecks).where(inArray(pitchdecks.id, pitchdeckIds));
+        }
+
+        await tx
+          .delete(qualificationSectionData)
+          .where(inArray(qualificationSectionData.qualificationId, qualificationIds));
+        await tx
+          .delete(websiteAudits)
+          .where(inArray(websiteAudits.qualificationId, qualificationIds));
+        await tx
+          .delete(cmsMatchResults)
+          .where(inArray(cmsMatchResults.qualificationId, qualificationIds));
+        await tx
+          .delete(baselineComparisons)
+          .where(inArray(baselineComparisons.qualificationId, qualificationIds));
+        await tx
+          .delete(ptEstimations)
+          .where(inArray(ptEstimations.qualificationId, qualificationIds));
+        await tx
+          .delete(referenceMatches)
+          .where(inArray(referenceMatches.qualificationId, qualificationIds));
+        await tx
+          .delete(competitorMatches)
+          .where(inArray(competitorMatches.qualificationId, qualificationIds));
+        await tx
+          .delete(dealEmbeddings)
+          .where(inArray(dealEmbeddings.qualificationId, qualificationIds));
+        await tx
+          .delete(backgroundJobs)
+          .where(inArray(backgroundJobs.qualificationId, qualificationIds));
+        await tx.delete(qualifications).where(inArray(qualifications.id, qualificationIds));
+      }
+
+      await tx.delete(documents).where(eq(documents.preQualificationId, preQualificationId));
+      await tx.delete(teamAssignments).where(eq(teamAssignments.preQualificationId, preQualificationId));
+      await tx
+        .delete(subjectiveAssessments)
+        .where(eq(subjectiveAssessments.preQualificationId, preQualificationId));
+      await tx.delete(backgroundJobs).where(eq(backgroundJobs.preQualificationId, preQualificationId));
+      await tx
+        .delete(dealEmbeddings)
+        .where(eq(dealEmbeddings.preQualificationId, preQualificationId));
+      await tx.delete(rawChunks).where(eq(rawChunks.preQualificationId, preQualificationId));
+      await tx.delete(quickScans).where(eq(quickScans.preQualificationId, preQualificationId));
+      await tx
+        .delete(deepMigrationAnalyses)
+        .where(eq(deepMigrationAnalyses.preQualificationId, preQualificationId));
+      await tx.delete(preQualifications).where(eq(preQualifications.id, preQualificationId));
+    });
+
+    revalidatePath('/pre-qualifications');
+    revalidatePath(`/pre-qualifications/${preQualificationId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting prequalification:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Fehler beim Löschen des Pre-Qualifications',
     };
   }
 }

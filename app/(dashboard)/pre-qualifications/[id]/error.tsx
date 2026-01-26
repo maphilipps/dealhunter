@@ -14,7 +14,7 @@ export default function RfpDetailError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('RFP detail error:', error);
+    console.error('Pre-Qualification detail error:', error);
   }, [error]);
 
   return (
@@ -27,7 +27,7 @@ export default function RfpDetailError({
             <AlertCircle className="h-5 w-5 text-red-600" />
             <CardTitle className="text-red-600">Ein Fehler ist aufgetreten</CardTitle>
           </div>
-          <CardDescription>{error.message || 'RFP konnte nicht geladen werden'}</CardDescription>
+          <CardDescription>{error.message || 'Pre-Qualification konnte nicht geladen werden'}</CardDescription>
         </CardHeader>
         <CardContent>
           <Button onClick={reset}>Erneut versuchen</Button>

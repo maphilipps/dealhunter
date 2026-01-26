@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
-import { getCachedRfp } from '@/lib/pre-qualifications/cached-queries';
+import { getCachedPreQualification } from '@/lib/pre-qualifications/cached-queries';
 import { parseJsonField } from '@/lib/utils/json';
 
 export default async function ReferencesPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,21 +17,21 @@ export default async function ReferencesPage({ params }: { params: Promise<{ id:
     redirect('/login');
   }
 
-  // Get RFP (cached - shares query with layout)
-  const rfp = await getCachedRfp(id);
+  // Get Pre-Qualification (cached - shares query with layout)
+  const preQualification = await getCachedPreQualification(id);
 
-  if (!rfp) {
+  if (!preQualification) {
     notFound();
   }
 
   // Check ownership
-  if (rfp.userId !== session.user.id) {
+  if (preQualification.userId !== session.user.id) {
     notFound();
   }
 
   // Parse extracted requirements
   const extractedReqs = parseJsonField<ExtractedRequirements | null>(
-    rfp.extractedRequirements,
+    preQualification.extractedRequirements,
     null
   );
 

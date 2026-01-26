@@ -28,7 +28,7 @@ interface SimilarityTesterProps {
   leadId?: string;
 }
 
-export function SimilarityTester({ rfpId, leadId }: SimilarityTesterProps) {
+export function SimilarityTester({ preQualificationId, leadId }: SimilarityTesterProps) {
   const [query, setQuery] = useState('');
   const [threshold, setThreshold] = useState(0.5);
   const [maxResults, setMaxResults] = useState(10);
@@ -46,7 +46,7 @@ export function SimilarityTester({ rfpId, leadId }: SimilarityTesterProps) {
 
     try {
       const searchResult = await searchSimilar({
-        rfpId,
+        preQualificationId,
         leadId,
         query: query.trim(),
         threshold,
@@ -65,7 +65,7 @@ export function SimilarityTester({ rfpId, leadId }: SimilarityTesterProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [rfpId, leadId, query, threshold, maxResults, includeRaw]);
+  }, [preQualificationId, leadId, query, threshold, maxResults, includeRaw]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !isLoading) {

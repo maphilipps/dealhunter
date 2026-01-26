@@ -82,7 +82,7 @@ describe('raw-retrieval-service', () => {
       const mockChunks = [
         {
           id: 'chunk-1',
-          rfpId: 'rfp-123',
+          preQualificationId: 'rfp-123',
           chunkIndex: 0,
           content: 'Budget: 100.000 EUR',
           tokenCount: 50,
@@ -92,7 +92,7 @@ describe('raw-retrieval-service', () => {
         },
         {
           id: 'chunk-2',
-          rfpId: 'rfp-123',
+          preQualificationId: 'rfp-123',
           chunkIndex: 1,
           content: 'Unrelated content',
           tokenCount: 50,
@@ -182,7 +182,7 @@ describe('raw-retrieval-service', () => {
         .fill(null)
         .map((_, i) => ({
           id: `chunk-${i}`,
-          rfpId: 'rfp-123',
+          preQualificationId: 'rfp-123',
           chunkIndex: i,
           content: `Content ${i}`,
           tokenCount: 50,
@@ -246,7 +246,7 @@ describe('raw-retrieval-service', () => {
       const mockChunks = [
         {
           id: 'chunk-1',
-          rfpId: 'rfp-123',
+          preQualificationId: 'rfp-123',
           chunkIndex: 0,
           content: 'Budget info',
           tokenCount: 50,

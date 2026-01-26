@@ -16,7 +16,7 @@ import { chunkRawText } from '@/lib/rag/raw-chunk-service';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 export interface WebResearchQuery {
-  rfpId: string;
+  preQualificationId: string;
   sectionId: string;
   question: string;
   maxResults?: number; // default: 3
@@ -45,9 +45,9 @@ const rateLimitMap = new Map<string, number[]>();
 /**
  * Check if rate limit allows another request
  */
-function checkRateLimit(rfpId: string): boolean {
+function checkRateLimit(preQualificationId: string): boolean {
   const now = Date.now();
-  const timestamps = rateLimitMap.get(rfpId) || [];
+  const timestamps = rateLimitMap.get(preQualificationId) || [];
 
   // Remove timestamps outside window
   const validTimestamps = timestamps.filter(ts => now - ts < RATE_LIMIT_WINDOW);
@@ -58,7 +58,7 @@ function checkRateLimit(rfpId: string): boolean {
 
   // Add current timestamp
   validTimestamps.push(now);
-  rateLimitMap.set(rfpId, validTimestamps);
+  rateLimitMap.set(preQualificationId, validTimestamps);
 
   return true;
 }
@@ -154,11 +154,11 @@ async function searchWithNative(query: string, maxResults: number): Promise<WebR
  * @returns Research response with results and stats
  */
 export async function performWebResearch(query: WebResearchQuery): Promise<WebResearchResponse> {
-  const { rfpId, sectionId, question, maxResults = 3 } = query;
+  const { preQualificationId, sectionId, question, maxResults = 3 } = query;
 
   // 1. Check rate limit
-  if (!checkRateLimit(rfpId)) {
-    console.warn(`[WEB-RESEARCH] Rate limit exceeded for RFP ${rfpId}`);
+  if (!checkRateLimit(preQualificationId)) {
+    console.warn(`[WEB-RESEARCH] Rate limit exceeded for Pre-Qualification ${preQualificationId}`);
     return {
       success: false,
       results: [],
@@ -225,7 +225,7 @@ export async function performWebResearch(query: WebResearchQuery): Promise<WebRe
     const existingChunks = await db
       .select({ chunkIndex: rawChunks.chunkIndex })
       .from(rawChunks)
-      .where(eq(rawChunks.preQualificationId, rfpId))
+      .where(eq(rawChunks.preQualificationId, preQualificationId))
       .orderBy(desc(rawChunks.chunkIndex))
       .limit(1);
 
@@ -233,7 +233,7 @@ export async function performWebResearch(query: WebResearchQuery): Promise<WebRe
 
     await db.insert(rawChunks).values(
       chunksWithEmbeddings.map((chunk, idx) => ({
-        preQualificationId: rfpId,
+        preQualificationId: preQualificationId,
         chunkIndex: startIndex + idx + 1,
         content: chunk.content,
         tokenCount: chunk.tokenCount,
@@ -271,8 +271,8 @@ export async function performWebResearch(query: WebResearchQuery): Promise<WebRe
 }
 
 /**
- * Clear rate limit for an RFP (useful for testing)
+ * Clear rate limit for an Pre-Qualification (useful for testing)
  */
-export function clearRateLimit(rfpId: string): void {
-  rateLimitMap.delete(rfpId);
+export function clearRateLimit(preQualificationId: string): void {
+  rateLimitMap.delete(preQualificationId);
 }

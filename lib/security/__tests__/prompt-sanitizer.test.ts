@@ -27,7 +27,7 @@ describe('prompt-sanitizer', () => {
 
   describe('wrapUserContent', () => {
     it('should wrap document content with correct delimiters', () => {
-      const content = 'User uploaded RFP text';
+      const content = 'User uploaded Pre-Qualification text';
       const wrapped = wrapUserContent(content, 'document');
 
       expect(wrapped).toContain(SAFE_DELIMITERS.DOCUMENT_START);
@@ -139,7 +139,7 @@ describe('prompt-sanitizer', () => {
     });
 
     it('should preserve safe content unchanged (after whitespace normalization)', () => {
-      const safeText = 'This is a normal RFP with requirements for a web application.';
+      const safeText = 'This is a normal Pre-Qualification with requirements for a web application.';
       const sanitized = sanitizeForPrompt(safeText);
 
       expect(sanitized).toBe(safeText);
@@ -223,7 +223,7 @@ describe('prompt-sanitizer', () => {
 
   describe('validateContentSafety', () => {
     it('should mark safe content as safe', () => {
-      const safeContent = 'This is a normal RFP document with standard requirements.';
+      const safeContent = 'This is a normal Pre-Qualification document with standard requirements.';
       const result = validateContentSafety(safeContent);
 
       expect(result.safe).toBe(true);

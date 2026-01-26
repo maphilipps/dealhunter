@@ -43,7 +43,7 @@ export async function GET() {
       {
         id: 'extraction',
         name: 'Extraction Agent',
-        description: 'Extrahiert strukturierte Daten aus RFP-Dokumenten (PDF, E-Mail, Text)',
+        description: 'Extrahiert strukturierte Daten aus Pre-Qualification-Dokumenten (PDF, E-Mail, Text)',
         status: 'active',
       },
       {
@@ -57,7 +57,7 @@ export async function GET() {
         id: 'bit-evaluation',
         name: 'Bit Evaluation Agent',
         description:
-          'Bewertet RFPs mit BIT/NO BIT Entscheidung basierend auf strategischen Kriterien',
+          'Bewertet Pre-Qualifications mit BIT/NO BIT Entscheidung basierend auf strategischen Kriterien',
         status: 'active',
       },
       {

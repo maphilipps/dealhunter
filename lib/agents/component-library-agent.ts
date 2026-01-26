@@ -57,7 +57,7 @@ export interface ComponentLibraryResult {
 
 export interface AnalyzeComponentsInput {
   leadId: string;
-  rfpId: string;
+  preQualificationId: string;
   websiteUrl: string;
   maxDepth?: number; // Default: 2
   maxPages?: number; // Default: 10
@@ -77,13 +77,13 @@ export interface AnalyzeComponentsInput {
  * 4. Extract component metadata (name, props, usage)
  * 5. Store results in RAG with agentName: 'component_library'
  *
- * @param input - Lead ID, RFP ID, and website URL
+ * @param input - Lead ID, Pre-Qualification ID, and website URL
  * @returns Component library analysis results
  */
 export async function analyzeComponents(
   input: AnalyzeComponentsInput
 ): Promise<ComponentLibraryResult> {
-  const { rfpId, websiteUrl, maxDepth = 2, maxPages = 10 } = input;
+  const { preQualificationId, websiteUrl, maxDepth = 2, maxPages = 10 } = input;
 
   console.error(`[Component Library Agent] Starting analysis for ${websiteUrl}`);
   console.error(`[Component Library Agent] Max depth: ${maxDepth}, Max pages: ${maxPages}`);
@@ -102,7 +102,7 @@ export async function analyzeComponents(
         error: 'No pages found during crawl',
         sources: [],
       };
-      await storeInRAG(rfpId, errorResult);
+      await storeInRAG(preQualificationId, errorResult);
       return errorResult;
     }
 
@@ -110,7 +110,7 @@ export async function analyzeComponents(
 
     // 2. Capture screenshots and analyze components
     const allComponents: Component[] = [];
-    const session = createSession(`component-lib-${rfpId}`);
+    const session = createSession(`component-lib-${preQualificationId}`);
 
     try {
       for (let i = 0; i < urls.length; i++) {
@@ -161,7 +161,7 @@ export async function analyzeComponents(
     };
 
     // 4. Store in RAG
-    await storeInRAG(rfpId, result);
+    await storeInRAG(preQualificationId, result);
 
     return result;
   } catch (error) {
@@ -177,7 +177,7 @@ export async function analyzeComponents(
       sources: [],
     };
 
-    await storeInRAG(rfpId, errorResult);
+    await storeInRAG(preQualificationId, errorResult);
     return errorResult;
   }
 }
@@ -418,7 +418,7 @@ Only include components that appear to be reusable patterns. Be specific about c
  * 1. Component metadata as structured JSON
  * 2. Embeddings for semantic retrieval
  */
-async function storeInRAG(rfpId: string, result: ComponentLibraryResult): Promise<void> {
+async function storeInRAG(preQualificationId: string, result: ComponentLibraryResult): Promise<void> {
   try {
     // Build searchable content with adesso Calculator fields
     const componentSummaries = result.components
@@ -491,7 +491,7 @@ ${result.sources.join(', ')}`;
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
       await db.insert(dealEmbeddings).values({
-        preQualificationId: rfpId,
+        preQualificationId: preQualificationId,
         agentName: 'component_library',
         chunkType: 'analysis',
         chunkIndex: 0,

@@ -6,6 +6,7 @@ import { cache } from 'react';
 
 import { AuditStatusBadge } from '@/components/qualifications/audit-status-badge';
 import { CustomerDeepDive } from '@/components/qualifications/customer-deep-dive';
+import { DeleteQualificationButton } from '@/components/qualifications/delete-qualification-button';
 import { DeepScanOverviewClient } from '@/components/qualifications/deep-scan-overview-client';
 import { ExecutiveSummaryCard } from '@/components/qualifications/executive-summary-card';
 import { LeadOverviewClient } from '@/components/qualifications/qualification-overview-client';
@@ -18,7 +19,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
   LEAD_PUBLIC_FIELDS,
-  RFP_PUBLIC_FIELDS,
+  Pre-Qualification_PUBLIC_FIELDS,
   BUSINESS_UNIT_PUBLIC_FIELDS,
   WEBSITE_AUDIT_PUBLIC_FIELDS,
   PT_ESTIMATION_PUBLIC_FIELDS,
@@ -49,12 +50,12 @@ const getLeadWithDetails = cache(async (id: string) => {
   }
 
   // Phase 2: Parallel fetch for all independent queries - select only needed fields
-  const [rfp, businessUnit, websiteAudit, cmsMatches, ptEstimation, refMatches] = await Promise.all(
+  const [preQualification, businessUnit, websiteAudit, cmsMatches, ptEstimation, refMatches] = await Promise.all(
     [
-      // Get related RFP (depends on lead.preQualificationId) - only public fields
+      // Get related Pre-Qualification (depends on lead.preQualificationId) - only public fields
       lead.preQualificationId
         ? db
-            .select(RFP_PUBLIC_FIELDS)
+            .select(Pre-Qualification_PUBLIC_FIELDS)
             .from(preQualifications)
             .where(eq(preQualifications.id, lead.preQualificationId))
             .limit(1)
@@ -113,7 +114,7 @@ const getLeadWithDetails = cache(async (id: string) => {
 
   return {
     lead,
-    rfp,
+    preQualification,
     businessUnit,
     websiteAudit,
     cmsMatches,
@@ -142,7 +143,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
     );
   }
 
-  const { lead, rfp, businessUnit, websiteAudit, cmsMatches, ptEstimation, refMatches } = data;
+  const { lead, preQualification, businessUnit, websiteAudit, cmsMatches, ptEstimation, refMatches } = data;
 
   return (
     <div className="space-y-6">
@@ -152,7 +153,10 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
           <h1 className="text-3xl font-bold tracking-tight">{lead.customerName}</h1>
           <p className="text-muted-foreground">Lead Overview & Deep Analysis Results</p>
         </div>
-        <AuditStatusBadge leadId={id} variant="badge" />
+        <div className="flex items-center gap-2">
+          <AuditStatusBadge leadId={id} variant="badge" />
+          <DeleteQualificationButton leadId={id} label={lead.customerName} />
+        </div>
       </div>
 
       {/* DeepScan Status Banner */}
@@ -506,7 +510,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
             </Button>
             {rfp && (
               <Button variant="outline" asChild>
-                <Link href={`/pre-qualifications/${rfp.id}`}>Ursprüngliches RFP</Link>
+                <Link href={`/pre-qualifications/${preQualification.id}`}>Ursprüngliches Pre-Qualification</Link>
               </Button>
             )}
           </div>

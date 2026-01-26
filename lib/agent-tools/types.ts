@@ -23,7 +23,7 @@ export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
   name: string;
   description: string;
   category:
-    | 'rfp'
+    | 'pre-qualification'
     | 'lead'
     | 'account'
     | 'reference'
@@ -37,15 +37,15 @@ export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
     | 'routing'
     | 'notification'
     | 'document'
-    | 'quickscan'
-    | 'quick_scan'
     | 'research'
     | 'staffing'
     | 'analysis'
     | 'pitchdeck'
     | 'audit'
     | 'workflow'
-    | 'decision';
+    | 'decision'
+    | 'scan'
+    | 'quickscan';
   inputSchema: z.ZodSchema<TInput>;
   execute: (input: TInput, context: ToolContext) => Promise<ToolResult<TOutput>>;
 }
@@ -76,7 +76,7 @@ export interface ToolRegistry {
  * Tool categories for capability discovery
  */
 export const TOOL_CATEGORIES = {
-  rfp: 'RFP/Bid Management',
+  'pre-qualification': 'Pre-Qualification/Bid Management',
   account: 'Account Management',
   reference: 'Reference Management',
   competency: 'Competency Management',
@@ -89,8 +89,6 @@ export const TOOL_CATEGORIES = {
   routing: 'BL Routing',
   notification: 'Notifications',
   document: 'Document Management',
-  quickscan: 'QuickScan Website Analysis',
-  quick_scan: 'QuickScan Website Analysis',
   research: 'Company & Contact Research',
   staffing: 'Team Staffing & Skill Matching',
   analysis: 'Analysis & Estimation',
@@ -98,4 +96,6 @@ export const TOOL_CATEGORIES = {
   audit: 'Website Audits',
   workflow: 'Workflow & Job Management',
   decision: 'Decision Aggregation',
+  scan: 'Scan Primitives',
+  quickscan: 'Quick Scan Tools',
 } as const;

@@ -1,12 +1,12 @@
 import { extractedRequirementsSchema, type ExtractedRequirements } from './schema';
 import { suggestWebsiteUrls } from './url-suggestion-agent';
 
-import { openai } from '@/lib/ai/config';
-import { embedAgentOutput } from '@/lib/rag/embedding-service';
-import { embedRawText } from '@/lib/rag/raw-embedding-service';
-import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
-import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import { AgentEventType } from '@/lib/streaming/event-types';
+import { openai } from '../ai/config';
+import { embedAgentOutput } from '../rag/embedding-service';
+import { embedRawText } from '../rag/raw-embedding-service';
+import { queryRawChunks, formatRAGContext } from '../rag/raw-retrieval-service';
+import type { EventEmitter } from '../streaming/event-emitter';
+import { AgentEventType } from '../streaming/event-types';
 
 // Prompt injection defense delimiters
 // These delimiters separate user document content from system instructions
@@ -78,7 +78,7 @@ async function detectDocumentLanguage(rawText: string): Promise<DocumentLanguage
     const response = completion.choices[0]?.message?.content?.trim().toLowerCase() || 'en';
     return response === 'de' ? 'de' : 'en';
   } catch {
-    // Default to English on error (most common for RFPs)
+    // Default to English on error (most common for Pre-Qualifications)
     return 'en';
   }
 }
@@ -108,7 +108,7 @@ const EXTRACTION_FIELDS: FieldDefinition[] = [
     displayName: 'Kundenname',
     queries: {
       de: 'Auftraggeber Vergabestelle Kunde Unternehmen Organisation Firma Name des Auftraggebers',
-      en: 'client customer contracting authority organization company issuing party RFP issued by',
+      en: 'client customer contracting authority organization company issuing party Pre-Qualification issued by',
     },
     extractPrompt:
       'Extrahiere den Namen des Kunden/Auftraggebers. Antworte NUR mit dem Namen, nichts anderes.',
@@ -118,10 +118,10 @@ const EXTRACTION_FIELDS: FieldDefinition[] = [
     displayName: 'Projektname',
     queries: {
       de: 'Projekt Name Titel Bezeichnung Vorhaben Ausschreibung Gegenstand',
-      en: 'RFP project title name subject matter scope platform website mobile app',
+      en: 'Pre-Qualification project title name subject matter scope platform website mobile app',
     },
     extractPrompt:
-      'Extrahiere den Projektnamen oder -titel aus dem RFP-Dokument. Antworte NUR mit dem Namen, nichts anderes.',
+      'Extrahiere den Projektnamen oder -titel aus dem Pre-Qualification-Dokument. Antworte NUR mit dem Namen, nichts anderes.',
   },
   {
     name: 'projectDescription',
@@ -175,7 +175,7 @@ Falls kein Budget explizit genannt wird, antworte mit:
     displayName: 'Abgabefrist',
     queries: {
       de: 'Deadline Abgabe Frist Termin Einreichung bis spätestens Abgabetermin Einreichungsfrist',
-      en: 'submission deadline due date response timeline RFP deadline closing date proposal due by',
+      en: 'submission deadline due date response timeline Pre-Qualification deadline closing date proposal due by',
     },
     extractPrompt:
       'Extrahiere das Abgabedatum. Antworte NUR im Format YYYY-MM-DD oder "nicht genannt".',
@@ -286,7 +286,7 @@ Falls keine URLs gefunden: antworte mit []`,
  * Uses language-specific query for better retrieval
  */
 async function extractSingleField(
-  rfpId: string,
+  preQualificationId: string,
   field: FieldDefinition,
   language: DocumentLanguage,
   emit: EventEmitter
@@ -305,7 +305,7 @@ async function extractSingleField(
 
   // Query RAG for relevant chunks
   const chunks = await queryRawChunks({
-    preQualificationId: rfpId,
+    preQualificationId: preQualificationId,
     question: query,
     maxResults: 5,
   });

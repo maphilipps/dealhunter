@@ -21,7 +21,7 @@ const getLeadInputSchema = z.object({
 });
 
 const createLeadInputSchema = z.object({
-  rfpId: z.string(),
+  preQualificationId: z.string(),
   customerName: z.string().min(1),
   websiteUrl: z.string().url().optional(),
   industry: z.string().optional(),
@@ -170,42 +170,42 @@ registry.register({
 
 registry.register({
   name: 'lead.create',
-  description: 'Create a new Lead from an existing RFP',
+  description: 'Create a new Lead from an existing Pre-Qualification',
   category: 'lead',
   inputSchema: createLeadInputSchema,
   async execute(input, context: ToolContext) {
-    // Verify RFP exists and is accessible
-    const [rfp] = await db
+    // Verify Pre-Qualification exists and is accessible
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
       .where(
-        and(eq(preQualifications.id, input.rfpId), eq(preQualifications.userId, context.userId))
+        and(eq(preQualifications.id, input.preQualificationId), eq(preQualifications.userId, context.userId))
       )
       .limit(1);
 
-    if (!rfp) {
-      return { success: false, error: 'RFP not found or no access' };
+    if (!preQualification) {
+      return { success: false, error: 'Pre-Qualification not found or no access' };
     }
 
-    // Verify RFP is in a state that allows Lead creation
-    if (!['decision_made', 'bid_voted', 'routed'].includes(rfp.status)) {
+    // Verify Pre-Qualification is in a state that allows Lead creation
+    if (!['decision_made', 'bid_voted', 'routed'].includes(preQualification.status)) {
       return {
         success: false,
-        error: 'RFP must be in decision_made, bid_voted, or routed status to create a Lead',
+        error: 'Pre-Qualification must be in decision_made, bid_voted, or routed status to create a Lead',
       };
     }
 
-    // Check if Lead already exists for this RFP
+    // Check if Lead already exists for this Pre-Qualification
     const [existing] = await db
       .select()
       .from(qualifications)
-      .where(eq(qualifications.preQualificationId, input.rfpId))
+      .where(eq(qualifications.preQualificationId, input.preQualificationId))
       .limit(1);
 
     if (existing) {
       return {
         success: false,
-        error: 'Lead already exists for this RFP',
+        error: 'Lead already exists for this Pre-Qualification',
         data: { id: existing.id },
       };
     }
@@ -214,7 +214,7 @@ registry.register({
     const [lead] = await db
       .insert(qualifications)
       .values({
-        preQualificationId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         customerName: input.customerName,
         websiteUrl: input.websiteUrl,
         industry: input.industry,
@@ -454,7 +454,7 @@ registry.register({
       .where(eq(qualifications.id, input.id))
       .returning();
 
-    // TODO: Send notification to BD user (original RFP creator)
+    // TODO: Send notification to BD user (original Pre-Qualification creator)
     // This would typically trigger a notification system
 
     return { success: true, data: updated };

@@ -157,10 +157,10 @@ function calculateOverallScore(industryScore: number, technologyScore: number): 
  * 6. Store results in RAG
  *
  * @param leadId - Lead ID to analyze
- * @param rfpId - RFP ID for RAG storage
+ * @param rfpId - Pre-Qualification ID for RAG storage
  * @returns Reference recommendations
  */
-export async function runReferencesAgent(leadId: string, rfpId: string): Promise<ReferencesResult> {
+export async function runReferencesAgent(leadId: string, preQualificationId: string): Promise<ReferencesResult> {
   console.error(`[References Agent] Starting analysis for lead ${leadId}`);
 
   try {
@@ -273,7 +273,7 @@ export async function runReferencesAgent(leadId: string, rfpId: string): Promise
     );
 
     // 6. Store in RAG
-    await storeInRAG(rfpId, leadId, result);
+    await storeInRAG(preQualificationId, leadId, result);
 
     return result;
   } catch (error) {
@@ -539,7 +539,7 @@ function generateSummary(recommendations: ReferenceRecommendation[], leadIndustr
 /**
  * Store references results in RAG
  */
-async function storeInRAG(rfpId: string, leadId: string, result: ReferencesResult): Promise<void> {
+async function storeInRAG(preQualificationId: string, leadId: string, result: ReferencesResult): Promise<void> {
   try {
     const recommendationDetails = result.recommendations
       .map(
@@ -585,7 +585,7 @@ ${recommendationDetails || 'No recommendations available.'}`;
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
       await db.insert(dealEmbeddings).values({
-        preQualificationId: rfpId,
+        preQualificationId: preQualificationId,
         agentName: 'references',
         chunkType: 'analysis',
         chunkIndex: 0,

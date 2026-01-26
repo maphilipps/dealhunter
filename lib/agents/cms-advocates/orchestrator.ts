@@ -26,7 +26,7 @@ import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 export interface CMSAdvocateOrchestratorInput {
   leadId: string;
-  rfpId: string;
+  preQualificationId: string;
   requirements: ProjectRequirement[];
   customerProfile: CustomerProfile;
   cmsOptions?: string[]; // Override default CMS list
@@ -104,7 +104,7 @@ export async function runCMSAdvocateOrchestrator(
   };
 
   // 4. Store in RAG
-  await storeInRAG(input.rfpId, result);
+  await storeInRAG(input.preQualificationId, result);
 
   return result;
 }
@@ -262,7 +262,7 @@ function createFallbackAdvocateOutput(cmsName: string): CMSAdvocateOutput {
 /**
  * Store orchestrator results in RAG for retrieval
  */
-async function storeInRAG(rfpId: string, result: CMSAdvocateOrchestratorOutput): Promise<void> {
+async function storeInRAG(preQualificationId: string, result: CMSAdvocateOrchestratorOutput): Promise<void> {
   try {
     // Build searchable content
     const advocateSummaries = result.advocateResults
@@ -323,7 +323,7 @@ ${result.comparison.finalRecommendation.nextSteps.map(s => `- ${s}`).join('\n')}
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
       await db.insert(dealEmbeddings).values({
-        preQualificationId: rfpId,
+        preQualificationId: preQualificationId,
         agentName: 'cms_advocate_orchestrator',
         chunkType: 'analysis',
         chunkIndex: 0,

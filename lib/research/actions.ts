@@ -19,7 +19,7 @@ import { auth } from '@/lib/auth';
  */
 
 const TriggerWebResearchSchema = z.object({
-  rfpId: z.string().min(1, 'RFP ID is required'),
+  preQualificationId: z.string().min(1, 'Pre-Qualification ID is required'),
   leadId: z.string().min(1, 'Lead ID is required'),
   sectionId: z.string().min(1, 'Section ID is required'),
   question: z.string().min(1, 'Research question is required'),
@@ -55,12 +55,12 @@ export async function triggerWebResearch(
     };
   }
 
-  const { rfpId, sectionId, question, maxResults } = validation.data;
+  const { preQualificationId, sectionId, question, maxResults } = validation.data;
 
   // 3. Perform web research
   try {
     const result = await performWebResearch({
-      rfpId,
+      preQualificationId,
       sectionId,
       question,
       maxResults,

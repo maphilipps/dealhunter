@@ -180,21 +180,21 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   // Run research in background
   void (async () => {
     try {
-      // 1. Load RFP
-      const rfp = await db
+      // 1. Load Pre-Qualification
+      const preQualification = await db
         .select()
         .from(preQualifications)
-        .where(eq(preQualifications.id, rfpId))
+        .where(eq(preQualifications.id, preQualificationId))
         .limit(1);
 
-      if (!rfp.length) {
+      if (!preQualification.length) {
         await sendEvent({
           id: `error-${Date.now()}`,
           type: AgentEventType.AGENT_PROGRESS,
           timestamp: Date.now(),
           data: {
             agent: 'Matrix Orchestrator',
-            message: 'RFP nicht gefunden',
+            message: 'Pre-Qualification nicht gefunden',
           },
         });
         await writer.close();
@@ -202,8 +202,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       }
 
       // 2. Parse Quick Scan Results
-      const quickScanData: Record<string, unknown> = rfp[0].quickScanResults
-        ? (JSON.parse(rfp[0].quickScanResults) as Record<string, unknown>)
+      const quickScanData: Record<string, unknown> = preQualification[0].quickScanResults
+        ? (JSON.parse(preQualification[0].quickScanResults) as Record<string, unknown>)
         : {};
 
       // 3. Extract Requirements
@@ -272,8 +272,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         }
       );
 
-      // 6. Save to RFP
-      await saveMatrixToRfp(rfpId, matrix);
+      // 6. Save to Pre-Qualification
+      await saveMatrixToRfp(preQualificationId, matrix);
 
       // 7. Send final result
       await sendEvent({
@@ -320,18 +320,18 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: rfpId } = await params;
 
-  const rfp = await db
+  const preQualification = await db
     .select({ quickScanResults: preQualifications.quickScanResults })
     .from(preQualifications)
-    .where(eq(preQualifications.id, rfpId))
+    .where(eq(preQualifications.id, preQualificationId))
     .limit(1);
 
-  if (!rfp.length) {
-    return Response.json({ error: 'RFP not found' }, { status: 404 });
+  if (!preQualification.length) {
+    return Response.json({ error: 'Pre-Qualification not found' }, { status: 404 });
   }
 
-  const quickScanData: Record<string, unknown> = rfp[0].quickScanResults
-    ? (JSON.parse(rfp[0].quickScanResults) as Record<string, unknown>)
+  const quickScanData: Record<string, unknown> = preQualification[0].quickScanResults
+    ? (JSON.parse(preQualification[0].quickScanResults) as Record<string, unknown>)
     : {};
 
   return Response.json({

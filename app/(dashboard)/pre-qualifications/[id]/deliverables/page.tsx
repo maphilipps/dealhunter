@@ -35,7 +35,7 @@ import {
 } from '@/lib/agents/expert-agents/deliverables-schema';
 import { auth } from '@/lib/auth';
 import { extractedRequirementsSchema } from '@/lib/extraction/schema';
-import { getCachedRfp } from '@/lib/pre-qualifications/cached-queries';
+import { getCachedPreQualification } from '@/lib/pre-qualifications/cached-queries';
 
 const categoryLabels: Record<string, string> = {
   proposal_document: 'Proposal Dokumente',
@@ -233,13 +233,13 @@ export default async function DeliverablesPage({ params }: { params: Promise<{ i
     redirect('/login');
   }
 
-  const rfp = await getCachedRfp(id);
+  const preQualification = await getCachedPreQualification(id);
 
-  if (!rfp) {
+  if (!preQualification) {
     notFound();
   }
 
-  if (rfp.userId !== session.user.id) {
+  if (preQualification.userId !== session.user.id) {
     notFound();
   }
 
@@ -255,8 +255,8 @@ export default async function DeliverablesPage({ params }: { params: Promise<{ i
   }
 
   // Fallback: Parse extracted requirements
-  const parseResult = rfp.extractedRequirements
-    ? extractedRequirementsSchema.safeParse(JSON.parse(rfp.extractedRequirements))
+  const parseResult = preQualification.extractedRequirements
+    ? extractedRequirementsSchema.safeParse(JSON.parse(preQualification.extractedRequirements))
     : null;
 
   if (parseResult && !parseResult.success) {

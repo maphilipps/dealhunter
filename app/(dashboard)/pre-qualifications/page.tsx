@@ -158,7 +158,7 @@ export default async function BidsPage() {
                             </Button>
                           </Link>
                           <DeletePreQualificationButton
-                            rfpId={bid.id}
+                            preQualificationId={bid.id}
                             label={customerName}
                             size="sm"
                           />

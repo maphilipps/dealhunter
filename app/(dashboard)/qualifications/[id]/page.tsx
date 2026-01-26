@@ -508,7 +508,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
             <Button variant="outline" asChild>
               <Link href={`/qualifications/${id}/quick-scan`}>Quick Scan ansehen</Link>
             </Button>
-            {rfp && (
+            {preQualification && (
               <Button variant="outline" asChild>
                 <Link href={`/pre-qualifications/${preQualification.id}`}>Ursprüngliches Pre-Qualification</Link>
               </Button>

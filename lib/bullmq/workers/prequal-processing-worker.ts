@@ -19,7 +19,7 @@ import { runDuplicateCheckAgent } from '../../bids/duplicate-check-agent';
 import { extractTextFromPdf } from '../../bids/pdf-extractor';
 import { db } from '../../db';
 import { preQualifications, quickScans } from '../../db/schema';
-import { extractRequirements } from '../../extraction/agent';
+import { runExtractionAgentNative } from '../../extraction/agent-native';
 import type { ExtractedRequirements } from '../../extraction/schema';
 import { suggestWebsiteUrls } from '../../extraction/url-suggestion-agent';
 import { detectPII, cleanText } from '../../pii/pii-cleaner';
@@ -216,7 +216,7 @@ export async function processPreQualJob(
     const extractionInputType: 'pdf' | 'freetext' | 'email' =
       inputType === 'combined' ? 'freetext' : inputType;
 
-    const extractionResult = await extractRequirements({
+    const extractionResult = await runExtractionAgentNative({
       preQualificationId,
       rawText: rawInput,
       inputType: extractionInputType,

@@ -178,10 +178,13 @@ export async function runDeepScanAgentNative(
       'Run each expert via scan.runExpert.<name>.',
       'Use scan.rag.query and scan.webSearch when data is missing.',
       'After experts finish, call scan.cacheAuditPages to ensure UI caches are updated.',
-      'Finally call completeDeepScan with completedExperts, failedExperts, sectionConfidences.',
+      '',
+      'CRITICAL: You MUST call completeDeepScan at the end, even if some experts failed.',
+      'Include all completedExperts, failedExperts, and sectionConfidences in the call.',
+      'Do not continue exploring or gathering data indefinitely - call completeDeepScan when experts are done.',
     ].join('\n'),
     tools: { listTools, runTool, completeDeepScan },
-    stopWhen: [stepCountIs(200), hasToolCall('completeDeepScan')],
+    stopWhen: [stepCountIs(300), hasToolCall('completeDeepScan')],
   });
 
   logActivity('DeepScan agent started', `URL: ${input.websiteUrl}`);
@@ -215,7 +218,24 @@ export async function runDeepScanAgentNative(
     .find(call => call.toolName === 'completeDeepScan');
 
   if (!completion || !('input' in completion)) {
-    throw new Error('DeepScan agent did not call completeDeepScan');
+    // Graceful fallback: Agent didn't call completeDeepScan (likely hit step limit)
+    // Use tracked data from tool executions instead
+    console.warn(
+      `[DeepScan Agent] Agent did not call completeDeepScan. Using tracked data. ` +
+        `Steps: ${result.steps.length}, Completed: ${completedSet.size}, Failed: ${failedSet.size}`
+    );
+
+    logActivity(
+      'DeepScan incomplete',
+      `Agent stopped without calling completeDeepScan after ${result.steps.length} steps`
+    );
+
+    // Return what we have from tracked execution
+    return {
+      completedExperts: Array.from(completedSet),
+      failedExperts: Array.from(failedSet),
+      sectionConfidences,
+    };
   }
 
   const payload = completion.input as DeepScanCompletion;

@@ -1,0 +1,196 @@
+# Docker Compose for DealHunter - Production Deployment
+#
+# Runs complete stack: PostgreSQL, Redis, Next.js App, BullMQ Workers
+#
+# Usage:
+# - Start: docker compose -f docker-compose.prod.yml up -d
+# - Stop: docker compose -f docker-compose.prod.yml down
+# - Logs: docker compose -f docker-compose.prod.yml logs -f
+# - Rebuild: docker compose -f docker-compose.prod.yml up -d --build
+#
+# Prerequisites:
+# - Create .env.production with all required environment variables
+# - Ensure DATABASE_URL and REDIS_URL point to correct services
+#
+# Services:
+# - postgres: PostgreSQL with pgvector extension
+# - redis: Redis for BullMQ job queue
+# - app: Next.js application (port 3000)
+# - worker: BullMQ worker for background jobs
+
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: dealhunter-postgres-prod
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dealhunter}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-dealhunter}
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-dealhunter} -d ${POSTGRES_DB:-dealhunter}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dealhunter
+
+  redis:
+    image: redis:7-alpine
+    container_name: dealhunter-redis-prod
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data_prod:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dealhunter
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+    container_name: dealhunter-app
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dealhunter}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-dealhunter}
+
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+
+      # Auth
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+
+      # Anthropic AI
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+      # App Config
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      NODE_ENV: production
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dealhunter
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  worker-prequal:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: dealhunter-worker-prequal
+    restart: unless-stopped
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dealhunter}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-dealhunter}
+
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+
+      # Anthropic AI
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+      # Worker Config
+      NODE_ENV: production
+      WORKER_TYPE: prequal-processing
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dealhunter
+    command: ['npx', 'tsx', 'workers/prequal-processing.ts']
+
+  worker-quickscan:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: dealhunter-worker-quickscan
+    restart: unless-stopped
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dealhunter}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-dealhunter}
+
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+
+      # Anthropic AI
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+      # Worker Config
+      NODE_ENV: production
+      WORKER_TYPE: quick-scan
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dealhunter
+    command: ['npx', 'tsx', 'workers/quick-scan.ts']
+
+  worker-deepscan:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: dealhunter-worker-deepscan
+    restart: unless-stopped
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dealhunter}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-dealhunter}
+
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+
+      # Anthropic AI
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+      # Worker Config
+      NODE_ENV: production
+      WORKER_TYPE: deep-scan
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dealhunter
+    command: ['npx', 'tsx', 'workers/index.ts']
+
+networks:
+  dealhunter:
+    driver: bridge
+
+volumes:
+  pgdata_prod:
+  redis_data_prod:

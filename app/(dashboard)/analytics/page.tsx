@@ -134,7 +134,7 @@ export default function AnalyticsPage() {
   const stageData = [
     { name: 'Cold', value: data.stage.cold, fill: COLORS.cold },
     { name: 'Warm', value: data.stage.warm, fill: COLORS.warm },
-    { name: 'Pre-Qualification', value: data.stage.preQualification, fill: COLORS.rfp },
+    { name: 'Pre-Qualification', value: data.stage.preQualification, fill: COLORS.preQualification },
   ].filter(item => item.value > 0);
 
   const funnelData = [

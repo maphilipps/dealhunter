@@ -45,9 +45,9 @@ export interface HelpPanelProps {
 
 const defaultFAQs: HelpItem[] = [
   {
-    question: 'Wie lade ich ein RFP hoch?',
+    question: 'Wie lade ich ein Pre-Qualification hoch?',
     answer:
-      'Gehe zu "RFPs" → "New RFP" und lade eine PDF-Datei hoch oder füge den Text direkt ein. Der AI Agent extrahiert automatisch alle relevanten Informationen.',
+      'Gehe zu "Pre-Qualifications" → "New Pre-Qualification" und lade eine PDF-Datei hoch oder füge den Text direkt ein. Der AI Agent extrahiert automatisch alle relevanten Informationen.',
   },
   {
     question: 'Was ist ein Quick Scan?',

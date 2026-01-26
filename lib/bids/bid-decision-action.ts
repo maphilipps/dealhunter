@@ -15,7 +15,7 @@ import { handleBidDecision } from '@/lib/workflow/orchestrator';
  * Triggers Timeline Agent if BID, archives if NO-BID.
  */
 export async function makeBidDecision(
-  rfpId: string,
+  preQualificationId: string,
   decision: 'bid' | 'no_bid'
 ): Promise<{
   success: boolean;
@@ -30,37 +30,37 @@ export async function makeBidDecision(
   }
 
   try {
-    // 1. Fetch RFP and verify ownership
-    const [rfp] = await db
+    // 1. Fetch Pre-Qualification and verify ownership
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
-      .where(and(eq(preQualifications.id, rfpId), eq(preQualifications.userId, session.user.id)));
+      .where(and(eq(preQualifications.id, preQualificationId), eq(preQualifications.userId, session.user.id)));
 
-    if (!rfp) {
-      return { success: false, error: 'RFP nicht gefunden' };
+    if (!preQualification) {
+      return { success: false, error: 'Pre-Qualification nicht gefunden' };
     }
 
-    // 2. Verify RFP is in correct status (bit_pending)
-    if (rfp.status !== 'bit_pending') {
+    // 2. Verify Pre-Qualification is in correct status (bit_pending)
+    if (preQualification.status !== 'bit_pending') {
       return {
         success: false,
-        error: `RFP muss im Status "BID/NO-BID Entscheidung erforderlich" sein (aktuell: ${rfp.status})`,
+        error: `Pre-Qualification muss im Status "BID/NO-BID Entscheidung erforderlich" sein (aktuell: ${preQualification.status})`,
       };
     }
 
     console.error(
-      `[BID Decision Action] User ${session.user.id} decided "${decision}" for RFP ${rfpId}`
+      `[BID Decision Action] User ${session.user.id} decided "${decision}" for Pre-Qualification ${preQualificationId}`
     );
 
     // 3. Use orchestrator to handle the decision
     // This will either trigger Timeline Agent (BID) or archive (NO-BID)
-    const result = await handleBidDecision(rfpId, decision);
+    const result = await handleBidDecision(preQualificationId, decision);
 
     // 4. Create audit log
     await createAuditLog({
       action: 'bid_override', // Using existing enum value
       entityType: 'pre_qualification',
-      entityId: rfpId,
+      entityId: preQualificationId,
       previousValue: 'pending',
       newValue: decision,
       reason: `Manual ${decision.toUpperCase()} decision by BD Manager`,

@@ -99,8 +99,8 @@ export function AgentCapabilities() {
   }
 
   const capabilityLabels: Record<keyof Capabilities, string> = {
-    canCreateRfps: 'RFPs erstellen',
-    canViewRfps: 'RFPs ansehen',
+    canCreateRfps: 'Pre-Qualifications erstellen',
+    canViewRfps: 'Pre-Qualifications ansehen',
     canManageAccounts: 'Accounts verwalten',
     canManageReferences: 'Referenzen verwalten',
     canManageCompetencies: 'Kompetenzen verwalten',

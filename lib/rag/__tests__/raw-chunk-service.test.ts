@@ -116,7 +116,7 @@ describe('raw-chunk-service', () => {
       });
     });
 
-    it('should handle realistic German RFP text', () => {
+    it('should handle realistic German Pre-Qualification text', () => {
       const rfpText = `
 Ausschreibung: Relaunch Corporate Website
 

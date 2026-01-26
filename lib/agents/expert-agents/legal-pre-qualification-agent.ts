@@ -1,7 +1,7 @@
 /**
- * Legal RFP Expert Agent
+ * Legal Pre-Qualification Expert Agent
  *
- * Analyzes CONTRACTUAL/LEGAL requirements from RFP documents.
+ * Analyzes CONTRACTUAL/LEGAL requirements from Pre-Qualification documents.
  * NOT website legal compliance (that's legal-check-agent.ts).
  * Focuses on: liability, insurance, penalties, IP, contract terms, etc.
  */
@@ -17,7 +17,7 @@ import type { ExpertAgentInput, ExpertAgentOutput } from './types';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 
-const LEGAL_RFP_QUERIES = [
+const LEGAL_Pre-Qualification_QUERIES = [
   'terms conditions contract agreement liability warranty',
   'GDPR privacy data protection compliance certification ISO SOC2',
   'insurance liability indemnification indemnity',
@@ -28,14 +28,14 @@ const LEGAL_RFP_QUERIES = [
 ];
 
 function buildSystemPrompt(): string {
-  return `You are a Legal RFP Expert Agent analyzing RFP documents for contractual and legal requirements.
+  return `You are a Legal Pre-Qualification Expert Agent analyzing Pre-Qualification documents for contractual and legal requirements.
 
 You work for adesso, an IT consultancy. Your analysis helps identify legal risks, required certifications, insurance requirements, and potential deal breakers in IT project/consulting contracts.
 
 ## Instructions
 
 1. **Legal Requirements Extraction**:
-   - Extract ALL legal/contractual requirements from the RFP
+   - Extract ALL legal/contractual requirements from the Pre-Qualification
    - Categorize each requirement:
      - contract_terms: Contract duration, termination, liability caps
      - compliance: GDPR, SOC2, ISO, industry-specific compliance
@@ -92,11 +92,11 @@ Return valid JSON matching the schema.`;
 export async function runLegalRfpAgent(
   input: ExpertAgentInput
 ): Promise<ExpertAgentOutput<LegalRfpAnalysis>> {
-  const { rfpId } = input;
+  const { preQualificationId } = input;
 
   try {
     const ragResults = await Promise.all(
-      LEGAL_RFP_QUERIES.map(query => queryRfpDocument(rfpId, query, 5))
+      LEGAL_Pre-Qualification_QUERIES.map(query => queryRfpDocument(preQualificationId, query, 5))
     );
 
     const allResults = ragResults.flat();
@@ -109,14 +109,14 @@ export async function runLegalRfpAgent(
           requiredCertifications: [],
           requiredInsurance: [],
           overallRiskLevel: 'low',
-          riskFactors: ['No legal requirements found in RFP document'],
+          riskFactors: ['No legal requirements found in Pre-Qualification document'],
           dealBreakers: [],
-          recommendations: ['Review RFP manually - no legal content detected'],
+          recommendations: ['Review Pre-Qualification manually - no legal content detected'],
           questionsForLegal: [],
           confidence: 0,
         },
         0,
-        'No legal information found in RFP document'
+        'No legal information found in Pre-Qualification document'
       );
     }
 
@@ -126,19 +126,19 @@ export async function runLegalRfpAgent(
 
     const context = formatContextFromRAG(
       uniqueResults.slice(0, 15),
-      'RFP Legal/Contractual Requirements'
+      'Pre-Qualification Legal/Contractual Requirements'
     );
 
     const analysis = await generateStructuredOutput({
       model: 'sonnet-4-5',
       schema: LegalRfpAnalysisSchema,
       system: buildSystemPrompt(),
-      prompt: `Analyze the following RFP content and extract all legal and contractual requirements:\n\n${context}`,
+      prompt: `Analyze the following Pre-Qualification content and extract all legal and contractual requirements:\n\n${context}`,
       temperature: 0.2,
     });
 
     const summaryContent = buildSummaryForStorage(analysis);
-    await storeAgentResult(rfpId, 'legal_rfp_expert', summaryContent, {
+    await storeAgentResult(preQualificationId, 'legal_rfp_expert', summaryContent, {
       overallRiskLevel: analysis.overallRiskLevel,
       requirementsCount: analysis.requirements.length,
       dealBreakersCount: analysis.dealBreakers.length,
@@ -152,13 +152,13 @@ export async function runLegalRfpAgent(
     return createAgentOutput<LegalRfpAnalysis>(
       null,
       0,
-      error instanceof Error ? error.message : 'Unknown error in Legal RFP Agent'
+      error instanceof Error ? error.message : 'Unknown error in Legal Pre-Qualification Agent'
     );
   }
 }
 
 function buildSummaryForStorage(analysis: LegalRfpAnalysis): string {
-  const parts: string[] = ['Legal RFP Analysis Summary:'];
+  const parts: string[] = ['Legal Pre-Qualification Analysis Summary:'];
 
   parts.push(`- Overall Risk Level: ${analysis.overallRiskLevel.toUpperCase()}`);
 

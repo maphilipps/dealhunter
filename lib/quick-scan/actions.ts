@@ -5,17 +5,18 @@ import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { preQualifications, quickScans } from '@/lib/db/schema';
+import { addQuickScanJob } from '@/lib/bullmq/queues';
 
 /**
  * Start Quick Scan for a bid opportunity
- * Creates QuickScan record with 'running' status and returns immediately.
- * The actual scan is executed via the SSE streaming endpoint.
+ * Creates QuickScan record with 'pending' status and returns immediately.
+ * The actual scan is executed via the background worker (agent-native).
  *
  * Flow:
  * 1. startQuickScan() creates record + sets status='running' + returns immediately
- * 2. UI renders QuickScanResults which connects to SSE stream
- * 3. SSE endpoint executes the scan and streams live updates
- * 4. On completion, SSE endpoint updates DB status to 'completed'
+ * 2. UI renders QuickScanResults which connects to SSE stream for status updates
+ * 3. Background worker executes the scan and streams activity via DB
+ * 4. On completion, worker updates DB status to 'completed'
  */
 export async function startQuickScan(bidId: string) {
   const session = await auth();
@@ -58,14 +59,30 @@ export async function startQuickScan(bidId: string) {
       };
     }
 
-    // Create QuickScan record with 'running' status
-    // The actual scan will be executed via the SSE streaming endpoint
+    if (bid.quickScanId) {
+      const [existingQuickScan] = await db
+        .select()
+        .from(quickScans)
+        .where(eq(quickScans.id, bid.quickScanId))
+        .limit(1);
+
+      if (existingQuickScan && ['pending', 'running'].includes(existingQuickScan.status)) {
+        return {
+          success: false,
+          error: 'Ein Quick Scan läuft bereits',
+          quickScanId: existingQuickScan.id,
+        };
+      }
+    }
+
+    // Create QuickScan record with 'pending' status
+    // The actual scan will be executed via BullMQ
     const [quickScan] = await db
       .insert(quickScans)
       .values({
         preQualificationId: bidId,
         websiteUrl,
-        status: 'running',
+        status: 'pending',
         startedAt: new Date(),
       })
       .returning();
@@ -79,12 +96,20 @@ export async function startQuickScan(bidId: string) {
       })
       .where(eq(preQualifications.id, bidId));
 
-    // Return immediately - scan is executed via SSE stream
-    // The UI will connect to /api/pre-qualifications/[id]/quick-scan/stream which runs the actual scan
+    // Enqueue background job
+    await addQuickScanJob({
+      preQualificationId: bidId,
+      quickScanId: quickScan.id,
+      websiteUrl,
+      userId: session.user.id,
+    });
+
+    // Return immediately - scan is executed via background worker
+    // The UI will connect to /api/pre-qualifications/[id]/quick-scan/stream for status updates
     return {
       success: true,
       quickScanId: quickScan.id,
-      status: 'running',
+      status: 'pending',
     };
   } catch (error) {
     console.error('Quick Scan error:', error);
@@ -99,7 +124,7 @@ export async function startQuickScan(bidId: string) {
  * Re-trigger Quick Scan for a bid
  * IMPORTANT: Preserves existing data and supplements it with new findings (nicht ersetzen!)
  * Resets status to 'running' but keeps existing data for merging
- * The actual scan is executed via the streaming endpoint
+ * The actual scan is executed via the background worker
  */
 export async function retriggerQuickScan(bidId: string) {
   const session = await auth();
@@ -147,10 +172,24 @@ export async function retriggerQuickScan(bidId: string) {
     // If existing QuickScan exists, reset status but KEEP existing data
     // This allows Research Agents to supplement (ergänzen) data, not replace (ersetzen)
     if (bid.quickScanId) {
+      const [existingQuickScan] = await db
+        .select()
+        .from(quickScans)
+        .where(eq(quickScans.id, bid.quickScanId))
+        .limit(1);
+
+      if (existingQuickScan && ['pending', 'running'].includes(existingQuickScan.status)) {
+        return {
+          success: false,
+          error: 'Ein Quick Scan läuft bereits',
+          quickScanId: existingQuickScan.id,
+        };
+      }
+
       await db
         .update(quickScans)
         .set({
-          status: 'running',
+          status: 'pending',
           websiteUrl, // May have changed
           startedAt: new Date(),
           completedAt: null,
@@ -166,7 +205,7 @@ export async function retriggerQuickScan(bidId: string) {
         .values({
           preQualificationId: bidId,
           websiteUrl,
-          status: 'running',
+          status: 'pending',
           startedAt: new Date(),
         })
         .returning();
@@ -186,10 +225,17 @@ export async function retriggerQuickScan(bidId: string) {
       })
       .where(eq(preQualifications.id, bidId));
 
+    await addQuickScanJob({
+      preQualificationId: bidId,
+      quickScanId,
+      websiteUrl,
+      userId: session.user.id,
+    });
+
     return {
       success: true,
       quickScanId: quickScanId,
-      status: 'running',
+      status: 'pending',
     };
   } catch (error) {
     console.error('Quick Scan re-trigger error:', error);

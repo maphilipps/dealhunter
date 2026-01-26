@@ -59,9 +59,9 @@ export const LEAD_INTERNAL_FIELDS = {
 } as const;
 
 /**
- * RFP fields safe for public/client access
+ * Pre-Qualification fields safe for public/client access
  */
-export const RFP_PUBLIC_FIELDS = {
+export const Pre-Qualification_PUBLIC_FIELDS = {
   id: preQualifications.id,
   status: preQualifications.status,
   stage: preQualifications.stage,

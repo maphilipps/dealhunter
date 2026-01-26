@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export interface ExpertAgentInput {
-  rfpId: string;
+  preQualificationId: string;
   leadId?: string;
 }
 

@@ -1,8 +1,72 @@
 import { z } from 'zod';
 
+import type {
+  createRagWriteTool,
+  createBatchRagWriteTool,
+  createVisualizationWriteTool,
+} from '@/lib/agent-tools';
+
+/**
+ * Finding input for RAG storage
+ */
+export interface FindingInput {
+  category: 'fact' | 'elaboration' | 'recommendation' | 'risk' | 'estimate';
+  chunkType: string;
+  content: string;
+  confidence: number;
+  requiresValidation?: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Visualization input for RAG storage (JsonRenderTree)
+ */
+export interface VisualizationInput {
+  sectionId: string;
+  visualization: {
+    root: string | null;
+    elements: Record<
+      string,
+      {
+        key: string;
+        type: string;
+        props: Record<string, unknown>;
+        children?: string[];
+      }
+    >;
+  };
+  confidence: number;
+}
+
+/**
+ * RAG Write Tools for agent-native output
+ * Allows experts to store findings and visualizations directly in the knowledge base
+ * Uses callable functions for direct invocation from experts
+ */
+export interface AuditRagWriteTools {
+  /** Store a single finding in the knowledge base */
+  storeFinding: (input: FindingInput) => Promise<{ success: boolean; message: string }>;
+  /** Store a visualization (JsonRenderTree) for UI display */
+  storeVisualization: (
+    input: VisualizationInput
+  ) => Promise<{ success: boolean; message: string; sectionId?: string }>;
+  /** Batch store multiple findings at once */
+  storeFindingsBatch: (
+    findings: FindingInput[]
+  ) => Promise<{ success: boolean; message: string; storedCount: number }>;
+  /** The AI SDK tools for LLM use (optional) */
+  aiTools?: {
+    storeFinding: ReturnType<typeof createRagWriteTool>;
+    storeVisualization: ReturnType<typeof createVisualizationWriteTool>;
+    storeFindingsBatch: ReturnType<typeof createBatchRagWriteTool>;
+  };
+}
+
 export interface AuditAgentInput {
   leadId: string;
   websiteUrl: string;
+  /** Optional RAG Write Tools for agent-native output */
+  ragTools?: AuditRagWriteTools;
 }
 
 export interface AuditSection {

@@ -109,12 +109,12 @@ export type IntegrationsAnalysis = z.infer<typeof IntegrationsAnalysisSchema>;
  * Run integrations agent
  *
  * @param leadId - Lead ID
- * @param rfpId - RFP ID
+ * @param rfpId - Pre-Qualification ID
  * @returns Integrations analysis
  */
 export async function runIntegrationsAgent(
   leadId: string,
-  rfpId: string
+  preQualificationId: string
 ): Promise<IntegrationsAnalysis> {
   // 1. Fetch lead and Quick Scan data
   const [leadData] = await db
@@ -246,7 +246,7 @@ ${result.recommendations.map(r => `- ${r}`).join('\n')}`;
   if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
     await db.insert(dealEmbeddings).values({
       qualificationId: leadId,
-      preQualificationId: rfpId,
+      preQualificationId: preQualificationId,
       agentName: 'integrations',
       chunkType: 'analysis',
       chunkIndex: 0,

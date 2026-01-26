@@ -1,7 +1,7 @@
 /**
  * Phase 1 Workflow Orchestrator (DEA-90)
  *
- * Auto-triggers agents in sequence during RFP qualification workflow:
+ * Auto-triggers agents in sequence during Pre-Qualification qualification workflow:
  * 1. Upload → Duplicate Check
  * 2. Duplicate Check (no dups) → Extract
  * 3. Extract Review + Confirm → Quick Scan (if website URL)
@@ -27,9 +27,9 @@ import type { ExtractedRequirements } from '../extraction/schema';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * RFP Status types from schema
+ * Pre-Qualification Status types from schema
  */
-export type RFPStatus = PreQualification['status'];
+export type PreQualificationStatus = PreQualification['status'];
 
 /**
  * Agent names in Phase 1 workflow
@@ -39,14 +39,14 @@ export type Phase1Agent = 'DuplicateCheck' | 'Extract' | 'QuickScan' | 'Timeline
 /**
  * Trigger conditions for status transitions
  */
-type TriggerCondition = (rfp: PreQualification) => boolean | Promise<boolean>;
+type TriggerCondition = (preQualification: PreQualification) => boolean | Promise<boolean>;
 
 /**
  * Trigger rule definition
  */
 interface TriggerRule {
   nextAgent: Phase1Agent | null;
-  nextStatus: RFPStatus | null;
+  nextStatus: PreQualificationStatus | null;
   trigger: 'auto' | 'auto_if_no_duplicates' | 'auto_after_user_confirm' | 'status_update_only';
   condition: TriggerCondition;
   skipReason?: string;
@@ -60,7 +60,7 @@ interface TriggerRule {
  * Trigger rules for Phase 1 workflow
  * Maps current status → next agent + condition
  */
-const TRIGGER_RULES: Partial<Record<RFPStatus, TriggerRule>> = {
+const TRIGGER_RULES: Partial<Record<PreQualificationStatus, TriggerRule>> = {
   // 1. Upload → Extract (ALWAYS auto-trigger to get customer data)
   draft: {
     nextAgent: 'Extract',
@@ -90,10 +90,10 @@ const TRIGGER_RULES: Partial<Record<RFPStatus, TriggerRule>> = {
     nextAgent: 'QuickScan',
     nextStatus: 'quick_scanning',
     trigger: 'auto_if_no_duplicates',
-    condition: rfp => {
+    condition: preQualification => {
       // First check for duplicates
-      if (rfp.duplicateCheckResult) {
-        const result = JSON.parse(rfp.duplicateCheckResult) as {
+      if (preQualification.duplicateCheckResult) {
+        const result = JSON.parse(preQualification.duplicateCheckResult) as {
           hasDuplicates?: boolean;
           userOverride?: boolean;
         };
@@ -104,10 +104,10 @@ const TRIGGER_RULES: Partial<Record<RFPStatus, TriggerRule>> = {
       }
 
       // Then check for website URL
-      if (rfp.websiteUrl) return true;
+      if (preQualification.websiteUrl) return true;
 
-      if (rfp.extractedRequirements) {
-        const extracted = JSON.parse(rfp.extractedRequirements) as ExtractedRequirements;
+      if (preQualification.extractedRequirements) {
+        const extracted = JSON.parse(preQualification.extractedRequirements) as ExtractedRequirements;
         return !!(
           extracted.websiteUrl ||
           (extracted.websiteUrls && extracted.websiteUrls.length > 0)
@@ -128,7 +128,7 @@ const TRIGGER_RULES: Partial<Record<RFPStatus, TriggerRule>> = {
     condition: () => true,
   },
 
-  // 6. BID/NO-BID Decision by BL is handled in Leads workflow, not RFP workflow
+  // 6. BID/NO-BID Decision by BL is handled in Leads workflow, not Pre-Qualification workflow
   // Timeline Agent runs AFTER BL approves (in Phase 2)
   // NOTE: bit_pending now means "waiting for BL routing", not "waiting for BID decision"
 
@@ -149,7 +149,7 @@ const TRIGGER_RULES: Partial<Record<RFPStatus, TriggerRule>> = {
  * Map agent completion to next status
  * Called by agents after they finish
  */
-export function getNextStatusAfterAgent(agentName: Phase1Agent): RFPStatus {
+export function getNextStatusAfterAgent(agentName: Phase1Agent): PreQualificationStatus {
   switch (agentName) {
     case 'Extract':
       return 'reviewing'; // User must review + confirm
@@ -167,18 +167,18 @@ export function getNextStatusAfterAgent(agentName: Phase1Agent): RFPStatus {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Trigger next agent based on current RFP status
+ * Trigger next agent based on current Pre-Qualification status
  *
  * This is the main orchestration function - called after agent completion
  * or user actions (e.g., BID decision, duplicate override)
  *
- * @param rfpId - RFP ID
- * @param currentStatus - Current RFP status
+ * @param rfpId - Pre-Qualification ID
+ * @param currentStatus - Current Pre-Qualification status
  * @param context - Additional context (e.g., user override flag)
  */
 export async function triggerNextAgent(
-  rfpId: string,
-  currentStatus: RFPStatus,
+  preQualificationId: string,
+  currentStatus: PreQualificationStatus,
   context?: {
     userOverride?: boolean; // For duplicate warning override
     decision?: 'bid' | 'no_bid'; // For BID/NO-BID decision
@@ -198,28 +198,28 @@ export async function triggerNextAgent(
 
     // Update status if there's a next status
     if (rule.nextStatus) {
-      await updateRfpStatus(rfpId, rule.nextStatus);
+      await updateRfpStatus(preQualificationId, rule.nextStatus);
     }
 
     return { triggered: false, reason: 'Status update only, no agent to trigger' };
   }
 
-  // Load RFP data
-  const [rfp] = await db
+  // Load Pre-Qualification data
+  const [preQualification] = await db
     .select()
     .from(preQualifications)
-    .where(eq(preQualifications.id, rfpId))
+    .where(eq(preQualifications.id, preQualificationId))
     .limit(1);
 
-  if (!rfp) {
-    console.error(`[Orchestrator] RFP not found: ${rfpId}`);
-    return { triggered: false, reason: 'RFP not found' };
+  if (!preQualification) {
+    console.error(`[Orchestrator] Pre-Qualification not found: ${preQualificationId}`);
+    return { triggered: false, reason: 'Pre-Qualification not found' };
   }
 
   // Apply context updates (e.g., user override, decision)
   const contextualRfp = { ...rfp };
-  if (context?.userOverride && rfp.duplicateCheckResult) {
-    const result = JSON.parse(rfp.duplicateCheckResult) as Record<string, unknown>;
+  if (context?.userOverride && preQualification.duplicateCheckResult) {
+    const result = JSON.parse(preQualification.duplicateCheckResult) as Record<string, unknown>;
     result.userOverride = true;
     contextualRfp.duplicateCheckResult = JSON.stringify(result);
   }
@@ -232,18 +232,18 @@ export async function triggerNextAgent(
 
   if (!shouldTrigger) {
     console.error(
-      `[Orchestrator] Skipping ${rule.nextAgent} for ${rfpId}: ${rule.skipReason || 'condition not met'}`
+      `[Orchestrator] Skipping ${rule.nextAgent} for ${preQualificationId}: ${rule.skipReason || 'condition not met'}`
     );
     return { triggered: false, reason: rule.skipReason || 'Condition not met' };
   }
 
   // Update status to next agent's running status
   if (rule.nextStatus) {
-    await updateRfpStatus(rfpId, rule.nextStatus);
+    await updateRfpStatus(preQualificationId, rule.nextStatus);
   }
 
   // Trigger next agent (via background job or direct call)
-  console.error(`[Orchestrator] Triggering ${rule.nextAgent} for ${rfpId}`);
+  console.error(`[Orchestrator] Triggering ${rule.nextAgent} for ${preQualificationId}`);
 
   // NOTE: Actual agent execution happens in API routes or server actions
   // This function just updates status and logs intent
@@ -256,23 +256,23 @@ export async function triggerNextAgent(
  * Called by agents after successful completion
  * Updates status and triggers next agent
  *
- * @param rfpId - RFP ID
+ * @param rfpId - Pre-Qualification ID
  * @param agentName - Agent that just completed
  */
 export async function onAgentComplete(
-  rfpId: string,
+  preQualificationId: string,
   agentName: Phase1Agent
 ): Promise<{ nextAgent?: Phase1Agent }> {
-  console.error(`[Orchestrator] Agent ${agentName} completed for RFP ${rfpId}`);
+  console.error(`[Orchestrator] Agent ${agentName} completed for Pre-Qualification ${preQualificationId}`);
 
   // Get next status
   const nextStatus = getNextStatusAfterAgent(agentName);
 
-  // Update RFP status
-  await updateRfpStatus(rfpId, nextStatus);
+  // Update Pre-Qualification status
+  await updateRfpStatus(preQualificationId, nextStatus);
 
   // Try to trigger next agent
-  const result = await triggerNextAgent(rfpId, nextStatus);
+  const result = await triggerNextAgent(preQualificationId, nextStatus);
 
   return { nextAgent: result.agent };
 }
@@ -281,11 +281,11 @@ export async function onAgentComplete(
  * Handle user override on duplicate warning
  * Continues workflow even with duplicates
  */
-export async function handleDuplicateOverride(rfpId: string): Promise<{ success: boolean }> {
-  console.error(`[Orchestrator] User override duplicate warning for ${rfpId}`);
+export async function handleDuplicateOverride(preQualificationId: string): Promise<{ success: boolean }> {
+  console.error(`[Orchestrator] User override duplicate warning for ${preQualificationId}`);
 
   // Trigger Extract Agent with override context
-  const result = await triggerNextAgent(rfpId, 'duplicate_checking', { userOverride: true });
+  const result = await triggerNextAgent(preQualificationId, 'duplicate_checking', { userOverride: true });
 
   return { success: result.triggered };
 }
@@ -295,28 +295,28 @@ export async function handleDuplicateOverride(rfpId: string): Promise<{ success:
  * Triggers Timeline Agent if BID, archives if NO-BID
  */
 export async function handleBidDecision(
-  rfpId: string,
+  preQualificationId: string,
   decision: 'bid' | 'no_bid'
 ): Promise<{ success: boolean; nextAgent?: Phase1Agent }> {
-  console.error(`[Orchestrator] BID decision "${decision}" for ${rfpId}`);
+  console.error(`[Orchestrator] BID decision "${decision}" for ${preQualificationId}`);
 
-  // Update decision in RFP
+  // Update decision in Pre-Qualification
   await db
     .update(preQualifications)
     .set({
       decision,
       updatedAt: new Date(),
     })
-    .where(eq(preQualifications.id, rfpId));
+    .where(eq(preQualifications.id, preQualificationId));
 
   // NO-BID → Archive
   if (decision === 'no_bid') {
-    await updateRfpStatus(rfpId, 'archived');
+    await updateRfpStatus(preQualificationId, 'archived');
     return { success: true };
   }
 
   // BID → Trigger Timeline Agent
-  const result = await triggerNextAgent(rfpId, 'bit_pending', { decision: 'bid' });
+  const result = await triggerNextAgent(preQualificationId, 'bit_pending', { decision: 'bid' });
 
   return { success: result.triggered, nextAgent: result.agent };
 }
@@ -326,26 +326,26 @@ export async function handleBidDecision(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Update RFP status
+ * Update Pre-Qualification status
  */
-async function updateRfpStatus(rfpId: string, status: RFPStatus): Promise<void> {
+async function updateRfpStatus(preQualificationId: string, status: PreQualificationStatus): Promise<void> {
   await db
     .update(preQualifications)
     .set({
       status,
       updatedAt: new Date(),
     })
-    .where(eq(preQualifications.id, rfpId));
+    .where(eq(preQualifications.id, preQualificationId));
 
-  console.error(`[Orchestrator] Updated RFP ${rfpId} status to: ${status}`);
+  console.error(`[Orchestrator] Updated Pre-Qualification ${preQualificationId} status to: ${status}`);
 }
 
 /**
  * Get current workflow status for UI display
  * Returns human-readable labels and next agent info
  */
-export async function getWorkflowStatus(rfpId: string): Promise<{
-  currentStatus: RFPStatus;
+export async function getWorkflowStatus(preQualificationId: string): Promise<{
+  currentStatus: PreQualificationStatus;
   currentStatusLabel: string;
   nextAgent: Phase1Agent | null;
   nextAgentLabel: string | null;
@@ -353,30 +353,31 @@ export async function getWorkflowStatus(rfpId: string): Promise<{
   canProceed: boolean;
   blockReason?: string;
 }> {
-  const [rfp] = await db
+  const [preQualification] = await db
     .select()
     .from(preQualifications)
-    .where(eq(preQualifications.id, rfpId))
+    .where(eq(preQualifications.id, preQualificationId))
     .limit(1);
 
-  if (!rfp) {
-    throw new Error(`RFP not found: ${rfpId}`);
+  if (!preQualification) {
+    throw new Error(`Pre-Qualification not found: ${preQualificationId}`);
   }
 
-  const rule = TRIGGER_RULES[rfp.status];
+  const rule = TRIGGER_RULES[preQualification.status];
   const isProcessing = [
+    'processing',
     'duplicate_checking',
     'extracting',
     'quick_scanning',
     'timeline_estimating',
-  ].includes(rfp.status);
+  ].includes(preQualification.status);
 
   // Determine if workflow can proceed
   let canProceed = true;
   let blockReason: string | undefined;
 
   if (rule) {
-    const shouldTrigger = await rule.condition(rfp);
+    const shouldTrigger = await rule.condition(preQualification);
     canProceed = shouldTrigger;
     if (!shouldTrigger) {
       blockReason = rule.skipReason;
@@ -384,8 +385,8 @@ export async function getWorkflowStatus(rfpId: string): Promise<{
   }
 
   return {
-    currentStatus: rfp.status,
-    currentStatusLabel: getStatusLabel(rfp.status),
+    currentStatus: preQualification.status,
+    currentStatusLabel: getStatusLabel(preQualification.status),
     nextAgent: rule?.nextAgent || null,
     nextAgentLabel: rule?.nextAgent ? getAgentLabel(rule.nextAgent) : null,
     isProcessing,
@@ -398,9 +399,10 @@ export async function getWorkflowStatus(rfpId: string): Promise<{
 // UI LABELS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function getStatusLabel(status: RFPStatus): string {
-  const labels: Record<RFPStatus, string> = {
+function getStatusLabel(status: PreQualificationStatus): string {
+  const labels: Record<PreQualificationStatus, string> = {
     draft: 'Entwurf',
+    processing: 'Hintergrundverarbeitung läuft',
     duplicate_checking: 'Duplikat-Prüfung läuft',
     duplicate_check_failed: 'Duplikat-Prüfung fehlgeschlagen',
     duplicate_warning: 'Duplikat gefunden',

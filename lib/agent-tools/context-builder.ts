@@ -1,7 +1,7 @@
 import { eq, desc, count } from 'drizzle-orm';
 
-import { listToolsForAgent, getToolsByCategory } from '@/lib/agent-tools';
-import { db } from '@/lib/db';
+import { listToolsForAgent, getToolsByCategory } from './index';
+import { db } from '../db';
 import {
   preQualifications,
   accounts,
@@ -10,7 +10,8 @@ import {
   businessUnits,
   employees,
   technologies,
-} from '@/lib/db/schema';
+  users,
+} from '../db/schema';
 
 export interface AgentContext {
   user: {
@@ -41,8 +42,6 @@ export interface AgentContext {
 }
 
 export async function buildAgentContext(userId: string): Promise<AgentContext> {
-  const { users } = await import('@/lib/db/schema');
-
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 
   if (!user) {
@@ -150,10 +149,10 @@ export async function buildAgentContext(userId: string): Promise<AgentContext> {
 
 function getPermissionsForRole(role: 'bd' | 'bl' | 'admin'): string[] {
   const basePermissions = [
-    'rfp.create',
-    'rfp.list',
-    'rfp.get',
-    'rfp.update',
+    'preQualification.create',
+    'preQualification.list',
+    'preQualification.get',
+    'preQualification.update',
     'account.create',
     'account.list',
     'account.get',
@@ -212,7 +211,7 @@ export function formatContextForPrompt(context: AgentContext): string {
     context.user.businessUnitName ? `- Business Unit: ${context.user.businessUnitName}` : '',
     '',
     '## Available Resources',
-    `- RFPs: ${context.resources.rfpCount} total`,
+    `- Pre-Qualifications: ${context.resources.rfpCount} total`,
     context.resources.recentRfps.length > 0
       ? `- Recent: ${context.resources.recentRfps.map(r => `${r.customerName || r.id} (${r.status})`).join(', ')}`
       : '',

@@ -81,7 +81,7 @@ Synthesize the outputs from other expert agents into a concise, decision-focused
 Return valid JSON matching the schema.`;
 }
 
-async function getExpertAgentOutputs(rfpId: string): Promise<string> {
+async function getExpertAgentOutputs(preQualificationId: string): Promise<string> {
   const results = await db
     .select({
       agentName: dealEmbeddings.agentName,
@@ -91,7 +91,7 @@ async function getExpertAgentOutputs(rfpId: string): Promise<string> {
     .from(dealEmbeddings)
     .where(
       and(
-        eq(dealEmbeddings.preQualificationId, rfpId),
+        eq(dealEmbeddings.preQualificationId, preQualificationId),
         inArray(dealEmbeddings.agentName, EXPERT_AGENT_NAMES)
       )
     );
@@ -122,12 +122,12 @@ async function getExpertAgentOutputs(rfpId: string): Promise<string> {
 export async function runSummaryAgent(
   input: ExpertAgentInput
 ): Promise<ExpertAgentOutput<ManagementSummary>> {
-  const { rfpId } = input;
+  const { preQualificationId } = input;
 
   try {
     const [expertOutputs, ragResults] = await Promise.all([
-      getExpertAgentOutputs(rfpId),
-      queryRfpDocument(rfpId, SUMMARY_RAG_QUERY, 10),
+      getExpertAgentOutputs(preQualificationId),
+      queryRfpDocument(preQualificationId, SUMMARY_RAG_QUERY, 10),
     ]);
 
     if (!expertOutputs && ragResults.length === 0) {
@@ -156,7 +156,7 @@ export async function runSummaryAgent(
     });
 
     const summaryContent = buildSummaryForStorage(analysis);
-    await storeAgentResult(rfpId, 'summary_expert', summaryContent, {
+    await storeAgentResult(preQualificationId, 'summary_expert', summaryContent, {
       fitScore: analysis.assessment.fitScore,
       complexityScore: analysis.assessment.complexityScore,
       recommendation: analysis.assessment.recommendation,

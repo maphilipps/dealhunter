@@ -10,6 +10,8 @@ import {
 import { notFound, redirect } from 'next/navigation';
 
 import { BidDetailClient } from '@/components/bids/bid-detail-client';
+import { DeletePreQualificationButton } from '@/components/pre-qualifications/delete-prequalification-button';
+import { QuickScanStatusBanner } from '@/components/pre-qualifications/quick-scan-status-banner';
 import { RunExpertAgentsButton } from '@/components/pre-qualifications/run-expert-agents-button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +20,7 @@ import { Progress } from '@/components/ui/progress';
 import { getAgentResult, hasExpertAgentResults } from '@/lib/agents/expert-agents';
 import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schema';
 import { auth } from '@/lib/auth';
-import { getCachedRfp } from '@/lib/pre-qualifications/cached-queries';
+import { getCachedPreQualification } from '@/lib/pre-qualifications/cached-queries';
 
 export default async function BidDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -29,7 +31,7 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
   }
 
   // Get bid opportunity (cached - shares query with layout)
-  const bid = await getCachedRfp(id);
+  const bid = await getCachedPreQualification(id);
 
   if (!bid) {
     notFound();
@@ -50,6 +52,7 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
     // The metadata contains the key fields we need
     summary = summaryResult.metadata as unknown as ManagementSummary;
   }
+  const deleteLabel = summary?.headline || bid.id;
 
   return (
     <div className="space-y-6">
@@ -57,12 +60,18 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {summary?.headline || 'RFP Übersicht'}
+            {summary?.headline || 'Pre-Qualification Übersicht'}
           </h1>
           <p className="text-muted-foreground">ID: {bid.id}</p>
         </div>
-        <RunExpertAgentsButton rfpId={id} hasResults={hasResults} />
+        <div className="flex items-center gap-2">
+          <RunExpertAgentsButton rfpId={id} hasResults={hasResults} />
+          <DeletePreQualificationButton rfpId={id} label={deleteLabel} />
+        </div>
       </div>
+
+      {/* Quick Scan Status */}
+      <QuickScanStatusBanner showWhenComplete={true} dismissible={true} />
 
       {/* Expert Analysis Not Run Yet */}
       {!hasResults && (
@@ -304,7 +313,7 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
               <p className="font-medium">
                 {bid.stage === 'cold' && 'Cold'}
                 {bid.stage === 'warm' && 'Warm'}
-                {bid.stage === 'rfp' && 'RFP'}
+                {bid.stage === 'pre-qualification' && 'Pre-Qualification'}
               </p>
             </div>
             <div>

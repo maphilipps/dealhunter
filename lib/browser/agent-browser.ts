@@ -142,7 +142,9 @@ export async function reload(options: BrowserSession = {}): Promise<void> {
  * Get the current page HTML
  */
 export async function getHtml(options: BrowserSession = {}): Promise<string> {
-  const { stdout } = await runCommand(['get', 'html'], { session: options.session });
+  // agent-browser now requires a selector for 'get html'
+  // Using 'html' selector to get the complete document HTML
+  const { stdout } = await runCommand(['get', 'html', 'html'], { session: options.session });
   return stdout;
 }
 

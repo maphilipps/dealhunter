@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { uploadCombinedBid } from '@/lib/bids/actions';
+import { createPendingPreQualification } from '@/lib/bids/actions';
 
 interface UploadBidFormProps {
   userId: string;
@@ -121,44 +121,31 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
       }
 
       formData.append('source', 'reactive');
-      formData.append('stage', 'rfp');
+      formData.append('stage', 'pre-qualification');
       formData.append('enableDSGVO', enableDSGVO.toString());
 
-      if (selectedAccountId) {
+      if (selectedAccountId && selectedAccountId !== 'none') {
         formData.append('accountId', selectedAccountId);
       }
 
-      const result = await uploadCombinedBid(formData);
+      // Use new async-first action - creates pending entry and queues background processing
+      const result = await createPendingPreQualification(formData);
 
       if (result.success) {
-        const fileCount = selectedFiles.length;
-        const urlCount = validUrls.length;
-        const hasText = additionalText.trim().length > 0;
-
-        let message = 'Erfolgreich hochgeladen';
-        if (fileCount > 1 || urlCount > 1 || (fileCount >= 1 && urlCount >= 1)) {
-          const parts = [];
-          if (fileCount > 0) parts.push(`${fileCount} PDF${fileCount > 1 ? 's' : ''}`);
-          if (urlCount > 0) parts.push(`${urlCount} URL${urlCount > 1 ? 's' : ''}`);
-          if (hasText) parts.push('Text');
-          message = `${parts.join(' + ')} kombiniert`;
-        }
-
-        if (result.piiRemoved) {
-          message += ' (persönliche Daten entfernt)';
-        }
-
-        toast.success(message);
+        toast.success('Verarbeitung gestartet...');
+        // Navigate immediately - processing continues in background
+        // Do NOT reset isUploading - let navigation handle it
         router.push(`/pre-qualifications/${result.bidId}`);
       } else {
         toast.error(result.error || 'Upload fehlgeschlagen');
+        setIsUploading(false);
       }
     } catch (error) {
       toast.error('Ein Fehler ist aufgetreten');
       console.error('Upload error:', error);
-    } finally {
       setIsUploading(false);
     }
+    // Note: No finally block - isUploading stays true until navigation completes
   };
 
   const validUrls = websiteUrls.filter(url => url.trim());
@@ -171,7 +158,7 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
       <Card className="border-primary/20 bg-primary/5">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg text-primary">
-            RFP Eingabe - Kombinieren Sie beliebig viele Quellen
+            Pre-Qualification Eingabe - Kombinieren Sie beliebig viele Quellen
           </CardTitle>
           <CardDescription>
             Alle Quellen werden zu einem ganzheitlichen Input für die AI-Analyse kombiniert.
@@ -271,7 +258,7 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
                     <Upload className="h-5 w-5 text-primary" />
                     PDF Dokumente
                   </CardTitle>
-                  <CardDescription>RFP, Anhänge, E-Mails als PDF</CardDescription>
+                  <CardDescription>Pre-Qualification, Anhänge, E-Mails als PDF</CardDescription>
                 </div>
                 {selectedFiles.length > 0 && (
                   <span className="text-sm text-muted-foreground">
@@ -373,7 +360,7 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
               <Textarea
                 value={additionalText}
                 onChange={e => setAdditionalText(e.target.value)}
-                placeholder="Kopieren Sie hier den RFP-Text oder E-Mail-Inhalt ein..."
+                placeholder="Kopieren Sie hier den Pre-Qualification-Text oder E-Mail-Inhalt ein..."
                 rows={6}
                 disabled={isUploading}
                 className="resize-y"

@@ -85,10 +85,10 @@ export type HostingAnalysis = z.infer<typeof HostingAnalysisSchema>;
  * Run hosting agent
  *
  * @param leadId - Lead ID
- * @param rfpId - RFP ID
+ * @param rfpId - Pre-Qualification ID
  * @returns Hosting analysis with recommendations
  */
-export async function runHostingAgent(leadId: string, rfpId: string): Promise<HostingAnalysis> {
+export async function runHostingAgent(leadId: string, preQualificationId: string): Promise<HostingAnalysis> {
   // 1. Fetch lead and Quick Scan data
   const [leadData] = await db
     .select({
@@ -216,7 +216,7 @@ ${result.migrationRisk.factors.map(f => `- ${f}`).join('\n')}`;
   if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
     await db.insert(dealEmbeddings).values({
       qualificationId: leadId,
-      preQualificationId: rfpId,
+      preQualificationId: preQualificationId,
       agentName: 'hosting',
       chunkType: 'analysis',
       chunkIndex: 0,

@@ -28,7 +28,7 @@ import {
 import { getAgentResult } from '@/lib/agents/expert-agents';
 import type { TechStackAnalysis } from '@/lib/agents/expert-agents/techstack-schema';
 import { auth } from '@/lib/auth';
-import { getCachedRfpWithRelations } from '@/lib/pre-qualifications/cached-queries';
+import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
 
 // Labels for categories and requirement types
 const categoryLabels: Record<string, string> = {
@@ -171,18 +171,18 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
     redirect('/login');
   }
 
-  // Get RFP with relations (cached and parallelized) and expert agent results
-  const [{ rfp, quickScan }, techStackAgentResult] = await Promise.all([
-    getCachedRfpWithRelations(id),
+  // Get Pre-Qualification with relations (cached and parallelized) and expert agent results
+  const [{ preQualification, quickScan }, techStackAgentResult] = await Promise.all([
+    getCachedPreQualificationWithRelations(id),
     getAgentResult(id, 'techstack_expert'),
   ]);
 
-  if (!rfp) {
+  if (!preQualification) {
     notFound();
   }
 
   // Check ownership
-  if (rfp.userId !== session.user.id) {
+  if (preQualification.userId !== session.user.id) {
     notFound();
   }
 
@@ -207,16 +207,16 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Tech Stack</h1>
-        <p className="text-muted-foreground">Anforderungen aus RFP & Website-Analyse</p>
+        <p className="text-muted-foreground">Anforderungen aus Pre-Qualification & Website-Analyse</p>
       </div>
 
-      {/* RFP Requirements Section */}
+      {/* Pre-Qualification Requirements Section */}
       {techStackAnalysis && (
         <>
           <div className="space-y-4">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <FileText className="h-5 w-5 text-blue-600" />
-              RFP Anforderungen (Expert Agent)
+              Pre-Qualification Anforderungen (Expert Agent)
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -485,7 +485,7 @@ export default async function TechPage({ params }: { params: Promise<{ id: strin
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Alle Technologie-Anforderungen</CardTitle>
-                  <CardDescription>Aus dem RFP-Dokument extrahierte Technologien</CardDescription>
+                  <CardDescription>Aus dem Pre-Qualification-Dokument extrahierte Technologien</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>

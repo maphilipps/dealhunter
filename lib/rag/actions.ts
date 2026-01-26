@@ -121,7 +121,7 @@ function safeParseJSON<T>(str: string | null, fallback: T): T {
 // ============================================================================
 
 /**
- * Get aggregated RAG statistics for an RFP
+ * Get aggregated RAG statistics for an Pre-Qualification
  */
 export async function getRAGStats(
   input: z.infer<typeof getRAGStatsSchema>
@@ -428,7 +428,7 @@ export async function getSectionData(
 
 /**
  * Search for similar chunks using cosine similarity
- * Supports both RFP-based search (dealEmbeddings, rawChunks) and Lead-based search (dealEmbeddings)
+ * Supports both Pre-Qualification-based search (dealEmbeddings, rawChunks) and Lead-based search (dealEmbeddings)
  */
 export async function searchSimilar(
   input: SimilaritySearchParams
@@ -587,7 +587,7 @@ export async function searchSimilar(
 }
 
 /**
- * Get RFP ID for a lead (helper for client components)
+ * Get Pre-Qualification ID for a lead (helper for client components)
  */
 export async function getRfpIdForLead(
   qualificationId: string
@@ -605,7 +605,7 @@ export async function getRfpIdForLead(
     };
   } catch (error) {
     console.error('[RAG Actions] getRfpIdForLead failed:', error);
-    return { success: false, error: 'Failed to get RFP ID' };
+    return { success: false, error: 'Failed to get Pre-Qualification ID' };
   }
 }
 
@@ -825,7 +825,7 @@ export async function getLeadEmbeddingTypes(
 }
 
 /**
- * Get unique agent names for an RFP (for filter dropdowns)
+ * Get unique agent names for an Pre-Qualification (for filter dropdowns)
  */
 export async function getAgentNames(preQualificationId: string): Promise<ActionResult<string[]>> {
   try {
@@ -846,7 +846,7 @@ export async function getAgentNames(preQualificationId: string): Promise<ActionR
 }
 
 /**
- * Get unique chunk types for an RFP (for filter dropdowns)
+ * Get unique chunk types for an Pre-Qualification (for filter dropdowns)
  */
 export async function getChunkTypes(preQualificationId: string): Promise<ActionResult<string[]>> {
   try {

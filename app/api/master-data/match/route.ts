@@ -58,7 +58,7 @@ export type MatchResult = {
 /**
  * POST /api/master-data/match
  *
- * Auto-matches references, competencies, and competitors based on RFP criteria.
+ * Auto-matches references, competencies, and competitors based on Pre-Qualification criteria.
  * Used during bid evaluation to surface relevant master data.
  */
 export async function POST(request: NextRequest) {

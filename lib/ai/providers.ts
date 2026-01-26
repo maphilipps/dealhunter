@@ -5,6 +5,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from './config';
+
 /**
  * Centralized AI SDK Providers Configuration
  *
@@ -32,25 +34,23 @@ let openaiProviderInstance: any = null;
  * Prefer using the direct OpenAI SDK from lib/ai/config.ts for most use cases.
  *
  * Uses environment variables:
- * - OPENAI_API_KEY: API key for adesso AI Hub
- * - OPENAI_BASE_URL: Base URL for adesso AI Hub (defaults to production URL)
+ * - AI_HUB_API_KEY: API key for adesso AI Hub
+ * - AI_HUB_BASE_URL: Base URL for adesso AI Hub (defaults to production URL)
  */
 export function getOpenAIProvider() {
   if (!openaiProviderInstance) {
     // Dynamic import only when needed
     const { createOpenAI } = require('@ai-sdk/openai');
     openaiProviderInstance = createOpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+      apiKey: AI_HUB_API_KEY,
+      baseURL: AI_HUB_BASE_URL,
     });
   }
   return openaiProviderInstance;
 }
 
 // Backward-compatible export (deprecated - use getOpenAIProvider() instead)
-export const openai = new Proxy({} as any, {
-  get(target, prop) {
-    const provider = getOpenAIProvider();
-    return Reflect.get(provider, prop);
-  },
-});
+export function openai(...args: any[]) {
+  const provider = getOpenAIProvider();
+  return provider(...args);
+}

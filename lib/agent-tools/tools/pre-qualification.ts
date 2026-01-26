@@ -7,7 +7,7 @@ import type { ToolContext } from '../types';
 import { db } from '@/lib/db';
 import { preQualifications, documents, quickScans } from '@/lib/db/schema';
 
-const listRfpsInputSchema = z.object({
+const listPreQualificationsInputSchema = z.object({
   status: z
     .enum([
       'draft',
@@ -30,10 +30,10 @@ const listRfpsInputSchema = z.object({
 });
 
 registry.register({
-  name: 'rfp.list',
-  description: 'List all RFPs/Bids for the current user, optionally filtered by status',
-  category: 'rfp',
-  inputSchema: listRfpsInputSchema,
+  name: 'preQualification.list',
+  description: 'List all Pre-Qualifications/Bids for the current user, optionally filtered by status',
+  category: 'pre-qualification',
+  inputSchema: listPreQualificationsInputSchema,
   async execute(input, context: ToolContext) {
     let results;
     if (input.status) {
@@ -61,33 +61,33 @@ registry.register({
   },
 });
 
-const getRfpInputSchema = z.object({
+const getPreQualificationInputSchema = z.object({
   id: z.string(),
 });
 
 registry.register({
-  name: 'rfp.get',
-  description: 'Get a single RFP/Bid by ID',
-  category: 'rfp',
-  inputSchema: getRfpInputSchema,
+  name: 'preQualification.get',
+  description: 'Get a single Pre-Qualification/Bid by ID',
+  category: 'pre-qualification',
+  inputSchema: getPreQualificationInputSchema,
   async execute(input, context: ToolContext) {
-    const [rfp] = await db
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
       .where(and(eq(preQualifications.id, input.id), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
-    if (!rfp) {
-      return { success: false, error: 'RFP not found or no access' };
+    if (!preQualification) {
+      return { success: false, error: 'Pre-Qualification not found or no access' };
     }
 
-    return { success: true, data: rfp };
+    return { success: true, data: preQualification };
   },
 });
 
-const createRfpInputSchema = z.object({
+const createPreQualificationInputSchema = z.object({
   source: z.enum(['reactive', 'proactive']),
-  stage: z.enum(['cold', 'warm', 'rfp']),
+  stage: z.enum(['cold', 'warm', 'pre-qualification']),
   inputType: z.enum(['pdf', 'crm', 'freetext', 'email', 'combined']),
   rawInput: z.string().min(20),
   websiteUrl: z.string().url().optional(),
@@ -95,12 +95,12 @@ const createRfpInputSchema = z.object({
 });
 
 registry.register({
-  name: 'rfp.create',
-  description: 'Create a new RFP/Bid from text input',
-  category: 'rfp',
-  inputSchema: createRfpInputSchema,
+  name: 'preQualification.create',
+  description: 'Create a new Pre-Qualification/Bid from text input',
+  category: 'pre-qualification',
+  inputSchema: createPreQualificationInputSchema,
   async execute(input, context: ToolContext) {
-    const [rfp] = await db
+    const [preQualification] = await db
       .insert(preQualifications)
       .values({
         userId: context.userId,
@@ -115,11 +115,11 @@ registry.register({
       })
       .returning();
 
-    return { success: true, data: rfp };
+    return { success: true, data: preQualification };
   },
 });
 
-const updateRfpInputSchema = z.object({
+const updatePreQualificationInputSchema = z.object({
   id: z.string(),
   status: z
     .enum([
@@ -146,10 +146,10 @@ const updateRfpInputSchema = z.object({
 });
 
 registry.register({
-  name: 'rfp.update',
-  description: 'Update an existing RFP/Bid',
-  category: 'rfp',
-  inputSchema: updateRfpInputSchema,
+  name: 'preQualification.update',
+  description: 'Update an existing Pre-Qualification/Bid',
+  category: 'pre-qualification',
+  inputSchema: updatePreQualificationInputSchema,
   async execute(input, context: ToolContext) {
     const [existing] = await db
       .select()
@@ -158,7 +158,7 @@ registry.register({
       .limit(1);
 
     if (!existing) {
-      return { success: false, error: 'RFP not found or no access' };
+      return { success: false, error: 'Pre-Qualification not found or no access' };
     }
 
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
@@ -180,15 +180,15 @@ registry.register({
   },
 });
 
-const deleteRfpInputSchema = z.object({
+const deletePreQualificationInputSchema = z.object({
   id: z.string(),
 });
 
 registry.register({
-  name: 'rfp.delete',
-  description: 'Delete an RFP/Bid (archives it)',
-  category: 'rfp',
-  inputSchema: deleteRfpInputSchema,
+  name: 'preQualification.delete',
+  description: 'Delete an Pre-Qualification/Bid (archives it)',
+  category: 'pre-qualification',
+  inputSchema: deletePreQualificationInputSchema,
   async execute(input, context: ToolContext) {
     const [existing] = await db
       .select()
@@ -197,7 +197,7 @@ registry.register({
       .limit(1);
 
     if (!existing) {
-      return { success: false, error: 'RFP not found or no access' };
+      return { success: false, error: 'Pre-Qualification not found or no access' };
     }
 
     const [archived] = await db
@@ -211,35 +211,35 @@ registry.register({
 });
 
 const getQuickScanInputSchema = z.object({
-  rfpId: z.string(),
+  preQualificationId: z.string(),
 });
 
 registry.register({
-  name: 'rfp.getQuickScan',
-  description: 'Get Quick Scan results for an RFP',
-  category: 'rfp',
+  name: 'preQualification.getQuickScan',
+  description: 'Get Quick Scan results for an Pre-Qualification',
+  category: 'pre-qualification',
   inputSchema: getQuickScanInputSchema,
   async execute(input, context: ToolContext) {
-    const [rfp] = await db
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
       .where(
-        and(eq(preQualifications.id, input.rfpId), eq(preQualifications.userId, context.userId))
+        and(eq(preQualifications.id, input.preQualificationId), eq(preQualifications.userId, context.userId))
       )
       .limit(1);
 
-    if (!rfp) {
-      return { success: false, error: 'RFP not found or no access' };
+    if (!preQualification) {
+      return { success: false, error: 'Pre-Qualification not found or no access' };
     }
 
-    if (!rfp.quickScanId) {
-      return { success: false, error: 'No Quick Scan for this RFP' };
+    if (!preQualification.quickScanId) {
+      return { success: false, error: 'No Quick Scan for this Pre-Qualification' };
     }
 
     const [scan] = await db
       .select()
       .from(quickScans)
-      .where(eq(quickScans.id, rfp.quickScanId))
+      .where(eq(quickScans.id, preQualification.quickScanId))
       .limit(1);
 
     return { success: true, data: scan };
@@ -247,25 +247,25 @@ registry.register({
 });
 
 const listDocumentsInputSchema = z.object({
-  rfpId: z.string(),
+  preQualificationId: z.string(),
 });
 
 registry.register({
-  name: 'rfp.listDocuments',
-  description: 'List all documents attached to an RFP',
-  category: 'rfp',
+  name: 'preQualification.listDocuments',
+  description: 'List all documents attached to an Pre-Qualification',
+  category: 'pre-qualification',
   inputSchema: listDocumentsInputSchema,
   async execute(input, context: ToolContext) {
-    const [rfp] = await db
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
       .where(
-        and(eq(preQualifications.id, input.rfpId), eq(preQualifications.userId, context.userId))
+        and(eq(preQualifications.id, input.preQualificationId), eq(preQualifications.userId, context.userId))
       )
       .limit(1);
 
-    if (!rfp) {
-      return { success: false, error: 'RFP not found or no access' };
+    if (!preQualification) {
+      return { success: false, error: 'Pre-Qualification not found or no access' };
     }
 
     const docs = await db
@@ -278,7 +278,7 @@ registry.register({
         uploadedAt: documents.uploadedAt,
       })
       .from(documents)
-      .where(eq(documents.preQualificationId, input.rfpId))
+      .where(eq(documents.preQualificationId, input.preQualificationId))
       .orderBy(desc(documents.uploadedAt));
 
     return { success: true, data: docs };

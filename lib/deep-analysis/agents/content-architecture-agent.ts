@@ -9,11 +9,12 @@ import { z } from 'zod';
 
 import { ContentArchitectureSchema, type ContentArchitecture } from '../schemas';
 import { fetchSitemap, samplePages, fetchPageContent, extractPageMetadata } from '../utils/crawler';
+import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.OPENAI_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+  apiKey: AI_HUB_API_KEY,
+  baseURL: AI_HUB_BASE_URL,
 });
 
 // Schema for page classification

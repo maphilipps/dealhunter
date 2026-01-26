@@ -13,7 +13,43 @@ import { getConnection } from './connection';
  */
 export const QUEUE_NAMES = {
   DEEP_SCAN: 'deep-scan',
+  PREQUAL_PROCESSING: 'prequal-processing',
+  QUICK_SCAN: 'quick-scan',
 } as const;
+
+/**
+ * PreQual Processing job data structure
+ */
+export interface PreQualProcessingJobData {
+  /** PreQualification ID */
+  preQualificationId: string;
+  /** User who triggered the processing */
+  userId: string;
+  /** PDF files as base64 encoded strings */
+  files: Array<{
+    name: string;
+    base64: string;
+    size: number;
+  }>;
+  /** Website URLs to analyze */
+  websiteUrls: string[];
+  /** Additional text input */
+  additionalText: string;
+  /** Enable DSGVO PII cleaning */
+  enableDSGVO: boolean;
+  /** Optional account ID */
+  accountId?: string;
+}
+
+/**
+ * PreQual Processing job result structure
+ */
+export interface PreQualProcessingJobResult {
+  success: boolean;
+  step: 'extracting' | 'duplicate_checking' | 'scanning' | 'timeline' | 'complete';
+  progress: number;
+  error?: string;
+}
 
 /**
  * Deep Scan job data structure
@@ -41,6 +77,29 @@ export interface DeepScanJobResult {
   completedExperts: string[];
   failedExperts: string[];
   sectionConfidences: Record<string, number>;
+  errors?: Record<string, string>;
+  error?: string;
+}
+
+/**
+ * Quick Scan job data structure
+ */
+export interface QuickScanJobData {
+  /** PreQualification ID to scan */
+  preQualificationId: string;
+  /** QuickScan record ID */
+  quickScanId: string;
+  /** Website URL to scan */
+  websiteUrl: string;
+  /** User who triggered the scan */
+  userId: string;
+}
+
+/**
+ * Quick Scan job result structure
+ */
+export interface QuickScanJobResult {
+  success: boolean;
   error?: string;
 }
 
@@ -149,6 +208,196 @@ export async function getDeepScanJob(jobId: string) {
   return queue.getJob(jobId);
 }
 
+// ============================================================================
+// PreQual Processing Queue
+// ============================================================================
+
+/**
+ * PreQual Processing Queue
+ *
+ * Handles background processing of new Pre-Qualification submissions with:
+ * - PDF extraction
+ * - Duplicate checking
+ * - Quick scan
+ * - Timeline generation (for BID decisions)
+ */
+let prequalProcessingQueue: Queue<
+  PreQualProcessingJobData,
+  PreQualProcessingJobResult,
+  string
+> | null = null;
+
+/**
+ * Get or create the PreQual Processing queue
+ */
+export function getPreQualProcessingQueue(): Queue<
+  PreQualProcessingJobData,
+  PreQualProcessingJobResult,
+  string
+> {
+  if (!prequalProcessingQueue) {
+    prequalProcessingQueue = new Queue<
+      PreQualProcessingJobData,
+      PreQualProcessingJobResult,
+      string
+    >(QUEUE_NAMES.PREQUAL_PROCESSING, {
+      connection: getConnection(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 30000, // 30 seconds initial delay
+        },
+        // Keep completed jobs for 24 hours
+        removeOnComplete: {
+          age: 24 * 60 * 60,
+          count: 100,
+        },
+        // Keep failed jobs for 7 days
+        removeOnFail: {
+          age: 7 * 24 * 60 * 60,
+          count: 500,
+        },
+      },
+    });
+
+    console.log('[BullMQ] PreQual Processing queue initialized');
+  }
+
+  return prequalProcessingQueue!;
+}
+
+// ============================================================================
+// Quick Scan Queue
+// ============================================================================
+
+/**
+ * Quick Scan Queue
+ *
+ * Handles background processing of manual quick scan jobs.
+ */
+let quickScanQueue: Queue<QuickScanJobData, QuickScanJobResult, string> | null = null;
+
+/**
+ * Get or create the Quick Scan queue
+ */
+export function getQuickScanQueue(): Queue<QuickScanJobData, QuickScanJobResult, string> {
+  if (!quickScanQueue) {
+    quickScanQueue = new Queue<QuickScanJobData, QuickScanJobResult, string>(QUEUE_NAMES.QUICK_SCAN, {
+      connection: getConnection(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 30000,
+        },
+        removeOnComplete: {
+          age: 24 * 60 * 60,
+          count: 100,
+        },
+        removeOnFail: {
+          age: 7 * 24 * 60 * 60,
+          count: 500,
+        },
+      },
+    });
+
+    console.log('[BullMQ] Quick Scan queue initialized');
+  }
+
+  return quickScanQueue!;
+}
+
+/**
+ * Queue events for Quick Scan monitoring
+ */
+let quickScanQueueEvents: QueueEvents | null = null;
+
+/**
+ * Get or create queue events for the Quick Scan queue
+ */
+export function getQuickScanQueueEvents(): QueueEvents {
+  if (!quickScanQueueEvents) {
+    quickScanQueueEvents = new QueueEvents(QUEUE_NAMES.QUICK_SCAN, {
+      connection: getConnection(),
+    });
+  }
+
+  return quickScanQueueEvents;
+}
+
+/**
+ * Add a quick scan job to the queue
+ *
+ * @param data - Job data
+ * @returns The created job
+ */
+export async function addQuickScanJob(data: QuickScanJobData) {
+  const queue = getQuickScanQueue();
+
+  const job = await queue.add('process', data);
+
+  console.log(
+    `[BullMQ] Added quick scan job ${job.id} for prequal ${data.preQualificationId}`
+  );
+
+  return job;
+}
+
+/**
+ * Get a quick scan job by ID
+ */
+export async function getQuickScanJob(jobId: string) {
+  const queue = getQuickScanQueue();
+  return queue.getJob(jobId);
+}
+
+/**
+ * Queue events for PreQual Processing monitoring
+ */
+let prequalProcessingQueueEvents: QueueEvents | null = null;
+
+/**
+ * Get or create queue events for the PreQual Processing queue
+ */
+export function getPreQualProcessingQueueEvents(): QueueEvents {
+  if (!prequalProcessingQueueEvents) {
+    prequalProcessingQueueEvents = new QueueEvents(QUEUE_NAMES.PREQUAL_PROCESSING, {
+      connection: getConnection(),
+    });
+  }
+
+  return prequalProcessingQueueEvents;
+}
+
+/**
+ * Add a prequal processing job to the queue
+ *
+ * @param data - Job data
+ * @returns The created job
+ */
+export async function addPreQualProcessingJob(data: PreQualProcessingJobData) {
+  const queue = getPreQualProcessingQueue();
+
+  const job = await queue.add('process', data, {
+    jobId: data.preQualificationId, // Use prequal ID as job ID for easy lookup
+  });
+
+  console.log(
+    `[BullMQ] Added prequal processing job ${job.id} for prequal ${data.preQualificationId}`
+  );
+
+  return job;
+}
+
+/**
+ * Get a prequal processing job by ID
+ */
+export async function getPreQualProcessingJob(jobId: string) {
+  const queue = getPreQualProcessingQueue();
+  return queue.getJob(jobId);
+}
+
 /**
  * Close all queue connections
  * Call this on graceful shutdown
@@ -162,6 +411,26 @@ export async function closeQueues(): Promise<void> {
   if (deepScanQueueEvents) {
     await deepScanQueueEvents.close();
     deepScanQueueEvents = null;
+  }
+
+  if (prequalProcessingQueue) {
+    await prequalProcessingQueue.close();
+    prequalProcessingQueue = null;
+  }
+
+  if (prequalProcessingQueueEvents) {
+    await prequalProcessingQueueEvents.close();
+    prequalProcessingQueueEvents = null;
+  }
+
+  if (quickScanQueue) {
+    await quickScanQueue.close();
+    quickScanQueue = null;
+  }
+
+  if (quickScanQueueEvents) {
+    await quickScanQueueEvents.close();
+    quickScanQueueEvents = null;
   }
 
   console.log('[BullMQ] All queues closed');

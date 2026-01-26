@@ -28,7 +28,7 @@ export function QualificationsEmptyStateClient({ userRole }: QualificationsEmpty
             id: 'wait-for-qualifications',
             icon: <Zap className="h-5 w-5" />,
             label: 'Qualifications erwarten',
-            description: 'BD Team qualifiziert RFPs und leitet passende Qualifications weiter',
+            description: 'BD Team qualifiziert Pre-Qualifications und leitet passende Qualifications weiter',
             onClick: () => {
               // Just informational - no action needed
             },
@@ -50,8 +50,8 @@ export function QualificationsEmptyStateClient({ userRole }: QualificationsEmpty
           {
             id: 'create-rfp',
             icon: <Upload className="h-5 w-5" />,
-            label: 'RFP hochladen',
-            description: 'Laden Sie ein RFP hoch, um den Qualifizierungsprozess zu starten',
+            label: 'Pre-Qualification hochladen',
+            description: 'Laden Sie ein Pre-Qualification hoch, um den Qualifizierungsprozess zu starten',
             onClick: () => {
               router.push('/pre-qualifications/new');
             },
@@ -71,7 +71,7 @@ export function QualificationsEmptyStateClient({ userRole }: QualificationsEmpty
             id: 'view-docs',
             icon: <BookOpen className="h-5 w-5" />,
             label: 'Dokumentation',
-            description: 'Erfahren Sie mehr über den RFP-zu-Lead-Workflow',
+            description: 'Erfahren Sie mehr über den Pre-Qualification-zu-Lead-Workflow',
             onClick: () => {
               router.push('/docs/workflow');
             },
@@ -86,8 +86,8 @@ export function QualificationsEmptyStateClient({ userRole }: QualificationsEmpty
         title="Keine Qualifications vorhanden"
         description={
           userRole === 'bl'
-            ? 'Für Ihre Business Unit wurden noch keine Qualifications weitergeleitet. Sobald das BD Team ein passendes RFP qualifiziert, erscheint es hier.'
-            : 'Es gibt aktuell keine Qualifications im System. Laden Sie RFPs hoch, um den Qualifizierungsprozess zu starten.'
+            ? 'Für Ihre Business Unit wurden noch keine Qualifications weitergeleitet. Sobald das BD Team ein passendes Pre-Qualification qualifiziert, erscheint es hier.'
+            : 'Es gibt aktuell keine Qualifications im System. Laden Sie Pre-Qualifications hoch, um den Qualifizierungsprozess zu starten.'
         }
         variant="info"
       />

@@ -29,7 +29,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { getAgentResult, type LegalRfpAnalysis } from '@/lib/agents/expert-agents';
 import { auth } from '@/lib/auth';
-import { getCachedRfpWithRelations } from '@/lib/pre-qualifications/cached-queries';
+import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
 import { parseJsonField } from '@/lib/utils/json';
 
 interface LegalCompliance {
@@ -123,21 +123,21 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
     redirect('/login');
   }
 
-  // Get RFP with relations (cached and parallelized)
-  const [{ rfp, quickScan }, legalAgentRow] = await Promise.all([
-    getCachedRfpWithRelations(id),
+  // Get Pre-Qualification with relations (cached and parallelized)
+  const [{ preQualification, quickScan }, legalAgentRow] = await Promise.all([
+    getCachedPreQualificationWithRelations(id),
     getAgentResult(id, 'legal_rfp_expert'),
   ]);
 
   // Parse the legal agent result from metadata
   const legalAgentResult = legalAgentRow?.metadata as LegalRfpAnalysis | null;
 
-  if (!rfp) {
+  if (!preQualification) {
     notFound();
   }
 
   // Check ownership
-  if (rfp.userId !== session.user.id) {
+  if (preQualification.userId !== session.user.id) {
     notFound();
   }
 
@@ -146,7 +146,7 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
 
   // Parse extracted requirements
   const extractedReqs = parseJsonField<ExtractedRequirements | null>(
-    rfp.extractedRequirements,
+    preQualification.extractedRequirements,
     null
   );
 
@@ -187,7 +187,7 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
                 </Badge>
               </div>
               <CardDescription>
-                Bewertung der rechtlichen Risiken aus dem RFP-Dokument (Konfidenz:{' '}
+                Bewertung der rechtlichen Risiken aus dem Pre-Qualification-Dokument (Konfidenz:{' '}
                 {legalAgentResult.confidence}%)
               </CardDescription>
             </CardHeader>
@@ -595,7 +595,7 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
         </Card>
       )}
 
-      {/* Legal Requirements from RFP */}
+      {/* Legal Requirements from Pre-Qualification */}
       {extractedReqs?.legalRequirements && extractedReqs.legalRequirements.length > 0 && (
         <Card>
           <CardHeader>
@@ -603,7 +603,7 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
               <Scale className="h-5 w-5" />
               Rechtliche Anforderungen
             </CardTitle>
-            <CardDescription>Aus dem RFP-Dokument extrahierte rechtliche Vorgaben</CardDescription>
+            <CardDescription>Aus dem Pre-Qualification-Dokument extrahierte rechtliche Vorgaben</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">

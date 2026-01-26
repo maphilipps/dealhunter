@@ -1,7 +1,7 @@
 /**
  * Deliverables Expert Agent
  *
- * Extracts all required submission documents from RFP documents via RAG.
+ * Extracts all required submission documents from Pre-Qualification documents via RAG.
  */
 
 import { createId } from '@paralleldrive/cuid2';
@@ -36,9 +36,9 @@ const DeliverableWithoutIdSchema = DeliverablesAnalysisSchema.extend({
 });
 
 function buildSystemPrompt(): string {
-  return `You are a Deliverables Expert Agent analyzing RFP documents for submission requirements.
+  return `You are a Deliverables Expert Agent analyzing Pre-Qualification documents for submission requirements.
 
-Your task is to extract ALL required deliverables and submission documents from the provided RFP context.
+Your task is to extract ALL required deliverables and submission documents from the provided Pre-Qualification context.
 
 ## Instructions
 
@@ -78,7 +78,7 @@ Your task is to extract ALL required deliverables and submission documents from 
    - Set overall confidence based on completeness of extraction
 
 7. **Raw Text**:
-   - Include the exact text from the RFP that describes each deliverable
+   - Include the exact text from the Pre-Qualification that describes each deliverable
 
 Return valid JSON matching the schema. Be thorough - missing a mandatory deliverable could disqualify a proposal.`;
 }
@@ -86,11 +86,11 @@ Return valid JSON matching the schema. Be thorough - missing a mandatory deliver
 export async function runDeliverablesAgent(
   input: ExpertAgentInput
 ): Promise<ExpertAgentOutput<DeliverablesAnalysis>> {
-  const { rfpId } = input;
+  const { preQualificationId } = input;
 
   try {
     const ragResults = await Promise.all(
-      DELIVERABLES_QUERIES.map(query => queryRfpDocument(rfpId, query, 5))
+      DELIVERABLES_QUERIES.map(query => queryRfpDocument(preQualificationId, query, 5))
     );
 
     const allResults = ragResults.flat();
@@ -106,7 +106,7 @@ export async function runDeliverablesAgent(
           confidence: 0,
         },
         0,
-        'No deliverables information found in RFP document'
+        'No deliverables information found in Pre-Qualification document'
       );
     }
 
@@ -116,14 +116,14 @@ export async function runDeliverablesAgent(
 
     const context = formatContextFromRAG(
       uniqueResults.slice(0, 15),
-      'RFP Deliverables & Submission Requirements'
+      'Pre-Qualification Deliverables & Submission Requirements'
     );
 
     const rawAnalysis = await generateStructuredOutput({
       model: 'sonnet-4-5',
       schema: DeliverableWithoutIdSchema,
       system: buildSystemPrompt(),
-      prompt: `Analyze the following RFP content and extract all required deliverables and submission requirements:\n\n${context}`,
+      prompt: `Analyze the following Pre-Qualification content and extract all required deliverables and submission requirements:\n\n${context}`,
       temperature: 0.2,
     });
 
@@ -139,7 +139,7 @@ export async function runDeliverablesAgent(
     };
 
     const summaryContent = buildSummaryForStorage(analysis);
-    await storeAgentResult(rfpId, 'deliverables_expert', summaryContent, {
+    await storeAgentResult(preQualificationId, 'deliverables_expert', summaryContent, {
       totalCount: analysis.totalCount,
       mandatoryCount: analysis.mandatoryCount,
       primarySubmissionMethod: analysis.primarySubmissionMethod,

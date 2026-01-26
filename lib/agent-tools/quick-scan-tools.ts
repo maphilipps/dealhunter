@@ -3,22 +3,42 @@ import { z } from 'zod';
 import { registry } from './registry';
 import type { ToolContext } from './types';
 
-// Import primitive tools
+// Import primitive tools (using relative paths for worker compatibility)
+import { fetchWebsiteData } from '../quick-scan/tools/website-fetch';
 import {
   classifyContentTypes,
   estimateContentTypesFromUrls,
-} from '@/lib/quick-scan/tools/content-classifier';
+} from '../quick-scan/tools/content-classifier';
 import {
   searchDecisionMakers,
   quickContactSearch,
-} from '@/lib/quick-scan/tools/decision-maker-research';
+} from '../quick-scan/tools/decision-maker-research';
 import {
   analyzeMigrationComplexity,
   analyzeWithAI as analyzeMigrationWithAI,
-} from '@/lib/quick-scan/tools/migration-analyzer';
-import { crawlNavigation, quickNavigationScan } from '@/lib/quick-scan/tools/navigation-crawler';
-import { countPages, quickPageCount } from '@/lib/quick-scan/tools/page-counter';
-import { runPlaywrightAudit } from '@/lib/quick-scan/tools/playwright';
+} from '../quick-scan/tools/migration-analyzer';
+import { crawlNavigation, quickNavigationScan } from '../quick-scan/tools/navigation-crawler';
+import { countPages, quickPageCount } from '../quick-scan/tools/page-counter';
+import { runPlaywrightAudit } from '../quick-scan/tools/playwright';
+import {
+  analyzeTechStack,
+  analyzeContentVolume,
+  detectFeatures,
+  runSeoAudit,
+  runLegalCompliance,
+} from '../quick-scan/workflow/steps/analysis';
+import { gatherCompanyIntelligence } from '../quick-scan/tools/company-research';
+import { generateBLRecommendation } from '../quick-scan/workflow/steps/synthesis';
+import { loadBusinessUnitsFromDB } from '../quick-scan/workflow/steps/bootstrap';
+import type {
+  TechStack,
+  ContentVolume,
+  Features,
+  SEOAudit,
+  LegalCompliance,
+  CompanyIntelligence,
+  BLRecommendation,
+} from '../quick-scan/schema';
 
 /**
  * QuickScan 2.0 Agent Tools
@@ -36,10 +56,10 @@ const auditNavigationSchema = z.object({
 });
 
 registry.register({
-  name: 'quickscan.navigation.full',
+  name: 'scan.quickscan.navigation.full',
   description:
     'Crawlt die vollständige Navigationsstruktur einer Website und erstellt einen Sitemap-Baum',
-  category: 'quickscan',
+  category: 'scan',
   inputSchema: auditNavigationSchema,
   async execute(input, _context: ToolContext) {
     try {
@@ -69,9 +89,9 @@ const quickNavSchema = z.object({
 });
 
 registry.register({
-  name: 'quickscan.navigation.quick',
+  name: 'scan.quickscan.navigation.quick',
   description: 'Schneller Scan der Navigation (nur Homepage)',
-  category: 'quickscan',
+  category: 'scan',
   inputSchema: quickNavSchema,
   async execute(input, _context: ToolContext) {
     try {
@@ -96,9 +116,9 @@ const countPagesSchema = z.object({
 });
 
 registry.register({
-  name: 'quickscan.pages.count',
+  name: 'scan.quickscan.pages.count',
   description: 'Zählt alle Seiten einer Website (Sitemap + Link Discovery + Navigation)',
-  category: 'quickscan',
+  category: 'scan',
   inputSchema: countPagesSchema,
   async execute(input, _context: ToolContext) {
     try {
@@ -118,14 +138,133 @@ const quickCountSchema = z.object({
 });
 
 registry.register({
-  name: 'quickscan.pages.quick',
+  name: 'scan.quickscan.pages.quick',
   description: 'Schnelle Seitenzählung (nur Sitemap)',
-  category: 'quickscan',
+  category: 'scan',
   inputSchema: quickCountSchema,
   async execute(input, _context: ToolContext) {
     try {
       const result = await quickPageCount(input.url);
       return { success: true, data: result };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+// ========================================
+// Website Analysis Tools (Tech/Content/Features)
+// ========================================
+
+const techStackSchema = z.object({
+  url: z.string().describe('Website URL'),
+});
+
+registry.register({
+  name: 'scan.quickscan.techStack.analyze',
+  description: 'Erkennt CMS, Frameworks, Hosting und Libraries (Tech Stack)',
+  category: 'scan',
+  inputSchema: techStackSchema,
+  async execute(input, _context: ToolContext) {
+    try {
+      const websiteData = await fetchWebsiteData(input.url);
+      const result = analyzeTechStack(websiteData);
+      return { success: true, data: result as TechStack };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+const contentVolumeSchema = z.object({
+  url: z.string().describe('Website URL'),
+});
+
+registry.register({
+  name: 'scan.quickscan.content.volume',
+  description: 'Analysiert Seitenanzahl, Content-Typen und Medienvolumen',
+  category: 'scan',
+  inputSchema: contentVolumeSchema,
+  async execute(input, _context: ToolContext) {
+    try {
+      const websiteData = await fetchWebsiteData(input.url);
+      const result = analyzeContentVolume(websiteData);
+      return { success: true, data: result as ContentVolume };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+const featureDetectSchema = z.object({
+  url: z.string().describe('Website URL'),
+});
+
+registry.register({
+  name: 'scan.quickscan.features.detect',
+  description: 'Erkennt Website-Features (E-Commerce, Login, Suche, etc.)',
+  category: 'scan',
+  inputSchema: featureDetectSchema,
+  async execute(input, _context: ToolContext) {
+    try {
+      const websiteData = await fetchWebsiteData(input.url);
+      const result = detectFeatures(websiteData);
+      return { success: true, data: result as Features };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+const seoAuditSchema = z.object({
+  url: z.string().describe('Website URL'),
+});
+
+registry.register({
+  name: 'scan.quickscan.seo.audit',
+  description: 'SEO Basis-Audit (Title, Meta, Structured Data, OpenGraph)',
+  category: 'scan',
+  inputSchema: seoAuditSchema,
+  async execute(input, _context: ToolContext) {
+    try {
+      const websiteData = await fetchWebsiteData(input.url);
+      const result = runSeoAudit(websiteData.html);
+      return { success: true, data: result as SEOAudit };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+const legalComplianceSchema = z.object({
+  url: z.string().describe('Website URL'),
+});
+
+registry.register({
+  name: 'scan.quickscan.legal.compliance',
+  description: 'DSGVO/Legal-Checks (Impressum, Datenschutz, Cookie-Banner)',
+  category: 'scan',
+  inputSchema: legalComplianceSchema,
+  async execute(input, _context: ToolContext) {
+    try {
+      const websiteData = await fetchWebsiteData(input.url);
+      const result = runLegalCompliance(websiteData.html);
+      return { success: true, data: result as LegalCompliance };
     } catch (error) {
       return {
         success: false,
@@ -145,9 +284,9 @@ const classifyContentSchema = z.object({
 });
 
 registry.register({
-  name: 'quickscan.content.classify',
+  name: 'scan.quickscan.content.classify',
   description: 'Klassifiziert Content-Typen per AI (sampelt 15-20 Seiten)',
-  category: 'quickscan',
+  category: 'scan',
   inputSchema: classifyContentSchema,
   async execute(input, _context: ToolContext) {
     try {
@@ -167,9 +306,9 @@ const estimateContentSchema = z.object({
 });
 
 registry.register({
-  name: 'quickscan.content.estimate',
+  name: 'scan.quickscan.content.estimate',
   description: 'Schätzt Content-Typen basierend auf URL-Patterns (ohne AI)',
-  category: 'quickscan',
+  category: 'scan',
   inputSchema: estimateContentSchema,
   // eslint-disable-next-line @typescript-eslint/require-await
   async execute(input, _context: ToolContext) {
@@ -215,9 +354,9 @@ const analyzeMigrationSchema = z.object({
 });
 
 registry.register({
-  name: 'quickscan.migration.analyze',
+  name: 'scan.quickscan.migration.analyze',
   description: 'Analysiert die Migrations-Komplexität basierend auf Tech Stack und Content',
-  category: 'quickscan',
+  category: 'scan',
   inputSchema: analyzeMigrationSchema,
   async execute(input, _context: ToolContext) {
     try {
@@ -269,9 +408,9 @@ const analyzeMigrationAISchema = z.object({
 });
 
 registry.register({
-  name: 'quickscan.migration.analyzeAI',
+  name: 'scan.quickscan.migration.analyzeAI',
   description: 'AI-gestützte Migrations-Analyse mit HTML-Kontext',
-  category: 'quickscan',
+  category: 'scan',
   inputSchema: analyzeMigrationAISchema,
   async execute(input: z.infer<typeof analyzeMigrationAISchema>, _context: ToolContext) {
     try {
@@ -357,9 +496,9 @@ const auditAccessibilitySchema = z.object({
 });
 
 registry.register({
-  name: 'quickscan.accessibility',
+  name: 'scan.quickscan.accessibility',
   description: 'Führt Accessibility-Audit mit axe-core durch (Multi-Page)',
-  category: 'quickscan',
+  category: 'scan',
   inputSchema: auditAccessibilitySchema,
   async execute(input, _context: ToolContext) {
     try {
@@ -418,18 +557,201 @@ registry.register({
 });
 
 // ========================================
+// Playwright Audit Tool (Screenshots/Performance/Navigation)
+// ========================================
+
+const playwrightAuditSchema = z.object({
+  url: z.string().describe('Website URL'),
+  bidId: z.string().describe('Bid/PreQualification ID'),
+});
+
+registry.register({
+  name: 'scan.quickscan.playwright.audit',
+  description: 'Playwright Audit (Screenshots, Performance, Navigation, A11y)',
+  category: 'scan',
+  inputSchema: playwrightAuditSchema,
+  async execute(input, _context: ToolContext) {
+    try {
+      const result = await runPlaywrightAudit(input.url, input.bidId, {
+        takeScreenshots: true,
+        runAccessibilityAudit: true,
+        analyzeNavigation: true,
+      });
+
+      return {
+        success: true,
+        data: {
+          screenshots: result.screenshots.desktop
+            ? {
+                homepage: {
+                  desktop: result.screenshots.desktop,
+                  mobile: result.screenshots.mobile,
+                },
+                keyPages: result.screenshots.keyPages,
+                timestamp: new Date().toISOString(),
+              }
+            : null,
+          accessibility: result.accessibility
+            ? {
+                score: result.accessibility.score,
+                level: result.accessibility.level,
+                criticalIssues: result.accessibility.violations.filter(v => v.impact === 'critical')
+                  .length,
+                seriousIssues: result.accessibility.violations.filter(v => v.impact === 'serious')
+                  .length,
+                moderateIssues: result.accessibility.violations.filter(v => v.impact === 'moderate')
+                  .length,
+                minorIssues: result.accessibility.violations.filter(v => v.impact === 'minor')
+                  .length,
+                checks: {
+                  hasAltTexts: !result.accessibility.violations.some(v => v.id === 'image-alt'),
+                  hasAriaLabels: !result.accessibility.violations.some(v => v.id.includes('aria')),
+                  hasProperHeadings: !result.accessibility.violations.some(v =>
+                    v.id.includes('heading')
+                  ),
+                  hasSkipLinks: result.accessibility.passes > 0,
+                  colorContrast: result.accessibility.violations.some(v =>
+                    v.id === 'color-contrast'
+                  )
+                    ? 'fail'
+                    : 'pass',
+                  keyboardNavigation: result.accessibility.violations.some(v =>
+                    v.id.includes('keyboard')
+                  )
+                    ? 'fail'
+                    : 'pass',
+                  formLabels: result.accessibility.violations.some(v => v.id.includes('label'))
+                    ? 'fail'
+                    : 'pass',
+                },
+                violations: result.accessibility.violations.map(v => ({
+                  id: v.id,
+                  impact: v.impact,
+                  description: v.description,
+                  help: v.help,
+                })),
+                pagesAudited: 1,
+                auditedUrls: [input.url],
+              }
+            : null,
+          navigation: result.navigation || null,
+          performance: result.performance
+            ? {
+                score: result.performance.score,
+                firstContentfulPaint: result.performance.fcp,
+                largestContentfulPaint: result.performance.lcp,
+                cumulativeLayoutShift: result.performance.cls,
+                timeToInteractive: result.performance.tti,
+                totalBlockingTime: result.performance.tbt,
+                speedIndex: result.performance.speedIndex,
+                diagnostics: result.performance.diagnostics || [],
+                resourceCount: result.performance.resourceCount,
+                estimatedLoadTime:
+                  result.performance.loadTime < 2000
+                    ? 'fast'
+                    : result.performance.loadTime < 5000
+                      ? 'medium'
+                      : 'slow',
+                hasLazyLoading: false,
+                hasMinification: false,
+                hasCaching: false,
+                renderBlockingResources:
+                  result.performance.resourceCount.scripts +
+                  result.performance.resourceCount.stylesheets,
+              }
+            : null,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+// ========================================
+// Company Intelligence Tool
+// ========================================
+
+const companyIntelSchema = z.object({
+  companyName: z.string().describe('Firmenname'),
+  url: z.string().describe('Website URL'),
+});
+
+registry.register({
+  name: 'scan.quickscan.company.intelligence',
+  description: 'Company Intelligence (Branche, Markt, Marktdaten)',
+  category: 'scan',
+  inputSchema: companyIntelSchema,
+  async execute(input, _context: ToolContext) {
+    try {
+      const websiteData = await fetchWebsiteData(input.url);
+      const result = await gatherCompanyIntelligence(input.companyName, input.url, websiteData.html);
+      return { success: true, data: result as CompanyIntelligence };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+// ========================================
+// Business Line Recommendation Tool
+// ========================================
+
+const recommendBLSchema = z.object({
+  url: z.string().describe('Website URL'),
+  companyName: z.string().optional().describe('Firmenname'),
+  techStack: z.any().describe('Tech Stack Ergebnis'),
+  contentVolume: z.any().describe('Content Volume Ergebnis'),
+  features: z.any().describe('Features Ergebnis'),
+  extractedRequirements: z.any().optional().describe('Extrahierte Anforderungen'),
+});
+
+registry.register({
+  name: 'scan.quickscan.recommendBusinessLine',
+  description: 'Empfiehlt die passende Business Line basierend auf Analyse',
+  category: 'scan',
+  inputSchema: recommendBLSchema,
+  async execute(input, _context: ToolContext) {
+    try {
+      const businessUnits = await loadBusinessUnitsFromDB();
+      const result = await generateBLRecommendation({
+        url: input.url,
+        companyName: input.companyName,
+        techStack: input.techStack as TechStack,
+        contentVolume: input.contentVolume as ContentVolume,
+        features: input.features as Features,
+        businessUnits,
+        extractedRequirements: input.extractedRequirements,
+      });
+      return { success: true, data: result as BLRecommendation };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+// ========================================
 // QuickScan Start Tool (for UI parity)
 // ========================================
 
 const startQuickScanSchema = z.object({
-  rfpId: z.string().describe('RFP ID für den QuickScan'),
+  preQualificationId: z.string().describe('Pre-Qualification ID für den QuickScan'),
   websiteUrl: z.string().describe('Website URL zum Scannen'),
 });
 
 registry.register({
-  name: 'quickscan.start',
-  description: 'Startet einen vollständigen QuickScan für einen RFP',
-  category: 'quickscan',
+  name: 'scan.quickscan.start',
+  description: 'Startet einen vollständigen QuickScan für einen Pre-Qualification',
+  category: 'scan',
   inputSchema: startQuickScanSchema,
   // eslint-disable-next-line @typescript-eslint/require-await
   async execute(input, _context: ToolContext) {
@@ -438,9 +760,9 @@ registry.register({
     return {
       success: true,
       data: {
-        message: `QuickScan für RFP ${input.rfpId} wird gestartet`,
+        message: `QuickScan für Pre-Qualification ${input.preQualificationId} wird gestartet`,
         websiteUrl: input.websiteUrl,
-        rfpId: input.rfpId,
+        preQualificationId: input.preQualificationId,
         status: 'initiated',
       },
     };
@@ -451,16 +773,24 @@ registry.register({
  * List of all QuickScan tool names for reference
  */
 export const QUICKSCAN_TOOLS = [
-  'quickscan.navigation.full',
-  'quickscan.navigation.quick',
-  'quickscan.pages.count',
-  'quickscan.pages.quick',
-  'quickscan.content.classify',
-  'quickscan.content.estimate',
-  'quickscan.migration.analyze',
-  'quickscan.migration.analyzeAI',
-  'quickscan.accessibility',
-  'quickscan.start',
+  'scan.quickscan.navigation.full',
+  'scan.quickscan.navigation.quick',
+  'scan.quickscan.pages.count',
+  'scan.quickscan.pages.quick',
+  'scan.quickscan.techStack.analyze',
+  'scan.quickscan.content.volume',
+  'scan.quickscan.features.detect',
+  'scan.quickscan.seo.audit',
+  'scan.quickscan.legal.compliance',
+  'scan.quickscan.content.classify',
+  'scan.quickscan.content.estimate',
+  'scan.quickscan.migration.analyze',
+  'scan.quickscan.migration.analyzeAI',
+  'scan.quickscan.accessibility',
+  'scan.quickscan.playwright.audit',
+  'scan.quickscan.company.intelligence',
+  'scan.quickscan.recommendBusinessLine',
+  'scan.quickscan.start',
   'research.decisionMakers',
   'research.contacts.quick',
 ] as const;

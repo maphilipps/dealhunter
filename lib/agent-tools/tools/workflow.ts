@@ -29,9 +29,9 @@ registry.register({
   category: 'workflow',
   inputSchema: startDeepScanInputSchema,
   async execute(input, context: ToolContext) {
-    // Get lead with rfpId (check authorization via rfp.userId)
+    // Get lead with preQualificationId (check authorization via preQualification.userId)
     const [leadData] = await db
-      .select({ lead: qualifications, rfp: preQualifications })
+      .select({ lead: qualifications, preQualification: preQualifications })
       .from(qualifications)
       .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
       .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
@@ -134,7 +134,7 @@ registry.register({
 
     // If Deep Analysis job, update lead status
     if (job.jobType === 'deep-analysis' && job.preQualificationId) {
-      // Find lead by rfpId
+      // Find lead by preQualificationId
       const [lead] = await db
         .select()
         .from(qualifications)
@@ -229,10 +229,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     let query = db.select().from(backgroundJobs).where(eq(backgroundJobs.userId, context.userId));
 
-    // Filter by leadId (via rfpId, authorize via rfp.userId)
+    // Filter by leadId (via preQualificationId, authorize via preQualification.userId)
     if (input.leadId) {
       const [leadData] = await db
-        .select({ lead: qualifications, rfp: preQualifications })
+        .select({ lead: qualifications, preQualification: preQualifications })
         .from(qualifications)
         .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
         .where(

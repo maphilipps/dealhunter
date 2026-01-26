@@ -6,7 +6,7 @@ import { ScreenshotGallery } from './screenshot-gallery';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
-import { getCachedRfpWithRelations } from '@/lib/pre-qualifications/cached-queries';
+import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
 
 interface ContentVolumeData {
   totalPages?: number;
@@ -43,15 +43,15 @@ export default async function FactsPage({ params }: { params: Promise<{ id: stri
     redirect('/login');
   }
 
-  // Get RFP with relations (cached and parallelized)
-  const { rfp, quickScan } = await getCachedRfpWithRelations(id);
+  // Get Pre-Qualification with relations (cached and parallelized)
+  const { preQualification, quickScan } = await getCachedPreQualificationWithRelations(id);
 
-  if (!rfp) {
+  if (!preQualification) {
     notFound();
   }
 
   // Check ownership
-  if (rfp.userId !== session.user.id) {
+  if (preQualification.userId !== session.user.id) {
     notFound();
   }
 

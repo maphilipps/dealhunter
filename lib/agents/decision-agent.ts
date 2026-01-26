@@ -111,10 +111,10 @@ const CATEGORIES = [
  * Run decision agent
  *
  * @param leadId - Lead ID
- * @param rfpId - RFP ID
+ * @param rfpId - Pre-Qualification ID
  * @returns Decision analysis with BID/NO-BID recommendation
  */
-export async function runDecisionAgent(leadId: string, rfpId: string): Promise<DecisionAnalysis> {
+export async function runDecisionAgent(leadId: string, preQualificationId: string): Promise<DecisionAnalysis> {
   // 1. Fetch lead data
   const [leadData] = await db
     .select({
@@ -289,7 +289,7 @@ ${result.reasoning}`;
   if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
     await db.insert(dealEmbeddings).values({
       qualificationId: leadId,
-      preQualificationId: rfpId,
+      preQualificationId: preQualificationId,
       agentName: 'decision',
       chunkType: 'analysis',
       chunkIndex: 0,

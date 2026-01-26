@@ -1,16 +1,33 @@
 'use server';
 
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { preQualifications, qualifications, businessUnits } from '@/lib/db/schema';
+import {
+  backgroundJobs,
+  baselineComparisons,
+  cmsMatchResults,
+  competitorMatches,
+  dealEmbeddings,
+  pitchdeckDeliverables,
+  pitchdeckTeamMembers,
+  pitchdecks,
+  preQualifications,
+  ptEstimations,
+  qualificationSectionData,
+  qualifications,
+  businessUnits,
+  referenceMatches,
+  users,
+  websiteAudits,
+} from '@/lib/db/schema';
 
 export interface ConvertRfpToLeadInput {
-  rfpId: string;
+  preQualificationId: string;
 }
 
 export interface ConvertRfpToLeadResult {
@@ -20,16 +37,16 @@ export interface ConvertRfpToLeadResult {
 }
 
 /**
- * DEA-38: Converts an RFP to a Lead when status is set to 'routed'
+ * DEA-38: Converts an Pre-Qualification to a Lead when status is set to 'routed'
  *
  * This function:
- * 1. Validates that the RFP exists and has status 'routed'
- * 2. Creates a Lead record with data from the RFP
+ * 1. Validates that the Pre-Qualification exists and has status 'routed'
+ * 2. Creates a Lead record with data from the Pre-Qualification
  * 3. Creates an audit trail entry
  *
  * Note: BL (Bereichsleiter) will decide BID/NO-BID in Lead Dashboard (Phase 2)
  *
- * @param input - RFP ID to convert
+ * @param input - Pre-Qualification ID to convert
  * @returns Lead ID if successful
  */
 /**
@@ -58,7 +75,7 @@ export async function getLeads() {
       return { success: false, error: 'Benutzer nicht gefunden', leads: [] };
     }
 
-    // Admin can see all leads, BL sees only their BU leads, BD sees none (they work with RFPs)
+    // Admin can see all leads, BL sees only their BU leads, BD sees none (they work with Pre-Qualifications)
     const { desc } = await import('drizzle-orm');
     let userLeads;
 
@@ -73,7 +90,7 @@ export async function getLeads() {
         .where(eq(qualifications.businessUnitId, user.businessUnitId))
         .orderBy(desc(qualifications.createdAt));
     } else {
-      // BD role should work with RFPs, not leads
+      // BD role should work with Pre-Qualifications, not leads
       return { success: true, leads: [] };
     }
 
@@ -94,43 +111,43 @@ export async function convertRfpToLead(
   }
 
   try {
-    const { rfpId } = input;
+    const { preQualificationId } = input;
 
     // Validate input
-    if (!rfpId) {
+    if (!preQualificationId) {
       return {
         success: false,
-        error: 'RFP ID ist erforderlich',
+        error: 'Pre-Qualification ID ist erforderlich',
       };
     }
 
-    // Get RFP
-    const [rfp] = await db
+    // Get Pre-Qualification
+    const [preQualification] = await db
       .select()
       .from(preQualifications)
-      .where(eq(preQualifications.id, rfpId))
+      .where(eq(preQualifications.id, preQualificationId))
       .limit(1);
 
-    if (!rfp) {
+    if (!preQualification) {
       return {
         success: false,
-        error: 'RFP nicht gefunden',
+        error: 'Pre-Qualification nicht gefunden',
       };
     }
 
     // Validate status - must be 'routed'
-    if (rfp.status !== 'routed') {
+    if (preQualification.status !== 'routed') {
       return {
         success: false,
-        error: 'RFP muss Status "routed" haben',
+        error: 'Pre-Qualification muss Status "routed" haben',
       };
     }
 
     // Validate business unit assignment
-    if (!rfp.assignedBusinessUnitId) {
+    if (!preQualification.assignedBusinessUnitId) {
       return {
         success: false,
-        error: 'RFP muss einer Business Unit zugewiesen sein',
+        error: 'Pre-Qualification muss einer Business Unit zugewiesen sein',
       };
     }
 
@@ -138,7 +155,7 @@ export async function convertRfpToLead(
     const [businessUnit] = await db
       .select()
       .from(businessUnits)
-      .where(eq(businessUnits.id, rfp.assignedBusinessUnitId))
+      .where(eq(businessUnits.id, preQualification.assignedBusinessUnitId))
       .limit(1);
 
     if (!businessUnit) {
@@ -149,20 +166,20 @@ export async function convertRfpToLead(
     }
 
     // Parse extracted requirements for lead data
-    const extractedReqs = rfp.extractedRequirements
-      ? (JSON.parse(rfp.extractedRequirements) as Record<string, unknown>)
+    const extractedReqs = preQualification.extractedRequirements
+      ? (JSON.parse(preQualification.extractedRequirements) as Record<string, unknown>)
       : {};
 
     // Parse Quick Scan data for decision makers (DEA-92)
     let decisionMakers: unknown[] | null = null;
 
-    if (rfp.quickScanId) {
+    if (preQualification.quickScanId) {
       // Load Quick Scan data if quickScanId is set
       const { quickScans } = await import('@/lib/db/schema');
       const [quickScan] = await db
         .select()
         .from(quickScans)
-        .where(eq(quickScans.id, rfp.quickScanId))
+        .where(eq(quickScans.id, preQualification.quickScanId))
         .limit(1);
 
       if (quickScan?.decisionMakers) {
@@ -170,17 +187,17 @@ export async function convertRfpToLead(
       }
     }
 
-    // Check if lead already exists for this RFP
+    // Check if lead already exists for this Pre-Qualification
     const existingLead = await db
       .select()
       .from(qualifications)
-      .where(eq(qualifications.preQualificationId, rfpId))
+      .where(eq(qualifications.preQualificationId, preQualificationId))
       .limit(1);
 
     if (existingLead.length > 0) {
       return {
         success: false,
-        error: 'Für dieses RFP wurde bereits ein Lead erstellt',
+        error: 'Für dieses Pre-Qualification wurde bereits ein Lead erstellt',
       };
     }
 
@@ -200,18 +217,18 @@ export async function convertRfpToLead(
     const [newLead] = await db
       .insert(qualifications)
       .values({
-        preQualificationId: rfp.id,
+        preQualificationId: preQualification.id,
         status: 'routed',
         customerName: (extractedReqs.customerName as string | undefined) || 'Unbekannter Kunde',
-        websiteUrl: rfp.websiteUrl || websiteUrl,
+        websiteUrl: preQualification.websiteUrl || websiteUrl,
         industry: (extractedReqs.industry as string | undefined) || null,
         projectDescription: (extractedReqs.projectDescription as string | undefined) || null,
         budget: (extractedReqs.budget as string | undefined) || null,
         requirements: extractedReqs.requirements
           ? JSON.stringify(extractedReqs.requirements)
           : null,
-        businessUnitId: rfp.assignedBusinessUnitId,
-        quickScanId: rfp.quickScanId || null,
+        businessUnitId: preQualification.assignedBusinessUnitId,
+        quickScanId: preQualification.quickScanId || null,
         decisionMakers: decisionMakers ? JSON.stringify(decisionMakers) : null,
         routedAt: new Date(),
       })
@@ -221,18 +238,18 @@ export async function convertRfpToLead(
     await createAuditLog({
       action: 'create',
       entityType: 'pre_qualification',
-      entityId: rfpId,
+      entityId: preQualificationId,
       previousValue: null,
       newValue: JSON.stringify({
         leadId: newLead.id,
         status: 'routed',
-        businessUnitId: rfp.assignedBusinessUnitId,
+        businessUnitId: preQualification.assignedBusinessUnitId,
       }),
-      reason: 'Automatische Lead-Erstellung bei RFP-Status "routed"',
+      reason: 'Automatische Lead-Erstellung bei Pre-Qualification-Status "routed"',
     });
 
     // Revalidate cache
-    revalidatePath(`/pre-qualifications/${rfpId}`);
+    revalidatePath(`/pre-qualifications/${preQualificationId}`);
     revalidatePath('/pre-qualifications');
     revalidatePath('/leads');
 
@@ -241,7 +258,7 @@ export async function convertRfpToLead(
       leadId: newLead.id,
     };
   } catch (error) {
-    console.error('Error converting RFP to Lead:', error);
+    console.error('Error converting Pre-Qualification to Lead:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
@@ -665,6 +682,89 @@ export async function checkAndIngestAuditData(leadId: string): Promise<IngestAud
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
+}
+
+export async function deleteQualificationHard(qualificationId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    const [lead] = await db
+      .select()
+      .from(qualifications)
+      .where(eq(qualifications.id, qualificationId))
+      .limit(1);
+
+    if (!lead) {
+      return { success: false, error: 'Lead nicht gefunden' };
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+
+    if (!user) {
+      return { success: false, error: 'Benutzer nicht gefunden' };
+    }
+
+    const isAdmin = session.user.role === 'admin';
+    const isBlForLead =
+      session.user.role === 'bl' &&
+      user.businessUnitId &&
+      user.businessUnitId === lead.businessUnitId;
+
+    if (!isAdmin && !isBlForLead) {
+      return { success: false, error: 'Keine Berechtigung' };
+    }
+
+    await db.transaction(async tx => {
+      const pitchdeckRows = await tx
+        .select({ id: pitchdecks.id })
+        .from(pitchdecks)
+        .where(eq(pitchdecks.qualificationId, qualificationId));
+
+      const pitchdeckIds = pitchdeckRows.map(row => row.id);
+
+      if (pitchdeckIds.length > 0) {
+        await tx
+          .delete(pitchdeckDeliverables)
+          .where(inArray(pitchdeckDeliverables.pitchdeckId, pitchdeckIds));
+        await tx
+          .delete(pitchdeckTeamMembers)
+          .where(inArray(pitchdeckTeamMembers.pitchdeckId, pitchdeckIds));
+        await tx.delete(pitchdecks).where(inArray(pitchdecks.id, pitchdeckIds));
+      }
+
+      await tx
+        .delete(qualificationSectionData)
+        .where(eq(qualificationSectionData.qualificationId, qualificationId));
+      await tx.delete(websiteAudits).where(eq(websiteAudits.qualificationId, qualificationId));
+      await tx.delete(cmsMatchResults).where(eq(cmsMatchResults.qualificationId, qualificationId));
+      await tx
+        .delete(baselineComparisons)
+        .where(eq(baselineComparisons.qualificationId, qualificationId));
+      await tx.delete(ptEstimations).where(eq(ptEstimations.qualificationId, qualificationId));
+      await tx.delete(referenceMatches).where(eq(referenceMatches.qualificationId, qualificationId));
+      await tx
+        .delete(competitorMatches)
+        .where(eq(competitorMatches.qualificationId, qualificationId));
+      await tx.delete(dealEmbeddings).where(eq(dealEmbeddings.qualificationId, qualificationId));
+      await tx.delete(backgroundJobs).where(eq(backgroundJobs.qualificationId, qualificationId));
+      await tx.delete(qualifications).where(eq(qualifications.id, qualificationId));
+    });
+
+    revalidatePath('/qualifications');
+    revalidatePath(`/qualifications/${qualificationId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting qualification:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Fehler beim Löschen des Leads',
     };
   }
 }

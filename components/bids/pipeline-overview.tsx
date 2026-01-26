@@ -45,7 +45,7 @@ export function PipelineOverview({ opportunities }: PipelineOverviewProps) {
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <p className="text-sm text-muted-foreground">
-              No bid opportunities yet. Upload an RFP to get started.
+              No bid opportunities yet. Upload an Pre-Qualification to get started.
             </p>
           </div>
         </CardContent>

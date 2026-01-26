@@ -5,8 +5,8 @@ import type { RiskAnalysis } from './schema';
 /**
  * Risk Thresholds (in working days)
  *
- * Based on delta = RFP_Deadline - AI_Estimate:
- * - HIGH: delta < -30 days (RFP wants it >20% faster than realistic)
+ * Based on delta = Pre-Qualification_Deadline - AI_Estimate:
+ * - HIGH: delta < -30 days (Pre-Qualification wants it >20% faster than realistic)
  * - MEDIUM: delta between -30 and 0 days (tight but potentially doable)
  * - LOW: delta > 0 days (sufficient buffer)
  */
@@ -18,10 +18,10 @@ const RISK_THRESHOLDS = {
 /**
  * Analyze Timeline Risk
  *
- * Compares RFP deadline with AI-generated timeline estimate
+ * Compares Pre-Qualification deadline with AI-generated timeline estimate
  * to determine if the deadline is realistic.
  *
- * @param rfpDeadline - RFP deadline (ISO string or Date)
+ * @param rfpDeadline - Pre-Qualification deadline (ISO string or Date)
  * @param aiTimeline - AI-generated ProjectTimeline
  * @param projectStartDate - Optional project start date (defaults to today)
  * @returns RiskAnalysis with risk level, delta, and warnings
@@ -31,12 +31,12 @@ export function analyzeTimelineRisk(
   aiTimeline: ProjectTimeline,
   projectStartDate?: Date
 ): RiskAnalysis {
-  // Handle missing RFP deadline
+  // Handle missing Pre-Qualification deadline
   if (!rfpDeadline) {
     return {
       risk: 'LOW',
       deltaDays: 0,
-      warning: 'Keine RFP-Deadline angegeben - keine Risiko-Analyse möglich',
+      warning: 'Keine Pre-Qualification-Deadline angegeben - keine Risiko-Analyse möglich',
       rfpDeadline: null,
       aiEstimatedCompletion: null,
       isRealistic: true,
@@ -51,14 +51,14 @@ export function analyzeTimelineRisk(
   const aiCompletionDate = addWorkingDays(startDate, aiTimeline.totalDays);
 
   // Calculate delta in working days (positive = buffer, negative = too tight)
-  // If RFP is before AI completion, delta is negative (bad)
-  // If RFP is after AI completion, delta is positive (good)
+  // If Pre-Qualification is before AI completion, delta is negative (bad)
+  // If Pre-Qualification is after AI completion, delta is positive (good)
   let deltaDays: number;
   if (rfpDate < aiCompletionDate) {
-    // RFP deadline is BEFORE AI estimate → negative delta
+    // Pre-Qualification deadline is BEFORE AI estimate → negative delta
     deltaDays = -calculateWorkingDays(rfpDate, aiCompletionDate);
   } else {
-    // RFP deadline is AFTER AI estimate → positive delta (buffer)
+    // Pre-Qualification deadline is AFTER AI estimate → positive delta (buffer)
     deltaDays = calculateWorkingDays(aiCompletionDate, rfpDate);
   }
 
@@ -68,7 +68,7 @@ export function analyzeTimelineRisk(
   let isRealistic: boolean;
 
   if (deltaDays < RISK_THRESHOLDS.HIGH_THRESHOLD) {
-    // HIGH RISK: RFP deadline is >30 working days (6+ weeks) before AI estimate
+    // HIGH RISK: Pre-Qualification deadline is >30 working days (6+ weeks) before AI estimate
     risk = 'HIGH';
     isRealistic = false;
 
@@ -76,21 +76,21 @@ export function analyzeTimelineRisk(
     const rfpMonths = Math.round(calculateWorkingDays(startDate, rfpDate) / 20);
     const aiMonths = aiTimeline.totalMonths;
 
-    warning = `Unrealistische Timeline! RFP fordert ${rfpMonths} Monate, AI schätzt ${aiMonths} Monate. Das Projekt müsste ${shortfallWeeks} Wochen früher fertig sein als realistisch.`;
+    warning = `Unrealistische Timeline! Pre-Qualification fordert ${rfpMonths} Monate, AI schätzt ${aiMonths} Monate. Das Projekt müsste ${shortfallWeeks} Wochen früher fertig sein als realistisch.`;
   } else if (deltaDays < RISK_THRESHOLDS.MEDIUM_THRESHOLD) {
-    // MEDIUM RISK: RFP deadline is 0-30 days before AI estimate
+    // MEDIUM RISK: Pre-Qualification deadline is 0-30 days before AI estimate
     risk = 'MEDIUM';
     isRealistic = false;
 
     const shortfallWeeks = Math.abs(Math.round(deltaDays / 5));
     warning = `Timeline knapp - ${shortfallWeeks} Wochen weniger Buffer als empfohlen. Projekt ist machbar, aber mit erhöhtem Risiko.`;
   } else {
-    // LOW RISK: RFP deadline is after AI estimate (has buffer)
+    // LOW RISK: Pre-Qualification deadline is after AI estimate (has buffer)
     risk = 'LOW';
     isRealistic = true;
 
     const bufferWeeks = Math.round(deltaDays / 5);
-    warning = `RFP-Deadline realistisch - ${bufferWeeks} Wochen Buffer vorhanden.`;
+    warning = `Pre-Qualification-Deadline realistisch - ${bufferWeeks} Wochen Buffer vorhanden.`;
   }
 
   return {

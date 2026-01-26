@@ -18,7 +18,7 @@ export { generateRfpEmbedding } from './embedding-service';
  * Duplicate Check Result Types
  */
 export interface DuplicateMatch {
-  rfpId: string;
+  preQualificationId: string;
   customerName: string;
   reason: string;
   websiteUrl?: string;
@@ -153,11 +153,11 @@ function extractUrls(requirements: ExtractedRequirements): string[] {
 }
 
 /**
- * Main function to check for duplicate RFPs with semantic similarity
+ * Main function to check for duplicate Pre-Qualifications with semantic similarity
  *
  * @param extractedRequirements - The extracted requirements to check
  * @param accountId - Optional account ID for exact matching
- * @param excludeRfpId - RFP ID to exclude from results (own ID for updates)
+ * @param excludeRfpId - Pre-Qualification ID to exclude from results (own ID for updates)
  * @param currentEmbedding - Optional pre-generated embedding (to avoid regenerating)
  * @returns DuplicateCheckResult with exact and similar matches
  */
@@ -195,7 +195,7 @@ export async function checkForDuplicates(
     conditions.push(ne(preQualifications.id, excludeRfpId));
   }
 
-  // Only check RFPs that have extracted requirements
+  // Only check Pre-Qualifications that have extracted requirements
   conditions.push(isNotNull(preQualifications.extractedRequirements));
 
   // Fetch potential duplicates (including embeddings)
@@ -211,7 +211,7 @@ export async function checkForDuplicates(
     .from(preQualifications)
     .where(conditions.length > 0 ? and(...conditions) : undefined);
 
-  // Check each existing RFP for duplicates
+  // Check each existing Pre-Qualification for duplicates
   for (const existing of existingRfps) {
     if (!existing.extractedRequirements) continue;
 
@@ -232,7 +232,7 @@ export async function checkForDuplicates(
 
     if (matchingUrl) {
       exactMatches.push({
-        rfpId: existing.id,
+        preQualificationId: existing.id,
         customerName: existingCustomerName,
         reason: `Gleiche Website-URL: ${matchingUrl}`,
         websiteUrl: matchingUrl,
@@ -245,7 +245,7 @@ export async function checkForDuplicates(
     // Check 2: Same account (HIGH priority)
     if (accountId && existing.accountId === accountId) {
       exactMatches.push({
-        rfpId: existing.id,
+        preQualificationId: existing.id,
         customerName: existingCustomerName,
         reason: 'Gleicher Account',
         websiteUrl: normalizedExistingUrls[0],
@@ -262,7 +262,7 @@ export async function checkForDuplicates(
       if (similarity >= 90) {
         // Very high similarity - treat as exact match
         exactMatches.push({
-          rfpId: existing.id,
+          preQualificationId: existing.id,
           customerName: existingCustomerName,
           reason: `Sehr ähnlicher Kundenname (${similarity}% Übereinstimmung)`,
           websiteUrl: normalizedExistingUrls[0],
@@ -280,7 +280,7 @@ export async function checkForDuplicates(
           isWithinDateRange(submissionDeadline, existingDeadline, 14);
 
         similarMatches.push({
-          rfpId: existing.id,
+          preQualificationId: existing.id,
           customerName: existingCustomerName,
           similarity,
           reason: deadlineMatch
@@ -304,7 +304,7 @@ export async function checkForDuplicates(
         // High semantic similarity (>85%) indicates potential duplicate
         if (semanticSimilarity >= 85) {
           similarMatches.push({
-            rfpId: existing.id,
+            preQualificationId: existing.id,
             customerName: existingCustomerName,
             similarity: semanticSimilarity,
             reason: `Hohe semantische Ähnlichkeit (${semanticSimilarity}% via Embeddings)`,

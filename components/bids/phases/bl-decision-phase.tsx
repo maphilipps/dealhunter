@@ -24,7 +24,7 @@ import type { QuickScan } from '@/lib/db/schema';
 
 interface BLDecisionPhaseProps {
   quickScan: QuickScan;
-  rfpId: string;
+  preQualificationId: string;
 }
 
 type Decision = 'bid' | 'no-bid' | null;
@@ -41,7 +41,7 @@ export function BLDecisionPhase({ quickScan, rfpId }: BLDecisionPhaseProps) {
     setSubmitting(true);
     try {
       // TODO: Implement actual decision submission API
-      const res = await fetch(`/api/pre-qualifications/${rfpId}/decision`, {
+      const res = await fetch(`/api/pre-qualifications/${preQualificationId}/decision`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision, reasoning }),

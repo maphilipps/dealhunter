@@ -71,12 +71,12 @@ describe('analyzeTimelineRisk', () => {
     expect(result.isRealistic).toBe(true);
     expect(result.rfpDeadline).toBeNull();
     expect(result.aiEstimatedCompletion).toBeNull();
-    expect(result.warning).toContain('Keine RFP-Deadline');
+    expect(result.warning).toContain('Keine Pre-Qualification-Deadline');
   });
 
-  it('should return HIGH risk when RFP deadline is >30 days before AI estimate', () => {
+  it('should return HIGH risk when Pre-Qualification deadline is >30 days before AI estimate', () => {
     // AI needs 120 working days (~24 weeks = ~168 calendar days)
-    // RFP only gives 60 calendar days (~42 working days)
+    // Pre-Qualification only gives 60 calendar days (~42 working days)
     // Delta: 42 - 120 = -78 working days (HIGH risk)
     const today = new Date('2026-01-21');
     const rfpDeadline = new Date(today);
@@ -91,9 +91,9 @@ describe('analyzeTimelineRisk', () => {
     expect(result.deltaDays).toBeLessThan(-30); // More than 30 days short
   });
 
-  it('should return MEDIUM risk when RFP deadline is 0-30 days before AI estimate', () => {
+  it('should return MEDIUM risk when Pre-Qualification deadline is 0-30 days before AI estimate', () => {
     // AI needs 120 working days (~168 calendar days)
-    // RFP gives ~150 calendar days (~107 working days)
+    // Pre-Qualification gives ~150 calendar days (~107 working days)
     // Delta: 107 - 120 = -13 working days (MEDIUM risk)
     const today = new Date('2026-01-21');
     const rfpDeadline = new Date(today);
@@ -109,8 +109,8 @@ describe('analyzeTimelineRisk', () => {
     expect(result.deltaDays).toBeLessThan(0); // Still negative
   });
 
-  it('should return LOW risk when RFP deadline has buffer', () => {
-    // AI needs 120 working days, RFP gives 150 working days
+  it('should return LOW risk when Pre-Qualification deadline has buffer', () => {
+    // AI needs 120 working days, Pre-Qualification gives 150 working days
     const today = new Date('2026-01-21');
     const rfpDeadline = new Date(today);
     // Add 150 working days (approx 210 calendar days accounting for weekends)
@@ -125,7 +125,7 @@ describe('analyzeTimelineRisk', () => {
     expect(result.deltaDays).toBeGreaterThan(0);
   });
 
-  it('should handle string RFP deadline', () => {
+  it('should handle string Pre-Qualification deadline', () => {
     const today = new Date('2026-01-21');
     const rfpDeadline = new Date(today);
     rfpDeadline.setDate(rfpDeadline.getDate() + 210);

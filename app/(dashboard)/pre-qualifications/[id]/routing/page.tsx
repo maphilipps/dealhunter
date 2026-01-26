@@ -24,7 +24,7 @@ import {
 import { db } from '@/lib/db';
 import { businessUnits } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
-import { getCachedRfpWithRelations } from '@/lib/pre-qualifications/cached-queries';
+import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
 import { analyzeTimelineRisk, getRiskIcon } from '@/lib/timeline/risk-analyzer';
 import type { ProjectTimeline, RiskAnalysis } from '@/lib/timeline/schema';
 
@@ -49,15 +49,15 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
     redirect('/login');
   }
 
-  // Get RFP with relations (cached and parallelized)
-  const { rfp, quickScan } = await getCachedRfpWithRelations(id);
+  // Get Pre-Qualification with relations (cached and parallelized)
+  const { preQualification, quickScan } = await getCachedPreQualificationWithRelations(id);
 
-  if (!rfp) {
+  if (!preQualification) {
     notFound();
   }
 
   // Check ownership
-  if (rfp.userId !== session.user.id) {
+  if (preQualification.userId !== session.user.id) {
     notFound();
   }
 
@@ -84,9 +84,9 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
 
   // Get extracted requirements
   let extractedReqs: ExtractedRequirements | null = null;
-  if (rfp.extractedRequirements) {
+  if (preQualification.extractedRequirements) {
     try {
-      extractedReqs = JSON.parse(rfp.extractedRequirements) as ExtractedRequirements;
+      extractedReqs = JSON.parse(preQualification.extractedRequirements) as ExtractedRequirements;
     } catch {
       extractedReqs = null;
     }
@@ -175,7 +175,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
                 </Badge>
               )}
             </div>
-            {missingData.timeline && <ReloadTimelineButton rfpId={rfp.id} />}
+            {missingData.timeline && <ReloadTimelineButton rfpId={preQualification.id} />}
           </AlertDescription>
         </Alert>
       )}
@@ -191,11 +191,11 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
               Line zuweisen.
             </p>
             <a
-              href={`/pre-qualifications/${rfp.id}`}
+              href={`/pre-qualifications/${preQualification.id}`}
               className="inline-flex items-center gap-2 text-sm font-medium underline"
             >
               <RefreshCw className="h-4 w-4" />
-              Zum RFP Overview um Quick Scan zu starten
+              Zum Pre-Qualification Overview um Quick Scan zu starten
             </a>
           </AlertDescription>
         </Alert>
@@ -244,9 +244,9 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
                   BID/NO-BID Bewertung
                 </p>
                 <p className="text-foreground text-lg font-bold">
-                  {rfp.status === 'routed' ||
-                  rfp.status === 'full_scanning' ||
-                  rfp.status === 'bl_reviewing'
+                  {preQualification.status === 'routed' ||
+                  preQualification.status === 'full_scanning' ||
+                  preQualification.status === 'bl_reviewing'
                     ? 'BID'
                     : 'Ausstehend'}
                 </p>
@@ -342,7 +342,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
                 <h4 className="mb-2 font-semibold">Deadline-Vergleich</h4>
                 <div className="grid gap-2 md:grid-cols-2">
                   <div>
-                    <p className="text-muted-foreground text-sm">RFP Deadline</p>
+                    <p className="text-muted-foreground text-sm">Pre-Qualification Deadline</p>
                     <p className="font-medium">
                       {rfpDeadline ? new Date(rfpDeadline).toLocaleDateString('de-DE') : 'N/A'}
                     </p>
@@ -477,7 +477,7 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
                 <li>Keine ausreichenden Projekt-Informationen in der Ausschreibung</li>
                 <li>Der Quick Scan konnte die Timeline nicht extrahieren</li>
               </ul>
-              <ReloadTimelineButton rfpId={rfp.id} />
+              <ReloadTimelineButton rfpId={preQualification.id} />
             </div>
           </CardContent>
         </Card>
@@ -487,11 +487,11 @@ export default async function RoutingPage({ params }: { params: Promise<{ id: st
       <Card>
         <CardHeader>
           <CardTitle>Business Line Routing</CardTitle>
-          <CardDescription>Wählen Sie die zuständige Business Line für diesen RFP</CardDescription>
+          <CardDescription>Wählen Sie die zuständige Business Line für diesen Pre-Qualification</CardDescription>
         </CardHeader>
         <CardContent>
           <RoutingForm
-            rfpId={rfp.id}
+            rfpId={preQualification.id}
             blRecommendation={blRecommendation}
             allBusinessUnits={allBusinessUnits}
           />

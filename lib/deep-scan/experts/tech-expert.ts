@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { queryLeadRag, storeAuditAgentOutput, formatAuditContext } from './base';
 import type { AuditAgentInput, AuditAgentOutput, AuditSection } from './types';
+import { techExpertToVisualization } from '../output-to-json-render';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
@@ -210,7 +211,62 @@ ${combinedContext}`,
     };
 
     // ═══════════════════════════════════════════════════════════════
-    // STORE IN RAG
+    // AGENT-NATIVE: Store findings and visualization directly
+    // ═══════════════════════════════════════════════════════════════
+    if (input.ragTools) {
+      log('Speichere Findings und Visualisierung via Agent-Native RAG...');
+
+      // Store tech stack finding
+      const techFindingContent = [
+        `CMS: ${techStackAnalysis.cms?.name || 'Nicht erkannt'}`,
+        techStackAnalysis.cms?.version ? `Version: ${techStackAnalysis.cms.version}` : null,
+        `Frameworks: ${techStackAnalysis.frameworks.map(f => f.name).join(', ') || 'Keine'}`,
+        `Analytics: ${techStackAnalysis.analytics.join(', ') || 'Keine'}`,
+        techStackAnalysis.hosting.provider ? `Hosting: ${techStackAnalysis.hosting.provider}` : null,
+        techStackAnalysis.hosting.cdn ? `CDN: ${techStackAnalysis.hosting.cdn}` : null,
+      ]
+        .filter(Boolean)
+        .join('. ');
+
+      await input.ragTools.storeFinding({
+        category: 'fact',
+        chunkType: 'tech_stack',
+        content: techFindingContent,
+        confidence: techStackAnalysis.confidence,
+        metadata: { raw: techStackAnalysis },
+      });
+
+      // Store CMS deep-dive if available
+      if (cmsDeepDive) {
+        const cmsContent = [
+          `${cmsDeepDive.name} Analyse:`,
+          `Stärken: ${cmsDeepDive.strengths.join(', ')}`,
+          `Schwächen: ${cmsDeepDive.weaknesses.join(', ')}`,
+          `Migration Complexity: ${cmsDeepDive.migrationComplexity}`,
+        ].join(' ');
+
+        await input.ragTools.storeFinding({
+          category: 'elaboration',
+          chunkType: 'cms_deepdive',
+          content: cmsContent,
+          confidence: cmsDeepDive.confidence,
+          metadata: { raw: cmsDeepDive },
+        });
+      }
+
+      // Generate and store visualization
+      const visualization = techExpertToVisualization(techStackAnalysis, cmsDeepDive ?? undefined);
+      await input.ragTools.storeVisualization({
+        sectionId: 'technology',
+        visualization,
+        confidence: techStackAnalysis.confidence,
+      });
+
+      log('Agent-Native RAG Speicherung abgeschlossen');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // LEGACY: Store via storeAuditAgentOutput (fallback)
     // ═══════════════════════════════════════════════════════════════
     const output: AuditAgentOutput = {
       success: true,
@@ -221,7 +277,10 @@ ${combinedContext}`,
       analyzedAt: new Date().toISOString(),
     };
 
-    await storeAuditAgentOutput(input.leadId, 'audit_tech_expert', output);
+    // Only store via legacy path if ragTools not available
+    if (!input.ragTools) {
+      await storeAuditAgentOutput(input.leadId, 'audit_tech_expert', output);
+    }
 
     log('Technologie-Analyse abgeschlossen');
 

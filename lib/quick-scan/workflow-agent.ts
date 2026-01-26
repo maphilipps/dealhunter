@@ -144,6 +144,8 @@ export async function runQuickScanWorkflow(
       steps: quickScanSteps,
       emit,
       contextSection,
+      // Enable RAG write tools for agent-native output
+      preQualificationId: input.preQualificationId,
     });
 
     const workflowResult = await engine.execute(input, fullUrl);

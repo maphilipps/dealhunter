@@ -511,7 +511,7 @@ export const companyIntelligenceSchema = z.object({
       fiftyTwoWeekHigh: z.coerce.number().nullish().describe('52-week high price'),
       fiftyTwoWeekLow: z.coerce.number().nullish().describe('52-week low price'),
     })
-    .optional()
+    .nullish()
     .describe('Stock market data for publicly traded companies'),
 
   // Market position & trends

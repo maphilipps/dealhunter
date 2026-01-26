@@ -11,8 +11,19 @@ import type {
   StepResult,
   StepRegistry,
   QuickScanInput,
+  RagWriteTools,
+  FindingInput,
+  VisualizationInput,
 } from './types';
 
+import {
+  createRagWriteTool,
+  createBatchRagWriteTool,
+  createVisualizationWriteTool,
+} from '@/lib/agent-tools';
+import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
+import { db } from '@/lib/db';
+import { dealEmbeddings } from '@/lib/db/schema';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
 /**
@@ -38,11 +49,149 @@ export class WorkflowEngine {
   private steps: StepRegistry;
   private emit: WorkflowEngineOptions['emit'];
   private contextSection?: string;
+  private preQualificationId?: string;
+  private ragTools?: RagWriteTools;
 
   constructor(options: WorkflowEngineOptions) {
     this.steps = options.steps;
     this.emit = options.emit;
     this.contextSection = options.contextSection;
+    this.preQualificationId = options.preQualificationId;
+
+    // Create RAG write tools if preQualificationId is provided
+    if (this.preQualificationId) {
+      const preQualId = this.preQualificationId;
+      const agentName = 'quick_scan';
+
+      // Create callable functions for direct invocation
+      this.ragTools = {
+        // Store a single finding
+        storeFinding: async (input: FindingInput) => {
+          const embedding = await generateQueryEmbedding(input.content);
+
+          // Count existing chunks of this type
+          const existingChunks = await db.query.dealEmbeddings.findMany({
+            where: (de, { and, eq }) =>
+              and(
+                eq(de.preQualificationId, preQualId),
+                eq(de.agentName, agentName),
+                eq(de.chunkType, input.chunkType)
+              ),
+            columns: { chunkIndex: true },
+          });
+
+          const nextIndex =
+            existingChunks.length > 0
+              ? Math.max(...existingChunks.map(c => c.chunkIndex)) + 1
+              : 0;
+
+          await db.insert(dealEmbeddings).values({
+            qualificationId: null,
+            preQualificationId: preQualId,
+            agentName,
+            chunkType: input.chunkType,
+            chunkIndex: nextIndex,
+            chunkCategory: input.category,
+            content: input.content,
+            confidence: input.confidence,
+            requiresValidation: input.requiresValidation ?? false,
+            embedding,
+            metadata: input.metadata ? JSON.stringify(input.metadata) : null,
+          });
+
+          return {
+            success: true,
+            message: `Stored ${input.category} finding [${input.chunkType}#${nextIndex}]`,
+          };
+        },
+
+        // Store a visualization
+        storeVisualization: async (input: VisualizationInput) => {
+          await db.insert(dealEmbeddings).values({
+            qualificationId: null,
+            preQualificationId: preQualId,
+            agentName,
+            chunkType: 'visualization',
+            chunkIndex: 0,
+            chunkCategory: 'elaboration',
+            content: JSON.stringify(input.visualization),
+            confidence: input.confidence,
+            embedding: null,
+            metadata: JSON.stringify({
+              sectionId: input.sectionId,
+              isVisualization: true,
+              elementCount: Object.keys(input.visualization.elements).length,
+            }),
+          });
+
+          return {
+            success: true,
+            message: `Stored visualization for section "${input.sectionId}"`,
+            sectionId: input.sectionId,
+          };
+        },
+
+        // Batch store findings
+        storeFindingsBatch: async (findings: FindingInput[]) => {
+          const embeddings = await Promise.all(
+            findings.map(f => generateQueryEmbedding(f.content))
+          );
+
+          // Get current indices
+          const existingChunks = await db.query.dealEmbeddings.findMany({
+            where: (de, { and, eq }) =>
+              and(eq(de.preQualificationId, preQualId), eq(de.agentName, agentName)),
+            columns: { chunkType: true, chunkIndex: true },
+          });
+
+          const indexMap = new Map<string, number>();
+          for (const chunk of existingChunks) {
+            const current = indexMap.get(chunk.chunkType) ?? -1;
+            if (chunk.chunkIndex > current) {
+              indexMap.set(chunk.chunkType, chunk.chunkIndex);
+            }
+          }
+
+          const values = findings.map((finding, i) => {
+            const currentMax = indexMap.get(finding.chunkType) ?? -1;
+            const newIndex = currentMax + 1;
+            indexMap.set(finding.chunkType, newIndex);
+
+            return {
+              qualificationId: null,
+              preQualificationId: preQualId,
+              agentName,
+              chunkType: finding.chunkType,
+              chunkIndex: newIndex,
+              chunkCategory: finding.category,
+              content: finding.content,
+              confidence: finding.confidence,
+              requiresValidation: finding.requiresValidation ?? false,
+              embedding: embeddings[i],
+              metadata: finding.metadata ? JSON.stringify(finding.metadata) : null,
+            };
+          });
+
+          await db.insert(dealEmbeddings).values(values);
+
+          return {
+            success: true,
+            message: `Stored ${findings.length} findings`,
+            storedCount: findings.length,
+          };
+        },
+
+        // AI SDK tools for LLM use
+        aiTools: {
+          storeFinding: createRagWriteTool({ preQualificationId: preQualId, agentName }),
+          storeVisualization: createVisualizationWriteTool({
+            preQualificationId: preQualId,
+            agentName,
+          }),
+          storeFindingsBatch: createBatchRagWriteTool({ preQualificationId: preQualId, agentName }),
+        },
+      };
+    }
   }
 
   /**
@@ -104,20 +253,57 @@ export class WorkflowEngine {
           }
 
           try {
+            const stepStart = Date.now();
+            this.emit({
+              type: AgentEventType.STEP_START,
+              data: {
+                stepId,
+                stepName: step.config.displayName,
+                phase: step.config.phase,
+                timestamp: stepStart,
+                dependencies: step.config.dependencies,
+                optional: step.config.optional,
+              },
+            });
+
             // Get input for this step from dependencies
             const stepInput = this.getStepInput(stepId, results);
 
             // Execute step
             const output = await step.execute(stepInput, ctx);
+            const duration = Date.now() - stepStart;
+
+            this.emit({
+              type: AgentEventType.STEP_COMPLETE,
+              data: {
+                stepId,
+                stepName: step.config.displayName,
+                phase: step.config.phase,
+                success: true,
+                duration,
+                result: output,
+              },
+            });
 
             return {
               stepId,
               success: true,
               output,
-              duration: 0, // Duration tracked by step wrapper
+              duration,
             } as StepResult;
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.emit({
+              type: AgentEventType.STEP_COMPLETE,
+              data: {
+                stepId,
+                stepName: step.config.displayName,
+                phase: step.config.phase,
+                success: false,
+                duration: 0,
+                error: errorMessage,
+              },
+            });
             return {
               stepId,
               success: false,
@@ -203,6 +389,7 @@ export class WorkflowEngine {
       results,
       fullUrl,
       contextSection: this.contextSection,
+      ragTools: this.ragTools,
       getResult<T>(stepId: string): T | undefined {
         const result = results.get(stepId);
         return result?.success ? (result.output as T) : undefined;

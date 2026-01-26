@@ -9,16 +9,16 @@ import { Button } from '@/components/ui/button';
 import { reloadTimeline } from '@/lib/pre-qualifications/actions';
 
 interface ReloadTimelineButtonProps {
-  rfpId: string;
+  preQualificationId: string;
 }
 
-export function ReloadTimelineButton({ rfpId }: ReloadTimelineButtonProps) {
+export function ReloadTimelineButton({ preQualificationId }: ReloadTimelineButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const handleReload = () => {
     startTransition(async () => {
-      const result = await reloadTimeline(rfpId);
+      const result = await reloadTimeline(preQualificationId);
       if (result.success) {
         toast.success('Timeline erfolgreich aktualisiert');
         router.refresh();

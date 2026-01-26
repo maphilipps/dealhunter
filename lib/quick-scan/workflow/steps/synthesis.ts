@@ -13,7 +13,7 @@ import {
 import { wrapTool } from '../tool-wrapper';
 import type { BusinessUnit } from '../types';
 
-import { generateStructuredOutput } from '@/lib/ai/config';
+import { generateStructuredOutput } from '../../../ai/config';
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -34,7 +34,7 @@ export interface SynthesisInput {
 // RECOMMEND BUSINESS LINE STEP
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async function generateBLRecommendation(
+export async function generateBLRecommendation(
   input: SynthesisInput,
   contextSection?: string
 ): Promise<BLRecommendation> {
@@ -78,7 +78,31 @@ Empfehle die passende Business Line mit Begründung.`;
   return result;
 }
 
-export const recommendBusinessLineStep = wrapTool<SynthesisInput, BLRecommendation>(
+function formatBLRecommendationForRAG(result: unknown): string {
+  const bl = result as BLRecommendation;
+  const parts: string[] = [
+    `Empfohlene Business Line: ${bl.primaryBusinessLine || 'Nicht bestimmt'}`,
+    `Confidence: ${bl.confidence}%`,
+    `Begründung: ${bl.reasoning || 'Keine Begründung verfügbar'}`,
+  ];
+
+  if (bl.alternativeBusinessLines?.length) {
+    const alts = bl.alternativeBusinessLines.map(a => a.name).join(', ');
+    parts.push(`Alternativen: ${alts}`);
+  }
+
+  return parts.join('. ');
+}
+
+// Input type that matches the actual input from dependencies
+interface RecommendBLInput {
+  techStack: TechStack;
+  contentVolume: ContentVolume;
+  features: Features;
+  loadBusinessUnits: BusinessUnit[]; // Key matches dependency name
+}
+
+export const recommendBusinessLineStep = wrapTool<RecommendBLInput, BLRecommendation>(
   {
     name: 'recommendBusinessLine',
     displayName: 'BL Recommendation',
@@ -86,9 +110,25 @@ export const recommendBusinessLineStep = wrapTool<SynthesisInput, BLRecommendati
     dependencies: ['techStack', 'contentVolume', 'features', 'loadBusinessUnits'],
     optional: false,
     timeout: 60000,
+    // Agent-Native: Auto-store BL recommendation
+    ragStorage: {
+      chunkType: 'bl_recommendation',
+      category: 'recommendation',
+      formatContent: formatBLRecommendationForRAG,
+      getConfidence: result => (result as BLRecommendation).confidence ?? 60,
+    },
   },
   async (input, ctx) => {
-    return generateBLRecommendation(input, ctx.contextSection);
+    // Map input to SynthesisInput format
+    const synthesisInput: SynthesisInput = {
+      url: ctx.fullUrl,
+      techStack: input.techStack,
+      contentVolume: input.contentVolume,
+      features: input.features,
+      businessUnits: input.loadBusinessUnits, // Map from loadBusinessUnits to businessUnits
+      extractedRequirements: ctx.input.extractedRequirements,
+    };
+    return generateBLRecommendation(synthesisInput, ctx.contextSection);
   }
 );
 

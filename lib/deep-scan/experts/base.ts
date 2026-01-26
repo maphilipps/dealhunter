@@ -16,7 +16,7 @@ import {
 
 import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
-import { dealEmbeddings } from '@/lib/db/schema';
+import { dealEmbeddings, qualificationSectionData } from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 /**
@@ -298,6 +298,52 @@ function convertToReadableText(data: unknown, indent = 0): string {
   return typeof data === 'object' && data !== null ? JSON.stringify(data) : String(data);
 }
 
+export function buildAuditSectionId(category: string, slug: string): string {
+  return `audit:${category}:${slug}`;
+}
+
+async function upsertAuditSectionCache(params: {
+  qualificationId: string;
+  sectionId: string;
+  content: string;
+  confidence?: number | null;
+  sources?: string[] | null;
+}) {
+  const { qualificationId, sectionId, content, confidence, sources } = params;
+
+  const [existing] = await db
+    .select({ id: qualificationSectionData.id })
+    .from(qualificationSectionData)
+    .where(
+      and(
+        eq(qualificationSectionData.qualificationId, qualificationId),
+        eq(qualificationSectionData.sectionId, sectionId)
+      )
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(qualificationSectionData)
+      .set({
+        content,
+        confidence: confidence ?? null,
+        sources: sources ? JSON.stringify(sources) : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(qualificationSectionData.id, existing.id));
+    return;
+  }
+
+  await db.insert(qualificationSectionData).values({
+    qualificationId,
+    sectionId,
+    content,
+    confidence: confidence ?? null,
+    sources: sources ? JSON.stringify(sources) : null,
+  });
+}
+
 // Store agent output with sections - stores BOTH JSON and readable text
 export async function storeAuditAgentOutput(
   qualificationId: string,
@@ -316,6 +362,28 @@ export async function storeAuditAgentOutput(
     ...output,
     sections: sectionsWithVisualizations,
   };
+
+  // Cache audit sections for UI rendering (qualificationSectionData)
+  for (const section of sectionsWithVisualizations) {
+    const sectionId = buildAuditSectionId(outputWithVisualizations.category, section.slug);
+    const cachedPayload = JSON.stringify({
+      category: outputWithVisualizations.category,
+      slug: section.slug,
+      title: section.title,
+      content: section.content,
+      visualization: section.visualization,
+      analyzedAt: outputWithVisualizations.analyzedAt,
+      confidence: outputWithVisualizations.confidence,
+    });
+
+    await upsertAuditSectionCache({
+      qualificationId,
+      sectionId,
+      content: cachedPayload,
+      confidence: outputWithVisualizations.confidence,
+      sources: [],
+    });
+  }
 
   // Build comprehensive readable text from all sections
   const textParts: string[] = [
@@ -478,6 +546,37 @@ export async function getAuditSection(
   category: string,
   slug: string
 ): Promise<AuditSection | null> {
+  const cachedSectionId = buildAuditSectionId(category, slug);
+  const [cached] = await db
+    .select({ content: qualificationSectionData.content })
+    .from(qualificationSectionData)
+    .where(
+      and(
+        eq(qualificationSectionData.qualificationId, qualificationId),
+        eq(qualificationSectionData.sectionId, cachedSectionId)
+      )
+    )
+    .limit(1);
+
+  if (cached?.content) {
+    try {
+      const parsed = JSON.parse(cached.content) as {
+        slug: string;
+        title: string;
+        content: unknown;
+        visualization?: unknown;
+      };
+      return {
+        slug: parsed.slug,
+        title: parsed.title,
+        content: parsed.content,
+        visualization: parsed.visualization,
+      };
+    } catch {
+      // Fallback to legacy storage
+    }
+  }
+
   const results = await db
     .select({
       content: dealEmbeddings.content,

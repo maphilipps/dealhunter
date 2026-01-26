@@ -16,9 +16,9 @@ const deleteQuickScanInputSchema = z.object({
 // ===== Tool Implementations =====
 
 registry.register({
-  name: 'quickScan.delete',
+  name: 'scan.quickscan.delete',
   description: 'Delete a QuickScan (hard delete - cascades to related data)',
-  category: 'quick_scan',
+  category: 'scan',
   inputSchema: deleteQuickScanInputSchema,
   async execute(input, context: ToolContext) {
     // Only BD and Admin can delete QuickScans

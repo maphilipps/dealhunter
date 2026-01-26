@@ -25,18 +25,18 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
     notFound();
   }
 
-  // Get suggested URLs from RFP
+  // Get suggested URLs from Pre-Qualification
   let suggestedUrls: { url: string; description?: string }[] = [];
   if (lead.preQualificationId) {
-    const [rfp] = await db
+    const [preQualification] = await db
       .select({ extractedRequirements: preQualifications.extractedRequirements })
       .from(preQualifications)
       .where(eq(preQualifications.id, lead.preQualificationId))
       .limit(1);
 
-    if (rfp?.extractedRequirements) {
+    if (preQualification?.extractedRequirements) {
       try {
-        const extracted = JSON.parse(rfp.extractedRequirements) as Record<string, unknown>;
+        const extracted = JSON.parse(preQualification.extractedRequirements) as Record<string, unknown>;
         if (extracted.websiteUrls && Array.isArray(extracted.websiteUrls)) {
           suggestedUrls = (
             extracted.websiteUrls as Array<{ url: string; description?: string }>

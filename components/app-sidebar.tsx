@@ -1,15 +1,9 @@
 'use client';
 
 import {
-  BarChart3,
   Database,
-  FileText,
   Home,
   ListTodo,
-  PlusCircle,
-  Settings,
-  Target,
-  Users,
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -36,9 +30,9 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 // Dealhunter app branding
 const appBranding = {
-  name: 'Dealhunter',
+  name: 'PHP-XCOM',
   logo: '/logo.png',
-  subtitle: 'Pre-Qualification Tool',
+  subtitle: 'DealHunter',
 };
 
 type UserRole = 'bd' | 'bl' | 'admin';
@@ -59,145 +53,71 @@ const allNavItems: Array<{
     roles: ['bd', 'bl', 'admin'],
   },
   {
-    title: 'Pre-Qualifications',
-    url: '/pre-qualifications',
-    icon: FileText,
-    roles: ['bd', 'bl', 'admin'],
-    items: [
-      {
-        title: 'Alle Pre-Qualifications',
-        url: '/pre-qualifications',
-      },
-      {
-        title: 'Neue Pre-Qualification',
-        url: '/pre-qualifications/new',
-      },
-      {
-        title: 'In Prüfung',
-        url: '/pre-qualifications?status=pending',
-      },
-      {
-        title: 'Genehmigt',
-        url: '/pre-qualifications?status=approved',
-      },
-    ],
-  },
-  {
     title: 'Qualifications',
     url: '/qualifications',
     icon: ListTodo,
-    roles: ['bl', 'admin'],
+    roles: ['bd', 'bl', 'admin'],
     items: [
       {
-        title: 'Meine Qualifications',
+        title: 'Pre-Qualifications',
+        url: '/pre-qualifications',
+      },
+      {
+        title: 'Qualifications',
         url: '/qualifications',
-      },
-      {
-        title: 'Alle Qualifications',
-        url: '/qualifications?filter=all',
-      },
-      {
-        title: 'Deep Scan',
-        url: '/qualifications?view=deep-scan',
-      },
-    ],
-  },
-  {
-    title: 'Accounts',
-    url: '/accounts',
-    icon: Target,
-    roles: ['bd', 'bl', 'admin'],
-    items: [
-      {
-        title: 'All Accounts',
-        url: '/accounts',
-      },
-      {
-        title: 'Active',
-        url: '/accounts?status=active',
-      },
-      {
-        title: 'Pipeline',
-        url: '/accounts?status=pipeline',
-      },
-    ],
-  },
-  {
-    title: 'Analytics',
-    url: '/analytics',
-    icon: BarChart3,
-    roles: ['bd', 'bl', 'admin'],
-  },
-  {
-    title: 'Master Data',
-    url: '/master-data',
-    icon: Database,
-    roles: ['bd', 'bl', 'admin'],
-    items: [
-      {
-        title: 'Referenzen',
-        url: '/master-data/references',
-      },
-      {
-        title: 'Kompetenzen',
-        url: '/master-data/competencies',
-      },
-      {
-        title: 'Wettbewerber',
-        url: '/master-data/competitors',
-      },
-    ],
-  },
-  {
-    title: 'Admin',
-    url: '/admin',
-    icon: Settings,
-    roles: ['admin'],
-    items: [
-      {
-        title: 'Validierung',
-        url: '/admin/validations',
-      },
-      {
-        title: 'Business Units',
-        url: '/admin/business-units',
-      },
-      {
-        title: 'Technologies',
-        url: '/admin/technologies',
-      },
-      {
-        title: 'Employees',
-        url: '/admin/employees',
       },
     ],
   },
 ];
 
-const allProjects: Array<{
+const allMasterDataItems: Array<{
   name: string;
   url: string;
-  icon: typeof PlusCircle;
+  icon: typeof Database;
   roles: UserRole[];
 }> = [
   {
-    name: 'Quick Actions',
-    url: '/pre-qualifications/new',
-    icon: PlusCircle,
+    name: 'Referenzen',
+    url: '/master-data/references',
+    icon: Database,
+    roles: ['bd', 'bl', 'admin'],
+  },
+  {
+    name: 'Kompetenzen',
+    url: '/master-data/competencies',
+    icon: Database,
+    roles: ['bd', 'bl', 'admin'],
+  },
+  {
+    name: 'Wettbewerber',
+    url: '/master-data/competitors',
+    icon: Database,
+    roles: ['bd', 'bl', 'admin'],
+  },
+  {
+    name: 'Business Units',
+    url: '/admin/business-units',
+    icon: Database,
+    roles: ['bd', 'bl', 'admin'],
+  },
+  {
+    name: 'Technologies',
+    url: '/admin/technologies',
+    icon: Database,
     roles: ['bd', 'bl', 'admin'],
   },
   {
     name: 'Employees',
     url: '/admin/employees',
-    icon: Users,
-    roles: ['admin'],
+    icon: Database,
+    roles: ['bd', 'bl', 'admin'],
   },
 ];
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   // Filter navigation items based on user role
   const navMain = allNavItems.filter(item => item.roles.includes(user.role));
-  const projects = allProjects.filter(project => project.roles.includes(user.role));
+  const masterData = allMasterDataItems.filter(item => item.roles.includes(user.role));
 
   return (
     <Sidebar {...props} collapsible="icon">
@@ -206,7 +126,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />
-        <NavProjects projects={projects} />
+        <NavProjects projects={masterData} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

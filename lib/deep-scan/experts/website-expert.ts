@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { queryLeadRag, storeAuditAgentOutput, formatAuditContext } from './base';
 import type { AuditAgentInput, AuditAgentOutput, AuditSection } from './types';
+import { websiteExpertToVisualization } from '../output-to-json-render';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
@@ -152,19 +153,79 @@ Bewerte wie häufig jede Komponente vorkommt.`,
       items: sections.map(s => ({ slug: s.slug, title: s.title })),
     };
 
+    const confidence = Math.round((pageTypeAnalysis.confidence + componentAnalysis.confidence) / 2);
+
     // ═══════════════════════════════════════════════════════════════
-    // STORE IN RAG
+    // AGENT-NATIVE: Store findings and visualization directly
+    // ═══════════════════════════════════════════════════════════════
+    if (input.ragTools) {
+      log('Speichere Findings und Visualisierung via Agent-Native RAG...');
+
+      // Store page type finding
+      const pageTypesContent = pageTypeAnalysis.types
+        .map(t => `${t.name}: ${t.count} Seiten`)
+        .join('. ');
+
+      await input.ragTools.storeFinding({
+        category: 'fact',
+        chunkType: 'page_types',
+        content: `Seitentypen (${pageTypeAnalysis.totalPages} Seiten insgesamt): ${pageTypesContent}`,
+        confidence: pageTypeAnalysis.confidence,
+        metadata: { raw: pageTypeAnalysis },
+      });
+
+      // Store components finding
+      const componentsContent = componentAnalysis.components
+        .map(c => `${c.name} (${c.category}, ${c.frequency})`)
+        .join('. ');
+
+      await input.ragTools.storeFinding({
+        category: 'fact',
+        chunkType: 'components',
+        content: `Erkannte Komponenten: ${componentsContent}`,
+        confidence: componentAnalysis.confidence,
+        metadata: { raw: componentAnalysis },
+      });
+
+      // Generate and store visualization
+      // Map our analysis to the expected WebsiteAnalysis format
+      const visualization = websiteExpertToVisualization({
+        siteStructure: {
+          totalPages: pageTypeAnalysis.totalPages,
+          maxDepth: pageTypeAnalysis.types.length,
+          sections: pageTypeAnalysis.types.map(t => ({ path: t.name, count: t.count })),
+        },
+        contentTypes: pageTypeAnalysis.types.map(t => ({
+          type: t.name,
+          count: t.count,
+          percentage: pageTypeAnalysis.totalPages > 0 ? Math.round((t.count / pageTypeAnalysis.totalPages) * 100) : 0,
+        })),
+      });
+      await input.ragTools.storeVisualization({
+        sectionId: 'website-analysis',
+        visualization,
+        confidence,
+      });
+
+      log('Agent-Native RAG Speicherung abgeschlossen');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // LEGACY: Store via storeAuditAgentOutput (fallback)
     // ═══════════════════════════════════════════════════════════════
     const output: AuditAgentOutput = {
       success: true,
       category: 'website-analyse',
       sections,
       navigation,
-      confidence: Math.round((pageTypeAnalysis.confidence + componentAnalysis.confidence) / 2),
+      confidence,
       analyzedAt: new Date().toISOString(),
     };
 
-    await storeAuditAgentOutput(input.leadId, 'audit_website_expert', output);
+    // Only store via legacy path if ragTools not available
+    if (!input.ragTools) {
+      await storeAuditAgentOutput(input.leadId, 'audit_website_expert', output);
+    }
 
     log('Website-Analyse abgeschlossen');
 

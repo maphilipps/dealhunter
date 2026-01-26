@@ -3,8 +3,8 @@ import { z } from 'zod';
 
 import { checkForDuplicates, type DuplicateCheckResult } from './duplicate-check';
 
-import { openai } from '@/lib/ai/providers';
-import type { ExtractedRequirements } from '@/lib/extraction/schema';
+import { aiHubOpenAI, modelNames } from '../ai/config';
+import type { ExtractedRequirements } from '../extraction/schema';
 
 /**
  * Duplicate Check Agent
@@ -26,7 +26,7 @@ export const DuplicateCheckAgentOutputSchema = z.object({
   reasoning: z.string().describe('Explanation of the decision'),
   exactMatches: z.array(
     z.object({
-      rfpId: z.string(),
+      preQualificationId: z.string(),
       customerName: z.string(),
       reason: z.string(),
       websiteUrl: z.string().optional(),
@@ -35,7 +35,7 @@ export const DuplicateCheckAgentOutputSchema = z.object({
   ),
   similarMatches: z.array(
     z.object({
-      rfpId: z.string(),
+      preQualificationId: z.string(),
       customerName: z.string(),
       similarity: z.number().min(0).max(100),
       reason: z.string(),
@@ -73,7 +73,7 @@ export async function runDuplicateCheckAgent(params: {
       hasDuplicates: false,
       confidence: 100,
       recommendation: 'create_new',
-      reasoning: 'Keine Duplikate gefunden. RFP kann als neu angelegt werden.',
+      reasoning: 'Keine Duplikate gefunden. Pre-Qualification kann als neu angelegt werden.',
       exactMatches: [],
       similarMatches: [],
     };
@@ -86,12 +86,12 @@ export async function runDuplicateCheckAgent(params: {
   // Use AI to analyze duplicate result and provide structured recommendation
 
   const result = await generateObject({
-    model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
+    model: aiHubOpenAI(modelNames.default) as unknown as LanguageModel,
     schema: DuplicateCheckAgentOutputSchema,
     prompt: `
 Du bist ein Duplicate Detection Agent. Analysiere die gefundenen Duplikate und gib eine strukturierte Empfehlung.
 
-**Neuer RFP:**
+**Neuer Pre-Qualification:**
 - Kunde: ${extractedRequirements.customerName || 'Unbekannt'}
 - Projekt: ${extractedRequirements.projectName || 'Unbekannt'}
 - Beschreibung: ${extractedRequirements.projectDescription || 'Keine Beschreibung'}
@@ -108,7 +108,7 @@ ${duplicateResult.similarMatches.map(m => `- ${m.customerName} (${m.similarity}%
 **Entscheidungsregeln:**
 - > 90% Similarity: "merge" (automatisch zusammenführen)
 - 70-90% Similarity: "manual_review" (manuelle Prüfung)
-- < 70% Similarity: "create_new" (neuer RFP)
+- < 70% Similarity: "create_new" (neuer Pre-Qualification)
 
 Analysiere die Matches und gib eine Empfehlung mit Begründung.
     `.trim(),

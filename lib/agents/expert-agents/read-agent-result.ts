@@ -20,7 +20,7 @@ export interface AgentResultRow {
  * Get the latest result from a specific expert agent
  */
 export async function getAgentResult(
-  rfpId: string,
+  preQualificationId: string,
   agentName: ExpertAgentName
 ): Promise<AgentResultRow | null> {
   const results = await db
@@ -31,7 +31,7 @@ export async function getAgentResult(
     })
     .from(dealEmbeddings)
     .where(
-      and(eq(dealEmbeddings.preQualificationId, rfpId), eq(dealEmbeddings.agentName, agentName))
+      and(eq(dealEmbeddings.preQualificationId, preQualificationId), eq(dealEmbeddings.agentName, agentName))
     )
     .orderBy(desc(dealEmbeddings.createdAt))
     .limit(1);
@@ -60,18 +60,18 @@ export async function getAgentResult(
 }
 
 /**
- * Check if expert agents have been run for an RFP
+ * Check if expert agents have been run for an Pre-Qualification
  */
-export async function hasExpertAgentResults(rfpId: string): Promise<boolean> {
-  const result = await getAgentResult(rfpId, 'summary_expert');
+export async function hasExpertAgentResults(preQualificationId: string): Promise<boolean> {
+  const result = await getAgentResult(preQualificationId, 'summary_expert');
   return result !== null;
 }
 
 /**
- * Get all expert agent results for an RFP
+ * Get all expert agent results for an Pre-Qualification
  */
 export async function getAllAgentResults(
-  rfpId: string
+  preQualificationId: string
 ): Promise<Record<ExpertAgentName, AgentResultRow | null>> {
   const agents: ExpertAgentName[] = [
     'timing_expert',
@@ -82,7 +82,7 @@ export async function getAllAgentResults(
   ];
 
   const results = await Promise.all(
-    agents.map(async name => [name, await getAgentResult(rfpId, name)] as const)
+    agents.map(async name => [name, await getAgentResult(preQualificationId, name)] as const)
   );
 
   return Object.fromEntries(results) as Record<ExpertAgentName, AgentResultRow | null>;

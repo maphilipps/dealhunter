@@ -73,7 +73,7 @@ interface RAGDataClientProps {
 }
 
 export function RAGDataClient({ leadId }: RAGDataClientProps) {
-  const [rfpId, setRfpId] = useState<string | null>(null);
+  const [preQualificationId, setRfpId] = useState<string | null>(null);
   const [combinedStats, setCombinedStats] = useState<CombinedStats>({
     rfpStats: null,
     leadStats: null,
@@ -83,13 +83,13 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Load RFP ID and initial data
+  // Load Pre-Qualification ID and initial data
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Get RFP ID (may be null)
+      // Get Pre-Qualification ID (may be null)
       const rfpResult = await getRfpIdForLead(leadId);
       const foundRfpId = rfpResult.success ? rfpResult.data : null;
       setRfpId(foundRfpId);
@@ -202,12 +202,12 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
           <CombinedStatsCard stats={combinedStats} isLoading={isLoading} />
         </TabsContent>
 
-        {/* Agent Outputs Tab - shows RFP embeddings if available */}
+        {/* Agent Outputs Tab - shows Pre-Qualification embeddings if available */}
         <TabsContent value="agent-outputs" className="mt-6">
           {rfpId ? (
-            <ChunkBrowser rfpId={rfpId} mode="agent" />
+            <ChunkBrowser rfpId={preQualificationId} mode="agent" />
           ) : (
-            <NoDataPlaceholder message="Keine RFP-Daten - Agent Outputs nur mit RFP verfügbar" />
+            <NoDataPlaceholder message="Keine Pre-Qualification-Daten - Agent Outputs nur mit Pre-Qualification verfügbar" />
           )}
         </TabsContent>
 
@@ -262,11 +262,11 @@ function CombinedStatsCard({ stats, isLoading }: { stats: CombinedStats; isLoadi
     );
   }
 
-  const rfp = stats.rfpStats;
+  const preQualification = stats.rfpStats;
   const lead = stats.leadStats;
 
-  const totalRfpEmbeddings = rfp?.totalEmbeddings ?? 0;
-  const totalRfpRawChunks = rfp?.totalRawChunks ?? 0;
+  const totalRfpEmbeddings = preQualification?.totalEmbeddings ?? 0;
+  const totalRfpRawChunks = preQualification?.totalRawChunks ?? 0;
   const totalLeadEmbeddings = lead?.total ?? 0;
 
   return (
@@ -275,18 +275,18 @@ function CombinedStatsCard({ stats, isLoading }: { stats: CombinedStats; isLoadi
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">RFP Agent Outputs</CardTitle>
+            <CardTitle className="text-sm font-medium">Pre-Qualification Agent Outputs</CardTitle>
             <Bot className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalRfpEmbeddings.toLocaleString('de-DE')}</div>
-            <p className="text-xs text-muted-foreground">{rfp?.agentStats.length ?? 0} Agents</p>
+            <p className="text-xs text-muted-foreground">{preQualification?.agentStats.length ?? 0} Agents</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">RFP Raw Chunks</CardTitle>
+            <CardTitle className="text-sm font-medium">Pre-Qualification Raw Chunks</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -348,18 +348,18 @@ function CombinedStatsCard({ stats, isLoading }: { stats: CombinedStats; isLoadi
         </Card>
       )}
 
-      {/* RFP Agent Breakdown */}
-      {rfp && rfp.agentStats.length > 0 && (
+      {/* Pre-Qualification Agent Breakdown */}
+      {rfp && preQualification.agentStats.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bot className="h-5 w-5" />
-              RFP Agent Outputs
+              Pre-Qualification Agent Outputs
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {rfp.agentStats.map(agent => (
+              {preQualification.agentStats.map(agent => (
                 <div key={agent.agentName} className="flex items-center justify-between">
                   <Badge variant="outline" className="font-mono">
                     {agent.agentName}

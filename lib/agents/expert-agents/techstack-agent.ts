@@ -1,8 +1,8 @@
 /**
  * TechStack Expert Agent
  *
- * Extracts technology requirements from RFP documents via RAG.
- * This analyzes what the RFP DOCUMENT says about technology requirements -
+ * Extracts technology requirements from Pre-Qualification documents via RAG.
+ * This analyzes what the Pre-Qualification DOCUMENT says about technology requirements -
  * the customer's explicit requirements, not what they currently use.
  */
 
@@ -29,14 +29,14 @@ const TECHSTACK_QUERIES = [
 ];
 
 function buildSystemPrompt(): string {
-  return `You are a TechStack Expert Agent analyzing RFP documents for technology requirements.
+  return `You are a TechStack Expert Agent analyzing Pre-Qualification documents for technology requirements.
 
 You work for adesso, an IT consultancy focused on CMS/Web projects. Your analysis helps determine if we can propose our preferred technology stack or must use the customer's specified technologies.
 
 ## Instructions
 
 1. **Technology Requirements**:
-   - Extract ALL mentioned technologies from the RFP
+   - Extract ALL mentioned technologies from the Pre-Qualification
    - Distinguish between:
      - "required": Customer explicitly mandates this technology
      - "preferred": Customer prefers but allows alternatives
@@ -84,11 +84,11 @@ Return valid JSON matching the schema.`;
 export async function runTechStackAgent(
   input: ExpertAgentInput
 ): Promise<ExpertAgentOutput<TechStackAnalysis>> {
-  const { rfpId } = input;
+  const { preQualificationId } = input;
 
   try {
     const ragResults = await Promise.all(
-      TECHSTACK_QUERIES.map(query => queryRfpDocument(rfpId, query, 5))
+      TECHSTACK_QUERIES.map(query => queryRfpDocument(preQualificationId, query, 5))
     );
 
     const allResults = ragResults.flat();
@@ -103,11 +103,11 @@ export async function runTechStackAgent(
           integrations: {},
           infrastructure: {},
           complexityScore: 1,
-          complexityFactors: ['No technical requirements found in RFP'],
+          complexityFactors: ['No technical requirements found in Pre-Qualification'],
           confidence: 0,
         },
         0,
-        'No technology information found in RFP document'
+        'No technology information found in Pre-Qualification document'
       );
     }
 
@@ -115,18 +115,18 @@ export async function runTechStackAgent(
       (a, b) => b.similarity - a.similarity
     );
 
-    const context = formatContextFromRAG(uniqueResults.slice(0, 15), 'RFP Technology Requirements');
+    const context = formatContextFromRAG(uniqueResults.slice(0, 15), 'Pre-Qualification Technology Requirements');
 
     const analysis = await generateStructuredOutput({
       model: 'sonnet-4-5',
       schema: TechStackAnalysisSchema,
       system: buildSystemPrompt(),
-      prompt: `Analyze the following RFP content and extract all technology requirements:\n\n${context}`,
+      prompt: `Analyze the following Pre-Qualification content and extract all technology requirements:\n\n${context}`,
       temperature: 0.2,
     });
 
     const summaryContent = buildSummaryForStorage(analysis);
-    await storeAgentResult(rfpId, 'techstack_expert', summaryContent, {
+    await storeAgentResult(preQualificationId, 'techstack_expert', summaryContent, {
       cmsFlexibility: analysis.cmsRequirements.flexibility,
       complexityScore: analysis.complexityScore,
       requirementsCount: analysis.requirements.length,

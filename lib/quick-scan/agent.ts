@@ -382,6 +382,8 @@ export interface QuickScanInput {
   extractedRequirements?: any;
   bidId?: string;
   userId?: string;
+  /** Pre-Qualification ID for RAG write tools (enables agent-native output) */
+  preQualificationId?: string;
 }
 
 export interface QuickScanResult {

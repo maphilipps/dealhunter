@@ -148,7 +148,7 @@ export async function assignBusinessUnit(
 
     // DEA-38: Auto-convert to Lead when status becomes 'routed'
     const { convertRfpToLead } = await import('@/lib/qualifications/actions');
-    const leadResult = await convertRfpToLead({ rfpId: bidId });
+    const leadResult = await convertRfpToLead({ preQualificationId: bidId });
 
     let leadId: string | undefined;
     if (leadResult.success) {

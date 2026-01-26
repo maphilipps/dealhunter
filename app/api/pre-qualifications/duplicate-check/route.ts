@@ -7,7 +7,7 @@ import { extractedRequirementsSchema } from '@/lib/extraction/schema';
 /**
  * POST /api/pre-qualifications/duplicate-check
  *
- * Check for duplicate RFPs using AI-powered duplicate detection
+ * Check for duplicate Pre-Qualifications using AI-powered duplicate detection
  */
 
 const DuplicateCheckRequestSchema = z.object({

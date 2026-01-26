@@ -137,7 +137,7 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
     return { status: 'answered', color: 'bg-green-50 text-green-800', icon: '✓' };
   };
 
-  // Map data to the 10 BIT questions - combining Quick Scan and RFP data
+  // Map data to the 10 BIT questions - combining Quick Scan and Pre-Qualification data
   const questions = [
     {
       id: 1,
@@ -147,7 +147,7 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
         : extractedData?.customerName
           ? `Unternehmen: ${extractedData.customerName}${extractedData.industry ? `, Branche: ${extractedData.industry}` : ''}`
           : null,
-      source: companyIntelligence ? 'Company Intelligence' : 'RFP-Extraktion',
+      source: companyIntelligence ? 'Company Intelligence' : 'Pre-Qualification-Extraktion',
       ...getAnswerStatus(!!companyIntelligence?.basicInfo?.name || !!extractedData?.customerName),
     },
     {
@@ -162,7 +162,7 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
               contentVolume.estimatedPageCount
             ? `Geschätzte Projektgröße basierend auf ${contentVolume.estimatedPageCount} Seiten`
             : null,
-      source: extractedData?.budgetRange ? 'RFP-Dokument' : 'Company Intelligence / Content Volume',
+      source: extractedData?.budgetRange ? 'Pre-Qualification-Dokument' : 'Company Intelligence / Content Volume',
       ...getAnswerStatus(
         !!extractedData?.budgetRange ||
           !!companyIntelligence?.financials ||
@@ -197,7 +197,7 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
       })(),
       source:
         extractedData?.submissionDeadline || extractedData?.timeline
-          ? 'RFP-Dokument / Content Volume'
+          ? 'Pre-Qualification-Dokument / Content Volume'
           : 'Content Volume',
       ...getAnswerStatus(
         !!(
@@ -213,7 +213,7 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
       answer: extractedData?.procurementType
         ? `Vergabeart: ${extractedData.procurementType === 'public' ? 'Öffentliche Ausschreibung' : extractedData.procurementType === 'private' ? 'Private Vergabe' : 'Semi-öffentlich'}`
         : null,
-      source: extractedData?.procurementType ? 'RFP-Dokument' : 'Manuell zu ermitteln',
+      source: extractedData?.procurementType ? 'Pre-Qualification-Dokument' : 'Manuell zu ermitteln',
       ...getAnswerStatus(!!extractedData?.procurementType),
     },
     {
@@ -221,7 +221,7 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
       question: 'Welche Leistungen werden benötigt?',
       answer: (() => {
         const services: string[] = [];
-        // From RFP extraction
+        // From Pre-Qualification extraction
         if (extractedData?.scope) services.push(extractedData.scope);
         // From Quick Scan
         if (techStack && 'cms' in techStack && techStack.cms)
@@ -240,7 +240,7 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
         }
         return services.length > 0 ? services.join(', ') : null;
       })(),
-      source: 'RFP-Dokument / Tech Stack / Features',
+      source: 'Pre-Qualification-Dokument / Tech Stack / Features',
       ...getAnswerStatus(
         !!(extractedData?.scope || extractedData?.keyRequirements?.length || techStack || features)
       ),
@@ -257,7 +257,7 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
           refs.push(`Technologien: ${extractedData.technologies.slice(0, 3).join(', ')}`);
         return refs.length > 0 ? `Prüfe Referenzen für: ${refs.join(', ')}` : null;
       })(),
-      source: 'Tech Stack / RFP → Referenz-Datenbank',
+      source: 'Tech Stack / Pre-Qualification → Referenz-Datenbank',
       ...getAnswerStatus(
         !!(techStack && 'cms' in techStack) ||
           !!extractedData?.industry ||
@@ -284,7 +284,7 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
         return criteria.length > 0 ? criteria.join(' | ') : null;
       })(),
       source: extractedData?.requiredDeliverables?.length
-        ? 'RFP-Dokument (Unterlagen)'
+        ? 'Pre-Qualification-Dokument (Unterlagen)'
         : 'Ausschreibungsunterlagen',
       ...getAnswerStatus(
         !!extractedData?.requiredDeliverables?.length || !!extractedData?.constraints?.length
@@ -308,7 +308,7 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
         }
         return teamReqs.length > 0 ? teamReqs.join(' | ') : null;
       })(),
-      source: 'RFP-Dokument / BL Recommendation / Tech Stack',
+      source: 'Pre-Qualification-Dokument / BL Recommendation / Tech Stack',
       ...getAnswerStatus(
         !!(
           results.blRecommendation?.requiredSkills ||
@@ -338,7 +338,7 @@ export function TenQuestionsTab({ quickScan, extractedData }: TenQuestionsTabPro
         ]
           .filter(Boolean)
           .join(', ') || 'Keine besonderen Herausforderungen erkannt',
-      source: 'Performance / A11y / Legal / Content / RFP',
+      source: 'Performance / A11y / Legal / Content / Pre-Qualification',
       ...getAnswerStatus(true),
     },
     {

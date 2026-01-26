@@ -26,12 +26,12 @@ interface BLRecommendation {
 }
 
 interface RoutingFormProps {
-  rfpId: string;
+  preQualificationId: string;
   blRecommendation: BLRecommendation | null;
   allBusinessUnits: BusinessUnit[];
 }
 
-export function RoutingForm({ rfpId, blRecommendation, allBusinessUnits }: RoutingFormProps) {
+export function RoutingForm({ preQualificationId, blRecommendation, allBusinessUnits }: RoutingFormProps) {
   const router = useRouter();
 
   // Find the ID of the recommended business unit by matching the name
@@ -66,21 +66,21 @@ export function RoutingForm({ rfpId, blRecommendation, allBusinessUnits }: Routi
 
         const isOverriding = selectedBL !== recommendedBuId;
         const result = await assignBusinessUnit({
-          bidId: rfpId,
+          bidId: preQualificationId,
           businessLineName: selectedBU.name,
           overrideReason: isOverriding ? reason.trim() : undefined,
         });
 
         if (result.success) {
-          // Redirect zum Lead falls einer erstellt wurde, sonst zum RFP
+          // Redirect zum Lead falls einer erstellt wurde, sonst zum Pre-Qualification
           if (result.leadId) {
             router.push(`/qualifications/${result.leadId}`);
           } else {
-            router.push(`/pre-qualifications/${rfpId}`);
+            router.push(`/pre-qualifications/${preQualificationId}`);
           }
           router.refresh();
         } else {
-          setError(result.error || 'Fehler beim Routen des RFPs');
+          setError(result.error || 'Fehler beim Routen des Pre-Qualifications');
         }
       } catch (err) {
         setError('Unerwarteter Fehler beim Routen');

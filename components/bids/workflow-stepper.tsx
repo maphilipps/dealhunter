@@ -23,7 +23,7 @@ import type { QuickScan, PreQualification } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 interface WorkflowStepperProps {
-  rfp: PreQualification;
+  preQualification: PreQualification;
   quickScan: QuickScan | null;
   extractedData?: ExtractedRequirements | null;
 }
@@ -84,7 +84,7 @@ function getPhaseStatus(
   return 'pending';
 }
 
-export function WorkflowStepper({ rfp, quickScan, extractedData }: WorkflowStepperProps) {
+export function WorkflowStepper({ preQualification, quickScan, extractedData }: WorkflowStepperProps) {
   const [activePhase, setActivePhase] = useState<WorkflowPhase>(() => {
     if (!quickScan || quickScan.status !== 'completed') return 'facts';
     if (!quickScan.recommendedBusinessUnit) return 'comparison';
@@ -182,7 +182,7 @@ export function WorkflowStepper({ rfp, quickScan, extractedData }: WorkflowStepp
       <div className="min-h-[500px]">
         {activePhase === 'facts' && (
           <div className="space-y-4">
-            <ScrapedFactsPhase quickScan={quickScan} extractedData={extractedData} bidId={rfp.id} />
+            <ScrapedFactsPhase quickScan={quickScan} extractedData={extractedData} bidId={preQualification.id} />
 
             {/* Trigger Workflow 2 Button */}
             {quickScan?.status === 'completed' && (
@@ -223,11 +223,11 @@ export function WorkflowStepper({ rfp, quickScan, extractedData }: WorkflowStepp
         )}
 
         {activePhase === 'comparison' && quickScan && (
-          <BUComparisonPhase quickScan={quickScan} rfpId={rfp.id} />
+          <BUComparisonPhase quickScan={quickScan} preQualificationId={preQualification.id} />
         )}
 
         {activePhase === 'decision' && quickScan && (
-          <BLDecisionPhase quickScan={quickScan} rfpId={rfp.id} />
+          <BLDecisionPhase quickScan={quickScan} preQualificationId={preQualification.id} />
         )}
       </div>
     </div>

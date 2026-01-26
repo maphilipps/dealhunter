@@ -46,9 +46,10 @@ const sourceMap = {
   proactive: 'Proaktiv',
 };
 
-const stageMap = {
+const stageMap: Record<string, string> = {
   cold: 'Cold',
   warm: 'Warm',
+  'pre-qualification': 'Pre-Qualification',
   preQualification: 'Pre-Qualification',
 };
 

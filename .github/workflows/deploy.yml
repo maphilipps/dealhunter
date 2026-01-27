@@ -12,75 +12,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: dealhunter
-          POSTGRES_PASSWORD: dealhunter
-          POSTGRES_DB: dealhunter
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Restore Next.js cache
-        uses: actions/cache@v4
-        with:
-          path: .next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Initialize build database
-        run: npm run db:push
-        env:
-          DATABASE_URL: postgresql://dealhunter:dealhunter@localhost:5432/dealhunter
-
-      - name: Build
-        run: npm run build
-        env:
-          SKIP_ENV_VALIDATION: true
-          DATABASE_URL: postgresql://dealhunter:dealhunter@localhost:5432/dealhunter
-          REDIS_URL: redis://localhost:6379
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          NEXT_PUBLIC_APP_URL: https://dealhunter.adessocms.de
-          # AI provider keys for build-time validation
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_BASE_URL: https://adesso-ai-hub.3asabc.de/v1
-
-      - name: Prepare standalone package
-        run: |
-          # Copy static files to standalone
-          cp -r .next/static .next/standalone/.next/static
-          cp -r public .next/standalone/public
-
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -88,32 +22,25 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H 95.216.208.185 >> ~/.ssh/known_hosts
 
-      - name: Prepare server directory
-        run: |
-          ssh -i ~/.ssh/deploy_key deploy@95.216.208.185 "mkdir -p /var/www/dealhunter-standalone"
-
-      - name: Deploy standalone build
-        run: |
-          rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key" \
-            .next/standalone/ \
-            deploy@95.216.208.185:/var/www/dealhunter-standalone/
-
-      - name: Restart services
+      - name: Deploy on Server
         run: |
           ssh -i ~/.ssh/deploy_key deploy@95.216.208.185 << 'EOF'
-            cd /var/www/dealhunter-standalone
-
-            # Restart the main app with standalone server
-            sudo pm2 delete dealhunter 2>/dev/null || true
-            sudo pm2 start server.js --name dealhunter \
-              --node-args="--env-file=/var/www/dealhunter/.env.production"
-
-            # Worker still needs full repo for now
+            set -e
             cd /var/www/dealhunter
-            git pull origin main
+
+            echo "📥 Pulling latest changes..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "📦 Installing dependencies..."
             npm ci --prefer-offline
-            sudo pm2 restart dealhunter-worker
+
+            echo "🔨 Building application..."
+            npm run build
+
+            echo "🔄 Restarting services..."
+            sudo pm2 restart dealhunter || sudo pm2 start npm --name dealhunter -- start
+            sudo pm2 restart dealhunter-worker || echo "Worker not configured"
 
             echo "✅ Deployment complete!"
             sudo pm2 list

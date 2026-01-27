@@ -10,6 +10,11 @@
       "url": "https://mcp.vercel.com",
       "oauth": {},
       "enabled": true
+    },
+    "Sentry": {
+      "type": "remote",
+      "url": "https://mcp.sentry.dev/mcp/marc-philipps/qualifier",
+      "oauth": {}
     }
   },
   "$schema": "https://opencode.ai/config.json"

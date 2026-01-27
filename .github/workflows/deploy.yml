@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -17,8 +18,18 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /var/www/dealhunter
+
+            echo "📥 Pulling latest changes..."
             git pull origin main
-            npm install
+
+            echo "📦 Installing dependencies..."
+            npm ci --prefer-offline
+
+            echo "🔨 Building application..."
             npm run build
-            pm2 restart dealhunter
-            echo "Deployment completed!"
+
+            echo "🔄 Restarting services..."
+            pm2 restart dealhunter dealhunter-worker
+
+            echo "✅ Deployment complete!"
+            pm2 list

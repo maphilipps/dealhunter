@@ -63,6 +63,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   const [duplicateCheck, setDuplicateCheck] = useState<DuplicateCheckResult | null>(
     bid.duplicateCheckResult ? (JSON.parse(bid.duplicateCheckResult) as DuplicateCheckResult) : null
   );
+  const [needsWebsiteUrl, setNeedsWebsiteUrl] = useState(false);
 
   // Phase 1.1: Ref to prevent double-start race condition in React Strict Mode
 

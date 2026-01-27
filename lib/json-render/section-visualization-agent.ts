@@ -232,7 +232,7 @@ async function storeVisualization(
   });
 }
 
-function tryParseJson(content: string): unknown | null {
+function tryParseJson(content: string): unknown {
   try {
     return JSON.parse(content);
   } catch {

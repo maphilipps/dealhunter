@@ -82,7 +82,8 @@ const AUDIT_CONFIGS: AuditConfig[] = [
 function getChunkType(filename: string): string {
   const name = filename.toLowerCase();
 
-  if (name.includes('cost') || name.includes('estimation') || name.includes('kalkulation')) return 'cost_estimation';
+  if (name.includes('cost') || name.includes('estimation') || name.includes('kalkulation'))
+    return 'cost_estimation';
   if (name.includes('cms_comparison') || name.includes('cms-vergleich')) return 'cms_comparison';
   if (name.includes('migration')) return 'migration_strategy';
   if (name.includes('architecture') || name.includes('architektur')) return 'architecture';
@@ -92,16 +93,20 @@ function getChunkType(filename: string): string {
   if (name.includes('gap') || name.includes('analyse')) return 'gap_analysis';
   if (name.includes('referenz') || name.includes('reference')) return 'references';
   if (name.includes('challenge') || name.includes('position')) return 'positioning';
-  if (name.includes('azure') || name.includes('hosting') || name.includes('infrastructure')) return 'infrastructure';
+  if (name.includes('azure') || name.includes('hosting') || name.includes('infrastructure'))
+    return 'infrastructure';
 
   return 'audit_data';
 }
 
 // Get chunk category based on content/type
-function getChunkCategory(chunkType: string): 'fact' | 'elaboration' | 'recommendation' | 'risk' | 'estimate' {
+function getChunkCategory(
+  chunkType: string
+): 'fact' | 'elaboration' | 'recommendation' | 'risk' | 'estimate' {
   if (chunkType.includes('cost') || chunkType.includes('estimation')) return 'estimate';
   if (chunkType.includes('risk') || chunkType.includes('gap')) return 'risk';
-  if (chunkType.includes('recommendation') || chunkType.includes('migration')) return 'recommendation';
+  if (chunkType.includes('recommendation') || chunkType.includes('migration'))
+    return 'recommendation';
   if (chunkType.includes('analysis') || chunkType.includes('comparison')) return 'elaboration';
   return 'fact';
 }
@@ -147,8 +152,13 @@ function findFiles(dir: string, extensions: string[], depth: number = 0): string
       }
     } else if (extensions.includes(extname(entry).toLowerCase())) {
       // Skip package.json, tsconfig, etc.
-      if (entry === 'package.json' || entry === 'package-lock.json' ||
-          entry === 'tsconfig.json' || entry === 'vite.config.ts') continue;
+      if (
+        entry === 'package.json' ||
+        entry === 'package-lock.json' ||
+        entry === 'tsconfig.json' ||
+        entry === 'vite.config.ts'
+      )
+        continue;
       files.push(fullPath);
     }
   }
@@ -310,7 +320,7 @@ async function seedAudits() {
       .values({
         userId: adminUser.id,
         source: 'proactive',
-        stage: 'preQualification',
+        stage: 'pre-qualification',
         inputType: 'freetext',
         rawInput: rawInput.substring(0, 10000),
         status: 'routed',
@@ -358,7 +368,9 @@ async function seedAudits() {
       // Skip very large files
       const stat = statSync(filePath);
       if (stat.size > 500000) {
-        console.log(`   ⏭️  Skipping large file: ${relativePath} (${Math.round(stat.size / 1024)}KB)`);
+        console.log(
+          `   ⏭️  Skipping large file: ${relativePath} (${Math.round(stat.size / 1024)}KB)`
+        );
         continue;
       }
 
@@ -410,7 +422,9 @@ async function seedAudits() {
           }
         }
 
-        process.stdout.write(`\r   📥 Imported ${auditChunks} chunks from ${relativePath.substring(0, 40)}...`);
+        process.stdout.write(
+          `\r   📥 Imported ${auditChunks} chunks from ${relativePath.substring(0, 40)}...`
+        );
       } catch (error) {
         console.error(`   ❌ Error reading ${relativePath}:`, error);
       }

@@ -31,8 +31,8 @@ const shutdown = async () => {
   console.log('[DB] Pool closed');
 };
 
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
+process.on('SIGTERM', () => void shutdown());
+process.on('SIGINT', () => void shutdown());
 
 // Export pool for direct queries (e.g., pgvector operations)
 export { pool };

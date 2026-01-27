@@ -786,7 +786,7 @@ export const backgroundJobs = pgTable(
 
     // Job Details
     jobType: text('job_type', {
-      enum: ['qualification', 'deep-analysis', 'deep-scan', 'quick-scan', 'team-notification', 'cleanup'],
+      enum: ['qualification', 'deep-analysis', 'deep-scan', 'quick-scan', 'team-notification', 'cleanup', 'visualization'],
     }).notNull(),
     inngestRunId: text('inngest_run_id'), // Inngest execution ID for tracking
     bullmqJobId: text('bullmq_job_id'), // BullMQ job ID for tracking

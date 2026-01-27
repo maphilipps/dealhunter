@@ -68,7 +68,7 @@ export async function POST(
       id: jobId,
       userId: session.user.id,
       qualificationId,
-      type: 'visualization',
+      jobType: 'visualization',
       status: 'pending',
       progress: 0,
       metadata: JSON.stringify({ focusPrompt }),

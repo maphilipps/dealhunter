@@ -379,8 +379,7 @@ Falls nicht gefunden: antworte mit {"criteria": [], "weights": [], "requiresConc
       de: 'Leistungsumfang Leistungen Tasks Scope Pflichtenheft Serviceleistungen',
       en: 'scope of services required services tasks deliverables statement of work',
     },
-    extractPrompt:
-      'Liste die geforderten Leistungen/Services auf. Format: kommagetrennte Liste.',
+    extractPrompt: 'Liste die geforderten Leistungen/Services auf. Format: kommagetrennte Liste.',
     isArray: true,
   },
   {
@@ -965,9 +964,17 @@ export async function runExtractionWithStreaming(
  * Now delegates to the Agent-Native implementation
  */
 export async function extractRequirements(input: ExtractionInput): Promise<ExtractionOutput> {
+  if (!input.preQualificationId) {
+    throw new Error('preQualificationId is required for extraction');
+  }
   // Import dynamically to avoid circular dependency
   const { runExtractionAgentNative } = await import('./agent-native');
-  const result = await runExtractionAgentNative(input);
+  const result = await runExtractionAgentNative({
+    preQualificationId: input.preQualificationId,
+    rawText: input.rawText,
+    inputType: input.inputType,
+    metadata: input.metadata,
+  });
   return {
     requirements: result.requirements,
     success: result.success,

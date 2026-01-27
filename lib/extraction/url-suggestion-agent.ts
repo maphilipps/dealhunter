@@ -1,14 +1,9 @@
-import OpenAI from 'openai';
+import { generateText } from 'ai';
 import { z } from 'zod';
 
 import { createIntelligentTools } from '../agent-tools/intelligent-tools';
-import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '../ai/config';
-
-// Initialize OpenAI client with adesso AI Hub
-const openai = new OpenAI({
-  apiKey: AI_HUB_API_KEY,
-  baseURL: AI_HUB_BASE_URL,
-});
+import { modelNames } from '../ai/config';
+import { getProviderForSlot } from '../ai/providers';
 
 /**
  * Schema for URL suggestions
@@ -127,12 +122,9 @@ export async function suggestWebsiteUrls(input: UrlSuggestionInput): Promise<Url
         .join('\n\n')}`;
     }
 
-    const completion = await openai.chat.completions.create({
-      model: 'gemini-3-flash-preview',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert business researcher specializing in company identification and web presence analysis.
+    const { text } = await generateText({
+      model: getProviderForSlot('research')(modelNames.research),
+      system: `You are an expert business researcher specializing in company identification and web presence analysis.
 
 Your task is to suggest the most likely website URLs for a company or organization based on the provided information.
 
@@ -151,10 +143,7 @@ URL RESEARCH STRATEGIES:
 - Consider common patterns: www.[company-name].[tld]
 - Remove spaces and special characters from company names
 - Consider abbreviations and acronyms`,
-        },
-        {
-          role: 'user',
-          content: `Find website URLs for this organization:
+      prompt: `Find website URLs for this organization:
 
 ${contextParts.join('\n')}${webSearchContext}
 
@@ -179,13 +168,11 @@ RESPOND WITH THIS EXACT JSON STRUCTURE ONLY:
   ],
   "reasoning": "Based on company name and industry analysis..."
 }`,
-        },
-      ],
       temperature: 0.3,
-      max_tokens: 1500,
+      maxOutputTokens: 1500,
     });
 
-    const responseText = completion.choices[0]?.message?.content || '{}';
+    const responseText = text || '{}';
 
     // Clean and parse response - extract JSON from potential surrounding text
     let cleanedResponse = responseText

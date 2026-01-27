@@ -23,7 +23,7 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Dealhunter - AI-powered BD Platform',
+  title: 'PHPXOM Qualifier - AI-powered BD Platform',
   description: 'AI-gestützte BD-Entscheidungsplattform für adesso SE',
 };
 

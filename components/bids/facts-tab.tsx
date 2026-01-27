@@ -1,8 +1,6 @@
 'use client';
 
 import {
-  Loader2,
-  RotateCcw,
   Globe,
   Server,
   Code,
@@ -30,7 +28,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import type { QuickScan } from '@/lib/db/schema';
-import { retriggerQuickScan } from '@/lib/quick-scan/actions';
 import type {
   TechStack,
   PerformanceIndicators,
@@ -53,7 +50,6 @@ interface FactsTabProps {
  * All cards use ShadCN components only.
  */
 export function FactsTab({ quickScan, bidId }: FactsTabProps) {
-  const [isRetriggering, setIsRetriggering] = useState(false);
 
   // Helper to safely parse JSON fields (may already be objects from Drizzle)
   const safeJsonParse = <T,>(value: string | T | null | undefined): T | null => {
@@ -79,24 +75,6 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
   const accessibilityAudit = safeJsonParse<AccessibilityAudit>(quickScan.accessibilityAudit);
   const companyIntelligence = safeJsonParse<CompanyIntelligence>(quickScan.companyIntelligence);
 
-  const handleRetrigger = async () => {
-    setIsRetriggering(true);
-    toast.info('Starte Quick Scan erneut...');
-    try {
-      const result = await retriggerQuickScan(bidId);
-      if (result.success) {
-        toast.success('Quick Scan gestartet - bitte warten...');
-        window.location.reload();
-      } else {
-        toast.error(result.error || 'Quick Scan Re-Trigger fehlgeschlagen');
-        setIsRetriggering(false);
-      }
-    } catch {
-      toast.error('Ein Fehler ist aufgetreten');
-      setIsRetriggering(false);
-    }
-  };
-
   return (
     <div className="space-y-4">
       {/* Header Card */}
@@ -108,19 +86,6 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
               <CardTitle>Website-Analyse</CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void handleRetrigger()}
-                disabled={isRetriggering}
-              >
-                {isRetriggering ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <RotateCcw className="h-4 w-4 mr-1" />
-                )}
-                Erneut scannen
-              </Button>
               <Badge variant={quickScan.status === 'completed' ? 'default' : 'destructive'}>
                 {quickScan.status === 'completed' ? 'Abgeschlossen' : 'Fehlgeschlagen'}
               </Badge>

@@ -21,7 +21,7 @@ interface QuickScanResultsProps {
 }
 
 /**
- * Quick Scan Results Component
+ * Qualification Results Component
  * - Running: Shows live ActivityStream with agent feedback
  * - Completed: Shows 2-tab layout (Fakten, Entscheidungsmatrix)
  * - Failed: Shows error state
@@ -51,7 +51,7 @@ export function QuickScanResults({
               setIsPolling(false);
 
               // Show success toast
-              toast.success('Quick Scan abgeschlossen!', {
+              toast.success('Qualification abgeschlossen!', {
                 description:
                   'Die Analyse wurde erfolgreich abgeschlossen. Wechsle zur Entscheidungsmatrix...',
                 duration: 5000,
@@ -72,7 +72,7 @@ export function QuickScanResults({
             } else if (result.quickScan.status === 'failed') {
               setQuickScan(result.quickScan);
               setIsPolling(false);
-              toast.error('Quick Scan fehlgeschlagen');
+              toast.error('Qualification fehlgeschlagen');
               return;
             }
           }
@@ -85,7 +85,7 @@ export function QuickScanResults({
             }, interval);
           } else {
             setIsPolling(false);
-            toast.error('Zeitüberschreitung beim Warten auf Quick Scan Ergebnisse');
+            toast.error('Zeitüberschreitung beim Warten auf Qualification-Ergebnisse');
             onRefresh?.();
           }
         } catch (error) {
@@ -120,7 +120,7 @@ export function QuickScanResults({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                <CardTitle className="text-blue-900">Quick Scan läuft</CardTitle>
+                <CardTitle className="text-blue-900">Qualification läuft</CardTitle>
               </div>
               <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                 Live
@@ -135,7 +135,7 @@ export function QuickScanResults({
         {/* Live Activity Stream - Grouped by Agent */}
         <ActivityStream
           streamUrl={`/api/pre-qualifications/${bidId}/quick-scan/stream`}
-          title="Quick Scan Agent Activity"
+          title="Qualification Agent Activity"
           autoStart={true}
           grouped={true}
           onComplete={() => {
@@ -167,7 +167,7 @@ export function QuickScanResults({
         <CardHeader>
           <div className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-red-600" />
-            <CardTitle className="text-red-900">Quick Scan fehlgeschlagen</CardTitle>
+            <CardTitle className="text-red-900">Qualification fehlgeschlagen</CardTitle>
           </div>
           <CardDescription className="text-red-700">
             Bei der Analyse der Website ist ein Fehler aufgetreten.
@@ -189,10 +189,10 @@ export function QuickScanResults({
         <CardHeader>
           <div className="flex items-center gap-2">
             <Loader2 className="h-5 w-5 text-slate-400" />
-            <CardTitle className="text-slate-700">Quick Scan ausstehend</CardTitle>
+            <CardTitle className="text-slate-700">Qualification ausstehend</CardTitle>
           </div>
           <CardDescription className="text-slate-500">
-            Der Quick Scan wird in Kürze gestartet...
+            Die Qualification wird in Kürze gestartet...
           </CardDescription>
         </CardHeader>
       </Card>

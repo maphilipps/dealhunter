@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu } from 'lucide-react';
+import { Loader2, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/sheet';
 import {
   getPreQualificationNavigationSections,
+  isQualificationRunning,
   isNavigationItemEnabled,
   type QuickScanDataAvailability,
 } from '@/lib/pre-qualifications/navigation';
@@ -36,6 +37,7 @@ export function PreQualificationMobileNav({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const navigationSections = getPreQualificationNavigationSections(preQualificationId);
+  const qualificationRunning = isQualificationRunning(status);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -64,8 +66,12 @@ export function PreQualificationMobileNav({
               <div className="flex flex-col gap-1">
                 {section.items.map(item => {
                   const isActive = pathname === item.url;
-                  const isEnabled = isNavigationItemEnabled(item, dataAvailability);
-                  const Icon = item.icon;
+                  const isOverview = item.url === `/pre-qualifications/${preQualificationId}`;
+                  const isEnabled =
+                    !qualificationRunning || isOverview
+                      ? isNavigationItemEnabled(item, dataAvailability)
+                      : false;
+                  const Icon = qualificationRunning && !isOverview ? Loader2 : item.icon;
 
                   if (isEnabled) {
                     return (
@@ -79,7 +85,7 @@ export function PreQualificationMobileNav({
                             : 'hover:bg-accent/50'
                         }`}
                       >
-                        <Icon className="size-4" />
+                        <Icon className={`size-4${Icon === Loader2 ? ' animate-spin' : ''}`} />
                         <span>{item.title}</span>
                       </Link>
                     );
@@ -90,9 +96,13 @@ export function PreQualificationMobileNav({
                     <div
                       key={item.title}
                       className="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm opacity-50"
-                      title="Quick Scan Daten fehlen"
+                      title={
+                        qualificationRunning
+                          ? 'Qualification läuft – bitte warten'
+                          : 'Qualification Daten fehlen'
+                      }
                     >
-                      <Icon className="size-4" />
+                      <Icon className={`size-4${Icon === Loader2 ? ' animate-spin' : ''}`} />
                       <span>{item.title}</span>
                     </div>
                   );

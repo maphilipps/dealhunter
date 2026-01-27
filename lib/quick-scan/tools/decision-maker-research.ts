@@ -1,8 +1,11 @@
+import { generateText } from 'ai';
 import { z } from 'zod';
 
 import type { DecisionMakersResearch, DecisionMaker } from '../schema';
 
-import { generateStructuredOutput } from '@/lib/ai/config';
+
+import { modelNames } from '@/lib/ai/config';
+import { getProviderForSlot } from '@/lib/ai/providers';
 import { searchAndContents, getContents } from '@/lib/search/web-search';
 
 // Valid source types for DecisionMaker
@@ -31,10 +34,10 @@ type DecisionMakerSource =
 const extractedPersonSchema = z.object({
   name: z.string(),
   role: z.string(),
-  email: z.string().optional(),
-  linkedInUrl: z.string().optional(),
-  xingUrl: z.string().optional(),
-  phone: z.string().optional(),
+  email: z.string().nullable(),
+  linkedInUrl: z.string().nullable(),
+  xingUrl: z.string().nullable(),
+  phone: z.string().nullable(),
 });
 
 // Search strategies - ordered by effectiveness
@@ -136,20 +139,20 @@ async function extractPeopleFromPage(
   }>
 > {
   try {
-    const result = await generateStructuredOutput({
-      schema: z.object({
-        people: z
-          .array(
-            z.object({
-              name: z.string().optional().default('Unbekannt'),
-              role: z.string().optional().default('Unbekannt'),
-              email: z.string().optional(),
-              linkedInUrl: z.string().optional(),
-              phone: z.string().optional(),
-            })
-          )
-          .default([]),
-      }),
+    const responseSchema = z.object({
+      people: z.array(
+        z.object({
+          name: z.string(),
+          role: z.string(),
+          email: z.string().nullable(),
+          linkedInUrl: z.string().nullable(),
+          phone: z.string().nullable(),
+        })
+      ),
+    });
+
+    const { text } = await generateText({
+      model: getProviderForSlot('research')(modelNames.research),
       system: `Du bist ein Experte für die Extraktion von Kontaktinformationen aus Webseiten.
 
 AUFGABE: Extrahiere Entscheidungsträger und Führungspersonen von ${companyName}.
@@ -170,6 +173,19 @@ ${pageContent.slice(0, 10000)}
 Gib ein JSON zurück mit allen gefundenen Führungspersonen.`,
     });
 
+    const jsonStart = text.indexOf('{');
+    const jsonEnd = text.lastIndexOf('}');
+    if (jsonStart === -1 || jsonEnd === -1) {
+      throw new Error('No JSON object found in model output');
+    }
+
+    const jsonString = text.slice(jsonStart, jsonEnd + 1);
+    const parsed = JSON.parse(jsonString);
+    const validated = responseSchema.safeParse(parsed);
+    if (!validated.success) {
+      throw new Error(`Decision maker schema validation failed: ${validated.error.message}`);
+    }
+
     const source: DecisionMakerSource = pageUrl.includes('linkedin.com')
       ? 'linkedin'
       : pageUrl.includes('xing.com')
@@ -177,8 +193,12 @@ Gib ein JSON zurück mit allen gefundenen Führungspersonen.`,
         : pageUrl.includes('impressum')
           ? 'impressum'
           : 'web_search';
-    return result.people.map(p => ({
-      ...p,
+    return validated.data.people.map(p => ({
+      name: p.name,
+      role: p.role,
+      email: p.email ?? undefined,
+      linkedInUrl: p.linkedInUrl ?? undefined,
+      phone: p.phone ?? undefined,
       source,
     }));
   } catch (error) {

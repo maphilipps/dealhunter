@@ -13,6 +13,7 @@ interface TenQuestionsCardProps {
 }
 
 const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
+  qualification: 'Qualification',
   migration: 'Migration',
   greenfield: 'Greenfield',
   relaunch: 'Relaunch',

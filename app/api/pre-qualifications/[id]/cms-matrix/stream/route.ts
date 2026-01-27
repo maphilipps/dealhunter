@@ -216,7 +216,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
           timestamp: Date.now(),
           data: {
             agent: 'Matrix Orchestrator',
-            message: 'Keine Anforderungen erkannt. Bitte zuerst Quick Scan durchführen.',
+            message: 'Keine Anforderungen erkannt. Bitte zuerst die Qualification durchführen.',
           },
         });
         await writer.close();

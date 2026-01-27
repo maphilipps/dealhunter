@@ -23,7 +23,7 @@ import { registry, createRagWriteTool, createBatchRagWriteTool, createVisualizat
 import type { ToolContext } from '../agent-tools';
 import { buildAgentContext, formatContextForPrompt } from '../agent-tools/context-builder';
 import { modelNames, defaultSettings } from '../ai/config';
-import { getOpenAIProvider } from '../ai/providers';
+import { getProviderForSlot } from '../ai/providers';
 
 const completionSchema = extendedQuickScan2Schema.extend({
   rawScanData: z.any().optional(),
@@ -63,6 +63,8 @@ export async function runQuickScanAgentNative(
     options?.onActivity?.(entry);
   };
 
+  const mode = input.mode ?? 'full';
+
   const agentContext = await buildAgentContext(input.userId);
   const toolContext = buildToolContext(agentContext);
   const contextSection = formatContextForPrompt(agentContext);
@@ -87,9 +89,14 @@ export async function runQuickScanAgentNative(
       'Run a tool by name with the provided input. Use this for all atomic QuickScan actions.',
     inputSchema: z.object({
       name: z.string(),
-      input: z.any(),
+      input: z.record(z.string(), z.any()),
     }),
     execute: async ({ name, input: toolInput }) => {
+      if (mode === 'qualification' && name.startsWith('research.')) {
+        const error = `Tool ${name} is disabled in qualification mode.`;
+        logActivity(`Tool skipped: ${name}`, error);
+        return { success: false, error };
+      }
       const start = Date.now();
       logActivity(`Tool start: ${name}`);
       const result = await registry.execute(name, toolInput, toolContext);
@@ -130,13 +137,17 @@ export async function runQuickScanAgentNative(
   }
 
   const agent = new ToolLoopAgent({
-    model: getOpenAIProvider()(modelNames.default),
+    model: getProviderForSlot('default')(modelNames.default),
     instructions: [
       'You are the QuickScan agent. Use tools to gather facts and then call completeQuickScan.',
       'Follow agent-native rules: use tools for actions, do not invent data.',
       'Required outputs: techStack, contentVolume, features, blRecommendation.',
-      'Optional outputs to include when possible: navigationStructure, accessibilityAudit, seoAudit, legalCompliance, performanceIndicators, screenshots, companyIntelligence, contentTypes, migrationComplexity, decisionMakers.',
-      'Always attempt contacts via research.decisionMakers and research.contacts.quick.',
+      mode === 'qualification'
+        ? 'Qualification mode: only produce required outputs. Skip contact/decision-maker research and external people lookup.'
+        : 'Optional outputs to include when possible: navigationStructure, accessibilityAudit, seoAudit, legalCompliance, performanceIndicators, screenshots, companyIntelligence, contentTypes, migrationComplexity, decisionMakers.',
+      mode === 'qualification'
+        ? 'Do NOT use research.* tools.'
+        : 'Always attempt contacts via research.decisionMakers and research.contacts.quick.',
       'Use scan.webSearch and scan.fetchUrl for external research when needed.',
       'Use scan.rag.query to reuse existing findings for this prequalification.',
       'Use runTool with these core tools when relevant:',
@@ -150,8 +161,7 @@ export async function runQuickScanAgentNative(
       '- scan.quickscan.content.classify',
       '- scan.quickscan.migration.analyzeAI',
       '- scan.quickscan.recommendBusinessLine',
-      '- research.decisionMakers',
-      '- research.contacts.quick',
+      ...(mode === 'qualification' ? [] : ['- research.decisionMakers', '- research.contacts.quick']),
       'Use Bid ID for scan.quickscan.playwright.audit when available.',
       'Tool results follow { success, data, error }.',
       'Record references by calling storeFinding or storeFindingsBatch when available.',

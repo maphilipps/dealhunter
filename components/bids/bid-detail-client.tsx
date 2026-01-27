@@ -1,9 +1,9 @@
 'use client';
 
-import { Loader2, Sparkles, CheckCircle2, RotateCcw, ArrowRight, Building2 } from 'lucide-react';
+import { Loader2, CheckCircle2, RotateCcw, ArrowRight, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { BaselineComparisonCard } from './baseline-comparison-card';
@@ -21,12 +21,11 @@ import { ProjectPlanningCard } from './project-planning-card';
 import { QuickScanResults } from './quick-scan-results';
 import { TeamBuilder } from './team-builder';
 import { TenQuestionsCard } from './ten-questions-card';
-import { WebsiteUrlInput } from './website-url-input';
 
 import { ActivityStream } from '@/components/ai-elements/activity-stream';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { startPreQualProcessing, updateExtractedRequirements } from '@/lib/bids/actions';
+import { updateExtractedRequirements } from '@/lib/bids/actions';
 import type { DuplicateCheckResult } from '@/lib/bids/duplicate-check';
 import {
   calculateAnsweredQuestionsCount,
@@ -36,7 +35,7 @@ import { getBitEvaluationResult, retriggerBitEvaluation } from '@/lib/bit-evalua
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 import type { PreQualification, QuickScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
-import { startQuickScan, getQuickScanResult, retriggerQuickScan } from '@/lib/quick-scan/actions';
+import { getQuickScanResult } from '@/lib/quick-scan/actions';
 
 interface BidDetailClientProps {
   bid: PreQualification;
@@ -59,17 +58,13 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   const [bitEvaluationResult, setBitEvaluationResult] = useState<BitEvaluationResult | null>(null);
   const [isLoadingBitEvaluation, setIsLoadingBitEvaluation] = useState(false);
   const [showLowConfidenceDialog, setShowLowConfidenceDialog] = useState(false);
-  const [needsWebsiteUrl, setNeedsWebsiteUrl] = useState(false);
-  const [isSubmittingUrl, setIsSubmittingUrl] = useState(false);
   const [isRetriggeringBit, setIsRetriggeringBit] = useState(false);
-  const [isRetriggeringQuickScan, setIsRetriggeringQuickScan] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [duplicateCheck, setDuplicateCheck] = useState<DuplicateCheckResult | null>(
     bid.duplicateCheckResult ? (JSON.parse(bid.duplicateCheckResult) as DuplicateCheckResult) : null
   );
 
   // Phase 1.1: Ref to prevent double-start race condition in React Strict Mode
-  const hasAutoStartedQuickScanRef = useRef(false);
 
   useEffect(() => {
     const processingStates = [
@@ -86,22 +81,6 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     setRefreshKey(prev => prev + 1);
   };
 
-  // Handle extraction start - background processing only
-  const handleStartExtraction = () => {
-    setIsExtracting(true);
-    toast.info('Starte Verarbeitung im Hintergrund...');
-
-    void (async () => {
-      const result = await startPreQualProcessing(bid.id);
-      if (result.success) {
-        void router.refresh();
-      } else {
-        setIsExtracting(false);
-        toast.error(result.error || 'Verarbeitung konnte nicht gestartet werden');
-      }
-    })();
-  };
-
   // Handle requirements confirmation
   const handleConfirmRequirements = async (updatedRequirements: ExtractedRequirements) => {
     toast.info('Speichere Änderungen...');
@@ -110,105 +89,13 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
       const result = await updateExtractedRequirements(bid.id, updatedRequirements);
 
       if (result.success) {
-        toast.success('Änderungen gespeichert! Quick Scan wird gestartet...');
-
-        // Start Quick Scan automatically
-        setTimeout(() => {
-          void (async () => {
-            const scanResult = await startQuickScan(bid.id);
-            if (scanResult.success) {
-              toast.success('Quick Scan erfolgreich gestartet!');
-              void router.refresh();
-
-              setTimeout(() => {
-                void void checkQuickScanCompletion();
-              }, 2000);
-            } else if (scanResult.needsWebsiteUrl) {
-              toast.error('Bitte Website-URL in den Anforderungen angeben');
-            } else {
-              toast.error(scanResult.error || 'Quick Scan konnte nicht gestartet werden');
-            }
-          })();
-        }, 500);
+        toast.success('Änderungen gespeichert!');
+        void router.refresh();
       } else {
         toast.error(result.error || 'Speichern fehlgeschlagen');
       }
     } catch {
       toast.error('Ein Fehler ist aufgetreten');
-    }
-  };
-
-  // Check if Quick Scan completed - BD routes to BL, BL makes BID/NO-BID decision
-  const checkQuickScanCompletion = useCallback(
-    async function checkScanStatus() {
-      const scanResult = await getQuickScanResult(bid.id);
-
-      if (scanResult.success && scanResult.quickScan?.status === 'completed') {
-        toast.success(
-          'Quick Scan abgeschlossen! Bitte prüfen Sie die 10 Fragen und treffen Sie eine BIT/NO BIT Entscheidung.'
-        );
-        void router.refresh();
-      } else if (scanResult.success && scanResult.quickScan?.status === 'running') {
-        // Quick Scan still running, poll again
-        setTimeout(() => {
-          void checkScanStatus();
-        }, 3000);
-      }
-    },
-    [bid.id, router]
-  );
-
-  // Handle URL submission when Quick Scan needs a URL
-  const handleUrlSubmit = async (
-    urls: Array<{ url: string; type: string; description?: string; selected: boolean }>
-  ) => {
-    setIsSubmittingUrl(true);
-
-    try {
-      // Update extracted requirements with selected URLs
-      const selectedUrls = urls.filter(u => u.selected);
-      const primaryUrl = selectedUrls[0]?.url;
-
-      const updatedRequirements = {
-        ...extractedData,
-        websiteUrls: selectedUrls.map(u => ({
-          url: u.url,
-          type: u.type,
-          description: u.description,
-          extractedFromDocument: false,
-        })),
-        websiteUrl: primaryUrl,
-      };
-
-      // Save updated requirements
-      const updateResult = await updateExtractedRequirements(bid.id, updatedRequirements);
-
-      if (!updateResult.success) {
-        toast.error(updateResult.error || 'Fehler beim Speichern der URLs');
-        setIsSubmittingUrl(false);
-        return;
-      }
-
-      setExtractedData(updatedRequirements as ExtractedRequirements);
-      toast.success('URLs gespeichert! Quick Scan wird gestartet...');
-
-      // Start Quick Scan
-      const scanResult = await startQuickScan(bid.id);
-      if (scanResult.success) {
-        setNeedsWebsiteUrl(false);
-        toast.success('Quick Scan gestartet!');
-        void router.refresh();
-
-        setTimeout(() => {
-          void checkQuickScanCompletion();
-        }, 2000);
-      } else {
-        toast.error(scanResult.error || 'Quick Scan konnte nicht gestartet werden');
-      }
-    } catch {
-      toast.error('Ein Fehler ist aufgetreten');
-    } finally {
-      setIsSubmittingUrl(false);
     }
   };
 
@@ -233,28 +120,6 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     } catch (error) {
       toast.error('Ein Fehler ist aufgetreten');
       setIsRetriggeringBit(false);
-    }
-  };
-
-  // Handle Quick Scan re-trigger
-  const handleRetriggerQuickScan = async () => {
-    setIsRetriggeringQuickScan(true);
-    toast.info('Starte Quick Scan erneut...');
-
-    try {
-      const result = await retriggerQuickScan(bid.id);
-
-      if (result.success) {
-        toast.success('Quick Scan gestartet - bitte warten...');
-        // Refresh server components to show updated state
-        void router.refresh();
-      } else {
-        toast.error(result.error || 'Quick Scan Re-Trigger fehlgeschlagen');
-        setIsRetriggeringQuickScan(false);
-      }
-    } catch (error) {
-      toast.error('Ein Fehler ist aufgetreten');
-      setIsRetriggeringQuickScan(false);
     }
   };
 
@@ -346,52 +211,6 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     }
   }, [bid.id, bid.status]);
 
-  // Phase 1.1: Auto-start Quick Scan when URLs are available after extraction
-  // Uses ref to prevent double-start in React Strict Mode
-  useEffect(() => {
-    // Only auto-start if:
-    // 1. Status is 'reviewing' (extraction complete, but not yet started quick scan)
-    // 2. No quickScan exists yet
-    // 3. We haven't already started (ref check)
-    // 4. URLs are available in extracted data
-    if (
-      bid.status === 'reviewing' &&
-      !quickScan &&
-      !hasAutoStartedQuickScanRef.current &&
-      extractedData
-    ) {
-      const urls = extractedData?.websiteUrls;
-      const hasUrls = urls && Array.isArray(urls) && urls.length > 0;
-
-      if (hasUrls) {
-        hasAutoStartedQuickScanRef.current = true;
-
-        startQuickScan(bid.id)
-          .then(result => {
-            if (result.success) {
-              toast.success('Quick Scan automatisch gestartet!');
-              void router.refresh();
-              // Start polling for completion
-              setTimeout(() => {
-                void checkQuickScanCompletion();
-              }, 2000);
-            } else if (result.needsWebsiteUrl) {
-              // Reset ref so user can manually trigger after adding URL
-              hasAutoStartedQuickScanRef.current = false;
-              setNeedsWebsiteUrl(true);
-            } else {
-              // Reset ref on error so retry is possible
-              hasAutoStartedQuickScanRef.current = false;
-              toast.error(result.error || 'Quick Scan konnte nicht automatisch gestartet werden');
-            }
-          })
-          .catch(() => {
-            hasAutoStartedQuickScanRef.current = false;
-          });
-      }
-    }
-  }, [bid.status, bid.id, quickScan, extractedData, router]);
-
   // Processing state - Show progress card while background processing runs
   if (
     isExtracting ||
@@ -414,13 +233,12 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         <Card>
           <CardHeader>
             <CardTitle>Nächster Schritt</CardTitle>
-            <CardDescription>AI-gestützte Extraktion der Anforderungen</CardDescription>
+            <CardDescription>Die Qualification startet automatisch nach dem Anlegen.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={handleStartExtraction} disabled={isExtracting}>
-              <Sparkles className="mr-2 h-4 w-4" />
-              AI-Extraktion starten
-            </Button>
+            <p className="text-sm text-muted-foreground">
+              Es sind keine manuellen Aktionen erforderlich.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -455,7 +273,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     );
   }
 
-  // Quick Scanning or later states - Show Quick Scan results
+  // Qualification or later states - Show results
   if (
     [
       'quick_scanning',
@@ -480,19 +298,6 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <CardTitle>Extrahierte Anforderungen</CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRetriggerQuickScan}
-                  disabled={isRetriggeringQuickScan}
-                >
-                  {isRetriggeringQuickScan ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : (
-                    <RotateCcw className="h-4 w-4 mr-1" />
-                  )}
-                  Quick Scan neu starten
-                </Button>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2">
@@ -527,26 +332,14 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             </Card>
           )}
 
-          {/* Website URL Input (when needed) */}
-          {needsWebsiteUrl && extractedData && (
-            <WebsiteUrlInput
-              customerName={extractedData.customerName ?? ''}
-              industry={extractedData.industry}
-              projectDescription={extractedData.projectDescription}
-              technologies={extractedData.technologies}
-              onSubmit={handleUrlSubmit}
-              isSubmitting={isSubmittingUrl}
-            />
-          )}
-
-          {/* Quick Scan Results */}
-          {isLoadingQuickScan && !needsWebsiteUrl && (
+          {/* Qualification Results */}
+          {isLoadingQuickScan && (
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span className="text-sm text-muted-foreground">
-                    Lade Quick Scan Ergebnisse...
+                    Lade Qualification Ergebnisse...
                   </span>
                 </div>
               </CardContent>

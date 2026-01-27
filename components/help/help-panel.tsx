@@ -50,9 +50,9 @@ const defaultFAQs: HelpItem[] = [
       'Gehe zu "Pre-Qualifications" → "New Pre-Qualification" und lade eine PDF-Datei hoch oder füge den Text direkt ein. Der AI Agent extrahiert automatisch alle relevanten Informationen.',
   },
   {
-    question: 'Was ist ein Quick Scan?',
+    question: 'Was ist eine Qualification?',
     answer:
-      'Der Quick Scan analysiert automatisch die Website des Kunden, identifiziert den Tech Stack und gibt eine initiale BID/NO-BID Empfehlung basierend auf der Business Line.',
+      'Die Qualification analysiert automatisch die bereitgestellten Unterlagen und Webquellen, identifiziert den Tech Stack und liefert eine initiale BID/NO-BID Empfehlung basierend auf der Business Line.',
   },
   {
     question: 'Wie funktioniert die BID/NO-BID Entscheidung?',

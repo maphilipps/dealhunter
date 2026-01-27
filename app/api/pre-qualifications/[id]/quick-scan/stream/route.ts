@@ -43,7 +43,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
 
     // 3. Get the existing QuickScan record
     if (!bid.quickScanId) {
-      return new Response(JSON.stringify({ error: 'No Quick Scan found for this bid' }), {
+      return new Response(JSON.stringify({ error: 'No Qualification found for this bid' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -55,14 +55,14 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       .where(eq(quickScans.id, bid.quickScanId));
 
     if (!quickScan) {
-      return new Response(JSON.stringify({ error: 'Quick Scan record not found' }), {
+      return new Response(JSON.stringify({ error: 'Qualification record not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
     if (!quickScan.websiteUrl) {
-      return new Response(JSON.stringify({ error: 'No website URL in Quick Scan' }), {
+      return new Response(JSON.stringify({ error: 'No website URL in Qualification' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -84,7 +84,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         if (!latestQuickScan) {
           emit({
             type: AgentEventType.ERROR,
-            data: { message: 'Quick Scan record not found', code: 'NOT_FOUND' },
+            data: { message: 'Qualification record not found', code: 'NOT_FOUND' },
           });
           break;
         }
@@ -101,8 +101,8 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
           emit({
             type: AgentEventType.AGENT_PROGRESS,
             data: {
-              agent: 'Quick Scan',
-              message: 'Quick Scan läuft im Hintergrund...',
+              agent: 'Qualification',
+              message: 'Qualification läuft im Hintergrund...',
             },
           });
           announcedRunning = true;
@@ -113,7 +113,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
           for (const entry of newEntries) {
             emit({
               type: AgentEventType.AGENT_PROGRESS,
-              data: { agent: 'Quick Scan', message: entry.action, details: entry.details },
+              data: { agent: 'Qualification', message: entry.action, details: entry.details },
             });
           }
           lastCount = activityLog.length;
@@ -123,7 +123,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
           emit({
             type: AgentEventType.AGENT_COMPLETE,
             data: {
-              agent: 'Quick Scan',
+              agent: 'Qualification',
               result: {
                 recommendedBusinessUnit: latestQuickScan.recommendedBusinessUnit,
                 confidence: latestQuickScan.confidence,
@@ -137,7 +137,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
           emit({
             type: AgentEventType.ERROR,
             data: {
-              message: 'Quick Scan fehlgeschlagen',
+              message: 'Qualification fehlgeschlagen',
               code: 'QUICK_SCAN_FAILED',
             },
           });

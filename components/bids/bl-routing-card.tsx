@@ -119,7 +119,7 @@ export function BLRoutingCard({ bidId, recommendation }: BLRoutingCardProps) {
                   AI Empfehlung: Business Unit Routing
                 </CardTitle>
                 <CardDescription className={isLowConfidence ? 'text-amber-700' : 'text-blue-700'}>
-                  Basierend auf Quick Scan Analyse
+                  Basierend auf Qualification Analyse
                 </CardDescription>
               </div>
             </div>

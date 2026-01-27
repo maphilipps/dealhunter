@@ -7,11 +7,11 @@
 
 import { z } from 'zod';
 
+import { extractedRequirementsSchema, type ExtractedRequirements } from '../../extraction/schema';
+import { queryRawChunks, formatRAGContext } from '../../rag/raw-retrieval-service';
 import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
-import { extractedRequirementsSchema, type ExtractedRequirements } from '../../extraction/schema';
-import { queryRawChunks, formatRAGContext } from '../../rag/raw-retrieval-service';
 
 /**
  * In-memory state for extraction sessions

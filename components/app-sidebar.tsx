@@ -28,11 +28,11 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   };
 }
 
-// Dealhunter app branding
+// PHPXOM Qualifier app branding
 const appBranding = {
-  name: 'PHP-XCOM',
+  name: 'PHPXOM',
   logo: '/logo.png',
-  subtitle: 'DealHunter',
+  subtitle: 'Qualifier',
 };
 
 type UserRole = 'bd' | 'bl' | 'admin';
@@ -59,7 +59,7 @@ const allNavItems: Array<{
     roles: ['bd', 'bl', 'admin'],
     items: [
       {
-        title: 'Pre-Qualifications',
+        title: 'Leads',
         url: '/pre-qualifications',
       },
       {

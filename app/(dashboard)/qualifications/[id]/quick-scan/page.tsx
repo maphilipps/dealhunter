@@ -134,7 +134,7 @@ export default async function QuickScanResultsPage({
             {lead.customerName}
           </Link>
           <span className="text-muted-foreground">/</span>
-          <h1 className="text-3xl font-bold tracking-tight">Quick Scan Ergebnis</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Qualification Ergebnis</h1>
         </div>
         <p className="text-muted-foreground mt-1">
           Alle relevanten Informationen für die Routing-Entscheidung

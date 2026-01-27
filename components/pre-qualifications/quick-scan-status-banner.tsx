@@ -1,17 +1,16 @@
 /**
- * Quick Scan Status Banner
+ * Qualification Status Banner
  *
- * Displays a banner showing the current quick scan status.
- * Similar to DeepScanStatusBanner but for Quick Scans.
+ * Displays a banner showing the current qualification status.
+ * Similar to DeepScanStatusBanner but for Qualifications.
  */
 
 'use client';
 
-import { Loader2, PlayCircle, AlertTriangle, RefreshCw, CheckCircle2, X } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { useState } from 'react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useQuickScan } from '@/contexts/quick-scan-context';
 
@@ -26,24 +25,13 @@ export function QuickScanStatusBanner({
   dismissible = false,
   compact = false,
 }: QuickScanStatusBannerProps) {
-  const { status, job, isInProgress, progress, currentStep, error, startQuickScan } = useQuickScan();
-
-  const [isStarting, setIsStarting] = useState(false);
+  const { status, job, isInProgress, progress, currentStep, error } = useQuickScan();
   const [isDismissed, setIsDismissed] = useState(false);
 
   if (isDismissed) return null;
   if (status === 'completed' && !showWhenComplete) return null;
 
-  async function handleStart() {
-    setIsStarting(true);
-    try {
-      await startQuickScan();
-    } finally {
-      setIsStarting(false);
-    }
-  }
-
-  // Idle state - show "Start Quick Scan" button
+  // Idle state - Qualification not started yet
   if (status === 'idle') {
     return (
       <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950">
@@ -51,27 +39,14 @@ export function QuickScanStatusBanner({
         <div className="flex flex-1 items-center justify-between">
           <div>
             <AlertTitle className="text-yellow-800 dark:text-yellow-200">
-              Quick Scan noch nicht ausgeführt
+              Qualification läuft noch nicht
             </AlertTitle>
             {!compact && (
               <AlertDescription className="text-yellow-700 dark:text-yellow-300">
-                Starten Sie den Quick Scan, um die Website zu analysieren.
+                Die Qualification wird automatisch gestartet, sobald Daten vorliegen.
               </AlertDescription>
             )}
           </div>
-          <Button
-            onClick={handleStart}
-            disabled={isStarting}
-            className="ml-4 gap-2 bg-yellow-600 hover:bg-yellow-700"
-            size={compact ? 'sm' : 'default'}
-          >
-            {isStarting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <PlayCircle className="h-4 w-4" />
-            )}
-            {compact ? 'Start' : 'Jetzt starten'}
-          </Button>
         </div>
       </Alert>
     );
@@ -84,7 +59,7 @@ export function QuickScanStatusBanner({
         <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
         <div>
           <AlertTitle className="text-yellow-800 dark:text-yellow-200">
-            Quick Scan wartet in der Warteschlange...
+            Qualification wartet in der Warteschlange...
           </AlertTitle>
         </div>
       </Alert>
@@ -99,7 +74,7 @@ export function QuickScanStatusBanner({
         <div className="flex flex-1 flex-col gap-3">
           <div className="flex items-center justify-between">
             <AlertTitle className="text-blue-800 dark:text-blue-200">
-              Quick Scan läuft
+              Qualification läuft
             </AlertTitle>
             <span className="text-sm font-medium text-blue-700">{progress}%</span>
           </div>
@@ -128,34 +103,22 @@ export function QuickScanStatusBanner({
         <AlertTriangle className="h-4 w-4" />
         <div className="flex flex-1 items-center justify-between">
           <div>
-            <AlertTitle>Quick Scan fehlgeschlagen</AlertTitle>
+            <AlertTitle>Qualification fehlgeschlagen</AlertTitle>
             {!compact && (
               <AlertDescription className="max-w-2xl truncate">
                 {error?.message || job?.errorMessage || 'Unbekannter Fehler'}
               </AlertDescription>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={handleStart}
-              disabled={isStarting}
-              variant="outline"
-              size={compact ? 'sm' : 'default'}
-              className="gap-2"
+          {dismissible && (
+            <button
+              className="ml-4 inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
+              onClick={() => setIsDismissed(true)}
+              aria-label="Banner schließen"
             >
-              {isStarting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              {compact ? 'Retry' : 'Erneut versuchen'}
-            </Button>
-            {dismissible && (
-              <Button variant="ghost" size="icon" onClick={() => setIsDismissed(true)}>
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </Alert>
     );
@@ -169,7 +132,7 @@ export function QuickScanStatusBanner({
         <div className="flex flex-1 items-center justify-between">
           <div>
             <AlertTitle className="text-green-800 dark:text-green-200">
-              Quick Scan abgeschlossen
+              Qualification abgeschlossen
             </AlertTitle>
             {!compact && (
               <AlertDescription className="text-green-700 dark:text-green-300">
@@ -178,9 +141,13 @@ export function QuickScanStatusBanner({
             )}
           </div>
           {dismissible && (
-            <Button variant="ghost" size="icon" onClick={() => setIsDismissed(true)}>
+            <button
+              className="ml-4 inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
+              onClick={() => setIsDismissed(true)}
+              aria-label="Banner schließen"
+            >
               <X className="h-4 w-4" />
-            </Button>
+            </button>
           )}
         </div>
       </Alert>

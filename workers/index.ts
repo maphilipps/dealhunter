@@ -21,7 +21,7 @@ import { processVisualizationJob } from '../lib/bullmq/workers/visualization-pro
  * Worker concurrency settings
  */
 const DEEP_SCAN_CONCURRENCY = parseInt(process.env.DEEP_SCAN_CONCURRENCY || '2', 10);
-const PREQUAL_CONCURRENCY = parseInt(process.env.PREQUAL_CONCURRENCY || '3', 10);
+const PREQUAL_CONCURRENCY = parseInt(process.env.PREQUAL_CONCURRENCY || '1', 10);
 const QUICK_SCAN_CONCURRENCY = parseInt(process.env.QUICK_SCAN_CONCURRENCY || '3', 10);
 const VISUALIZATION_CONCURRENCY = parseInt(process.env.VISUALIZATION_CONCURRENCY || '2', 10);
 
@@ -88,6 +88,7 @@ async function main() {
     {
       connection: connectionOptions,
       concurrency: PREQUAL_CONCURRENCY,
+      lockDuration: parseInt(process.env.PREQUAL_LOCK_DURATION_MS || '900000', 10),
     }
   );
 

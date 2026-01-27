@@ -29,7 +29,7 @@ export default async function ReferencesPage({ params }: { params: Promise<{ id:
       preQualificationId={id}
       sectionId="references"
       title="Referenzen"
-      description="Geforderte Referenzen und Kriterien"
+      description="Welche und wie viele Referenzen sind gefordert? Wie spitz sind die Kriterien (z.B. Branche)?"
     />
   );
 }

@@ -19,6 +19,11 @@ import { preQualifications, quickScans } from '@/lib/db/schema';
  * 4. On completion, worker updates DB status to 'completed'
  */
 export async function startQuickScan(bidId: string) {
+  return {
+    success: false,
+    error: 'Quick Scan wird automatisch als Teil der Qualification ausgeführt.',
+  };
+
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -127,6 +132,11 @@ export async function startQuickScan(bidId: string) {
  * The actual scan is executed via the background worker
  */
 export async function retriggerQuickScan(bidId: string) {
+  return {
+    success: false,
+    error: 'Quick Scan wird automatisch als Teil der Qualification ausgeführt.',
+  };
+
   const session = await auth();
 
   if (!session?.user?.id) {

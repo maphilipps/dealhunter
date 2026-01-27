@@ -17,9 +17,9 @@ export default async function NewBidPage() {
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Neuer Pre-Qualification</h1>
+        <h1 className="text-3xl font-bold">Neuer Lead</h1>
         <p className="text-muted-foreground mt-2">
-          Upload einer Anforderung als PDF, Freitext oder E-Mail
+          Upload einer Anforderung als PDF, Excel, Word oder Freitext
         </p>
       </div>
 

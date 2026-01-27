@@ -1,6 +1,6 @@
 'use client';
 
-import { Upload, FileText, Loader2, Globe, Type, X, Plus } from 'lucide-react';
+import { Upload, FileText, Loader2, Type, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -8,15 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { createPendingPreQualification } from '@/lib/bids/actions';
 
@@ -25,15 +17,13 @@ interface UploadBidFormProps {
   accounts: Array<{ id: string; name: string; industry: string }>;
 }
 
-export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps) {
+export function UploadBidForm({ userId: _userId, accounts: _accounts }: UploadBidFormProps) {
   const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [websiteUrls, setWebsiteUrls] = useState<string[]>(['']);
   const [additionalText, setAdditionalText] = useState('');
   const [enableDSGVO, setEnableDSGVO] = useState(false);
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -50,32 +40,48 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
-    const pdfFiles = files.filter(file => file.type === 'application/pdf');
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+    ];
 
-    if (pdfFiles.length === 0) {
-      toast.error('Nur PDF-Dateien sind erlaubt');
+    const validFiles = files.filter(file => allowedTypes.includes(file.type));
+
+    if (validFiles.length === 0) {
+      toast.error('Nur PDF-, Excel- und Word-Dateien sind erlaubt');
       return;
     }
 
-    if (pdfFiles.length !== files.length) {
-      toast.warning(`${files.length - pdfFiles.length} Nicht-PDF-Dateien wurden ignoriert`);
+    if (validFiles.length !== files.length) {
+      toast.warning(`${files.length - validFiles.length} nicht unterstützte Dateien wurden ignoriert`);
     }
 
-    setSelectedFiles(prev => [...prev, ...pdfFiles]);
+    setSelectedFiles(prev => [...prev, ...validFiles]);
   }, []);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    const pdfFiles = Array.from(files).filter(file => file.type === 'application/pdf');
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+    ];
 
-    if (pdfFiles.length === 0) {
-      toast.error('Nur PDF-Dateien sind erlaubt');
+    const validFiles = Array.from(files).filter(file => allowedTypes.includes(file.type));
+
+    if (validFiles.length === 0) {
+      toast.error('Nur PDF-, Excel- und Word-Dateien sind erlaubt');
       return;
     }
 
-    setSelectedFiles(prev => [...prev, ...pdfFiles]);
+    setSelectedFiles(prev => [...prev, ...validFiles]);
     e.target.value = '';
   }, []);
 
@@ -83,23 +89,9 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   }, []);
 
-  const addUrlField = useCallback(() => {
-    setWebsiteUrls(prev => [...prev, '']);
-  }, []);
-
-  const updateUrl = useCallback((index: number, value: string) => {
-    setWebsiteUrls(prev => prev.map((url, i) => (i === index ? value : url)));
-  }, []);
-
-  const removeUrl = useCallback((index: number) => {
-    setWebsiteUrls(prev => (prev.length > 1 ? prev.filter((_, i) => i !== index) : ['']));
-  }, []);
-
   const handleSubmit = async () => {
-    const validUrls = websiteUrls.filter(url => url.trim());
-
-    if (selectedFiles.length === 0 && validUrls.length === 0 && !additionalText.trim()) {
-      toast.error('Mindestens eine Eingabe (PDF, URL oder Text) ist erforderlich');
+    if (selectedFiles.length === 0 && !additionalText.trim()) {
+      toast.error('Mindestens eine Eingabe (Datei oder Text) ist erforderlich');
       return;
     }
 
@@ -112,10 +104,6 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
         formData.append('files', file);
       }
 
-      for (const url of validUrls) {
-        formData.append('websiteUrls', url);
-      }
-
       if (additionalText.trim()) {
         formData.append('additionalText', additionalText.trim());
       }
@@ -123,10 +111,6 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
       formData.append('source', 'reactive');
       formData.append('stage', 'pre-qualification');
       formData.append('enableDSGVO', enableDSGVO.toString());
-
-      if (selectedAccountId && selectedAccountId !== 'none') {
-        formData.append('accountId', selectedAccountId);
-      }
 
       // Use new async-first action - creates pending entry and queues background processing
       const result = await createPendingPreQualification(formData);
@@ -148,117 +132,65 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
     // Note: No finally block - isUploading stays true until navigation completes
   };
 
-  const validUrls = websiteUrls.filter(url => url.trim());
-  const hasAnyInput = selectedFiles.length > 0 || validUrls.length > 0 || additionalText.trim();
+  const hasAnyInput = selectedFiles.length > 0 || additionalText.trim();
   const totalFileSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
 
   return (
     <div className="space-y-6">
-      {/* Info Banner */}
-      <Card className="border-primary/20 bg-primary/5">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg text-primary">
-            Pre-Qualification Eingabe - Kombinieren Sie beliebig viele Quellen
-          </CardTitle>
-          <CardDescription>
-            Alle Quellen werden zu einem ganzheitlichen Input für die AI-Analyse kombiniert.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      {/* Main Grid: Info left (1/3), Upload fields right (2/3) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* LEFT: Info Banner (1/3) */}
+        <Card className="border-primary/20 bg-primary/5 lg:col-span-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg text-primary">
+              Lead Eingabe
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="font-medium">
+              Zur Unterstützung bei der Bid/No-Bid Entscheidung:
+            </p>
+            <p>
+              Die AI-Analyse extrahiert automatisch folgende Informationen aus den hochgeladenen Dokumenten:
+            </p>
+            <ul className="list-disc list-inside space-y-2 text-xs">
+              <li>
+                <strong>Budget & Laufzeit:</strong> Budgetangaben und Vertragslaufzeit werden identifiziert
+              </li>
+              <li>
+                <strong>Ausschreibungszeitplan:</strong> Timeline, Fristen und Vergabeverfahren (Shortlisting vs. offenes Verfahren) werden analysiert
+              </li>
+              <li>
+                <strong>Vertragstyp:</strong> Vertragsbedingungen (EVB-IT, Werk-, Dienst- oder Servicevertrag mit SLA) werden erkannt
+              </li>
+              <li>
+                <strong>Leistungsumfang:</strong> Geforderte Leistungen werden strukturiert aufbereitet
+              </li>
+              <li>
+                <strong>Referenzanforderungen:</strong> Anzahl und Spezifikation der geforderten Referenzen (inkl. Branchenvorgaben) werden erfasst
+              </li>
+              <li>
+                <strong>Zuschlagskriterien:</strong> Bewertungskriterien für Teilnahmeantrag und Angebot werden differenziert dargestellt
+              </li>
+              <li>
+                <strong>Angebotsstruktur:</strong> Erforderliche Arbeitspakete für Teilnahme- und Angebotsphase werden identifiziert
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* LEFT COLUMN: Account + URLs */}
-        <div className="space-y-6">
-          {/* Account Selection */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">Account zuordnen</CardTitle>
-              <CardDescription>Optional: Bestehenden Account verknüpfen</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Select
-                value={selectedAccountId}
-                onValueChange={setSelectedAccountId}
-                disabled={isUploading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="-- Kein Account ausgewählt --" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">-- Kein Account ausgewählt --</SelectItem>
-                  {accounts.map(account => (
-                    <SelectItem key={account.id} value={account.id}>
-                      {account.name} ({account.industry})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-
-          {/* Website URLs */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Globe className="h-5 w-5 text-primary" />
-                Website-URLs
-              </CardTitle>
-              <CardDescription>Für automatische Tech-Stack-Analyse (empfohlen)</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {websiteUrls.map((url, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Input
-                    type="url"
-                    value={url}
-                    onChange={e => updateUrl(index, e.target.value)}
-                    placeholder={
-                      index === 0 ? 'https://www.kunde.de' : 'Weitere URL (z.B. LinkedIn)'
-                    }
-                    disabled={isUploading}
-                  />
-                  {websiteUrls.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeUrl(index)}
-                      disabled={isUploading}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addUrlField}
-                disabled={isUploading}
-                className="w-full"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Weitere URL hinzufügen
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* RIGHT COLUMN: Files + Freetext */}
-        <div className="space-y-6">
-          {/* PDF Upload */}
+        {/* RIGHT: Upload Fields stacked vertically (2/3) */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* File Upload */}
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Upload className="h-5 w-5 text-primary" />
-                    PDF Dokumente
+                    Dokumente hochladen
                   </CardTitle>
-                  <CardDescription>Pre-Qualification, Anhänge, E-Mails als PDF</CardDescription>
+                  <CardDescription>PDF, Excel, Word - Pre-Qualification, Anhänge, E-Mails</CardDescription>
                 </div>
                 {selectedFiles.length > 0 && (
                   <span className="text-sm text-muted-foreground">
@@ -311,21 +243,21 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
               >
                 <input
                   type="file"
-                  id="pdf-upload"
-                  accept="application/pdf"
+                  id="file-upload"
+                  accept=".pdf,.xls,.xlsx,.doc,.docx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   multiple
                   className="hidden"
                   onChange={handleFileSelect}
                   disabled={isUploading}
                 />
 
-                <label htmlFor="pdf-upload" className="cursor-pointer block">
+                <label htmlFor="file-upload" className="cursor-pointer block">
                   <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                   <p className="text-sm font-medium">
-                    {selectedFiles.length > 0 ? 'Weitere PDFs hinzufügen' : 'PDFs hierher ziehen'}
+                    {selectedFiles.length > 0 ? 'Weitere Dateien hinzufügen' : 'Dateien hierher ziehen'}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    oder klicken (max. 10 MB/Datei)
+                    PDF, Excel, Word - oder klicken (max. 10 MB/Datei)
                   </p>
                 </label>
               </div>
@@ -349,27 +281,27 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
 
           {/* Freetext */}
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Type className="h-5 w-5 text-primary" />
-                Freitext / E-Mail
-              </CardTitle>
-              <CardDescription>Zusätzliche Informationen oder E-Mail-Inhalt</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={additionalText}
-                onChange={e => setAdditionalText(e.target.value)}
-                placeholder="Kopieren Sie hier den Pre-Qualification-Text oder E-Mail-Inhalt ein..."
-                rows={6}
-                disabled={isUploading}
-                className="resize-y"
-              />
-              <p className="text-xs text-muted-foreground mt-2 text-right">
-                {additionalText.length} Zeichen
-              </p>
-            </CardContent>
-          </Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Type className="h-5 w-5 text-primary" />
+              Freitext / E-Mail
+            </CardTitle>
+            <CardDescription>Zusätzliche Informationen oder E-Mail-Inhalt</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={additionalText}
+              onChange={e => setAdditionalText(e.target.value)}
+              placeholder="Kopieren Sie hier den Pre-Qualification-Text oder E-Mail-Inhalt ein..."
+              rows={6}
+              disabled={isUploading}
+              className="resize-y"
+            />
+            <p className="text-xs text-muted-foreground mt-2 text-right">
+              {additionalText.length} Zeichen
+            </p>
+          </CardContent>
+        </Card>
         </div>
       </div>
 
@@ -384,12 +316,7 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
                   <div className="text-muted-foreground text-xs flex gap-2">
                     {selectedFiles.length > 0 && (
                       <span>
-                        {selectedFiles.length} PDF{selectedFiles.length > 1 ? 's' : ''}
-                      </span>
-                    )}
-                    {validUrls.length > 0 && (
-                      <span>
-                        {validUrls.length} URL{validUrls.length > 1 ? 's' : ''}
+                        {selectedFiles.length} Datei{selectedFiles.length > 1 ? 'en' : ''}
                       </span>
                     )}
                     {additionalText.trim() && <span>+ Text</span>}
@@ -416,7 +343,7 @@ export function UploadBidForm({ userId: _userId, accounts }: UploadBidFormProps)
               ) : (
                 <>
                   <Upload className="h-4 w-4 mr-2" />
-                  Bid erstellen
+                  Lead erstellen
                 </>
               )}
             </Button>

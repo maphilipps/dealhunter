@@ -85,7 +85,6 @@ async function retriggerPreQual(preQualId: string) {
     backgroundJobId: qualificationJob.id,
     files,
     websiteUrls: pq.websiteUrl ? [pq.websiteUrl] : [],
-    additionalText: pq.additionalText || undefined,
     enableDSGVO: true,
   });
 

@@ -110,7 +110,7 @@ export async function runDeepScanAgentNative(
     description: 'Run a tool by name with the provided input.',
     inputSchema: z.object({
       name: z.string(),
-      input: z.record(z.string(), z.any()),
+      input: z.object({}).passthrough(),
     }),
     execute: async ({ name, input: toolInput }) => {
       const expertMatch = name.startsWith('scan.runExpert.')

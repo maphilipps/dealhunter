@@ -27,7 +27,7 @@ const createLeadInputSchema = z.object({
   industry: z.string().optional(),
   projectDescription: z.string().optional(),
   budget: z.string().optional(),
-  requirements: z.record(z.string(), z.any()).optional(),
+  requirements: z.object({}).passthrough().optional(),
   businessUnitId: z.string(),
   quickScanId: z.string().optional(),
 });
@@ -40,7 +40,7 @@ const updateLeadInputSchema = z.object({
   industry: z.string().optional(),
   projectDescription: z.string().optional(),
   budget: z.string().optional(),
-  requirements: z.record(z.string(), z.any()).optional(),
+  requirements: z.object({}).passthrough().optional(),
   selectedCmsId: z.string().optional(),
 });
 

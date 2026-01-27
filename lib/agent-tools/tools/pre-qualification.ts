@@ -140,7 +140,7 @@ const updatePreQualificationInputSchema = z.object({
     ])
     .optional(),
   decision: z.enum(['bid', 'no_bid', 'pending']).optional(),
-  extractedRequirements: z.record(z.string(), z.any()).optional(),
+  extractedRequirements: z.object({}).passthrough().optional(),
   websiteUrl: z.string().url().optional(),
   assignedBusinessUnitId: z.string().optional(),
 });

@@ -1,8 +1,8 @@
-# PHPXOM Qualifier
+# PHPXCOM Qualifier
 
 > AI-powered Business Development decision platform for adesso SE
 
-PHPXOM Qualifier automates the complete RFP (Request for Proposal) evaluation workflow - from document upload to BID/NO-BID decision and team assignment - using AI agents powered by Vercel AI SDK v5.
+PHPXCOM Qualifier automates the complete RFP (Request for Proposal) evaluation workflow - from document upload to BID/NO-BID decision and team assignment - using AI agents powered by Vercel AI SDK v5.
 
 ## Features
 

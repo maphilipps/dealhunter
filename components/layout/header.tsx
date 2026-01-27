@@ -20,7 +20,7 @@ export async function Header() {
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2">
             <Bot className="h-6 w-6" />
-            <span className="text-xl font-bold">PHPXOM Qualifier</span>
+            <span className="text-xl font-bold">PHPXCOM Qualifier</span>
           </Link>
 
           <nav className="flex items-center gap-4">

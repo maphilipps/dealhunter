@@ -19,7 +19,12 @@ import {
   type MigrationComplexity,
   type DecisionMakersResearch,
 } from './schema';
-import { registry, createRagWriteTool, createBatchRagWriteTool, createVisualizationWriteTool } from '../agent-tools';
+import {
+  registry,
+  createRagWriteTool,
+  createBatchRagWriteTool,
+  createVisualizationWriteTool,
+} from '../agent-tools';
 import type { ToolContext } from '../agent-tools';
 import { buildAgentContext, formatContextForPrompt } from '../agent-tools/context-builder';
 import { modelNames, defaultSettings } from '../ai/config';
@@ -107,34 +112,34 @@ export async function runQuickScanAgentNative(
   });
 
   const completeQuickScan = tool({
-    description:
-      'Finalize the quick scan. Call this once after collecting all required fields.',
+    description: 'Finalize the quick scan. Call this once after collecting all required fields.',
     inputSchema: completionSchema,
     execute: async (payload: QuickScanCompletion) => {
       return { success: true, payload };
     },
   });
 
-  const tools: Record<string, unknown> = {
+  const tools = {
     listTools,
     runTool,
     completeQuickScan,
+    ...(input.preQualificationId
+      ? {
+          storeFinding: createRagWriteTool({
+            preQualificationId: input.preQualificationId,
+            agentName: 'quick_scan',
+          }),
+          storeFindingsBatch: createBatchRagWriteTool({
+            preQualificationId: input.preQualificationId,
+            agentName: 'quick_scan',
+          }),
+          storeVisualization: createVisualizationWriteTool({
+            preQualificationId: input.preQualificationId,
+            agentName: 'quick_scan',
+          }),
+        }
+      : {}),
   };
-
-  if (input.preQualificationId) {
-    tools.storeFinding = createRagWriteTool({
-      preQualificationId: input.preQualificationId,
-      agentName: 'quick_scan',
-    });
-    tools.storeFindingsBatch = createBatchRagWriteTool({
-      preQualificationId: input.preQualificationId,
-      agentName: 'quick_scan',
-    });
-    tools.storeVisualization = createVisualizationWriteTool({
-      preQualificationId: input.preQualificationId,
-      agentName: 'quick_scan',
-    });
-  }
 
   const agent = new ToolLoopAgent({
     model: getProviderForSlot('default')(modelNames.default),
@@ -161,7 +166,9 @@ export async function runQuickScanAgentNative(
       '- scan.quickscan.content.classify',
       '- scan.quickscan.migration.analyzeAI',
       '- scan.quickscan.recommendBusinessLine',
-      ...(mode === 'qualification' ? [] : ['- research.decisionMakers', '- research.contacts.quick']),
+      ...(mode === 'qualification'
+        ? []
+        : ['- research.decisionMakers', '- research.contacts.quick']),
       'Use Bid ID for scan.quickscan.playwright.audit when available.',
       'Tool results follow { success, data, error }.',
       'Record references by calling storeFinding or storeFindingsBatch when available.',
@@ -188,11 +195,11 @@ export async function runQuickScanAgentNative(
 
   const result = await agent.generate({
     prompt,
-    maxOutputTokens: defaultSettings.deterministic.maxTokens,
   });
 
   const completion = result.steps
-    .flatMap(step => step.toolCalls)
+    .flatMap(step => step.toolCalls ?? [])
+    .filter((call): call is NonNullable<typeof call> => call != null)
     .find(call => call.toolName === 'completeQuickScan');
 
   if (!completion || !('input' in completion)) {

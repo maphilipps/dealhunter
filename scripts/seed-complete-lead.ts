@@ -533,7 +533,7 @@ async function seedCompleteLead() {
     .values({
       userId: bdUser.id,
       source: 'reactive',
-      stage: 'preQualification',
+      stage: 'pre-qualification',
       inputType: 'pdf',
       rawInput: JSON.stringify(extractedRequirements),
       extractedRequirements: JSON.stringify(extractedRequirements),

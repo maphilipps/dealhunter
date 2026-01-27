@@ -94,7 +94,7 @@ async function seedLocarnoLead() {
     id: preQualificationId,
     userId: USER_ID,
     source: 'proactive',
-    stage: 'preQualification',
+    stage: 'pre-qualification',
     inputType: 'freetext',
     rawInput: `Locarno Film Festival Website Relaunch
 

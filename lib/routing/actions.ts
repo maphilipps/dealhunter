@@ -9,7 +9,7 @@ import { type RouteBusinessUnitInput } from './schemas';
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { preQualifications, businessUnits } from '@/lib/db/schema';
+import { preQualifications, businessUnits, quickScans } from '@/lib/db/schema';
 import { sendBLAssignmentEmail } from '@/lib/notifications/email';
 
 export interface AssignBusinessUnitInput {
@@ -109,16 +109,22 @@ export async function assignBusinessUnit(
       (extractedReqs.projectDescription as string | undefined) || 'Keine Beschreibung verfügbar';
 
     // DEA-25: Create audit log if this is an override
-    const aiRecommendation = bid.quickScanResults
-      ? (JSON.parse(bid.quickScanResults) as Record<string, unknown>).recommendedBusinessUnit
+    const quickScanRow = bid.quickScanId
+      ? await db
+          .select({ recommendedBusinessUnit: quickScans.recommendedBusinessUnit })
+          .from(quickScans)
+          .where(eq(quickScans.id, bid.quickScanId))
+          .limit(1)
+          .then(r => r[0] || null)
       : null;
+    const aiRecommendation = quickScanRow?.recommendedBusinessUnit ?? null;
 
     if (overrideReason) {
       await createAuditLog({
         action: 'bl_override',
         entityType: 'pre_qualification',
         entityId: bidId,
-        previousValue: (aiRecommendation as string | null) ?? undefined,
+        previousValue: aiRecommendation ?? undefined,
         newValue: businessLineName,
         reason: overrideReason,
       });
@@ -245,9 +251,37 @@ export async function getBusinessLineRecommendation(bidId: string) {
       ? (JSON.parse(bid.extractedRequirements) as Record<string, unknown>)
       : {};
 
-    // Parse quick scan results if available
-    const quickScan = bid.quickScanResults
-      ? (JSON.parse(bid.quickScanResults) as Record<string, unknown>)
+    // Parse quick scan results if available (source of truth: quick_scans)
+    const quickScanRow = bid.quickScanId
+      ? await db
+          .select({
+            features: quickScans.features,
+            techStack: quickScans.techStack,
+            integrations: quickScans.integrations,
+            recommendedBusinessUnit: quickScans.recommendedBusinessUnit,
+          })
+          .from(quickScans)
+          .where(eq(quickScans.id, bid.quickScanId))
+          .limit(1)
+          .then(r => r[0] || null)
+      : null;
+
+    const safeParse = (value: string | null | undefined): Record<string, unknown> | undefined => {
+      if (!value) return undefined;
+      try {
+        return JSON.parse(value) as Record<string, unknown>;
+      } catch {
+        return undefined;
+      }
+    };
+
+    const quickScan: Record<string, unknown> = quickScanRow
+      ? {
+          features: safeParse(quickScanRow.features),
+          techStack: safeParse(quickScanRow.techStack),
+          integrations: safeParse(quickScanRow.integrations),
+          recommendedBusinessUnit: quickScanRow.recommendedBusinessUnit,
+        }
       : {};
 
     // Build input for routing agent
@@ -304,9 +338,7 @@ export interface ArchiveAsNoBidResult {
  * Archive a Pre-Qualification as NO-BID
  * Sets decision to 'no_bid' and status to 'archived'
  */
-export async function archiveAsNoBid(
-  input: ArchiveAsNoBidInput
-): Promise<ArchiveAsNoBidResult> {
+export async function archiveAsNoBid(input: ArchiveAsNoBidInput): Promise<ArchiveAsNoBidResult> {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: 'Nicht authentifiziert' };
@@ -358,10 +390,11 @@ export async function archiveAsNoBid(
 
     // Create audit log
     await createAuditLog({
-      action: 'NO_BID_DECISION',
-      targetType: 'pre_qualification',
-      targetId: preQualificationId,
-      details: {
+      action: 'status_change',
+      entityType: 'pre_qualification',
+      entityId: preQualificationId,
+      newValue: {
+        type: 'no_bid_decision',
         reason: reason.trim(),
         previousStatus: preQual.status,
       },

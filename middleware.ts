@@ -63,8 +63,8 @@ export default auth(req => {
 
 export const config = {
   matcher: [
-    // Protect all pages except static assets
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    // Protect all pages except static assets and public files
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.svg$|.*\\.ico$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.webp$).*)',
     /**
      * Explicitly protect ALL API routes
      *

@@ -1,4 +1,4 @@
-import { Plus, Eye } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
@@ -33,7 +33,7 @@ export default async function BidsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Pre-Qualification Opportunities</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Leads</h1>
           <p className="text-muted-foreground">
             Verwalten Sie Ihre Angebotsanfragen und Ausschreibungen
           </p>
@@ -41,7 +41,7 @@ export default async function BidsPage() {
         <Link href="/pre-qualifications/new">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Neuer Pre-Qualification
+            Neuer Lead
           </Button>
         </Link>
       </div>
@@ -89,8 +89,8 @@ export default async function BidsPage() {
       {/* Bids Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Alle Pre-Qualifications</CardTitle>
-          <CardDescription>Klicken Sie auf einen Bid, um Details zu sehen</CardDescription>
+          <CardTitle>Alle Leads</CardTitle>
+          <CardDescription>Klicken Sie auf einen Lead, um Details zu sehen</CardDescription>
         </CardHeader>
         <CardContent>
           {bids.length === 0 ? (
@@ -99,8 +99,8 @@ export default async function BidsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>User</TableHead>
                   <TableHead>Kunde</TableHead>
-                  <TableHead>Quelle</TableHead>
                   <TableHead>Phase</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Entscheidung</TableHead>
@@ -110,7 +110,7 @@ export default async function BidsPage() {
               </TableHeader>
               <TableBody>
                 {bids.map(bid => {
-                  // Parse extracted requirements to get customer name
+                  // Parse customer name from extractedRequirements
                   let customerName = 'Unbekannt';
                   try {
                     if (bid.extractedRequirements) {
@@ -127,36 +127,43 @@ export default async function BidsPage() {
                   }
 
                   return (
-                    <TableRow key={bid.id}>
-                      <TableCell className="font-medium">{customerName}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {bid.source === 'reactive' ? 'Reaktiv' : 'Proaktiv'}
-                        </Badge>
+                    <TableRow key={bid.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableCell className="font-medium">
+                        <Link href={`/pre-qualifications/${bid.id}`} className="block w-full">
+                          {bid.userName || 'Unbekannt'}
+                        </Link>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">
-                          {bid.stage === 'cold' && 'Cold'}
-                          {bid.stage === 'warm' && 'Warm'}
-                          {bid.stage === 'pre-qualification' && 'Pre-Qualification'}
-                        </Badge>
+                        <Link href={`/pre-qualifications/${bid.id}`} className="block w-full">
+                          {customerName}
+                        </Link>
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={bid.status} />
+                        <Link href={`/pre-qualifications/${bid.id}`} className="block w-full">
+                          <Badge variant="secondary">
+                            {bid.stage === 'cold' && 'Cold'}
+                            {bid.stage === 'warm' && 'Warm'}
+                            {bid.stage === 'pre-qualification' && 'Lead'}
+                          </Badge>
+                        </Link>
                       </TableCell>
                       <TableCell>
-                        <DecisionBadge decision={bid.decision} />
+                        <Link href={`/pre-qualifications/${bid.id}`} className="block w-full">
+                          <StatusBadge status={bid.status} />
+                        </Link>
                       </TableCell>
                       <TableCell>
-                        {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('de-DE') : '-'}
+                        <Link href={`/pre-qualifications/${bid.id}`} className="block w-full">
+                          <DecisionBadge decision={bid.decision} />
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Link href={`/pre-qualifications/${bid.id}`} className="block w-full">
+                          {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('de-DE') : '-'}
+                        </Link>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Link href={`/pre-qualifications/${bid.id}`}>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
                           <DeletePreQualificationButton
                             preQualificationId={bid.id}
                             label={customerName}
@@ -187,7 +194,7 @@ function StatusBadge({ status }: { status: string }) {
     extracting: { label: 'Extraktion', variant: 'default' },
     reviewing: { label: 'Review', variant: 'default' },
     // Evaluation
-    quick_scanning: { label: 'Quick Scan', variant: 'default' },
+    quick_scanning: { label: 'Qualification', variant: 'default' },
     evaluating: { label: 'Evaluierung', variant: 'default' },
     decision_made: { label: 'Entschieden', variant: 'outline' },
     // NO BIT Path

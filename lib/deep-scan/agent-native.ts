@@ -5,7 +5,7 @@ import { registry } from '@/lib/agent-tools';
 import type { ToolContext } from '@/lib/agent-tools';
 import { buildAgentContext, formatContextForPrompt } from '@/lib/agent-tools/context-builder';
 import { defaultSettings, modelNames } from '@/lib/ai/config';
-import { getOpenAIProvider } from '@/lib/ai/providers';
+import { getProviderForSlot } from '@/lib/ai/providers';
 import { saveCheckpoint, saveError, type DeepScanPhase } from '@/lib/deep-scan/checkpoint';
 import { EXPERT_TO_SECTIONS } from '@/lib/deep-scan/section-expert-mapping';
 
@@ -110,7 +110,7 @@ export async function runDeepScanAgentNative(
     description: 'Run a tool by name with the provided input.',
     inputSchema: z.object({
       name: z.string(),
-      input: z.any(),
+      input: z.record(z.string(), z.any()),
     }),
     execute: async ({ name, input: toolInput }) => {
       const expertMatch = name.startsWith('scan.runExpert.')
@@ -170,7 +170,7 @@ export async function runDeepScanAgentNative(
   });
 
   const agent = new ToolLoopAgent({
-    model: getOpenAIProvider().chat(modelNames.default),
+    model: getProviderForSlot('default')(modelNames.default),
     instructions: [
       'You are the DeepScan agent. Use tools to gather data, then call completeDeepScan.',
       'Follow agent-native rules: use tools for actions, do not invent data.',

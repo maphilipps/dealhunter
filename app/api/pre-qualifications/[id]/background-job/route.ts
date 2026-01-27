@@ -39,14 +39,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get latest quick-scan job for this pre-qualification
+    // Get latest qualification job for this pre-qualification
     const jobs = await db
       .select()
       .from(backgroundJobs)
       .where(
         and(
           eq(backgroundJobs.preQualificationId, preQualId),
-          eq(backgroundJobs.jobType, 'quick-scan')
+          eq(backgroundJobs.jobType, 'qualification')
         )
       )
       .orderBy(desc(backgroundJobs.createdAt))

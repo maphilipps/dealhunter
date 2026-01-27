@@ -32,7 +32,6 @@ import {
   Copy,
   ExternalLink,
 } from 'lucide-react';
-import { RotateCcw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -61,7 +60,6 @@ import { startCMSEvaluation } from '@/lib/cms-matching/actions';
 import type { CMSMatchingResult } from '@/lib/cms-matching/schema';
 import type { QuickScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
-import { retriggerQuickScan } from '@/lib/quick-scan/actions';
 
 interface BusinessUnit {
   id: string;
@@ -484,31 +482,6 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [selectedCMS, setSelectedCMS] = useState<string>('');
 
-  // Re-scan State
-  const [isRetriggering, setIsRetriggering] = useState(false);
-
-  // Handle re-trigger Quick Scan
-  const handleRetrigger = async () => {
-    if (!bidId) return;
-    setIsRetriggering(true);
-    toast.info('Starte Quick Scan erneut...');
-
-    try {
-      const result = await retriggerQuickScan(bidId);
-
-      if (result.success) {
-        toast.success('Quick Scan gestartet - bitte warten...');
-        // Force page reload to show ActivityStream
-        window.location.reload();
-      } else {
-        toast.error(result.error || 'Quick Scan Re-Trigger fehlgeschlagen');
-        setIsRetriggering(false);
-      }
-    } catch {
-      toast.error('Ein Fehler ist aufgetreten');
-      setIsRetriggering(false);
-    }
-  };
 
   // Load business units
   useEffect(() => {
@@ -589,7 +562,7 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
       <Card>
         <CardContent className="py-12 text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">Quick Scan wird gestartet...</p>
+          <p className="text-muted-foreground">Qualification wird gestartet...</p>
         </CardContent>
       </Card>
     );
@@ -600,7 +573,7 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
       <Card className="border-blue-200 bg-blue-50">
         <CardContent className="py-12 text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600 mb-4" />
-          <p className="text-blue-700 font-medium">Quick Scan läuft...</p>
+          <p className="text-blue-700 font-medium">Qualification läuft...</p>
           <p className="text-sm text-blue-600">Analyse von {quickScan.websiteUrl}</p>
         </CardContent>
       </Card>
@@ -652,19 +625,6 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
               <CardTitle>Gescrapte Fakten</CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRetrigger}
-                disabled={isRetriggering}
-              >
-                {isRetriggering ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <RotateCcw className="h-4 w-4 mr-1" />
-                )}
-                Erneut scannen
-              </Button>
               <Badge variant={quickScan.status === 'completed' ? 'default' : 'destructive'}>
                 {quickScan.status === 'completed' ? 'Abgeschlossen' : 'Fehlgeschlagen'}
               </Badge>

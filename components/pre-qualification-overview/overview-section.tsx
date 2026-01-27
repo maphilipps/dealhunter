@@ -5,18 +5,16 @@ import type { OverviewData } from './types';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 
 interface OverviewSectionProps {
   data: OverviewData | null;
-  onRunQuickScan?: () => void;
 }
 
-export function OverviewSection({ data, onRunQuickScan }: OverviewSectionProps) {
+export function OverviewSection({ data }: OverviewSectionProps) {
   if (!data || !data.companyIntelligence) {
-    return <EmptyOverview onRunQuickScan={onRunQuickScan} />;
+    return <EmptyOverview />;
   }
 
   const company = data.companyIntelligence;
@@ -290,17 +288,19 @@ export function OverviewSection({ data, onRunQuickScan }: OverviewSectionProps) 
 }
 
 // Helper Components
-function EmptyOverview({ onRunQuickScan }: { onRunQuickScan?: () => void }) {
+function EmptyOverview() {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Keine Daten verfügbar</CardTitle>
         <CardDescription>
-          Der QuickScan wurde noch nicht durchgeführt oder enthält keine Daten.
+          Die Qualification wurde noch nicht durchgeführt oder enthält keine Daten.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {onRunQuickScan && <Button onClick={onRunQuickScan}>QuickScan starten</Button>}
+        <p className="text-sm text-muted-foreground">
+          Die Qualification läuft automatisch, sobald Daten verfügbar sind.
+        </p>
       </CardContent>
     </Card>
   );

@@ -2,7 +2,8 @@ import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
 
 import { checkForDuplicates, type DuplicateCheckResult } from './duplicate-check';
-import { aiHubOpenAI, modelNames } from '../ai/config';
+import { modelNames } from '../ai/config';
+import { getProviderForSlot } from '../ai/providers';
 import type { ExtractedRequirements } from '../extraction/schema';
 
 /**
@@ -28,8 +29,8 @@ export const DuplicateCheckAgentOutputSchema = z.object({
       preQualificationId: z.string(),
       customerName: z.string(),
       reason: z.string(),
-      websiteUrl: z.string().optional(),
-      submissionDeadline: z.string().optional(),
+      websiteUrl: z.string().nullable(),
+      submissionDeadline: z.string().nullable(),
     })
   ),
   similarMatches: z.array(
@@ -38,8 +39,8 @@ export const DuplicateCheckAgentOutputSchema = z.object({
       customerName: z.string(),
       similarity: z.number().min(0).max(100),
       reason: z.string(),
-      websiteUrl: z.string().optional(),
-      submissionDeadline: z.string().optional(),
+      websiteUrl: z.string().nullable(),
+      submissionDeadline: z.string().nullable(),
     })
   ),
 });
@@ -85,7 +86,7 @@ export async function runDuplicateCheckAgent(params: {
   // Use AI to analyze duplicate result and provide structured recommendation
 
   const result = await generateObject({
-    model: aiHubOpenAI(modelNames.default) as unknown as LanguageModel,
+    model: getProviderForSlot('default')(modelNames.default) as unknown as LanguageModel,
     schema: DuplicateCheckAgentOutputSchema,
     prompt: `
 Du bist ein Duplicate Detection Agent. Analysiere die gefundenen Duplikate und gib eine strukturierte Empfehlung.

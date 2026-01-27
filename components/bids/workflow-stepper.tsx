@@ -41,7 +41,7 @@ interface PhaseConfig {
 const phases: PhaseConfig[] = [
   {
     id: 'facts',
-    label: 'Quick Scan',
+    label: 'Qualification',
     description: 'Automatische Datenerfassung',
     icon: FileSearch,
     route: '/workflow-1',

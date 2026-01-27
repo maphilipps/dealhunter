@@ -1,15 +1,15 @@
-import { cache } from 'react';
 
 import { desc, eq } from 'drizzle-orm';
 import { AlertTriangle, CheckCircle2, FileText, Globe, Package, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 
 import { AuditStatusBadge } from '@/components/qualifications/audit-status-badge';
 import { BulkVisualizationGenerator } from '@/components/qualifications/bulk-visualization-generator';
 import { CustomerDeepDive } from '@/components/qualifications/customer-deep-dive';
-import { DeleteQualificationButton } from '@/components/qualifications/delete-qualification-button';
 import { DeepScanOverviewClient } from '@/components/qualifications/deep-scan-overview-client';
+import { DeleteQualificationButton } from '@/components/qualifications/delete-qualification-button';
 import { ExecutiveSummaryCard } from '@/components/qualifications/executive-summary-card';
 import { LeadOverviewClient } from '@/components/qualifications/qualification-overview-client';
 import { Badge } from '@/components/ui/badge';
@@ -511,7 +511,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
         <CardContent>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" asChild>
-              <Link href={`/qualifications/${id}/quick-scan`}>Quick Scan ansehen</Link>
+              <Link href={`/qualifications/${id}/quick-scan`}>Qualification ansehen</Link>
             </Button>
             {preQualification && (
               <Button variant="outline" asChild>

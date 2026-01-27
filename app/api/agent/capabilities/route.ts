@@ -48,7 +48,7 @@ export async function GET() {
       },
       {
         id: 'quick-scan',
-        name: 'Quick Scan Agent',
+        name: 'Qualification Agent',
         description:
           'Führt eine schnelle Erstbewertung durch und empfiehlt passende Business Lines',
         status: 'active',

@@ -131,7 +131,7 @@ export function WebsiteUrlInput({
           Website URL erforderlich
         </CardTitle>
         <CardDescription>
-          Für den Quick Scan wird eine Website-URL benötigt. Sie können AI-Vorschläge generieren
+          Für die Qualification wird eine Website-URL benötigt. Sie können AI-Vorschläge generieren
           lassen oder URLs manuell eingeben.
         </CardDescription>
       </CardHeader>
@@ -253,7 +253,7 @@ export function WebsiteUrlInput({
                   Wird gestartet...
                 </>
               ) : (
-                `Quick Scan starten (${selectedCount} URL${selectedCount !== 1 ? 's' : ''})`
+                `Qualification starten (${selectedCount} URL${selectedCount !== 1 ? 's' : ''})`
               )}
             </Button>
           </div>

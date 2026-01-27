@@ -287,3 +287,95 @@ export async function getBusinessLineRecommendation(bidId: string) {
     };
   }
 }
+
+// ===== NO-BID Archive Action =====
+
+export interface ArchiveAsNoBidInput {
+  preQualificationId: string;
+  reason: string;
+}
+
+export interface ArchiveAsNoBidResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Archive a Pre-Qualification as NO-BID
+ * Sets decision to 'no_bid' and status to 'archived'
+ */
+export async function archiveAsNoBid(
+  input: ArchiveAsNoBidInput
+): Promise<ArchiveAsNoBidResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    const { preQualificationId, reason } = input;
+
+    if (!preQualificationId || !reason.trim()) {
+      return {
+        success: false,
+        error: 'Pre-Qualification ID und Begründung sind erforderlich',
+      };
+    }
+
+    // Get pre-qualification
+    const [preQual] = await db
+      .select()
+      .from(preQualifications)
+      .where(eq(preQualifications.id, preQualificationId))
+      .limit(1);
+
+    if (!preQual) {
+      return { success: false, error: 'Pre-Qualification nicht gefunden' };
+    }
+
+    // Check ownership
+    if (preQual.userId !== session.user.id) {
+      return { success: false, error: 'Keine Berechtigung' };
+    }
+
+    // Update to archived with NO-BID decision
+    const decisionData = JSON.stringify({
+      decision: 'no_bid',
+      reason: reason.trim(),
+      decidedAt: new Date().toISOString(),
+      decidedBy: session.user.id,
+    });
+
+    await db
+      .update(preQualifications)
+      .set({
+        status: 'archived',
+        decision: 'no_bid',
+        decisionData,
+        updatedAt: new Date(),
+      })
+      .where(eq(preQualifications.id, preQualificationId));
+
+    // Create audit log
+    await createAuditLog({
+      action: 'NO_BID_DECISION',
+      targetType: 'pre_qualification',
+      targetId: preQualificationId,
+      details: {
+        reason: reason.trim(),
+        previousStatus: preQual.status,
+      },
+    });
+
+    revalidatePath('/pre-qualifications');
+    revalidatePath(`/pre-qualifications/${preQualificationId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error archiving as NO-BID:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
+}

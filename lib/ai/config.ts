@@ -10,6 +10,8 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 
+import { getProviderForSlot } from './providers';
+
 // Lazy-initialized OpenAI clients to reduce bundle size
 // Only the OpenAI SDK is imported (not multiple providers)
 // This implements Vercel React Best Practice: bundle-conditional
@@ -30,7 +32,10 @@ export const aiHubOpenAI = createOpenAI({
 
 // Direct OpenAI provider for specific models if needed (embeddings only)
 export const directOpenAI = createOpenAI({
-  apiKey: process.env.OPENAI_EMBEDDING_API_KEY, // Use specific key if needed
+  apiKey:
+    process.env.OPENAI_DIRECT_API_KEY ||
+    process.env.OPENAI_EMBEDDING_API_KEY ||
+    process.env.OPENAI_API_KEY,
   baseURL: 'https://api.openai.com/v1',
 });
 
@@ -59,7 +64,10 @@ export function getOpenAIDirectClient() {
     // Dynamic import only when needed
     const OpenAI = require('openai').default;
     openaiDirectInstance = new OpenAI({
-      apiKey: process.env.OPENAI_EMBEDDING_API_KEY,
+      apiKey:
+        process.env.OPENAI_DIRECT_API_KEY ||
+        process.env.OPENAI_EMBEDDING_API_KEY ||
+        process.env.OPENAI_API_KEY,
       baseURL: 'https://api.openai.com/v1', // Explicitly OpenAI, not AI Hub
     });
   }
@@ -81,14 +89,24 @@ export const openaiDirect = new Proxy({} as any, {
   },
 });
 
+// Dynamic model names - reads from environment variables
+// Lazy import to avoid circular dependency
+function getModelNameLazy(slot: string): string {
+   
+  const { getModelName } = require('./model-config') as { getModelName: (s: string) => string };
+  return getModelName(slot);
+}
+
+// Use getModelName() from model-config.ts for dynamic access
+// This object provides legacy compatibility with static property access
 export const modelNames = {
-  fast: 'gemini-3-flash-preview',
-  default: 'gemini-3-flash-preview',
-  quality: 'gemini-3-flash-preview',
-  premium: 'gemini-3-flash-preview',
-  'sonnet-4-5': 'gemini-3-flash-preview',
-  // Fast synthesizer model for section synthesis (lower latency)
-  synthesizer: 'claude-haiku-*',
+  get fast() { return getModelNameLazy('fast'); },
+  get default() { return getModelNameLazy('default'); },
+  get quality() { return getModelNameLazy('quality'); },
+  get premium() { return getModelNameLazy('premium'); },
+  get 'sonnet-4-5'() { return getModelNameLazy('quality'); }, // Alias
+  get synthesizer() { return getModelNameLazy('synthesizer'); },
+  get research() { return getModelNameLazy('research'); },
 } as const;
 
 export const defaultSettings = {
@@ -121,7 +139,7 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
 
   try {
     const { object, usage } = await generateObject({
-      model: aiHubOpenAI(modelName),
+      model: getProviderForSlot(modelKey)(modelName),
       schema: options.schema as any,
       system: options.system,
       prompt: options.prompt,

@@ -40,7 +40,7 @@ export async function processVisualizationJob(
     }
 
     // Determine which sections to process
-    let sectionsToProcess = sectionIds;
+    const sectionsToProcess = sectionIds;
 
     if (sectionsToProcess.length === 0) {
       // Find all sections with RAG data but no visualization

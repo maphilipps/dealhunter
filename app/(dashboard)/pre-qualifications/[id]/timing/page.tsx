@@ -28,7 +28,7 @@ export default async function TimingPage({ params }: { params: Promise<{ id: str
       preQualificationId={id}
       sectionId="timing"
       title="Zeitplan / Verfahren"
-      description="Timeline, Shortlisting und Vergabeverfahren"
+      description="Wie lautet die Timeline? Gibt es einen Shortlistingprozess oder ein direktes Vergabeverfahren?"
     />
   );
 }

@@ -7,12 +7,11 @@ import { extractTextFromPdf } from './pdf-extractor';
 import { auth } from '@/lib/auth';
 import { addPreQualProcessingJob } from '@/lib/bullmq/queues';
 import { db } from '@/lib/db';
-import { preQualifications, documents } from '@/lib/db/schema';
+import { backgroundJobs, preQualifications, documents, users } from '@/lib/db/schema';
 import type { PreQualification } from '@/lib/db/schema';
 import { extractRequirements } from '@/lib/extraction/agent';
 import { suggestWebsiteUrls } from '@/lib/extraction/url-suggestion-agent';
 import { detectPII, cleanText } from '@/lib/pii/pii-cleaner';
-import { startQuickScan } from '@/lib/quick-scan/actions';
 import { triggerNextAgent } from '@/lib/workflow/orchestrator';
 
 /**
@@ -34,13 +33,24 @@ export async function getBids() {
   }
 
   try {
-    const bids = await db
-      .select()
+    const bidsWithUser = await db
+      .select({
+        id: preQualifications.id,
+        userId: preQualifications.userId,
+        userName: users.name,
+        source: preQualifications.source,
+        stage: preQualifications.stage,
+        status: preQualifications.status,
+        decision: preQualifications.decision,
+        extractedRequirements: preQualifications.extractedRequirements,
+        createdAt: preQualifications.createdAt,
+      })
       .from(preQualifications)
+      .leftJoin(users, eq(preQualifications.userId, users.id))
       .where(eq(preQualifications.userId, session.user.id))
       .orderBy(desc(preQualifications.createdAt));
 
-    return { success: true, bids };
+    return { success: true, bids: bidsWithUser };
   } catch (error) {
     console.error('Get bids error:', error);
     return { success: false, error: 'Fehler beim Laden der Bids', bids: [] };
@@ -419,22 +429,60 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
       return { success: false, error: 'Keine Berechtigung' };
     }
 
-    // Update requirements and move to quick_scanning status
+    // Update requirements and move to processing status
     await db
       .update(preQualifications)
       .set({
         extractedRequirements: JSON.stringify(requirements),
-        status: 'quick_scanning',
+        status: 'processing',
       })
       .where(eq(preQualifications.id, bidId));
 
-    // Auto-launch Quick Scan (fire-and-forget)
-    // Don't await - let it run in background while user sees success
-    startQuickScan(bidId).catch(error => {
-      console.error('Auto Quick Scan launch failed:', error);
+    const docs = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.preQualificationId, bidId));
+
+    const files = docs.map(doc => ({
+      name: doc.fileName,
+      base64: doc.fileData,
+      size: doc.fileSize,
+    }));
+
+    const websiteUrls = bid.websiteUrl ? [bid.websiteUrl] : [];
+    const additionalText = bid.rawInput && bid.rawInput !== 'Verarbeitung läuft...' ? bid.rawInput : '';
+
+    const [qualificationJob] = await db
+      .insert(backgroundJobs)
+      .values({
+        jobType: 'qualification',
+        preQualificationId: bidId,
+        userId: session.user.id,
+        status: 'pending',
+        progress: 0,
+        currentStep: 'Warteschlange',
+      })
+      .returning();
+
+    const qualificationBullmqJob = await addPreQualProcessingJob({
+      preQualificationId: bidId,
+      userId: session.user.id,
+      backgroundJobId: qualificationJob.id,
+      files,
+      websiteUrls,
+      additionalText,
+      enableDSGVO: false,
+      useExistingRequirements: true,
     });
 
-    return { success: true, quickScanStarted: true };
+    if (qualificationBullmqJob?.id) {
+      await db
+        .update(backgroundJobs)
+        .set({ bullmqJobId: String(qualificationBullmqJob.id) })
+        .where(eq(backgroundJobs.id, qualificationJob.id));
+    }
+
+    return { success: true };
   } catch (error) {
     console.error('Update requirements error:', error);
     return { success: false, error: 'Update fehlgeschlagen' };
@@ -481,7 +529,7 @@ export async function uploadCombinedBid(formData: FormData) {
   if (files.length === 0 && websiteUrls.length === 0 && !additionalText) {
     return {
       success: false,
-      error: 'Mindestens eine Eingabe (PDF, URL oder Text) ist erforderlich',
+      error: 'Mindestens eine Eingabe (Datei oder Text) ist erforderlich',
     };
   }
 
@@ -704,7 +752,7 @@ export async function createPendingPreQualification(formData: FormData) {
   if (files.length === 0 && websiteUrls.length === 0 && !additionalText) {
     return {
       success: false,
-      error: 'Mindestens eine Eingabe (PDF, URL oder Text) ist erforderlich',
+      error: 'Mindestens eine Eingabe (Datei oder Text) ist erforderlich',
     };
   }
 
@@ -721,11 +769,18 @@ export async function createPendingPreQualification(formData: FormData) {
 
   try {
     const maxSize = 10 * 1024 * 1024; // 10 MB per file
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+    ];
 
     // Validate all files first
     for (const file of files) {
-      if (file.type !== 'application/pdf') {
-        return { success: false, error: `${file.name}: Nur PDF-Dateien sind erlaubt` };
+      if (!allowedTypes.includes(file.type)) {
+        return { success: false, error: `${file.name}: Nur PDF-, Excel- und Word-Dateien sind erlaubt` };
       }
       if (file.size > maxSize) {
         return { success: false, error: `${file.name}: Datei ist zu groß (max. 10 MB)` };
@@ -786,6 +841,18 @@ export async function createPendingPreQualification(formData: FormData) {
       })
       .returning();
 
+    const [qualificationJob] = await db
+      .insert(backgroundJobs)
+      .values({
+        jobType: 'qualification',
+        preQualificationId: bidOpportunity.id,
+        userId: session.user.id,
+        status: 'pending',
+        progress: 0,
+        currentStep: 'Warteschlange',
+      })
+      .returning();
+
     // Save PDF files to documents table (for later reference)
     for (const fileData of filesBase64) {
       await db.insert(documents).values({
@@ -800,15 +867,23 @@ export async function createPendingPreQualification(formData: FormData) {
     }
 
     // Queue BullMQ job for background processing
-    await addPreQualProcessingJob({
+    const qualificationBullmqJob = await addPreQualProcessingJob({
       preQualificationId: bidOpportunity.id,
       userId: session.user.id,
+      backgroundJobId: qualificationJob.id,
       files: filesBase64,
       websiteUrls,
       additionalText,
       enableDSGVO,
       accountId: validAccountId,
     });
+
+    if (qualificationBullmqJob?.id) {
+      await db
+        .update(backgroundJobs)
+        .set({ bullmqJobId: String(qualificationBullmqJob.id) })
+        .where(eq(backgroundJobs.id, qualificationJob.id));
+    }
 
     console.log(
       `[createPendingPreQualification] Created prequal ${bidOpportunity.id}, queued for processing`
@@ -878,14 +953,34 @@ export async function startPreQualProcessing(bidId: string) {
     })
     .where(eq(preQualifications.id, bidId));
 
-  await addPreQualProcessingJob({
+  const [qualificationJob] = await db
+    .insert(backgroundJobs)
+    .values({
+      jobType: 'qualification',
+      preQualificationId: bidId,
+      userId: session.user.id,
+      status: 'pending',
+      progress: 0,
+      currentStep: 'Warteschlange',
+    })
+    .returning();
+
+  const qualificationBullmqJob = await addPreQualProcessingJob({
     preQualificationId: bidId,
     userId: session.user.id,
+    backgroundJobId: qualificationJob.id,
     files,
     websiteUrls,
     additionalText,
     enableDSGVO: false,
   });
+
+  if (qualificationBullmqJob?.id) {
+    await db
+      .update(backgroundJobs)
+      .set({ bullmqJobId: String(qualificationBullmqJob.id) })
+      .where(eq(backgroundJobs.id, qualificationJob.id));
+  }
 
   return { success: true };
 }

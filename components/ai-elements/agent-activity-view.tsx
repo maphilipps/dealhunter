@@ -257,6 +257,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
       'Business Analyst': 'bg-rose-500/10 text-rose-700 border-rose-200',
       'AI Reasoning': 'bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-200',
       'Quick Scan': 'bg-indigo-500/10 text-indigo-700 border-indigo-200',
+      Qualification: 'bg-indigo-500/10 text-indigo-700 border-indigo-200',
     };
     return colors[agent] || 'bg-gray-500/10 text-gray-700 border-gray-200';
   };

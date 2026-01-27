@@ -27,7 +27,7 @@ export default async function AwardCriteriaPage({ params }: { params: Promise<{ 
       preQualificationId={id}
       sectionId="award-criteria"
       title="Zuschlagskriterien"
-      description="Bewertungskriterien und Gewichtungen"
+      description="Zuschlagskriterien im Detail: Konzepte, Gewichtungen, Kriterien in Teilnahmeantrag vs. Angebot?"
     />
   );
 }

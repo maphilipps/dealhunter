@@ -202,7 +202,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
       <Card className="border-slate-200">
         <CardContent className="py-12 text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-400 mb-4" />
-          <p className="text-muted-foreground">QuickScan wird ausgeführt...</p>
+          <p className="text-muted-foreground">Qualification wird ausgeführt...</p>
           <p className="text-sm text-muted-foreground mt-2">
             Die Entscheidungsmatrix ist verfügbar, sobald der Scan abgeschlossen ist.
           </p>
@@ -244,7 +244,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
             </div>
             {quickScan.reasoning && (
               <div className="rounded-lg bg-white p-4 border border-blue-200">
-                <p className="text-sm font-medium text-muted-foreground mb-2">Quick Scan Analyse</p>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Qualification Analyse</p>
                 <p className="text-sm text-foreground">{quickScan.reasoning}</p>
               </div>
             )}

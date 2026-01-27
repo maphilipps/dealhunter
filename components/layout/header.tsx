@@ -20,7 +20,7 @@ export async function Header() {
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2">
             <Bot className="h-6 w-6" />
-            <span className="text-xl font-bold">Dealhunter</span>
+            <span className="text-xl font-bold">PHPXOM Qualifier</span>
           </Link>
 
           <nav className="flex items-center gap-4">
@@ -28,10 +28,10 @@ export async function Header() {
               Dashboard
             </Link>
             <Link href="/pre-qualifications/new" className="text-sm font-medium hover:underline">
-              Neuer Bid
+              Neuer Lead
             </Link>
             <Link href="/pre-qualifications" className="text-sm font-medium hover:underline">
-              Alle Bids
+              Alle Leads
             </Link>
             <Link href="/accounts" className="text-sm font-medium hover:underline">
               Accounts

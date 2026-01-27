@@ -1,10 +1,9 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
-import { getPreQualProcessingJob } from '@/lib/bullmq/queues';
 import { db } from '@/lib/db';
-import { preQualifications } from '@/lib/db/schema';
+import { backgroundJobs, preQualifications } from '@/lib/db/schema';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,7 +25,7 @@ const STEP_CONFIG = {
  * Processing status response type
  */
 interface ProcessingStatusResponse {
-  step: 'extracting' | 'duplicate_checking' | 'scanning' | 'timeline' | 'complete';
+  step: 'extracting' | 'duplicate_checking' | 'scanning' | 'questions' | 'sections' | 'complete';
   progress: number;
   currentTask: string;
   error?: string;
@@ -77,30 +76,22 @@ export async function GET(
     const isProcessing = processingStates.includes(status);
     const hasError = status.includes('_failed') || status === 'duplicate_warning';
 
-    // 4. Try to get more detailed progress from BullMQ job
-    let jobProgress = 0;
-    let jobError: string | undefined;
+    // 4. Try to get more detailed progress from Qualification job
+    const [qualificationJob] = await db
+      .select()
+      .from(backgroundJobs)
+      .where(
+        and(
+          eq(backgroundJobs.preQualificationId, id),
+          eq(backgroundJobs.jobType, 'qualification')
+        )
+      )
+      .orderBy(desc(backgroundJobs.createdAt))
+      .limit(1);
 
-    try {
-      const job = await getPreQualProcessingJob(id);
-      if (job) {
-        // Get job progress (0-100)
-        const progress = job.progress;
-        if (typeof progress === 'number') {
-          jobProgress = progress;
-        } else if (typeof progress === 'object' && progress !== null) {
-          jobProgress = (progress as { progress?: number }).progress || 0;
-        }
-
-        // Check for job failure
-        const state = await job.getState();
-        if (state === 'failed') {
-          jobError = job.failedReason || 'Verarbeitung fehlgeschlagen';
-        }
-      }
-    } catch {
-      // BullMQ job not found or error - use DB status only
-    }
+    const jobProgress = qualificationJob?.progress ?? 0;
+    let jobError = qualificationJob?.errorMessage ?? undefined;
+    const jobStepLabel = qualificationJob?.currentStep ?? null;
 
     // 5. Parse agent errors if present
     if (prequal.agentErrors && !jobError) {
@@ -119,11 +110,20 @@ export async function GET(
     const progress = Math.max(baseProgress, jobProgress);
 
     // 7. Build response
+    let step: ProcessingStatusResponse['step'] = config?.step || 'extracting';
+    if (qualificationJob) {
+      if (progress >= 90) step = 'sections';
+      else if (progress >= 80) step = 'questions';
+      else if (progress >= 60) step = 'scanning';
+      else if (progress >= 40) step = 'duplicate_checking';
+      else step = 'extracting';
+    }
+
     const response: ProcessingStatusResponse = {
-      step: config?.step || 'extracting',
+      step,
       progress,
-      currentTask: config?.label || `Status: ${status}`,
-      isComplete: !isProcessing && !hasError,
+      currentTask: jobStepLabel || config?.label || `Status: ${status}`,
+      isComplete: qualificationJob ? qualificationJob.status === 'completed' : !isProcessing && !hasError,
       status,
     };
 

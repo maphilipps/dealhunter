@@ -21,7 +21,7 @@ interface ProcessingStep {
  * Processing status from API
  */
 interface ProcessingStatus {
-  step: 'extracting' | 'duplicate_checking' | 'scanning' | 'timeline' | 'complete';
+  step: 'extracting' | 'duplicate_checking' | 'scanning' | 'questions' | 'sections' | 'complete';
   progress: number;
   currentTask: string;
   error?: string;
@@ -54,6 +54,16 @@ const PROCESSING_STEPS: ProcessingStep[] = [
     id: 'scanning',
     label: 'Anforderungen analysieren',
     description: 'KI analysiert Website und Projektanforderungen',
+  },
+  {
+    id: 'questions',
+    label: '10 Fragen beantworten',
+    description: 'Schlüsselantworten werden zusammengestellt',
+  },
+  {
+    id: 'sections',
+    label: 'Detailseiten erstellen',
+    description: 'Agenten generieren die Sektionen und Visualisierung',
   },
   {
     id: 'complete',

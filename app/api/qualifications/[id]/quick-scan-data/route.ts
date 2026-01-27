@@ -55,7 +55,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json({
         quickScan: null,
         rfpExtraction: null,
-        message: 'No Quick Scan data available',
+        message: 'No Qualification data available',
       });
     }
 
@@ -85,7 +85,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json({
         quickScan: null,
         rfpExtraction: null,
-        message: 'Quick Scan not found',
+        message: 'Qualification not found',
       });
     }
 

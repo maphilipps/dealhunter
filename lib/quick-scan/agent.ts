@@ -384,6 +384,12 @@ export interface QuickScanInput {
   userId?: string;
   /** Pre-Qualification ID for RAG write tools (enables agent-native output) */
   preQualificationId?: string;
+  /**
+   * Controls behavior of the QuickScan agent in different workflows.
+   * - qualification: only collect fields needed for Qualification pages; skip contact research.
+   * - full: full quick scan behavior (default)
+   */
+  mode?: 'qualification' | 'full';
 }
 
 export interface QuickScanResult {

@@ -1,19 +1,13 @@
-import OpenAI from 'openai';
+import { generateText } from 'ai';
 
-
-import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '../../ai/config';
+import { modelNames } from '../../ai/config';
+import { getProviderForSlot } from '../../ai/providers';
 import { getStockData, searchStockSymbol } from '../../integrations/yahoo-finance';
 import { searchAndContents } from '../../search/web-search';
 
 // Security: Prompt Injection Protection
 import { wrapUserContent } from '../../security/prompt-sanitizer';
 import { companyIntelligenceSchema, type CompanyIntelligence } from '../schema';
-
-// Initialize clients
-const openai = new OpenAI({
-  apiKey: AI_HUB_API_KEY,
-  baseURL: AI_HUB_BASE_URL,
-});
 
 interface ImprintData {
   companyName?: string;
@@ -256,17 +250,15 @@ Erstelle ein JSON-Objekt mit folgender Struktur:
 Fülle nur Felder aus, die du aus den Daten belegen kannst. Setze andere auf null.`;
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'gemini-3-flash-preview',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
+    const { text } = await generateText({
+      model: getProviderForSlot('research')(modelNames.research),
+      system: systemPrompt,
+      prompt: userPrompt,
       temperature: 0.2,
-      max_tokens: 2000,
+      maxOutputTokens: 2000,
     });
 
-    const responseText = completion.choices[0]?.message?.content || '{}';
+    const responseText = text || '{}';
     const cleanedResponse = responseText
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')

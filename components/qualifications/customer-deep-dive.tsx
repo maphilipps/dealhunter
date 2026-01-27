@@ -3,7 +3,7 @@
 /**
  * Customer Deep Dive Component (DEA-140 Phase 1.2)
  *
- * Zeigt detaillierte Kundeninformationen aus Quick Scan:
+ * Zeigt detaillierte Kundeninformationen aus Qualification:
  * - Company Intelligence (Unternehmensgröße, Finanzen)
  * - IT-Landschaft (Tech Stack, CMS, Hosting)
  * - Decision Makers
@@ -136,7 +136,7 @@ export function CustomerDeepDive({ leadId, quickScanId }: CustomerDeepDiveProps)
             <CardTitle className="text-lg">Customer Deep Dive</CardTitle>
           </div>
           <CardDescription>
-            Keine Quick Scan Daten verfügbar. Führen Sie zuerst einen Quick Scan durch.
+            Keine Qualification Daten verfügbar. Führen Sie zuerst eine Qualification durch.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -188,7 +188,7 @@ export function CustomerDeepDive({ leadId, quickScanId }: CustomerDeepDiveProps)
                 <CardTitle className="text-lg">Customer Deep Dive</CardTitle>
                 {quickScan.status === 'completed' && (
                   <Badge variant="secondary" className="ml-2">
-                    Quick Scan abgeschlossen
+                    Qualification abgeschlossen
                   </Badge>
                 )}
               </div>
@@ -201,7 +201,7 @@ export function CustomerDeepDive({ leadId, quickScanId }: CustomerDeepDiveProps)
               </Button>
             </div>
             <CardDescription>
-              Unternehmensdaten, IT-Landschaft & Decision Makers aus Quick Scan
+              Unternehmensdaten, IT-Landschaft & Decision Makers aus Qualification
             </CardDescription>
           </CardHeader>
         </CollapsibleTrigger>

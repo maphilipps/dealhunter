@@ -2,24 +2,11 @@ import { ToolLoopAgent, hasToolCall, stepCountIs, tool } from 'ai';
 import { z } from 'zod';
 
 import { createBatchRagWriteTool, createVisualizationWriteTool } from '@/lib/agent-tools';
-import { modelNames, defaultSettings } from '@/lib/ai/config';
-import { getOpenAIProvider } from '@/lib/ai/providers';
 import { webSearchTool, fetchUrlTool } from '@/lib/agent-tools/tools/web-search';
-import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
+import { modelNames, defaultSettings } from '@/lib/ai/config';
+import { getProviderForSlot } from '@/lib/ai/providers';
 import { getPreQualSectionQueryTemplate } from '@/lib/pre-qualifications/section-queries';
-
-const jsonRenderTreeSchema = z.object({
-  root: z.string().nullable(),
-  elements: z.record(
-    z.string(),
-    z.object({
-      key: z.string(),
-      type: z.string(),
-      props: z.record(z.string(), z.unknown()),
-      children: z.array(z.string()).optional(),
-    })
-  ),
-});
+import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
 
 const SECTION_UI_SYSTEM_PROMPT = `You generate JsonRenderTree UI for a pre-qualification section.
 Only use these components: Grid, ResultCard, Section, BulletList, Paragraph, KeyValue, Metric, ProgressBar, ScoreCard.
@@ -73,6 +60,8 @@ export async function runPreQualSectionAgent(input: {
     agentName: 'prequal_section_agent',
   });
 
+  let hasQueriedDocuments = false;
+
   const storeFindingsBatch = createBatchRagWriteTool({
     preQualificationId,
     agentName: 'prequal_section_agent',
@@ -84,8 +73,21 @@ export async function runPreQualSectionAgent(input: {
     execute: async ({ success }: { success: boolean }) => ({ success }),
   });
 
+  const gatedStoreVisualization = tool({
+    description: 'Persist the visualization tree after querying documents.',
+    inputSchema: z.object({
+      tree: z.unknown(),
+    }),
+    execute: async ({ tree }: { tree: unknown }) => {
+      if (!hasQueriedDocuments) {
+        return { success: false, error: 'queryDocuments must be called before storeVisualization' };
+      }
+      return storeVisualization.execute({ tree } as any);
+    },
+  });
+
   const agent = new ToolLoopAgent({
-    model: getOpenAIProvider()(modelNames.default),
+    model: getProviderForSlot('default')(modelNames.default),
     instructions: [
       SECTION_UI_SYSTEM_PROMPT,
       'Use queryDocuments first to gather document-only context.',
@@ -96,11 +98,33 @@ export async function runPreQualSectionAgent(input: {
       'Finally call storeVisualization with a JsonRenderTree.',
     ].join('\n'),
     tools: {
-      queryDocuments,
+      queryDocuments: tool({
+        description: 'Query only the provided documents (raw chunks) for relevant information.',
+        inputSchema: z.object({
+          query: z.string(),
+          topK: z.number().min(1).max(20).default(8),
+        }),
+        execute: async ({ query, topK }: { query: string; topK: number }) => {
+          hasQueriedDocuments = true;
+          const chunks = await queryRawChunks(preQualificationId, query, topK);
+          if (chunks.length === 0) {
+            return {
+              found: false,
+              context: 'Keine relevanten Informationen in den Dokumenten gefunden.',
+              chunks: [],
+            };
+          }
+          return {
+            found: true,
+            context: formatRAGContext(chunks),
+            chunks: chunks.map(c => ({ text: c.text, score: c.score })),
+          };
+        },
+      }),
       webSearch: webSearchTool,
       fetchUrl: fetchUrlTool,
       storeFindingsBatch,
-      storeVisualization,
+      storeVisualization: gatedStoreVisualization,
       complete,
     },
     stopWhen: [stepCountIs(20), hasToolCall('storeVisualization')],

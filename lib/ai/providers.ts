@@ -1,53 +1,76 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from './config';
+const DIRECT_OPENAI_KEY =
+  process.env.OPENAI_DIRECT_API_KEY || process.env.OPENAI_EMBEDDING_API_KEY;
+import { getModel, getModelProvider, getModelConfig, type ModelSlot } from './model-config';
 
 /**
  * Centralized AI SDK Providers Configuration
  *
- * All AI providers are configured here to use the adesso AI Hub.
- * This ensures compliance and centralized cost tracking.
+ * Supports dynamic switching between AI Hub and OpenAI per model slot.
+ * Configure via environment variables:
+ * - AI_MODEL_<SLOT>_PROVIDER: 'ai-hub' | 'openai'
+ * - AI_MODEL_<SLOT>_NAME: Model name
  *
- * IMPORTANT: For adesso AI Hub compatibility, use the direct OpenAI SDK from lib/ai/config.ts
- * instead of AI SDK's @ai-sdk/openai provider. The hub uses custom model names
- * (claude-haiku-4.5, claude-sonnet-4) that work with the OpenAI SDK but not AI SDK v5.
- *
- * Prefer using:
- * - lib/ai/config.ts with direct OpenAI SDK for generateObject/generateText
- * - This provider only for streamText use cases that require AI SDK
+ * Example:
+ * AI_MODEL_QUALITY_PROVIDER=openai
+ * AI_MODEL_QUALITY_NAME=gpt-4o
  */
 
-// Lazy-initialized AI SDK provider to reduce bundle size
-// This implements Vercel React Best Practice: bundle-conditional
-let openaiProviderInstance: any = null;
+// Lazy-initialized default AI Hub provider (for legacy compatibility)
+let defaultProviderInstance: any = null;
 
 /**
- * Get or create the OpenAI-compatible provider configured for adesso AI Hub
- * Uses lazy initialization to avoid eager loading of the AI SDK
- *
- * NOTE: This provider may have compatibility issues with adesso AI Hub's model spec v3.
- * Prefer using the direct OpenAI SDK from lib/ai/config.ts for most use cases.
- *
- * Uses environment variables:
- * - AI_HUB_API_KEY: API key for adesso AI Hub
- * - AI_HUB_BASE_URL: Base URL for adesso AI Hub (defaults to production URL)
+ * Get the default OpenAI-compatible provider (AI Hub)
+ * For new code, prefer getModelForSlot() for dynamic provider selection
  */
 export function getOpenAIProvider() {
-  if (!openaiProviderInstance) {
-    // Dynamic import only when needed
+  if (!defaultProviderInstance) {
     const { createOpenAI } = require('@ai-sdk/openai');
-    openaiProviderInstance = createOpenAI({
-      apiKey: AI_HUB_API_KEY,
-      baseURL: AI_HUB_BASE_URL,
-    });
+    if (DIRECT_OPENAI_KEY) {
+      defaultProviderInstance = createOpenAI({
+        apiKey: DIRECT_OPENAI_KEY,
+        baseURL: 'https://api.openai.com/v1',
+      });
+    } else {
+      defaultProviderInstance = createOpenAI({
+        apiKey: AI_HUB_API_KEY,
+        baseURL: AI_HUB_BASE_URL,
+      });
+    }
   }
-  return openaiProviderInstance;
+  return defaultProviderInstance;
 }
+
+/**
+ * Get a model instance for a specific slot with dynamic provider selection
+ * This is the preferred way to get models - respects per-slot configuration
+ */
+export function getModelForSlot(slot: ModelSlot) {
+  return getModel(slot);
+}
+
+/**
+ * Get the provider function for a slot (for ToolLoopAgent etc.)
+ */
+export function getProviderForSlot(slot: ModelSlot) {
+  return getModelProvider(slot);
+}
+
+/**
+ * Get the current configuration for a slot (for debugging/logging)
+ */
+export function getSlotConfig(slot: ModelSlot) {
+  return getModelConfig(slot);
+}
+
+// Re-export for convenience
+export { getModel, getModelProvider, getModelConfig, type ModelSlot } from './model-config';
 
 // Backward-compatible export (deprecated - use getOpenAIProvider() instead)
 export function openai(...args: any[]) {

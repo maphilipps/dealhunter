@@ -116,7 +116,7 @@ export async function runTechExpert(
     log('Analysiere Tech-Stack...');
 
     const techStackAnalysis = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: TechStackOverviewSchema,
       system: `Du bist ein Tech-Stack-Analyse-Experte. Analysiere die erkannten Technologien einer Website.
 
@@ -158,7 +158,7 @@ Bewerte Confidence basierend auf Evidenz-Stärke.`,
       log(`CMS Deep-Dive für ${techStackAnalysis.cms.name}...`);
 
       cmsDeepDive = await generateStructuredOutput({
-        model: 'sonnet-4-5',
+        model: 'quality',
         schema: CMSDeepDiveSchema,
         system: `Du bist ein CMS-Experte mit tiefem Wissen über Enterprise-CMS-Systeme.
 

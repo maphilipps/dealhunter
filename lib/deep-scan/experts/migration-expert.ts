@@ -144,7 +144,7 @@ export async function runMigrationExpert(
     log('Analysiere Migrations-Komplexität...');
 
     const migrationAnalysis = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: MigrationAnalysisSchema,
       system: `Du bist ein CMS-Migrations-Experte mit Fokus auf Drupal-Projekte. Analysiere die Website-Daten und erstelle eine Migrations-Einschätzung.
 

@@ -120,7 +120,7 @@ export async function runDeliverablesAgent(
     );
 
     const rawAnalysis = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: DeliverableWithoutIdSchema,
       system: buildSystemPrompt(),
       prompt: `Analyze the following Pre-Qualification content and extract all required deliverables and submission requirements:\n\n${context}`,

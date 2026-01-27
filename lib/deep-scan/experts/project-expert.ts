@@ -155,7 +155,7 @@ export async function runProjectExpert(
     log('Generiere Projektplan...');
 
     const projectPlan = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: ProjectPlanSchema,
       system: `Du bist ein erfahrener IT-Projektleiter bei adesso. Erstelle einen realistischen Projektplan für ein Drupal-Relaunch-Projekt.
 

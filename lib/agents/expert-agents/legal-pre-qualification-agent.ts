@@ -130,7 +130,7 @@ export async function runLegalRfpAgent(
     );
 
     const analysis = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: LegalRfpAnalysisSchema,
       system: buildSystemPrompt(),
       prompt: `Analyze the following Pre-Qualification content and extract all legal and contractual requirements:\n\n${context}`,

@@ -182,7 +182,7 @@ export async function runArchitectureExpert(
     log('Generiere CMS-Architektur-Empfehlung...');
 
     const architecture = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: ArchitectureSchema,
       system: `Du bist ein CMS-Architekt. Analysiere die Website-Struktur und erstelle eine technologie-agnostische CMS-Architektur-Empfehlung.
 

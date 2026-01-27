@@ -148,7 +148,7 @@ export async function runSummaryAgent(
       .join('\n');
 
     const analysis = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: ManagementSummarySchema,
       system: buildSystemPrompt(),
       prompt: `Create a management summary from the following expert analyses and document context:\n\n${context}`,

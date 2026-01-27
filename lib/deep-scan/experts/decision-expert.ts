@@ -161,7 +161,7 @@ export async function runDecisionExpert(
     log('Generiere BID/NO-BID Empfehlung...');
 
     const decision = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: DecisionSchema,
       system: `Du bist ein erfahrener Business Development Manager. Erstelle eine fundierte BID/NO-BID Empfehlung.
 

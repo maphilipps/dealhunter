@@ -134,7 +134,7 @@ export async function runPerformanceExpert(
     log('Analysiere Core Web Vitals und Bottlenecks...');
 
     const performanceAnalysis = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: PerformanceAnalysisSchema,
       system: `Du bist ein Web Performance Experte. Analysiere die gescrapten Website-Daten und erstelle eine Performance-Einschätzung.
 

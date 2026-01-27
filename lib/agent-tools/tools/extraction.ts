@@ -111,8 +111,8 @@ registry.register({
           found: true,
           context,
           chunks: chunks.map((c) => ({
-            text: c.text,
-            score: c.score,
+            text: c.content,
+            score: c.similarity,
           })),
         },
       };
@@ -292,7 +292,7 @@ registry.register({
         success: false,
         error: `Validation failed: ${parseResult.error.message}`,
         data: {
-          validationErrors: parseResult.error.errors,
+          validationErrors: parseResult.error.issues,
           currentState: session,
         },
       };

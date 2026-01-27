@@ -25,52 +25,15 @@ import {
 interface PreQualificationSidebarRightProps {
   preQualificationId: string;
   title?: string;
+  customerName?: string | null;
   status: string;
   dataAvailability: QuickScanDataAvailability;
 }
 
-const ANALYSIS_INTRO = {
-  title: 'Analyseauftrag',
-  subtitle:
-    'Du berätst mich in der Analyse der beigefügten Ausschreibung. Für die Entscheidung Bid/No Bid benötigen wir eine strukturierte Auswertung.',
-  constraint: 'Beziehe Dich ausschließlich auf die bereitgestellten Dokumente.',
-};
-
-const ANALYSIS_SECTIONS = [
-  {
-    group: 'Ausschreibung',
-    items: [
-      {
-        label: 'Budget',
-        hint: 'Budgetangaben, Größenordnung und Laufzeit?',
-      },
-      {
-        label: 'Zeitplan / Verfahren',
-        hint: 'Timeline, Shortlisting, Verfahrenstyp, Portal?',
-      },
-      {
-        label: 'Verträge',
-        hint: 'EVB-IT oder andere Verträge, Werk/Dienst/SLA?',
-      },
-      {
-        label: 'Leistungsumfang',
-        hint: 'Geforderte Leistungen und Unterlagen?',
-      },
-      {
-        label: 'Referenzen',
-        hint: 'Anzahl, Branchen, Spezifika?',
-      },
-      {
-        label: 'Zuschlagskriterien',
-        hint: 'Kriterien, Konzepte, Unterschiede TA/Angebot?',
-      },
-    ],
-  },
-];
-
 export function PreQualificationSidebarRight({
   preQualificationId,
   title,
+  customerName,
   status,
   dataAvailability,
 }: PreQualificationSidebarRightProps) {
@@ -82,45 +45,15 @@ export function PreQualificationSidebarRight({
     <TooltipProvider>
       <Sidebar collapsible="icon" variant="sidebar" side="right" className="hidden md:flex">
         <SidebarContent>
-          {/* Analysis Briefing */}
-          <SidebarGroup>
-            <SidebarGroupLabel>Analyseauftrag</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <div className="px-2 py-1 space-y-2 text-xs leading-relaxed text-muted-foreground">
-                <p className="text-sm font-medium text-foreground">{ANALYSIS_INTRO.title}</p>
-                <p>{ANALYSIS_INTRO.subtitle}</p>
-                <p className="text-[11px] text-muted-foreground">{ANALYSIS_INTRO.constraint}</p>
-                <p className="text-[11px] text-muted-foreground">
-                  Websuche zur Anreicherung ist optional und wird separat gekennzeichnet.
-                </p>
-                <div className="space-y-2">
-                  {ANALYSIS_SECTIONS.map(section => (
-                    <div key={section.group}>
-                      <p className="text-foreground text-xs font-semibold">{section.group}</p>
-                      <ul className="list-disc pl-4 space-y-1">
-                        {section.items.map(item => (
-                          <li key={item.label}>
-                            <span className="text-foreground font-medium">{item.label}</span>
-                            {item.hint && (
-                              <span className="text-muted-foreground"> — {item.hint}</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
           {/* Pre-Qualification Metadata */}
           <SidebarGroup>
-            <SidebarGroupLabel>Pre-Qualification Details</SidebarGroupLabel>
+            <SidebarGroupLabel>Lead Details</SidebarGroupLabel>
             <SidebarGroupContent>
-              <div className="px-2 py-1">
+              <div className="px-2 py-1 space-y-1">
                 {title && <p className="truncate text-sm font-medium">{title}</p>}
-                <p className="text-muted-foreground mt-1 text-xs">Status: {status}</p>
+                {customerName && (
+                  <p className="truncate text-xs text-muted-foreground">{customerName}</p>
+                )}
               </div>
             </SidebarGroupContent>
           </SidebarGroup>

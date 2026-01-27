@@ -110,10 +110,10 @@ export function ProcessingProgressCard({ bidId }: ProcessingProgressCardProps) {
       if (data.isComplete || data.error) {
         setIsPolling(false);
 
-        // Refresh page data after completion
+        // Redirect to Budget page after completion (first content section)
         if (data.isComplete) {
           setTimeout(() => {
-            router.refresh();
+            router.push(`/pre-qualifications/${bidId}/budget`);
           }, 500);
         }
       }

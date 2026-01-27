@@ -128,6 +128,8 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
     const loadQuickScan = async () => {
       if (
         [
+          'extracting',
+          'duplicate_warning',
           'quick_scanning',
           'questions_ready',
           'bit_pending',

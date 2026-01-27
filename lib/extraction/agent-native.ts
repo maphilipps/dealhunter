@@ -41,7 +41,7 @@ export interface ExtractionAgentOutput {
 }
 
 const completionSchema = z.object({
-  requirements: z.record(z.string(), z.any()).optional(),
+  requirements: z.object({}).passthrough().optional(),
   fieldsExtracted: z.array(z.string()).default([]),
   confidenceScore: z.number().min(0).max(1).default(0.5),
 });
@@ -49,8 +49,42 @@ const completionSchema = z.object({
 /**
  * Build the system prompt with schema description
  */
-function buildSystemPrompt(inputType: string, metadata?: ExtractionAgentInput['metadata']): string {
+function buildSystemPrompt(
+  inputType: string,
+  metadata?: ExtractionAgentInput['metadata'],
+  options?: {
+    language?: 'de' | 'en';
+    prePopulatedFields?: string[];
+  }
+): string {
   const schemaDesc = generateSchemaDescription();
+  const lang = options?.language || 'de';
+  const prePopulated = options?.prePopulatedFields || [];
+
+  // Language-specific query hints
+  const queryHints =
+    lang === 'en'
+      ? `
+## Query Language Hints (Document is in ENGLISH)
+Use English terms for queries:
+- Customer: "client", "organization", "agency", "company", "procuring entity"
+- Budget: "budget", "cost", "price", "funding", "value"
+- Deadline: "deadline", "due date", "submission date", "closing date"
+- Requirements: "requirements", "specifications", "deliverables", "scope"
+- Contact: "contact", "point of contact", "representative", "email"`
+      : `
+## Query-Hinweise (Dokument ist auf DEUTSCH)
+Nutze deutsche Begriffe für Queries:
+- Kunde: "Auftraggeber", "Vergabestelle", "Kunde", "Organisation"
+- Budget: "Budget", "Kosten", "Auftragswert", "Vergütung"
+- Deadline: "Abgabefrist", "Einreichungsfrist", "Deadline"
+- Anforderungen: "Anforderungen", "Leistungen", "Pflichtenheft"
+- Kontakt: "Ansprechpartner", "Kontakt", "E-Mail"`;
+
+  const prePopulatedInfo =
+    prePopulated.length > 0
+      ? `\n\n## Bereits extrahierte Felder (aus Header-Scan)\nDiese Felder wurden bereits extrahiert: ${prePopulated.join(', ')}\nDu kannst diese überschreiben, wenn du bessere Informationen findest.\n`
+      : '';
 
   return `Du bist der Extraction Agent. Deine Aufgabe ist es, strukturierte Anforderungen aus Dokumenten zu extrahieren.
 
@@ -62,13 +96,14 @@ function buildSystemPrompt(inputType: string, metadata?: ExtractionAgentInput['m
 4. Dann: Business Details (budgetRange, timeline, submissionDeadline)
 5. Dann: Kontakte und Deliverables
 6. Zuletzt: prequal.complete aufrufen
-
+${prePopulatedInfo}
 ## Verfügbare Tools
 
 - **prequal.query**: Suche im Dokument nach spezifischen Informationen
 - **prequal.set**: Setze ein Feld mit dem extrahierten Wert
 - **prequal.get**: Prüfe den aktuellen Extraktionsstand
 - **prequal.complete**: Schließe die Extraktion ab
+${queryHints}
 
 ## Schema
 
@@ -122,6 +157,81 @@ ${rawText.slice(0, 9000)}`.trim();
 }
 
 /**
+ * Header Scanner - extracts critical fields from the document header
+ *
+ * Problem: RAG queries in German don't match English documents.
+ * Solution: Direct LLM analysis of the first ~1500 chars to extract:
+ * - customerName (who issued the RFP)
+ * - projectName (title of the project/RFP)
+ * - language (de/en for subsequent queries)
+ */
+async function extractHeaderFields(rawText: string): Promise<{
+  customerName?: string;
+  projectName?: string;
+  projectDescription?: string;
+  language: 'de' | 'en';
+}> {
+  const header = rawText.slice(0, 2000);
+
+  const prompt = `Analyze this document header and extract key information.
+
+CRITICAL: Extract the ACTUAL organization/company name, not random text fragments.
+Look for: Company names, agency names, "Vergabestelle", "Auftraggeber", "Client:", "From:", letterhead, logo text.
+
+IMPORTANT: Use FULL organization names, NOT abbreviations!
+- "SPL" → "Saudi Pro League"
+- "BaFin" → "Bundesanstalt für Finanzdienstleistungsaufsicht"
+- "DB" → "Deutsche Bahn AG"
+- If you only see an abbreviation, expand it to the full name if you know it.
+
+Document Header:
+---
+${header}
+---
+
+Return JSON with these fields:
+{
+  "customerName": "Full organization/company name (e.g. 'Saudi Pro League', 'Bundesministerium für Verkehr', 'Deutsche Bahn AG')",
+  "projectName": "The project or RFP title",
+  "projectDescription": "Brief description if visible (max 200 chars)",
+  "language": "de" or "en" (primary document language)
+}
+
+If a field cannot be determined, use null. DO NOT guess or use random text fragments.`;
+
+  try {
+    const { text } = await generateText({
+      model: getProviderForSlot('fast')(modelNames.fast),
+      prompt,
+      temperature: 0,
+    });
+
+    const jsonStart = text.indexOf('{');
+    const jsonEnd = text.lastIndexOf('}');
+    if (jsonStart === -1 || jsonEnd === -1) {
+      return { language: 'de' };
+    }
+
+    const parsed = JSON.parse(text.slice(jsonStart, jsonEnd + 1)) as {
+      customerName?: string;
+      projectName?: string;
+      projectDescription?: string;
+      language?: string;
+    };
+
+    return {
+      customerName: parsed.customerName || undefined,
+      projectName: parsed.projectName || undefined,
+      projectDescription: parsed.projectDescription || undefined,
+      language: parsed.language === 'en' ? 'en' : 'de',
+    };
+  } catch (error) {
+    console.error('[Header Scanner] Failed:', error);
+    return { language: 'de' };
+  }
+}
+
+/**
  * Run the Agent-Native Extraction
  */
 export async function runExtractionAgentNative(
@@ -142,18 +252,48 @@ export async function runExtractionAgentNative(
   try {
     logActivity('Start', `Starte Agent-Native Extraktion für ${input.inputType}`);
 
+    // Step 0: Header Scanner - extract critical fields directly from document header
+    logActivity('Header-Scan', 'Analysiere Dokument-Header für Kundenname und Titel...');
+    const headerFields = await extractHeaderFields(input.rawText);
+
+    if (headerFields.customerName) {
+      logActivity('Header-Scan', `Kunde gefunden: ${headerFields.customerName}`);
+    }
+    if (headerFields.projectName) {
+      logActivity('Header-Scan', `Projekt gefunden: ${headerFields.projectName}`);
+    }
+    logActivity('Header-Scan', `Sprache: ${headerFields.language === 'en' ? 'Englisch' : 'Deutsch'}`);
+
     // Step 1: Embed the raw text into RAG
     logActivity('Embedding', 'Erstelle Dokument-Embeddings für semantische Suche...');
     const embedResult = await embedRawText(input.preQualificationId, input.rawText);
 
-    if (!embedResult.success) {
+    // If the pre-qualification was deleted mid-run, skip RAG instead of crashing the job.
+    if (!embedResult.success && !embedResult.skipped) {
       throw new Error(`Embedding failed: ${embedResult.error}`);
     }
 
-    logActivity('Embedding', `${embedResult.chunkCount} Chunks erstellt`);
+    const embeddedChunks = embedResult.stats?.totalChunks ?? 0;
+    logActivity('Embedding', `${embeddedChunks} Chunks erstellt`);
 
-    // Step 2: Initialize extraction session
-    initExtractionSession(input.preQualificationId);
+    // Step 2: Initialize extraction session with header fields
+    const initialData: Partial<ExtractedRequirements> = {
+      technologies: [],
+      keyRequirements: [],
+    };
+
+    // Pre-populate from header scan
+    if (headerFields.customerName) {
+      initialData.customerName = headerFields.customerName;
+    }
+    if (headerFields.projectName) {
+      initialData.projectName = headerFields.projectName;
+    }
+    if (headerFields.projectDescription) {
+      initialData.projectDescription = headerFields.projectDescription;
+    }
+
+    initExtractionSession(input.preQualificationId, initialData);
 
     // Step 3: Build tool context
     const toolContext: ToolContext = {
@@ -171,7 +311,8 @@ export async function runExtractionAgentNative(
       inputSchema: z.object({
         name: z.string().describe('Tool name (e.g., prequal.query, prequal.set)'),
         input: z
-          .record(z.string(), z.any())
+          .object({})
+          .passthrough()
           .describe('Tool input parameters'),
       }),
       execute: async ({ name, input: toolInput }) => {
@@ -207,7 +348,14 @@ export async function runExtractionAgentNative(
     });
 
     // Step 5: Create and run the agent
-    const systemPrompt = buildSystemPrompt(input.inputType, input.metadata);
+    const prePopulatedFields = Object.keys(initialData).filter(
+      (k) => k !== 'technologies' && k !== 'keyRequirements' && initialData[k as keyof typeof initialData]
+    );
+
+    const systemPrompt = buildSystemPrompt(input.inputType, input.metadata, {
+      language: headerFields.language,
+      prePopulatedFields,
+    });
 
     const agent = new ToolLoopAgent({
       model: getProviderForSlot('default')(modelNames.default),
@@ -218,10 +366,17 @@ export async function runExtractionAgentNative(
 
     logActivity('Agent', 'Starte Extraktion...');
 
-    // Build initial prompt
+    // Build initial prompt with pre-populated fields info
+    const prePopulatedInfo =
+      prePopulatedFields.length > 0
+        ? `\n\nBereits aus Header extrahiert:\n${prePopulatedFields.map((f) => `- ${f}: ${JSON.stringify(initialData[f as keyof typeof initialData])}`).join('\n')}`
+        : '';
+
     const prompt = `
 Pre-Qualification ID: ${input.preQualificationId}
 Dokument-Typ: ${input.inputType}
+Dokument-Sprache: ${headerFields.language === 'en' ? 'Englisch' : 'Deutsch'}
+${prePopulatedInfo}
 
 Beginne mit der Extraktion. Starte mit prequal.query um das Projektziel zu finden, dann setze projectGoal.
 

@@ -72,7 +72,9 @@ export function getModelConfig(slot: ModelSlot): ModelConfig {
   const modelName = process.env[`${envPrefix}_NAME`] || DEFAULT_MODELS[slot].modelName;
 
   const directOpenAIKey =
-    process.env.OPENAI_DIRECT_API_KEY || process.env.OPENAI_EMBEDDING_API_KEY;
+    process.env.OPENAI_DIRECT_API_KEY ||
+    process.env.OPENAI_EMBEDDING_API_KEY ||
+    process.env.OPENAI_API_KEY;
 
   // If a direct OpenAI key exists and model looks like OpenAI, force provider to OpenAI
   if (directOpenAIKey && modelName.startsWith('gpt-')) {

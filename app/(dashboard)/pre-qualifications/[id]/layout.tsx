@@ -11,6 +11,7 @@ import {
   getCachedPreQualificationWithRelations,
   getCachedUser,
   getPreQualificationTitle,
+  getPreQualificationCustomerName,
 } from '@/lib/pre-qualifications/cached-queries';
 import { getQuickScanDataAvailability } from '@/lib/pre-qualifications/navigation';
 
@@ -29,11 +30,12 @@ export default async function PreQualificationDashboardLayout({
   }
 
   // Parallel fetch of Pre-Qualification with relations and user data
-  const [{ preQualification, quickScan }, dbUser, preQualificationTitle, latestJob] =
+  const [{ preQualification, quickScan }, dbUser, preQualificationTitle, customerName, latestJob] =
     await Promise.all([
       getCachedPreQualificationWithRelations(id),
       getCachedUser(session.user.id),
       getPreQualificationTitle(id),
+      getPreQualificationCustomerName(id),
       db
         .select({
           id: backgroundJobs.id,
@@ -91,6 +93,7 @@ export default async function PreQualificationDashboardLayout({
         <PreQualificationSidebarRight
           preQualificationId={id}
           title={preQualificationTitle}
+          customerName={customerName}
           status={preQualification.status}
           dataAvailability={dataAvailability}
         />

@@ -43,7 +43,7 @@ const findingSchema = z.object({
     .boolean()
     .optional()
     .describe('Flag if this needs human review before acting on it'),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: z.object({}).passthrough().optional(),
 });
 
 type FindingInput = z.infer<typeof findingSchema>;

@@ -89,7 +89,7 @@ export async function runQuickScanAgentNative(
       'Run a tool by name with the provided input. Use this for all atomic QuickScan actions.',
     inputSchema: z.object({
       name: z.string(),
-      input: z.record(z.string(), z.any()),
+      input: z.object({}).passthrough(),
     }),
     execute: async ({ name, input: toolInput }) => {
       if (mode === 'qualification' && name.startsWith('research.')) {

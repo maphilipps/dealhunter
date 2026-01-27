@@ -24,7 +24,7 @@ export interface VisualizationWriteToolContext {
 const jsonRenderElementSchema = z.object({
   key: z.string(),
   type: z.string(),
-  props: z.record(z.string(), z.unknown()),
+  props: z.object({}).passthrough(),
   children: z.array(z.string()).optional(),
 });
 

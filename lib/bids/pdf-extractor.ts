@@ -16,11 +16,13 @@ import { generateText } from 'ai';
 import { PDFDocument } from 'pdf-lib';
 
 import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
-import { getModelConfig } from '@/lib/ai/model-config';
 
 function getPdfExtractionModel() {
-  const config = getModelConfig('vision');
-  const modelName = process.env.AI_PDF_MODEL_AI_HUB || config.modelName || 'gemini-3-flash-preview';
+  // Force Gemini Flash on AI Hub for PDF extraction.
+  // Some environments set a disallowed OpenAI vision model; ignore that here.
+  const envModel = process.env.AI_PDF_MODEL_AI_HUB;
+  const modelName =
+    envModel && envModel.startsWith('gemini-') ? envModel : 'gemini-3-flash-preview';
 
   const apiKey = AI_HUB_API_KEY || process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -31,6 +33,12 @@ function getPdfExtractionModel() {
     apiKey,
     baseURL: AI_HUB_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
   });
+
+  if (envModel && !envModel.startsWith('gemini-')) {
+    console.warn(
+      `[PDF Extractor] Ignoring non-gemini AI_PDF_MODEL_AI_HUB=${envModel}; using ${modelName}`
+    );
+  }
 
   return hub(modelName);
 }

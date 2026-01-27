@@ -18,7 +18,7 @@ import {
   isEmbeddingEnabled,
 } from '../ai/embedding-config';
 import { db } from '../db';
-import { rawChunks } from '../db/schema';
+import { preQualifications, rawChunks } from '../db/schema';
 
 // Batch size for embedding API calls (OpenAI maximum is 2048 inputs)
 const EMBEDDING_BATCH_SIZE = 2048;
@@ -94,6 +94,25 @@ export async function embedRawText(
   const zeroEmbedding = new Array(EMBEDDING_DIMENSIONS).fill(0);
 
   try {
+    // Guard against FK violations when the pre-qualification no longer exists.
+    const [preQual] = await db
+      .select({ id: preQualifications.id })
+      .from(preQualifications)
+      .where(eq(preQualifications.id, preQualificationId))
+      .limit(1);
+
+    if (!preQual) {
+      console.warn(
+        `[RAG-RAW] Skipping embedding; pre-qualification not found: ${preQualificationId}`
+      );
+      return {
+        success: false,
+        skipped: true,
+        stats: getChunkStats([]),
+        error: 'Pre-qualification not found',
+      };
+    }
+
     // 1. Delete existing raw chunks for this pre-qualification (idempotent re-run)
     await db.delete(rawChunks).where(eq(rawChunks.preQualificationId, preQualificationId));
 

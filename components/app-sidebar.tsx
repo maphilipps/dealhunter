@@ -28,9 +28,9 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   };
 }
 
-// PHPXOM Qualifier app branding
+// PHPXCOM Qualifier app branding
 const appBranding = {
-  name: 'PHPXOM',
+  name: 'PHPXCOM',
   logo: '/logo.png',
   subtitle: 'Qualifier',
 };

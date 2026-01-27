@@ -6,30 +6,80 @@ on:
       - main
   workflow_dispatch:
 
+# Allow only one concurrent deployment
+concurrency:
+  group: 'production'
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          host: 95.216.208.185
-          username: deploy
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Restore Next.js cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          SKIP_ENV_VALIDATION: true
+
+      - name: Prepare standalone package
+        run: |
+          # Copy static files to standalone
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H 95.216.208.185 >> ~/.ssh/known_hosts
+
+      - name: Prepare server directory
+        run: |
+          ssh -i ~/.ssh/deploy_key deploy@95.216.208.185 "mkdir -p /var/www/dealhunter-standalone"
+
+      - name: Deploy standalone build
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            .next/standalone/ \
+            deploy@95.216.208.185:/var/www/dealhunter-standalone/
+
+      - name: Restart services
+        run: |
+          ssh -i ~/.ssh/deploy_key deploy@95.216.208.185 << 'EOF'
+            cd /var/www/dealhunter-standalone
+
+            # Restart the main app with standalone server
+            sudo pm2 delete dealhunter 2>/dev/null || true
+            sudo pm2 start server.js --name dealhunter \
+              --node-args="--env-file=/var/www/dealhunter/.env.production"
+
+            # Worker still needs full repo for now
             cd /var/www/dealhunter
-
-            echo "📥 Pulling latest changes..."
             git pull origin main
-
-            echo "📦 Installing dependencies..."
             npm ci --prefer-offline
-
-            echo "🔨 Building application..."
-            npm run build
-
-            echo "🔄 Restarting services..."
-            sudo pm2 restart dealhunter dealhunter-worker
+            sudo pm2 restart dealhunter-worker
 
             echo "✅ Deployment complete!"
             sudo pm2 list
+          EOF

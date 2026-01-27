@@ -86,7 +86,11 @@ registry.register({
   inputSchema: queryInputSchema,
   async execute(input) {
     try {
-      const chunks = await queryRawChunks(input.preQualificationId, input.query, input.topK);
+      const chunks = await queryRawChunks({
+        preQualificationId: input.preQualificationId,
+        question: input.query,
+        maxResults: input.topK,
+      });
 
       if (chunks.length === 0) {
         return {

@@ -17,6 +17,7 @@ import type { Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { runSummaryAgent } from '../../agents/expert-agents';
 import { modelNames } from '../../ai/config';
 import { getProviderForSlot } from '../../ai/providers';
 import { extractTextFromPdf } from '../../bids/pdf-extractor';
@@ -949,6 +950,18 @@ export async function processPreQualJob(
     // ═══════════════════════════════════════════════════════════════
     // STEP 5: FINALIZE (90-100%)
     // ═══════════════════════════════════════════════════════════════
+    try {
+      await updateQualificationJob(backgroundJobId, {
+        currentStep: 'Management Summary erstellen',
+      });
+      const summaryResult = await runSummaryAgent({ preQualificationId });
+      if (!summaryResult.success || !summaryResult.data) {
+        console.warn('[PreQual Worker] Summary agent returned no output:', summaryResult.error);
+      }
+    } catch (error) {
+      console.error('[PreQual Worker] Summary agent failed:', error);
+    }
+
     await job.updateProgress(PROGRESS.COMPLETE);
     await updateQualificationJob(backgroundJobId, {
       status: 'completed',

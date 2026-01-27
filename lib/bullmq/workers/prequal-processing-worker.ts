@@ -19,18 +19,18 @@ import { z } from 'zod';
 
 import { modelNames } from '../../ai/config';
 import { getProviderForSlot } from '../../ai/providers';
-import { runDuplicateCheckAgent } from '../../bids/duplicate-check-agent';
 import { extractTextFromPdf } from '../../bids/pdf-extractor';
 import { runTenQuestionsAgent } from '../../bids/ten-questions-agent';
 import { db } from '../../db';
 import { backgroundJobs, preQualifications, quickScans } from '../../db/schema';
 import { runExtractionAgentNative } from '../../extraction/agent-native';
 import type { ExtractedRequirements } from '../../extraction/schema';
-import { suggestWebsiteUrls } from '../../extraction/url-suggestion-agent';
-import { runPreQualSectionAgent } from '../../json-render/prequal-section-agent';
 import { detectPII, cleanText } from '../../pii/pii-cleaner';
+import { runPreQualSectionOrchestrator, type Decision } from '../../qualification/orchestrator-worker';
+import { QUALIFICATION_QUESTIONS, type TenQuestionsPayload } from '../../bids/ten-questions';
 import { runQuickScanAgentNative } from '../../quick-scan/agent-native';
 import { embedAgentOutput } from '../../rag/embedding-service';
+import { queryRawChunks, formatRAGContext } from '../../rag/raw-retrieval-service';
 import { generateTimelineFromQuickScan } from '../../timeline/integration';
 import { onAgentComplete } from '../../workflow/orchestrator';
 import type { PreQualProcessingJobData, PreQualProcessingJobResult } from '../queues';
@@ -244,12 +244,69 @@ function extractCustomerNameFromText(rawInput: string, fileNames: string[]): str
   return null;
 }
 
+/**
+ * RAG-basierte Kundenname-Extraktion
+ * Nutzt semantische Suche um den Auftraggeber zu finden
+ */
+async function inferCustomerNameFromRAG(preQualificationId: string): Promise<string | null> {
+  try {
+    const chunks = await queryRawChunks({
+      preQualificationId,
+      question: 'Wer ist der Auftraggeber, Vergabestelle, oder ausschreibende Organisation?',
+      maxResults: 5,
+    });
+
+    if (chunks.length === 0) return null;
+
+    const context = formatRAGContext(chunks);
+
+    const schema = z.object({
+      customerName: z.string().nullable(),
+    });
+
+    const result = await generateObject({
+      model: getProviderForSlot('fast')(modelNames.fast),
+      schema,
+      prompt: `Extrahiere den Namen der ausschreibenden Organisation (Auftraggeber/Vergabestelle) aus diesem Kontext.
+
+WICHTIG:
+- Suche nach offiziellen Organisationsnamen (Behörden, Kommunen, Unternehmen)
+- Ignoriere Kapitelüberschriften wie "8.10 SEO..."
+- Wenn unklar, gib null zurück
+
+Kontext:
+${context}`,
+      temperature: 0,
+    });
+
+    const name = result.object.customerName?.trim();
+    if (name && /^\d+\.\d+/.test(name)) {
+      return null; // Reject chapter headings
+    }
+    return name && name.length > 0 ? name : null;
+  } catch (error) {
+    console.error('[PreQual Worker] RAG customer name inference failed:', error);
+    return null;
+  }
+}
+
 async function inferCustomerNameWithAI(rawInput: string, fileNames: string[]): Promise<string | null> {
   const schema = z.object({
     customerName: z.string().nullable(),
   });
 
-  const prompt = `Extract the issuing organization (customer) name from this tender context. If unsure, return null.\n\nFiles: ${fileNames.join(', ') || 'n/a'}\n\nText:\n${rawInput.slice(0, 8000)}`;
+  const prompt = `Extract the issuing organization (customer/Auftraggeber/Vergabestelle) name from this tender context.
+
+IMPORTANT:
+- Look for official organization names, not chapter titles or document sections
+- The customer is typically a government agency, municipality, company, or institution
+- Ignore headings like "8.10 SEO..." or similar document structure elements
+- If unsure, return null
+
+Files: ${fileNames.join(', ') || 'n/a'}
+
+Text:
+${rawInput.slice(0, 12000)}`;
 
   try {
     const result = await generateObject({
@@ -260,12 +317,112 @@ async function inferCustomerNameWithAI(rawInput: string, fileNames: string[]): P
       maxOutputTokens: 200,
     });
     const name = result.object.customerName?.trim();
+    // Validate: reject obvious non-customer names (chapter headings, etc.)
+    if (name && /^\d+\.\d+/.test(name)) {
+      console.log('[PreQual Worker] Rejected invalid customer name (looks like chapter heading):', name);
+      return null;
+    }
     return name && name.length > 0 ? name : null;
   } catch (error) {
     console.error('[PreQual Worker] AI customer name inference failed:', {
       message: error instanceof Error ? error.message : String(error),
     });
     return null;
+  }
+}
+
+/**
+ * Synthetisiert die 10 Fragen aus der Orchestrator-Decision
+ * Nutzt einen Agent (LLM) statt hartcodierter switch/case Logik
+ */
+async function synthesizeTenQuestionsFromDecision(decision: Decision): Promise<TenQuestionsPayload> {
+  const questionsSchema = z.object({
+    answers: z.array(z.object({
+      questionId: z.number().min(1).max(10).describe('Die Fragen-ID (1-10)'),
+      answer: z.string().nullable().describe('Die Antwort auf die Frage, oder null wenn nicht beantwortbar'),
+      confidence: z.number().min(0).max(100).describe('Konfidenz der Antwort in Prozent (0-100)'),
+      reasoning: z.string().describe('Kurze Begründung für die Antwort. Leerer String "" wenn keine Begründung nötig.'),
+    })),
+  });
+
+  const prompt = `Du bist ein Experte für Ausschreibungsanalyse. Basierend auf der folgenden Bid/No-Bid Decision, beantworte die 10 BD-Fragen so gut wie möglich.
+
+## DECISION
+- Empfehlung: ${decision.recommendation}
+- Konfidenz: ${decision.confidence}%
+- Begründung: ${decision.reasoning}
+- Stärken: ${decision.strengths.join('; ') || 'Keine'}
+- Schwächen: ${decision.weaknesses.join('; ') || 'Keine'}
+- Bedingungen: ${decision.conditions.join('; ') || 'Keine'}
+
+## DIE 10 BD-FRAGEN
+${QUALIFICATION_QUESTIONS.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+
+## ANWEISUNGEN
+- Beantworte jede Frage basierend auf den Decision-Informationen
+- Wenn eine Frage nicht aus der Decision beantwortbar ist (z.B. Kundenbeziehung), setze answer auf null
+- Für Fragen mit passenden Informationen: Formuliere eine prägnante, hilfreiche Antwort
+- Confidence = 0 wenn keine Antwort, 50-70 für abgeleitete Antworten, 80+ für direkt belegbare Antworten
+- Verweise bei Bedarf auf die entsprechenden Sections (Budget, Timing, Contracts, etc.)
+
+Gib für alle 10 Fragen eine Antwort.`;
+
+  try {
+    const result = await generateObject({
+      model: getProviderForSlot('fast')(modelNames.fast),
+      schema: questionsSchema,
+      prompt,
+      temperature: 0,
+    });
+
+    // Map agent responses to TenQuestionsPayload format
+    const answersMap = new Map(result.object.answers.map(a => [a.questionId, a]));
+
+    const questions = QUALIFICATION_QUESTIONS.map((question, index) => {
+      const id = index + 1;
+      const agentAnswer = answersMap.get(id);
+
+      return {
+        id,
+        question,
+        answered: Boolean(agentAnswer?.answer),
+        answer: agentAnswer?.answer ?? undefined,
+        evidence: [],
+        confidence: agentAnswer?.confidence ?? 0,
+      };
+    });
+
+    const answeredCount = questions.filter(q => q.answered).length;
+
+    console.log(`[PreQual Worker] Agent synthesized ${answeredCount}/10 questions from Decision`);
+
+    return {
+      questions,
+      answeredCount,
+      totalCount: questions.length,
+      projectType: 'qualification',
+    };
+  } catch (error) {
+    console.error('[PreQual Worker] Agent synthesis failed, using fallback:', error);
+
+    // Fallback: Minimale Antworten ohne switch/case
+    const questions = QUALIFICATION_QUESTIONS.map((question, index) => ({
+      id: index + 1,
+      question,
+      answered: index === 9, // Nur letzte Frage (Bid/No-Bid) beantworten
+      answer: index === 9
+        ? `${decision.recommendation === 'bid' ? 'Empfehlung: Bieten' : decision.recommendation === 'no-bid' ? 'Empfehlung: Nicht bieten' : 'Empfehlung: Unter Bedingungen bieten'}. ${decision.reasoning}`
+        : undefined,
+      evidence: [],
+      confidence: index === 9 ? decision.confidence : 0,
+    }));
+
+    return {
+      questions,
+      answeredCount: 1,
+      totalCount: questions.length,
+      projectType: 'qualification',
+    };
   }
 }
 
@@ -439,6 +596,7 @@ export async function processPreQualJob(
       const inferredCustomer =
         extractCustomerNameFromRawInput(rawInput) ||
         extractCustomerNameFromText(rawInput, fileNameCandidates) ||
+        (await inferCustomerNameFromRAG(preQualificationId)) ||
         (await inferCustomerNameWithAI(rawInput, fileNameCandidates));
 
       if (inferredCustomer) {
@@ -459,57 +617,8 @@ export async function processPreQualJob(
       extractedRequirements.websiteUrl = websiteUrls[0];
     }
 
-    // If still no website URL, attempt web search-based suggestion
-    const hasWebsiteUrl =
-      (extractedRequirements.websiteUrls && extractedRequirements.websiteUrls.length > 0) ||
-      Boolean(extractedRequirements.websiteUrl);
-
-    if (!hasWebsiteUrl) {
-      const customerName =
-        extractedRequirements.customerName ||
-        extractedRequirements.projectName ||
-        extractCustomerNameFromRawInput(rawInput) ||
-        extractCustomerNameFromText(rawInput, files.map(f => f.name));
-
-      const resolvedCustomerName =
-        customerName ||
-        (await inferCustomerNameWithAI(rawInput, files.map(f => f.name)));
-
-      if (resolvedCustomerName) {
-        try {
-          const suggestion = await suggestWebsiteUrls({
-            customerName: resolvedCustomerName,
-            industry: extractedRequirements.industry,
-            projectDescription: extractedRequirements.projectDescription,
-            technologies: extractedRequirements.technologies,
-            useWebSearch: true,
-          });
-
-          if (suggestion.suggestions.length > 0) {
-            extractedRequirements.websiteUrls = suggestion.suggestions.map(s => ({
-              url: s.url,
-              type: s.type,
-              description: s.description,
-              extractedFromDocument: false,
-            }));
-            extractedRequirements.websiteUrl = suggestion.suggestions[0].url;
-          }
-        } catch (error) {
-          console.error('[PreQual Worker] URL suggestion failed:', {
-            message: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-          });
-        }
-      } else {
-        console.warn('[PreQual Worker] Missing customer name for URL suggestion');
-      }
-    }
-
-    // Save extracted requirements (skip overwrite when using existing data unless we enriched URLs)
-    const shouldPersistRequirements =
-      !useExistingRequirements ||
-      Boolean(extractedRequirements.websiteUrl) ||
-      Boolean(extractedRequirements.websiteUrls?.length);
+    // Qualification should run purely on extracted documents (no web enrichment or URL suggestion).
+    const shouldPersistRequirements = true;
 
     if (shouldPersistRequirements) {
       await db
@@ -528,66 +637,20 @@ export async function processPreQualJob(
     });
 
     // ═══════════════════════════════════════════════════════════════
-    // STEP 3: DUPLICATE CHECK (40-50%)
+    // STEP 3: DUPLICATE CHECK (removed)
     // ═══════════════════════════════════════════════════════════════
-    await updateStatus(preQualificationId, 'duplicate_checking');
-    console.log(`[PreQual Worker] Running duplicate check`);
-
-    try {
-      const duplicateResult = await runDuplicateCheckAgent({
-        extractedRequirements: extractedRequirements,
-        excludeRfpId: preQualificationId,
-      });
-
-      await db
-        .update(preQualifications)
-        .set({
-          duplicateCheckResult: JSON.stringify(duplicateResult),
-          updatedAt: new Date(),
-        })
-        .where(eq(preQualifications.id, preQualificationId));
-
-      // If duplicates found with high confidence, set warning status
-      if (duplicateResult.hasDuplicates && duplicateResult.confidence >= 70) {
-        console.log(`[PreQual Worker] Duplicates found (${duplicateResult.confidence}% confidence)`);
-        await updateStatus(preQualificationId, 'duplicate_warning');
-
-        // Return early - user needs to decide
-        return {
-          success: true,
-          step: 'duplicate_checking',
-          progress: PROGRESS.DUPLICATE_CHECK,
-        };
-      }
-    } catch (error) {
-      console.error(`[PreQual Worker] Duplicate check failed:`, {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        preQualificationId,
-      });
-      // Continue anyway - duplicate check is not critical
-    }
-
     await job.updateProgress(PROGRESS.DUPLICATE_CHECK);
     await updateQualificationJob(backgroundJobId, {
       progress: PROGRESS.DUPLICATE_CHECK,
-      currentStep: 'Duplikate geprüft',
+      currentStep: 'Qualifikation läuft',
     });
 
     // ═══════════════════════════════════════════════════════════════
     // STEP 4: QUICK SCAN (50-90%)
     // ═══════════════════════════════════════════════════════════════
-    const websiteUrl = extractedRequirements.websiteUrl ||
-      (extractedRequirements.websiteUrls && extractedRequirements.websiteUrls[0]?.url);
+    const websiteUrl: string | null = null;
 
     if (websiteUrl) {
-      await updateStatus(preQualificationId, 'quick_scanning');
-      await updateQualificationJob(backgroundJobId, {
-        progress: PROGRESS.QUICK_SCAN,
-        currentStep: 'Quick Scan läuft',
-      });
-
-      console.log(`[PreQual Worker] Running Quick Scan for ${websiteUrl}`);
 
       const [quickScan] = await db
         .insert(quickScans)
@@ -615,6 +678,7 @@ export async function processPreQualJob(
           extractedRequirements,
           userId,
           preQualificationId,
+          mode: 'qualification',
         },
         {
           onActivity: entry => {
@@ -631,7 +695,7 @@ export async function processPreQualJob(
       try {
         timeline = await generateTimelineFromQuickScan({
           projectName:
-            (extractedRequirements.projectTitle as string | undefined) ||
+            extractedRequirements.projectName ||
             extractedRequirements.projectDescription ||
             'Projekt',
           projectDescription: extractedRequirements.projectDescription,
@@ -788,33 +852,64 @@ export async function processPreQualJob(
       });
     }
 
-    const sectionIds = [
-      'budget',
-      'timing',
-      'contracts',
-      'deliverables',
-      'references',
-      'award-criteria',
-      'legal',
-      'tech-stack',
-      'facts',
-      'contacts',
-    ];
-
     await updateQualificationJob(backgroundJobId, {
       progress: PROGRESS.SECTION_PAGES,
       currentStep: 'Detailseiten generieren',
     });
 
-    for (const sectionId of sectionIds) {
-      try {
-        await runPreQualSectionAgent({
-          preQualificationId,
-          sectionId,
-          allowWebEnrichment: true,
-        });
-      } catch (error) {
-        console.error(`[PreQual Worker] Section agent failed for ${sectionId}:`, error);
+    // Orchestrator-Worker Pattern: Parallele Section-Verarbeitung
+    const orchestratorResult = await runPreQualSectionOrchestrator(preQualificationId, {
+      maxConcurrency: 5,
+      enableEvaluation: true,
+      qualityThreshold: 60,
+      maxRetries: 1,
+      skipPlanning: false,
+      onProgress: (completed, total, sectionId) => {
+        updateQualificationJob(backgroundJobId, {
+          currentStep: `Section ${completed}/${total}: ${sectionId}`,
+        }).catch((err) =>
+          console.error('[PreQual Worker] Progress update failed:', err)
+        );
+      },
+    });
+
+    if (!orchestratorResult.success) {
+      console.error('[PreQual Worker] Orchestrator failed:', orchestratorResult.error);
+      console.error(
+        '[PreQual Worker] Failed sections:',
+        orchestratorResult.failedSections.map((s) => s.sectionId)
+      );
+    } else {
+      console.log(
+        `[PreQual Worker] Sections completed: ${orchestratorResult.completedSections}/${7}`
+      );
+      if (orchestratorResult.decision) {
+        console.log(
+          `[PreQual Worker] Bid/No Bid: ${orchestratorResult.decision.recommendation} (Confidence: ${orchestratorResult.decision.confidence}%)`
+        );
+
+        // Synthetisiere 10 Fragen aus Decision (Agent-basiert)
+        const tenQuestions = await synthesizeTenQuestionsFromDecision(orchestratorResult.decision);
+
+        // Speichere in quickScan
+        const existingQuickScan = await db
+          .select({ id: quickScans.id })
+          .from(quickScans)
+          .where(eq(quickScans.preQualificationId, preQualificationId))
+          .limit(1);
+
+        if (existingQuickScan.length > 0) {
+          await db
+            .update(quickScans)
+            .set({
+              tenQuestions: JSON.stringify(tenQuestions),
+              recommendedBusinessUnit: orchestratorResult.decision.recommendation === 'bid' ? 'dxs' : null,
+              confidence: orchestratorResult.decision.confidence,
+              reasoning: orchestratorResult.decision.reasoning,
+            })
+            .where(eq(quickScans.id, existingQuickScan[0].id));
+          console.log('[PreQual Worker] 10 Fragen aus Decision synthetisiert');
+        }
       }
     }
 

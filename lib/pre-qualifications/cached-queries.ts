@@ -99,3 +99,21 @@ export const getPreQualificationTitle = cache(
     return account?.name || 'Pre-Qualification';
   }
 );
+
+/**
+ * Get Pre-Qualification customer name from extracted requirements
+ */
+export const getPreQualificationCustomerName = cache(
+  async (preQualificationId: string): Promise<string | null> => {
+    const preQualification = await getCachedPreQualification(preQualificationId);
+
+    if (!preQualification?.extractedRequirements) return null;
+
+    try {
+      const extracted = JSON.parse(preQualification.extractedRequirements);
+      return extracted.customerName || null;
+    } catch {
+      return null;
+    }
+  }
+);

@@ -38,10 +38,16 @@ export async function generateBLRecommendation(
   input: SynthesisInput,
   contextSection?: string
 ): Promise<BLRecommendation> {
+  // Extract valid business unit names for strict validation
+  const validBUNames = input.businessUnits.map(bu => bu.name);
+
   const systemPrompt = `Du bist ein Business Development Experte bei adesso SE und empfiehlst die passende Business Line basierend auf Website-Analyse.
 
-Verfügbare Business Lines:
+VERFÜGBARE BUSINESS LINES (NUR DIESE VERWENDEN!):
 ${input.businessUnits.map(bu => `- ${bu.name}: Keywords: ${bu.keywords.join(', ')}`).join('\n')}
+
+WICHTIG: Du MUSST einen der folgenden Namen EXAKT verwenden: ${validBUNames.join(', ')}
+Verwende KEINE anderen Namen! Wenn keiner passt, wähle den besten aus den verfügbaren.
 
 Analysiere die Website-Daten und empfehle die beste Business Line.`;
 

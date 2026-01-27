@@ -71,6 +71,9 @@ jobs:
           REDIS_URL: redis://localhost:6379
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           NEXT_PUBLIC_APP_URL: https://dealhunter.adessocms.de
+          # AI provider keys for build-time validation
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: https://adesso-ai-hub.3asabc.de/v1
 
       - name: Prepare standalone package
         run: |

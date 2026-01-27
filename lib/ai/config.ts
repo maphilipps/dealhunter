@@ -104,7 +104,6 @@ export const modelNames = {
   get default() { return getModelNameLazy('default'); },
   get quality() { return getModelNameLazy('quality'); },
   get premium() { return getModelNameLazy('premium'); },
-  get 'sonnet-4-5'() { return getModelNameLazy('quality'); }, // Alias
   get synthesizer() { return getModelNameLazy('synthesizer'); },
   get research() { return getModelNameLazy('research'); },
 } as const;

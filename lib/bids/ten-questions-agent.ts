@@ -61,7 +61,7 @@ export async function runTenQuestionsAgent(
       return {
         id: index + 1,
         question,
-        context: toolResult.success ? data?.context ?? '' : '',
+        context: toolResult.success ? (data?.context ?? '') : '',
       };
     })
   );
@@ -80,7 +80,7 @@ export async function runTenQuestionsAgent(
     ].join('\n'),
   });
 
-  const payload = object as z.infer<typeof completionSchema>;
+  const payload = object;
 
   const questions = payload.questions.map(item => ({
     id: item.id,

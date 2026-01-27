@@ -4,8 +4,6 @@ import { withBotId } from 'botid/next/config';
 import { withWorkflow } from 'workflow/next';
 
 const nextConfig: NextConfig = {
-  // Enable standalone output for Docker deployment
-  output: 'standalone',
   serverExternalPackages: ['@slack/bolt'],
   experimental: {
     serverActions: {

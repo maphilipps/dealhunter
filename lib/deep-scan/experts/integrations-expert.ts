@@ -128,7 +128,7 @@ export async function runIntegrationsExpert(
     log('Analysiere Integrationen...');
 
     const integrations = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: IntegrationsSchema,
       system: `Du bist ein Integration-Spezialist. Analysiere externe Requests und identifiziere Integrationen.
 

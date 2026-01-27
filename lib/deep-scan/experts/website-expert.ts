@@ -87,7 +87,7 @@ export async function runWebsiteExpert(
     log('Analysiere Seitentypen...');
 
     const pageTypeAnalysis = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: PageTypeSchema,
       system: `Du bist ein Website-Analyse-Experte. Analysiere die gescrapten Seiten und kategorisiere sie nach Seitentypen.
       
@@ -120,7 +120,7 @@ Gruppiere ähnliche Seiten und zähle sie.`,
     log('Analysiere Komponenten...');
 
     const componentAnalysis = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: ComponentSchema,
       system: `Du bist ein UI/UX-Experte. Analysiere die Seitenstruktur und identifiziere wiederkehrende Komponenten.
 

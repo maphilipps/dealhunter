@@ -118,7 +118,7 @@ export async function runTechStackAgent(
     const context = formatContextFromRAG(uniqueResults.slice(0, 15), 'Pre-Qualification Technology Requirements');
 
     const analysis = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: TechStackAnalysisSchema,
       system: buildSystemPrompt(),
       prompt: `Analyze the following Pre-Qualification content and extract all technology requirements:\n\n${context}`,

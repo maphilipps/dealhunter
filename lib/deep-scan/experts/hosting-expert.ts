@@ -152,7 +152,7 @@ export async function runHostingExpert(
     log('Generiere Hosting-Empfehlung...');
 
     const hosting = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: HostingSchema,
       system: `Du bist ein Cloud-Infrastruktur-Experte. Analysiere die Anforderungen und empfehle passende Hosting-Lösungen.
 

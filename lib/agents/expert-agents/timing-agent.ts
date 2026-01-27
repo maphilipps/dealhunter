@@ -102,7 +102,7 @@ export async function runTimingAgent(
     const context = formatContextFromRAG(uniqueResults.slice(0, 15), 'Pre-Qualification Timing Information');
 
     const analysis = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: TimingAnalysisSchema,
       system: buildSystemPrompt(),
       prompt: `Analyze the following Pre-Qualification content and extract all timing/deadline information:\n\n${context}`,

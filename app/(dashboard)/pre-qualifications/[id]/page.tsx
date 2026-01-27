@@ -1,7 +1,6 @@
 import { Calendar, Target } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 
-import { BidDetailClient } from '@/components/bids/bid-detail-client';
 import { ProcessingProgressCard } from '@/components/bids/processing-progress-card';
 import { DeletePreQualificationButton } from '@/components/pre-qualifications/delete-prequalification-button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +11,7 @@ import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schem
 import { auth } from '@/lib/auth';
 import { getCachedPreQualification } from '@/lib/pre-qualifications/cached-queries';
 
-const PROCESSING_STATES = ['processing', 'extracting', 'duplicate_checking', 'quick_scanning'];
+const PROCESSING_STATES = ['processing', 'extracting', 'quick_scanning', 'duplicate_warning'];
 
 export default async function BidDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -163,13 +162,8 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
         </Card>
       )}
 
-      {/* Fallback overview when no expert summary exists yet */}
-      {!summary && <BidDetailClient bid={bid} />}
-
-      {/* Processing Progress (if running) */}
-      {PROCESSING_STATES.includes(bid.status) && (
-        <ProcessingProgressCard bidId={bid.id} />
-      )}
+      {/* Processing Progress (must remain visible) */}
+      {PROCESSING_STATES.includes(bid.status) && <ProcessingProgressCard bidId={bid.id} />}
     </div>
   );
 }

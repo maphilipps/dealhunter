@@ -160,7 +160,7 @@ export async function runCostsExpert(
     log('Generiere Kosten-Estimation...');
 
     const costs = await generateStructuredOutput({
-      model: 'sonnet-4-5',
+      model: 'quality',
       schema: CostEstimationSchema,
       system: `Du bist ein Projektcontroller. Erstelle eine detaillierte Aufwandsschätzung für ein Web-Projekt.
 

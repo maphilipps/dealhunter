@@ -1,4 +1,4 @@
-import { ToolLoopAgent, hasToolCall, stepCountIs, tool } from 'ai';
+import { generateObject } from 'ai';
 import { z } from 'zod';
 
 import { registry } from '@/lib/agent-tools';
@@ -40,73 +40,46 @@ export async function runTenQuestionsAgent(
     userName: 'Qualification Agent',
   };
 
-  let hasQueriedDocument = false;
+  // Deterministic orchestrator-worker pattern:
+  // 1) Query documents per question via tool
+  // 2) Synthesize answers from those document contexts only
+  const language = input.language ?? 'de';
+  const contexts = await Promise.all(
+    QUALIFICATION_QUESTIONS.map(async (question, index) => {
+      const toolResult = await registry.execute(
+        'prequal.query',
+        {
+          preQualificationId: input.preQualificationId,
+          query: question,
+          language,
+          topK: 8,
+        },
+        toolContext
+      );
 
-  const runTool = tool({
-    description: 'Query the pre-qualification documents using RAG.',
-    inputSchema: z.object({
-      name: z.literal('prequal.query'),
-      input: z.object({
-        preQualificationId: z.string(),
-        query: z.string(),
-        language: z.enum(['de', 'en']).default('de'),
-        topK: z.number().min(1).max(20).default(5),
-      }),
-    }),
-    execute: async ({ name, input: toolInput }) => {
-      if (name === 'prequal.query') {
-        hasQueriedDocument = true;
-      }
-      return registry.execute(name, toolInput, toolContext);
-    },
-  });
+      return {
+        id: index + 1,
+        question,
+        context: toolResult.success ? toolResult.data?.context ?? '' : '',
+      };
+    })
+  );
 
-  const completeTenQuestions = tool({
-    description: 'Finalize the qualification questions with answers and evidence.',
-    inputSchema: completionSchema,
-    execute: async payload => ({ success: true, payload }),
-  });
-
-  const agent = new ToolLoopAgent({
+  const { object } = await generateObject({
     model: getProviderForSlot('quality')(modelNames.quality),
-    instructions: [
-      'You answer the Qualification questions using ONLY the provided documents.',
-      'You MUST use prequal.query to find evidence before answering each question.',
-      'If the documents do not contain the information, set answer=null and evidence=[].',
-      'Never invent data. Evidence snippets must be direct excerpts from the document context.',
-      'Return all 10 questions with answers, evidence, and confidence (0-100).',
+    schema: completionSchema,
+    prompt: [
+      'Du berätst mich in der Analyse der beigefügten Ausschreibung.',
+      'Beziehe Dich bei den Antworten immer ausschließlich auf die bereitgestellten Dokumente.',
+      'Wenn keine Evidenz vorhanden ist, setze answer=null und evidence=[].',
+      'Evidence-Snippets müssen direkte Ausschnitte aus dem Kontext sein.',
+      '',
+      'Kontext je Frage (nur Dokumente):',
+      JSON.stringify(contexts, null, 2),
     ].join('\n'),
-    tools: { runTool, completeTenQuestions },
-    stopWhen: [stepCountIs(30), hasToolCall('completeTenQuestions')],
   });
 
-  const questionsList = QUALIFICATION_QUESTIONS.map((q, index) => `${index + 1}. ${q}`).join('\n');
-
-  const prompt = [
-    `Pre-Qualification ID: ${input.preQualificationId}`,
-    `Language: ${input.language ?? 'de'}`,
-    '',
-    'Answer the following 10 questions. Use prequal.query for each question to gather evidence.',
-    'If no evidence is found, answer null.',
-    '',
-    questionsList,
-  ].join('\n');
-
-  const result = await agent.generate({ prompt });
-
-  const completionCall = result.steps
-    .flatMap(step => step.toolCalls)
-    .find(call => call.toolName === 'completeTenQuestions');
-
-  if (!completionCall || !('input' in completionCall)) {
-    throw new Error('TenQuestions agent did not call completeTenQuestions');
-  }
-
-  const payload = completionCall.input as z.infer<typeof completionSchema>;
-
-  if (!hasQueriedDocument) {
-    throw new Error('TenQuestions agent did not query documents');
-  }
+  const payload = object as z.infer<typeof completionSchema>;
 
   const questions = payload.questions.map(item => ({
     id: item.id,

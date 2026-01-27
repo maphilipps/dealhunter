@@ -209,7 +209,7 @@ export async function processVisualizationJob(
       .set({
         status: 'failed',
         completedAt: new Date(),
-        error: error instanceof Error ? error.message : 'Unknown error',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
       })
       .where(eq(backgroundJobs.id, dbJobId));
 

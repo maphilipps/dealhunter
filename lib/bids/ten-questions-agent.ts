@@ -57,10 +57,11 @@ export async function runTenQuestionsAgent(
         toolContext
       );
 
+      const data = toolResult.data as { context?: string } | undefined;
       return {
         id: index + 1,
         question,
-        context: toolResult.success ? toolResult.data?.context ?? '' : '',
+        context: toolResult.success ? data?.context ?? '' : '',
       };
     })
   );

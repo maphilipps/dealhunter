@@ -67,3 +67,6 @@ local.db
 # DDEV
 .ddev/.env.local
 .ddev/config.local.yaml
+
+# Sentry Config File
+.env.sentry-build-plugin

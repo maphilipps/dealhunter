@@ -39,6 +39,11 @@ jobs:
         run: npm run build
         env:
           SKIP_ENV_VALIDATION: true
+          # Required for page data collection
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          NEXT_PUBLIC_APP_URL: https://dealhunter.adessocms.de
 
       - name: Prepare standalone package
         run: |

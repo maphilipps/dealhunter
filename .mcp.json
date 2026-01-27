@@ -7,6 +7,9 @@
     "vercel": {
       "type": "http",
       "url": "https://mcp.vercel.com"
+    },
+    "Sentry": {
+      "url": "https://mcp.sentry.dev/mcp/marc-philipps/qualifier"
     }
   }
 }

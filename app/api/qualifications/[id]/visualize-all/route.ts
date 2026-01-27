@@ -71,8 +71,7 @@ export async function POST(
       jobType: 'visualization',
       status: 'pending',
       progress: 0,
-      metadata: JSON.stringify({ focusPrompt }),
-      createdAt: new Date(),
+      result: focusPrompt ? JSON.stringify({ focusPrompt }) : null,
     });
 
     // Add to BullMQ queue
@@ -120,7 +119,7 @@ export async function GET(
     const runningJob = await db.query.backgroundJobs.findFirst({
       where: and(
         eq(backgroundJobs.qualificationId, qualificationId),
-        eq(backgroundJobs.type, 'visualization'),
+        eq(backgroundJobs.jobType, 'visualization'),
         sql`status IN ('pending', 'running')`
       ),
       orderBy: (jobs, { desc }) => [desc(jobs.createdAt)],

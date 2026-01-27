@@ -96,9 +96,9 @@ test.describe('Navigation: Sidebar Links', () => {
     await expect(page).toHaveURL('/analytics');
   });
 
-  test('TC-1.7: Master Data → Expandable Menu', async ({ page }) => {
-    // Find Master Data menu button
-    const masterDataMenu = page.locator('button:has-text("Master Data")');
+  test('TC-1.7: Einstellungen → Expandable Menu', async ({ page }) => {
+    // Find Einstellungen menu button
+    const masterDataMenu = page.locator('button:has-text("Einstellungen")');
     await expect(masterDataMenu).toBeVisible();
 
     // Verify it's expandable
@@ -115,9 +115,9 @@ test.describe('Navigation: Sidebar Links', () => {
     await expect(page.locator('a:has-text("Wettbewerber")')).toBeVisible();
   });
 
-  test('TC-1.8: Master Data → References navigates correctly', async ({ page }) => {
-    // Expand Master Data menu
-    await page.click('button:has-text("Master Data")');
+  test('TC-1.8: Einstellungen → References navigates correctly', async ({ page }) => {
+    // Expand Einstellungen menu
+    await page.click('button:has-text("Einstellungen")');
     await page.waitForTimeout(300);
 
     // Click "Referenzen"
@@ -128,9 +128,9 @@ test.describe('Navigation: Sidebar Links', () => {
     await expect(page).toHaveURL('/master-data/references');
   });
 
-  test('TC-1.9: Master Data → Competencies navigates correctly', async ({ page }) => {
-    // Expand Master Data menu
-    await page.click('button:has-text("Master Data")');
+  test('TC-1.9: Einstellungen → Competencies navigates correctly', async ({ page }) => {
+    // Expand Einstellungen menu
+    await page.click('button:has-text("Einstellungen")');
     await page.waitForTimeout(300);
 
     // Click "Kompetenzen"
@@ -141,9 +141,9 @@ test.describe('Navigation: Sidebar Links', () => {
     await expect(page).toHaveURL('/master-data/competencies');
   });
 
-  test('TC-1.10: Master Data → Competitors navigates correctly', async ({ page }) => {
-    // Expand Master Data menu
-    await page.click('button:has-text("Master Data")');
+  test('TC-1.10: Einstellungen → Competitors navigates correctly', async ({ page }) => {
+    // Expand Einstellungen menu
+    await page.click('button:has-text("Einstellungen")');
     await page.waitForTimeout(300);
 
     // Click "Wettbewerber"

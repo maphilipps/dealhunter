@@ -216,7 +216,7 @@ registry.register({
 const listJobsInputSchema = z.object({
   leadId: z.string().optional(),
   status: z.enum(['pending', 'running', 'completed', 'failed', 'cancelled']).optional(),
-  jobType: z.enum(['deep-analysis', 'team-notification', 'cleanup']).optional(),
+  jobType: z.enum(['qualification', 'deep-analysis', 'team-notification', 'cleanup']).optional(),
   limit: z.number().min(1).max(100).default(50),
 });
 

@@ -45,7 +45,7 @@ export function TimelineChart({ timeline, className }: TimelineChartProps) {
               Projekt-Timeline (Schätzung)
             </CardTitle>
             <CardDescription>
-              Basierend auf Quick Scan Ergebnissen - Detaillierte Planung erfolgt nach BL-Zuweisung
+              Basierend auf Qualification Ergebnissen - Detaillierte Planung erfolgt nach BL-Zuweisung
             </CardDescription>
           </div>
           <Badge variant={confidenceBadgeVariant} className="ml-4">
@@ -245,7 +245,7 @@ export function TimelineChart({ timeline, className }: TimelineChartProps) {
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               <strong>Niedrige Konfidenz:</strong> Diese Timeline-Schätzung basiert auf limitierten
-              Informationen aus dem Quick Scan. Eine detaillierte Planung erfolgt nach der
+              Informationen aus der Qualification. Eine detaillierte Planung erfolgt nach der
               BL-Zuweisung und Deep Analysis.
             </AlertDescription>
           </Alert>

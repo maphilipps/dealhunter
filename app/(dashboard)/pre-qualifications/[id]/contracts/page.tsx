@@ -27,7 +27,7 @@ export default async function ContractsPage({ params }: { params: Promise<{ id: 
       preQualificationId={id}
       sectionId="contracts"
       title="Verträge"
-      description="Vertragstyp, Vertragsmodell und Laufzeit"
+      description="Was besagt der Vertragstyp (z.B. EVB-IT)? Werk-, Dienst- oder Servicevertrag mit SLA?"
     />
   );
 }

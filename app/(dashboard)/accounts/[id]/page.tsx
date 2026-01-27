@@ -27,7 +27,7 @@ const statusMap: Record<
   draft: { label: 'Entwurf', variant: 'secondary' },
   extracting: { label: 'Extrahiere', variant: 'default' },
   reviewing: { label: 'Wird geprüft', variant: 'default' },
-  quick_scanning: { label: 'Quick Scan', variant: 'default' },
+  quick_scanning: { label: 'Qualification', variant: 'default' },
   bit_pending: { label: 'Entscheidung ausstehend', variant: 'outline' },
   evaluating: { label: 'Wird evaluiert', variant: 'default' },
   decision_made: { label: 'Entscheidung getroffen', variant: 'default' },

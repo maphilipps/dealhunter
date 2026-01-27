@@ -1,5 +1,6 @@
 'use client';
 
+import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -16,6 +17,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   getPreQualificationNavigationSections,
+  isQualificationRunning,
   isNavigationItemEnabled,
   type QuickScanDataAvailability,
 } from '@/lib/pre-qualifications/navigation';
@@ -28,20 +30,40 @@ interface PreQualificationSidebarRightProps {
 }
 
 const ANALYSIS_INTRO = {
-  title: 'Ausschreibung analysieren (nur Dokumente).',
-  subtitle: 'Diese Navigation bildet die relevanten Detailseiten ab.',
+  title: 'Analyseauftrag',
+  subtitle:
+    'Du berätst mich in der Analyse der beigefügten Ausschreibung. Für die Entscheidung Bid/No Bid benötigen wir eine strukturierte Auswertung.',
+  constraint: 'Beziehe Dich ausschließlich auf die bereitgestellten Dokumente.',
 };
 
 const ANALYSIS_SECTIONS = [
   {
     group: 'Ausschreibung',
     items: [
-      { label: 'Budget', hint: 'Budgetrahmen & Laufzeit' },
-      { label: 'Zeitplan / Verfahren', hint: 'Timeline, Shortlisting, Portal' },
-      { label: 'Verträge', hint: 'Vertragstyp & Modell' },
-      { label: 'Leistungsumfang', hint: 'Umfang & Unterlagen' },
-      { label: 'Referenzen', hint: 'Anzahl, Branchen, Technologien' },
-      { label: 'Zuschlagskriterien', hint: 'Kriterien & Gewichtung' },
+      {
+        label: 'Budget',
+        hint: 'Budgetangaben, Größenordnung und Laufzeit?',
+      },
+      {
+        label: 'Zeitplan / Verfahren',
+        hint: 'Timeline, Shortlisting, Verfahrenstyp, Portal?',
+      },
+      {
+        label: 'Verträge',
+        hint: 'EVB-IT oder andere Verträge, Werk/Dienst/SLA?',
+      },
+      {
+        label: 'Leistungsumfang',
+        hint: 'Geforderte Leistungen und Unterlagen?',
+      },
+      {
+        label: 'Referenzen',
+        hint: 'Anzahl, Branchen, Spezifika?',
+      },
+      {
+        label: 'Zuschlagskriterien',
+        hint: 'Kriterien, Konzepte, Unterschiede TA/Angebot?',
+      },
     ],
   },
 ];
@@ -54,6 +76,7 @@ export function PreQualificationSidebarRight({
 }: PreQualificationSidebarRightProps) {
   const pathname = usePathname();
   const navigationSections = getPreQualificationNavigationSections(preQualificationId);
+  const qualificationRunning = isQualificationRunning(status);
 
   return (
     <TooltipProvider>
@@ -66,8 +89,9 @@ export function PreQualificationSidebarRight({
               <div className="px-2 py-1 space-y-2 text-xs leading-relaxed text-muted-foreground">
                 <p className="text-sm font-medium text-foreground">{ANALYSIS_INTRO.title}</p>
                 <p>{ANALYSIS_INTRO.subtitle}</p>
+                <p className="text-[11px] text-muted-foreground">{ANALYSIS_INTRO.constraint}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Websuche zur Anreicherung ist erlaubt, Quellen werden klar gekennzeichnet.
+                  Websuche zur Anreicherung ist optional und wird separat gekennzeichnet.
                 </p>
                 <div className="space-y-2">
                   {ANALYSIS_SECTIONS.map(section => (
@@ -109,14 +133,19 @@ export function PreQualificationSidebarRight({
                 <SidebarMenu>
                   {section.items.map(item => {
                     const isActive = pathname === item.url;
-                    const isEnabled = isNavigationItemEnabled(item, dataAvailability);
+                    const isOverview = item.url === `/pre-qualifications/${preQualificationId}`;
+                    const isEnabled =
+                      !qualificationRunning || isOverview
+                        ? isNavigationItemEnabled(item, dataAvailability)
+                        : false;
+                    const Icon = qualificationRunning && !isOverview ? Loader2 : item.icon;
 
                     if (isEnabled) {
                       return (
                         <SidebarMenuItem key={item.title}>
                           <SidebarMenuButton asChild isActive={isActive}>
                             <Link href={item.url}>
-                              <item.icon className="h-4 w-4" />
+                              <Icon className={`h-4 w-4${Icon === Loader2 ? ' animate-spin' : ''}`} />
                               <span>{item.title}</span>
                             </Link>
                           </SidebarMenuButton>
@@ -130,12 +159,16 @@ export function PreQualificationSidebarRight({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <SidebarMenuButton className="cursor-not-allowed opacity-50" disabled>
-                              <item.icon className="h-4 w-4" />
+                              <Icon className={`h-4 w-4${Icon === Loader2 ? ' animate-spin' : ''}`} />
                               <span>{item.title}</span>
                             </SidebarMenuButton>
                           </TooltipTrigger>
                           <TooltipContent side="left">
-                            <p>Quick Scan Daten fehlen</p>
+                            <p>
+                              {qualificationRunning
+                                ? 'Qualification läuft – bitte warten'
+                                : 'Qualification Daten fehlen'}
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       </SidebarMenuItem>

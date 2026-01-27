@@ -48,7 +48,7 @@ export async function POST(
     const existingJob = await db.query.backgroundJobs.findFirst({
       where: and(
         eq(backgroundJobs.qualificationId, qualificationId),
-        eq(backgroundJobs.type, 'visualization'),
+        eq(backgroundJobs.jobType, 'qualification'),
         eq(backgroundJobs.status, 'running')
       ),
     });

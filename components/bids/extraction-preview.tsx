@@ -325,11 +325,11 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         )}
       </div>
 
-      {/* Website URLs for Quick Scan */}
+      {/* Website URLs for Qualification */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <Label>Website URLs für Quick Scan *</Label>
+            <Label>Website URLs für Qualification *</Label>
             <p className="text-xs text-muted-foreground mt-1">
               Wählen Sie die Website(s) für die technische Analyse aus
             </p>
@@ -645,7 +645,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
       {/* Confirm Button */}
       <div className="flex justify-end pt-4 border-t">
         <Button onClick={handleConfirm} size="lg">
-          Bestätigen und weiter zum Quick Scan
+          Bestätigen und weiter zur Qualification
         </Button>
       </div>
     </div>

@@ -17,13 +17,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .limit(1);
 
     if (quickScanResults.length === 0) {
-      return NextResponse.json({ error: 'Quick Scan nicht gefunden' }, { status: 404 });
+      return NextResponse.json({ error: 'Qualification nicht gefunden' }, { status: 404 });
     }
 
     const quickScan = quickScanResults[0];
 
     if (quickScan.status !== 'completed') {
-      return NextResponse.json({ error: 'Quick Scan noch nicht abgeschlossen' }, { status: 400 });
+      return NextResponse.json({ error: 'Qualification noch nicht abgeschlossen' }, { status: 400 });
     }
 
     // Calculate BU matches

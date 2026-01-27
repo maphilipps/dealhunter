@@ -94,28 +94,9 @@ export function QuickScanProvider({
   }
 
   async function startQuickScan() {
-    try {
-      setError(null);
-
-      const response = await fetch(`/api/pre-qualifications/${preQualificationId}/quick-scan/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to start quick scan');
-      }
-
-      const data = await response.json();
-
-      // Start polling for the new job
-      await refetch();
-    } catch (err) {
-      console.error('[QuickScan Context] Start error:', err);
-      setError(err instanceof Error ? err : new Error('Failed to start quick scan'));
-      throw err;
-    }
+    const err = new Error('Qualification startet automatisch. Manuelles Starten ist deaktiviert.');
+    setError(err);
+    throw err;
   }
 
   return (

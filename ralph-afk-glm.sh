@@ -7,82 +7,63 @@ if [ -z "$1" ]; then
 fi
 
 for ((i=1; i<=$1; i++)); do
-  echo "=== Iteration $i of $1 (GLM Models) ==="
+  echo "=== Linting Iteration $i of $1 (GLM Models) ==="
 
   result=$(claude --dangerously-skip-permissions --settings ~/.claude/settings-glm.json -p "
-  **AUTONOMOUS FEATURE WORKFLOW:**
+  **LINTING LOOP - FIX ONE ERROR AT A TIME:**
 
-  1. **Decide which task to work on next:**
-     - Use Linear MCP to get ALL available issues (Backlog, Todo, In Progress)
-     - Team: Dealhunter
-     - Analyze priorities, dependencies, and impact
-     - YOU decide which task has the highest priority
-     - Consider: blockers, quick wins, dependencies, business value
-     - IMPORTANT: Choose ONE task, don't just pick the first in the list
+  1. **Run Linting:**
+     - Execute: npm run lint
+     - Capture and analyze the output
+     - Count total errors remaining
 
-  2. **Start Issue:** Update chosen issue status to 'In Progress' in Linear
-     - Add comment: \"Starting work on this issue\"
+  2. **Identify ONE Error:**
+     - Pick the FIRST linting error from the output
+     - Understand what the error is about
+     - Identify the file and line number
 
-  3. **Read ALL Issue Comments:** BEFORE any implementation:
-     - Use Linear MCP list_comments to get ALL comments on the issue
-     - Comments contain CRITICAL context: feedback, clarifications, requirements updates
-     - Comments may contain: bug reports, user requests, code review notes, blockers
-     - If comments contradict the description: comments are MORE RECENT and take priority
-     - Summarize key points from comments before proceeding
+  3. **Fix the Error:**
+     - Read the file with the error
+     - Fix ONLY this ONE error
+     - Keep the fix minimal and focused
+     - Don't fix multiple errors at once
+     - Don't refactor unrelated code
 
-  4. **Ralph Wiggum Principle:** BEFORE writing ANY code:
-     - Read the issue description carefully
-     - Follow the 'Ralph Wiggum Principle' instruction in the issue
-     - Check existing code in the mentioned paths
-     - Understand what already exists
-     - Only then proceed with implementation
+  4. **Verify the Fix:**
+     - Run npm run lint again
+     - Confirm this specific error is gone
+     - Check that no NEW errors were introduced
+     - If error persists, try a different approach
 
-  5. **Implement:** Work on the issue following its Acceptance Criteria
-     - ONLY work on this ONE feature
-     - Follow the requirements exactly
-     - Use existing code where possible
-     - Keep changes focused and minimal
-
-  6. **Check feedback loops:**
-     - Run type checks: npm run typecheck
-     - Run tests: npm test
-     - Fix any errors before proceeding
-     - If new code added: ensure test coverage
-     - Use fix_my_app MCP if build errors occur
-
-  7. **Append progress to progress.txt:**
-     - Issue ID and Title
-     - What was implemented
-     - Any notes or blockers
-     - Link to commit (after commit step)
-
-  8. **Make a git commit:**
+  5. **Commit the Fix:**
      - Stage changes: git add .
-     - Format: 'feat(DEA-X): <description>' or 'fix(DEA-X): <description>'
-     - Include issue reference in commit message
+     - Format: 'lint: fix <error-type> in <filename>'
+     - Example: 'lint: fix unused import in page.tsx'
      - Commit directly to main branch
 
-  9. **Complete Issue:** Update issue status to 'Done' in Linear
-     - Add comment with what was implemented
-     - Reference commit hash
-     - Close any related sub-issues if applicable
+  6. **Report Progress:**
+     - State which error was fixed
+     - Show errors remaining count
+     - If no errors remain, output: <promise>COMPLETE</promise>
 
   **CRITICAL RULES:**
-  - ONLY work on a SINGLE FEATURE per iteration
-  - YOU decide priority, not the system
-  - ALWAYS read ALL issue comments BEFORE implementing (they contain critical updates!)
-  - ALWAYS check existing code first (Ralph Wiggum Principle)
-  - ALWAYS run type checks and tests before committing
-  - ALWAYS update Linear issue with each step
-  - ALWAYS commit directly to main (no branches)
-  - If while implementing you notice all work is complete, output: <promise>COMPLETE</promise>
+  - Fix ONLY ONE error per iteration
+  - ALWAYS verify with npm run lint after fixing
+  - Keep changes minimal - don't over-engineer
+  - Commit after each successful fix
+  - Stop when linting shows 0 errors
   ")
 
   echo "$result"
 
+  # Check if complete
+  if echo "$result" | grep -q "<promise>COMPLETE</promise>"; then
+    echo "✅ All linting errors fixed!"
+    exit 0
+  fi
 
-  # Short pause between iterations to avoid rate limits
+  # Short pause between iterations
   sleep 2
 done
 
-echo "Completed $1 iterations."
+echo "Completed $1 linting iterations."

@@ -17,7 +17,8 @@ import { processPreQualJob } from '../lib/bullmq/workers/prequal-processing-work
  * Worker concurrency - how many jobs to process in parallel
  * PreQual processing is I/O bound (PDF extraction, AI calls), so we can run a few in parallel
  */
-const WORKER_CONCURRENCY = parseInt(process.env.PREQUAL_WORKER_CONCURRENCY || '3', 10);
+const WORKER_CONCURRENCY = parseInt(process.env.PREQUAL_WORKER_CONCURRENCY || '1', 10);
+const PREQUAL_LOCK_DURATION_MS = parseInt(process.env.PREQUAL_LOCK_DURATION_MS || '900000', 10);
 
 /**
  * Create and start the worker
@@ -37,6 +38,7 @@ async function main() {
     {
       connection: connectionOptions,
       concurrency: WORKER_CONCURRENCY,
+      lockDuration: PREQUAL_LOCK_DURATION_MS,
     }
   );
 

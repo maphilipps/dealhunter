@@ -47,7 +47,7 @@ export default async function PreQualificationDashboardLayout({
         })
         .from(backgroundJobs)
         .where(
-          and(eq(backgroundJobs.preQualificationId, id), eq(backgroundJobs.jobType, 'quick-scan'))
+          and(eq(backgroundJobs.preQualificationId, id), eq(backgroundJobs.jobType, 'qualification'))
         )
         .orderBy(desc(backgroundJobs.createdAt))
         .limit(1)

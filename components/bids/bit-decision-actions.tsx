@@ -129,7 +129,7 @@ export function BitDecisionActions({
             <div>
               <CardTitle className="text-indigo-900">BIT / NO BIT Entscheidung</CardTitle>
               <CardDescription className="text-indigo-700">
-                Basierend auf den 10 Fragen und Quick Scan Ergebnissen
+                Basierend auf den 10 Fragen und Qualification Ergebnissen
               </CardDescription>
             </div>
             {getRecommendationBadge()}

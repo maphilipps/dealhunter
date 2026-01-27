@@ -9,6 +9,7 @@ import {
   Trophy,
   GitBranch,
   Grid3X3,
+  CheckCircle2,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -40,6 +41,20 @@ export interface QuickScanDataAvailability {
   hasDeliverables: boolean;
   hasTenQuestions: boolean;
   hasRecommendation: boolean;
+}
+
+const QUALIFICATION_RUNNING_STATUSES = new Set([
+  'processing',
+  'extracting',
+  'duplicate_checking',
+  'quick_scanning',
+  'timeline_estimating',
+  'evaluating',
+]);
+
+export function isQualificationRunning(status?: string | null): boolean {
+  if (!status) return false;
+  return QUALIFICATION_RUNNING_STATUSES.has(status);
 }
 
 /**
@@ -150,19 +165,24 @@ export function getPreQualificationNavigationSections(
       ],
     },
     {
-      label: 'Routing',
+      label: 'Analyse',
       items: [
-        {
-          title: 'BL Routing',
-          icon: GitBranch,
-          url: `/pre-qualifications/${preQualificationId}/routing`,
-          alwaysEnabled: true, // Routing is ALWAYS accessible (manual routing)
-        },
         {
           title: 'CMS Matrix',
           icon: Grid3X3,
           url: `/pre-qualifications/${preQualificationId}/routing/cms-matrix`,
           alwaysEnabled: true,
+        },
+      ],
+    },
+    {
+      label: 'Entscheidung',
+      items: [
+        {
+          title: 'BID / NO-BID',
+          icon: CheckCircle2,
+          url: `/pre-qualifications/${preQualificationId}/routing`,
+          alwaysEnabled: true, // Decision is ALWAYS accessible
         },
       ],
     },

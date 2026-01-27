@@ -20,7 +20,7 @@ export function PreQualificationsEmptyStateClient() {
     {
       id: 'upload-preQualification',
       icon: <Upload className="h-5 w-5" />,
-      label: 'Pre-Qualification hochladen',
+      label: 'Lead hochladen',
       description: 'PDF oder Text hochladen und AI-Extraktion starten',
       onClick: () => {
         router.push('/pre-qualifications/new');
@@ -28,12 +28,12 @@ export function PreQualificationsEmptyStateClient() {
       variant: 'default' as const,
     },
     {
-      id: 'quick-scan',
+      id: 'qualification',
       icon: <Zap className="h-5 w-5" />,
-      label: 'Quick Scan',
-      description: 'Website-Analyse mit Tech Stack Erkennung',
+      label: 'Qualification',
+      description: 'Automatische Extraktion, Analyse und Detailseiten',
       onClick: () => {
-        router.push('/docs/quick-scan');
+        router.push('/docs/qualification');
       },
       variant: 'outline' as const,
     },
@@ -51,7 +51,7 @@ export function PreQualificationsEmptyStateClient() {
       id: 'view-docs',
       icon: <BookOpen className="h-5 w-5" />,
       label: 'Dokumentation',
-      description: 'Pre-Qualification-Workflow und BID/NO-BID Kriterien',
+      description: 'Lead-Workflow und BID/NO-BID Kriterien',
       onClick: () => {
         router.push('/docs/workflow');
       },
@@ -63,12 +63,12 @@ export function PreQualificationsEmptyStateClient() {
     <div className="space-y-6">
       <EmptyState
         icon={<Upload className="h-12 w-12" />}
-        title="Keine Pre-Qualifications vorhanden"
-        description="Laden Sie Ihr erstes Pre-Qualification hoch, um den AI-gestützten Qualifizierungsprozess zu starten. Der Quick Scan analysiert automatisch die Website und gibt eine initiale BID/NO-BID Empfehlung."
+        title="Keine Leads vorhanden"
+        description="Laden Sie Ihren ersten Lead hoch, um den AI-gestützten Qualifizierungsprozess zu starten. Die Qualification analysiert automatisch die Website und liefert eine initiale BID/NO-BID Einschätzung."
         variant="info"
         actions={[
           {
-            label: 'Neuer Pre-Qualification',
+            label: 'Neuer Lead',
             onClick: () => router.push('/pre-qualifications/new'),
             variant: 'default',
             icon: <Upload className="h-4 w-4" />,
@@ -78,7 +78,7 @@ export function PreQualificationsEmptyStateClient() {
 
       <SuggestedActions
         title="Workflow Übersicht"
-        description="So funktioniert der Pre-Qualification-zu-Lead-Prozess"
+        description="So funktioniert der Lead-Prozess"
         actions={suggestions}
         columns={2}
       />

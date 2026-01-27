@@ -26,6 +26,8 @@ export interface PreQualProcessingJobData {
   preQualificationId: string;
   /** User who triggered the processing */
   userId: string;
+  /** Background job ID for qualification tracking */
+  backgroundJobId: string;
   /** PDF files as base64 encoded strings */
   files: Array<{
     name: string;
@@ -38,6 +40,8 @@ export interface PreQualProcessingJobData {
   additionalText: string;
   /** Enable DSGVO PII cleaning */
   enableDSGVO: boolean;
+  /** Skip extraction and use existing extracted requirements */
+  useExistingRequirements?: boolean;
   /** Optional account ID */
   accountId?: string;
 }

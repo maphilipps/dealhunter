@@ -57,11 +57,11 @@ export function BUMatchingTab({
       <Card>
         <CardHeader>
           <CardTitle>Business Unit Matching</CardTitle>
-          <CardDescription>Der Quick Scan wurde noch nicht durchgeführt.</CardDescription>
+          <CardDescription>Die Qualification wurde noch nicht durchgeführt.</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Nach dem Quick Scan wird hier die BU-Zuweisung angezeigt.
+            Nach der Qualification wird hier die BU-Zuweisung angezeigt.
           </p>
         </CardContent>
       </Card>
@@ -113,7 +113,7 @@ export function BUMatchingTab({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">CMS & Framework</CardTitle>
-            <CardDescription>Erkannte Systeme aus dem Quick Scan</CardDescription>
+            <CardDescription>Erkannte Systeme aus der Qualification</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {matchData?.cms && (
@@ -138,7 +138,7 @@ export function BUMatchingTab({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Tech Stack</CardTitle>
-            <CardDescription>Technologien aus dem Quick Scan</CardDescription>
+            <CardDescription>Technologien aus der Qualification</CardDescription>
           </CardHeader>
           <CardContent>
             {matchData?.detectedTechnologies &&

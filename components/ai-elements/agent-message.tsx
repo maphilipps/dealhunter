@@ -71,6 +71,7 @@ export function AgentMessage({ event }: AgentMessageProps) {
       'Strategic Fit': 'bg-orange-500/10 text-orange-700 border-orange-200',
       Competition: 'bg-red-500/10 text-red-700 border-red-200',
       'Quick Scan': 'bg-indigo-500/10 text-indigo-700 border-indigo-200',
+      Qualification: 'bg-indigo-500/10 text-indigo-700 border-indigo-200',
       // Quick Scan Sub-Agents
       'Website Crawler': 'bg-cyan-500/10 text-cyan-700 border-cyan-200',
       Wappalyzer: 'bg-violet-500/10 text-violet-700 border-violet-200',

@@ -11,8 +11,6 @@ import { notFound, redirect } from 'next/navigation';
 
 import { BidDetailClient } from '@/components/bids/bid-detail-client';
 import { DeletePreQualificationButton } from '@/components/pre-qualifications/delete-prequalification-button';
-import { QuickScanStatusBanner } from '@/components/pre-qualifications/quick-scan-status-banner';
-import { RunExpertAgentsButton } from '@/components/pre-qualifications/run-expert-agents-button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +40,7 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
     notFound();
   }
 
-  // Check for expert agent results
+  // Check for expert agent results (optional summary)
   const hasResults = await hasExpertAgentResults(id);
   const summaryResult = hasResults ? await getAgentResult(id, 'summary_expert') : null;
 
@@ -60,30 +58,16 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {summary?.headline || 'Pre-Qualification Übersicht'}
+            {summary?.headline || 'Lead Übersicht'}
           </h1>
           <p className="text-muted-foreground">ID: {bid.id}</p>
         </div>
         <div className="flex items-center gap-2">
-          <RunExpertAgentsButton preQualificationId={id} hasResults={hasResults} />
           <DeletePreQualificationButton preQualificationId={id} label={deleteLabel} />
         </div>
       </div>
 
-      {/* Quick Scan Status */}
-      <QuickScanStatusBanner showWhenComplete={true} dismissible={true} />
 
-      {/* Expert Analysis Not Run Yet */}
-      {!hasResults && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Expert-Analyse ausstehend</AlertTitle>
-          <AlertDescription>
-            Klicke auf &quot;Expert-Analyse starten&quot; um detaillierte Insights zu Timing,
-            Deliverables, Tech Stack und Legal zu erhalten.
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Management Summary (if available) */}
       {summary && (
@@ -341,7 +325,7 @@ function StatusBadge({ status }: { status: string }) {
     extracting: { label: 'Extraktion läuft', variant: 'default' as const },
     reviewing: { label: 'Wird geprüft', variant: 'default' as const },
     // Evaluation
-    quick_scanning: { label: 'Quick Scan', variant: 'default' as const },
+    quick_scanning: { label: 'Qualification', variant: 'default' as const },
     evaluating: { label: 'Wird bewertet', variant: 'default' as const },
     decision_made: { label: 'Entschieden', variant: 'default' as const },
     // NO BIT Path

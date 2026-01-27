@@ -1,8 +1,10 @@
-import { generateObject, type LanguageModel } from 'ai';
+import { generateText } from 'ai';
 
 import { projectTimelineSchema, COMPLEXITY_MULTIPLIERS, type ProjectTimeline } from './schema';
+import { PHASE_DISTRIBUTION, STANDARD_PHASES } from './schema';
 
-import { openai } from '@/lib/ai/providers';
+import { modelNames } from '@/lib/ai/config';
+import { getProviderForSlot } from '@/lib/ai/providers';
 
 /**
  * Input for Timeline Agent
@@ -91,6 +93,95 @@ function assessComplexity(input: TimelineAgentInput): 'low' | 'medium' | 'high' 
   return 'very_high';
 }
 
+function buildFallbackTimeline(
+  input: TimelineAgentInput,
+  totalDays: number,
+  complexity: 'low' | 'medium' | 'high' | 'very_high'
+): ProjectTimeline {
+  const totalWeeks = Math.max(1, Math.ceil(totalDays / 5));
+  const totalMonths = Number((totalWeeks / 4.33).toFixed(1));
+
+  const phases: ProjectTimeline['phases'] = [];
+  let currentDay = 0;
+
+  STANDARD_PHASES.forEach((name, index) => {
+    const pct = PHASE_DISTRIBUTION[name];
+    const isLast = index === STANDARD_PHASES.length - 1;
+    const rawDuration = Math.max(1, Math.round(totalDays * pct));
+    const durationDays = isLast ? Math.max(1, totalDays - currentDay) : rawDuration;
+    const startDay = currentDay;
+    const endDay = currentDay + durationDays - 1;
+    currentDay += durationDays;
+
+    phases.push({
+      name,
+      durationDays,
+      startDay,
+      endDay,
+      dependencies: index === 0 ? [] : [STANDARD_PHASES[index - 1]],
+      keyActivities: [`${name}: Standard-Setup für Phase 1`],
+      canParallelize: name === 'Design & Prototyping' || name === 'Frontend Development',
+    });
+  });
+
+  const teamSize =
+    totalDays < 50
+      ? { min: 2, optimal: 3, max: 4 }
+      : totalDays < 150
+        ? { min: 3, optimal: 4, max: 5 }
+        : totalDays < 300
+          ? { min: 4, optimal: 6, max: 8 }
+          : { min: 6, optimal: 8, max: 12 };
+
+  const confidenceMap = {
+    low: 85,
+    medium: 75,
+    high: 60,
+    very_high: 45,
+  } as const;
+
+  return {
+    totalDays,
+    totalWeeks,
+    totalMonths,
+    estimatedStart: null,
+    estimatedGoLive: input.targetDeadline ?? null,
+    phases,
+    assumedTeamSize: teamSize,
+    confidence: confidenceMap[complexity],
+    assumptions: [
+      'Standard-Projektphasen und typische Aufwandsverteilung',
+      'Teamverfügbarkeit über die Laufzeit konstant',
+      'Keine wesentlichen Scope-Änderungen während der Umsetzung',
+    ],
+    risks: [
+      {
+        factor: input.targetDeadline ? 'Feste Deadline kann Umsetzung verkürzen' : 'Deadline unklar',
+        impact: 'medium',
+        likelihood: input.targetDeadline ? 'high' : 'medium',
+      },
+      {
+        factor: 'Unklare Anforderungen in frühen Phasen',
+        impact: 'medium',
+        likelihood: 'medium',
+      },
+      {
+        factor: 'Integrationsaufwand höher als initial angenommen',
+        impact: 'high',
+        likelihood: 'low',
+      },
+    ],
+    calculationBasis: {
+      contentVolume: `~${input.estimatedPageCount ?? 50} Seiten, ${input.contentTypes ?? 5} Content-Typen`,
+      complexity,
+      integrations: input.detectedIntegrations?.length || 0,
+      hasCriticalDeadline: Boolean(input.targetDeadline),
+    },
+    generatedAt: new Date().toISOString(),
+    phase: 'quick_scan',
+  };
+}
+
 /**
  * Timeline Agent
  *
@@ -173,10 +264,7 @@ ${input.specialRequirements?.length ? `## Special Requirements\n${input.specialR
     }
   }
 
-  const { object } = await generateObject({
-    model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
-    schema: projectTimelineSchema,
-    prompt: `Du bist ein erfahrener Projektplaner bei adesso SE.
+  const prompt = `Du bist ein erfahrener Projektplaner bei adesso SE.
 
 Erstelle einen **realistischen Projekt-Timeline** für die initiale Bewertung (Phase 1 - Quick Scan).
 
@@ -245,11 +333,34 @@ Liste mögliche Timeline-Risiken:
 - Neue/unbekannte Technologie
 - Abhängigkeiten von Kunden
 
-Antworte im vorgegebenen JSON-Schema.`,
-    temperature: 0.3,
+Antworte AUSSCHLIESSLICH als gültiges JSON, das exakt dem Schema entspricht.`;
+
+  const { text } = await generateText({
+    model: getProviderForSlot('quality')(modelNames.quality),
+    prompt: `${prompt}\n\n${contextDescription}${ragContext}`,
   });
 
-  return object;
+  try {
+    const jsonStart = text.indexOf('{');
+    const jsonEnd = text.lastIndexOf('}');
+    if (jsonStart === -1 || jsonEnd === -1) {
+      throw new Error('Timeline JSON not found in model output');
+    }
+
+    const jsonString = text.slice(jsonStart, jsonEnd + 1);
+    const parsed = JSON.parse(jsonString);
+    const result = projectTimelineSchema.safeParse(parsed);
+    if (!result.success) {
+      throw new Error(`Timeline JSON schema validation failed: ${result.error.message}`);
+    }
+
+    return result.data;
+  } catch (error) {
+    console.warn('[Timeline Agent] Falling back to heuristic timeline:', {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return buildFallbackTimeline(input, totalDays, complexity);
+  }
 }
 
 /**

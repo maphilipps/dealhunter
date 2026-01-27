@@ -8,19 +8,19 @@
  */
 
 import { ToolLoopAgent, hasToolCall, stepCountIs, tool } from 'ai';
+import { generateText } from 'ai';
 import { z } from 'zod';
 
 import { registry } from '../agent-tools';
 import type { ToolContext } from '../agent-tools';
+import type { ExtractedRequirements } from './schema';
 import { generateSchemaDescription, initExtractionSession } from '../agent-tools/tools/extraction';
 import { modelNames } from '../ai/config';
-import { getOpenAIProvider } from '../ai/providers';
+import { getProviderForSlot } from '../ai/providers';
 import { embedAgentOutput } from '../rag/embedding-service';
 import { embedRawText } from '../rag/raw-embedding-service';
 import type { EventEmitter } from '../streaming/event-emitter';
 import { AgentEventType } from '../streaming/event-types';
-
-import type { ExtractedRequirements } from './schema';
 
 export interface ExtractionAgentInput {
   preQualificationId: string;
@@ -41,7 +41,7 @@ export interface ExtractionAgentOutput {
 }
 
 const completionSchema = z.object({
-  requirements: z.record(z.unknown()).optional(),
+  requirements: z.record(z.string(), z.any()).optional(),
   fieldsExtracted: z.array(z.string()).default([]),
   confidenceScore: z.number().min(0).max(1).default(0.5),
 });
@@ -89,6 +89,38 @@ ${metadata?.date ? `Datum: ${metadata.date}` : ''}
 `;
 }
 
+async function inferSubmissionDeadline(rawText: string): Promise<{
+  submissionDeadline?: string;
+  submissionTime?: string;
+  rawText?: string;
+}> {
+  const prompt = `Extract the bid submission deadline from this document.
+Return JSON ONLY with keys: submissionDeadline (YYYY-MM-DD), submissionTime (HH:MM, optional), rawText (snippet).
+If no deadline is present, return {}.
+
+Document:
+${rawText.slice(0, 9000)}`.trim();
+
+  const { text } = await generateText({
+    model: getProviderForSlot('fast')(modelNames.fast),
+    prompt,
+  });
+
+  const jsonStart = text.indexOf('{');
+  const jsonEnd = text.lastIndexOf('}');
+  if (jsonStart === -1 || jsonEnd === -1) return {};
+  try {
+    const parsed = JSON.parse(text.slice(jsonStart, jsonEnd + 1)) as {
+      submissionDeadline?: string;
+      submissionTime?: string;
+      rawText?: string;
+    };
+    return parsed;
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Run the Agent-Native Extraction
  */
@@ -131,14 +163,28 @@ export async function runExtractionAgentNative(
       userName: 'Extraction Agent',
     };
 
-    // Step 4: Create tools for the agent
+    // Step 4: Create tools for the agent using AI SDK tool() helper
+    let hasQueriedDocument = false;
+
     const runTool = tool({
       description: 'Execute a registered tool by name',
       inputSchema: z.object({
         name: z.string().describe('Tool name (e.g., prequal.query, prequal.set)'),
-        input: z.record(z.unknown()).describe('Tool input parameters'),
+        input: z
+          .record(z.string(), z.any())
+          .describe('Tool input parameters'),
       }),
       execute: async ({ name, input: toolInput }) => {
+        if (name === 'prequal.query') {
+          hasQueriedDocument = true;
+        }
+
+        if (name === 'prequal.set' && !hasQueriedDocument) {
+          const error = 'prequal.set requires prior prequal.query in this session.';
+          logActivity(`Tool Error: ${name}`, error);
+          return { success: false, error };
+        }
+
         logActivity(`Tool: ${name}`, JSON.stringify(toolInput).slice(0, 100));
 
         const result = await registry.execute(name, toolInput, toolContext);
@@ -164,8 +210,8 @@ export async function runExtractionAgentNative(
     const systemPrompt = buildSystemPrompt(input.inputType, input.metadata);
 
     const agent = new ToolLoopAgent({
-      model: getOpenAIProvider().chat(modelNames.default),
-      system: systemPrompt,
+      model: getProviderForSlot('default')(modelNames.default),
+      instructions: systemPrompt,
       tools: { runTool, completeExtraction },
       stopWhen: [stepCountIs(50), hasToolCall('completeExtraction')],
     });
@@ -206,6 +252,16 @@ Nutze die Tools um alle relevanten Felder zu extrahieren.
 
     const requirements = completeResult.data.requirements;
 
+    if (!requirements.submissionDeadline && input.rawText?.length) {
+      const inferred = await inferSubmissionDeadline(input.rawText);
+      if (inferred.submissionDeadline) {
+        requirements.submissionDeadline = inferred.submissionDeadline;
+      }
+      if (inferred.submissionTime) {
+        requirements.submissionTime = inferred.submissionTime;
+      }
+    }
+
     // Step 7: Embed structured requirements into RAG
     logActivity('RAG', 'Speichere extrahierte Daten in Knowledge Base...');
     embedAgentOutput(
@@ -237,6 +293,10 @@ Nutze die Tools um alle relevanten Felder zu extrahieren.
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logActivity('Fehler', errorMessage);
+    console.error('[Extraction Agent] Failed:', {
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
 
     emit?.({
       type: AgentEventType.ERROR,

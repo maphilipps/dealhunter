@@ -93,7 +93,7 @@ export default async function CMSMatrixPage({ params }: { params: Promise<{ id: 
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Noch nicht ausgewertet</AlertTitle>
           <AlertDescription>
-            Die CMS-Entscheidungsmatrix wurde noch nicht generiert. Führen Sie zuerst den Quick Scan
+            Die CMS-Entscheidungsmatrix wurde noch nicht generiert. Führen Sie zuerst die Qualification
             durch, um die Technologie-Empfehlungen zu erhalten.
           </AlertDescription>
         </Alert>

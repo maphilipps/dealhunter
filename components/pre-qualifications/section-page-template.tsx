@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, FileText, Globe2, Loader2, RefreshCw, TrendingUp } from 'lucide-react';
+import { AlertCircle, Globe2, Loader2, RefreshCw, TrendingUp } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { QuickScanRenderer, type RenderTree } from '@/components/json-render/quick-scan-registry';
@@ -119,23 +119,6 @@ export function PreQualificationSectionPageTemplate({
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Quellenlogik
-          </CardTitle>
-          <CardDescription>
-            Antworten basieren primär auf den bereitgestellten Dokumenten. Websuche ist aktiviert
-            und wird strikt getrennt ausgewiesen.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">Quelle: Dokumente</Badge>
-          <Badge variant="default">Websuche: erlaubt</Badge>
-        </CardContent>
-      </Card>
-
       {loading && (
         <Card>
           <CardHeader>
@@ -167,9 +150,7 @@ export function PreQualificationSectionPageTemplate({
         </Alert>
       )}
 
-      {!loading && !error && visualizationTree && (
-        <QuickScanRenderer tree={visualizationTree} />
-      )}
+      {!loading && !error && visualizationTree && <QuickScanRenderer tree={visualizationTree} />}
 
       {!loading && !error && !visualizationTree && (
         <Card>

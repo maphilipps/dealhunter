@@ -1,6 +1,7 @@
 import { Calendar, Target } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 
+import { BidDetailClient } from '@/components/bids/bid-detail-client';
 import { ProcessingProgressCard } from '@/components/bids/processing-progress-card';
 import { DeletePreQualificationButton } from '@/components/pre-qualifications/delete-prequalification-button';
 import { Badge } from '@/components/ui/badge';
@@ -161,6 +162,9 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
           </CardContent>
         </Card>
       )}
+
+      {/* Fallback overview when no expert summary exists yet */}
+      {!summary && <BidDetailClient bid={bid} />}
 
       {/* Processing Progress (if running) */}
       {PROCESSING_STATES.includes(bid.status) && (

@@ -5,7 +5,7 @@
  * POST /api/pre-qualifications/[id]/cms-matrix/stream
  */
 
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
 import {
@@ -15,7 +15,7 @@ import {
 } from '@/lib/cms-matching/parallel-matrix-orchestrator';
 import type { RequirementMatch } from '@/lib/cms-matching/schema';
 import { db } from '@/lib/db';
-import { preQualifications, technologies } from '@/lib/db/schema';
+import { preQualifications, quickScans, technologies } from '@/lib/db/schema';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
 
 export const runtime = 'nodejs';
@@ -201,9 +201,39 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         return;
       }
 
-      // 2. Parse Quick Scan Results
-      const quickScanData: Record<string, unknown> = preQualification[0].quickScanResults
-        ? (JSON.parse(preQualification[0].quickScanResults) as Record<string, unknown>)
+      // 2. Load Quick Scan and parse its structured fields
+      // Prefer the linked quickScanId; fall back to the latest completed scan.
+      const linkedQuickScan = preQualification[0].quickScanId
+        ? await db.query.quickScans.findFirst({
+            where: eq(quickScans.id, preQualification[0].quickScanId),
+          })
+        : null;
+
+      const latestCompletedQuickScan =
+        linkedQuickScan ??
+        (await db.query.quickScans.findFirst({
+          where: and(
+            eq(quickScans.preQualificationId, preQualificationId),
+            eq(quickScans.status, 'completed')
+          ),
+          orderBy: (table, { desc }) => [desc(table.completedAt), desc(table.createdAt)],
+        }));
+
+      const safeParse = (value: unknown): Record<string, unknown> | undefined => {
+        if (!value || typeof value !== 'string') return undefined;
+        try {
+          return JSON.parse(value) as Record<string, unknown>;
+        } catch {
+          return undefined;
+        }
+      };
+
+      const quickScanData: Record<string, unknown> = latestCompletedQuickScan
+        ? {
+            features: safeParse(latestCompletedQuickScan.features),
+            techStack: safeParse(latestCompletedQuickScan.techStack),
+            contentVolume: safeParse(latestCompletedQuickScan.contentVolume),
+          }
         : {};
 
       // 3. Extract Requirements
@@ -321,7 +351,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const { id: preQualificationId } = await params;
 
   const preQualification = await db
-    .select({ quickScanResults: preQualifications.quickScanResults })
+    .select({ quickScanId: preQualifications.quickScanId })
     .from(preQualifications)
     .where(eq(preQualifications.id, preQualificationId))
     .limit(1);
@@ -330,12 +360,21 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     return Response.json({ error: 'Pre-Qualification not found' }, { status: 404 });
   }
 
-  const quickScanData: Record<string, unknown> = preQualification[0].quickScanResults
-    ? (JSON.parse(preQualification[0].quickScanResults) as Record<string, unknown>)
+  const quickScanId = preQualification[0].quickScanId;
+  if (!quickScanId) {
+    return Response.json({ matrix: null, cmsMatchingResult: null });
+  }
+
+  const quickScan = await db.query.quickScans.findFirst({
+    where: eq(quickScans.id, quickScanId),
+  });
+
+  const cmsEval = quickScan?.cmsEvaluation
+    ? (JSON.parse(quickScan.cmsEvaluation) as Record<string, unknown>)
     : {};
 
   return Response.json({
-    matrix: (quickScanData.cmsMatchingMatrix as Record<string, unknown> | null) || null,
-    cmsMatchingResult: (quickScanData.cmsMatchingResult as Record<string, unknown> | null) || null,
+    matrix: (cmsEval.cmsMatchingMatrix as Record<string, unknown> | null) || null,
+    cmsMatchingResult: (cmsEval.cmsMatchingResult as Record<string, unknown> | null) || null,
   });
 }

@@ -13,6 +13,7 @@
 
 import { generateObject } from 'ai';
 import { z } from 'zod';
+
 import { getModelForSlot } from '@/lib/ai/providers';
 import { runPreQualSectionAgent } from '@/lib/json-render/prequal-section-agent';
 import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
@@ -49,9 +50,11 @@ const OrchestratorPlanSchema = z.object({
     })
   ),
   strategy: z.object({
-    mode: z.enum(['documents-first', 'web-enriched', 'hybrid']).describe(
-      'documents-first: Nur Dokumente | web-enriched: Priorität auf Web | hybrid: Beides kombiniert'
-    ),
+    mode: z
+      .enum(['documents-first', 'web-enriched', 'hybrid'])
+      .describe(
+        'documents-first: Nur Dokumente | web-enriched: Priorität auf Web | hybrid: Beides kombiniert'
+      ),
     maxConcurrency: z.number().min(1).max(10).describe('Anzahl paralleler Worker (empfohlen: 5)'),
   }),
 });
@@ -86,14 +89,22 @@ export type EvaluatorResult = z.infer<typeof EvaluatorResultSchema>;
  * Decision Schema (Bid/No Bid)
  */
 const DecisionSchema = z.object({
-  recommendation: z.enum(['bid', 'no-bid', 'conditional-bid']).describe(
-    'bid: Empfehlung mitbieten | no-bid: Nicht mitbieten | conditional-bid: Unter Bedingungen mitbieten'
-  ),
-  confidence: z.number().min(0).max(100).describe('Konfidenz als ganze Zahl von 0 bis 100 (z.B. 75 für 75%)'),
+  recommendation: z
+    .enum(['bid', 'no-bid', 'conditional-bid'])
+    .describe(
+      'bid: Empfehlung mitbieten | no-bid: Nicht mitbieten | conditional-bid: Unter Bedingungen mitbieten'
+    ),
+  confidence: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe('Konfidenz als ganze Zahl von 0 bis 100 (z.B. 75 für 75%)'),
   reasoning: z.string().describe('Begründung für die Empfehlung'),
   strengths: z.array(z.string()).describe('Stärken der Ausschreibung für uns'),
   weaknesses: z.array(z.string()).describe('Schwächen/Risiken der Ausschreibung'),
-  conditions: z.array(z.string()).describe('Bedingungen für conditional-bid. Leeres Array [] wenn keine Bedingungen.'),
+  conditions: z
+    .array(z.string())
+    .describe('Bedingungen für conditional-bid. Leeres Array [] wenn keine Bedingungen.'),
 });
 
 export type Decision = z.infer<typeof DecisionSchema>;
@@ -179,9 +190,7 @@ async function runWithConcurrency<T, R>(
 /**
  * ORCHESTRATOR: Analysiert Dokument-Preview und plant Section-Execution
  */
-async function planSectionExecution(
-  preQualificationId: string
-): Promise<OrchestratorPlan> {
+async function planSectionExecution(preQualificationId: string): Promise<OrchestratorPlan> {
   console.log('[Orchestrator] Plane Section-Execution...');
 
   // Hole Preview der Dokumente (Top 5 Chunks)
@@ -322,7 +331,7 @@ async function executeSectionWorkers(
     maxConcurrency
   );
 
-  const successful = results.filter((r) => r.success).length;
+  const successful = results.filter(r => r.success).length;
   console.log(`[Workers] Abgeschlossen: ${successful}/${results.length} erfolgreich`);
 
   return results;
@@ -383,8 +392,8 @@ async function generateBidDecision(
   // TODO: Hier müsste die Section-Daten aus der DB geladen werden
   // Für jetzt: Vereinfachte Implementierung basierend auf Success-Rate
 
-  const successRate = results.filter((r) => r.success).length / results.length;
-  const failedSections = results.filter((r) => !r.success);
+  const successRate = results.filter(r => r.success).length / results.length;
+  const failedSections = results.filter(r => !r.success);
 
   const model = getModelForSlot('quality');
 
@@ -394,8 +403,8 @@ async function generateBidDecision(
     prompt: `Du bist ein Experte für öffentliche Ausschreibungen und hilfst bei der Bid/No-Bid Entscheidung.
 
 SECTION RESULTS:
-- Erfolgreiche Sections: ${results.filter((r) => r.success).length}/${results.length}
-- Fehlgeschlagene Sections: ${failedSections.map((r) => r.sectionId).join(', ') || 'keine'}
+- Erfolgreiche Sections: ${results.filter(r => r.success).length}/${results.length}
+- Fehlgeschlagene Sections: ${failedSections.map(r => r.sectionId).join(', ') || 'keine'}
 
 AUFGABE:
 Basierend auf den Section-Analysen, gib eine Bid/No-Bid Empfehlung ab.
@@ -420,9 +429,10 @@ Generiere jetzt die Empfehlung:`,
   });
 
   // Normalize confidence: LLM might return 0-1 or 0-100
-  const normalizedConfidence = decision.confidence <= 1
-    ? Math.round(decision.confidence * 100)
-    : Math.round(decision.confidence);
+  const normalizedConfidence =
+    decision.confidence <= 1
+      ? Math.round(decision.confidence * 100)
+      : Math.round(decision.confidence);
 
   console.log(
     `[Decision] Empfehlung: ${decision.recommendation} (Confidence: ${normalizedConfidence}%)`
@@ -465,7 +475,7 @@ export async function runPreQualSectionOrchestrator(
     if (skipPlanning) {
       // Fallback: Standard-Plan ohne LLM-Call
       plan = {
-        tasks: SECTION_IDS.map((sectionId) => ({
+        tasks: SECTION_IDS.map(sectionId => ({
           sectionId,
           priority: 'medium' as const,
           requiresWebEnrichment: sectionId === 'budget' || sectionId === 'references',
@@ -517,7 +527,7 @@ export async function runPreQualSectionOrchestrator(
     // STEP 4: DECISION - Bid/No Bid Empfehlung
     const decision = await generateBidDecision(preQualificationId, results);
 
-    const failedSections = results.filter((r) => !r.success);
+    const failedSections = results.filter(r => !r.success);
     const success = failedSections.length === 0;
 
     console.log(

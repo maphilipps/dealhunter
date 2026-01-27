@@ -56,7 +56,11 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          <DeletePreQualificationButton preQualificationId={id} label={deleteLabel} />
+          <DeletePreQualificationButton
+            preQualificationId={id}
+            label={deleteLabel}
+            isProcessing={PROCESSING_STATES.includes(bid.status)}
+          />
         </div>
       </div>
 

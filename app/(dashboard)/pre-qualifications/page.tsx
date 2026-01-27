@@ -175,6 +175,12 @@ export default async function BidsPage() {
                             preQualificationId={bid.id}
                             label={customerName}
                             size="sm"
+                            isProcessing={[
+                              'processing',
+                              'extracting',
+                              'quick_scanning',
+                              'duplicate_warning',
+                            ].includes(bid.status)}
                           />
                         </div>
                       </TableCell>

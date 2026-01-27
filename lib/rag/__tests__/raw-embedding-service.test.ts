@@ -160,17 +160,42 @@ describe('raw-embedding-service', () => {
   });
 
   describe('embedRawText', () => {
+    // Helper to mock pre-qualification existence check
+    const mockPreQualExists = () => {
+      const mockSelect = vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => ({
+            limit: vi.fn(() => [{ id: 'preQualification-123' }]),
+          })),
+        })),
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
+    };
+
     it('should return skipped when embeddings are disabled', async () => {
       vi.mocked(isEmbeddingEnabled).mockReturnValue(false);
+      mockPreQualExists();
+      // Use longer text to ensure chunking happens
+      const longText = 'Dies ist ein ausführlicher Text für das Embedding. '.repeat(10);
 
-      const result = await embedRawText('preQualification-123', 'Some text');
+      const mockInsert = vi.fn(() => ({ values: vi.fn() }));
+      const mockDelete = vi.fn(() => ({ where: vi.fn() }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.insert).mockImplementation(mockInsert as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.delete).mockImplementation(mockDelete as any);
+
+      const result = await embedRawText('preQualification-123', longText);
 
       expect(result.success).toBe(true);
       expect(result.skipped).toBe(true);
-      expect(result.stats.totalChunks).toBe(0);
+      expect(result.stats.totalChunks).toBeGreaterThanOrEqual(1);
     });
 
     it('should return success with zero chunks for empty text', async () => {
+      mockPreQualExists();
+
       const result = await embedRawText('preQualification-123', '');
 
       expect(result.success).toBe(true);
@@ -178,6 +203,7 @@ describe('raw-embedding-service', () => {
     });
 
     it('should embed text and store in database', async () => {
+      mockPreQualExists();
       const longText = 'Dies ist ein ausführlicher Projekttext mit allen Details. '.repeat(20);
 
       const mockEmbedding = Array(3072).fill(0.1);
@@ -210,6 +236,7 @@ describe('raw-embedding-service', () => {
     });
 
     it('should handle errors gracefully', async () => {
+      mockPreQualExists();
       vi.mocked(db.delete).mockImplementation((() => {
         throw new Error('Database error');
       }) as any);

@@ -18,7 +18,7 @@ import {
 import type { RequirementMatch, CMSMatchingResult } from './schema';
 
 import { db } from '@/lib/db';
-import { preQualifications } from '@/lib/db/schema';
+import { preQualifications, quickScans } from '@/lib/db/schema';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
 
 /**
@@ -442,30 +442,34 @@ export async function saveMatrixToRfp(
   matrix: RequirementMatrix
 ): Promise<void> {
   try {
-    // Load current quick scan results
+    // Load linked quick scan ID
     const preQualification = await db
-      .select({ quickScanResults: preQualifications.quickScanResults })
+      .select({ quickScanId: preQualifications.quickScanId })
       .from(preQualifications)
       .where(eq(preQualifications.id, preQualificationId))
       .limit(1);
 
-    // Parse existing results or create new object
-    const currentResults = preQualification[0]?.quickScanResults
-      ? JSON.parse(preQualification[0].quickScanResults)
-      : {};
+    const quickScanId = preQualification[0]?.quickScanId;
+    if (!quickScanId) {
+      console.warn(`[Matrix] No quickScanId for pre-qualification ${preQualificationId}`);
+      return;
+    }
 
-    // Add matrix to results
-    currentResults.cmsMatchingMatrix = matrix;
-    currentResults.cmsMatchingResult = matrixToCMSMatchingResult(matrix);
+    const cmsEvaluation = {
+      cmsMatchingMatrix: matrix,
+      cmsMatchingResult: matrixToCMSMatchingResult(matrix),
+      generatedAt: new Date().toISOString(),
+      source: 'cms-matrix',
+    };
 
-    // Save updated results
+    // Persist to quick_scans as source of truth
     await db
-      .update(preQualifications)
+      .update(quickScans)
       .set({
-        quickScanResults: JSON.stringify(currentResults),
-        updatedAt: new Date(),
+        cmsEvaluation: JSON.stringify(cmsEvaluation),
+        cmsEvaluationCompletedAt: new Date(),
       })
-      .where(eq(preQualifications.id, preQualificationId));
+      .where(eq(quickScans.id, quickScanId));
 
     console.log(`[Matrix] Saved matrix to Pre-Qualification ${preQualificationId}`);
   } catch (error) {

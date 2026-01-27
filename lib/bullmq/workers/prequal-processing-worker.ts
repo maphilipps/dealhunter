@@ -20,14 +20,17 @@ import { z } from 'zod';
 import { modelNames } from '../../ai/config';
 import { getProviderForSlot } from '../../ai/providers';
 import { extractTextFromPdf } from '../../bids/pdf-extractor';
+import { QUALIFICATION_QUESTIONS, type TenQuestionsPayload } from '../../bids/ten-questions';
 import { runTenQuestionsAgent } from '../../bids/ten-questions-agent';
 import { db } from '../../db';
 import { backgroundJobs, preQualifications, quickScans } from '../../db/schema';
 import { runExtractionAgentNative } from '../../extraction/agent-native';
 import type { ExtractedRequirements } from '../../extraction/schema';
 import { detectPII, cleanText } from '../../pii/pii-cleaner';
-import { runPreQualSectionOrchestrator, type Decision } from '../../qualification/orchestrator-worker';
-import { QUALIFICATION_QUESTIONS, type TenQuestionsPayload } from '../../bids/ten-questions';
+import {
+  runPreQualSectionOrchestrator,
+  type Decision,
+} from '../../qualification/orchestrator-worker';
 import { runQuickScanAgentNative } from '../../quick-scan/agent-native';
 import { embedAgentOutput } from '../../rag/embedding-service';
 import { queryRawChunks, formatRAGContext } from '../../rag/raw-retrieval-service';
@@ -60,7 +63,7 @@ async function updateStatus(
   await db
     .update(preQualifications)
     .set({
-      status: status as typeof preQualifications.$inferSelect['status'],
+      status: status as (typeof preQualifications.$inferSelect)['status'],
       updatedAt: new Date(),
       ...additionalData,
     })
@@ -91,7 +94,11 @@ async function updateQualificationJob(
 async function processPdf(
   fileData: { name: string; base64: string; size: number },
   enableDSGVO: boolean
-): Promise<{ fileName: string; text: string; piiMatches: Array<{ type: string; original: string; replacement: string }> }> {
+): Promise<{
+  fileName: string;
+  text: string;
+  piiMatches: Array<{ type: string; original: string; replacement: string }>;
+}> {
   const buffer = Buffer.from(fileData.base64, 'base64');
   let text = '';
   if (buffer.length === 0) {
@@ -290,7 +297,10 @@ ${context}`,
   }
 }
 
-async function inferCustomerNameWithAI(rawInput: string, fileNames: string[]): Promise<string | null> {
+async function inferCustomerNameWithAI(
+  rawInput: string,
+  fileNames: string[]
+): Promise<string | null> {
   const schema = z.object({
     customerName: z.string().nullable(),
   });
@@ -319,7 +329,10 @@ ${rawInput.slice(0, 12000)}`;
     const name = result.object.customerName?.trim();
     // Validate: reject obvious non-customer names (chapter headings, etc.)
     if (name && /^\d+\.\d+/.test(name)) {
-      console.log('[PreQual Worker] Rejected invalid customer name (looks like chapter heading):', name);
+      console.log(
+        '[PreQual Worker] Rejected invalid customer name (looks like chapter heading):',
+        name
+      );
       return null;
     }
     return name && name.length > 0 ? name : null;
@@ -335,14 +348,25 @@ ${rawInput.slice(0, 12000)}`;
  * Synthetisiert die 10 Fragen aus der Orchestrator-Decision
  * Nutzt einen Agent (LLM) statt hartcodierter switch/case Logik
  */
-async function synthesizeTenQuestionsFromDecision(decision: Decision): Promise<TenQuestionsPayload> {
+async function synthesizeTenQuestionsFromDecision(
+  decision: Decision
+): Promise<TenQuestionsPayload> {
   const questionsSchema = z.object({
-    answers: z.array(z.object({
-      questionId: z.number().min(1).max(10).describe('Die Fragen-ID (1-10)'),
-      answer: z.string().nullable().describe('Die Antwort auf die Frage, oder null wenn nicht beantwortbar'),
-      confidence: z.number().min(0).max(100).describe('Konfidenz der Antwort in Prozent (0-100)'),
-      reasoning: z.string().describe('Kurze Begründung für die Antwort. Leerer String "" wenn keine Begründung nötig.'),
-    })),
+    answers: z.array(
+      z.object({
+        questionId: z.number().min(1).max(10).describe('Die Fragen-ID (1-10)'),
+        answer: z
+          .string()
+          .nullable()
+          .describe('Die Antwort auf die Frage, oder null wenn nicht beantwortbar'),
+        confidence: z.number().min(0).max(100).describe('Konfidenz der Antwort in Prozent (0-100)'),
+        reasoning: z
+          .string()
+          .describe(
+            'Kurze Begründung für die Antwort. Leerer String "" wenn keine Begründung nötig.'
+          ),
+      })
+    ),
   });
 
   const prompt = `Du bist ein Experte für Ausschreibungsanalyse. Basierend auf der folgenden Bid/No-Bid Decision, beantworte die 10 BD-Fragen so gut wie möglich.
@@ -410,9 +434,10 @@ Gib für alle 10 Fragen eine Antwort.`;
       id: index + 1,
       question,
       answered: index === 9, // Nur letzte Frage (Bid/No-Bid) beantworten
-      answer: index === 9
-        ? `${decision.recommendation === 'bid' ? 'Empfehlung: Bieten' : decision.recommendation === 'no-bid' ? 'Empfehlung: Nicht bieten' : 'Empfehlung: Unter Bedingungen bieten'}. ${decision.reasoning}`
-        : undefined,
+      answer:
+        index === 9
+          ? `${decision.recommendation === 'bid' ? 'Empfehlung: Bieten' : decision.recommendation === 'no-bid' ? 'Empfehlung: Nicht bieten' : 'Empfehlung: Unter Bedingungen bieten'}. ${decision.reasoning}`
+          : undefined,
       evidence: [],
       confidence: index === 9 ? decision.confidence : 0,
     }));
@@ -469,9 +494,7 @@ export async function processPreQualJob(
       console.log(`[PreQual Worker] Extracting text from ${files.length} PDFs`);
 
       // Process PDFs in parallel
-      const results = await Promise.all(
-        files.map(file => processPdf(file, enableDSGVO))
-      );
+      const results = await Promise.all(files.map(file => processPdf(file, enableDSGVO)));
 
       for (const result of results) {
         if (result.text.trim()) {
@@ -480,7 +503,9 @@ export async function processPreQualJob(
         allPiiMatches.push(...result.piiMatches);
       }
 
-      console.log(`[PreQual Worker] Extracted text from ${extractedTexts.length}/${files.length} PDFs`);
+      console.log(
+        `[PreQual Worker] Extracted text from ${extractedTexts.length}/${files.length} PDFs`
+      );
     }
 
     await job.updateProgress(PROGRESS.PDF_EXTRACTION);
@@ -493,7 +518,10 @@ export async function processPreQualJob(
     let rawInput = buildRawInput(extractedTexts, websiteUrls, additionalText);
 
     if (rawInput.trim().length < 20) {
-      const fileNames = files.map(file => file.name).filter(Boolean).join(', ');
+      const fileNames = files
+        .map(file => file.name)
+        .filter(Boolean)
+        .join(', ');
       rawInput = [
         'Hinweis: Keine extrahierbaren Inhalte erkannt.',
         fileNames ? `Dateien: ${fileNames}` : '',
@@ -551,7 +579,9 @@ export async function processPreQualJob(
 
       if (existingPrequal?.extractedRequirements) {
         try {
-          extractedRequirements = JSON.parse(existingPrequal.extractedRequirements) as ExtractedRequirements;
+          extractedRequirements = JSON.parse(
+            existingPrequal.extractedRequirements
+          ) as ExtractedRequirements;
         } catch {
           extractedRequirements = {} as ExtractedRequirements;
         }
@@ -651,7 +681,6 @@ export async function processPreQualJob(
     const websiteUrl: string | null = null;
 
     if (websiteUrl) {
-
       const [quickScan] = await db
         .insert(quickScans)
         .values({
@@ -739,16 +768,22 @@ export async function processPreQualJob(
         navigationStructure: result.navigationStructure
           ? JSON.stringify(result.navigationStructure)
           : null,
-        accessibilityAudit: result.accessibilityAudit ? JSON.stringify(result.accessibilityAudit) : null,
+        accessibilityAudit: result.accessibilityAudit
+          ? JSON.stringify(result.accessibilityAudit)
+          : null,
         seoAudit: result.seoAudit ? JSON.stringify(result.seoAudit) : null,
         legalCompliance: result.legalCompliance ? JSON.stringify(result.legalCompliance) : null,
         performanceIndicators: result.performanceIndicators
           ? JSON.stringify(result.performanceIndicators)
           : null,
         screenshots: result.screenshots ? JSON.stringify(result.screenshots) : null,
-        companyIntelligence: result.companyIntelligence ? JSON.stringify(result.companyIntelligence) : null,
+        companyIntelligence: result.companyIntelligence
+          ? JSON.stringify(result.companyIntelligence)
+          : null,
         contentTypes: result.contentTypes ? JSON.stringify(result.contentTypes) : null,
-        migrationComplexity: result.migrationComplexity ? JSON.stringify(result.migrationComplexity) : null,
+        migrationComplexity: result.migrationComplexity
+          ? JSON.stringify(result.migrationComplexity)
+          : null,
         decisionMakers: result.decisionMakers ? JSON.stringify(result.decisionMakers) : null,
         rawScanData: result.rawScanData ? JSON.stringify(result.rawScanData) : null,
         activityLog: JSON.stringify(result.activityLog),
@@ -757,10 +792,7 @@ export async function processPreQualJob(
         completedAt: new Date(),
       };
 
-      await db
-        .update(quickScans)
-        .set(quickScanPayload)
-        .where(eq(quickScans.id, quickScan.id));
+      await db.update(quickScans).set(quickScanPayload).where(eq(quickScans.id, quickScan.id));
 
       await updateQualificationJob(backgroundJobId, {
         progress: PROGRESS.QUICK_SCAN,
@@ -867,9 +899,7 @@ export async function processPreQualJob(
       onProgress: (completed, total, sectionId) => {
         updateQualificationJob(backgroundJobId, {
           currentStep: `Section ${completed}/${total}: ${sectionId}`,
-        }).catch((err) =>
-          console.error('[PreQual Worker] Progress update failed:', err)
-        );
+        }).catch(err => console.error('[PreQual Worker] Progress update failed:', err));
       },
     });
 
@@ -877,7 +907,7 @@ export async function processPreQualJob(
       console.error('[PreQual Worker] Orchestrator failed:', orchestratorResult.error);
       console.error(
         '[PreQual Worker] Failed sections:',
-        orchestratorResult.failedSections.map((s) => s.sectionId)
+        orchestratorResult.failedSections.map(s => s.sectionId)
       );
     } else {
       console.log(
@@ -903,7 +933,8 @@ export async function processPreQualJob(
             .update(quickScans)
             .set({
               tenQuestions: JSON.stringify(tenQuestions),
-              recommendedBusinessUnit: orchestratorResult.decision.recommendation === 'bid' ? 'dxs' : null,
+              recommendedBusinessUnit:
+                orchestratorResult.decision.recommendation === 'bid' ? 'dxs' : null,
               confidence: orchestratorResult.decision.confidence,
               reasoning: orchestratorResult.decision.reasoning,
             })
@@ -952,15 +983,17 @@ export async function processPreQualJob(
       .update(preQualifications)
       .set({
         status: 'extraction_failed',
-        agentErrors: JSON.stringify([{
-          agent: 'prequal-processing',
-          error: errorMsg,
-          errorDetails: {
-            name: errorName,
-            stack: errorStack,
+        agentErrors: JSON.stringify([
+          {
+            agent: 'prequal-processing',
+            error: errorMsg,
+            errorDetails: {
+              name: errorName,
+              stack: errorStack,
+            },
+            timestamp: new Date().toISOString(),
           },
-          timestamp: new Date().toISOString(),
-        }]),
+        ]),
         updatedAt: new Date(),
       })
       .where(eq(preQualifications.id, preQualificationId));

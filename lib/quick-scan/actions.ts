@@ -3,7 +3,6 @@
 import { eq } from 'drizzle-orm';
 
 import { auth } from '@/lib/auth';
-import { addQuickScanJob } from '@/lib/bullmq/queues';
 import { db } from '@/lib/db';
 import { preQualifications, quickScans } from '@/lib/db/schema';
 
@@ -19,110 +18,12 @@ import { preQualifications, quickScans } from '@/lib/db/schema';
  * 4. On completion, worker updates DB status to 'completed'
  */
 export async function startQuickScan(bidId: string) {
+  // Quick Scan is now executed automatically as part of qualification process
+  void bidId; // Suppress unused parameter warning
   return {
     success: false,
     error: 'Quick Scan wird automatisch als Teil der Qualification ausgeführt.',
   };
-
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return { success: false, error: 'Nicht authentifiziert' };
-  }
-
-  try {
-    // Get the bid opportunity
-    const [bid] = await db
-      .select()
-      .from(preQualifications)
-      .where(eq(preQualifications.id, bidId))
-      .limit(1);
-
-    if (!bid) {
-      return { success: false, error: 'Bid nicht gefunden' };
-    }
-
-    if (bid.userId !== session.user.id) {
-      return { success: false, error: 'Keine Berechtigung' };
-    }
-
-    // Parse extracted requirements
-    const extractedReqs = bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null;
-
-    // Determine website URL from extracted requirements or ask user
-    // Prioritize websiteUrls array (primary source), fallback to legacy single URL
-    const websiteUrl =
-      extractedReqs?.websiteUrls?.[0]?.url || // Primary: Array with type info
-      extractedReqs?.websiteUrl || // Legacy: Single URL field
-      null;
-
-    if (!websiteUrl) {
-      return {
-        success: false,
-        error: 'Keine Website-URL in den extrahierten Anforderungen gefunden',
-        needsWebsiteUrl: true,
-      };
-    }
-
-    if (bid.quickScanId) {
-      const [existingQuickScan] = await db
-        .select()
-        .from(quickScans)
-        .where(eq(quickScans.id, bid.quickScanId))
-        .limit(1);
-
-      if (existingQuickScan && ['pending', 'running'].includes(existingQuickScan.status)) {
-        return {
-          success: false,
-          error: 'Ein Quick Scan läuft bereits',
-          quickScanId: existingQuickScan.id,
-        };
-      }
-    }
-
-    // Create QuickScan record with 'pending' status
-    // The actual scan will be executed via BullMQ
-    const [quickScan] = await db
-      .insert(quickScans)
-      .values({
-        preQualificationId: bidId,
-        websiteUrl,
-        status: 'pending',
-        startedAt: new Date(),
-      })
-      .returning();
-
-    // Update bid status to quick_scanning
-    await db
-      .update(preQualifications)
-      .set({
-        status: 'quick_scanning',
-        quickScanId: quickScan.id,
-      })
-      .where(eq(preQualifications.id, bidId));
-
-    // Enqueue background job
-    await addQuickScanJob({
-      preQualificationId: bidId,
-      quickScanId: quickScan.id,
-      websiteUrl,
-      userId: session.user.id,
-    });
-
-    // Return immediately - scan is executed via background worker
-    // The UI will connect to /api/pre-qualifications/[id]/quick-scan/stream for status updates
-    return {
-      success: true,
-      quickScanId: quickScan.id,
-      status: 'pending',
-    };
-  } catch (error) {
-    console.error('Quick Scan error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Quick Scan fehlgeschlagen',
-    };
-  }
 }
 
 /**
@@ -132,128 +33,12 @@ export async function startQuickScan(bidId: string) {
  * The actual scan is executed via the background worker
  */
 export async function retriggerQuickScan(bidId: string) {
+  // Quick Scan is now executed automatically as part of qualification process
+  void bidId; // Suppress unused parameter warning
   return {
     success: false,
     error: 'Quick Scan wird automatisch als Teil der Qualification ausgeführt.',
   };
-
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return { success: false, error: 'Nicht authentifiziert' };
-  }
-
-  try {
-    // Get the bid opportunity
-    const [bid] = await db
-      .select()
-      .from(preQualifications)
-      .where(eq(preQualifications.id, bidId))
-      .limit(1);
-
-    if (!bid) {
-      return { success: false, error: 'Bid nicht gefunden' };
-    }
-
-    if (bid.userId !== session.user.id) {
-      return { success: false, error: 'Keine Berechtigung' };
-    }
-
-    // Parse extracted requirements
-    const extractedReqs = bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : null;
-
-    // Determine website URL from extracted requirements
-    // Prioritize websiteUrls array (primary source), fallback to legacy single URL
-    const websiteUrl =
-      extractedReqs?.websiteUrls?.[0]?.url || // Primary: Array with type info
-      extractedReqs?.websiteUrl || // Legacy: Single URL field
-      null;
-
-    if (!websiteUrl) {
-      return {
-        success: false,
-        error: 'Keine Website-URL in den extrahierten Anforderungen gefunden',
-        needsWebsiteUrl: true,
-      };
-    }
-
-    let quickScanId: string;
-
-    // If existing QuickScan exists, reset status but KEEP existing data
-    // This allows Research Agents to supplement (ergänzen) data, not replace (ersetzen)
-    if (bid.quickScanId) {
-      const [existingQuickScan] = await db
-        .select()
-        .from(quickScans)
-        .where(eq(quickScans.id, bid.quickScanId))
-        .limit(1);
-
-      if (existingQuickScan && ['pending', 'running'].includes(existingQuickScan.status)) {
-        return {
-          success: false,
-          error: 'Ein Quick Scan läuft bereits',
-          quickScanId: existingQuickScan.id,
-        };
-      }
-
-      await db
-        .update(quickScans)
-        .set({
-          status: 'pending',
-          websiteUrl, // May have changed
-          startedAt: new Date(),
-          completedAt: null,
-          // Keep all other fields - they will be merged with new results in stream route
-        })
-        .where(eq(quickScans.id, bid.quickScanId));
-
-      quickScanId = bid.quickScanId;
-    } else {
-      // Create new QuickScan record if none exists
-      const [quickScan] = await db
-        .insert(quickScans)
-        .values({
-          preQualificationId: bidId,
-          websiteUrl,
-          status: 'pending',
-          startedAt: new Date(),
-        })
-        .returning();
-
-      quickScanId = quickScan.id;
-    }
-
-    // Update bid status and reset BIT evaluation data
-    await db
-      .update(preQualifications)
-      .set({
-        status: 'quick_scanning',
-        quickScanId: quickScanId,
-        decision: 'pending',
-        decisionData: null,
-        alternativeRecommendation: null,
-      })
-      .where(eq(preQualifications.id, bidId));
-
-    await addQuickScanJob({
-      preQualificationId: bidId,
-      quickScanId,
-      websiteUrl,
-      userId: session.user.id,
-    });
-
-    return {
-      success: true,
-      quickScanId: quickScanId,
-      status: 'pending',
-    };
-  } catch (error) {
-    console.error('Quick Scan re-trigger error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Quick Scan Re-Trigger fehlgeschlagen',
-    };
-  }
 }
 
 /**

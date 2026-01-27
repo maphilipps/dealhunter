@@ -34,10 +34,7 @@ async function retriggerPreQual(preQualId: string) {
   console.log(`[Retrigger] Found: ${pq.id} (Status: ${pq.status})`);
 
   // Get associated documents
-  const docs = await db
-    .select()
-    .from(documents)
-    .where(eq(documents.preQualificationId, preQualId));
+  const docs = await db.select().from(documents).where(eq(documents.preQualificationId, preQualId));
 
   console.log(`[Retrigger] Found ${docs.length} documents`);
 
@@ -48,11 +45,7 @@ async function retriggerPreQual(preQualId: string) {
       userId: pq.userId,
       jobType: 'qualification',
       status: 'pending',
-      relatedEntityType: 'pre-qualification',
-      relatedEntityId: preQualId,
-      inputPayload: JSON.stringify({ preQualificationId: preQualId }),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      preQualificationId: preQualId,
     })
     .returning();
 
@@ -60,11 +53,11 @@ async function retriggerPreQual(preQualId: string) {
 
   // Prepare file data (re-read from stored documents)
   const files = docs
-    .filter((d) => d.storedContent)
-    .map((d) => ({
+    .filter(d => d.fileData)
+    .map(d => ({
       name: d.fileName,
-      base64: d.storedContent!,
-      size: d.size || 0,
+      base64: d.fileData,
+      size: d.fileSize,
     }));
 
   console.log(`[Retrigger] Prepared ${files.length} files for processing`);
@@ -85,6 +78,7 @@ async function retriggerPreQual(preQualId: string) {
     backgroundJobId: qualificationJob.id,
     files,
     websiteUrls: pq.websiteUrl ? [pq.websiteUrl] : [],
+    additionalText: '',
     enableDSGVO: true,
   });
 
@@ -101,7 +95,7 @@ if (!preQualId) {
   process.exit(1);
 }
 
-retriggerPreQual(preQualId).catch((err) => {
+retriggerPreQual(preQualId).catch(err => {
   console.error('[Retrigger] Error:', err);
   process.exit(1);
 });

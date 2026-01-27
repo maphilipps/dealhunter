@@ -446,7 +446,7 @@ async function seedDAXData() {
     {
       account: createdAccounts.find(a => a.name === 'BMW AG'),
       source: 'reactive',
-      stage: 'preQualification',
+      stage: 'pre-qualification',
       inputType: 'pdf',
       websiteUrl: 'https://www.bmw.de',
       extractedRequirements: {
@@ -538,7 +538,7 @@ async function seedDAXData() {
     {
       account: createdAccounts.find(a => a.name === 'Siemens AG'),
       source: 'reactive',
-      stage: 'preQualification',
+      stage: 'pre-qualification',
       inputType: 'email',
       websiteUrl: 'https://www.siemens.de',
       extractedRequirements: {
@@ -585,7 +585,7 @@ async function seedDAXData() {
     {
       account: createdAccounts.find(a => a.name === 'adidas AG'),
       source: 'reactive',
-      stage: 'preQualification',
+      stage: 'pre-qualification',
       inputType: 'pdf',
       websiteUrl: 'https://www.adidas.de',
       extractedRequirements: {
@@ -681,7 +681,7 @@ async function seedDAXData() {
       .values({
         userId: testUser.id,
         source: rfpTemplate.source as 'reactive' | 'proactive',
-        stage: rfpTemplate.stage as 'cold' | 'warm' | 'preQualification',
+        stage: rfpTemplate.stage as 'cold' | 'warm' | 'pre-qualification',
         inputType: rfpTemplate.inputType as 'pdf' | 'crm' | 'freetext' | 'email' | 'combined',
         rawInput: JSON.stringify(rfpTemplate.extractedRequirements),
         extractedRequirements: JSON.stringify(rfpTemplate.extractedRequirements),

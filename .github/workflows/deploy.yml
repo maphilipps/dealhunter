@@ -14,7 +14,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: 95.216.208.185
-          username: root
+          username: deploy
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /var/www/dealhunter
@@ -29,7 +29,7 @@ jobs:
             npm run build
 
             echo "🔄 Restarting services..."
-            pm2 restart dealhunter dealhunter-worker
+            sudo pm2 restart dealhunter dealhunter-worker
 
             echo "✅ Deployment complete!"
-            pm2 list
+            sudo pm2 list

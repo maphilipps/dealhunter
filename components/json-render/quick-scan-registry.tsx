@@ -52,7 +52,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableHead, TableRow } from '@/components/ui/table';
 import {
+  TypographyH3,
   TypographyLarge,
   TypographyList,
   TypographyMuted,
@@ -96,44 +98,28 @@ const iconMap = {
   extractedComponents: Layers,
 };
 
-// Variant styles for ResultCard
-const variantStyles = {
-  default: 'border-border',
-  highlight: 'border-blue-200 bg-blue-50',
-  warning: 'border-yellow-200 bg-yellow-50',
-  success: 'border-green-200 bg-green-50',
-};
-
 /**
  * Quick Scan Component Registry
  * Maps json-render catalog components to React implementations
  */
 export const quickScanRegistry: Record<string, ComponentType<RegistryComponentProps>> = {
   ResultCard: ({ element, children }) => {
-    const {
-      title,
-      description,
-      variant = 'default',
-      icon,
-    } = element.props as {
+    const { title, description, icon } = element.props as {
       title: string;
       description?: string;
-      variant?: keyof typeof variantStyles;
       icon?: keyof typeof iconMap;
     };
     const Icon = icon ? iconMap[icon] : null;
 
     return (
-      <Card className={cn(variantStyles[variant], 'mb-6')}>
-        <CardHeader className="pb-4">
-          <div className="flex items-center gap-2">
-            {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
-            <CardTitle>{title}</CardTitle>
-          </div>
-          {description && <CardDescription>{description}</CardDescription>}
-        </CardHeader>
-        {children && <CardContent className="space-y-4">{children}</CardContent>}
-      </Card>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
+          <TypographyH3>{title}</TypographyH3>
+        </div>
+        {description && <TypographyMuted>{description}</TypographyMuted>}
+        {children}
+      </div>
     );
   },
 
@@ -392,53 +378,65 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
   /**
    * BulletList - Simple bullet point list for text content
-   * Used by: fallback generator, AI synthesis
    */
   BulletList: ({ element }) => {
-    const { title, items } = element.props as {
-      title?: string;
-      items: string[];
-    };
-
+    const { items } = element.props as { items: string[] };
     return (
-      <div className="space-y-3">
-        {title && <TypographySmall>{title}</TypographySmall>}
-        <TypographyList className="my-0 ml-4 space-y-1.5 [&>li]:mt-0">
-          {items.map((item, idx) => (
-            <li key={idx}>{item}</li>
-          ))}
-        </TypographyList>
-      </div>
+      <TypographyList>
+        {items.map((item, idx) => (
+          <li key={idx}>{item}</li>
+        ))}
+      </TypographyList>
     );
   },
 
   /**
-   * Paragraph - Simple text paragraph for explanations
+   * Paragraph - Simple text paragraph
    */
   Paragraph: ({ element }) => {
     const { text } = element.props as { text: string };
-    return (
-      <TypographyP className="text-sm mt-0 leading-normal [&:not(:first-child)]:mt-3">
-        {text}
-      </TypographyP>
-    );
+    return <TypographyP>{text}</TypographyP>;
   },
 
   /**
-   * KeyValue - Key-value pair display
+   * KeyValue - Single key-value pair as table row
    */
   KeyValue: ({ element }) => {
     const { label, value } = element.props as { label: string; value: string };
     return (
-      <div className="flex justify-between text-sm py-1">
-        <span className="text-muted-foreground">{label}:</span>
-        <span className="font-medium">{value}</span>
-      </div>
+      <Table>
+        <TableBody>
+          <TableRow>
+            <TableHead scope="row">{label}</TableHead>
+            <TableCell>{value}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     );
   },
 
   /**
-   * Section - Section header with optional badge
+   * KeyValueTable - Multiple key-value pairs as proper table
+   */
+  KeyValueTable: ({ element }) => {
+    const { items } = element.props as { items?: Array<{ label: string; value: string }> };
+    if (!items || items.length === 0) return null;
+    return (
+      <Table>
+        <TableBody>
+          {items.map((item, idx) => (
+            <TableRow key={idx}>
+              <TableHead scope="row">{item.label}</TableHead>
+              <TableCell>{item.value}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  },
+
+  /**
+   * Section - Major section with Card and H2 heading
    */
   Section: ({ element, children }) => {
     const {
@@ -454,15 +452,47 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     };
 
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <TypographyLarge>{title}</TypographyLarge>
-            {description && <TypographyMuted className="mt-1">{description}</TypographyMuted>}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle as="h2">{title}</CardTitle>
+            {badge && <Badge variant={badgeVariant}>{badge}</Badge>}
           </div>
+          {description && <CardDescription>{description}</CardDescription>}
+        </CardHeader>
+        {children && (
+          <CardContent>
+            <div className="space-y-4">{children}</div>
+          </CardContent>
+        )}
+      </Card>
+    );
+  },
+
+  /**
+   * SubSection - Sub-section with H3 heading
+   */
+  SubSection: ({ element, children }) => {
+    const {
+      title,
+      description,
+      badge,
+      badgeVariant = 'secondary',
+    } = element.props as {
+      title: string;
+      description?: string;
+      badge?: string;
+      badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
+    };
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <TypographyH3>{title}</TypographyH3>
           {badge && <Badge variant={badgeVariant}>{badge}</Badge>}
         </div>
-        {children && <div className="space-y-3">{children}</div>}
+        {description && <TypographyMuted>{description}</TypographyMuted>}
+        <div className="space-y-3">{children}</div>
       </div>
     );
   },

@@ -29,7 +29,8 @@ jobs:
             cd /var/www
 
             # Check if we need to re-clone due to permission issues
-            if [ -d "dealhunter" ] && ! touch dealhunter/.git/objects/.write-test 2>/dev/null; then
+            # Test by checking if deploy user owns the .git directory
+            if [ -d "dealhunter" ] && [ "$(stat -c '%U' dealhunter/.git 2>/dev/null)" != "deploy" ]; then
               echo "⚠️ Permission issue detected. Re-cloning repository..."
               rm -rf dealhunter.bak 2>/dev/null || true
               mv dealhunter dealhunter.bak

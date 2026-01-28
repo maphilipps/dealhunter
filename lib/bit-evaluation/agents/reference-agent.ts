@@ -1,33 +1,16 @@
-import OpenAI from 'openai';
-
 import { referenceMatchSchema, type ReferenceMatch } from '../schema';
 
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
-import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
-
-
-// Security: Prompt Injection Protection
+import { generateStructuredOutput } from '@/lib/ai/config';
 import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
-
-// Initialize OpenAI client with adesso AI Hub
-const openai = new OpenAI({
-  apiKey: AI_HUB_API_KEY,
-  baseURL: AI_HUB_BASE_URL,
-});
 
 export interface ReferenceAgentInput {
   extractedRequirements: any;
   quickScanResults?: any;
-  useWebSearch?: boolean; // Web Search für Referenz-Recherche
+  useWebSearch?: boolean;
 }
 
-/**
- * BIT-007: Reference Match Agent
- * Evaluates matching with existing reference projects and experience
- * UPGRADED: Mit Web Search für adesso Referenz-Recherche
- */
 export async function runReferenceAgent(input: ReferenceAgentInput): Promise<ReferenceMatch> {
-  // === Intelligent Research Phase ===
   let adessoReferences = '';
   let industryProjects = '';
 
@@ -41,7 +24,6 @@ export async function runReferenceAgent(input: ReferenceAgentInput): Promise<Ref
       const techStack = input.quickScanResults?.techStack;
       const cms = techStack?.cms;
 
-      // Suche nach adesso Referenzen in der Branche
       if (industry) {
         const referenceSearch = await intelligentTools.webSearch(
           `adesso SE ${industry} Projekt Referenz Kunde case study`,
@@ -54,13 +36,11 @@ export async function runReferenceAgent(input: ReferenceAgentInput): Promise<Ref
             .map(r => `- ${r.title}: ${r.snippet}`)
             .join('\n');
 
-          // Wrap web search results for prompt injection protection
-          adessoReferences = `\n\n**adesso Referenzen in ${industry} (EXA):**\n${wrapUserContent(rawRefData, 'web')}`;
+          adessoReferences = `\n\n### adesso Referenzen in ${industry}\n${wrapUserContent(rawRefData, 'web')}`;
           console.log(`[Reference Agent] ${referenceSearch.length} adesso Referenzen gefunden`);
         }
       }
 
-      // Suche nach ähnlichen Projekten mit der Technologie
       if (cms) {
         const techProjectSearch = await intelligentTools.webSearch(
           `adesso ${cms} Projekt Enterprise Implementation`,
@@ -73,8 +53,7 @@ export async function runReferenceAgent(input: ReferenceAgentInput): Promise<Ref
             .map(r => `- ${r.title}: ${r.snippet}`)
             .join('\n');
 
-          // Wrap web search results for prompt injection protection
-          industryProjects = `\n\n**adesso ${cms} Projekte (EXA):**\n${wrapUserContent(rawTechData, 'web')}`;
+          industryProjects = `\n\n### adesso ${cms} Projekte\n${wrapUserContent(rawTechData, 'web')}`;
           console.log(`[Reference Agent] ${techProjectSearch.length} Tech-Projekte gefunden`);
         }
       }
@@ -83,103 +62,82 @@ export async function runReferenceAgent(input: ReferenceAgentInput): Promise<Ref
     }
   }
 
-  const completion = await openai.chat.completions.create({
-    model: 'gemini-3-flash-preview',
-    messages: [
-      {
-        role: 'system',
-        content: `Du bist ein erfahrener Reference Project Matcher bei adesso SE.
-Bewerte GRÜNDLICH, wie gut diese Opportunity zu unseren bestehenden Referenzprojekten und Erfahrungen passt.
-Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
+  const systemPrompt = `Du bist ein Reference Project Matcher bei adesso SE.
 
-WICHTIG: Gib immer eine fundierte Einschätzung ab. Alle Begründungen und Texte auf Deutsch.`,
-      },
-      {
-        role: 'user',
-        content: `Evaluate how well this opportunity matches our existing experience and reference projects.
+## Deine Aufgabe
+Bewerte, wie gut diese Opportunity zu unseren bestehenden Referenzprojekten und Erfahrungen passt.
 
-Extracted Requirements:
+## adesso Referenz-Portfolio
+
+### CMS & Portal Projekte
+- 200+ Drupal-Projekte (Enterprise-Portale, Government, Corporate)
+- Large-Scale Content Migrations (TYPO3, WordPress → Drupal)
+- Headless CMS mit React/Next.js Frontends
+- Multi-Language, Multi-Site Implementierungen
+
+### E-Commerce Projekte
+- SAP Commerce für Retail-Kunden
+- Shopware für Mittelstand
+- Custom E-Commerce mit Payment-Integration
+
+### Enterprise Integration
+- SAP-Integration in Manufacturing
+- Salesforce in Insurance
+- Microsoft Dynamics in Public Sector
+
+### Cloud & DevOps
+- AWS Migrationen für Banking
+- Azure in Insurance
+- Kubernetes/Container Transformationen
+
+### Branchen-Erfahrung
+
+| Branche | Erfahrung |
+|---------|-----------|
+| Banking & Insurance | 30+ Major Clients (extensive) |
+| Automotive | Major OEMs und Supplier (extensive) |
+| Retail & E-Commerce | 50+ Implementierungen (extensive) |
+| Public Sector | Government, Kommunen (moderate) |
+| Energy & Utilities | Grid Operators, Provider (moderate) |
+| Manufacturing | Discrete + Process (moderate) |
+| Healthcare | Wachsend (limited) |
+
+## Industry Experience Levels
+- none: Keine Erfahrung
+- limited: 1-5 Projekte
+- moderate: 5-20 Projekte
+- extensive: 20+ Projekte
+
+## Ausgabesprache
+Alle Texte auf Deutsch.`;
+
+  const userPrompt = `Bewerte die Referenz-Passung für diese Opportunity.
+
+## Extrahierte Anforderungen
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${
   input.quickScanResults
-    ? `
-Quick Scan Results:
-${JSON.stringify(input.quickScanResults, null, 2)}
-`
+    ? `## Quick Scan Ergebnisse
+${JSON.stringify(input.quickScanResults, null, 2)}`
     : ''
 }
 ${adessoReferences}
 ${industryProjects}
 
-adesso's Reference Project Portfolio:
+## Deine Bewertung
+Analysiere und bewerte:
+1. Ähnliche Projekte (similarProjectsAnalysis: hasRelevantReferences, similarProjects, projectTypeMatchScore)
+2. Branchen-Match (industryMatchAnalysis: industryMatchScore, industryExperience, industryInsights)
+3. Technologie-Match (technologyMatchAnalysis: technologyMatchScore, matchingTechnologies, missingExperience)
+4. Erfolgsrate (successRateAnalysis: estimatedSuccessRate, successFactors, riskFactors)
+5. Gesamtbewertung (overallReferenceScore, confidence, reasoning, criticalBlockers)`;
 
-**CMS & Portal Projects:**
-- 200+ Drupal projects (enterprise portals, government sites, corporate websites)
-- Large-scale content migrations (TYPO3, WordPress to Drupal)
-- Headless CMS implementations with React/Next.js frontends
-- Multi-language, multi-site implementations
-
-**E-Commerce Projects:**
-- SAP Commerce implementations for retail clients
-- Shopware projects for mid-market
-- Custom e-commerce with payment integrations
-
-**Enterprise Integration:**
-- SAP integration projects in manufacturing
-- Salesforce implementations in insurance
-- Microsoft Dynamics in public sector
-
-**Cloud & DevOps:**
-- AWS migrations for banking clients
-- Azure implementations for insurance
-- Kubernetes/container transformations
-
-**Industry Experience:**
-- Banking & Insurance: 30+ major clients
-- Automotive: Major OEMs and suppliers
-- Retail & E-Commerce: 50+ implementations
-- Public Sector: Government agencies, municipalities
-- Energy & Utilities: Grid operators, energy providers
-- Manufacturing: Discrete and process manufacturing
-
-Respond with JSON containing:
-- similarProjectsAnalysis (object):
-  - hasRelevantReferences (boolean): Do we have relevant reference projects?
-  - similarProjects (array of objects with projectType, relevanceScore 0-100, keyLearnings): Similar projects
-  - projectTypeMatchScore (number 0-100): Overall project type match score
-- industryMatchAnalysis (object):
-  - industryMatchScore (number 0-100): How well do we know this industry
-  - industryExperience (string: "none", "limited", "moderate", or "extensive"): Experience level
-  - industryInsights (array of strings): Key industry insights we bring
-- technologyMatchAnalysis (object):
-  - technologyMatchScore (number 0-100): Technology experience score
-  - matchingTechnologies (array of strings): Technologies with strong experience
-  - missingExperience (array of strings): Technologies we lack experience with
-- successRateAnalysis (object):
-  - estimatedSuccessRate (number 0-100): Estimated success rate based on history
-  - successFactors (array of strings): Factors that increase success probability
-  - riskFactors (array of strings): Factors that decrease success probability
-- overallReferenceScore (number 0-100): Gesamt Reference Match Score
-- confidence (number 0-100): Confidence der Bewertung
-- reasoning (string): Ausführliche Begründung auf Deutsch (min. 2-3 Sätze)
-- criticalBlockers (array of strings): Kritische Referenz-bezogene Blocker auf Deutsch`,
-      },
-    ],
+  return generateStructuredOutput({
+    model: 'quality',
+    schema: referenceMatchSchema,
+    system: systemPrompt,
+    prompt: userPrompt,
     temperature: 0.3,
-    max_tokens: 4000,
   });
-
-  const responseText = completion.choices[0]?.message?.content || '{}';
-  const cleanedResponse = responseText
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '')
-    .trim();
-
-  const rawResult = JSON.parse(cleanedResponse);
-  const cleanedResult = Object.fromEntries(
-    Object.entries(rawResult).filter(([_, v]) => v !== null)
-  );
-
-  return referenceMatchSchema.parse(cleanedResult);
 }

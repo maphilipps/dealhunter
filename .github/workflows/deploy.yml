@@ -33,8 +33,8 @@ jobs:
             git reset --hard origin/main
 
             echo "📦 Installing dependencies..."
-            # Fix permissions if node_modules was created by another user
-            if [ -d "node_modules" ] && [ ! -w "node_modules" ]; then
+            # Fix permissions if node_modules exists (may have been created by another user)
+            if [ -d "node_modules" ]; then
               echo "⚠️ Fixing node_modules permissions..."
               sudo chown -R deploy:deploy node_modules
             fi

@@ -3,6 +3,7 @@
 ## Übersicht
 
 - **Server IP**: 95.216.208.185
+- **Alte Domain**: dealhunter.adessocms.de (redirect zur neuen)
 - **Neue Domain**: leads.adesso-dx-phpxcom.de
 - **App läuft auf**: Port 3000 (PM2)
 - **Reverse Proxy**: Caddy (automatisches SSL)

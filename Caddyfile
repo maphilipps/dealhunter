@@ -1,10 +1,16 @@
-# DealHunter / Leads App - Caddy Configuration
+# Leads App - Caddy Configuration
 #
 # Copy this file to /etc/caddy/Caddyfile on your server
 # Then run: sudo systemctl reload caddy
 #
 # Caddy will automatically obtain SSL certificates from Let's Encrypt
 
+# Redirect old domain to new domain
+dealhunter.adessocms.de {
+    redir https://leads.adesso-dx-phpxcom.de{uri} permanent
+}
+
+# Main domain - Leads App
 leads.adesso-dx-phpxcom.de {
     # Reverse proxy to Next.js app running on port 3000
     reverse_proxy localhost:3000 {

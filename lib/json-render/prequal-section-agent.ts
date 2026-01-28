@@ -23,17 +23,15 @@ VERBOTEN:
 - Verschachtelte Cards (NIEMALS Card in Card!)
 
 STRUKTUR:
-1. Root ist eine Section (wird als Card mit H2 gerendert)
-2. Unterabschnitte mit SubSection (H3)
-3. Mehrere KeyValue-Paare in KeyValueTable gruppieren
-4. KEINE Rohdaten ausgeben - IMMER aufbereiten und interpretieren!
+1. Root ist eine Section (Card mit H2)
+2. ZUERST: Kurze Zusammenfassung (1 Paragraph, 2-3 Sätze max)
+3. DANN: Ausführliche Details in SubSections (H3)
+4. KEINE Rohdaten - IMMER aufbereiten!
 
-INHALTLICHE QUALITÄT:
-- Fasse Kernpunkte zusammen, nicht einfach kopieren
-- Interpretiere die Bedeutung für ein Angebotsteam
-- KEINE DUPLIKATE: Jede Information nur einmal erwähnen
-- Nutze BulletList für aufbereitete Listen
-- Nutze Paragraph für Zusammenfassungen
+INHALT:
+- ZUSAMMENFASSUNG: Kernaussage für schnelles Verständnis
+- DETAILS: Strukturierte Fakten in SubSections
+- KEINE DUPLIKATE: Information nur einmal erwähnen
 - Bei fehlenden Infos: Klar benennen was fehlt
 
 KEY-VALUE REGELN (WICHTIG!):
@@ -46,15 +44,14 @@ LAYOUT-REGELN:
 - Immer einspaltig (kein Grid mit columns: 2)
 - VERBOTEN: Grid, ResultCard (deprecated)
 
-BEISPIEL:
+BEISPIEL (Zusammenfassung → Details):
 {
   "root": "section-main",
   "elements": {
-    "section-main": { "key": "section-main", "type": "Section", "props": { "title": "Vertragliche Rahmenbedingungen" }, "children": ["para-summary", "sub-commercial", "sub-legal"] },
-    "para-summary": { "key": "para-summary", "type": "Paragraph", "props": { "text": "Die Ausschreibung sieht einen EVB-IT Systemvertrag vor..." } },
-    "sub-commercial": { "key": "sub-commercial", "type": "SubSection", "props": { "title": "Kommerzielles Modell" }, "children": ["kvtable-1"] },
+    "section-main": { "key": "section-main", "type": "Section", "props": { "title": "Vertragliche Rahmenbedingungen" }, "children": ["summary", "sub-details"] },
+    "summary": { "key": "summary", "type": "Paragraph", "props": { "text": "EVB-IT Systemvertrag über 4 Jahre mit DSGVO-Anforderungen und EU-Hosting-Pflicht." } },
+    "sub-details": { "key": "sub-details", "type": "SubSection", "props": { "title": "Details" }, "children": ["kvtable-1", "list-1"] },
     "kvtable-1": { "key": "kvtable-1", "type": "KeyValueTable", "props": { "items": [{"label": "Vertragstyp", "value": "EVB-IT Systemvertrag"}, {"label": "Laufzeit", "value": "4 Jahre + Option"}] } },
-    "sub-legal": { "key": "sub-legal", "type": "SubSection", "props": { "title": "Rechtliche Anforderungen" }, "children": ["list-1"] },
     "list-1": { "key": "list-1", "type": "BulletList", "props": { "items": ["DSGVO-Konformität erforderlich", "Hosting in DE/EU"] } }
   }
 }
@@ -99,7 +96,11 @@ export async function runPreQualSectionAgent(input: {
     description: `Speichere die aufbereitete UI-Visualisierung für Section "${sectionId}".
 
 WICHTIG: Rufe erst queryDocuments auf, dann erstelle eine AUFBEREITETE Visualisierung.
-KEINE Rohdaten, KEINE Confidence-Anzeigen, KEINE ProgressBars, KEINE verschachtelten Cards.
+
+STRUKTUR: Zusammenfassung → Details
+1. Section (Card mit H2) als Root
+2. ZUERST: Kurze Zusammenfassung (1 Paragraph, 2-3 Sätze)
+3. DANN: Details in SubSection(s) mit KeyValueTable/BulletList
 
 Verfügbare Typen:
 - Section: Hauptcontainer mit Card + H2 (title: string, description?: string)

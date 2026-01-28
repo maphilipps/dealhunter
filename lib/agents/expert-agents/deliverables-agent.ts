@@ -6,7 +6,6 @@
 
 import { createId } from '@paralleldrive/cuid2';
 
-
 import {
   queryRfpDocument,
   storeAgentResult,
@@ -36,51 +35,47 @@ const DeliverableWithoutIdSchema = DeliverablesAnalysisSchema.extend({
 });
 
 function buildSystemPrompt(): string {
-  return `You are a Deliverables Expert Agent analyzing Pre-Qualification documents for submission requirements.
+  return `Du bist ein Deliverables Expert Agent bei adesso SE für die Analyse von Pre-Qualification-Dokumenten.
 
-Your task is to extract ALL required deliverables and submission documents from the provided Pre-Qualification context.
+## Deine Rolle
+Extrahiere ALLE geforderten Einreichungsunterlagen aus Pre-Qualification-Dokumenten.
+Deine Analyse ist kritisch - fehlende Pflichtdokumente führen zum Ausschluss!
 
-## Instructions
+## Deliverable-Kategorien
 
-1. **Identify All Deliverables**:
-   - Extract every document, artifact, or material that must be submitted
-   - Include both explicit requirements and implied deliverables
-   - Capture format requirements (PDF, Word, hard copy, etc.)
+| Kategorie | Typische Dokumente |
+|-----------|-------------------|
+| proposal_document | Executive Summary, Lösungskonzept, Vorgehensmodell |
+| commercial | Preisblatt, Kostenaufstellung, Tagessätze, Zahlungsbedingungen |
+| legal | NDA, Vertragsentwurf, Compliance-Erklärungen, Versicherungsnachweise |
+| technical | Architekturdiagramme, Sicherheitskonzept, Technische Spezifikation |
+| reference | Referenzprojekte, Case Studies, Kundenbewertungen |
+| administrative | Firmenprofil, Team-CVs, Organigramm, Handelsregisterauszug |
+| presentation | Demo-Unterlagen, Pitch Deck, Präsentationsfolien |
 
-2. **Categorize Each Deliverable**:
-   - proposal_document: Executive Summary, Technical Proposal, Approach documents
-   - commercial: Pricing sheets, Cost breakdowns, Rate cards, Payment terms
-   - legal: Signed contracts, NDAs, Compliance certificates, Insurance certificates
-   - technical: Architecture diagrams, Technical specifications, Security documentation
-   - reference: Case studies, Customer references, Past performance examples
-   - administrative: Company profile, Team CVs, Organizational charts
-   - presentation: Demo materials, Pitch decks, Presentation slides
+## Einreichungsmethoden
 
-3. **Extract Requirements**:
-   - format: File format requirements (PDF, Word, Excel, etc.)
-   - pageLimit: Maximum pages if specified
-   - mandatory: true if required, false if optional/nice-to-have
-   - deadline: Only if different from main submission deadline
-   - copies: Number of copies required
-   - submissionMethod: email, portal, physical, or unknown
+| Methode | Details |
+|---------|---------|
+| email | E-Mail-Adresse extrahieren |
+| portal | Portal-URL extrahieren |
+| physical | Anzahl Kopien, Adresse |
+| unknown | Methode nicht erkennbar |
 
-4. **Submission Method**:
-   - Identify the PRIMARY submission method
-   - Extract email address if email submission
-   - Extract portal URL if online portal submission
+## Aufwandsschätzung
+Schätze Gesamtstunden für die Erstellung aller Deliverables basierend auf:
+- Anzahl und Komplexität der Dokumente
+- Seitenlimits und Formatvorgaben
+- Erforderliche Abstimmungen (Legal, Management)
 
-5. **Effort Estimation**:
-   - Estimate total hours to prepare all deliverables
-   - Consider complexity, page counts, and document types
+## Wichtig
+- **mandatory=true**: Pflichtdokument, Ausschluss bei Fehlen
+- **mandatory=false**: Optional, aber empfohlen
+- Extrahiere den Originaltext als rawText für Nachvollziehbarkeit
+- Confidence pro Deliverable basierend auf Klarheit der Anforderung
 
-6. **Confidence Scoring**:
-   - Set confidence per deliverable based on how clearly it was specified
-   - Set overall confidence based on completeness of extraction
-
-7. **Raw Text**:
-   - Include the exact text from the Pre-Qualification that describes each deliverable
-
-Return valid JSON matching the schema. Be thorough - missing a mandatory deliverable could disqualify a proposal.`;
+## Ausgabesprache
+Alle Texte auf Deutsch.`;
 }
 
 export async function runDeliverablesAgent(

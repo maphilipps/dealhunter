@@ -270,29 +270,52 @@ export async function evaluateResults(
   try {
     const aiEvaluation: EvaluationResultFromZod = await generateStructuredOutput({
       schema: evaluationResultZodSchema,
-      system: `Du bist ein Qualitätsprüfer für AI Agent Ergebnisse.
-Analysiere die Ergebnisse auf:
-1. Vollständigkeit - Sind alle wichtigen Informationen vorhanden?
-2. Plausibilität - Sind die Ergebnisse logisch konsistent?
-3. Confidence - Sind die Confidence-Werte akzeptabel (>70%)?
-4. Verbesserungspotenzial - Was kann verbessert werden?
+      system: `Du bist ein Qualitätsprüfer für AI Agent Ergebnisse bei adesso SE.
 
-Kontext: ${schema.context || 'Agent Results Evaluation'}
+## Deine Rolle
+Analysiere Agent-Outputs auf Qualität und identifiziere Verbesserungspotenzial.
+Deine Bewertung hilft, die Zuverlässigkeit der automatisierten Analyse sicherzustellen.
 
-Wichtig: Sei konstruktiv. Wenn etwas fehlt, schlage vor, wie man es finden könnte.`,
-      prompt: `Bewerte diese Ergebnisse:
+## Prüfkriterien
 
+| Kriterium | Gewicht | Beschreibung |
+|-----------|---------|--------------|
+| Vollständigkeit | 40% | Sind alle Pflichtfelder ausgefüllt? |
+| Plausibilität | 30% | Sind die Ergebnisse logisch konsistent? |
+| Confidence | 20% | Sind die Confidence-Werte ≥70%? |
+| Actionability | 10% | Sind die Ergebnisse handlungsrelevant? |
+
+## Severity-Klassifikation
+
+| Level | Wann verwenden |
+|-------|----------------|
+| critical | Fehlende Pflichtdaten, Inkonsistenzen |
+| major | Niedrige Confidence, unvollständige Analyse |
+| minor | Fehlende optionale Daten, Optimierungspotenzial |
+
+## Kontext
+${schema.context || 'Agent Results Evaluation'}
+
+## Ausgabe
+- Sei konstruktiv und lösungsorientiert
+- Schlage konkrete Verbesserungen vor
+- Alle Texte auf Deutsch`,
+      prompt: `Bewerte diese Agent-Ergebnisse:
+
+\`\`\`json
 ${JSON.stringify(results, null, 2)}
+\`\`\`
 
-Vorläufige Metriken:
+## Vorläufige Metriken
 - Vollständigkeit: ${completeness}%
 - Basis-Score: ${baseScore}
 - Confidence-Probleme: ${metrics.confidenceIssues.join(', ') || 'Keine'}
 
-Erforderliche Felder: ${schema.requiredFields.map(f => f.description).join(', ')}
-Optionale Felder: ${schema.optionalFields?.map(f => f.description).join(', ') || 'Keine'}
+## Schema-Definition
+- Pflichtfelder: ${schema.requiredFields.map(f => f.description).join(', ')}
+- Optionale Felder: ${schema.optionalFields?.map(f => f.description).join(', ') || 'Keine'}
 
-Gib eine strukturierte Bewertung mit konkreten Verbesserungsvorschlägen.`,
+Erstelle eine strukturierte Bewertung mit konkreten Verbesserungsvorschlägen.`,
     });
 
     ctx.emit?.({

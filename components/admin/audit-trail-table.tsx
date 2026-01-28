@@ -202,7 +202,7 @@ export function AuditTrailTable() {
             ) : (
               logs.map(log => (
                 <TableRow key={log.id}>
-                  <TableCell className="whitespace-nowrap">
+                  <TableCell>
                     {formatDistanceToNow(new Date(log.createdAt), {
                       addSuffix: true,
                       locale: de,

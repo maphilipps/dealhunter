@@ -12,6 +12,7 @@
 import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
 
+import { AI_TIMEOUTS } from '../ai/config';
 import { openai } from '../ai/providers';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -195,7 +196,7 @@ export async function analyzeContentArchitecture(
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: ContentArchitectureAnalysisSchema,
       maxRetries: 2,
-      abortSignal: AbortSignal.timeout(60_000), // 60s timeout
+      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),
       prompt: `You are a senior Drupal architect at adesso SE, analyzing a website for migration to Drupal.
 
 ## Context

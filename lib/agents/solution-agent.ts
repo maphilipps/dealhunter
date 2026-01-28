@@ -14,6 +14,7 @@
 import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
 
+import { AI_TIMEOUTS } from '../ai/config';
 import { openai } from '../ai/providers';
 import { queryRAG } from '../rag/retrieval-service';
 
@@ -187,7 +188,7 @@ export async function generateOutline(input: SolutionInput): Promise<SolutionOut
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: OutlineSchema,
       maxRetries: 2,
-      abortSignal: AbortSignal.timeout(60_000), // 60s timeout
+      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),
       prompt: `You are a technical solution architect creating a structured outline for a pitchdeck deliverable.
 
 **Deliverable:** ${input.deliverableName}
@@ -310,7 +311,7 @@ export async function generateDraft(
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: DraftSchema,
       maxRetries: 2,
-      abortSignal: AbortSignal.timeout(90_000), // 90s timeout for long drafts
+      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_HEAVY),
       prompt: `You are a technical solution architect creating a professional pitchdeck deliverable.
 
 **Deliverable:** ${input.deliverableName}
@@ -451,7 +452,7 @@ export async function generateTalkingPoints(
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: TalkingPointsSchema,
       maxRetries: 2,
-      abortSignal: AbortSignal.timeout(60_000), // 60s timeout
+      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),
       prompt: `You are a presentation coach creating talking points for a technical pitch.
 
 **Deliverable:** ${input.deliverableName}
@@ -553,7 +554,7 @@ export async function generateVisualIdeas(input: SolutionInput): Promise<Solutio
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: VisualIdeasSchema,
       maxRetries: 2,
-      abortSignal: AbortSignal.timeout(60_000), // 60s timeout
+      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),
       prompt: `You are a presentation designer suggesting visuals for a technical deliverable.
 
 **Deliverable:** ${input.deliverableName}

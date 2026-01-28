@@ -15,6 +15,7 @@ import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
 
 import type { ContentArchitectureResult } from './content-architecture-agent';
+import { AI_TIMEOUTS } from '../ai/config';
 import { openai } from '../ai/providers';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -135,7 +136,7 @@ export async function analyzeMigrationComplexity(
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: MigrationComplexityAnalysisSchema,
       maxRetries: 2,
-      abortSignal: AbortSignal.timeout(60_000), // 60s timeout
+      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),
       prompt: `Analyze the migration complexity for the following website migration.
 
 Website: ${websiteUrl}

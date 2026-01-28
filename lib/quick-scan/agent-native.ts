@@ -27,7 +27,7 @@ import {
 } from '../agent-tools';
 import type { ToolContext } from '../agent-tools';
 import { buildAgentContext, formatContextForPrompt } from '../agent-tools/context-builder';
-import { modelNames, defaultSettings } from '../ai/config';
+import { modelNames, defaultSettings, AI_TIMEOUTS } from '../ai/config';
 import { getProviderForSlot } from '../ai/providers';
 
 const completionSchema = extendedQuickScan2Schema.extend({
@@ -195,8 +195,8 @@ export async function runQuickScanAgentNative(
 
   // AbortController für externes Timeout-Handling
   const controller = new AbortController();
-  const TOTAL_TIMEOUT_MS = 5 * 60 * 1000; // 5 Minuten gesamt
-  const STEP_TIMEOUT_MS = 60 * 1000; // 60 Sekunden pro Step
+  const TOTAL_TIMEOUT_MS = AI_TIMEOUTS.QUICK_SCAN_TOTAL;
+  const STEP_TIMEOUT_MS = AI_TIMEOUTS.QUICK_SCAN_STEP;
   const timeoutId = setTimeout(() => controller.abort(), TOTAL_TIMEOUT_MS);
 
   let result;

@@ -8,6 +8,7 @@
 
 import { Worker } from 'bullmq';
 
+import { AI_TIMEOUTS } from '../lib/ai/config';
 import { getConnectionOptions, closeConnection } from '../lib/bullmq/connection';
 import { QUEUE_NAMES, closeQueues } from '../lib/bullmq/queues';
 import { processPreQualJob } from '../lib/bullmq/workers/prequal-processing-worker';
@@ -33,7 +34,7 @@ async function main() {
       connection: connectionOptions,
       concurrency: WORKER_CONCURRENCY,
       // Timeout-Konfiguration für lange laufende Jobs
-      lockDuration: 10 * 60 * 1000, // 10 Minuten Job-Lock
+      lockDuration: AI_TIMEOUTS.WORKER_LOCK,
       stalledInterval: 30 * 1000, // Stalled-Check alle 30s
       maxStalledCount: 2, // Nach 2 Checks als stalled markieren
     }

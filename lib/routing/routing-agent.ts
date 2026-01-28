@@ -8,6 +8,7 @@ import {
   type RouteBusinessUnitInput,
 } from './schemas';
 
+import { AI_TIMEOUTS } from '@/lib/ai/config';
 import { openai } from '@/lib/ai/providers';
 import { TECH_TO_BU_MAPPING, getBusinessUnitForTech } from '@/lib/config/business-rules';
 import { db } from '@/lib/db';
@@ -167,7 +168,7 @@ Technologies: ${bu.technologies.join(', ') || 'Keine'}
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: BusinessLineRoutingSchema,
       maxRetries: 2,
-      abortSignal: AbortSignal.timeout(45_000), // 45s timeout
+      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_STANDARD),
       system: `Du bist ein Business Line Routing Agent für adesso SE.
 
 Deine Aufgabe ist es, Projekt-Anforderungen zu analysieren und die passende Business Line zu empfehlen.

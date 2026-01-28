@@ -135,6 +135,29 @@ export const defaultSettings = {
 
 export type ModelKey = keyof typeof modelNames;
 
+/**
+ * Centralized timeout configurations for AI operations
+ * All values in milliseconds
+ */
+export const AI_TIMEOUTS = {
+  /** Simple agent calls (decision maker research) */
+  AGENT_SIMPLE: 30_000,
+  /** Standard agent calls (company research, routing) */
+  AGENT_STANDARD: 45_000,
+  /** Complex agent calls (content architecture, migration, timeline) */
+  AGENT_COMPLEX: 60_000,
+  /** Heavy agent calls (ten questions, draft generation) */
+  AGENT_HEAVY: 90_000,
+  /** Quick-Scan total timeout */
+  QUICK_SCAN_TOTAL: 5 * 60_000,
+  /** Quick-Scan per-step timeout */
+  QUICK_SCAN_STEP: 60_000,
+  /** SSE stream maximum duration */
+  SSE_STREAM: 10 * 60_000,
+  /** BullMQ worker lock duration */
+  WORKER_LOCK: 10 * 60_000,
+} as const;
+
 export async function generateStructuredOutput<T extends z.ZodType>(options: {
   model?: ModelKey;
   schema: T;

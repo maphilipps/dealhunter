@@ -1,6 +1,7 @@
 import { eq, and } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
+import { AI_TIMEOUTS } from '@/lib/ai/config';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { preQualifications, quickScans } from '@/lib/db/schema';
@@ -76,7 +77,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
 
       // Timeout-Konstanten
       const startTime = Date.now();
-      const MAX_STREAM_DURATION = 10 * 60 * 1000; // 10 Minuten
+      const MAX_STREAM_DURATION = AI_TIMEOUTS.SSE_STREAM;
       const POLL_INTERVAL = 2000;
 
       while (Date.now() - startTime < MAX_STREAM_DURATION) {
@@ -152,14 +153,17 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
       }
 
-      // Timeout erreicht - Error Event emittieren
-      emit({
-        type: AgentEventType.ERROR,
-        data: {
-          message: 'Qualification hat das Zeitlimit überschritten (10 Minuten)',
-          code: 'STREAM_TIMEOUT',
-        },
-      });
+      // Check if we actually timed out (vs exited due to completed/failed status)
+      const timedOut = Date.now() - startTime >= MAX_STREAM_DURATION;
+      if (timedOut) {
+        emit({
+          type: AgentEventType.ERROR,
+          data: {
+            message: 'Qualification hat das Zeitlimit überschritten (10 Minuten)',
+            code: 'STREAM_TIMEOUT',
+          },
+        });
+      }
     });
 
     return createSSEResponse(stream);

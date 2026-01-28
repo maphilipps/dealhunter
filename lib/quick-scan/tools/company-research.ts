@@ -1,6 +1,6 @@
 import { generateText } from 'ai';
 
-import { modelNames } from '../../ai/config';
+import { modelNames, AI_TIMEOUTS } from '../../ai/config';
 import { getProviderForSlot } from '../../ai/providers';
 import { getStockData, searchStockSymbol } from '../../integrations/yahoo-finance';
 import { searchAndContents } from '../../search/web-search';
@@ -257,7 +257,7 @@ Fülle nur Felder aus, die du aus den Daten belegen kannst. Setze andere auf nul
       temperature: 0.2,
       maxOutputTokens: 2000,
       maxRetries: 2,
-      abortSignal: AbortSignal.timeout(45_000), // 45s timeout for complex company analysis
+      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_STANDARD),
     });
 
     const responseText = text || '{}';

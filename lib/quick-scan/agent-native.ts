@@ -27,7 +27,7 @@ import {
 } from '../agent-tools';
 import type { ToolContext } from '../agent-tools';
 import { buildAgentContext, formatContextForPrompt } from '../agent-tools/context-builder';
-import { modelNames, defaultSettings } from '../ai/config';
+import { modelNames, defaultSettings, AI_TIMEOUTS } from '../ai/config';
 import { getProviderForSlot } from '../ai/providers';
 
 const completionSchema = extendedQuickScan2Schema.extend({
@@ -193,9 +193,42 @@ export async function runQuickScanAgentNative(
     .filter(Boolean)
     .join('\n');
 
-  const result = await agent.generate({
-    prompt,
-  });
+  // AbortController für externes Timeout-Handling
+  const controller = new AbortController();
+  const TOTAL_TIMEOUT_MS = AI_TIMEOUTS.QUICK_SCAN_TOTAL;
+  const STEP_TIMEOUT_MS = AI_TIMEOUTS.QUICK_SCAN_STEP;
+  const timeoutId = setTimeout(() => controller.abort(), TOTAL_TIMEOUT_MS);
+
+  let result;
+  try {
+    result = await agent.generate({
+      prompt,
+      abortSignal: controller.signal,
+      timeout: {
+        totalMs: TOTAL_TIMEOUT_MS,
+        stepMs: STEP_TIMEOUT_MS,
+      },
+      onStepFinish: stepResult => {
+        const toolNames =
+          stepResult.toolCalls
+            ?.filter((t): t is NonNullable<typeof t> => t != null)
+            .map(t => t.toolName)
+            .join(', ') || 'none';
+        logActivity('Step completed', `Tools: ${toolNames}`);
+      },
+    });
+  } catch (error) {
+    clearTimeout(timeoutId);
+    // Timeout-Fehler anreichern
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(
+        `QuickScan Timeout: Agent hat nach ${TOTAL_TIMEOUT_MS / 1000}s nicht geantwortet`
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const completion = result.steps
     .flatMap(step => step.toolCalls ?? [])

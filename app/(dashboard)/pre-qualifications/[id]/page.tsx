@@ -3,13 +3,14 @@ import { notFound, redirect } from 'next/navigation';
 
 import { ProcessingProgressCard } from '@/components/bids/processing-progress-card';
 import { DeletePreQualificationButton } from '@/components/pre-qualifications/delete-prequalification-button';
+import { QuickScanSummaryGrid } from '@/components/pre-qualifications/management-summary';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { getAgentResult, hasExpertAgentResults } from '@/lib/agents/expert-agents';
 import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schema';
 import { auth } from '@/lib/auth';
-import { getCachedPreQualification } from '@/lib/pre-qualifications/cached-queries';
+import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
 
 const PROCESSING_STATES = ['processing', 'extracting', 'quick_scanning', 'duplicate_warning'];
 
@@ -21,8 +22,8 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
     redirect('/login');
   }
 
-  // Get bid opportunity (cached - shares query with layout)
-  const bid = await getCachedPreQualification(id);
+  // Get bid opportunity with quick scan data (cached - shares query with layout)
+  const { preQualification: bid, quickScan } = await getCachedPreQualificationWithRelations(id);
 
   if (!bid) {
     notFound();
@@ -58,8 +59,6 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
           <DeletePreQualificationButton preQualificationId={id} label={deleteLabel} />
         </div>
       </div>
-
-
 
       {/* Management Summary (if available) */}
       {summary && (
@@ -161,6 +160,9 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
           </CardContent>
         </Card>
       )}
+
+      {/* Quick-Scan Summary Grid */}
+      <QuickScanSummaryGrid preQualificationId={id} quickScan={quickScan} />
 
       {/* Processing Progress (must remain visible) */}
       {PROCESSING_STATES.includes(bid.status) && <ProcessingProgressCard bidId={bid.id} />}

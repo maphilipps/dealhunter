@@ -3,8 +3,7 @@ import { z } from 'zod';
 
 import type { DecisionMakersResearch, DecisionMaker } from '../schema';
 
-
-import { modelNames } from '@/lib/ai/config';
+import { modelNames, AI_TIMEOUTS } from '@/lib/ai/config';
 import { getProviderForSlot } from '@/lib/ai/providers';
 import { searchAndContents, getContents } from '@/lib/search/web-search';
 
@@ -171,6 +170,8 @@ INHALT:
 ${pageContent.slice(0, 10000)}
 
 Gib ein JSON zurück mit allen gefundenen Führungspersonen.`,
+      maxRetries: 2,
+      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_SIMPLE),
     });
 
     const jsonStart = text.indexOf('{');

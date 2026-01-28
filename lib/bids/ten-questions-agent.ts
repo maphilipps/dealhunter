@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { registry } from '@/lib/agent-tools';
 import type { ToolContext } from '@/lib/agent-tools';
-import { modelNames } from '@/lib/ai/config';
+import { modelNames, AI_TIMEOUTS } from '@/lib/ai/config';
 import { getProviderForSlot } from '@/lib/ai/providers';
 import { QUALIFICATION_QUESTIONS, type TenQuestionsPayload } from '@/lib/bids/ten-questions';
 
@@ -69,6 +69,8 @@ export async function runTenQuestionsAgent(
   const { object } = await generateObject({
     model: getProviderForSlot('quality')(modelNames.quality),
     schema: completionSchema,
+    maxRetries: 2,
+    abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_HEAVY),
     prompt: [
       'Du berätst mich in der Analyse der beigefügten Ausschreibung.',
       'Beziehe Dich bei den Antworten immer ausschließlich auf die bereitgestellten Dokumente.',

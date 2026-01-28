@@ -3,7 +3,7 @@ import { generateText } from 'ai';
 import { projectTimelineSchema, COMPLEXITY_MULTIPLIERS, type ProjectTimeline } from './schema';
 import { PHASE_DISTRIBUTION, STANDARD_PHASES } from './schema';
 
-import { modelNames } from '@/lib/ai/config';
+import { modelNames, AI_TIMEOUTS } from '@/lib/ai/config';
 import { getProviderForSlot } from '@/lib/ai/providers';
 
 /**
@@ -156,7 +156,9 @@ function buildFallbackTimeline(
     ],
     risks: [
       {
-        factor: input.targetDeadline ? 'Feste Deadline kann Umsetzung verkürzen' : 'Deadline unklar',
+        factor: input.targetDeadline
+          ? 'Feste Deadline kann Umsetzung verkürzen'
+          : 'Deadline unklar',
         impact: 'medium',
         likelihood: input.targetDeadline ? 'high' : 'medium',
       },
@@ -338,6 +340,8 @@ Antworte AUSSCHLIESSLICH als gültiges JSON, das exakt dem Schema entspricht.`;
   const { text } = await generateText({
     model: getProviderForSlot('quality')(modelNames.quality),
     prompt: `${prompt}\n\n${contextDescription}${ragContext}`,
+    maxRetries: 2,
+    abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),
   });
 
   try {

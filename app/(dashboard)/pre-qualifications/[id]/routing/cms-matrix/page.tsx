@@ -1,10 +1,9 @@
-import { AlertCircle, Loader2, Star, Target } from 'lucide-react';
+import { AlertCircle, Loader2, Target } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import {
   Table,
   TableBody,
@@ -69,7 +68,15 @@ export default async function CMSMatrixPage({ params }: { params: Promise<{ id: 
   let cmsEvaluation: CMSMatchingResult | null = null;
   if (quickScan?.cmsEvaluation) {
     try {
-      cmsEvaluation = JSON.parse(quickScan.cmsEvaluation) as CMSMatchingResult;
+      const parsed = JSON.parse(quickScan.cmsEvaluation) as
+        | CMSMatchingResult
+        | {
+            cmsMatchingResult?: CMSMatchingResult;
+          };
+      cmsEvaluation =
+        'cmsMatchingResult' in parsed && parsed.cmsMatchingResult
+          ? parsed.cmsMatchingResult
+          : (parsed as CMSMatchingResult);
     } catch {
       cmsEvaluation = null;
     }
@@ -107,113 +114,6 @@ export default async function CMSMatrixPage({ params }: { params: Promise<{ id: 
 
       {cmsEvaluation && (
         <>
-          {/* Recommendation Card */}
-          <Card className="border-green-200 bg-green-50">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <Target className="h-6 w-6 text-green-600" />
-                <div>
-                  <CardTitle className="text-green-900">Empfehlung</CardTitle>
-                  <CardDescription className="text-green-700">
-                    AI-basierte Technologie-Empfehlung
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-lg bg-white p-4">
-                  <p className="text-muted-foreground mb-2 text-sm font-medium">Empfohlenes CMS</p>
-                  <p className="text-2xl font-bold text-green-700">
-                    {cmsEvaluation.recommendation.primaryCms}
-                  </p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Badge variant="default" className="bg-green-600">
-                      {cmsEvaluation.recommendation.confidence}% Konfidenz
-                    </Badge>
-                  </div>
-                </div>
-                <div className="rounded-lg bg-white p-4">
-                  <p className="text-muted-foreground mb-2 text-sm font-medium">Begründung</p>
-                  <p className="text-sm text-foreground">
-                    {cmsEvaluation.recommendation.reasoning}
-                  </p>
-                  {cmsEvaluation.recommendation.alternativeCms && (
-                    <div className="mt-3 pt-3 border-t">
-                      <p className="text-xs text-muted-foreground">Alternative</p>
-                      <p className="text-sm font-medium">
-                        {cmsEvaluation.recommendation.alternativeCms}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Technology Comparison Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Technologie-Vergleich</CardTitle>
-              <CardDescription>Gesamtbewertung aller analysierten CMS-Systeme</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>CMS</TableHead>
-                    <TableHead className="text-right">Score</TableHead>
-                    <TableHead>Stärken</TableHead>
-                    <TableHead>Schwächen</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {technologies.map((tech, idx) => (
-                    <TableRow key={tech.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {idx === 0 && <Star className="h-4 w-4 text-yellow-500" />}
-                          {tech.name}
-                          {tech.isBaseline && (
-                            <Badge variant="outline" className="text-xs">
-                              Baseline
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Progress value={tech.overallScore} className="w-16 h-2" />
-                          <span className={`font-bold ${getScoreColor(tech.overallScore)}`}>
-                            {tech.overallScore}%
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {tech.strengths.slice(0, 3).map((s, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs bg-green-100">
-                              {s}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {tech.weaknesses.slice(0, 3).map((w, i) => (
-                            <Badge key={i} variant="outline" className="text-xs text-red-600">
-                              {w}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
           {/* Requirements Matrix */}
           <Card>
             <CardHeader>
@@ -268,37 +168,45 @@ export default async function CMSMatrixPage({ params }: { params: Promise<{ id: 
             </CardContent>
           </Card>
 
-          {/* Metadata Card */}
-          <Card>
+          {/* Recommendation Card */}
+          <Card className="border-green-200 bg-green-50">
             <CardHeader>
-              <CardTitle>Analyse-Details</CardTitle>
+              <div className="flex items-center gap-3">
+                <Target className="h-6 w-6 text-green-600" />
+                <div>
+                  <CardTitle className="text-green-900">Empfehlung</CardTitle>
+                  <CardDescription className="text-green-700">
+                    AI-basierte Technologie-Empfehlung
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div>
-                  <p className="text-sm text-muted-foreground">Analysiert am</p>
-                  <p className="font-medium">
-                    {new Date(cmsEvaluation.metadata.matchedAt).toLocaleDateString('de-DE', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg bg-white p-4">
+                  <p className="text-muted-foreground mb-2 text-sm font-medium">Empfohlenes CMS</p>
+                  <p className="text-2xl font-bold text-green-700">
+                    {cmsEvaluation.recommendation.primaryCms}
                   </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Badge variant="default" className="bg-green-600">
+                      {cmsEvaluation.recommendation.confidence}% Konfidenz
+                    </Badge>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Anforderungen</p>
-                  <p className="font-medium">
-                    {cmsEvaluation.metadata.totalRequirements} (davon{' '}
-                    {cmsEvaluation.metadata.mustHaveCount} Must-Have)
+                <div className="rounded-lg bg-white p-4">
+                  <p className="text-muted-foreground mb-2 text-sm font-medium">Begründung</p>
+                  <p className="text-sm text-foreground">
+                    {cmsEvaluation.recommendation.reasoning}
                   </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Durchschnittlicher Match-Score</p>
-                  <p className="font-medium">
-                    {cmsEvaluation.metadata.averageMatchScore.toFixed(1)}%
-                  </p>
+                  {cmsEvaluation.recommendation.alternativeCms && (
+                    <div className="mt-3 pt-3 border-t">
+                      <p className="text-xs text-muted-foreground">Alternative</p>
+                      <p className="text-sm font-medium">
+                        {cmsEvaluation.recommendation.alternativeCms}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

@@ -2,92 +2,57 @@ import { z } from 'zod';
 
 export const ManagementSummarySchema = z.object({
   // One-liner
-  headline: z.string().max(200).default('Pre-Qualification Analysis'),
+  headline: z.string().max(200),
 
   // Executive summary (2-3 sentences)
-  executiveSummary: z.string().max(2000).default(''),
+  executiveSummary: z.string().max(2000),
 
-  // Key facts (using .any() to avoid response_format validation errors with Zod v4)
-  keyFacts: z
-    .any()
-    .refine(
-      (data): data is Record<string, unknown> =>
-        typeof data === 'object' &&
-        data !== null &&
-        (typeof data.customer === 'string' || data.customer === undefined || data.customer === null)
-    )
-    .transform(data => ({
-      customer: typeof data.customer === 'string' ? data.customer : 'Unknown',
-      industry: typeof data.industry === 'string' || data.industry === null ? data.industry : null,
-      projectType: typeof data.projectType === 'string' ? data.projectType : 'Unknown',
-      estimatedValue:
-        typeof data.estimatedValue === 'string' || data.estimatedValue === null
-          ? data.estimatedValue
-          : null,
-      submissionDeadline:
-        typeof data.submissionDeadline === 'string' || data.submissionDeadline === null
-          ? data.submissionDeadline
-          : null,
-      daysRemaining:
-        typeof data.daysRemaining === 'number' || data.daysRemaining === undefined
-          ? data.daysRemaining
-          : undefined,
-    }))
-    .default({
-      customer: 'Unknown',
-      industry: null,
-      projectType: 'Unknown',
-      estimatedValue: null,
-      submissionDeadline: null,
-      daysRemaining: undefined,
-    }),
+  // Key facts
+  keyFacts: z.object({
+    customer: z.string(),
+    industry: z.string().nullable(),
+    projectType: z.string(),
+    estimatedValue: z.string().nullable(),
+    submissionDeadline: z.string().nullable(),
+    daysRemaining: z.number().nullable(),
+  }),
 
   // Top 3-5 deliverables
   topDeliverables: z
     .array(
       z.object({
-        name: z.string().default('Unknown Deliverable'),
-        mandatory: z.boolean().default(true),
+        name: z.string(),
+        mandatory: z.boolean(),
       })
     )
-    .max(5)
-    .default([]),
+    .max(5),
 
   // Timeline highlights
   timelineHighlights: z
     .array(
       z.object({
-        milestone: z.string().default('Unknown Milestone'),
-        date: z.string().default('TBD'),
+        milestone: z.string(),
+        date: z.string(),
       })
     )
-    .max(5)
-    .default([]),
+    .max(5),
 
   // Quick assessment
-  assessment: z
-    .object({
-      fitScore: z.coerce.number().min(1).max(10).default(5), // How well does this fit adesso?
-      complexityScore: z.coerce.number().min(1).max(10).default(5),
-      urgencyLevel: z.enum(['critical', 'high', 'medium', 'low']).default('medium'),
-      recommendation: z.enum(['pursue', 'consider', 'decline']).default('consider'),
-      reasoning: z.string().default(''),
-    })
-    .default({
-      fitScore: 5,
-      complexityScore: 5,
-      urgencyLevel: 'medium',
-      recommendation: 'consider',
-      reasoning: '',
-    }),
+  assessment: z.object({
+    fitScore: z.coerce.number().min(1).max(10), // How well does this fit adesso?
+    complexityScore: z.coerce.number().min(1).max(10),
+    urgencyLevel: z.enum(['critical', 'high', 'medium', 'low']),
+    recommendation: z.enum(['pursue', 'consider', 'decline']),
+    reasoning: z.string(),
+  }),
 
   // Key risks (max 3)
-  topRisks: z.array(z.string()).max(3).default([]),
+  topRisks: z.array(z.string()).max(3),
 
   // Key opportunities (max 3)
-  topOpportunities: z.array(z.string()).max(3).default([]),
+  topOpportunities: z.array(z.string()).max(3),
 
-  confidence: z.coerce.number().min(0).max(100).default(50),
+  confidence: z.coerce.number().min(0).max(100),
 });
 
 export type ManagementSummary = z.infer<typeof ManagementSummarySchema>;

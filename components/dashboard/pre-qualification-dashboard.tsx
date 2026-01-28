@@ -18,7 +18,7 @@ import { SectionCard } from './section-card';
 import { SectionGroup } from './section-group';
 
 import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schema';
-import { SECTION_BY_ID, OVERVIEW_SECTION_IDS, BID_SECTION_IDS } from '@/lib/dashboard/sections';
+import { SECTION_BY_ID, BID_SECTION_IDS } from '@/lib/dashboard/sections';
 import type { DashboardSummaryResponse, SectionHighlight } from '@/lib/dashboard/types';
 
 /**
@@ -101,23 +101,7 @@ export function PreQualificationDashboard({
       {/* Management Summary */}
       <ManagementSummaryCard summary={managementSummary} isLoading={isLoading && !initialSummary} />
 
-      {/* Overview Group - Facts */}
-      <SectionGroup title="Übersicht">
-        {OVERVIEW_SECTION_IDS.map(sectionId => {
-          const section = sectionsMap.get(sectionId);
-          const config = SECTION_BY_ID.get(sectionId);
-          return (
-            <SectionCard
-              key={sectionId}
-              title={section?.sectionTitle ?? config?.title ?? sectionId}
-              icon={SECTION_ICONS[sectionId] ?? LayoutDashboard}
-              href={getSectionUrl(preQualificationId, sectionId)}
-              highlights={section?.highlights ?? []}
-              status={section?.status ?? 'no_data'}
-            />
-          );
-        })}
-      </SectionGroup>
+      {/* Overview Group - Facts removed from dashboard */}
 
       {/* Ausschreibung Group */}
       <SectionGroup title="Ausschreibung">

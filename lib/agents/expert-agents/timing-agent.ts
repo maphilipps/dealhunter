@@ -80,8 +80,17 @@ export async function runTimingAgent(
     if (allResults.length === 0) {
       return createAgentOutput<TimingAnalysis>(
         {
+          submissionDeadline: null,
+          projectStart: null,
+          projectEnd: null,
+          projectDurationMonths: null,
           milestones: [],
+          clarificationDeadline: null,
+          qaSessionDates: [],
+          awardDate: null,
+          contractSigningDate: null,
           urgencyLevel: 'low',
+          daysUntilSubmission: null,
           confidence: 0,
         },
         0,
@@ -133,7 +142,7 @@ function buildSummaryForStorage(analysis: TimingAnalysis): string {
     );
   }
 
-  if (analysis.daysUntilSubmission !== undefined) {
+  if (analysis.daysUntilSubmission !== null) {
     parts.push(`- Days Until Submission: ${analysis.daysUntilSubmission}`);
   }
 

@@ -1,7 +1,6 @@
 import type { Job } from 'bullmq';
 import { and, eq } from 'drizzle-orm';
 
-import { runExpertAgents } from '../../agents/expert-agents';
 import { db } from '../../db';
 import { backgroundJobs, preQualifications, quickScans } from '../../db/schema';
 import { withRetry, DEFAULT_RETRY_CONFIGS } from '../../errors/retry';
@@ -401,20 +400,6 @@ export async function processQuickScanJob(job: Job<QuickScanJobData>): Promise<Q
       console.error('[QuickScan Worker] Embedded Quick Scan result for RAG');
     } catch (error) {
       console.error('[QuickScan Worker] Failed to embed Quick Scan result:', error);
-    }
-
-    try {
-      await updateBackgroundJob(dbJobId, {
-        progress: 96,
-        currentStep: 'Running expert agents',
-      });
-      const expertResult = await runExpertAgents({ preQualificationId: preQualificationId });
-      console.log(
-        '[QuickScan Worker] Expert Agents completed:',
-        expertResult.success ? 'success' : 'partial'
-      );
-    } catch (error) {
-      console.error('[QuickScan Worker] Expert Agents failed:', error);
     }
 
     await logUpdater.flush();

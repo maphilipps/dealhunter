@@ -116,8 +116,9 @@ export default async function BidsPage() {
               </TableHeader>
               <TableBody>
                 {bids.map(bid => {
-                  // Parse customer name from extractedRequirements
+                  // Parse customer name AND project name from extractedRequirements
                   let customerName = 'Unbekannt';
+                  let projectName = 'Unbekannt';
                   try {
                     if (bid.extractedRequirements) {
                       const extracted = JSON.parse(bid.extractedRequirements) as Record<
@@ -126,6 +127,9 @@ export default async function BidsPage() {
                       >;
                       if (typeof extracted.customerName === 'string') {
                         customerName = extracted.customerName;
+                      }
+                      if (typeof extracted.projectName === 'string') {
+                        projectName = extracted.projectName;
                       }
                     }
                   } catch {
@@ -136,7 +140,7 @@ export default async function BidsPage() {
                     <TableRow key={bid.id} className="cursor-pointer hover:bg-muted/50">
                       <TableCell className="font-medium">
                         <Link href={`/pre-qualifications/${bid.id}`} className="block w-full">
-                          {bid.userName || 'Unbekannt'}
+                          {projectName}
                         </Link>
                       </TableCell>
                       <TableCell>

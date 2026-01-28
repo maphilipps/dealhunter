@@ -56,7 +56,9 @@ export function UploadBidForm({ userId: _userId, accounts: _accounts }: UploadBi
     }
 
     if (validFiles.length !== files.length) {
-      toast.warning(`${files.length - validFiles.length} nicht unterstützte Dateien wurden ignoriert`);
+      toast.warning(
+        `${files.length - validFiles.length} nicht unterstützte Dateien wurden ignoriert`
+      );
     }
 
     setSelectedFiles(prev => [...prev, ...validFiles]);
@@ -142,38 +144,42 @@ export function UploadBidForm({ userId: _userId, accounts: _accounts }: UploadBi
         {/* LEFT: Info Banner (1/3) */}
         <Card className="border-primary/20 bg-primary/5 lg:col-span-1">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg text-primary">
-              Lead Eingabe
-            </CardTitle>
+            <CardTitle className="text-lg text-primary">Lead Eingabe</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <p className="font-medium">
-              Zur Unterstützung bei der Bid/No-Bid Entscheidung:
-            </p>
+            <p className="font-medium">Zur Unterstützung bei der Bid/No-Bid Entscheidung:</p>
             <p>
-              Die AI-Analyse extrahiert automatisch folgende Informationen aus den hochgeladenen Dokumenten:
+              Die AI-Analyse extrahiert automatisch folgende Informationen aus den hochgeladenen
+              Dokumenten:
             </p>
             <ul className="list-disc list-inside space-y-2 text-xs">
               <li>
-                <strong>Budget & Laufzeit:</strong> Budgetangaben und Vertragslaufzeit werden identifiziert
+                <strong>Budget & Laufzeit:</strong> Budgetangaben und Vertragslaufzeit werden
+                identifiziert
               </li>
               <li>
-                <strong>Ausschreibungszeitplan:</strong> Timeline, Fristen und Vergabeverfahren (Shortlisting vs. offenes Verfahren) werden analysiert
+                <strong>Ausschreibungszeitplan:</strong> Timeline, Fristen und Vergabeverfahren
+                (Shortlisting vs. offenes Verfahren) werden analysiert
               </li>
               <li>
-                <strong>Vertragstyp:</strong> Vertragsbedingungen (EVB-IT, Werk-, Dienst- oder Servicevertrag mit SLA) werden erkannt
+                <strong>Vertragstyp:</strong> Vertragsbedingungen (EVB-IT, Werk-, Dienst- oder
+                Servicevertrag mit SLA) werden erkannt
               </li>
               <li>
-                <strong>Leistungsumfang:</strong> Geforderte Leistungen werden strukturiert aufbereitet
+                <strong>Leistungsumfang:</strong> Geforderte Leistungen werden strukturiert
+                aufbereitet
               </li>
               <li>
-                <strong>Referenzanforderungen:</strong> Anzahl und Spezifikation der geforderten Referenzen (inkl. Branchenvorgaben) werden erfasst
+                <strong>Referenzanforderungen:</strong> Anzahl und Spezifikation der geforderten
+                Referenzen (inkl. Branchenvorgaben) werden erfasst
               </li>
               <li>
-                <strong>Zuschlagskriterien:</strong> Bewertungskriterien für Teilnahmeantrag und Angebot werden differenziert dargestellt
+                <strong>Zuschlagskriterien:</strong> Bewertungskriterien für Teilnahmeantrag und
+                Angebot werden differenziert dargestellt
               </li>
               <li>
-                <strong>Angebotsstruktur:</strong> Erforderliche Arbeitspakete für Teilnahme- und Angebotsphase werden identifiziert
+                <strong>Angebotsstruktur:</strong> Erforderliche Arbeitspakete für Teilnahme- und
+                Angebotsphase werden identifiziert
               </li>
             </ul>
           </CardContent>
@@ -190,7 +196,9 @@ export function UploadBidForm({ userId: _userId, accounts: _accounts }: UploadBi
                     <Upload className="h-5 w-5 text-primary" />
                     Dokumente hochladen
                   </CardTitle>
-                  <CardDescription>PDF, Excel, Word - Pre-Qualification, Anhänge, E-Mails</CardDescription>
+                  <CardDescription>
+                    PDF, Excel, Word - Pre-Qualification, Anhänge, E-Mails
+                  </CardDescription>
                 </div>
                 {selectedFiles.length > 0 && (
                   <span className="text-sm text-muted-foreground">
@@ -254,7 +262,9 @@ export function UploadBidForm({ userId: _userId, accounts: _accounts }: UploadBi
                 <label htmlFor="file-upload" className="cursor-pointer block">
                   <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                   <p className="text-sm font-medium">
-                    {selectedFiles.length > 0 ? 'Weitere Dateien hinzufügen' : 'Dateien hierher ziehen'}
+                    {selectedFiles.length > 0
+                      ? 'Weitere Dateien hinzufügen'
+                      : 'Dateien hierher ziehen'}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     PDF, Excel, Word - oder klicken (max. 10 MB/Datei)
@@ -281,27 +291,27 @@ export function UploadBidForm({ userId: _userId, accounts: _accounts }: UploadBi
 
           {/* Freetext */}
           <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Type className="h-5 w-5 text-primary" />
-              Freitext / E-Mail
-            </CardTitle>
-            <CardDescription>Zusätzliche Informationen oder E-Mail-Inhalt</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={additionalText}
-              onChange={e => setAdditionalText(e.target.value)}
-              placeholder="Kopieren Sie hier den Pre-Qualification-Text oder E-Mail-Inhalt ein..."
-              rows={6}
-              disabled={isUploading}
-              className="resize-y"
-            />
-            <p className="text-xs text-muted-foreground mt-2 text-right">
-              {additionalText.length} Zeichen
-            </p>
-          </CardContent>
-        </Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Type className="h-5 w-5 text-primary" />
+                Freitext / E-Mail
+              </CardTitle>
+              <CardDescription>Zusätzliche Informationen oder E-Mail-Inhalt</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={additionalText}
+                onChange={e => setAdditionalText(e.target.value)}
+                placeholder="Kopieren Sie hier den Pre-Qualification-Text oder E-Mail-Inhalt ein..."
+                rows={6}
+                disabled={isUploading}
+                className="resize-y"
+              />
+              <p className="text-xs text-muted-foreground mt-2 text-right">
+                {additionalText.length} Zeichen
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -310,7 +320,7 @@ export function UploadBidForm({ userId: _userId, accounts: _accounts }: UploadBi
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              {hasAnyInput ? (
+              {hasAnyInput && (
                 <div className="space-y-1">
                   <span className="text-green-600 font-medium">✓ Eingaben vorhanden:</span>
                   <div className="text-muted-foreground text-xs flex gap-2">
@@ -322,10 +332,6 @@ export function UploadBidForm({ userId: _userId, accounts: _accounts }: UploadBi
                     {additionalText.trim() && <span>+ Text</span>}
                   </div>
                 </div>
-              ) : (
-                <span className="text-amber-600 font-medium">
-                  ⚠ Mindestens eine Eingabe erforderlich
-                </span>
               )}
             </div>
 

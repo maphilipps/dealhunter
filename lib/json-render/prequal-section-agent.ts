@@ -36,6 +36,12 @@ INHALTLICHE QUALITÄT:
 - Nutze Paragraph für Zusammenfassungen und Einschätzungen
 - Bei fehlenden Infos: Klar benennen was fehlt und warum es relevant wäre
 
+WICHTIG:
+- Immer einspaltig (kein Grid mit columns: 2)
+- KeyValueTable hat items-Prop (KEINE children!) - nur bei 2+ Paaren
+- Einzelnes KeyValue direkt verwenden (nicht in KeyValueTable)
+- VERBOTEN: Grid, ResultCard (deprecated)
+
 BEISPIEL:
 {
   "root": "section-main",
@@ -43,9 +49,7 @@ BEISPIEL:
     "section-main": { "key": "section-main", "type": "Section", "props": { "title": "Vertragliche Rahmenbedingungen" }, "children": ["para-summary", "sub-commercial", "sub-legal"] },
     "para-summary": { "key": "para-summary", "type": "Paragraph", "props": { "text": "Die Ausschreibung sieht einen EVB-IT Systemvertrag vor..." } },
     "sub-commercial": { "key": "sub-commercial", "type": "SubSection", "props": { "title": "Kommerzielles Modell" }, "children": ["kvtable-1"] },
-    "kvtable-1": { "key": "kvtable-1", "type": "KeyValueTable", "props": {}, "children": ["kv-1", "kv-2"] },
-    "kv-1": { "key": "kv-1", "type": "KeyValue", "props": { "label": "Vertragstyp", "value": "EVB-IT Systemvertrag" } },
-    "kv-2": { "key": "kv-2", "type": "KeyValue", "props": { "label": "Laufzeit", "value": "4 Jahre + Option" } },
+    "kvtable-1": { "key": "kvtable-1", "type": "KeyValueTable", "props": { "items": [{"label": "Vertragstyp", "value": "EVB-IT Systemvertrag"}, {"label": "Laufzeit", "value": "4 Jahre + Option"}] } },
     "sub-legal": { "key": "sub-legal", "type": "SubSection", "props": { "title": "Rechtliche Anforderungen" }, "children": ["list-1"] },
     "list-1": { "key": "list-1", "type": "BulletList", "props": { "items": ["DSGVO-Konformität erforderlich", "Hosting in DE/EU"] } }
   }
@@ -96,15 +100,16 @@ KEINE Rohdaten, KEINE Confidence-Anzeigen, KEINE ProgressBars, KEINE verschachte
 Verfügbare Typen:
 - Section: Hauptcontainer mit Card + H2 (title: string, description?: string)
 - SubSection: Unterabschnitt mit H3 (title: string)
-- KeyValueTable: Container für KeyValue-Paare - NUR bei 2+ Paaren verwenden!
-- KeyValue: Schlüssel-Wert als Table-Zeile (label: string, value: string)
+- KeyValueTable: Mehrere Key-Value-Paare (items: [{label, value}, ...]) - NUR bei 2+ Paaren!
+- KeyValue: Einzelnes Key-Value-Paar (label: string, value: string) - für standalone
 - BulletList: Aufzählung (items: string[])
 - Paragraph: Fließtext (text: string)
 - Metric: Einzelne Kennzahl (label: string, value: string|number, unit?: string)
 
 WICHTIG:
 - Immer einspaltig (kein Grid mit columns: 2)
-- KeyValueTable NUR bei 2+ KeyValue-Paaren (einzelnes KeyValue direkt ohne Table)
+- KeyValueTable hat items-Prop (KEINE children!) - nur bei 2+ Paaren
+- Einzelnes KeyValue direkt verwenden (nicht in KeyValueTable)
 - VERBOTEN: Grid, ResultCard (deprecated)
 
 Beispiel:
@@ -114,9 +119,7 @@ Beispiel:
     "section-main": { "key": "section-main", "type": "Section", "props": { "title": "Vertragsanalyse" }, "children": ["para-1", "sub-details"] },
     "para-1": { "key": "para-1", "type": "Paragraph", "props": { "text": "Die Ausschreibung sieht einen EVB-IT Systemvertrag vor." } },
     "sub-details": { "key": "sub-details", "type": "SubSection", "props": { "title": "Kommerzielle Details" }, "children": ["kvtable-1"] },
-    "kvtable-1": { "key": "kvtable-1", "type": "KeyValueTable", "props": {}, "children": ["kv-1", "kv-2"] },
-    "kv-1": { "key": "kv-1", "type": "KeyValue", "props": { "label": "Vertragstyp", "value": "EVB-IT Systemvertrag" } },
-    "kv-2": { "key": "kv-2", "type": "KeyValue", "props": { "label": "Laufzeit", "value": "4 Jahre" } }
+    "kvtable-1": { "key": "kvtable-1", "type": "KeyValueTable", "props": { "items": [{"label": "Vertragstyp", "value": "EVB-IT Systemvertrag"}, {"label": "Laufzeit", "value": "4 Jahre"}] } }
   }
 }`,
     inputSchema: z.object({

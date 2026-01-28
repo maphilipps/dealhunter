@@ -1,16 +1,13 @@
 'use server';
 
 import { generateObject, type LanguageModel } from 'ai';
+import { z } from 'zod';
 
-import {
-  BusinessLineRoutingSchema,
-  type BusinessLineRoutingResult,
-  type RouteBusinessUnitInput,
-} from './schemas';
+import { type BusinessLineRoutingResult, type RouteBusinessUnitInput } from './schemas';
 
 import { AI_TIMEOUTS } from '@/lib/ai/config';
 import { openai } from '@/lib/ai/providers';
-import { TECH_TO_BU_MAPPING, getBusinessUnitForTech } from '@/lib/config/business-rules';
+import { TECH_TO_BU_MAPPING } from '@/lib/config/business-rules';
 import { db } from '@/lib/db';
 import { businessUnits, technologies } from '@/lib/db/schema';
 
@@ -133,6 +130,27 @@ export async function matchBusinessLine(
       };
     }
 
+    // Create dynamic schema with actual BU names as enum
+    const buNames = businessUnitsData.map(bu => bu.name);
+    const DynamicRoutingSchema = z.object({
+      recommendedBU: z
+        .enum(buNames as [string, ...string[]])
+        .describe('Name der empfohlenen Business Unit - MUSS einer der verfügbaren sein'),
+      confidence: z.number().min(0).max(100).describe('Confidence score (0-100)'),
+      reasoning: z.string().describe('Begründung für die Empfehlung'),
+      alternativeBUs: z
+        .array(
+          z.object({
+            name: z.enum(buNames as [string, ...string[]]),
+            confidence: z.number().min(0).max(100),
+            reasoning: z.string(),
+          })
+        )
+        .describe('Alternative Business Units mit niedrigeren Confidence Scores'),
+      matchedKeywords: z.array(z.string()).describe('Keywords der BU, die gematcht haben'),
+      matchedTechnologies: z.array(z.string()).describe('Technologien der BU, die gematcht haben'),
+    });
+
     // Build context for AI (user-provided content needs wrapping)
     const rawProjectContext = `
 Kunde: ${input.customerName || 'Nicht angegeben'}
@@ -163,10 +181,10 @@ Technologies: ${bu.technologies.join(', ') || 'Keine'}
       )
       .join('\n\n---\n\n');
 
-    // Call AI to match business line
+    // Call AI to match business line with dynamic schema
     const result = await generateObject({
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
-      schema: BusinessLineRoutingSchema,
+      schema: DynamicRoutingSchema,
       maxRetries: 2,
       abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_STANDARD),
       system: `Du bist ein Business Line Routing Agent für adesso SE.

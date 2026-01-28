@@ -61,7 +61,7 @@ jobs:
 
             echo "🔄 Restarting services..."
             pm2 restart dealhunter || pm2 start npm --name dealhunter -- start
-            pm2 restart dealhunter-worker || echo "Worker not configured"
+            pm2 restart dealhunter-worker || pm2 start npm --name dealhunter-worker -- run worker
 
             echo "✅ Deployment complete!"
             pm2 list

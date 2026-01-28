@@ -29,11 +29,13 @@ jobs:
             cd /var/www
 
             # Check if we need to re-clone due to permission issues
-            echo "🔍 Checking .git ownership..."
-            OWNER=$(stat -c '%U' dealhunter/.git 2>/dev/null || echo "unknown")
-            echo "   Owner: $OWNER"
-            if [ -d "dealhunter" ] && [ "$OWNER" != "deploy" ]; then
-              echo "⚠️ Permission issue detected (owner=$OWNER). Re-cloning repository..."
+            # Find any files in .git not owned by deploy
+            echo "🔍 Checking for permission issues..."
+            BAD_FILES=$(find dealhunter/.git -not -user deploy 2>/dev/null | head -5)
+            if [ -n "$BAD_FILES" ]; then
+              echo "⚠️ Found files with wrong ownership:"
+              echo "$BAD_FILES"
+              echo "Re-cloning repository..."
               rm -rf dealhunter.bak 2>/dev/null || true
               mv dealhunter dealhunter.bak
               git clone --depth 1 https://github.com/maphilipps/dealhunter.git dealhunter

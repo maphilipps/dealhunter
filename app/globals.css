@@ -177,6 +177,32 @@ h6 {
   font-weight: 600;
 }
 
+h1 {
+  font-size: 1.875rem; /* 30px - text-3xl */
+  line-height: 2.25rem;
+}
+
+h2 {
+  font-size: 1.5rem; /* 24px - text-2xl */
+  line-height: 2rem;
+}
+
+h3 {
+  font-size: 1.25rem; /* 20px - text-xl */
+  line-height: 1.75rem;
+}
+
+h4 {
+  font-size: 1.125rem; /* 18px - text-lg */
+  line-height: 1.75rem;
+}
+
+h5,
+h6 {
+  font-size: 1rem; /* 16px - text-base */
+  line-height: 1.5rem;
+}
+
 /* Code blocks and monospace */
 code,
 kbd,

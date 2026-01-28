@@ -43,7 +43,7 @@ function CardTitle<T extends React.ElementType = 'div'>({
   return (
     <Component
       data-slot="card-title"
-      className={cn('leading-none font-semibold', className)}
+      className={cn('text-xl leading-none font-semibold', className)}
       {...props}
     />
   );

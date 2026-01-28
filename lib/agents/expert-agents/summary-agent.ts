@@ -5,7 +5,7 @@
  * Runs AFTER the other 4 agents (timing, deliverables, techstack, legal) complete.
  */
 
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, ne } from 'drizzle-orm';
 
 import {
   queryRfpDocument,
@@ -20,12 +20,20 @@ import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
 
+/**
+ * Agent names that produce summarizable outputs.
+ * Includes both legacy expert agents and current pre-qualification pipeline agents.
+ */
 const EXPERT_AGENT_NAMES = [
+  // Legacy expert agents (kept for backwards compatibility)
   'timing_expert',
   'deliverables_expert',
   'techstack_expert',
   'legal_rfp_expert',
   'extract',
+  // Pre-qualification pipeline agents
+  'prequal_section_agent',
+  'quick_scan',
 ];
 
 const SUMMARY_RAG_QUERY = 'executive summary introduction scope objectives project overview';
@@ -92,7 +100,9 @@ async function getExpertAgentOutputs(preQualificationId: string): Promise<string
     .where(
       and(
         eq(dealEmbeddings.preQualificationId, preQualificationId),
-        inArray(dealEmbeddings.agentName, EXPERT_AGENT_NAMES)
+        inArray(dealEmbeddings.agentName, EXPERT_AGENT_NAMES),
+        // Exclude visualization JSON trees - they're UI components, not text summaries
+        ne(dealEmbeddings.chunkType, 'visualization')
       )
     );
 

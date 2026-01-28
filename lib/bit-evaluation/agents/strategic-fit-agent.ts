@@ -1,33 +1,16 @@
-import OpenAI from 'openai';
-
 import { strategicFitSchema, type StrategicFit } from '../schema';
 
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
-import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
-
-
-// Security: Prompt Injection Protection
+import { generateStructuredOutput } from '@/lib/ai/config';
 import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
 
-// Initialize OpenAI client with adesso AI Hub
-const openai = new OpenAI({
-  apiKey: AI_HUB_API_KEY,
-  baseURL: AI_HUB_BASE_URL,
-});
-
 export interface StrategicFitAgentInput {
-  extractedRequirements: any; // From extraction phase
-  quickScanResults?: any; // BL recommendation, industry
-  useWebSearch?: boolean; // Web Search für Kunden-Recherche
+  extractedRequirements: any;
+  quickScanResults?: any;
+  useWebSearch?: boolean;
 }
 
-/**
- * BIT-004: Strategic Fit Agent
- * Evaluates alignment with adesso strategy and target customer profile
- * UPGRADED: Mit Web Search für Kunden- und Markt-Recherche
- */
 export async function runStrategicFitAgent(input: StrategicFitAgentInput): Promise<StrategicFit> {
-  // === Intelligent Research Phase ===
   let customerInsights = '';
   let industryInsights = '';
 
@@ -42,7 +25,6 @@ export async function runStrategicFitAgent(input: StrategicFitAgentInput): Promi
         input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
         input.extractedRequirements?.industry;
 
-      // Kunden-Recherche: Größe, Umsatz, digitale Strategie
       if (customerName) {
         const customerSearch = await intelligentTools.webSearch(
           `"${customerName}" Unternehmen Mitarbeiter Umsatz digital transformation`,
@@ -55,13 +37,11 @@ export async function runStrategicFitAgent(input: StrategicFitAgentInput): Promi
             .map(r => `- ${r.title}: ${r.snippet}`)
             .join('\n');
 
-          // Wrap web search results for prompt injection protection
-          customerInsights = `\n\n**Kunden-Intelligence (EXA):**\n${wrapUserContent(rawCustData, 'web')}`;
+          customerInsights = `\n\n### Kunden-Intelligence\n${wrapUserContent(rawCustData, 'web')}`;
           console.log(`[Strategic Fit Agent] ${customerSearch.length} Kunden-Insights gefunden`);
         }
       }
 
-      // Branchentrends recherchieren
       if (industry) {
         const industrySearch = await intelligentTools.webSearch(
           `${industry} digital transformation trends Germany 2024`,
@@ -74,8 +54,7 @@ export async function runStrategicFitAgent(input: StrategicFitAgentInput): Promi
             .map(r => `- ${r.title}: ${r.snippet}`)
             .join('\n');
 
-          // Wrap web search results for prompt injection protection
-          industryInsights = `\n\n**Branchen-Trends (EXA):**\n${wrapUserContent(rawIndData, 'web')}`;
+          industryInsights = `\n\n### Branchen-Trends\n${wrapUserContent(rawIndData, 'web')}`;
           console.log(`[Strategic Fit Agent] ${industrySearch.length} Branchen-Insights gefunden`);
         }
       }
@@ -84,105 +63,73 @@ export async function runStrategicFitAgent(input: StrategicFitAgentInput): Promi
     }
   }
 
-  const completion = await openai.chat.completions.create({
-    model: 'gemini-3-flash-preview',
-    messages: [
-      {
-        role: 'system',
-        content: `Du bist ein erfahrener Strategic Business Assessor bei adesso SE.
-Bewerte GRÜNDLICH, wie gut diese Opportunity zur strategischen Ausrichtung und dem Zielkundenprofil von adesso passt.
-Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
+  const systemPrompt = `Du bist ein Strategic Business Assessor bei adesso SE.
 
-WICHTIG: Gib immer eine fundierte Einschätzung ab. Alle Begründungen und Texte auf Deutsch.`,
-      },
-      {
-        role: 'user',
-        content: `Evaluate how well this opportunity aligns with adesso's strategic direction and target customer profile.
+## Deine Aufgabe
+Bewerte, wie gut diese Opportunity zur strategischen Ausrichtung und dem Zielkundenprofil von adesso passt.
 
-Extracted Requirements:
+## adesso Zielkundenprofil
+
+### Kundentypen (nach Priorität)
+1. **BEST FIT**: DAX/MDAX Unternehmen (1000+ MA)
+2. **GOOD FIT**: Mittelstand (250-1000 MA)
+3. **GOOD FIT**: Öffentlicher Sektor Deutschland
+4. **LOW FIT**: Startups/KMU (außer strategisch wichtig)
+
+### Zielbranchen (nach Priorität)
+1. Banking & Financial Services (Kernkompetenz)
+2. Insurance (Kernkompetenz)
+3. Automotive (starke Präsenz)
+4. Energy & Utilities (wachsend)
+5. Retail & E-Commerce (etabliert)
+6. Public Sector (stark in DE)
+7. Healthcare (wachsend)
+8. Manufacturing & Industry 4.0
+9. Telecommunications
+
+### Strategische Prioritäten
+- Digital Transformation Projekte
+- Cloud Migration & Modernisierung
+- Drupal CMS (Marktführer in DE)
+- Enterprise Architecture & Integration
+- Data & Analytics / AI
+
+### Strategischer Wert
+- **Referenzprojekt-Potenzial**: Gut für Marketing
+- **Neuer Markt**: Öffnet Türen zu neuen Branchen
+- **Beziehungsausbau**: Vertieft bestehende Kundenbeziehung
+- **Technologie-Leadership**: Positioniert uns als Innovator
+- **Recurring Revenue**: Potential für Managed Services
+
+## Ausgabesprache
+Alle Texte auf Deutsch.`;
+
+  const userPrompt = `Bewerte die strategische Passung dieser Opportunity.
+
+## Extrahierte Anforderungen
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${
   input.quickScanResults
-    ? `
-Quick Scan Results:
-${JSON.stringify(input.quickScanResults, null, 2)}
-`
+    ? `## Quick Scan Ergebnisse
+${JSON.stringify(input.quickScanResults, null, 2)}`
     : ''
 }
 ${customerInsights}
 ${industryInsights}
 
-adesso's Strategic Focus:
+## Deine Bewertung
+Analysiere und bewerte:
+1. Kundentyp-Analyse (customerTypeAssessment)
+2. Branchen-Alignment (industryAlignment)
+3. Strategischer Wert (strategicValue)
+4. Gesamtbewertung (overallStrategicFitScore, confidence, reasoning, criticalBlockers)`;
 
-**Target Customer Profile:**
-- Large enterprises (1000+ employees) - BEST FIT
-- Mid-market (250-1000 employees) - GOOD FIT
-- DAX/MDAX companies in Germany - BEST FIT
-- Public sector / Government - GOOD FIT for German public sector
-- Startups / Small businesses - USUALLY NOT A FIT (unless strategic)
-
-**Target Industries (Priority Order):**
-1. Banking & Financial Services (core strength)
-2. Insurance (core strength)
-3. Automotive (strong presence)
-4. Energy & Utilities (growing)
-5. Retail & E-Commerce (established)
-6. Public Sector (strong in Germany)
-7. Healthcare (growing)
-8. Manufacturing & Industry 4.0
-9. Telecommunications
-
-**Strategic Priorities:**
-- Digital transformation projects
-- Cloud migration and modernization
-- Drupal CMS expertise (market leader in Germany)
-- Enterprise architecture and system integration
-- Data & Analytics / AI integration
-- Sustainable, long-term client relationships
-
-**Strategic Value Indicators:**
-- **Reference Project Potential:** Can showcase our expertise, good for marketing
-- **New Market Entry:** Opens doors to new industries or customer segments
-- **Relationship Expansion:** Deepens relationship with existing customer
-- **Technology Leadership:** Cutting-edge tech that positions us as innovators
-- **Recurring Revenue:** Potential for managed services, retainers, or follow-on work
-
-Respond with JSON containing:
-- customerTypeAssessment (object):
-  - customerType (string): Type of customer (enterprise, mid-market, startup, etc.)
-  - isTargetCustomer (boolean): Is this our target customer profile?
-  - customerFitScore (number 0-100): How well customer fits our profile
-- industryAlignment (object):
-  - industry (string): Customer industry
-  - isTargetIndustry (boolean): Is this a target industry for adesso?
-  - industryExperience (string: "none", "limited", "moderate", or "extensive"): Our experience
-  - industryFitScore (number 0-100): Industry alignment score
-- strategicValue (object):
-  - isReferenceProject (boolean): Could this become a reference project?
-  - enablesNewMarket (boolean): Opens doors to new markets?
-  - expandsExistingRelationship (boolean): Expands relationship with existing customer?
-  - longTermPotential (string: "low", "medium", or "high"): Long-term potential
-- overallStrategicFitScore (number 0-100): Gesamt Strategic Fit Score
-- confidence (number 0-100): Confidence der Bewertung
-- reasoning (string): Ausführliche Begründung auf Deutsch (min. 2-3 Sätze)
-- criticalBlockers (array of strings): Strategische Blocker auf Deutsch`,
-      },
-    ],
+  return generateStructuredOutput({
+    model: 'quality',
+    schema: strategicFitSchema,
+    system: systemPrompt,
+    prompt: userPrompt,
     temperature: 0.3,
-    max_tokens: 4000,
   });
-
-  const responseText = completion.choices[0]?.message?.content || '{}';
-  const cleanedResponse = responseText
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '')
-    .trim();
-
-  const rawResult = JSON.parse(cleanedResponse);
-  const cleanedResult = Object.fromEntries(
-    Object.entries(rawResult).filter(([_, v]) => v !== null)
-  );
-
-  return strategicFitSchema.parse(cleanedResult);
 }

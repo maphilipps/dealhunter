@@ -52,7 +52,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import {
+  TypographyH3,
   TypographyLarge,
   TypographyList,
   TypographyMuted,
@@ -425,20 +427,31 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
   },
 
   /**
-   * KeyValue - Key-value pair display
+   * KeyValue - Single key-value pair as table row (use inside KeyValueTable)
    */
   KeyValue: ({ element }) => {
     const { label, value } = element.props as { label: string; value: string };
     return (
-      <div className="flex justify-between text-sm py-1">
-        <span className="text-muted-foreground">{label}:</span>
-        <span className="font-medium">{value}</span>
-      </div>
+      <TableRow className="border-0 hover:bg-transparent">
+        <TableCell className="py-1.5 pl-0 pr-4 text-muted-foreground w-[140px]">{label}</TableCell>
+        <TableCell className="py-1.5 px-0 font-medium">{value}</TableCell>
+      </TableRow>
     );
   },
 
   /**
-   * Section - Section header with optional badge
+   * KeyValueTable - Container for multiple KeyValue pairs as semantic table
+   */
+  KeyValueTable: ({ children }) => {
+    return (
+      <Table>
+        <TableBody>{children}</TableBody>
+      </Table>
+    );
+  },
+
+  /**
+   * Section - Major section with Card and H2 heading
    */
   Section: ({ element, children }) => {
     const {
@@ -454,15 +467,43 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     };
 
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <TypographyLarge>{title}</TypographyLarge>
-            {description && <TypographyMuted className="mt-1">{description}</TypographyMuted>}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle as="h2">{title}</CardTitle>
+            {badge && <Badge variant={badgeVariant}>{badge}</Badge>}
           </div>
+          {description && <CardDescription>{description}</CardDescription>}
+        </CardHeader>
+        {children && <CardContent>{children}</CardContent>}
+      </Card>
+    );
+  },
+
+  /**
+   * SubSection - Sub-section with H3 heading
+   */
+  SubSection: ({ element, children }) => {
+    const {
+      title,
+      description,
+      badge,
+      badgeVariant = 'secondary',
+    } = element.props as {
+      title: string;
+      description?: string;
+      badge?: string;
+      badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
+    };
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <TypographyH3>{title}</TypographyH3>
           {badge && <Badge variant={badgeVariant}>{badge}</Badge>}
         </div>
-        {children && <div className="space-y-3">{children}</div>}
+        {description && <TypographyMuted>{description}</TypographyMuted>}
+        {children}
       </div>
     );
   },

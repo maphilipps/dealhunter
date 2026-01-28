@@ -1,11 +1,14 @@
 'use client';
 
 import {
+  AlertTriangle,
   BarChart3,
   Building,
+  Calendar,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Clock,
   Code,
   ExternalLink,
   FileText,
@@ -14,6 +17,7 @@ import {
   Globe,
   HelpCircle,
   Image,
+  Info,
   Layers,
   Lightbulb,
   Linkedin,
@@ -48,6 +52,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
+import {
+  TypographyLarge,
+  TypographyList,
+  TypographyMuted,
+  TypographyMutedSpan,
+  TypographyP,
+  TypographySmall,
+} from '@/components/ui/typography';
 import { cn } from '@/lib/utils';
 
 // Types for json-render elements
@@ -141,7 +153,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
     return (
       <div className="flex flex-col p-3 bg-muted/50 rounded-lg">
-        <span className="text-sm text-muted-foreground">{label}</span>
+        <TypographyMutedSpan>{label}</TypographyMutedSpan>
         <span className="text-2xl font-bold">{value}</span>
         {subValue && (
           <span className={cn('text-sm', trend ? trendColors[trend] : 'text-muted-foreground')}>
@@ -195,7 +207,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
     return (
       <div className="space-y-2">
-        {title && <p className="font-medium text-sm">{title}</p>}
+        {title && <TypographySmall>{title}</TypographySmall>}
         <div className="grid gap-2">
           {features.map((feature, idx) => (
             <div key={idx} className="flex items-center gap-2">
@@ -208,7 +220,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
                 {feature.name}
               </span>
               {feature.details && (
-                <span className="text-xs text-muted-foreground">({feature.details})</span>
+                <TypographyMutedSpan className="text-xs">({feature.details})</TypographyMutedSpan>
               )}
             </div>
           ))}
@@ -251,7 +263,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
     return (
       <div className="space-y-3">
-        {title && <p className="font-medium text-sm">{title}</p>}
+        {title && <TypographySmall>{title}</TypographySmall>}
         {alternatives.map((alt, idx) => (
           <div key={idx} className="flex items-start justify-between p-3 bg-muted/50 rounded-lg">
             <div className="flex-1">
@@ -261,7 +273,9 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
                   {alt.confidence}%
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground mt-1">{alt.reason}</p>
+              <TypographyP className="text-sm mt-1 leading-normal [&:not(:first-child)]:mt-1">
+                {alt.reason}
+              </TypographyP>
             </div>
           </div>
         ))}
@@ -277,7 +291,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
     return (
       <div className="space-y-2">
-        {title && <p className="font-medium text-sm">{title}</p>}
+        {title && <TypographySmall>{title}</TypographySmall>}
         <div className="flex flex-wrap gap-2">
           {skills.map((skill, idx) => (
             <Badge key={idx} variant="outline">
@@ -308,13 +322,13 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         <div className="grid grid-cols-2 gap-4">
           {pageCount !== undefined && (
             <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Geschätzte Seiten</span>
+              <TypographyMutedSpan>Geschätzte Seiten</TypographyMutedSpan>
               <span className="text-xl font-bold">{pageCount}</span>
             </div>
           )}
           {complexity && (
             <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Komplexität</span>
+              <TypographyMutedSpan>Komplexität</TypographyMutedSpan>
               <Badge className={cn('w-fit', complexityColors[complexity])}>{complexity}</Badge>
             </div>
           )}
@@ -322,7 +336,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
         {languages && languages.length > 0 && (
           <div>
-            <span className="text-sm text-muted-foreground block mb-2">Sprachen</span>
+            <TypographyMutedSpan className="block mb-2">Sprachen</TypographyMutedSpan>
             <div className="flex flex-wrap gap-1">
               {languages.map((lang, idx) => (
                 <Badge key={idx} variant="outline" className="text-xs">
@@ -335,7 +349,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
         {contentTypes && contentTypes.length > 0 && (
           <div>
-            <span className="text-sm text-muted-foreground block mb-2">Content Types</span>
+            <TypographyMutedSpan className="block mb-2">Content Types</TypographyMutedSpan>
             <div className="space-y-1">
               {contentTypes.map((ct, idx) => (
                 <div key={idx} className="flex items-center justify-between text-sm">
@@ -388,14 +402,12 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
     return (
       <div className="space-y-3">
-        {title && <p className="font-medium text-sm">{title}</p>}
-        <ul className="list-disc list-inside space-y-2">
+        {title && <TypographySmall>{title}</TypographySmall>}
+        <TypographyList className="my-0 ml-4 space-y-1.5 [&>li]:mt-0">
           {items.map((item, idx) => (
-            <li key={idx} className="text-sm text-muted-foreground">
-              {item}
-            </li>
+            <li key={idx}>{item}</li>
           ))}
-        </ul>
+        </TypographyList>
       </div>
     );
   },
@@ -405,7 +417,11 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
    */
   Paragraph: ({ element }) => {
     const { text } = element.props as { text: string };
-    return <p className="text-sm text-muted-foreground">{text}</p>;
+    return (
+      <TypographyP className="text-sm mt-0 leading-normal [&:not(:first-child)]:mt-3">
+        {text}
+      </TypographyP>
+    );
   },
 
   /**
@@ -441,8 +457,8 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold">{title}</h3>
-            {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
+            <TypographyLarge>{title}</TypographyLarge>
+            {description && <TypographyMuted className="mt-1">{description}</TypographyMuted>}
           </div>
           {badge && <Badge variant={badgeVariant}>{badge}</Badge>}
         </div>
@@ -501,7 +517,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
           <Icon className={cn('h-5 w-5 mt-0.5 flex-shrink-0', config.iconColor)} />
           <div className="flex-1 min-w-0">
             <p className={cn('font-medium text-sm', config.titleColor)}>{title}</p>
-            <p className="text-sm text-muted-foreground mt-1">{text}</p>
+            <p className="text-sm mt-1">{text}</p>
           </div>
         </div>
       </div>
@@ -530,32 +546,32 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     return (
       <div className="p-4 rounded-lg border bg-card space-y-3">
         <div>
-          <h3 className="text-lg font-semibold">{name}</h3>
-          {industry && <p className="text-sm text-muted-foreground">{industry}</p>}
+          <TypographyLarge>{name}</TypographyLarge>
+          {industry && <TypographyMuted className="mt-0.5">{industry}</TypographyMuted>}
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-sm">
           {size && (
             <div>
-              <span className="text-muted-foreground">Größe:</span>
+              <TypographyMutedSpan>Größe:</TypographyMutedSpan>
               <p className="font-medium">{sizeLabels[size]}</p>
             </div>
           )}
           {location && (
             <div>
-              <span className="text-muted-foreground">Standort:</span>
+              <TypographyMutedSpan>Standort:</TypographyMutedSpan>
               <p className="font-medium">{location}</p>
             </div>
           )}
           {employeeCount && (
             <div>
-              <span className="text-muted-foreground">Mitarbeiter:</span>
+              <TypographyMutedSpan>Mitarbeiter:</TypographyMutedSpan>
               <p className="font-medium">{employeeCount}</p>
             </div>
           )}
           {revenue && (
             <div>
-              <span className="text-muted-foreground">Umsatz:</span>
+              <TypographyMutedSpan>Umsatz:</TypographyMutedSpan>
               <p className="font-medium">{revenue}</p>
             </div>
           )}
@@ -575,7 +591,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     return (
       <div className="p-3 rounded-lg bg-muted/50 space-y-1">
         <p className="font-medium">{name}</p>
-        {title && <p className="text-sm text-muted-foreground">{title}</p>}
+        {title && <p className="text-sm">{title}</p>}
         {email && (
           <p className="text-sm">
             <span className="text-muted-foreground">Email:</span>{' '}
@@ -624,7 +640,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
           {source && date && <span>•</span>}
           {date && <span>{date}</span>}
         </div>
-        {summary && <p className="text-sm text-muted-foreground">{summary}</p>}
+        {summary && <p className="text-sm">{summary}</p>}
       </div>
     );
   },
@@ -649,12 +665,12 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
     return (
       <div className="space-y-3">
-        {title && <p className="font-medium text-sm">{title}</p>}
+        {title && <TypographySmall>{title}</TypographySmall>}
         <div className="space-y-2">
           {items.map((item, idx) => (
             <div key={idx} className="p-3 rounded-lg border space-y-2">
               <div className="flex items-start justify-between gap-2">
-                <h4 className="font-medium text-sm flex-1">{item.title}</h4>
+                <TypographySmall className="flex-1">{item.title}</TypographySmall>
                 {item.sentiment && (
                   <Badge className={cn('text-xs', sentimentColors[item.sentiment])}>
                     {item.sentiment}
@@ -666,7 +682,11 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
                 {item.source && item.date && <span>•</span>}
                 {item.date && <span>{item.date}</span>}
               </div>
-              {item.summary && <p className="text-sm text-muted-foreground">{item.summary}</p>}
+              {item.summary && (
+                <TypographyP className="text-sm mt-0 leading-normal [&:not(:first-child)]:mt-1">
+                  {item.summary}
+                </TypographyP>
+              )}
             </div>
           ))}
         </div>
@@ -787,7 +807,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     return (
       <div className="p-4 rounded-lg bg-muted/50 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">{label}</span>
+          <TypographyMutedSpan>{label}</TypographyMutedSpan>
           <span className={cn('text-xl font-bold', variantColors[variant])}>
             {score}
             {maxScore !== 100 && `/${maxScore}`}
@@ -975,7 +995,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium">{dm.name}</p>
-                  <p className="text-sm text-muted-foreground">{dm.role}</p>
+                  <p className="text-sm">{dm.role}</p>
                 </div>
                 <div className="flex gap-1">
                   {dm.linkedInUrl && (
@@ -1245,28 +1265,28 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="p-3 rounded-lg bg-muted/50">
-            <p className="text-sm text-muted-foreground">Gesamte Seiten</p>
+            <TypographyMuted>Gesamte Seiten</TypographyMuted>
             <p className="text-2xl font-bold">{totalPages}</p>
           </div>
           <div className="p-3 rounded-lg bg-muted/50">
-            <p className="text-sm text-muted-foreground">Max. Tiefe</p>
+            <TypographyMuted>Max. Tiefe</TypographyMuted>
             <p className="text-2xl font-bold">{maxDepth}</p>
           </div>
           {sources?.sitemap !== undefined && sources.sitemap > 0 && (
             <div className="p-3 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Aus Sitemap</p>
+              <TypographyMuted>Aus Sitemap</TypographyMuted>
               <p className="text-2xl font-bold">{sources.sitemap}</p>
             </div>
           )}
           {sources?.linkDiscovery !== undefined && sources.linkDiscovery > 0 && (
             <div className="p-3 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Link Discovery</p>
+              <TypographyMuted>Link Discovery</TypographyMuted>
               <p className="text-2xl font-bold">{sources.linkDiscovery}</p>
             </div>
           )}
           {sources?.navigation !== undefined && sources.navigation > 0 && (
             <div className="p-3 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Aus Navigation</p>
+              <TypographyMuted>Aus Navigation</TypographyMuted>
               <p className="text-2xl font-bold">{sources.navigation}</p>
             </div>
           )}
@@ -1428,13 +1448,13 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         <div className="grid grid-cols-2 gap-3">
           {totalItems !== undefined && (
             <div className="p-3 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Nav-Items</p>
+              <TypographyMuted>Nav-Items</TypographyMuted>
               <p className="text-2xl font-bold">{totalItems}</p>
             </div>
           )}
           {maxDepth !== undefined && (
             <div className="p-3 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Max. Tiefe</p>
+              <TypographyMuted>Max. Tiefe</TypographyMuted>
               <p className="text-2xl font-bold">{maxDepth}</p>
             </div>
           )}
@@ -1442,7 +1462,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
         {mainNav && mainNav.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Hauptnavigation</p>
+            <TypographySmall className="text-muted-foreground">Hauptnavigation</TypographySmall>
             <div className="flex flex-wrap gap-2">
               {mainNav.map((item, idx) => (
                 <Badge key={idx} variant="outline" className="text-sm">
@@ -1456,7 +1476,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
         {navFeatures.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Features</p>
+            <TypographySmall className="text-muted-foreground">Features</TypographySmall>
             <div className="grid gap-1">
               {navFeatures.map((feature, idx) => (
                 <div key={idx} className="flex items-center gap-2">
@@ -1510,7 +1530,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
       <div className="space-y-4">
         {estimatedContentTypes !== undefined && (
           <div className="p-3 rounded-lg bg-muted/50 w-fit">
-            <p className="text-sm text-muted-foreground">Content Types</p>
+            <TypographyMuted>Content Types</TypographyMuted>
             <p className="text-2xl font-bold">{estimatedContentTypes}</p>
           </div>
         )}
@@ -1520,9 +1540,9 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
             <div key={idx} className="space-y-1">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">{item.type}</span>
-                <span className="text-muted-foreground">
+                <TypographyMutedSpan>
                   {item.count} ({item.percentage}%)
-                </span>
+                </TypographyMutedSpan>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
@@ -1539,15 +1559,17 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
         {recommendations && recommendations.length > 0 && (
           <div className="space-y-2 pt-2 border-t">
-            <p className="text-sm font-medium text-muted-foreground">Migration-Empfehlungen</p>
-            <ul className="space-y-1">
+            <TypographySmall className="text-muted-foreground">
+              Migration-Empfehlungen
+            </TypographySmall>
+            <TypographyList className="my-0 ml-0 space-y-1 [&>li]:mt-0">
               {recommendations.map((rec, idx) => (
-                <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                <li key={idx} className="text-sm flex items-start gap-2">
                   <span className="text-blue-500 mt-1">•</span>
                   {rec}
                 </li>
               ))}
-            </ul>
+            </TypographyList>
           </div>
         )}
       </div>
@@ -1579,7 +1601,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
     return (
       <div className="space-y-2">
-        {title && <p className="font-medium text-sm">{title}</p>}
+        {title && <TypographySmall>{title}</TypographySmall>}
         <div className="flex flex-wrap gap-2">
           {technologies.map((tech, idx) => (
             <div
@@ -2381,6 +2403,297 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
           })}
         </div>
       </div>
+    );
+  },
+
+  /**
+   * ProjectTimeline - Full project timeline visualization with Gantt-like bars
+   *
+   * Props:
+   * - totalDays: number - Total project duration in working days
+   * - totalWeeks: number - Total duration in weeks
+   * - totalMonths: number - Total duration in months
+   * - phases: Array<{ name, durationDays, startDay, endDay, keyActivities }> - Project phases
+   * - assumedTeamSize: { min, optimal, max } - Team size recommendation
+   * - confidence: number - Confidence level (0-100)
+   * - assumptions?: string[] - Key assumptions
+   * - risks?: Array<{ factor, impact, likelihood }> - Timeline risks
+   * - calculationBasis?: { contentVolume, complexity, integrations, hasCriticalDeadline }
+   * - estimatedStart?: string - ISO date
+   * - estimatedGoLive?: string - ISO date
+   */
+  ProjectTimeline: ({ element }) => {
+    const {
+      totalDays,
+      totalWeeks,
+      totalMonths,
+      phases,
+      assumedTeamSize,
+      confidence,
+      assumptions,
+      risks,
+      calculationBasis,
+      estimatedStart,
+      estimatedGoLive,
+    } = element.props as {
+      totalDays: number;
+      totalWeeks: number;
+      totalMonths: number;
+      phases: Array<{
+        name: string;
+        durationDays: number;
+        startDay: number;
+        endDay: number;
+        keyActivities?: string[];
+      }>;
+      assumedTeamSize: { min: number; optimal: number; max: number };
+      confidence: number;
+      assumptions?: string[];
+      risks?: Array<{ factor: string; impact: 'low' | 'medium' | 'high'; likelihood: string }>;
+      calculationBasis?: {
+        contentVolume: string;
+        complexity: string;
+        integrations: number;
+        hasCriticalDeadline: boolean;
+      };
+      estimatedStart?: string;
+      estimatedGoLive?: string;
+    };
+
+    const confidenceBg =
+      confidence >= 80
+        ? 'bg-green-100 text-green-800'
+        : confidence >= 60
+          ? 'bg-yellow-100 text-yellow-800'
+          : 'bg-red-100 text-red-800';
+
+    const phaseColors = [
+      'bg-blue-500',
+      'bg-purple-500',
+      'bg-green-500',
+      'bg-orange-500',
+      'bg-pink-500',
+      'bg-teal-500',
+    ];
+
+    const maxDay = totalDays || 1;
+
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Projekt-Timeline (Schätzung)
+              </CardTitle>
+              <CardDescription>
+                Basierend auf Quick Scan Analyse - Detaillierte Planung erfolgt nach Zuordnung
+              </CardDescription>
+            </div>
+            <Badge className={confidenceBg}>{confidence}% Konfidenz</Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {/* Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <div className="text-sm text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Gesamtdauer
+              </div>
+              <div className="text-2xl font-bold">{totalWeeks} Wochen</div>
+              <div className="text-xs text-muted-foreground">{totalDays} Arbeitstage</div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-sm text-muted-foreground">Monate</div>
+              <div className="text-2xl font-bold">{totalMonths?.toFixed(1) || '–'}</div>
+              <div className="text-xs text-muted-foreground">ca. Monate</div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-sm text-muted-foreground flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                Team-Größe
+              </div>
+              <div className="text-2xl font-bold">{assumedTeamSize?.optimal || '–'}</div>
+              <div className="text-xs text-muted-foreground">
+                {assumedTeamSize ? `${assumedTeamSize.min}-${assumedTeamSize.max} Personen` : '–'}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-sm text-muted-foreground">Phasen</div>
+              <div className="text-2xl font-bold">{phases?.length || 0}</div>
+              <div className="text-xs text-muted-foreground">Projekt-Phasen</div>
+            </div>
+          </div>
+
+          {/* Timeline Dates */}
+          {(estimatedStart || estimatedGoLive) && (
+            <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+              {estimatedStart && (
+                <div>
+                  <div className="text-sm font-medium">Geschätzter Start</div>
+                  <div className="text-lg">
+                    {new Date(estimatedStart).toLocaleDateString('de-DE', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </div>
+                </div>
+              )}
+              {estimatedGoLive && (
+                <div>
+                  <div className="text-sm font-medium">Geschätztes Go-Live</div>
+                  <div className="text-lg">
+                    {new Date(estimatedGoLive).toLocaleDateString('de-DE', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Phase Bars (Gantt-like) */}
+          {phases && phases.length > 0 && (
+            <div className="space-y-3">
+              <div className="text-sm font-medium">Phasen-Übersicht</div>
+              <div className="space-y-2">
+                {phases.map((phase, index) => {
+                  const startPercent = (phase.startDay / maxDay) * 100;
+                  const widthPercent = (phase.durationDays / maxDay) * 100;
+                  const color = phaseColors[index % phaseColors.length];
+
+                  return (
+                    <div key={index} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="font-medium">{phase.name}</div>
+                        <div className="text-muted-foreground">
+                          {phase.durationDays} Tage ({Math.ceil(phase.durationDays / 5)} Wochen)
+                        </div>
+                      </div>
+                      <div className="relative h-8 bg-muted rounded-md overflow-hidden">
+                        <div
+                          className={cn(
+                            'absolute h-full transition-all flex items-center px-2 text-white text-xs font-medium',
+                            color
+                          )}
+                          style={{
+                            left: `${startPercent}%`,
+                            width: `${Math.max(widthPercent, 5)}%`,
+                          }}
+                        >
+                          {widthPercent > 20 && <span className="truncate">{phase.name}</span>}
+                        </div>
+                      </div>
+                      {phase.keyActivities && phase.keyActivities.length > 0 && (
+                        <div className="text-xs text-muted-foreground pl-2">
+                          {phase.keyActivities.slice(0, 2).join(' • ')}
+                          {phase.keyActivities.length > 2 &&
+                            ` +${phase.keyActivities.length - 2} weitere`}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Calculation Basis */}
+          {calculationBasis && (
+            <div className="p-4 bg-muted rounded-lg space-y-2">
+              <div className="text-sm font-medium flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                Berechnungsgrundlage
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Content-Volumen:</span>
+                  <span className="ml-2">{calculationBasis.contentVolume}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Komplexität:</span>
+                  <span className="ml-2 capitalize">{calculationBasis.complexity}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Integrationen:</span>
+                  <span className="ml-2">{calculationBasis.integrations}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Kritische Deadline:</span>
+                  <span className="ml-2">
+                    {calculationBasis.hasCriticalDeadline ? 'Ja' : 'Nein'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Assumptions */}
+          {assumptions && assumptions.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-medium flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                Annahmen
+              </div>
+              <ul className="list-disc list-inside text-sm space-y-1">
+                {assumptions.map((assumption, index) => (
+                  <li key={index}>{assumption}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Risks */}
+          {risks && risks.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-medium flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                Timeline-Risiken
+              </div>
+              <div className="space-y-2">
+                {risks.map((risk, index) => {
+                  const impactColors = {
+                    low: 'bg-green-100 text-green-800',
+                    medium: 'bg-yellow-100 text-yellow-800',
+                    high: 'bg-red-100 text-red-800',
+                  };
+                  return (
+                    <div
+                      key={index}
+                      className={cn(
+                        'p-3 rounded-lg border',
+                        risk.impact === 'high' ? 'border-red-200 bg-red-50' : 'border-muted'
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-sm">{risk.factor}</span>
+                        <div className="flex gap-1">
+                          <Badge className={cn('text-xs', impactColors[risk.impact])}>
+                            {risk.impact === 'high'
+                              ? 'Hoch'
+                              : risk.impact === 'medium'
+                                ? 'Mittel'
+                                : 'Niedrig'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     );
   },
 };

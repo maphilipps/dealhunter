@@ -13,9 +13,9 @@ import {
 } from '@/components/ui/breadcrumb';
 
 const routeLabels: Record<string, string> = {
-  '': 'Dashboard',
   bids: 'Leads',
   'pre-qualifications': 'Leads',
+  qualifications: 'Qualifications',
   new: 'Neu',
   accounts: 'Accounts',
   analytics: 'Analytics',
@@ -35,7 +35,7 @@ export function DynamicBreadcrumb() {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbPage>Dashboard</BreadcrumbPage>
+            <BreadcrumbPage>Leads</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -45,17 +45,15 @@ export function DynamicBreadcrumb() {
   return (
     <Breadcrumb>
       <BreadcrumbList>
-        <BreadcrumbItem className="hidden md:block">
-          <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
-        </BreadcrumbItem>
         {segments.map((segment, index) => {
           const path = '/' + segments.slice(0, index + 1).join('/');
           const isLast = index === segments.length - 1;
+          const isFirst = index === 0;
           const label = routeLabels[segment] || segment;
 
           return (
             <Fragment key={path}>
-              <BreadcrumbSeparator className="hidden md:block" />
+              {!isFirst && <BreadcrumbSeparator className="hidden md:block" />}
               <BreadcrumbItem>
                 {isLast ? (
                   <BreadcrumbPage>{label}</BreadcrumbPage>

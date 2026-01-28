@@ -219,7 +219,7 @@ test.describe('Extraction: Navigation (TC-4)', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('TC-4.1: Breadcrumbs show Dashboard → RFPs → [Customer Name]', async ({ page }) => {
+  test('TC-4.1: Breadcrumbs show Leads → [Customer Name]', async ({ page }) => {
     await createRFP(page, 'RFP from Acme Corp for website relaunch');
 
     // Wait for extraction to complete
@@ -229,7 +229,7 @@ test.describe('Extraction: Navigation (TC-4)', () => {
     const hasBreadcrumbs =
       (await page.locator('[aria-label="breadcrumb"]').count()) > 0 ||
       (await page.locator('nav[aria-label="Breadcrumb"]').count()) > 0 ||
-      (await page.locator('text=Dashboard').count()) > 0;
+      (await page.locator('text=Leads').count()) > 0;
 
     expect(hasBreadcrumbs).toBeTruthy();
   });

@@ -21,13 +21,13 @@ test.describe('Navigation: Sidebar Links', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('TC-1.1: Dashboard Link navigates correctly', async ({ page }) => {
-    // Click Dashboard link in sidebar
-    await page.click('a[href="/"]');
+  test('TC-1.1: Leads Link navigates correctly', async ({ page }) => {
+    // Click Leads link in sidebar
+    await page.click('a[href="/pre-qualifications"]');
     await page.waitForLoadState('networkidle');
 
-    // Verify we're on dashboard
-    await expect(page).toHaveURL('/');
+    // Verify we're on leads page
+    await expect(page).toHaveURL('/pre-qualifications');
   });
 
   test('TC-1.2: RFPs Expandable Menu', async ({ page }) => {
@@ -241,25 +241,23 @@ test.describe('Navigation: Breadcrumbs', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('TC-2.1: Dashboard → No Breadcrumb', async ({ page }) => {
-    // On dashboard, breadcrumb should show only "Dashboard"
+  test('TC-2.1: Leads → Breadcrumb shows Leads', async ({ page }) => {
+    // Navigate to leads page (root redirects there)
+    await page.goto('/pre-qualifications');
+    await page.waitForLoadState('networkidle');
+
+    // On leads page, breadcrumb should show "Leads"
     const breadcrumb = page.locator('nav[aria-label="breadcrumb"]');
 
     if ((await breadcrumb.count()) > 0) {
       await expect(breadcrumb).toBeVisible();
-      await expect(breadcrumb.locator('text=Dashboard')).toBeVisible();
-
-      // No separator should be visible
-      const separators = breadcrumb.locator('[data-slot="separator"]');
-      expect(await separators.count()).toBe(0);
+      await expect(breadcrumb.locator('text=Leads')).toBeVisible();
     }
   });
 
-  test('TC-2.2: Dashboard → RFPs → Breadcrumb shows correctly', async ({ page }) => {
-    // Navigate to RFPs
-    await page.click('button:has-text("RFPs")');
-    await page.waitForTimeout(300);
-    await page.click('a:has-text("Alle RFPs")');
+  test('TC-2.2: Leads → Breadcrumb shows correctly', async ({ page }) => {
+    // Navigate to Leads
+    await page.click('a[href="/pre-qualifications"]');
     await page.waitForLoadState('networkidle');
 
     // Check breadcrumb
@@ -267,8 +265,7 @@ test.describe('Navigation: Breadcrumbs', () => {
 
     if ((await breadcrumb.count()) > 0) {
       await expect(breadcrumb).toBeVisible();
-      await expect(breadcrumb.locator('text=Dashboard')).toBeVisible();
-      await expect(breadcrumb.locator('text=RFPs')).toBeVisible();
+      await expect(breadcrumb.locator('text=Leads')).toBeVisible();
     }
   });
 
@@ -281,15 +278,15 @@ test.describe('Navigation: Breadcrumbs', () => {
     const breadcrumb = page.locator('nav[aria-label="breadcrumb"]');
 
     if ((await breadcrumb.count()) > 0) {
-      // Click Dashboard in breadcrumb
-      const dashboardLink = breadcrumb.locator('a:has-text("Dashboard")');
+      // Click master-data in breadcrumb
+      const masterDataLink = breadcrumb.locator('a:has-text("master-data")');
 
-      if ((await dashboardLink.count()) > 0) {
-        await dashboardLink.click();
+      if ((await masterDataLink.count()) > 0) {
+        await masterDataLink.click();
         await page.waitForLoadState('networkidle');
 
-        // Verify we're back on dashboard
-        await expect(page).toHaveURL('/');
+        // Verify we navigated
+        await expect(page).toHaveURL('/master-data');
       }
     }
   });
@@ -331,8 +328,7 @@ test.describe('Navigation: Responsive Sidebar', () => {
     await expect(sidebar).toBeVisible();
 
     // Should contain navigation items
-    await expect(sidebar.locator('text=Dashboard')).toBeVisible();
-    await expect(sidebar.locator('text=RFPs')).toBeVisible();
+    await expect(sidebar.locator('text=Leads')).toBeVisible();
   });
 
   test('TC-3.2: Mobile - Sidebar as Drawer', async ({ page }) => {

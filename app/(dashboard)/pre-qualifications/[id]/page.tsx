@@ -1,19 +1,19 @@
-import { Calendar, Target } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 
 import { ProcessingProgressCard } from '@/components/bids/processing-progress-card';
+import { DashboardPDFExport, PreQualificationDashboard } from '@/components/dashboard';
 import { DeletePreQualificationButton } from '@/components/pre-qualifications/delete-prequalification-button';
-import { QuickScanSummaryGrid } from '@/components/pre-qualifications/management-summary';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { getAgentResult, hasExpertAgentResults } from '@/lib/agents/expert-agents';
 import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schema';
 import { auth } from '@/lib/auth';
 import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
 import { isProcessingState } from '@/lib/pre-qualifications/constants';
 
-export default async function BidDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PreQualificationOverviewPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const session = await auth();
 
@@ -21,15 +21,15 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
     redirect('/login');
   }
 
-  // Get bid opportunity with quick scan data (cached - shares query with layout)
-  const { preQualification: bid, quickScan } = await getCachedPreQualificationWithRelations(id);
+  // Get pre-qualification data (cached - shares query with layout)
+  const { preQualification } = await getCachedPreQualificationWithRelations(id);
 
-  if (!bid) {
+  if (!preQualification) {
     notFound();
   }
 
   // Check ownership
-  if (bid.userId !== session.user.id) {
+  if (preQualification.userId !== session.user.id) {
     notFound();
   }
 
@@ -40,10 +40,11 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
   // Parse summary if available
   let summary: ManagementSummary | null = null;
   if (summaryResult?.metadata) {
-    // The metadata contains the key fields we need
     summary = summaryResult.metadata as unknown as ManagementSummary;
   }
-  const deleteLabel = summary?.headline || bid.id;
+
+  const isProcessing = isProcessingState(preQualification.status);
+  const deleteLabel = summary?.headline || preQualification.id;
 
   return (
     <div className="space-y-6">
@@ -53,122 +54,27 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
           <h1 className="text-3xl font-bold tracking-tight">
             {summary?.headline || 'Lead Übersicht'}
           </h1>
+          {summary?.keyFacts.customer && (
+            <p className="mt-1 text-muted-foreground">{summary.keyFacts.customer}</p>
+          )}
         </div>
         <div className="flex items-center gap-2">
+          {!isProcessing && <DashboardPDFExport />}
           <DeletePreQualificationButton
             preQualificationId={id}
             label={deleteLabel}
-            isProcessing={isProcessingState(bid.status)}
+            isProcessing={isProcessing}
           />
         </div>
       </div>
 
-      {/* Management Summary (if available) */}
-      {summary && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Management Summary
-            </CardTitle>
-            <CardDescription>{summary.executiveSummary}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Assessment */}
-              <div className="space-y-4">
-                <h4 className="font-semibold">Bewertung</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Fit Score</span>
-                    <span className="font-medium">{summary.assessment.fitScore}/10</span>
-                  </div>
-                  <Progress value={summary.assessment.fitScore * 10} />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Komplexität</span>
-                    <span className="font-medium">{summary.assessment.complexityScore}/10</span>
-                  </div>
-                  <Progress value={summary.assessment.complexityScore * 10} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Empfehlung:</span>
-                  <Badge
-                    variant={
-                      summary.assessment.recommendation === 'pursue'
-                        ? 'default'
-                        : summary.assessment.recommendation === 'consider'
-                          ? 'secondary'
-                          : 'destructive'
-                    }
-                  >
-                    {summary.assessment.recommendation === 'pursue' && 'Verfolgen'}
-                    {summary.assessment.recommendation === 'consider' && 'Prüfen'}
-                    {summary.assessment.recommendation === 'decline' && 'Ablehnen'}
-                  </Badge>
-                  <Badge
-                    variant={
-                      summary.assessment.urgencyLevel === 'critical'
-                        ? 'destructive'
-                        : summary.assessment.urgencyLevel === 'high'
-                          ? 'default'
-                          : 'secondary'
-                    }
-                  >
-                    {summary.assessment.urgencyLevel === 'critical' && '🔴 Kritisch'}
-                    {summary.assessment.urgencyLevel === 'high' && '🟠 Hoch'}
-                    {summary.assessment.urgencyLevel === 'medium' && '🟡 Mittel'}
-                    {summary.assessment.urgencyLevel === 'low' && '🟢 Niedrig'}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">{summary.assessment.reasoning}</p>
-              </div>
+      {/* Processing Progress (shown during processing) */}
+      {isProcessing && <ProcessingProgressCard bidId={preQualification.id} />}
 
-              {/* Key Facts */}
-              <div className="space-y-4">
-                <h4 className="font-semibold">Key Facts</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Kunde</span>
-                    <span className="font-medium">{summary.keyFacts.customer}</span>
-                  </div>
-                  {summary.keyFacts.industry && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Branche</span>
-                      <span>{summary.keyFacts.industry}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Projekttyp</span>
-                    <span>{summary.keyFacts.projectType}</span>
-                  </div>
-                  {summary.keyFacts.submissionDeadline && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Deadline</span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {summary.keyFacts.submissionDeadline}
-                        {summary.keyFacts.daysRemaining !== undefined && (
-                          <Badge variant="outline" className="ml-1">
-                            {summary.keyFacts.daysRemaining} Tage
-                          </Badge>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Dashboard Content */}
+      {!isProcessing && (
+        <PreQualificationDashboard preQualificationId={id} initialSummary={summary} />
       )}
-
-      {/* Quick-Scan Summary Grid */}
-      <QuickScanSummaryGrid preQualificationId={id} quickScan={quickScan} />
-
-      {/* Processing Progress (must remain visible) */}
-      {isProcessingState(bid.status) && <ProcessingProgressCard bidId={bid.id} />}
     </div>
   );
 }

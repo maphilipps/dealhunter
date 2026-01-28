@@ -199,3 +199,92 @@ samp {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* ===== Print Styles for Dashboard PDF Export ===== */
+@media print {
+  /* Hide navigation, sidebar, and action buttons */
+  [data-sidebar],
+  nav,
+  header:not(.print-header),
+  .no-print,
+  button:not(.print-button) {
+    display: none !important;
+  }
+
+  /* Reset background colors */
+  :root {
+    --background: white;
+    --foreground: black;
+    --card: white;
+    --card-foreground: black;
+    --muted: #f5f5f5;
+    --muted-foreground: #666;
+    --border: #ddd;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+
+  /* Ensure cards print nicely */
+  [data-slot='card'] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    margin-bottom: 0.5cm;
+  }
+
+  /* Typography adjustments */
+  h1 {
+    font-size: 18pt;
+    margin-bottom: 0.5cm;
+  }
+
+  h2,
+  h3,
+  h4 {
+    font-size: 12pt;
+    margin-top: 0.3cm;
+    margin-bottom: 0.2cm;
+  }
+
+  /* Grid adjustments for print */
+  .grid {
+    display: block !important;
+  }
+
+  .grid > * {
+    margin-bottom: 0.3cm;
+  }
+
+  /* Progress bars - show as text */
+  [role='progressbar'] {
+    display: none !important;
+  }
+
+  /* Badge styling */
+  .badge,
+  [data-slot='badge'] {
+    border: 1px solid #999 !important;
+    background: transparent !important;
+    color: black !important;
+    padding: 2px 6px;
+  }
+
+  /* Links */
+  a {
+    color: black !important;
+    text-decoration: none !important;
+  }
+
+}

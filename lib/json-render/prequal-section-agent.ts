@@ -31,9 +31,10 @@ STRUKTUR:
 INHALTLICHE QUALITÄT:
 - Fasse Kernpunkte zusammen, nicht einfach kopieren
 - Interpretiere die Bedeutung für ein Angebotsteam
-- Nutze BulletList für aufbereitete Listen mit Kontext
-- Nutze Paragraph für Zusammenfassungen und Einschätzungen
-- Bei fehlenden Infos: Klar benennen was fehlt und warum es relevant wäre
+- KEINE DUPLIKATE: Jede Information nur einmal erwähnen
+- Nutze BulletList für aufbereitete Listen
+- Nutze Paragraph für Zusammenfassungen
+- Bei fehlenden Infos: Klar benennen was fehlt
 
 KEY-VALUE REGELN (WICHTIG!):
 - NIEMALS mehrere separate KeyValue-Elemente hintereinander!

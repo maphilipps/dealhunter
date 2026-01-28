@@ -54,7 +54,7 @@ jobs:
             npm ci --prefer-offline
 
             echo "🧹 Cleaning old build artifacts..."
-            rm -rf .next
+            sudo rm -rf .next
 
             echo "🔨 Building application..."
             npm run build

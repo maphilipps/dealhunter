@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  Database,
-  Home,
-  ListTodo,
-} from 'lucide-react';
+import { Database, Home, ListTodo } from 'lucide-react';
 import * as React from 'react';
 
 import { NavMain } from '@/components/nav-main';
@@ -126,9 +122,9 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />
-        <NavProjects projects={masterData} />
       </SidebarContent>
       <SidebarFooter>
+        <NavProjects projects={masterData} />
         <NavUser user={user} />
       </SidebarFooter>
       {props.collapsible !== 'none' && <SidebarRail />}

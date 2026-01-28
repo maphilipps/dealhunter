@@ -14,8 +14,6 @@ import {
 import { wrapTool } from '../tool-wrapper';
 import type { BusinessUnit } from '../types';
 
-
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // SYNTHESIS INPUT TYPE
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -46,8 +44,11 @@ export async function generateBLRecommendation(
 VERFÜGBARE BUSINESS LINES (NUR DIESE VERWENDEN!):
 ${input.businessUnits.map(bu => `- ${bu.name}: Keywords: ${bu.keywords.join(', ')}`).join('\n')}
 
-WICHTIG: Du MUSST einen der folgenden Namen EXAKT verwenden: ${validBUNames.join(', ')}
-Verwende KEINE anderen Namen! Wenn keiner passt, wähle den besten aus den verfügbaren.
+KRITISCH WICHTIG:
+- Du MUSST einen der folgenden Namen EXAKT verwenden: ${validBUNames.join(', ')}
+- ES GIBT NUR DIESE ${validBUNames.length} BUSINESS LINES!
+- Verwende NIEMALS Namen wie "dxs", "DXS", "Digital Experience", oder ähnliches
+- Wenn keiner perfekt passt, wähle den BESTEN aus den VERFÜGBAREN
 
 Analysiere die Website-Daten und empfehle die beste Business Line.`;
 
@@ -80,6 +81,46 @@ Empfehle die passende Business Line mit Begründung.`;
     system: fullSystemPrompt,
     prompt: userPrompt,
   });
+
+  // POST-VALIDATION: Ensure the LLM used a valid BU name
+  if (!validBUNames.includes(result.primaryBusinessLine)) {
+    const invalidBUName = result.primaryBusinessLine; // Speichere den ungültigen Namen
+
+    console.warn(
+      `[BL-Recommendation] LLM returned invalid BU name: "${invalidBUName}". Valid: ${validBUNames.join(', ')}`
+    );
+
+    // Fallback: Choose best matching BU based on keywords
+    const techKeywords: string[] = [
+      input.techStack.cms?.toLowerCase(),
+      input.techStack.framework?.toLowerCase(),
+      ...(input.techStack.backend?.map(b => b.toLowerCase()) || []),
+    ].filter((tk): tk is string => Boolean(tk));
+
+    let bestBU = validBUNames[0]; // Default to first BU
+    let bestScore = 0;
+
+    for (const buName of validBUNames) {
+      const bu = input.businessUnits.find(b => b.name === buName);
+      if (!bu) continue;
+
+      const buKeywords = bu.keywords.map(k => k.toLowerCase());
+      const matches = techKeywords.filter(tk =>
+        buKeywords.some(bk => bk.includes(tk) || tk.includes(bk))
+      );
+      const score = matches.length;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestBU = buName;
+      }
+    }
+
+    result.primaryBusinessLine = bestBU;
+    result.reasoning =
+      `⚠️ Korrigiert von "${invalidBUName}" zu "${bestBU}" (LLM halluzinierte). ` +
+      result.reasoning;
+  }
 
   return result;
 }

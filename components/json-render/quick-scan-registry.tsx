@@ -98,44 +98,28 @@ const iconMap = {
   extractedComponents: Layers,
 };
 
-// Variant styles for ResultCard
-const variantStyles = {
-  default: 'border-border',
-  highlight: 'border-blue-200 bg-blue-50',
-  warning: 'border-yellow-200 bg-yellow-50',
-  success: 'border-green-200 bg-green-50',
-};
-
 /**
  * Quick Scan Component Registry
  * Maps json-render catalog components to React implementations
  */
 export const quickScanRegistry: Record<string, ComponentType<RegistryComponentProps>> = {
   ResultCard: ({ element, children }) => {
-    const {
-      title,
-      description,
-      variant = 'default',
-      icon,
-    } = element.props as {
+    const { title, description, icon } = element.props as {
       title: string;
       description?: string;
-      variant?: keyof typeof variantStyles;
       icon?: keyof typeof iconMap;
     };
     const Icon = icon ? iconMap[icon] : null;
 
     return (
-      <Card className={cn(variantStyles[variant])}>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
-            <CardTitle as="h3">{title}</CardTitle>
-          </div>
-          {description && <CardDescription>{description}</CardDescription>}
-        </CardHeader>
-        {children && <CardContent>{children}</CardContent>}
-      </Card>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
+          <TypographyH3>{title}</TypographyH3>
+        </div>
+        {description && <TypographyMuted>{description}</TypographyMuted>}
+        {children}
+      </div>
     );
   },
 

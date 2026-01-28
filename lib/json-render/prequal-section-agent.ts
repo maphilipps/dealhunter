@@ -13,32 +13,46 @@ import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-servic
 const SECTION_UI_SYSTEM_PROMPT = `Du generierst JsonRenderTree UI für eine Ausschreibungs-Analyse-Section.
 
 VERFÜGBARE KOMPONENTEN:
-- Layout: Grid, ResultCard, Section
-- Inhalt: BulletList, Paragraph, KeyValue, Metric
+- Layout: Section (äußerer Container mit H2), SubSection (H3 für Unterabschnitte)
+- Inhalt: BulletList, Paragraph, KeyValue, KeyValueTable, Metric
 
-VERBOTEN: ProgressBar, ScoreCard, Confidence-Anzeigen (wird bereits oben angezeigt)
+VERBOTEN:
+- ProgressBar, ScoreCard, Confidence-Anzeigen (wird bereits oben angezeigt)
+- ResultCard (deprecated - nutze SubSection stattdessen)
+- Grid (deprecated - nutze Section mit SubSection)
+- Verschachtelte Cards (NIEMALS Card in Card!)
 
-WICHTIGE REGELN:
-1. Root muss ein Grid sein.
-2. Nur Grid, ResultCard, Section können children haben.
-3. KEINE Rohdaten ausgeben - IMMER aufbereiten und interpretieren!
-4. Schreibe ZUSAMMENFASSENDE, GUT LESBARE Texte für Business-Entscheider.
-5. Bei fehlenden Infos: Klar benennen was fehlt und warum es relevant wäre.
+STRUKTUR:
+1. Root ist eine Section (wird als Card mit H2 gerendert)
+2. Unterabschnitte mit SubSection (H3)
+3. Mehrere KeyValue-Paare in KeyValueTable gruppieren
+4. KEINE Rohdaten ausgeben - IMMER aufbereiten und interpretieren!
 
 INHALTLICHE QUALITÄT:
 - Fasse Kernpunkte zusammen, nicht einfach kopieren
 - Interpretiere die Bedeutung für ein Angebotsteam
-- Nutze KeyValue für strukturierte Fakten (z.B. "Budget: 500.000 EUR")
+- KeyValueTable NUR bei 2+ KeyValue-Paaren (einzelnes KeyValue direkt ohne Table)
 - Nutze BulletList für aufbereitete Listen mit Kontext
 - Nutze Paragraph für Zusammenfassungen und Einschätzungen
-- Nutze Metric nur für einzelne wichtige Kennzahlen
+- Bei fehlenden Infos: Klar benennen was fehlt und warum es relevant wäre
 
-BEISPIEL für "deliverables":
-SCHLECHT: "Los 1: CMS, Los 2: Design" (zu knapp)
-GUT: ResultCard mit Titel "Leistungsumfang" + Paragraph mit Zusammenfassung + BulletList mit Details pro Los
+BEISPIEL:
+{
+  "root": "section-main",
+  "elements": {
+    "section-main": { "key": "section-main", "type": "Section", "props": { "title": "Vertragliche Rahmenbedingungen" }, "children": ["para-summary", "sub-commercial", "sub-legal"] },
+    "para-summary": { "key": "para-summary", "type": "Paragraph", "props": { "text": "Die Ausschreibung sieht einen EVB-IT Systemvertrag vor..." } },
+    "sub-commercial": { "key": "sub-commercial", "type": "SubSection", "props": { "title": "Kommerzielles Modell" }, "children": ["kvtable-1"] },
+    "kvtable-1": { "key": "kvtable-1", "type": "KeyValueTable", "props": {}, "children": ["kv-1", "kv-2"] },
+    "kv-1": { "key": "kv-1", "type": "KeyValue", "props": { "label": "Vertragstyp", "value": "EVB-IT Systemvertrag" } },
+    "kv-2": { "key": "kv-2", "type": "KeyValue", "props": { "label": "Laufzeit", "value": "4 Jahre + Option" } },
+    "sub-legal": { "key": "sub-legal", "type": "SubSection", "props": { "title": "Rechtliche Anforderungen" }, "children": ["list-1"] },
+    "list-1": { "key": "list-1", "type": "BulletList", "props": { "items": ["DSGVO-Konformität erforderlich", "Hosting in DE/EU"] } }
+  }
+}
 
 SPRACHE: Deutsch, professionell, prägnant.
-`; 
+`;
 
 export async function runPreQualSectionAgent(input: {
   preQualificationId: string;
@@ -77,27 +91,32 @@ export async function runPreQualSectionAgent(input: {
     description: `Speichere die aufbereitete UI-Visualisierung für Section "${sectionId}".
 
 WICHTIG: Rufe erst queryDocuments auf, dann erstelle eine AUFBEREITETE Visualisierung.
-KEINE Rohdaten, KEINE Confidence-Anzeigen, KEINE ProgressBars.
+KEINE Rohdaten, KEINE Confidence-Anzeigen, KEINE ProgressBars, KEINE verschachtelten Cards.
 
 Verfügbare Typen:
-- Grid: Layout-Container (columns: 1|2)
-- ResultCard: Karte mit Titel (title: string)
-- Section: Unterbereich mit Titel (title: string)
+- Section: Hauptcontainer mit Card + H2 (title: string, description?: string)
+- SubSection: Unterabschnitt mit H3 (title: string)
+- KeyValueTable: Container für KeyValue-Paare - NUR bei 2+ Paaren verwenden!
+- KeyValue: Schlüssel-Wert als Table-Zeile (label: string, value: string)
 - BulletList: Aufzählung (items: string[])
 - Paragraph: Fließtext (text: string)
-- KeyValue: Schlüssel-Wert (label: string, value: string)
 - Metric: Einzelne Kennzahl (label: string, value: string|number, unit?: string)
 
-Beispiel für gute Visualisierung:
+WICHTIG:
+- Immer einspaltig (kein Grid mit columns: 2)
+- KeyValueTable NUR bei 2+ KeyValue-Paaren (einzelnes KeyValue direkt ohne Table)
+- VERBOTEN: Grid, ResultCard (deprecated)
+
+Beispiel:
 {
-  "root": "grid-1",
+  "root": "section-main",
   "elements": {
-    "grid-1": { "key": "grid-1", "type": "Grid", "props": { "columns": 1 }, "children": ["card-summary", "card-details"] },
-    "card-summary": { "key": "card-summary", "type": "ResultCard", "props": { "title": "Zusammenfassung" }, "children": ["para-1"] },
-    "para-1": { "key": "para-1", "type": "Paragraph", "props": { "text": "Die Ausschreibung fordert ein CMS mit hohen Barrierefreiheitsanforderungen. Besonders relevant: BITV 2.0 Konformität wird explizit verlangt." } },
-    "card-details": { "key": "card-details", "type": "ResultCard", "props": { "title": "Details" }, "children": ["kv-1", "list-1"] },
-    "kv-1": { "key": "kv-1", "type": "KeyValue", "props": { "label": "Projektumfang", "value": "Ca. 500 Seiten Content-Migration" } },
-    "list-1": { "key": "list-1", "type": "BulletList", "props": { "items": ["Frontend: React-basiert, responsive", "Backend: Headless CMS gefordert", "Schnittstellen: REST API zu SAP"] } }
+    "section-main": { "key": "section-main", "type": "Section", "props": { "title": "Vertragsanalyse" }, "children": ["para-1", "sub-details"] },
+    "para-1": { "key": "para-1", "type": "Paragraph", "props": { "text": "Die Ausschreibung sieht einen EVB-IT Systemvertrag vor." } },
+    "sub-details": { "key": "sub-details", "type": "SubSection", "props": { "title": "Kommerzielle Details" }, "children": ["kvtable-1"] },
+    "kvtable-1": { "key": "kvtable-1", "type": "KeyValueTable", "props": {}, "children": ["kv-1", "kv-2"] },
+    "kv-1": { "key": "kv-1", "type": "KeyValue", "props": { "label": "Vertragstyp", "value": "EVB-IT Systemvertrag" } },
+    "kv-2": { "key": "kv-2", "type": "KeyValue", "props": { "label": "Laufzeit", "value": "4 Jahre" } }
   }
 }`,
     inputSchema: z.object({
@@ -107,7 +126,10 @@ Beispiel für gute Visualisierung:
       }),
       confidence: z.number().min(0).max(100),
     }),
-    execute: async (input: { visualization: { root: string | null; elements: Record<string, unknown> }; confidence: number }) => {
+    execute: async (input: {
+      visualization: { root: string | null; elements: Record<string, unknown> };
+      confidence: number;
+    }) => {
       if (!hasQueriedDocuments) {
         return { success: false, error: 'queryDocuments must be called before storeVisualization' };
       }
@@ -137,7 +159,9 @@ Beispiel für gute Visualisierung:
         }),
       });
 
-      console.log(`[Section:${sectionId}] Visualization stored (${Object.keys(visualization.elements).length} elements)`);
+      console.log(
+        `[Section:${sectionId}] Visualization stored (${Object.keys(visualization.elements).length} elements)`
+      );
 
       return {
         success: true,
@@ -220,8 +244,8 @@ WICHTIG:
     });
 
     // Check if storeVisualization was actually called
-    const storedVisualization = result.steps.some(
-      step => step.toolCalls.some(call => call.toolName === 'storeVisualization')
+    const storedVisualization = result.steps.some(step =>
+      step.toolCalls.some(call => call.toolName === 'storeVisualization')
     );
 
     if (!storedVisualization) {

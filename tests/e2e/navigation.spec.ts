@@ -98,15 +98,15 @@ test.describe('Navigation: Sidebar Links', () => {
 
   test('TC-1.7: Einstellungen → Expandable Menu', async ({ page }) => {
     // Find Einstellungen menu button
-    const masterDataMenu = page.locator('button:has-text("Einstellungen")');
-    await expect(masterDataMenu).toBeVisible();
+    const settingsMenu = page.locator('button:has-text("Einstellungen")');
+    await expect(settingsMenu).toBeVisible();
 
     // Verify it's expandable
-    const chevron = masterDataMenu.locator('svg').last();
+    const chevron = settingsMenu.locator('svg').last();
     await expect(chevron).toBeVisible();
 
     // Click to expand
-    await masterDataMenu.click();
+    await settingsMenu.click();
     await page.waitForTimeout(300);
 
     // Verify submenu items are visible

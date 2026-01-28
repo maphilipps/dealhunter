@@ -126,15 +126,15 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     const Icon = icon ? iconMap[icon] : null;
 
     return (
-      <Card className={cn(variantStyles[variant], 'mb-6')}>
-        <CardHeader className="pb-4">
+      <Card className={cn(variantStyles[variant])}>
+        <CardHeader>
           <div className="flex items-center gap-2">
             {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
-            <CardTitle>{title}</CardTitle>
+            <CardTitle as="h3">{title}</CardTitle>
           </div>
           {description && <CardDescription>{description}</CardDescription>}
         </CardHeader>
-        {children && <CardContent className="space-y-4">{children}</CardContent>}
+        {children && <CardContent>{children}</CardContent>}
       </Card>
     );
   },
@@ -432,9 +432,9 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
   KeyValue: ({ element }) => {
     const { label, value } = element.props as { label: string; value: string };
     return (
-      <TableRow className="border-0 hover:bg-transparent">
-        <TableCell className="py-1.5 pl-0 pr-4 text-muted-foreground w-[140px]">{label}</TableCell>
-        <TableCell className="py-1.5 px-0 font-medium">{value}</TableCell>
+      <TableRow>
+        <TableCell className="text-muted-foreground">{label}</TableCell>
+        <TableCell className="font-medium">{value}</TableCell>
       </TableRow>
     );
   },

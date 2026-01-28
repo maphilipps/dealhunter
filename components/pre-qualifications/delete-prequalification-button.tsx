@@ -1,6 +1,6 @@
 'use client';
 
-import { Trash2 } from 'lucide-react';
+import { StopCircle, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -23,9 +23,15 @@ type Props = {
   preQualificationId: string;
   label?: string;
   size?: 'default' | 'sm';
+  isProcessing?: boolean;
 };
 
-export function DeletePreQualificationButton({ preQualificationId, label, size = 'default' }: Props) {
+export function DeletePreQualificationButton({
+  preQualificationId,
+  label,
+  size = 'default',
+  isProcessing = false,
+}: Props) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -34,7 +40,9 @@ export function DeletePreQualificationButton({ preQualificationId, label, size =
     const result = await deletePreQualificationHard(preQualificationId);
 
     if (result.success) {
-      toast.success('Pre-Qualification erfolgreich gelöscht');
+      toast.success(
+        isProcessing ? 'Verarbeitung abgebrochen' : 'Pre-Qualification erfolgreich gelöscht'
+      );
       router.push('/pre-qualifications');
     } else {
       toast.error(result.error || 'Fehler beim Löschen');
@@ -42,30 +50,38 @@ export function DeletePreQualificationButton({ preQualificationId, label, size =
     }
   };
 
+  const Icon = isProcessing ? StopCircle : Trash2;
+  const buttonLabel = isProcessing ? 'Abbrechen' : 'Löschen';
+  const dialogTitle = isProcessing
+    ? 'Verarbeitung wirklich abbrechen?'
+    : 'Pre-Qualification wirklich löschen?';
+  const dialogDescription = isProcessing
+    ? `Möchten Sie die Verarbeitung ${label ? `von "${label}"` : ''} wirklich abbrechen? Alle bisherigen Daten werden gelöscht.`
+    : `Möchten Sie das Pre-Qualification ${label ? `"${label}"` : preQualificationId} wirklich löschen? Diese Aktion löscht alle Daten und kann nicht rückgängig gemacht werden.`;
+  const confirmLabel = isProcessing ? 'Jetzt abbrechen' : 'Jetzt löschen';
+  const loadingLabel = isProcessing ? 'Wird abgebrochen...' : 'Wird gelöscht...';
+
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button variant="destructive" size={size} disabled={isDeleting}>
-          <Trash2 className="h-4 w-4 mr-2" />
-          Löschen
+          <Icon className="h-4 w-4 mr-2" />
+          {buttonLabel}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Pre-Qualification wirklich löschen?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Möchten Sie das Pre-Qualification {label ? `"${label}"` : preQualificationId} wirklich löschen? Diese Aktion
-            löscht alle Daten und kann nicht rückgängig gemacht werden.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
+          <AlertDialogDescription>{dialogDescription}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+          <AlertDialogCancel>Zurück</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isDeleting ? 'Wird gelöscht...' : 'Jetzt löschen'}
+            {isDeleting ? loadingLabel : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

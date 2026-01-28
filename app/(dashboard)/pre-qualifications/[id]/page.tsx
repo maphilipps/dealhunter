@@ -11,8 +11,7 @@ import { getAgentResult, hasExpertAgentResults } from '@/lib/agents/expert-agent
 import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schema';
 import { auth } from '@/lib/auth';
 import { getCachedPreQualificationWithRelations } from '@/lib/pre-qualifications/cached-queries';
-
-const PROCESSING_STATES = ['processing', 'extracting', 'quick_scanning', 'duplicate_warning'];
+import { isProcessingState } from '@/lib/pre-qualifications/constants';
 
 export default async function BidDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -56,7 +55,11 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          <DeletePreQualificationButton preQualificationId={id} label={deleteLabel} />
+          <DeletePreQualificationButton
+            preQualificationId={id}
+            label={deleteLabel}
+            isProcessing={isProcessingState(bid.status)}
+          />
         </div>
       </div>
 
@@ -165,7 +168,7 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
       <QuickScanSummaryGrid preQualificationId={id} quickScan={quickScan} />
 
       {/* Processing Progress (must remain visible) */}
-      {PROCESSING_STATES.includes(bid.status) && <ProcessingProgressCard bidId={bid.id} />}
+      {isProcessingState(bid.status) && <ProcessingProgressCard bidId={bid.id} />}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { runExpertAgents } from '../../agents/expert-agents';
 import { db } from '../../db';
 import { backgroundJobs, preQualifications, quickScans } from '../../db/schema';
+import { withRetry, DEFAULT_RETRY_CONFIGS } from '../../errors/retry';
 import { runQuickScanAgentNative } from '../../quick-scan/agent-native';
 import type { QuickScanResult } from '../../quick-scan/workflow-agent';
 import { embedAgentOutput } from '../../rag/embedding-service';
@@ -31,22 +32,13 @@ function mergeQuickScanResults(quickScan: typeof quickScans.$inferSelect, result
     ...existingTechStack,
     ...result.techStack,
     libraries: [
-      ...new Set([
-        ...(existingTechStack?.libraries || []),
-        ...(result.techStack.libraries || []),
-      ]),
+      ...new Set([...(existingTechStack?.libraries || []), ...(result.techStack.libraries || [])]),
     ],
     analytics: [
-      ...new Set([
-        ...(existingTechStack?.analytics || []),
-        ...(result.techStack.analytics || []),
-      ]),
+      ...new Set([...(existingTechStack?.analytics || []), ...(result.techStack.analytics || [])]),
     ],
     marketing: [
-      ...new Set([
-        ...(existingTechStack?.marketing || []),
-        ...(result.techStack.marketing || []),
-      ]),
+      ...new Set([...(existingTechStack?.marketing || []), ...(result.techStack.marketing || [])]),
     ],
     backend: [
       ...new Set([...(existingTechStack?.backend || []), ...(result.techStack.backend || [])]),
@@ -135,7 +127,10 @@ class ActivityLogUpdater {
   private lastFlush = 0;
   private readonly minFlushInterval = 2000;
 
-  constructor(private quickScanId: string, initialLog: typeof this.activityLog) {
+  constructor(
+    private quickScanId: string,
+    initialLog: typeof this.activityLog
+  ) {
     this.activityLog = initialLog;
   }
 
@@ -171,7 +166,9 @@ async function getBackgroundJobId(bullmqJobId: string) {
   const [jobRecord] = await db
     .select({ id: backgroundJobs.id })
     .from(backgroundJobs)
-    .where(and(eq(backgroundJobs.bullmqJobId, bullmqJobId), eq(backgroundJobs.jobType, 'quick-scan')))
+    .where(
+      and(eq(backgroundJobs.bullmqJobId, bullmqJobId), eq(backgroundJobs.jobType, 'quick-scan'))
+    )
     .limit(1);
 
   return jobRecord?.id ?? null;
@@ -245,10 +242,9 @@ export async function processQuickScanJob(job: Job<QuickScanJobData>): Promise<Q
 
   const extractedReqs = parseJson<Record<string, unknown>>(bid.extractedRequirements) || null;
 
-  const initialLog =
-    (parseJson<Array<{ timestamp: string; action: string; details?: string }>>(
-      quickScan.activityLog
-    ) || []) as Array<{ timestamp: string; action: string; details?: string }>;
+  const initialLog = (parseJson<Array<{ timestamp: string; action: string; details?: string }>>(
+    quickScan.activityLog
+  ) || []) as Array<{ timestamp: string; action: string; details?: string }>;
   const logUpdater = new ActivityLogUpdater(quickScanId, initialLog);
 
   try {
@@ -257,20 +253,40 @@ export async function processQuickScanJob(job: Job<QuickScanJobData>): Promise<Q
       currentStep: 'Running quick scan agent',
     });
 
-    const result = await runQuickScanAgentNative(
-      {
-        bidId: preQualificationId,
-        websiteUrl,
-        extractedRequirements: extractedReqs,
-        userId,
-        preQualificationId,
-      },
-      {
-        onActivity: entry => {
-          logUpdater.push(entry);
-        },
+    // Agent-Aufruf mit Retry-Wrapper für transiente Fehler
+    const agentResult = await withRetry(
+      async () =>
+        runQuickScanAgentNative(
+          {
+            bidId: preQualificationId,
+            websiteUrl,
+            extractedRequirements: extractedReqs,
+            userId,
+            preQualificationId,
+          },
+          {
+            onActivity: entry => {
+              logUpdater.push(entry);
+            },
+          }
+        ),
+      { ...DEFAULT_RETRY_CONFIGS.quickScan, maxAttempts: 3 },
+      (attempt, maxAttempts, delay) => {
+        logUpdater.push({
+          timestamp: new Date().toISOString(),
+          action: `Retry ${attempt}/${maxAttempts}`,
+          details: `Warte ${delay / 1000}s vor nächstem Versuch...`,
+        });
       }
     );
+
+    if (!agentResult.success) {
+      throw new Error(
+        agentResult.error?.message || 'Quick-Scan fehlgeschlagen nach mehreren Versuchen'
+      );
+    }
+
+    const result = agentResult.data!;
 
     const { mergedTechStack, mergedDecisionMakers } = mergeQuickScanResults(quickScan, result);
 
@@ -325,9 +341,9 @@ export async function processQuickScanJob(job: Job<QuickScanJobData>): Promise<Q
       .set({
         status: 'completed',
         techStack: JSON.stringify(mergedTechStack),
-        cms: (mergedTechStack.cms) || null,
-        framework: (mergedTechStack.framework) || null,
-        hosting: (mergedTechStack.hosting) || null,
+        cms: mergedTechStack.cms || null,
+        framework: mergedTechStack.framework || null,
+        hosting: mergedTechStack.hosting || null,
         contentVolume: JSON.stringify(result.contentVolume),
         features: JSON.stringify(result.features),
         recommendedBusinessUnit: result.blRecommendation.primaryBusinessLine,
@@ -346,7 +362,9 @@ export async function processQuickScanJob(job: Job<QuickScanJobData>): Promise<Q
         performanceIndicators: result.performanceIndicators
           ? JSON.stringify(result.performanceIndicators)
           : quickScan.performanceIndicators,
-        screenshots: result.screenshots ? JSON.stringify(result.screenshots) : quickScan.screenshots,
+        screenshots: result.screenshots
+          ? JSON.stringify(result.screenshots)
+          : quickScan.screenshots,
         companyIntelligence: result.companyIntelligence
           ? JSON.stringify(result.companyIntelligence)
           : quickScan.companyIntelligence,

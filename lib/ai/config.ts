@@ -4,7 +4,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-explicit-any */
- 
 
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
@@ -92,7 +91,6 @@ export const openaiDirect = new Proxy({} as any, {
 // Dynamic model names - reads from environment variables
 // Lazy import to avoid circular dependency
 function getModelNameLazy(slot: string): string {
-   
   const { getModelName } = require('./model-config') as { getModelName: (s: string) => string };
   return getModelName(slot);
 }
@@ -100,12 +98,24 @@ function getModelNameLazy(slot: string): string {
 // Use getModelName() from model-config.ts for dynamic access
 // This object provides legacy compatibility with static property access
 export const modelNames = {
-  get fast() { return getModelNameLazy('fast'); },
-  get default() { return getModelNameLazy('default'); },
-  get quality() { return getModelNameLazy('quality'); },
-  get premium() { return getModelNameLazy('premium'); },
-  get synthesizer() { return getModelNameLazy('synthesizer'); },
-  get research() { return getModelNameLazy('research'); },
+  get fast() {
+    return getModelNameLazy('fast');
+  },
+  get default() {
+    return getModelNameLazy('default');
+  },
+  get quality() {
+    return getModelNameLazy('quality');
+  },
+  get premium() {
+    return getModelNameLazy('premium');
+  },
+  get synthesizer() {
+    return getModelNameLazy('synthesizer');
+  },
+  get research() {
+    return getModelNameLazy('research');
+  },
 } as const;
 
 export const defaultSettings = {
@@ -125,6 +135,29 @@ export const defaultSettings = {
 
 export type ModelKey = keyof typeof modelNames;
 
+/**
+ * Centralized timeout configurations for AI operations
+ * All values in milliseconds
+ */
+export const AI_TIMEOUTS = {
+  /** Simple agent calls (decision maker research) */
+  AGENT_SIMPLE: 30_000,
+  /** Standard agent calls (company research, routing) */
+  AGENT_STANDARD: 45_000,
+  /** Complex agent calls (content architecture, migration, timeline) */
+  AGENT_COMPLEX: 60_000,
+  /** Heavy agent calls (ten questions, draft generation) */
+  AGENT_HEAVY: 90_000,
+  /** Quick-Scan total timeout */
+  QUICK_SCAN_TOTAL: 5 * 60_000,
+  /** Quick-Scan per-step timeout */
+  QUICK_SCAN_STEP: 60_000,
+  /** SSE stream maximum duration */
+  SSE_STREAM: 10 * 60_000,
+  /** BullMQ worker lock duration */
+  WORKER_LOCK: 10 * 60_000,
+} as const;
+
 export async function generateStructuredOutput<T extends z.ZodType>(options: {
   model?: ModelKey;
   schema: T;
@@ -132,9 +165,23 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
   prompt: string;
   temperature?: number;
   maxTokens?: number;
+  /** Timeout in milliseconds (default: 60000 = 60s) */
+  timeout?: number;
+  /** External abort signal for cancellation */
+  abortSignal?: AbortSignal;
 }): Promise<z.infer<T>> {
   const modelKey = options.model ?? 'default';
   const modelName = modelNames[modelKey];
+
+  // Setup timeout handling
+  const timeoutMs = options.timeout ?? 60_000; // 60s default
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  // Combine external abort signal with our timeout
+  const combinedSignal = options.abortSignal
+    ? AbortSignal.any([options.abortSignal, controller.signal])
+    : controller.signal;
 
   try {
     const { object, usage } = await generateObject({
@@ -145,6 +192,7 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
       temperature: options.temperature ?? defaultSettings.deterministic.temperature,
       maxOutputTokens: options.maxTokens ?? defaultSettings.deterministic.maxTokens,
       maxRetries: 3, // Built-in retry for rate limits
+      abortSignal: combinedSignal,
     });
 
     // Log token usage for monitoring
@@ -152,8 +200,14 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
 
     return object as z.infer<T>;
   } catch (error) {
+    // Enhance timeout errors with more context
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`AI generation timeout after ${timeoutMs}ms (model: ${modelName})`);
+    }
     console.error('[generateStructuredOutput] Error:', error);
     // Propagate error for the caller to handle, now with better types from AI SDK
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

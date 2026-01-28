@@ -74,7 +74,12 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       let lastCount = 0;
       let announcedRunning = false;
 
-      while (true) {
+      // Timeout-Konstanten
+      const startTime = Date.now();
+      const MAX_STREAM_DURATION = 10 * 60 * 1000; // 10 Minuten
+      const POLL_INTERVAL = 2000;
+
+      while (Date.now() - startTime < MAX_STREAM_DURATION) {
         const [latestQuickScan] = await db
           .select()
           .from(quickScans)
@@ -144,8 +149,17 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
           break;
         }
 
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
       }
+
+      // Timeout erreicht - Error Event emittieren
+      emit({
+        type: AgentEventType.ERROR,
+        data: {
+          message: 'Qualification hat das Zeitlimit überschritten (10 Minuten)',
+          code: 'STREAM_TIMEOUT',
+        },
+      });
     });
 
     return createSSEResponse(stream);

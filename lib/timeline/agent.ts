@@ -156,7 +156,9 @@ function buildFallbackTimeline(
     ],
     risks: [
       {
-        factor: input.targetDeadline ? 'Feste Deadline kann Umsetzung verkürzen' : 'Deadline unklar',
+        factor: input.targetDeadline
+          ? 'Feste Deadline kann Umsetzung verkürzen'
+          : 'Deadline unklar',
         impact: 'medium',
         likelihood: input.targetDeadline ? 'high' : 'medium',
       },
@@ -338,6 +340,8 @@ Antworte AUSSCHLIESSLICH als gültiges JSON, das exakt dem Schema entspricht.`;
   const { text } = await generateText({
     model: getProviderForSlot('quality')(modelNames.quality),
     prompt: `${prompt}\n\n${contextDescription}${ragContext}`,
+    maxRetries: 2,
+    abortSignal: AbortSignal.timeout(60_000), // 60s timeout
   });
 
   try {

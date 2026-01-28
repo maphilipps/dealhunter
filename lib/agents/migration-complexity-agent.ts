@@ -134,6 +134,8 @@ export async function analyzeMigrationComplexity(
     const { object: analysis } = await generateObject({
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: MigrationComplexityAnalysisSchema,
+      maxRetries: 2,
+      abortSignal: AbortSignal.timeout(60_000), // 60s timeout
       prompt: `Analyze the migration complexity for the following website migration.
 
 Website: ${websiteUrl}

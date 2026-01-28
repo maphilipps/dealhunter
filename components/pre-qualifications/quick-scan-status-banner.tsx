@@ -98,16 +98,34 @@ export function QuickScanStatusBanner({
 
   // Failed state
   if (status === 'failed') {
+    // Timeout-spezifische Fehlermeldung erkennen
+    const errorMessage = error?.message || job?.errorMessage || 'Unbekannter Fehler';
+    const isTimeout =
+      errorMessage.includes('Timeout') ||
+      errorMessage.includes('Zeitlimit') ||
+      errorMessage.includes('STREAM_TIMEOUT');
+
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <div className="flex flex-1 items-center justify-between">
-          <div>
-            <AlertTitle>Qualification fehlgeschlagen</AlertTitle>
+          <div className="space-y-1">
+            <AlertTitle>
+              {isTimeout ? 'Qualification Zeitüberschreitung' : 'Qualification fehlgeschlagen'}
+            </AlertTitle>
             {!compact && (
-              <AlertDescription className="max-w-2xl truncate">
-                {error?.message || job?.errorMessage || 'Unbekannter Fehler'}
-              </AlertDescription>
+              <>
+                <AlertDescription className="max-w-2xl">
+                  {isTimeout
+                    ? 'Die Analyse hat zu lange gedauert. Die Website ist möglicherweise sehr umfangreich oder nicht erreichbar.'
+                    : errorMessage}
+                </AlertDescription>
+                <AlertDescription className="text-xs text-muted-foreground">
+                  {isTimeout
+                    ? 'Bitte prüfen Sie, ob die Website erreichbar ist, und starten Sie die Qualification erneut.'
+                    : 'Bitte versuchen Sie es erneut. Falls das Problem weiterhin besteht, kontaktieren Sie den Support.'}
+                </AlertDescription>
+              </>
             )}
           </div>
           {dismissible && (

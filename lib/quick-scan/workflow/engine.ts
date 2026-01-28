@@ -8,6 +8,7 @@ import type {
   WorkflowEngineOptions,
   WorkflowExecutionResult,
   WorkflowContext,
+  WorkflowStep,
   StepResult,
   StepRegistry,
   QuickScanInput,
@@ -81,9 +82,7 @@ export class WorkflowEngine {
           });
 
           const nextIndex =
-            existingChunks.length > 0
-              ? Math.max(...existingChunks.map(c => c.chunkIndex)) + 1
-              : 0;
+            existingChunks.length > 0 ? Math.max(...existingChunks.map(c => c.chunkIndex)) + 1 : 0;
 
           await db.insert(dealEmbeddings).values({
             qualificationId: null,
@@ -254,6 +253,8 @@ export class WorkflowEngine {
 
           try {
             const stepStart = Date.now();
+            const stepTimeout = step.config.timeout ?? 60_000; // 60s default
+
             this.emit({
               type: AgentEventType.STEP_START,
               data: {
@@ -269,8 +270,8 @@ export class WorkflowEngine {
             // Get input for this step from dependencies
             const stepInput = this.getStepInput(stepId, results);
 
-            // Execute step
-            const output = await step.execute(stepInput, ctx);
+            // Execute step with timeout enforcement
+            const output = await this.executeStepWithTimeout(step, stepInput, ctx, stepTimeout);
             const duration = Date.now() - stepStart;
 
             this.emit({
@@ -463,6 +464,32 @@ export class WorkflowEngine {
       default:
         return `Phase: ${phase}`;
     }
+  }
+
+  /**
+   * Execute a step with timeout enforcement
+   * Wraps step execution in Promise.race to enforce timeout
+   */
+  private async executeStepWithTimeout<T>(
+    step: WorkflowStep,
+    input: unknown,
+    ctx: WorkflowContext,
+    timeoutMs: number
+  ): Promise<T> {
+    return Promise.race([
+      step.execute(input, ctx) as Promise<T>,
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                `Step "${step.config.displayName}" timeout after ${Math.round(timeoutMs / 1000)}s`
+              )
+            ),
+          timeoutMs
+        )
+      ),
+    ]);
   }
 }
 

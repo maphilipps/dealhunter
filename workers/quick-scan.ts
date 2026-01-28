@@ -32,6 +32,10 @@ async function main() {
     {
       connection: connectionOptions,
       concurrency: WORKER_CONCURRENCY,
+      // Timeout-Konfiguration für lange laufende Jobs
+      lockDuration: 10 * 60 * 1000, // 10 Minuten Job-Lock
+      stalledInterval: 30 * 1000, // Stalled-Check alle 30s
+      maxStalledCount: 2, // Nach 2 Checks als stalled markieren
     }
   );
 
@@ -40,9 +44,7 @@ async function main() {
   });
 
   quickScanWorker.on('completed', (job, result) => {
-    console.log(
-      `[QuickScan Worker] Job ${job.id} completed. Success: ${result.success}`
-    );
+    console.log(`[QuickScan Worker] Job ${job.id} completed. Success: ${result.success}`);
   });
 
   quickScanWorker.on('failed', (job, error) => {

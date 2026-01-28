@@ -157,7 +157,10 @@ export async function generateOutline(input: SolutionInput): Promise<SolutionOut
 
   try {
     // 1. RAG Query: Retrieve comprehensive context from ALL Deep Scan agents
-    const { allChunks, contextByAgent } = await queryAllAgents(input.preQualificationId, input.deliverableName);
+    const { allChunks, contextByAgent } = await queryAllAgents(
+      input.preQualificationId,
+      input.deliverableName
+    );
 
     // Build structured context string with agent attribution
     const rawRagContext = Object.entries(contextByAgent)
@@ -183,6 +186,8 @@ export async function generateOutline(input: SolutionInput): Promise<SolutionOut
     const { object: outlineData } = await generateObject({
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: OutlineSchema,
+      maxRetries: 2,
+      abortSignal: AbortSignal.timeout(60_000), // 60s timeout
       prompt: `You are a technical solution architect creating a structured outline for a pitchdeck deliverable.
 
 **Deliverable:** ${input.deliverableName}
@@ -276,7 +281,10 @@ export async function generateDraft(
     }
 
     // 1. RAG Query: Retrieve comprehensive context from ALL Deep Scan agents
-    const { allChunks, contextByAgent } = await queryAllAgents(input.preQualificationId, input.deliverableName);
+    const { allChunks, contextByAgent } = await queryAllAgents(
+      input.preQualificationId,
+      input.deliverableName
+    );
 
     // Build structured context string with agent attribution and more details
     const rawRagContext = Object.entries(contextByAgent)
@@ -301,6 +309,8 @@ export async function generateDraft(
     const { object: draftData } = await generateObject({
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: DraftSchema,
+      maxRetries: 2,
+      abortSignal: AbortSignal.timeout(90_000), // 90s timeout for long drafts
       prompt: `You are a technical solution architect creating a professional pitchdeck deliverable.
 
 **Deliverable:** ${input.deliverableName}
@@ -413,7 +423,10 @@ export async function generateTalkingPoints(
     }
 
     // 1. RAG Query: Retrieve comprehensive insights from ALL agents
-    const { contextByAgent } = await queryAllAgents(input.preQualificationId, input.deliverableName);
+    const { contextByAgent } = await queryAllAgents(
+      input.preQualificationId,
+      input.deliverableName
+    );
 
     // Build structured context focusing on key insights
     const rawRagContext = Object.entries(contextByAgent)
@@ -437,6 +450,8 @@ export async function generateTalkingPoints(
     const { object: talkingPointsData } = await generateObject({
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: TalkingPointsSchema,
+      maxRetries: 2,
+      abortSignal: AbortSignal.timeout(60_000), // 60s timeout
       prompt: `You are a presentation coach creating talking points for a technical pitch.
 
 **Deliverable:** ${input.deliverableName}
@@ -508,7 +523,10 @@ export async function generateVisualIdeas(input: SolutionInput): Promise<Solutio
 
   try {
     // 1. RAG Query: Retrieve data from ALL agents that could be visualized
-    const { contextByAgent } = await queryAllAgents(input.preQualificationId, input.deliverableName);
+    const { contextByAgent } = await queryAllAgents(
+      input.preQualificationId,
+      input.deliverableName
+    );
 
     // Build context focusing on visualizable data
     const rawRagContext = Object.entries(contextByAgent)
@@ -534,6 +552,8 @@ export async function generateVisualIdeas(input: SolutionInput): Promise<Solutio
     const { object: visualData } = await generateObject({
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: VisualIdeasSchema,
+      maxRetries: 2,
+      abortSignal: AbortSignal.timeout(60_000), // 60s timeout
       prompt: `You are a presentation designer suggesting visuals for a technical deliverable.
 
 **Deliverable:** ${input.deliverableName}

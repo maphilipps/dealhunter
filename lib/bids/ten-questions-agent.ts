@@ -69,6 +69,8 @@ export async function runTenQuestionsAgent(
   const { object } = await generateObject({
     model: getProviderForSlot('quality')(modelNames.quality),
     schema: completionSchema,
+    maxRetries: 2,
+    abortSignal: AbortSignal.timeout(90_000), // 90s timeout for complex document analysis
     prompt: [
       'Du berätst mich in der Analyse der beigefügten Ausschreibung.',
       'Beziehe Dich bei den Antworten immer ausschließlich auf die bereitgestellten Dokumente.',

@@ -256,6 +256,8 @@ Fülle nur Felder aus, die du aus den Daten belegen kannst. Setze andere auf nul
       prompt: userPrompt,
       temperature: 0.2,
       maxOutputTokens: 2000,
+      maxRetries: 2,
+      abortSignal: AbortSignal.timeout(45_000), // 45s timeout for complex company analysis
     });
 
     const responseText = text || '{}';

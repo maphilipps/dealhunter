@@ -166,6 +166,8 @@ Technologies: ${bu.technologies.join(', ') || 'Keine'}
     const result = await generateObject({
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
       schema: BusinessLineRoutingSchema,
+      maxRetries: 2,
+      abortSignal: AbortSignal.timeout(45_000), // 45s timeout
       system: `Du bist ein Business Line Routing Agent für adesso SE.
 
 Deine Aufgabe ist es, Projekt-Anforderungen zu analysieren und die passende Business Line zu empfehlen.

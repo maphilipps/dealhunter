@@ -52,6 +52,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import {
   TypographyH3,
   TypographyLarge,
@@ -410,26 +411,43 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
   },
 
   /**
-   * KeyValue - Single key-value pair (standalone or inside KeyValueTable)
+   * KeyValue - Single key-value pair as table row
    */
   KeyValue: ({ element }) => {
     const { label, value } = element.props as { label: string; value: string };
     return (
-      <tr>
-        <td className="py-1.5 pr-4 text-muted-foreground align-top">{label}</td>
-        <td className="py-1.5 font-medium">{value}</td>
-      </tr>
+      <Table>
+        <TableBody>
+          <TableRow>
+            <TableCell className="text-muted-foreground font-normal w-[140px] align-top">
+              {label}
+            </TableCell>
+            <TableCell className="font-medium">{value}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     );
   },
 
   /**
-   * KeyValueTable - Container for multiple KeyValue pairs as semantic table
+   * KeyValueTable - Multiple key-value pairs as proper table
    */
-  KeyValueTable: ({ children }) => {
+  KeyValueTable: ({ element }) => {
+    const { items } = element.props as { items?: Array<{ label: string; value: string }> };
+    if (!items || items.length === 0) return null;
     return (
-      <table className="w-full text-sm">
-        <tbody>{children}</tbody>
-      </table>
+      <Table>
+        <TableBody>
+          {items.map((item, idx) => (
+            <TableRow key={idx}>
+              <TableCell className="text-muted-foreground font-normal w-[140px] align-top">
+                {item.label}
+              </TableCell>
+              <TableCell className="font-medium">{item.value}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     );
   },
 

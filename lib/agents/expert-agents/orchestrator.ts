@@ -1,3 +1,5 @@
+import { runDashboardSummaryAgent } from '../dashboard-summary-agent';
+
 import { runDeliverablesAgent } from './deliverables-agent';
 import { runLegalRfpAgent } from './legal-pre-qualification-agent';
 import { runSummaryAgent } from './summary-agent';
@@ -13,13 +15,16 @@ export interface OrchestratorResult {
     techstack: { success: boolean; confidence: number };
     legal: { success: boolean; confidence: number };
     summary: { success: boolean; confidence: number };
+    dashboardHighlights: { success: boolean; sectionsWithHighlights: number };
   };
   errors: string[];
   completedAt: string;
 }
 
 export async function runExpertAgents(input: ExpertAgentInput): Promise<OrchestratorResult> {
-  console.error(`[Expert Orchestrator] Starting all agents for Pre-Qualification ${input.preQualificationId}`);
+  console.error(
+    `[Expert Orchestrator] Starting all agents for Pre-Qualification ${input.preQualificationId}`
+  );
 
   const errors: string[] = [];
 
@@ -47,6 +52,13 @@ export async function runExpertAgents(input: ExpertAgentInput): Promise<Orchestr
   const summaryResult = await runSummaryAgent(input);
   if (!summaryResult.success) errors.push(`Summary: ${summaryResult.error || 'failed'}`);
 
+  // Run dashboard highlights AFTER summary (generates section cards)
+  console.error(`[Expert Orchestrator] Starting Dashboard Summary Agent`);
+  const dashboardResult = await runDashboardSummaryAgent(input.preQualificationId);
+  if (!dashboardResult.success) {
+    errors.push(`Dashboard Highlights: ${dashboardResult.errors.join(', ')}`);
+  }
+
   return {
     success: errors.length === 0,
     results: {
@@ -69,6 +81,10 @@ export async function runExpertAgents(input: ExpertAgentInput): Promise<Orchestr
       summary: {
         success: summaryResult.success,
         confidence: summaryResult.confidence,
+      },
+      dashboardHighlights: {
+        success: dashboardResult.success,
+        sectionsWithHighlights: dashboardResult.sectionsWithHighlights,
       },
     },
     errors,

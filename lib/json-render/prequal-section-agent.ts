@@ -31,15 +31,18 @@ STRUKTUR:
 INHALTLICHE QUALITÄT:
 - Fasse Kernpunkte zusammen, nicht einfach kopieren
 - Interpretiere die Bedeutung für ein Angebotsteam
-- KeyValueTable NUR bei 2+ KeyValue-Paaren (einzelnes KeyValue direkt ohne Table)
 - Nutze BulletList für aufbereitete Listen mit Kontext
 - Nutze Paragraph für Zusammenfassungen und Einschätzungen
 - Bei fehlenden Infos: Klar benennen was fehlt und warum es relevant wäre
 
-WICHTIG:
+KEY-VALUE REGELN (WICHTIG!):
+- NIEMALS mehrere separate KeyValue-Elemente hintereinander!
+- Bei 2+ Key-Value-Paaren: IMMER KeyValueTable mit items-Array verwenden
+- KeyValue (standalone) NUR für ein einzelnes, isoliertes Paar
+- KeyValueTable.props.items = [{label, value}, {label, value}, ...]
+
+LAYOUT-REGELN:
 - Immer einspaltig (kein Grid mit columns: 2)
-- KeyValueTable hat items-Prop (KEINE children!) - nur bei 2+ Paaren
-- Einzelnes KeyValue direkt verwenden (nicht in KeyValueTable)
 - VERBOTEN: Grid, ResultCard (deprecated)
 
 BEISPIEL:
@@ -100,16 +103,19 @@ KEINE Rohdaten, KEINE Confidence-Anzeigen, KEINE ProgressBars, KEINE verschachte
 Verfügbare Typen:
 - Section: Hauptcontainer mit Card + H2 (title: string, description?: string)
 - SubSection: Unterabschnitt mit H3 (title: string)
-- KeyValueTable: Mehrere Key-Value-Paare (items: [{label, value}, ...]) - NUR bei 2+ Paaren!
-- KeyValue: Einzelnes Key-Value-Paar (label: string, value: string) - für standalone
+- KeyValueTable: Mehrere Key-Value-Paare als EINE Tabelle (items: [{label, value}, ...])
+- KeyValue: NUR für ein einzelnes, isoliertes Paar (label: string, value: string)
 - BulletList: Aufzählung (items: string[])
 - Paragraph: Fließtext (text: string)
 - Metric: Einzelne Kennzahl (label: string, value: string|number, unit?: string)
 
-WICHTIG:
-- Immer einspaltig (kein Grid mit columns: 2)
-- KeyValueTable hat items-Prop (KEINE children!) - nur bei 2+ Paaren
-- Einzelnes KeyValue direkt verwenden (nicht in KeyValueTable)
+KEY-VALUE REGELN (KRITISCH!):
+- NIEMALS mehrere separate KeyValue-Elemente hintereinander verwenden!
+- Bei 2+ Key-Value-Paaren: IMMER KeyValueTable mit items-Array
+- KeyValue NUR für ein einzelnes, isoliertes Paar
+
+LAYOUT:
+- Immer einspaltig (kein Grid)
 - VERBOTEN: Grid, ResultCard (deprecated)
 
 Beispiel:

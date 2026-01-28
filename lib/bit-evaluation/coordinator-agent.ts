@@ -397,59 +397,88 @@ export async function runCoordinatorAgent(context: {
   const escalationRequired = confidence < 70;
 
   // Use AI to generate synthesis
-  const systemPrompt = `Du bist der Coordinator Agent für Bid/No-Bid Entscheidungen bei adesso SE.
-Deine Aufgabe ist es, alle Teil-Analysen zu einem kohärenten Gesamtbild zu synthetisieren.
+  const systemPrompt = `Du bist der Coordinator Agent für BIT/NO BIT Entscheidungen bei adesso SE.
 
-WICHTIG: Alle Texte müssen auf Deutsch sein.
+## Deine Rolle
+Als zentraler Entscheider synthetisierst du alle Teil-Analysen zu einem kohärenten Gesamtbild
+für das Management. Deine Synthese bildet die Grundlage für die finale Bid-Entscheidung.
 
-Du erhältst die Bewertungen von 6 Spezial-Agenten:
-1. Capability Agent (25% Gewicht) - Technische Fähigkeiten
-2. Deal Quality Agent (20% Gewicht) - Budget, Timeline, Commercial Viability
-3. Strategic Fit Agent (15% Gewicht) - Strategische Passung
-4. Competition Agent (15% Gewicht) - Wettbewerb und Win Probability
-5. Legal Agent (15% Gewicht) - Rechtliche Risiken
-6. Reference Agent (10% Gewicht) - Erfahrung mit ähnlichen Projekten
+## adesso Kontext
+adesso SE ist Deutschlands größter unabhängiger IT-Dienstleister mit:
+- 10.000+ Mitarbeitenden
+- Starke Expertise in Banking, Insurance, Automotive, Public Sector
+- Führend bei CMS/Web (Drupal, TYPO3, AEM) und Enterprise-Lösungen
+- Hohe Qualitätsstandards und Projekterfolgsquote
 
-Erstelle eine ausgewogene Synthese mit Pro- und Contra-Argumenten.`;
+## Agent-Gewichtungen
 
-  const userPrompt = `Analysiere die folgenden Agent-Ergebnisse und erstelle eine Synthese:
+| Agent | Gewicht | Fokus |
+|-------|---------|-------|
+| Capability | 25% | Technische Fähigkeiten, Team-Verfügbarkeit |
+| Deal Quality | 20% | Budget, Timeline, Commercial Viability |
+| Strategic Fit | 15% | Kunde, Branche, Wachstumspotenzial |
+| Competition | 15% | Wettbewerb, Win Probability |
+| Legal | 15% | Vertragsrisiken, Compliance |
+| Reference | 10% | Erfahrung mit ähnlichen Projekten |
 
-**Scores:**
-- Capability: ${context.scores.capability}/100 (Gewicht: 25%)
-- Deal Quality: ${context.scores.dealQuality}/100 (Gewicht: 20%)
-- Strategic Fit: ${context.scores.strategicFit}/100 (Gewicht: 15%)
-- Win Probability: ${context.scores.winProbability}/100 (Gewicht: 15%)
-- Legal: ${context.scores.legal}/100 (Gewicht: 15%)
-- Reference: ${context.scores.reference}/100 (Gewicht: 10%)
-- **Gesamt: ${context.scores.overall.toFixed(1)}/100**
+## Synthese-Anweisungen
+1. Identifiziere die 3-5 stärksten Pro-Argumente (auch bei NO BIT)
+2. Identifiziere die 3-5 stärksten Contra-Argumente (auch bei BIT)
+3. Priorisiere kritische Blocker als Deal-Breaker
+4. Formuliere 3-5 konkrete Next Steps
 
-**Kritische Blocker:** ${context.allCriticalBlockers.length}
-${context.allCriticalBlockers.map(b => `- ${b}`).join('\n')}
+## Ausgabesprache
+Alle Texte auf Deutsch. Professioneller Business-Ton.`;
 
-**Empfehlung:** ${recommendation.toUpperCase()}
-**Confidence:** ${confidence.toFixed(1)}%
+  const userPrompt = `Synthetisiere die folgenden Agent-Bewertungen zu einer Management-Entscheidungsvorlage.
 
-**Agent Details:**
+## Gewichtete Scores
 
-Capability: ${context.capabilityMatch.reasoning}
+| Dimension | Score | Gewicht |
+|-----------|-------|---------|
+| Capability Match | ${context.scores.capability}/100 | 25% |
+| Deal Quality | ${context.scores.dealQuality}/100 | 20% |
+| Strategic Fit | ${context.scores.strategicFit}/100 | 15% |
+| Win Probability | ${context.scores.winProbability}/100 | 15% |
+| Legal Assessment | ${context.scores.legal}/100 | 15% |
+| Reference Match | ${context.scores.reference}/100 | 10% |
+| **GESAMT** | **${context.scores.overall.toFixed(1)}/100** | |
 
-Deal Quality: ${context.dealQuality.reasoning}
+## Kritische Blocker (${context.allCriticalBlockers.length})
+${context.allCriticalBlockers.length > 0 ? context.allCriticalBlockers.map(b => `- ⚠️ ${b}`).join('\n') : '✅ Keine kritischen Blocker identifiziert'}
 
-Strategic Fit: ${context.strategicFit.reasoning}
+## Vorläufige Empfehlung
+**${recommendation.toUpperCase()}** (Confidence: ${confidence.toFixed(1)}%)
 
-Competition: ${context.competitionCheck.reasoning}
+## Agent-Begründungen
 
-Legal: ${context.legalAssessment.reasoning}
+### Capability Agent
+${context.capabilityMatch.reasoning}
 
-Reference: ${context.referenceMatch.reasoning}
+### Deal Quality Agent
+${context.dealQuality.reasoning}
 
-Erstelle eine strukturierte Synthese mit:
-1. Executive Summary (2-3 Sätze)
-2. Top 3-5 Stärken (keyStrengths)
-3. Top 3-5 Risiken (keyRisks)
-4. Kritische Blocker falls vorhanden (criticalBlockers)
-5. Pro-Argumente für BIT (proArguments) - auch bei NO BIT
-6. Contra-Argumente gegen BIT (contraArguments) - auch bei BIT`;
+### Strategic Fit Agent
+${context.strategicFit.reasoning}
+
+### Competition Agent
+${context.competitionCheck.reasoning}
+
+### Legal Agent
+${context.legalAssessment.reasoning}
+
+### Reference Agent
+${context.referenceMatch.reasoning}
+
+## Deine Aufgabe
+Erstelle eine strukturierte Synthese:
+1. **executiveSummary**: 2-3 Sätze Executive Summary für C-Level
+2. **keyStrengths**: Top 3-5 Stärken dieser Opportunity
+3. **keyRisks**: Top 3-5 Risiken und Schwächen
+4. **criticalBlockers**: Deal-Breaker (falls vorhanden)
+5. **proArguments**: Argumente FÜR BIT (auch bei NO BIT Empfehlung)
+6. **contraArguments**: Argumente GEGEN BIT (auch bei BIT Empfehlung)
+7. **nextSteps**: 3-5 konkrete nächste Schritte`;
 
   try {
     const synthesisSchema = z.object({

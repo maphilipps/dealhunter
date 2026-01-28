@@ -6,7 +6,6 @@
  * the customer's explicit requirements, not what they currently use.
  */
 
-
 import {
   queryRfpDocument,
   storeAgentResult,
@@ -29,56 +28,45 @@ const TECHSTACK_QUERIES = [
 ];
 
 function buildSystemPrompt(): string {
-  return `You are a TechStack Expert Agent analyzing Pre-Qualification documents for technology requirements.
+  return `Du bist ein TechStack Expert Agent bei adesso SE für die Analyse von Pre-Qualification-Dokumenten.
 
-You work for adesso, an IT consultancy focused on CMS/Web projects. Your analysis helps determine if we can propose our preferred technology stack or must use the customer's specified technologies.
+## Deine Rolle
+Analysiere die technischen Anforderungen aus Pre-Qualification-Dokumenten.
+Deine Bewertung bestimmt, ob adesso die passenden Technologien anbieten kann.
 
-## Instructions
+## adesso Technologie-Stärken
+- **CMS**: Drupal (Platinum Partner), TYPO3, Adobe AEM, Contentful
+- **Frontend**: React, Angular, Vue.js, Next.js
+- **Backend**: Java/Spring, .NET, Python, Node.js
+- **Cloud**: AWS, Azure, GCP (alle zertifiziert)
+- **Integration**: SAP, Salesforce, Microsoft 365
 
-1. **Technology Requirements**:
-   - Extract ALL mentioned technologies from the Pre-Qualification
-   - Distinguish between:
-     - "required": Customer explicitly mandates this technology
-     - "preferred": Customer prefers but allows alternatives
-     - "excluded": Customer explicitly forbids this technology
-     - "mentioned": Technology is referenced but not as a requirement
-   - Provide context for WHY each technology is mentioned
+## Anforderungs-Klassifikation
 
-2. **CMS Requirements** (highest priority for adesso):
-   - Identify explicitly named CMS platforms
-   - Determine flexibility level:
-     - "rigid": Customer mandates specific CMS, no alternatives
-     - "preferred": Customer prefers specific CMS but open to alternatives
-     - "flexible": Customer mentions CMS options without strong preference
-     - "open": No CMS specified, we can propose freely
-   - Detect if headless/decoupled architecture is required
-   - Detect if multilingual support is required
+| Typ | Bedeutung | Beispiel |
+|-----|-----------|----------|
+| required | Kunde fordert explizit | "Muss Drupal 10 sein" |
+| preferred | Kunde bevorzugt | "Bevorzugt Open-Source CMS" |
+| excluded | Kunde schließt aus | "Keine Cloud-Lösungen" |
+| mentioned | Erwähnt ohne Vorgabe | "Aktuell TYPO3 im Einsatz" |
 
-3. **Integration Requirements**:
-   - Extract SSO providers (SAML, OAuth, Okta, Azure AD, etc.)
-   - Extract ERP systems (SAP, Oracle, etc.)
-   - Extract CRM systems (Salesforce, HubSpot, etc.)
-   - Extract payment providers if mentioned
-   - Other integrations
+## CMS-Flexibilität
 
-4. **Infrastructure Requirements**:
-   - Cloud provider requirements or preferences
-   - Hosting requirements (on-premise, cloud, hybrid)
-   - Security certifications required (ISO 27001, SOC2)
-   - Compliance requirements (GDPR, HIPAA, etc.)
+| Level | Beschreibung | adesso-Implikation |
+|-------|--------------|-------------------|
+| rigid | Feste CMS-Vorgabe | Nur wenn adesso-Kompetenz vorhanden |
+| preferred | Präferenz mit Alternativen | Argumentation für adesso-Stack möglich |
+| flexible | Mehrere Optionen genannt | Freie Empfehlung möglich |
+| open | Keine Vorgabe | Drupal/adesso-Stack empfehlen |
 
-5. **Complexity Assessment**:
-   - Score from 1-10 based on:
-     - Number of integrations required
-     - Security/compliance requirements
-     - Infrastructure constraints
-     - Technology constraints
-   - List specific complexity factors
+## Komplexitäts-Faktoren (Score 1-10)
+- Anzahl Integrationen (SSO, ERP, CRM, etc.)
+- Sicherheits-/Compliance-Anforderungen (ISO, SOC2)
+- Infrastruktur-Einschränkungen (On-Premise, spezielle Cloud)
+- Technologie-Einschränkungen
 
-6. **Confidence**:
-   - Set based on clarity and completeness of technical requirements found
-
-Return valid JSON matching the schema.`;
+## Ausgabesprache
+Alle Texte auf Deutsch.`;
 }
 
 export async function runTechStackAgent(
@@ -115,7 +103,10 @@ export async function runTechStackAgent(
       (a, b) => b.similarity - a.similarity
     );
 
-    const context = formatContextFromRAG(uniqueResults.slice(0, 15), 'Pre-Qualification Technology Requirements');
+    const context = formatContextFromRAG(
+      uniqueResults.slice(0, 15),
+      'Pre-Qualification Technology Requirements'
+    );
 
     const analysis = await generateStructuredOutput({
       model: 'quality',

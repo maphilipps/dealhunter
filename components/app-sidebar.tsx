@@ -1,6 +1,6 @@
 'use client';
 
-import { Database, Home, ListTodo } from 'lucide-react';
+import { Database, ListChecks, ListTodo } from 'lucide-react';
 import * as React from 'react';
 
 import { NavMain } from '@/components/nav-main';
@@ -36,33 +36,22 @@ type UserRole = 'bd' | 'bl' | 'admin';
 const allNavItems: Array<{
   title: string;
   url: string;
-  icon: typeof Home;
+  icon: typeof ListTodo;
   isActive?: boolean;
   roles: UserRole[];
   items?: Array<{ title: string; url: string }>;
 }> = [
   {
-    title: 'Dashboard',
-    url: '/',
-    icon: Home,
-    isActive: true,
+    title: 'Leads',
+    url: '/pre-qualifications',
+    icon: ListTodo,
     roles: ['bd', 'bl', 'admin'],
   },
   {
     title: 'Qualifications',
     url: '/qualifications',
-    icon: ListTodo,
-    roles: ['bd', 'bl', 'admin'],
-    items: [
-      {
-        title: 'Leads',
-        url: '/pre-qualifications',
-      },
-      {
-        title: 'Qualifications',
-        url: '/qualifications',
-      },
-    ],
+    icon: ListChecks,
+    roles: ['bl', 'admin'],
   },
 ];
 

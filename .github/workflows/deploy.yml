@@ -33,6 +33,11 @@ jobs:
             git reset --hard origin/main
 
             echo "📦 Installing dependencies..."
+            # Fix permissions if node_modules was created by another user
+            if [ -d "node_modules" ] && [ ! -w "node_modules" ]; then
+              echo "⚠️ Fixing node_modules permissions..."
+              sudo chown -R deploy:deploy node_modules
+            fi
             npm ci --prefer-offline
 
             echo "🔨 Building application..."

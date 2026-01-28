@@ -460,7 +460,11 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
           </div>
           {description && <CardDescription>{description}</CardDescription>}
         </CardHeader>
-        {children && <CardContent>{children}</CardContent>}
+        {children && (
+          <CardContent>
+            <div className="space-y-4">{children}</div>
+          </CardContent>
+        )}
       </Card>
     );
   },
@@ -488,7 +492,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
           {badge && <Badge variant={badgeVariant}>{badge}</Badge>}
         </div>
         {description && <TypographyMuted>{description}</TypographyMuted>}
-        {children}
+        <div className="space-y-3">{children}</div>
       </div>
     );
   },

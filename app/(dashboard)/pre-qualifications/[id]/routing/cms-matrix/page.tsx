@@ -1,4 +1,4 @@
-import { AlertCircle, Star, Target } from 'lucide-react';
+import { AlertCircle, Loader2, Star, Target } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -87,16 +87,22 @@ export default async function CMSMatrixPage({ params }: { params: Promise<{ id: 
         <p className="text-muted-foreground">Technologie-Empfehlung basierend auf Anforderungen</p>
       </div>
 
-      {/* No Evaluation Alert */}
+      {/* No Evaluation yet - still processing */}
       {!cmsEvaluation && (
-        <Alert variant="default">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Noch nicht ausgewertet</AlertTitle>
-          <AlertDescription>
-            Die CMS-Entscheidungsmatrix wurde noch nicht generiert. Führen Sie zuerst die Qualification
-            durch, um die Technologie-Empfehlungen zu erhalten.
-          </AlertDescription>
-        </Alert>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
+              <div>
+                <CardTitle>CMS-Matrix wird erstellt...</CardTitle>
+                <CardDescription>
+                  Die CMS-Entscheidungsmatrix wird während der Verarbeitung automatisch generiert.
+                  Diese Seite aktualisiert sich automatisch, sobald die Analyse abgeschlossen ist.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
       )}
 
       {cmsEvaluation && (

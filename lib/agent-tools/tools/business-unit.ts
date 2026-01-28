@@ -5,7 +5,7 @@ import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { businessUnits } from '@/lib/db/schema';
+import { businessUnits, technologies } from '@/lib/db/schema';
 
 const listBusinessUnitsInputSchema = z.object({
   limit: z.number().min(1).max(100).default(50),
@@ -153,5 +153,129 @@ registry.register({
     await db.delete(businessUnits).where(eq(businessUnits.id, input.id));
 
     return { success: true, data: { id: input.id, deleted: true } };
+  },
+});
+
+// === NEW: List BU Capabilities with Technology Features ===
+
+const listCapabilitiesInputSchema = z.object({
+  limit: z.number().min(1).max(100).default(50),
+});
+
+interface TechnologyCapability {
+  id: string;
+  name: string;
+  category: string | null;
+  description: string | null;
+  features: Record<string, { supported: boolean; score: number; notes?: string }> | null;
+  pros: string[] | null;
+  cons: string[] | null;
+  useCases: string[] | null;
+}
+
+interface BusinessUnitCapability {
+  id: string;
+  name: string;
+  leaderName: string;
+  keywords: string[];
+  technologies: TechnologyCapability[];
+}
+
+registry.register({
+  name: 'businessUnit.listCapabilities',
+  description:
+    'List all business units with their capabilities including keywords and technology features. Use this to understand what each BU specializes in for routing decisions.',
+  category: 'business-unit',
+  inputSchema: listCapabilitiesInputSchema,
+  async execute(input, _context: ToolContext) {
+    // Get all BUs with their technologies
+    const allBUs = await db
+      .select({
+        buId: businessUnits.id,
+        buName: businessUnits.name,
+        buLeaderName: businessUnits.leaderName,
+        buKeywords: businessUnits.keywords,
+        techId: technologies.id,
+        techName: technologies.name,
+        techCategory: technologies.category,
+        techDescription: technologies.description,
+        techFeatures: technologies.features,
+        techPros: technologies.pros,
+        techCons: technologies.cons,
+        techUseCases: technologies.useCases,
+      })
+      .from(businessUnits)
+      .leftJoin(technologies, eq(technologies.businessUnitId, businessUnits.id))
+      .orderBy(desc(businessUnits.createdAt))
+      .limit(input.limit * 10); // Account for join multiplication
+
+    // Group by BU
+    const buMap = new Map<string, BusinessUnitCapability>();
+
+    for (const row of allBUs) {
+      if (!buMap.has(row.buId)) {
+        let keywords: string[] = [];
+        try {
+          keywords = JSON.parse(row.buKeywords || '[]') as string[];
+        } catch {
+          keywords = [];
+        }
+
+        buMap.set(row.buId, {
+          id: row.buId,
+          name: row.buName,
+          leaderName: row.buLeaderName,
+          keywords,
+          technologies: [],
+        });
+      }
+
+      // Add technology if exists
+      if (row.techId && row.techName) {
+        const bu = buMap.get(row.buId)!;
+
+        // Parse JSON fields
+        let features: TechnologyCapability['features'] = null;
+        let pros: string[] | null = null;
+        let cons: string[] | null = null;
+        let useCases: string[] | null = null;
+
+        try {
+          if (row.techFeatures) features = JSON.parse(row.techFeatures);
+        } catch {
+          /* ignore */
+        }
+        try {
+          if (row.techPros) pros = JSON.parse(row.techPros);
+        } catch {
+          /* ignore */
+        }
+        try {
+          if (row.techCons) cons = JSON.parse(row.techCons);
+        } catch {
+          /* ignore */
+        }
+        try {
+          if (row.techUseCases) useCases = JSON.parse(row.techUseCases);
+        } catch {
+          /* ignore */
+        }
+
+        bu.technologies.push({
+          id: row.techId,
+          name: row.techName,
+          category: row.techCategory,
+          description: row.techDescription,
+          features,
+          pros,
+          cons,
+          useCases,
+        });
+      }
+    }
+
+    const results = Array.from(buMap.values()).slice(0, input.limit);
+
+    return { success: true, data: results };
   },
 });

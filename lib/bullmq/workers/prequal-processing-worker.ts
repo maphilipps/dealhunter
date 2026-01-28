@@ -18,6 +18,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { runSummaryAgent } from '../../agents/expert-agents';
+import { startCMSEvaluation } from '../../cms-matching/actions';
 import { modelNames } from '../../ai/config';
 import { getProviderForSlot } from '../../ai/providers';
 import { extractTextFromPdf } from '../../bids/pdf-extractor';
@@ -832,6 +833,23 @@ export async function processPreQualJob(
         progress: PROGRESS.TEN_QUESTIONS,
         currentStep: '10 Fragen beantwortet',
       });
+
+      // Run CMS Evaluation automatically after Quick Scan
+      try {
+        await updateQualificationJob(backgroundJobId, {
+          currentStep: 'CMS-Matrix erstellen...',
+        });
+        const cmsResult = await startCMSEvaluation(quickScan.id, { useWebSearch: true });
+        if (cmsResult.success) {
+          console.log(
+            `[PreQual Worker] CMS Evaluation completed: ${cmsResult.result?.recommendation.primaryCms}`
+          );
+        } else {
+          console.warn('[PreQual Worker] CMS Evaluation failed:', cmsResult.error);
+        }
+      } catch (error) {
+        console.error('[PreQual Worker] CMS Evaluation error:', error);
+      }
 
       await onAgentComplete(preQualificationId, 'QuickScan');
     } else {

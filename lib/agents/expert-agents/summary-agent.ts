@@ -156,12 +156,8 @@ export async function runSummaryAgent(
     });
 
     const summaryContent = buildSummaryForStorage(analysis);
-    await storeAgentResult(preQualificationId, 'summary_expert', summaryContent, {
-      fitScore: analysis.assessment.fitScore,
-      complexityScore: analysis.assessment.complexityScore,
-      recommendation: analysis.assessment.recommendation,
-      urgencyLevel: analysis.assessment.urgencyLevel,
-    });
+    // Store full ManagementSummary in metadata so the UI can parse it directly
+    await storeAgentResult(preQualificationId, 'summary_expert', summaryContent, analysis);
 
     return createAgentOutput(analysis, analysis.confidence);
   } catch (error) {

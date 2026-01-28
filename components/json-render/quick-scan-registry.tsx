@@ -378,36 +378,24 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
   /**
    * BulletList - Simple bullet point list for text content
-   * Used by: fallback generator, AI synthesis
    */
   BulletList: ({ element }) => {
-    const { title, items } = element.props as {
-      title?: string;
-      items: string[];
-    };
-
+    const { items } = element.props as { items: string[] };
     return (
-      <div className="space-y-3">
-        {title && <TypographySmall>{title}</TypographySmall>}
-        <TypographyList className="my-0 ml-4 space-y-1.5 [&>li]:mt-0">
-          {items.map((item, idx) => (
-            <li key={idx}>{item}</li>
-          ))}
-        </TypographyList>
-      </div>
+      <TypographyList>
+        {items.map((item, idx) => (
+          <li key={idx}>{item}</li>
+        ))}
+      </TypographyList>
     );
   },
 
   /**
-   * Paragraph - Simple text paragraph for explanations
+   * Paragraph - Simple text paragraph
    */
   Paragraph: ({ element }) => {
     const { text } = element.props as { text: string };
-    return (
-      <TypographyP className="text-sm mt-0 leading-normal [&:not(:first-child)]:mt-3">
-        {text}
-      </TypographyP>
-    );
+    return <TypographyP>{text}</TypographyP>;
   },
 
   /**
@@ -419,10 +407,10 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
       <Table>
         <TableBody>
           <TableRow>
-            <TableCell className="text-muted-foreground font-normal w-[140px] align-top">
-              {label}
+            <TableCell>
+              <TypographyMuted>{label}</TypographyMuted>
             </TableCell>
-            <TableCell className="font-medium">{value}</TableCell>
+            <TableCell>{value}</TableCell>
           </TableRow>
         </TableBody>
       </Table>
@@ -440,10 +428,10 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         <TableBody>
           {items.map((item, idx) => (
             <TableRow key={idx}>
-              <TableCell className="text-muted-foreground font-normal w-[140px] align-top">
-                {item.label}
+              <TableCell>
+                <TypographyMuted>{item.label}</TypographyMuted>
               </TableCell>
-              <TableCell className="font-medium">{item.value}</TableCell>
+              <TableCell>{item.value}</TableCell>
             </TableRow>
           ))}
         </TableBody>

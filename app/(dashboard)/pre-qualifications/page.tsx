@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/table';
 import { auth } from '@/lib/auth';
 import { getBids } from '@/lib/bids/actions';
-import { isProcessingState } from '@/lib/pre-qualifications/constants';
 
 export default async function BidsPage() {
   const session = await auth();
@@ -180,7 +179,6 @@ export default async function BidsPage() {
                             preQualificationId={bid.id}
                             label={customerName}
                             size="sm"
-                            isProcessing={isProcessingState(bid.status)}
                           />
                         </div>
                       </TableCell>

@@ -13,32 +13,51 @@ import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-servic
 const SECTION_UI_SYSTEM_PROMPT = `Du generierst JsonRenderTree UI für eine Ausschreibungs-Analyse-Section.
 
 VERFÜGBARE KOMPONENTEN:
-- Layout: Grid, ResultCard, Section
-- Inhalt: BulletList, Paragraph, KeyValue, Metric
+- Layout: Section (äußerer Container mit H2), SubSection (H3 für Unterabschnitte)
+- Inhalt: BulletList, Paragraph, KeyValue, KeyValueTable, Metric
 
-VERBOTEN: ProgressBar, ScoreCard, Confidence-Anzeigen (wird bereits oben angezeigt)
+VERBOTEN:
+- ProgressBar, ScoreCard, Confidence-Anzeigen (wird bereits oben angezeigt)
+- ResultCard (deprecated - nutze SubSection stattdessen)
+- Grid (deprecated - nutze Section mit SubSection)
+- Verschachtelte Cards (NIEMALS Card in Card!)
 
-WICHTIGE REGELN:
-1. Root muss ein Grid sein.
-2. Nur Grid, ResultCard, Section können children haben.
-3. KEINE Rohdaten ausgeben - IMMER aufbereiten und interpretieren!
-4. Schreibe ZUSAMMENFASSENDE, GUT LESBARE Texte für Business-Entscheider.
-5. Bei fehlenden Infos: Klar benennen was fehlt und warum es relevant wäre.
+STRUKTUR:
+1. Root ist eine Section (Card mit H2)
+2. ZUERST: Kurze Zusammenfassung (1 Paragraph, 2-3 Sätze max)
+3. DANN: Ausführliche Details in SubSections (H3)
+4. KEINE Rohdaten - IMMER aufbereiten!
 
-INHALTLICHE QUALITÄT:
-- Fasse Kernpunkte zusammen, nicht einfach kopieren
-- Interpretiere die Bedeutung für ein Angebotsteam
-- Nutze KeyValue für strukturierte Fakten (z.B. "Budget: 500.000 EUR")
-- Nutze BulletList für aufbereitete Listen mit Kontext
-- Nutze Paragraph für Zusammenfassungen und Einschätzungen
-- Nutze Metric nur für einzelne wichtige Kennzahlen
+INHALT:
+- ZUSAMMENFASSUNG: Kernaussage für schnelles Verständnis
+- DETAILS: Strukturierte Fakten in SubSections
+- KEINE DUPLIKATE: Information nur einmal erwähnen
+- Bei fehlenden Infos: Klar benennen was fehlt
 
-BEISPIEL für "deliverables":
-SCHLECHT: "Los 1: CMS, Los 2: Design" (zu knapp)
-GUT: ResultCard mit Titel "Leistungsumfang" + Paragraph mit Zusammenfassung + BulletList mit Details pro Los
+KEY-VALUE REGELN (WICHTIG!):
+- NIEMALS mehrere separate KeyValue-Elemente hintereinander!
+- Bei 2+ Key-Value-Paaren: IMMER KeyValueTable mit items-Array verwenden
+- KeyValue (standalone) NUR für ein einzelnes, isoliertes Paar
+- KeyValueTable.props.items = [{label, value}, {label, value}, ...]
+
+LAYOUT-REGELN:
+- Immer einspaltig (kein Grid mit columns: 2)
+- VERBOTEN: Grid, ResultCard (deprecated)
+
+BEISPIEL (Zusammenfassung → Details):
+{
+  "root": "section-main",
+  "elements": {
+    "section-main": { "key": "section-main", "type": "Section", "props": { "title": "Vertragliche Rahmenbedingungen" }, "children": ["summary", "sub-details"] },
+    "summary": { "key": "summary", "type": "Paragraph", "props": { "text": "EVB-IT Systemvertrag über 4 Jahre mit DSGVO-Anforderungen und EU-Hosting-Pflicht." } },
+    "sub-details": { "key": "sub-details", "type": "SubSection", "props": { "title": "Details" }, "children": ["kvtable-1", "list-1"] },
+    "kvtable-1": { "key": "kvtable-1", "type": "KeyValueTable", "props": { "items": [{"label": "Vertragstyp", "value": "EVB-IT Systemvertrag"}, {"label": "Laufzeit", "value": "4 Jahre + Option"}] } },
+    "list-1": { "key": "list-1", "type": "BulletList", "props": { "items": ["DSGVO-Konformität erforderlich", "Hosting in DE/EU"] } }
+  }
+}
 
 SPRACHE: Deutsch, professionell, prägnant.
-`; 
+`;
 
 export async function runPreQualSectionAgent(input: {
   preQualificationId: string;
@@ -77,27 +96,38 @@ export async function runPreQualSectionAgent(input: {
     description: `Speichere die aufbereitete UI-Visualisierung für Section "${sectionId}".
 
 WICHTIG: Rufe erst queryDocuments auf, dann erstelle eine AUFBEREITETE Visualisierung.
-KEINE Rohdaten, KEINE Confidence-Anzeigen, KEINE ProgressBars.
+
+STRUKTUR: Zusammenfassung → Details
+1. Section (Card mit H2) als Root
+2. ZUERST: Kurze Zusammenfassung (1 Paragraph, 2-3 Sätze)
+3. DANN: Details in SubSection(s) mit KeyValueTable/BulletList
 
 Verfügbare Typen:
-- Grid: Layout-Container (columns: 1|2)
-- ResultCard: Karte mit Titel (title: string)
-- Section: Unterbereich mit Titel (title: string)
+- Section: Hauptcontainer mit Card + H2 (title: string, description?: string)
+- SubSection: Unterabschnitt mit H3 (title: string)
+- KeyValueTable: Mehrere Key-Value-Paare als EINE Tabelle (items: [{label, value}, ...])
+- KeyValue: NUR für ein einzelnes, isoliertes Paar (label: string, value: string)
 - BulletList: Aufzählung (items: string[])
 - Paragraph: Fließtext (text: string)
-- KeyValue: Schlüssel-Wert (label: string, value: string)
 - Metric: Einzelne Kennzahl (label: string, value: string|number, unit?: string)
 
-Beispiel für gute Visualisierung:
+KEY-VALUE REGELN (KRITISCH!):
+- NIEMALS mehrere separate KeyValue-Elemente hintereinander verwenden!
+- Bei 2+ Key-Value-Paaren: IMMER KeyValueTable mit items-Array
+- KeyValue NUR für ein einzelnes, isoliertes Paar
+
+LAYOUT:
+- Immer einspaltig (kein Grid)
+- VERBOTEN: Grid, ResultCard (deprecated)
+
+Beispiel:
 {
-  "root": "grid-1",
+  "root": "section-main",
   "elements": {
-    "grid-1": { "key": "grid-1", "type": "Grid", "props": { "columns": 1 }, "children": ["card-summary", "card-details"] },
-    "card-summary": { "key": "card-summary", "type": "ResultCard", "props": { "title": "Zusammenfassung" }, "children": ["para-1"] },
-    "para-1": { "key": "para-1", "type": "Paragraph", "props": { "text": "Die Ausschreibung fordert ein CMS mit hohen Barrierefreiheitsanforderungen. Besonders relevant: BITV 2.0 Konformität wird explizit verlangt." } },
-    "card-details": { "key": "card-details", "type": "ResultCard", "props": { "title": "Details" }, "children": ["kv-1", "list-1"] },
-    "kv-1": { "key": "kv-1", "type": "KeyValue", "props": { "label": "Projektumfang", "value": "Ca. 500 Seiten Content-Migration" } },
-    "list-1": { "key": "list-1", "type": "BulletList", "props": { "items": ["Frontend: React-basiert, responsive", "Backend: Headless CMS gefordert", "Schnittstellen: REST API zu SAP"] } }
+    "section-main": { "key": "section-main", "type": "Section", "props": { "title": "Vertragsanalyse" }, "children": ["para-1", "sub-details"] },
+    "para-1": { "key": "para-1", "type": "Paragraph", "props": { "text": "Die Ausschreibung sieht einen EVB-IT Systemvertrag vor." } },
+    "sub-details": { "key": "sub-details", "type": "SubSection", "props": { "title": "Kommerzielle Details" }, "children": ["kvtable-1"] },
+    "kvtable-1": { "key": "kvtable-1", "type": "KeyValueTable", "props": { "items": [{"label": "Vertragstyp", "value": "EVB-IT Systemvertrag"}, {"label": "Laufzeit", "value": "4 Jahre"}] } }
   }
 }`,
     inputSchema: z.object({
@@ -107,7 +137,10 @@ Beispiel für gute Visualisierung:
       }),
       confidence: z.number().min(0).max(100),
     }),
-    execute: async (input: { visualization: { root: string | null; elements: Record<string, unknown> }; confidence: number }) => {
+    execute: async (input: {
+      visualization: { root: string | null; elements: Record<string, unknown> };
+      confidence: number;
+    }) => {
       if (!hasQueriedDocuments) {
         return { success: false, error: 'queryDocuments must be called before storeVisualization' };
       }
@@ -137,7 +170,9 @@ Beispiel für gute Visualisierung:
         }),
       });
 
-      console.log(`[Section:${sectionId}] Visualization stored (${Object.keys(visualization.elements).length} elements)`);
+      console.log(
+        `[Section:${sectionId}] Visualization stored (${Object.keys(visualization.elements).length} elements)`
+      );
 
       return {
         success: true,
@@ -220,8 +255,8 @@ WICHTIG:
     });
 
     // Check if storeVisualization was actually called
-    const storedVisualization = result.steps.some(
-      step => step.toolCalls.some(call => call.toolName === 'storeVisualization')
+    const storedVisualization = result.steps.some(step =>
+      step.toolCalls.some(call => call.toolName === 'storeVisualization')
     );
 
     if (!storedVisualization) {

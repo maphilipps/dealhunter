@@ -60,11 +60,7 @@ export default async function PreQualificationOverviewPage({
         </div>
         <div className="flex items-center gap-2">
           {!isProcessing && <DashboardPDFExport />}
-          <DeletePreQualificationButton
-            preQualificationId={id}
-            label={deleteLabel}
-            isProcessing={isProcessing}
-          />
+          <DeletePreQualificationButton preQualificationId={id} label={deleteLabel} />
         </div>
       </div>
 

@@ -50,9 +50,9 @@ export function PreQualificationSidebarRight({
             <SidebarGroupLabel>Lead Details</SidebarGroupLabel>
             <SidebarGroupContent>
               <div className="px-2 py-1 space-y-1">
-                {title && <p className="truncate text-sm font-medium">{title}</p>}
+                {title && <p className="text-sm font-medium break-words">{title}</p>}
                 {customerName && (
-                  <p className="truncate text-xs text-muted-foreground">{customerName}</p>
+                  <p className="text-xs text-muted-foreground break-words">{customerName}</p>
                 )}
               </div>
             </SidebarGroupContent>
@@ -78,7 +78,9 @@ export function PreQualificationSidebarRight({
                         <SidebarMenuItem key={item.title}>
                           <SidebarMenuButton asChild isActive={isActive}>
                             <Link href={item.url}>
-                              <Icon className={`h-4 w-4${Icon === Loader2 ? ' animate-spin' : ''}`} />
+                              <Icon
+                                className={`h-4 w-4${Icon === Loader2 ? ' animate-spin' : ''}`}
+                              />
                               <span>{item.title}</span>
                             </Link>
                           </SidebarMenuButton>
@@ -92,7 +94,9 @@ export function PreQualificationSidebarRight({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <SidebarMenuButton className="cursor-not-allowed opacity-50" disabled>
-                              <Icon className={`h-4 w-4${Icon === Loader2 ? ' animate-spin' : ''}`} />
+                              <Icon
+                                className={`h-4 w-4${Icon === Loader2 ? ' animate-spin' : ''}`}
+                              />
                               <span>{item.title}</span>
                             </SidebarMenuButton>
                           </TooltipTrigger>

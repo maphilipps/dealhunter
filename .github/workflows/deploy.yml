@@ -28,23 +28,21 @@ jobs:
             set -e
             cd /var/www
 
-            # Check if we need to re-clone due to permission issues
-            # Find any files in .git not owned by deploy
+            # Check for permission issues
             echo "🔍 Checking for permission issues..."
             BAD_FILES=$(find dealhunter/.git -not -user deploy 2>/dev/null | head -5)
             if [ -n "$BAD_FILES" ]; then
-              echo "⚠️ Found files with wrong ownership:"
+              echo ""
+              echo "❌ PERMISSION ERROR: Files in .git are not owned by deploy user"
+              echo ""
+              echo "Files with wrong ownership:"
               echo "$BAD_FILES"
-              echo "Re-cloning repository..."
-              rm -rf dealhunter.bak 2>/dev/null || true
-              mv dealhunter dealhunter.bak
-              git clone --depth 1 https://github.com/maphilipps/dealhunter.git dealhunter
-              # Copy .env from backup
-              cp dealhunter.bak/.env dealhunter/.env 2>/dev/null || true
-              cp dealhunter.bak/.env.local dealhunter/.env.local 2>/dev/null || true
-              rm -rf dealhunter.bak
+              echo ""
+              echo "🔧 MANUAL FIX REQUIRED - Run on server as root:"
+              echo "   sudo chown -R deploy:deploy /var/www/dealhunter"
+              echo ""
+              exit 1
             fi
-            rm -f dealhunter/.git/objects/.write-test 2>/dev/null || true
 
             cd dealhunter
 

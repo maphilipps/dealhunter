@@ -7,17 +7,40 @@ export const ManagementSummarySchema = z.object({
   // Executive summary (2-3 sentences)
   executiveSummary: z.string().max(2000).default(''),
 
-  // Key facts
+  // Key facts (using .any() to avoid response_format validation errors with Zod v4)
   keyFacts: z
-    .object({
-      customer: z.string().default('Unknown'),
-      industry: z.string().nullish(),
-      projectType: z.string().default('Unknown'),
-      estimatedValue: z.string().nullish(),
-      submissionDeadline: z.string().nullish(),
-      daysRemaining: z.coerce.number().nullish(),
-    })
-    .default({ customer: 'Unknown', projectType: 'Unknown' }),
+    .any()
+    .refine(
+      (data): data is Record<string, unknown> =>
+        typeof data === 'object' &&
+        data !== null &&
+        (typeof data.customer === 'string' || data.customer === undefined || data.customer === null)
+    )
+    .transform(data => ({
+      customer: typeof data.customer === 'string' ? data.customer : 'Unknown',
+      industry: typeof data.industry === 'string' || data.industry === null ? data.industry : null,
+      projectType: typeof data.projectType === 'string' ? data.projectType : 'Unknown',
+      estimatedValue:
+        typeof data.estimatedValue === 'string' || data.estimatedValue === null
+          ? data.estimatedValue
+          : null,
+      submissionDeadline:
+        typeof data.submissionDeadline === 'string' || data.submissionDeadline === null
+          ? data.submissionDeadline
+          : null,
+      daysRemaining:
+        typeof data.daysRemaining === 'number' || data.daysRemaining === undefined
+          ? data.daysRemaining
+          : undefined,
+    }))
+    .default({
+      customer: 'Unknown',
+      industry: null,
+      projectType: 'Unknown',
+      estimatedValue: null,
+      submissionDeadline: null,
+      daysRemaining: undefined,
+    }),
 
   // Top 3-5 deliverables
   topDeliverables: z

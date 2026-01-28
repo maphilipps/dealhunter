@@ -29,9 +29,11 @@ jobs:
             cd /var/www
 
             # Check if we need to re-clone due to permission issues
-            # Test by checking if deploy user owns the .git directory
-            if [ -d "dealhunter" ] && [ "$(stat -c '%U' dealhunter/.git 2>/dev/null)" != "deploy" ]; then
-              echo "⚠️ Permission issue detected. Re-cloning repository..."
+            echo "🔍 Checking .git ownership..."
+            OWNER=$(stat -c '%U' dealhunter/.git 2>/dev/null || echo "unknown")
+            echo "   Owner: $OWNER"
+            if [ -d "dealhunter" ] && [ "$OWNER" != "deploy" ]; then
+              echo "⚠️ Permission issue detected (owner=$OWNER). Re-cloning repository..."
               rm -rf dealhunter.bak 2>/dev/null || true
               mv dealhunter dealhunter.bak
               git clone --depth 1 https://github.com/maphilipps/dealhunter.git dealhunter

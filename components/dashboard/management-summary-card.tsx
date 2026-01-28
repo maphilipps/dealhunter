@@ -2,12 +2,11 @@
 
 import { Calendar, Target } from 'lucide-react';
 
-import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schema';
-
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schema';
 import { cn } from '@/lib/utils';
 
 export interface ManagementSummaryCardProps {

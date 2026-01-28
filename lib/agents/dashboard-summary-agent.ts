@@ -10,55 +10,10 @@ import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
+import { DASHBOARD_SECTIONS } from '@/lib/dashboard/sections';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
 import { queryRAG } from '@/lib/rag/retrieval-service';
-
-/**
- * Section configuration for highlight generation
- */
-const DASHBOARD_SECTIONS = [
-  {
-    id: 'facts',
-    title: 'Key Facts',
-    query: 'Projektübersicht Kunde Branche Scope wichtigste Fakten',
-  },
-  {
-    id: 'budget',
-    title: 'Budget',
-    query: 'Budget Preis Kosten Finanzierung Vergütung Angebotspreis Wert',
-  },
-  {
-    id: 'timing',
-    title: 'Zeitplan / Verfahren',
-    query: 'Zeitplan Termine Fristen Meilensteine Deadlines Vergabeverfahren',
-  },
-  {
-    id: 'contracts',
-    title: 'Verträge',
-    query: 'Vertrag Bedingungen AGB Haftung Gewährleistung Vertragsstrafe',
-  },
-  {
-    id: 'deliverables',
-    title: 'Leistungsumfang',
-    query: 'Leistungen Anforderungen Deliverables Umfang Aufgaben',
-  },
-  {
-    id: 'references',
-    title: 'Referenzen',
-    query: 'Referenzen Nachweise Erfahrung Qualifikation Projekte',
-  },
-  {
-    id: 'award-criteria',
-    title: 'Zuschlagskriterien',
-    query: 'Zuschlagskriterien Bewertung Wertung Punkte Kriterien',
-  },
-  {
-    id: 'offer-structure',
-    title: 'Angebotsstruktur',
-    query: 'Angebotsstruktur Gliederung Format Unterlagen Abgabe',
-  },
-] as const;
 
 /**
  * Schema for generated highlights
@@ -70,9 +25,6 @@ const SectionHighlightsSchema = z.object({
     .describe('Top 3 most important facts for this section'),
   hasContent: z.boolean().describe('Whether relevant content was found'),
 });
-
-// Type for generated highlights - used by generateStructuredOutput
-// type SectionHighlights = z.infer<typeof SectionHighlightsSchema>;
 
 /**
  * Generate highlights for a single section
@@ -180,46 +132,51 @@ export interface DashboardSummaryResult {
 /**
  * Run the Dashboard Summary Agent
  *
- * Generates Top-3 Key Facts for all dashboard sections.
+ * Generates Top-3 Key Facts for all dashboard sections in parallel.
  * Should be called after all expert agents have completed.
  */
 export async function runDashboardSummaryAgent(
   preQualificationId: string
 ): Promise<DashboardSummaryResult> {
-  const errors: string[] = [];
-  let sectionsProcessed = 0;
-  let sectionsWithHighlights = 0;
+  console.error(`[DashboardSummaryAgent] Starting for ${preQualificationId}`);
 
-  console.log(`[DashboardSummaryAgent] Starting for ${preQualificationId}`);
-
-  for (const section of DASHBOARD_SECTIONS) {
-    try {
+  // Generate highlights for all sections in parallel
+  const results = await Promise.allSettled(
+    DASHBOARD_SECTIONS.map(async section => {
       const { highlights, confidence } = await generateSectionHighlights(
         preQualificationId,
         section.id,
         section.title,
-        section.query
+        section.ragQuery
       );
-
       await storeHighlights(preQualificationId, section.id, highlights, confidence);
+      return { sectionId: section.id, highlights, confidence };
+    })
+  );
 
+  // Aggregate results
+  const errors: string[] = [];
+  let sectionsProcessed = 0;
+  let sectionsWithHighlights = 0;
+
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
       sectionsProcessed++;
-      if (highlights.length > 0) {
+      if (result.value.highlights.length > 0) {
         sectionsWithHighlights++;
-        console.log(
-          `[DashboardSummaryAgent] ${section.id}: ${highlights.length} highlights (${confidence}%)`
+        console.error(
+          `[DashboardSummaryAgent] ${result.value.sectionId}: ${result.value.highlights.length} highlights (${result.value.confidence}%)`
         );
       } else {
-        console.log(`[DashboardSummaryAgent] ${section.id}: No highlights found`);
+        console.error(`[DashboardSummaryAgent] ${result.value.sectionId}: No highlights found`);
       }
-    } catch (error) {
-      const errorMsg = `Section ${section.id}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      errors.push(errorMsg);
-      console.error(`[DashboardSummaryAgent] ${errorMsg}`);
+    } else {
+      errors.push(result.reason instanceof Error ? result.reason.message : 'Unknown error');
+      console.error(`[DashboardSummaryAgent] Section failed:`, result.reason);
     }
   }
 
-  console.log(
+  console.error(
     `[DashboardSummaryAgent] Complete: ${sectionsProcessed}/${DASHBOARD_SECTIONS.length} sections, ${sectionsWithHighlights} with highlights`
   );
 
@@ -229,57 +186,4 @@ export async function runDashboardSummaryAgent(
     sectionsWithHighlights,
     errors,
   };
-}
-
-/**
- * Get cached dashboard highlights for a pre-qualification
- */
-export async function getDashboardHighlights(
-  preQualificationId: string
-): Promise<Map<string, { highlights: string[]; confidence: number }>> {
-  const results = await db.query.dealEmbeddings.findMany({
-    where: and(
-      eq(dealEmbeddings.preQualificationId, preQualificationId),
-      eq(dealEmbeddings.chunkType, 'dashboard_highlight')
-    ),
-  });
-
-  const highlightsMap = new Map<string, { highlights: string[]; confidence: number }>();
-
-  for (const row of results) {
-    try {
-      const metadata = row.metadata ? JSON.parse(row.metadata) : {};
-      const sectionId = metadata.sectionId;
-      if (sectionId && row.content) {
-        const highlights = JSON.parse(row.content) as string[];
-        highlightsMap.set(sectionId, {
-          highlights,
-          confidence: row.confidence ?? 50,
-        });
-      }
-    } catch {
-      // Skip malformed entries
-    }
-  }
-
-  return highlightsMap;
-}
-
-/**
- * Invalidate dashboard highlights for a section
- * Call this when section data changes
- */
-export async function invalidateSectionHighlights(
-  preQualificationId: string,
-  sectionId: string
-): Promise<void> {
-  await db
-    .delete(dealEmbeddings)
-    .where(
-      and(
-        eq(dealEmbeddings.preQualificationId, preQualificationId),
-        eq(dealEmbeddings.chunkType, 'dashboard_highlight'),
-        eq(dealEmbeddings.agentName, `dashboard_${sectionId}`)
-      )
-    );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { Building2, ChevronRight, Loader2 } from 'lucide-react';
+import { Building2, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,6 @@ export interface BURoutingCardProps {
   recommendedBusinessUnit: string | null;
   confidence: number | null;
   reasoning: string | null;
-  isProcessing?: boolean;
   className?: string;
 }
 
@@ -28,7 +27,6 @@ export function BURoutingCard({
   recommendedBusinessUnit,
   confidence,
   reasoning,
-  isProcessing = false,
   className,
 }: BURoutingCardProps) {
   const confidenceLabel =
@@ -69,18 +67,11 @@ export function BURoutingCard({
           </div>
         </CardHeader>
         <CardContent>
-          {isProcessing && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Analyse läuft, Empfehlung wird erstellt...</span>
-            </div>
-          )}
-
-          {!isProcessing && !recommendedBusinessUnit && (
+          {!recommendedBusinessUnit && (
             <p className="text-sm text-muted-foreground">Noch keine Routing-Empfehlung verfügbar</p>
           )}
 
-          {!isProcessing && recommendedBusinessUnit && (
+          {recommendedBusinessUnit && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-lg font-semibold">{recommendedBusinessUnit}</span>

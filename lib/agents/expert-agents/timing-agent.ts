@@ -4,7 +4,6 @@
  * Extracts all timing and deadline information from Pre-Qualification documents via RAG.
  */
 
-
 import {
   queryRfpDocument,
   storeAgentResult,
@@ -26,49 +25,44 @@ const TIMING_QUERIES = [
 function buildSystemPrompt(): string {
   const today = new Date().toISOString().split('T')[0];
 
-  return `You are a Timing Expert Agent analyzing Pre-Qualification documents for deadline and timeline information.
+  return `Du bist ein Timing Expert Agent bei adesso SE für die Analyse von Pre-Qualification-Dokumenten.
 
-Today's date: ${today}
+## Deine Rolle
+Extrahiere ALLE zeitlichen Informationen aus Pre-Qualification-Unterlagen.
+Deine Analyse ist kritisch für die Ressourcenplanung und Bid-Priorisierung.
 
-Your task is to extract ALL timing-related information from the provided Pre-Qualification context.
+## Heutiges Datum
+${today}
 
-## Instructions
+## Extraktions-Prioritäten
 
-1. **Submission Deadline** (highest priority):
-   - Extract the exact submission deadline with date, time, and timezone if available
-   - Include the raw text exactly as it appears in the document
-   - Set confidence based on clarity (100% for explicit dates, lower for ambiguous)
+| Priorität | Information | Bedeutung |
+|-----------|-------------|-----------|
+| 1 | Abgabefrist | Deadline für Angebotseinreichung |
+| 2 | Projekt-Timeline | Start- und Enddatum des Projekts |
+| 3 | Meilensteine | Phasen, Reviews, Go-Lives |
+| 4 | Q&A-Fristen | Rückfragen- und Klärungsfristen |
+| 5 | Vergabetermin | Erwarteter Zuschlagstermin |
 
-2. **Project Timeline**:
-   - Extract project start and end dates if mentioned
-   - Calculate projectDurationMonths if both dates are available
+## Dringlichkeits-Klassifikation
 
-3. **Milestones**:
-   - Extract ALL milestones mentioned (phases, deliverables, reviews, etc.)
-   - For each milestone, determine if the date is exact, estimated, or relative
-   - Mark whether each milestone is mandatory
+| Level | Tage bis Abgabe | Aktion |
+|-------|-----------------|--------|
+| critical | < 7 Tage | Sofortige Eskalation, Notfall-Team |
+| high | < 14 Tage | Priorisierte Bearbeitung |
+| medium | < 30 Tage | Normale Bearbeitung |
+| low | ≥ 30 Tage | Planmäßige Bearbeitung |
 
-4. **Q&A and Clarification**:
-   - Extract clarification deadline if mentioned
-   - Extract any Q&A session dates
+## Meilenstein-Typen
+- **exact**: Konkretes Datum angegeben (z.B. "15.03.2025")
+- **estimated**: Geschätztes Datum (z.B. "voraussichtlich Q2 2025")
+- **relative**: Relatives Datum (z.B. "6 Wochen nach Zuschlag")
 
-5. **Contract/Award**:
-   - Extract expected award date if mentioned
-   - Extract contract signing date if mentioned
-
-6. **Urgency Assessment**:
-   - Calculate daysUntilSubmission from today (${today}) to submission deadline
-   - Set urgencyLevel:
-     - critical: < 7 days
-     - high: < 14 days
-     - medium: < 30 days
-     - low: >= 30 days or no deadline found
-
-7. **Overall Confidence**:
-   - Set based on completeness and clarity of timing information found
-
-Return valid JSON matching the schema. Use ISO date format (YYYY-MM-DD) where possible.
-If a date is relative (e.g., "Q2 2024", "within 6 months"), preserve it as-is.`;
+## Ausgabe
+- Verwende ISO-Datumsformat (YYYY-MM-DD) wo möglich
+- Bei relativen Angaben (z.B. "Q2 2024") Originaltext beibehalten
+- Confidence basiert auf Klarheit der gefundenen Zeitangaben
+- Alle Texte auf Deutsch`;
 }
 
 export async function runTimingAgent(
@@ -99,7 +93,10 @@ export async function runTimingAgent(
       (a, b) => b.similarity - a.similarity
     );
 
-    const context = formatContextFromRAG(uniqueResults.slice(0, 15), 'Pre-Qualification Timing Information');
+    const context = formatContextFromRAG(
+      uniqueResults.slice(0, 15),
+      'Pre-Qualification Timing Information'
+    );
 
     const analysis = await generateStructuredOutput({
       model: 'quality',

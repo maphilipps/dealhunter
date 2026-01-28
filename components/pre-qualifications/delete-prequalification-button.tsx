@@ -1,6 +1,6 @@
 'use client';
 
-import { StopCircle, Trash2 } from 'lucide-react';
+import { StopCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -23,14 +23,12 @@ type Props = {
   preQualificationId: string;
   label?: string;
   size?: 'default' | 'sm';
-  isProcessing?: boolean;
 };
 
 export function DeletePreQualificationButton({
   preQualificationId,
   label,
   size = 'default',
-  isProcessing = false,
 }: Props) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -40,33 +38,25 @@ export function DeletePreQualificationButton({
     const result = await deletePreQualificationHard(preQualificationId);
 
     if (result.success) {
-      toast.success(
-        isProcessing ? 'Verarbeitung abgebrochen' : 'Pre-Qualification erfolgreich gelöscht'
-      );
+      toast.success('Pre-Qualification wurde abgebrochen');
       router.push('/pre-qualifications');
     } else {
-      toast.error(result.error || 'Fehler beim Löschen');
+      toast.error(result.error || 'Fehler beim Abbrechen');
       setIsDeleting(false);
     }
   };
 
-  const Icon = isProcessing ? StopCircle : Trash2;
-  const buttonLabel = isProcessing ? 'Abbrechen' : 'Löschen';
-  const dialogTitle = isProcessing
-    ? 'Verarbeitung wirklich abbrechen?'
-    : 'Pre-Qualification wirklich löschen?';
-  const dialogDescription = isProcessing
-    ? `Möchten Sie die Verarbeitung ${label ? `von "${label}"` : ''} wirklich abbrechen? Alle bisherigen Daten werden gelöscht.`
-    : `Möchten Sie das Pre-Qualification ${label ? `"${label}"` : preQualificationId} wirklich löschen? Diese Aktion löscht alle Daten und kann nicht rückgängig gemacht werden.`;
-  const confirmLabel = isProcessing ? 'Jetzt abbrechen' : 'Jetzt löschen';
-  const loadingLabel = isProcessing ? 'Wird abgebrochen...' : 'Wird gelöscht...';
+  const dialogTitle = 'Pre-Qualification wirklich abbrechen?';
+  const dialogDescription = `Möchten Sie die Pre-Qualification ${label ? `"${label}"` : ''} wirklich abbrechen? Alle Daten werden unwiderruflich gelöscht.`;
+  const confirmLabel = 'Jetzt abbrechen';
+  const loadingLabel = 'Wird abgebrochen...';
 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button variant="destructive" size={size} disabled={isDeleting}>
-          <Icon className="h-4 w-4 mr-2" />
-          {buttonLabel}
+          <StopCircle className="h-4 w-4 mr-2" />
+          Abbrechen
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

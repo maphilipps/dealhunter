@@ -52,7 +52,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import {
   TypographyH3,
   TypographyLarge,
@@ -411,15 +410,15 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
   },
 
   /**
-   * KeyValue - Single key-value pair as table row (use inside KeyValueTable)
+   * KeyValue - Single key-value pair (standalone or inside KeyValueTable)
    */
   KeyValue: ({ element }) => {
     const { label, value } = element.props as { label: string; value: string };
     return (
-      <TableRow>
-        <TableCell className="text-muted-foreground">{label}</TableCell>
-        <TableCell className="font-medium">{value}</TableCell>
-      </TableRow>
+      <tr>
+        <td className="py-1.5 pr-4 text-muted-foreground align-top">{label}</td>
+        <td className="py-1.5 font-medium">{value}</td>
+      </tr>
     );
   },
 
@@ -428,9 +427,9 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
    */
   KeyValueTable: ({ children }) => {
     return (
-      <Table>
-        <TableBody>{children}</TableBody>
-      </Table>
+      <table className="w-full text-sm">
+        <tbody>{children}</tbody>
+      </table>
     );
   },
 

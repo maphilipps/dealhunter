@@ -92,7 +92,13 @@ export async function runLegalRfpAgent(
       return createAgentOutput<LegalRfpAnalysis>(
         {
           requirements: [],
-          contractDetails: {},
+          contractDetails: {
+            contractType: null,
+            duration: null,
+            terminationNotice: null,
+            liabilityLimit: null,
+            penaltyClauses: [],
+          },
           requiredCertifications: [],
           requiredInsurance: [],
           overallRiskLevel: 'low',

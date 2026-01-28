@@ -367,7 +367,7 @@ export function RequirementsMatrix({ preQualificationId, initialMatrix }: Requir
                   <div
                     key={cms.id}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
-                      index === 0 ? 'bg-green-50 border-green-200' : 'bg-muted/50'
+                      index === 0 ? 'bg-green-200 border-green-300' : 'bg-muted/50'
                     }`}
                   >
                     <span className="font-medium text-lg">{index + 1}.</span>

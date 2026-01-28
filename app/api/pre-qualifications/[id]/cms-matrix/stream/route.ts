@@ -5,7 +5,7 @@
  * POST /api/pre-qualifications/[id]/cms-matrix/stream
  */
 
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ilike } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
 import {
@@ -13,7 +13,7 @@ import {
   saveMatrixToRfp,
   matrixToCMSMatchingResult,
 } from '@/lib/cms-matching/parallel-matrix-orchestrator';
-import type { RequirementMatch } from '@/lib/cms-matching/schema';
+import { extractRequirementsFromQuickScan } from '@/lib/cms-matching/requirements';
 import { db } from '@/lib/db';
 import { preQualifications, quickScans, technologies } from '@/lib/db/schema';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
@@ -22,143 +22,8 @@ export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes for research
 
 /**
- * Extrahiert Requirements aus Quick Scan Daten
+ * Requirements extraction moved to lib/cms-matching/requirements
  */
-function extractRequirementsFromQuickScan(quickScanData: Record<string, unknown>): Array<{
-  name: string;
-  category: RequirementMatch['category'];
-  priority: RequirementMatch['priority'];
-  source: RequirementMatch['source'];
-}> {
-  const requirements: Array<{
-    name: string;
-    category: RequirementMatch['category'];
-    priority: RequirementMatch['priority'];
-    source: RequirementMatch['source'];
-  }> = [];
-
-  const features = quickScanData.features as Record<string, unknown> | undefined;
-  const techStack = quickScanData.techStack as Record<string, unknown> | undefined;
-  const contentVolume = quickScanData.contentVolume as Record<string, unknown> | undefined;
-
-  // Features -> Functional Requirements
-  if (features) {
-    if (features.ecommerce) {
-      requirements.push({
-        name: 'E-Commerce Funktionalität',
-        category: 'functional',
-        priority: 'must-have',
-        source: 'detected',
-      });
-    }
-    if (features.multiLanguage) {
-      requirements.push({
-        name: 'Mehrsprachigkeit',
-        category: 'functional',
-        priority: 'must-have',
-        source: 'detected',
-      });
-    }
-    if (features.search) {
-      requirements.push({
-        name: 'Suchfunktion',
-        category: 'functional',
-        priority: 'should-have',
-        source: 'detected',
-      });
-    }
-    if (features.blog) {
-      requirements.push({
-        name: 'Blog/News Bereich',
-        category: 'functional',
-        priority: 'should-have',
-        source: 'detected',
-      });
-    }
-    if (features.forms) {
-      requirements.push({
-        name: 'Formulare',
-        category: 'functional',
-        priority: 'should-have',
-        source: 'detected',
-      });
-    }
-    if (features.userAccounts) {
-      requirements.push({
-        name: 'Benutzerkonten/Login',
-        category: 'functional',
-        priority: 'must-have',
-        source: 'detected',
-      });
-    }
-    if (features.api) {
-      requirements.push({
-        name: 'API-Schnittstelle',
-        category: 'technical',
-        priority: 'should-have',
-        source: 'detected',
-      });
-    }
-  }
-
-  // Tech Stack -> Technical Requirements
-  if (techStack) {
-    if (techStack.serverSideRendering) {
-      requirements.push({
-        name: 'Server-Side Rendering (SSR)',
-        category: 'technical',
-        priority: 'should-have',
-        source: 'detected',
-      });
-    }
-    if ((techStack.apiEndpoints as Record<string, unknown>)?.graphql) {
-      requirements.push({
-        name: 'GraphQL API',
-        category: 'technical',
-        priority: 'should-have',
-        source: 'detected',
-      });
-    }
-  }
-
-  // Content Volume -> Scalability
-  if (contentVolume) {
-    const pageCount = contentVolume.estimatedPageCount as number | undefined;
-    if (pageCount && pageCount > 500) {
-      requirements.push({
-        name: 'Enterprise-Skalierbarkeit (>500 Seiten)',
-        category: 'scalability',
-        priority: 'must-have',
-        source: 'inferred',
-      });
-    }
-    if (contentVolume.complexity === 'high') {
-      requirements.push({
-        name: 'Komplexe Content-Strukturen',
-        category: 'functional',
-        priority: 'must-have',
-        source: 'inferred',
-      });
-    }
-  }
-
-  // Always include common requirements
-  requirements.push({
-    name: 'DSGVO-Konformität',
-    category: 'compliance',
-    priority: 'must-have',
-    source: 'inferred',
-  });
-
-  requirements.push({
-    name: 'Barrierefreiheit (WCAG)',
-    category: 'compliance',
-    priority: 'should-have',
-    source: 'inferred',
-  });
-
-  return requirements;
-}
 
 /**
  * POST Handler - Startet die Matrix-Recherche
@@ -233,6 +98,9 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
             features: safeParse(latestCompletedQuickScan.features),
             techStack: safeParse(latestCompletedQuickScan.techStack),
             contentVolume: safeParse(latestCompletedQuickScan.contentVolume),
+            accessibilityAudit: safeParse(latestCompletedQuickScan.accessibilityAudit),
+            legalCompliance: safeParse(latestCompletedQuickScan.legalCompliance),
+            performanceIndicators: safeParse(latestCompletedQuickScan.performanceIndicators),
           }
         : {};
 
@@ -264,21 +132,33 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       });
 
       // 4. Load CMS Options from DB
-      const techs = await db.select().from(technologies).where(eq(technologies.category, 'CMS'));
+      const techs = await db.select().from(technologies).where(ilike(technologies.category, 'cms'));
 
-      const cmsOptions =
-        techs.length > 0
-          ? techs.map(t => ({
-              id: t.id,
-              name: t.name,
-              isBaseline: t.isDefault || false,
-            }))
-          : [
-              { id: 'drupal', name: 'Drupal', isBaseline: true },
-              { id: 'wordpress', name: 'WordPress', isBaseline: false },
-              { id: 'contentful', name: 'Contentful', isBaseline: false },
-              { id: 'strapi', name: 'Strapi', isBaseline: false },
-            ];
+      if (techs.length === 0) {
+        throw new Error('Keine CMS-Technologies gefunden (technologies.category="cms")');
+      }
+
+      const cmsOptions = techs.map(t => {
+        let strengths: string[] = [];
+        let weaknesses: string[] = [];
+        try {
+          strengths = t.pros ? (JSON.parse(t.pros) as string[]) : [];
+        } catch {
+          strengths = [];
+        }
+        try {
+          weaknesses = t.cons ? (JSON.parse(t.cons) as string[]) : [];
+        } catch {
+          weaknesses = [];
+        }
+        return {
+          id: t.id,
+          name: t.name,
+          isBaseline: t.isDefault || false,
+          strengths,
+          weaknesses,
+        };
+      });
 
       await sendEvent({
         id: `cms-${Date.now()}`,

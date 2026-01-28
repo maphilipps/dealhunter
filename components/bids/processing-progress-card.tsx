@@ -110,10 +110,10 @@ export function ProcessingProgressCard({ bidId }: ProcessingProgressCardProps) {
       if (data.isComplete || data.error) {
         setIsPolling(false);
 
-        // Redirect to Budget page after completion (first content section)
+        // Redirect to overview page after completion
         if (data.isComplete) {
           setTimeout(() => {
-            router.push(`/pre-qualifications/${bidId}/budget`);
+            router.push(`/pre-qualifications/${bidId}`);
           }, 500);
         }
       }
@@ -274,9 +274,7 @@ export function ProcessingProgressCard({ bidId }: ProcessingProgressCardProps) {
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-amber-900 dark:text-amber-100">
-                  Verbindungsproblem
-                </p>
+                <p className="font-medium text-amber-900 dark:text-amber-100">Verbindungsproblem</p>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">{error}</p>
               </div>
             </div>

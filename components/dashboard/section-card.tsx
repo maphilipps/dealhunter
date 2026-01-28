@@ -14,6 +14,7 @@ export interface SectionCardProps {
   highlights?: string[];
   /** Status: 'available' | 'pending' | 'no_data' */
   status: 'available' | 'pending' | 'no_data';
+  showHighlights?: boolean;
   className?: string;
 }
 
@@ -32,6 +33,7 @@ export function SectionCard({
   href,
   highlights = [],
   status,
+  showHighlights = true,
   className,
 }: SectionCardProps) {
   const isLoading = status === 'pending';
@@ -55,21 +57,21 @@ export function SectionCard({
           <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
         </CardHeader>
         <CardContent className="pt-0">
-          {isLoading && (
+          {showHighlights && isLoading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
               <span>Wird analysiert...</span>
             </div>
           )}
 
-          {hasNoData && (
+          {showHighlights && hasNoData && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <AlertCircle className="h-3 w-3" />
               <span>Keine Angaben im Dokument gefunden</span>
             </div>
           )}
 
-          {hasData && (
+          {showHighlights && hasData && (
             <ul className="space-y-1.5">
               {highlights.slice(0, 3).map((highlight, index) => (
                 <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -81,7 +83,7 @@ export function SectionCard({
           )}
 
           {/* Empty state when available but no highlights */}
-          {status === 'available' && highlights.length === 0 && (
+          {showHighlights && status === 'available' && highlights.length === 0 && (
             <p className="text-sm text-muted-foreground">Keine relevanten Informationen gefunden</p>
           )}
 

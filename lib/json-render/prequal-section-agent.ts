@@ -1,4 +1,5 @@
 import { ToolLoopAgent, hasToolCall, stepCountIs, tool } from 'ai';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { createBatchRagWriteTool } from '@/lib/agent-tools';
@@ -72,6 +73,8 @@ export async function runPreQualSectionAgent(input: {
   }
 
   let hasQueriedDocuments = false;
+  let hasStoredVisualization = false;
+  let hasStoredDashboardHighlights = false;
 
   const storeFindingsBatch = createBatchRagWriteTool({
     preQualificationId,
@@ -170,6 +173,7 @@ Beispiel:
         }),
       });
 
+      hasStoredVisualization = true;
       console.log(
         `[Section:${sectionId}] Visualization stored (${Object.keys(visualization.elements).length} elements)`
       );
@@ -178,6 +182,58 @@ Beispiel:
         success: true,
         message: `Stored visualization for "${sectionId}"`,
       };
+    },
+  });
+
+  const storeDashboardHighlights = tool({
+    description: `Speichere 1-3 Key-Facts für die Dashboard-Übersicht der Section "${sectionId}".
+
+Regeln:
+- Maximal 3 kurze Fakten
+- Jede Aussage maximal 120 Zeichen
+- Nur konkrete Fakten, keine Vermutungen
+- Wenn keine relevanten Infos vorhanden: leeres Array []`,
+    inputSchema: z.object({
+      highlights: z.array(z.string().max(120)).max(3),
+      confidence: z.number().min(0).max(100),
+    }),
+    execute: async (input: { highlights: string[]; confidence: number }) => {
+      if (!hasStoredVisualization) {
+        return { success: false, error: 'storeVisualization must be called before highlights' };
+      }
+
+      // Delete existing highlights for this section
+      await db
+        .delete(dealEmbeddings)
+        .where(
+          and(
+            eq(dealEmbeddings.preQualificationId, preQualificationId),
+            eq(dealEmbeddings.chunkType, 'dashboard_highlight'),
+            eq(dealEmbeddings.agentName, `dashboard_${sectionId}`)
+          )
+        );
+
+      if (input.highlights.length === 0) {
+        hasStoredDashboardHighlights = true;
+        return { success: true, message: 'No highlights to store' };
+      }
+
+      await db.insert(dealEmbeddings).values({
+        qualificationId: null,
+        preQualificationId,
+        agentName: `dashboard_${sectionId}`,
+        chunkType: 'dashboard_highlight',
+        chunkIndex: 0,
+        chunkCategory: 'elaboration',
+        content: JSON.stringify(input.highlights),
+        confidence: input.confidence,
+        embedding: null,
+        metadata: JSON.stringify({ sectionId }),
+      });
+
+      hasStoredDashboardHighlights = true;
+
+      return { success: true, message: `Stored dashboard highlights for "${sectionId}"` };
     },
   });
 
@@ -190,7 +246,8 @@ Beispiel:
         ? 'Web enrichment is allowed. If you use webSearch/fetchUrl, keep it in a separate section with source URLs.'
         : 'Do NOT use webSearch or fetchUrl. Only use document context.',
       'Persist findings via storeFindingsBatch with chunkType matching the sectionId.',
-      'Finally call storeVisualization with a JsonRenderTree.',
+      'Then call storeVisualization with a JsonRenderTree.',
+      'Finally call storeDashboardHighlights with 1-3 key facts for the dashboard.',
     ].join('\n'),
     tools: {
       queryDocuments: tool({
@@ -224,9 +281,10 @@ Beispiel:
       fetchUrl: fetchUrlTool,
       storeFindingsBatch,
       storeVisualization,
+      storeDashboardHighlights,
       complete,
     },
-    stopWhen: [stepCountIs(20), hasToolCall('storeVisualization')],
+    stopWhen: [stepCountIs(24), hasToolCall('storeDashboardHighlights')],
   });
 
   const prompt = `Section: ${sectionId}
@@ -241,6 +299,7 @@ DEINE AUFGABE:
    - Zusammenfassung: Was sind die Kernpunkte für ein Angebotsteam?
    - Details: Strukturierte Fakten mit KeyValue und BulletList
    - Einschätzung: Was bedeutet das? Was fehlt? Worauf achten?
+4. Erstelle 1-3 Key-Facts für das Dashboard und speichere sie via storeDashboardHighlights
 
 WICHTIG:
 - KEINE Rohdaten kopieren - INTERPRETIEREN und AUFBEREITEN
@@ -262,6 +321,11 @@ WICHTIG:
     if (!storedVisualization) {
       console.warn(`[Section:${sectionId}] Agent completed without storing visualization`);
       return { success: false, error: 'Agent did not create a visualization' };
+    }
+
+    if (!hasStoredDashboardHighlights) {
+      console.warn(`[Section:${sectionId}] Agent completed without dashboard highlights`);
+      return { success: false, error: 'Agent did not store dashboard highlights' };
     }
 
     return { success: true };

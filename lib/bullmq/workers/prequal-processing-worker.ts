@@ -14,10 +14,16 @@
 
 import { generateObject } from 'ai';
 import type { Job } from 'bullmq';
-import { eq } from 'drizzle-orm';
+import { eq, ilike } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { runSummaryAgent } from '../../agents/expert-agents';
+import {
+  runParallelMatrixResearch,
+  saveMatrixToRfp,
+} from '../../cms-matching/parallel-matrix-orchestrator';
+import { extractRequirementsFromQuickScan } from '../../cms-matching/requirements';
+import { generateBLRecommendation } from '../../quick-scan/workflow/steps/synthesis';
+import type { TechStack } from '../../quick-scan/schema';
 import { startCMSEvaluation } from '../../cms-matching/actions';
 import { modelNames } from '../../ai/config';
 import { getProviderForSlot } from '../../ai/providers';
@@ -25,7 +31,13 @@ import { extractTextFromPdf } from '../../bids/pdf-extractor';
 import { QUALIFICATION_QUESTIONS, type TenQuestionsPayload } from '../../bids/ten-questions';
 import { runTenQuestionsAgent } from '../../bids/ten-questions-agent';
 import { db } from '../../db';
-import { backgroundJobs, preQualifications, quickScans } from '../../db/schema';
+import {
+  backgroundJobs,
+  businessUnits,
+  preQualifications,
+  quickScans,
+  technologies,
+} from '../../db/schema';
 import { runExtractionAgentNative } from '../../extraction/agent-native';
 import type { ExtractedRequirements } from '../../extraction/schema';
 import { detectPII, cleanText } from '../../pii/pii-cleaner';
@@ -52,6 +64,32 @@ const PROGRESS = {
   TEN_QUESTIONS: 80,
   SECTION_PAGES: 90,
   COMPLETE: 100,
+};
+
+function getFallbackFeatures() {
+  return {
+    ecommerce: false,
+    userAccounts: false,
+    search: false,
+    multiLanguage: false,
+    blog: false,
+    forms: false,
+    api: false,
+    mobileApp: false,
+    customFeatures: [],
+  };
+}
+
+const EMPTY_TECH_STACK: TechStack = {
+  backend: [],
+  libraries: [],
+  analytics: [],
+  marketing: [],
+  javascriptFrameworks: [],
+  cssFrameworks: [],
+  headlessCms: [],
+  buildTools: [],
+  cdnProviders: [],
 };
 
 /**
@@ -755,6 +793,45 @@ export async function processPreQualJob(
         console.error('[PreQual Worker] Timeline generation failed:', error);
       }
 
+      let blRecommendation = result.blRecommendation;
+      if (!blRecommendation?.primaryBusinessLine) {
+        try {
+          const buRows = await db.select().from(businessUnits);
+          const buList = buRows
+            .map(bu => {
+              try {
+                return { name: bu.name, keywords: JSON.parse(bu.keywords) as string[] };
+              } catch {
+                return { name: bu.name, keywords: [] };
+              }
+            })
+            .filter(bu => bu.keywords.length > 0 || bu.name.length > 0);
+
+          if (buList.length > 0) {
+            blRecommendation = await generateBLRecommendation({
+              url: websiteUrl || 'document-only',
+              companyName: extractedRequirements?.customerName,
+              techStack: result.techStack || {},
+              contentVolume: {
+                estimatedPageCount: result.contentVolume?.estimatedPageCount ?? 0,
+                actualPageCount: result.contentVolume?.actualPageCount,
+                sitemapFound: result.contentVolume?.sitemapFound,
+                sitemapUrl: result.contentVolume?.sitemapUrl,
+                contentTypes: result.contentVolume?.contentTypes ?? [],
+                mediaAssets: result.contentVolume?.mediaAssets,
+                languages: result.contentVolume?.languages ?? [],
+                complexity: result.contentVolume?.complexity,
+              },
+              features: result.features || getFallbackFeatures(),
+              businessUnits: buList,
+              extractedRequirements,
+            });
+          }
+        } catch (error) {
+          console.error('[PreQual Worker] BL recommendation generation failed:', error);
+        }
+      }
+
       const quickScanPayload = {
         ...quickScan,
         status: 'completed' as const,
@@ -764,9 +841,9 @@ export async function processPreQualJob(
         hosting: result.techStack.hosting || null,
         contentVolume: JSON.stringify(result.contentVolume),
         features: JSON.stringify(result.features),
-        recommendedBusinessUnit: result.blRecommendation.primaryBusinessLine,
-        confidence: result.blRecommendation.confidence,
-        reasoning: result.blRecommendation.reasoning,
+        recommendedBusinessUnit: blRecommendation?.primaryBusinessLine ?? null,
+        confidence: blRecommendation?.confidence ?? null,
+        reasoning: blRecommendation?.reasoning ?? null,
         navigationStructure: result.navigationStructure
           ? JSON.stringify(result.navigationStructure)
           : null,
@@ -809,6 +886,62 @@ export async function processPreQualJob(
         );
       } catch (error) {
         console.error('[PreQual Worker] Failed to embed Quick Scan result:', error);
+      }
+
+      try {
+        await updateQualificationJob(backgroundJobId, {
+          currentStep: 'CMS-Matrix erstellen...',
+        });
+
+        const cmsTechs = await db
+          .select()
+          .from(technologies)
+          .where(ilike(technologies.category, 'cms'));
+
+        if (cmsTechs.length === 0) {
+          throw new Error('Keine CMS-Technologies gefunden (technologies.category="CMS")');
+        }
+
+        const cmsOptions = cmsTechs.map(t => {
+          let strengths: string[] = [];
+          let weaknesses: string[] = [];
+          try {
+            strengths = t.pros ? (JSON.parse(t.pros) as string[]) : [];
+          } catch {
+            strengths = [];
+          }
+          try {
+            weaknesses = t.cons ? (JSON.parse(t.cons) as string[]) : [];
+          } catch {
+            weaknesses = [];
+          }
+          return {
+            id: t.id,
+            name: t.name,
+            isBaseline: t.isDefault || false,
+            strengths,
+            weaknesses,
+          };
+        });
+
+        const requirements = extractRequirementsFromQuickScan({
+          features: result.features,
+          techStack: result.techStack,
+          contentVolume: result.contentVolume,
+          accessibilityAudit: result.accessibilityAudit,
+          legalCompliance: result.legalCompliance,
+          performanceIndicators: result.performanceIndicators,
+        });
+
+        const matrix = await runParallelMatrixResearch(requirements, cmsOptions, undefined, {
+          useCache: true,
+          saveToDb: true,
+          maxConcurrency: 5,
+        });
+
+        await saveMatrixToRfp(preQualificationId, matrix);
+      } catch (error) {
+        console.error('[PreQual Worker] CMS Matrix generation failed:', error);
       }
 
       const questions = await runTenQuestionsAgent({
@@ -892,6 +1025,99 @@ export async function processPreQualJob(
         })
         .where(eq(quickScans.id, quickScan.id));
 
+      try {
+        const buRows = await db.select().from(businessUnits);
+        const buList = buRows
+          .map(bu => {
+            try {
+              return { name: bu.name, keywords: JSON.parse(bu.keywords) as string[] };
+            } catch {
+              return { name: bu.name, keywords: [] };
+            }
+          })
+          .filter(bu => bu.keywords.length > 0 || bu.name.length > 0);
+
+        if (buList.length > 0) {
+          const blRecommendation = await generateBLRecommendation({
+            url: 'document-only',
+            companyName: extractedRequirements?.customerName,
+            techStack: EMPTY_TECH_STACK,
+            contentVolume: {
+              estimatedPageCount: 0,
+              contentTypes: [],
+              languages: [],
+            },
+            features: getFallbackFeatures(),
+            businessUnits: buList,
+            extractedRequirements,
+          });
+
+          await db
+            .update(quickScans)
+            .set({
+              recommendedBusinessUnit: blRecommendation.primaryBusinessLine,
+              confidence: blRecommendation.confidence,
+              reasoning: blRecommendation.reasoning,
+            })
+            .where(eq(quickScans.id, quickScan.id));
+        }
+      } catch (error) {
+        console.error('[PreQual Worker] BL recommendation (doc-only) failed:', error);
+      }
+
+      try {
+        await updateQualificationJob(backgroundJobId, {
+          currentStep: 'CMS-Matrix erstellen...',
+        });
+
+        const cmsTechs = await db
+          .select()
+          .from(technologies)
+          .where(ilike(technologies.category, 'cms'));
+
+        if (cmsTechs.length === 0) {
+          throw new Error('Keine CMS-Technologies gefunden (technologies.category="CMS")');
+        }
+
+        const cmsOptions = cmsTechs.map(t => {
+          let strengths: string[] = [];
+          let weaknesses: string[] = [];
+          try {
+            strengths = t.pros ? (JSON.parse(t.pros) as string[]) : [];
+          } catch {
+            strengths = [];
+          }
+          try {
+            weaknesses = t.cons ? (JSON.parse(t.cons) as string[]) : [];
+          } catch {
+            weaknesses = [];
+          }
+          return {
+            id: t.id,
+            name: t.name,
+            isBaseline: t.isDefault || false,
+            strengths,
+            weaknesses,
+          };
+        });
+
+        const requirements = extractRequirementsFromQuickScan({
+          features: getFallbackFeatures(),
+          techStack: {},
+          contentVolume: { estimatedPageCount: 0 },
+        });
+
+        const matrix = await runParallelMatrixResearch(requirements, cmsOptions, undefined, {
+          useCache: true,
+          saveToDb: true,
+          maxConcurrency: 5,
+        });
+
+        await saveMatrixToRfp(preQualificationId, matrix);
+      } catch (error) {
+        console.error('[PreQual Worker] CMS Matrix (doc-only) failed:', error);
+      }
+
       await updateStatus(preQualificationId, 'questions_ready');
       await updateQualificationJob(backgroundJobId, {
         progress: PROGRESS.QUICK_SCAN,
@@ -952,8 +1178,6 @@ export async function processPreQualJob(
             .update(quickScans)
             .set({
               tenQuestions: JSON.stringify(tenQuestions),
-              confidence: orchestratorResult.decision.confidence,
-              reasoning: orchestratorResult.decision.reasoning,
             })
             .where(eq(quickScans.id, existingQuickScan[0].id));
           console.log('[PreQual Worker] 10 Fragen aus Decision synthetisiert');
@@ -962,21 +1186,6 @@ export async function processPreQualJob(
     }
 
     await job.updateProgress(PROGRESS.QUICK_SCAN);
-
-    // ═══════════════════════════════════════════════════════════════
-    // STEP 5: FINALIZE (90-100%)
-    // ═══════════════════════════════════════════════════════════════
-    try {
-      await updateQualificationJob(backgroundJobId, {
-        currentStep: 'Management Summary erstellen',
-      });
-      const summaryResult = await runSummaryAgent({ preQualificationId });
-      if (!summaryResult.success || !summaryResult.data) {
-        console.warn('[PreQual Worker] Summary agent returned no output:', summaryResult.error);
-      }
-    } catch (error) {
-      console.error('[PreQual Worker] Summary agent failed:', error);
-    }
 
     await job.updateProgress(PROGRESS.COMPLETE);
     await updateQualificationJob(backgroundJobId, {

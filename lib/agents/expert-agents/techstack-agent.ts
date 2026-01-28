@@ -86,10 +86,26 @@ export async function runTechStackAgent(
         {
           requirements: [],
           cmsRequirements: {
+            explicit: [],
+            preferred: [],
+            excluded: [],
             flexibility: 'open',
+            headlessRequired: null,
+            multilingualRequired: null,
           },
-          integrations: {},
-          infrastructure: {},
+          integrations: {
+            sso: [],
+            erp: [],
+            crm: [],
+            payment: [],
+            other: [],
+          },
+          infrastructure: {
+            cloudProviders: [],
+            hostingRequirements: null,
+            securityCertifications: [],
+            complianceRequirements: [],
+          },
           complexityScore: 1,
           complexityFactors: ['No technical requirements found in Pre-Qualification'],
           confidence: 0,

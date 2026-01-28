@@ -196,7 +196,7 @@ function buildSummaryForStorage(analysis: ManagementSummary): string {
   if (analysis.keyFacts.submissionDeadline) {
     parts.push(`- Submission Deadline: ${analysis.keyFacts.submissionDeadline}`);
   }
-  if (analysis.keyFacts.daysRemaining !== undefined) {
+  if (analysis.keyFacts.daysRemaining !== null) {
     parts.push(`- Days Remaining: ${analysis.keyFacts.daysRemaining}`);
   }
 

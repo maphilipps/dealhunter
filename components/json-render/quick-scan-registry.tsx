@@ -54,6 +54,7 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableRow } from '@/components/ui/table';
 import {
+  TypographyH2,
   TypographyH3,
   TypographyLarge,
   TypographyList,
@@ -452,7 +453,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     };
 
     return (
-      <Card>
+      <Card className="bg-gray-50">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle as="h2">{title}</CardTitle>

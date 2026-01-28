@@ -48,6 +48,8 @@ export interface RequirementMatrix {
     id: string;
     name: string;
     isBaseline: boolean;
+    strengths?: string[];
+    weaknesses?: string[];
   }>;
   cells: MatrixCell[];
   metadata: {
@@ -132,6 +134,8 @@ export async function runParallelMatrixResearch(
     id: string;
     name: string;
     isBaseline: boolean;
+    strengths?: string[];
+    weaknesses?: string[];
   }>,
   emit?: MatrixEventEmitter,
   options?: {
@@ -391,14 +395,21 @@ export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchin
       .map(c => c.requirement)
       .slice(0, 5);
 
+    const combinedStrengths = Array.from(
+      new Set([...(tech.strengths ?? []), ...strengths].filter(Boolean))
+    ).slice(0, 6);
+    const combinedWeaknesses = Array.from(
+      new Set([...(tech.weaknesses ?? []), ...weaknesses].filter(Boolean))
+    ).slice(0, 6);
+
     return {
       id: tech.id,
       name: tech.name,
       category: 'CMS',
       isBaseline: tech.isBaseline,
       overallScore,
-      strengths,
-      weaknesses,
+      strengths: combinedStrengths,
+      weaknesses: combinedWeaknesses,
     };
   });
 

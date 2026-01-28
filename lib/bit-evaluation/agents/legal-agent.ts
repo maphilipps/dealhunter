@@ -1,5 +1,3 @@
-import OpenAI from 'openai';
-
 import {
   legalAssessmentSchema,
   type LegalAssessment,
@@ -8,97 +6,127 @@ import {
 } from '../schema';
 
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
-import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
-
-// Security: Prompt Injection Protection
+import { generateStructuredOutput } from '@/lib/ai/config';
 import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
-
-// Initialize OpenAI client with adesso AI Hub
-const openai = new OpenAI({
-  apiKey: AI_HUB_API_KEY,
-  baseURL: AI_HUB_BASE_URL,
-});
 
 export interface LegalAgentInput {
   extractedRequirements: any;
   quickScanResults?: any;
-  useWebSearch?: boolean; // Web Search für Vertrags-Recherche
-  level?: 'quick' | 'full'; // DEA-8: Quick Check (BD) vs Full Check (BL)
+  useWebSearch?: boolean;
+  level?: 'quick' | 'full';
 }
 
-/**
- * DEA-8: Legal Quick Check (BD-Level)
- * Fast risk assessment focusing on critical red flags
- */
-export async function runLegalQuickCheck(input: LegalAgentInput): Promise<LegalQuickCheck> {
-  const completion = await openai.chat.completions.create({
-    model: 'gemini-3-flash-preview',
-    messages: [
-      {
-        role: 'system',
-        content: `Du bist ein erfahrener Legal Risk Assessor bei adesso SE.
+const legalQuickCheckSystemPrompt = `Du bist ein Legal Risk Assessor bei adesso SE.
+
+## Deine Aufgabe
 Führe einen SCHNELLEN Legal Quick Check durch - fokussiere auf KRITISCHE Red Flags.
-Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
 
-WICHTIG: Alle Texte auf Deutsch.`,
-      },
-      {
-        role: 'user',
-        content: `Perform a QUICK legal risk check for this project. Focus on CRITICAL red flags only.
+## Red Flag Kategorien
 
-Extracted Requirements:
+| Kategorie | Beispiele |
+|-----------|-----------|
+| liability | Unbegrenzte Haftung, unfaire Haftungsklauseln |
+| penalty | Unrealistische Pönalen (>10% Budget) |
+| ip | Problematische IP-Übertragungsklauseln |
+| warranty | Überzogene Gewährleistungsanforderungen |
+| termination | Unfaire Kündigungsklauseln |
+| jurisdiction | Problematische Gerichtsstände |
+
+## Risiko-Score (1-10)
+- 1-3: Niedriges Risiko, Standard-Vertrag
+- 4-6: Mittleres Risiko, Verhandlung empfohlen
+- 7-8: Hohes Risiko, detaillierte Prüfung nötig
+- 9-10: Kritisches Risiko, potentieller Deal-Breaker
+
+## Ausgabesprache
+Alle Texte auf Deutsch.`;
+
+export async function runLegalQuickCheck(input: LegalAgentInput): Promise<LegalQuickCheck> {
+  const userPrompt = `Führe einen SCHNELLEN Legal Quick Check durch. Fokussiere auf KRITISCHE Red Flags.
+
+## Extrahierte Anforderungen
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${
   input.quickScanResults
-    ? `Quick Scan Results:
+    ? `## Quick Scan Ergebnisse
 ${JSON.stringify(input.quickScanResults, null, 2)}`
     : ''
 }
 
-Critical Red Flag Categories to check:
-- **liability**: Unbegrenzte Haftung, unfaire Haftungsklauseln
-- **penalty**: Unrealistische Pönalen (>10% Budget)
-- **ip**: Problematische IP-Übertragungsklauseln
-- **warranty**: Überzogene Gewährleistungsanforderungen
-- **termination**: Unfaire Kündigungsklauseln
-- **jurisdiction**: Problematische Gerichtsstände
+## Deine Bewertung
+Identifiziere:
+1. Kritische Red Flags (criticalFlags mit category, severity, description, clauseReference)
+2. Compliance-Hinweise (complianceHints)
+3. Braucht es eine detaillierte Prüfung? (requiresDetailedReview)
+4. Schneller Risiko-Score 1-10 (quickRiskScore)
+5. Confidence und kurze Begründung (reasoning)`;
 
-Respond with JSON containing:
-- criticalFlags (array): List of critical red flags found with category, severity, description (German), and clauseReference
-- complianceHints (array of strings): Hints about compliance topics that need attention (German)
-- requiresDetailedReview (boolean): Whether full legal review is required
-- quickRiskScore (number 1-10): Quick risk score (1=low, 10=critical)
-- confidence (number 0-100): Confidence in this quick check
-- reasoning (string): Quick assessment reasoning (German, 2-3 sentences)`,
-      },
-    ],
+  return generateStructuredOutput({
+    model: 'fast',
+    schema: legalQuickCheckSchema,
+    system: legalQuickCheckSystemPrompt,
+    prompt: userPrompt,
     temperature: 0.3,
-    max_tokens: 2000,
   });
-
-  const responseText = completion.choices[0]?.message?.content || '{}';
-  const cleanedResponse = responseText
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '')
-    .trim();
-
-  const rawResult = JSON.parse(cleanedResponse);
-  return legalQuickCheckSchema.parse(rawResult);
 }
 
-/**
- * BIT-006: Legal Assessment Agent (DEA-8 Enhanced)
- * Evaluates legal and contractual risks with two-level support
- * UPGRADED: Mit Web Search für Vertrags- und Compliance-Recherche
- */
+const legalFullCheckSystemPrompt = `Du bist ein Legal Risk Assessor bei adesso SE.
+
+## Deine Aufgabe
+Führe eine VOLLSTÄNDIGE rechtliche und vertragliche Risikoanalyse durch.
+
+## adesso Standard Legal Position
+- **Vertragstypen**: Präferiert T&M oder Hybrid; Fixed Price nur bei klarem Scope
+- **Zahlungsziele**: Standard 30 Tage netto; Meilenstein-basiert akzeptabel
+- **Haftung**: Standard-Caps auf Vertragswert; KEINE unbegrenzte Haftung
+- **IP**: Wir behalten IP für wiederverwendbare Komponenten
+- **Compliance**: DSGVO-konform; SOC2/ISO27001 zertifiziert
+- **Ausstieg**: Angemessene Kündigungsfristen (30-90 Tage)
+
+## Prüfbereiche
+
+### 1. Vertragstyp (contractTypeAssessment)
+- Typ erkennen (Fixed Price, T&M, Outcome-based, etc.)
+- Für adesso akzeptabel?
+- Vertragsrisiken
+
+### 2. Zahlungsrisiken (paymentRiskAssessment)
+- Zahlungsbedingungen
+- Risiko-Level (low/medium/high)
+- Spezifische Risiken
+
+### 3. Haftung (liabilityAssessment)
+- Unbegrenzte Haftung? (KRITISCH!)
+- Haftungs-Caps
+- Haftungsrisiken
+
+### 4. IP & Lizenzen (ipAndLicenseAssessment)
+- IP-Transfer erforderlich?
+- Lizenzanforderungen
+- IP-Risiken
+
+### 5. Compliance (complianceCheck)
+- Vergaberecht (VOB, VGV, UVgO, EU-Schwellenwert)
+- Rahmenvertrag?
+- Subunternehmer-Regelungen
+
+### 6. Ausstiegsklauseln (exitClauseAssessment)
+- Angemessene Exit-Klauseln?
+- Ausstiegsbedingungen
+- Exit-Risiken
+
+### 7. Red Flags (allRedFlags)
+- Alle identifizierten Red Flags mit Kategorie, Severity, Beschreibung
+
+## Ausgabesprache
+Alle Texte auf Deutsch.`;
+
 export async function runLegalAgent(input: LegalAgentInput): Promise<LegalAssessment> {
-  // DEA-8: Support quick check or full check
   const level = input.level || 'full';
 
-  // Always run quick check first
   const quickCheck = level === 'quick' ? await runLegalQuickCheck(input) : undefined;
-  // === Intelligent Research Phase ===
+
   let contractInsights = '';
   let complianceInsights = '';
 
@@ -109,7 +137,6 @@ export async function runLegalAgent(input: LegalAgentInput): Promise<LegalAssess
       const contractType = input.extractedRequirements?.contractType;
       const industry = input.quickScanResults?.companyIntelligence?.basicInfo?.industry;
 
-      // EVB-IT / Vertragstyp Recherche
       if (contractType && contractType.toLowerCase().includes('evb')) {
         const evbSearch = await intelligentTools.webSearch(
           `EVB-IT ${contractType} Vertrag Risiken Konditionen IT-Dienstleistung`,
@@ -122,13 +149,11 @@ export async function runLegalAgent(input: LegalAgentInput): Promise<LegalAssess
             .map(r => `- ${r.title}: ${r.snippet}`)
             .join('\n');
 
-          // Wrap web search results for prompt injection protection
-          contractInsights = `\n\n**EVB-IT Vertrags-Insights (EXA):**\n${wrapUserContent(rawEvbData, 'web')}`;
+          contractInsights = `\n\n### EVB-IT Vertrags-Insights\n${wrapUserContent(rawEvbData, 'web')}`;
           console.log(`[Legal Agent] ${evbSearch.length} Vertrags-Insights gefunden`);
         }
       }
 
-      // Branchenspezifische Compliance-Anforderungen
       if (industry) {
         const complianceSearch = await intelligentTools.webSearch(
           `${industry} IT compliance DSGVO Anforderungen Deutschland 2024`,
@@ -141,8 +166,7 @@ export async function runLegalAgent(input: LegalAgentInput): Promise<LegalAssess
             .map(r => `- ${r.title}: ${r.snippet}`)
             .join('\n');
 
-          // Wrap web search results for prompt injection protection
-          complianceInsights = `\n\n**Branchenspezifische Compliance (EXA):**\n${wrapUserContent(rawCompData, 'web')}`;
+          complianceInsights = `\n\n### Branchenspezifische Compliance\n${wrapUserContent(rawCompData, 'web')}`;
           console.log(`[Legal Agent] ${complianceSearch.length} Compliance-Insights gefunden`);
         }
       }
@@ -151,164 +175,84 @@ export async function runLegalAgent(input: LegalAgentInput): Promise<LegalAssess
     }
   }
 
-  // DEA-8: For full check, run comprehensive analysis
   let fullCheck = undefined;
   if (level === 'full') {
-    const completion = await openai.chat.completions.create({
-      model: 'gemini-3-flash-preview',
-      messages: [
-        {
-          role: 'system',
-          content: `Du bist ein erfahrener Legal Risk Assessor bei adesso SE.
-Bewerte GRÜNDLICH die rechtlichen und vertraglichen Risiken dieser Opportunity.
-Führe eine VOLLSTÄNDIGE Compliance-Prüfung durch (Vergaberecht, Rahmenverträge, Subunternehmer).
-Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
+    const fullCheckSchema = legalAssessmentSchema.shape.fullCheck.unwrap();
 
-WICHTIG: Gib immer eine fundierte Einschätzung ab. Alle Begründungen und Texte auf Deutsch.`,
-        },
-        {
-          role: 'user',
-          content: `Evaluate the legal and contractual risks for this project opportunity comprehensively.
+    const userPrompt = `Führe eine VOLLSTÄNDIGE rechtliche Risikoanalyse durch.
 
-Extracted Requirements:
+## Extrahierte Anforderungen
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${
   input.quickScanResults
-    ? `
-Quick Scan Results:
-${JSON.stringify(input.quickScanResults, null, 2)}
-`
+    ? `## Quick Scan Ergebnisse
+${JSON.stringify(input.quickScanResults, null, 2)}`
     : ''
 }
 ${contractInsights}
 ${complianceInsights}
 
-adesso's Standard Legal Position:
-- **Contract Types:** Preferred T&M or hybrid models; Fixed Price only with clear scope
-- **Payment Terms:** Standard 30 days net; milestone-based acceptable
-- **Liability:** Standard caps at contract value or lower; no unlimited liability
-- **IP:** Retain IP for reusable components; customer-specific deliverables transfer acceptable
-- **Compliance:** GDPR compliant; SOC2/ISO27001 certification available
-- **Exit:** Reasonable notice periods (30-90 days); mutual termination rights
+## Deine vollständige Analyse
+Analysiere alle 6 Bereiche und identifiziere alle Red Flags.`;
 
-Respond with JSON containing a "fullCheck" object with:
-- contractTypeAssessment (object):
-  - contractType (string): Type of contract (fixed price, T&M, outcome-based, etc.)
-  - isAcceptable (boolean): Is this contract type acceptable for adesso?
-  - contractRisks (array of strings): Risks related to contract type (German)
-- paymentRiskAssessment (object):
-  - paymentTerms (string): Payment terms description (e.g., "30 days net") (German)
-  - paymentRiskLevel (string: "low", "medium", or "high"): Risk level
-  - paymentRisks (array of strings): Payment-related risks (German)
-- liabilityAssessment (object):
-  - hasUnlimitedLiability (boolean): Does contract require unlimited liability?
-  - liabilityCaps (string): Description of liability caps if any (German)
-  - liabilityRisks (array of strings): Liability-related risks (German)
-- ipAndLicenseAssessment (object):
-  - ipTransferRequired (boolean): Is IP transfer to customer required?
-  - licenseRequirements (array of strings): License requirements or restrictions (German)
-  - ipRisks (array of strings): IP and licensing risks (German)
-- complianceCheck (object):
-  - procurementLaw (object):
-    - applicable (boolean): Is procurement law applicable?
-    - type (string: "vob", "vgv", "uvgo", "eu_threshold", or "none"): Type of procurement law
-    - requirements (array of strings): Procurement requirements (German)
-    - deadlines (array of objects with name and date): Procurement deadlines (German)
-  - frameworkAgreement (object):
-    - isFramework (boolean): Is this a framework agreement?
-    - existingFramework (string, optional): Name of existing framework (German)
-    - callOffRules (array of strings): Call-off rules (German)
-  - subcontractor (object):
-    - allowed (boolean): Are subcontractors allowed?
-    - restrictions (array of strings): Restrictions on subcontractors (German)
-    - reportingRequirements (array of strings): Reporting requirements (German)
-- exitClauseAssessment (object):
-  - hasReasonableExit (boolean): Are exit clauses reasonable?
-  - exitConditions (array of strings): Exit conditions in contract (German)
-  - exitRisks (array of strings): Exit-related risks (German)
-- allRedFlags (array): All identified red flags with category ("liability", "penalty", "ip", "warranty", "termination", "jurisdiction"), severity ("critical" or "warning"), description (German), and optional clauseReference`,
-        },
-      ],
+    fullCheck = await generateStructuredOutput({
+      model: 'quality',
+      schema: fullCheckSchema,
+      system: legalFullCheckSystemPrompt,
+      prompt: userPrompt,
       temperature: 0.3,
-      max_tokens: 4000,
     });
-
-    const responseText = completion.choices[0]?.message?.content || '{}';
-    const cleanedResponse = responseText
-      .replace(/```json\n?/g, '')
-      .replace(/```\n?/g, '')
-      .trim();
-
-    const rawResult = JSON.parse(cleanedResponse);
-    fullCheck = rawResult.fullCheck || rawResult;
   }
 
-  // Calculate overall scores
   const legalRiskScore =
-    quickCheck?.quickRiskScore ||
-    (fullCheck ? Math.round((100 - (fullCheck.overallLegalScore || 50)) / 10) : 5);
-  const overallLegalScore = quickCheck
-    ? Math.max(0, 100 - quickCheck.quickRiskScore * 10)
-    : fullCheck?.overallLegalScore || 50;
+    quickCheck?.quickRiskScore || (fullCheck ? Math.round((100 - 50) / 10) : 5);
+  const overallLegalScore = quickCheck ? Math.max(0, 100 - quickCheck.quickRiskScore * 10) : 50;
 
-  // Combine results
-  const finalCompletion = await openai.chat.completions.create({
-    model: 'gemini-3-flash-preview',
-    messages: [
-      {
-        role: 'system',
-        content: `Du bist Legal Risk Assessor. Erstelle eine finale Zusammenfassung.
-Antworte mit validem JSON ohne Markdown-Code-Blöcke.`,
-      },
-      {
-        role: 'user',
-        content: `Create final legal assessment summary based on:
+  const summarySystemPrompt = `Du bist Legal Risk Assessor. Erstelle eine finale Zusammenfassung auf Deutsch.`;
+
+  const summaryUserPrompt = `Erstelle eine finale Legal-Bewertung basierend auf:
 
 ${
   quickCheck
-    ? `Quick Check Results:
+    ? `## Quick Check
 ${JSON.stringify(quickCheck, null, 2)}`
     : ''
 }
 
 ${
   fullCheck
-    ? `Full Check Results:
+    ? `## Full Check
 ${JSON.stringify(fullCheck, null, 2)}`
     : ''
 }
 
-Provide:
-- overallLegalScore (number 0-100): ${overallLegalScore}
-- legalRiskScore (number 1-10): ${legalRiskScore}
-- confidence (number 0-100): Confidence level
-- reasoning (string): Detailed reasoning in German (min 3-4 sentences)
-- criticalBlockers (array of strings): Critical blockers in German`,
-      },
-    ],
-    temperature: 0.3,
-    max_tokens: 1000,
+## Zu liefern
+- overallLegalScore: ${overallLegalScore}
+- legalRiskScore: ${legalRiskScore}
+- confidence (0-100)
+- reasoning (ausführliche Begründung auf Deutsch, 3-4 Sätze)
+- criticalBlockers (kritische Blocker auf Deutsch)`;
+
+  const summarySchema = legalAssessmentSchema.pick({
+    overallLegalScore: true,
+    legalRiskScore: true,
+    confidence: true,
+    reasoning: true,
+    criticalBlockers: true,
   });
 
-  const finalResponseText = finalCompletion.choices[0]?.message?.content || '{}';
-  const finalCleanedResponse = finalResponseText
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '')
-    .trim();
+  const summary = await generateStructuredOutput({
+    model: 'fast',
+    schema: summarySchema,
+    system: summarySystemPrompt,
+    prompt: summaryUserPrompt,
+    temperature: 0.3,
+  });
 
-  const finalResult = JSON.parse(finalCleanedResponse);
-
-  // DEA-8: Construct the full legal assessment with two-level support
-  const result: LegalAssessment = {
-    quickCheck: quickCheck,
-    fullCheck: fullCheck,
-    overallLegalScore: finalResult.overallLegalScore || overallLegalScore,
-    legalRiskScore: finalResult.legalRiskScore || legalRiskScore,
-    confidence: finalResult.confidence || quickCheck?.confidence || 50,
-    reasoning: finalResult.reasoning || 'Rechtliche Analyse durchgeführt.',
-    criticalBlockers: finalResult.criticalBlockers || [],
-  };
-
-  return legalAssessmentSchema.parse(result);
+  return legalAssessmentSchema.parse({
+    quickCheck,
+    fullCheck,
+    ...summary,
+  });
 }

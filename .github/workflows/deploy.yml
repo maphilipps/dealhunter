@@ -53,6 +53,9 @@ jobs:
             echo "📦 Installing dependencies..."
             npm ci --prefer-offline
 
+            echo "🧹 Cleaning old build artifacts..."
+            rm -rf .next
+
             echo "🔨 Building application..."
             npm run build
 

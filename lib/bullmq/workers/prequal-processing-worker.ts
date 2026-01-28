@@ -952,8 +952,6 @@ export async function processPreQualJob(
             .update(quickScans)
             .set({
               tenQuestions: JSON.stringify(tenQuestions),
-              recommendedBusinessUnit:
-                orchestratorResult.decision.recommendation === 'bid' ? 'dxs' : null,
               confidence: orchestratorResult.decision.confidence,
               reasoning: orchestratorResult.decision.reasoning,
             })

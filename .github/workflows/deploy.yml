@@ -54,15 +54,15 @@ jobs:
             npm ci --prefer-offline
 
             echo "🧹 Cleaning old build artifacts..."
-            sudo rm -rf .next
+            rm -rf .next
 
             echo "🔨 Building application..."
             npm run build
 
             echo "🔄 Restarting services..."
-            sudo pm2 restart dealhunter || sudo pm2 start npm --name dealhunter -- start
-            sudo pm2 restart dealhunter-worker || echo "Worker not configured"
+            pm2 restart dealhunter || pm2 start npm --name dealhunter -- start
+            pm2 restart dealhunter-worker || echo "Worker not configured"
 
             echo "✅ Deployment complete!"
-            sudo pm2 list
+            pm2 list
           EOF

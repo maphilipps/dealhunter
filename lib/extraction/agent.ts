@@ -116,11 +116,11 @@ const EXTRACTION_FIELDS: FieldDefinition[] = [
     name: 'projectName',
     displayName: 'Projektname',
     queries: {
-      de: 'Projekt Name Titel Bezeichnung Vorhaben Ausschreibung Gegenstand',
-      en: 'Pre-Qualification project title name subject matter scope platform website mobile app',
+      de: 'Projekt Name Titel Bezeichnung Vorhaben Ausschreibung Gegenstand offiziell formell',
+      en: 'Pre-Qualification project title name subject matter official formal tender',
     },
     extractPrompt:
-      'Extrahiere den Projektnamen oder -titel aus dem Pre-Qualification-Dokument. Antworte NUR mit dem Namen, nichts anderes.',
+      'Extrahiere den OFFIZIELLEN Projektnamen oder Ausschreibungstitel aus dem Dokument. Suche nach formalen Bezeichnungen wie "Projekt:", "Ausschreibung:", "Gegenstand:" oder ähnlichen Überschriften. Ignoriere beiläufig erwähnte Begriffe oder Website-Namen. Antworte NUR mit dem offiziellen Namen, nichts anderes.',
   },
   {
     name: 'projectDescription',

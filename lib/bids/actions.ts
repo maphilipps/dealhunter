@@ -35,85 +35,36 @@ export async function getBids(options?: { sortBy?: string; sortOrder?: 'asc' | '
   const { sortBy = 'createdAt', sortOrder = 'desc' } = options || {};
 
   try {
-    // Build base query with database sorting for direct fields
-    let bidsWithUser;
+    // Map UI sort column names to database columns
+    const sortFieldMap = {
+      phase: preQualifications.stage,
+      entscheidung: preQualifications.decision,
+      createdAt: preQualifications.createdAt,
+    } as const;
 
-    if (sortBy === 'phase') {
-      bidsWithUser = await db
-        .select({
-          id: preQualifications.id,
-          userId: preQualifications.userId,
-          userName: users.name,
-          source: preQualifications.source,
-          stage: preQualifications.stage,
-          status: preQualifications.status,
-          decision: preQualifications.decision,
-          extractedRequirements: preQualifications.extractedRequirements,
-          createdAt: preQualifications.createdAt,
-        })
-        .from(preQualifications)
-        .leftJoin(users, eq(preQualifications.userId, users.id))
-        .where(eq(preQualifications.userId, session.user.id))
-        .orderBy(
-          sortOrder === 'asc' ? asc(preQualifications.stage) : desc(preQualifications.stage)
-        );
-    } else if (sortBy === 'entscheidung') {
-      bidsWithUser = await db
-        .select({
-          id: preQualifications.id,
-          userId: preQualifications.userId,
-          userName: users.name,
-          source: preQualifications.source,
-          stage: preQualifications.stage,
-          status: preQualifications.status,
-          decision: preQualifications.decision,
-          extractedRequirements: preQualifications.extractedRequirements,
-          createdAt: preQualifications.createdAt,
-        })
-        .from(preQualifications)
-        .leftJoin(users, eq(preQualifications.userId, users.id))
-        .where(eq(preQualifications.userId, session.user.id))
-        .orderBy(
-          sortOrder === 'asc' ? asc(preQualifications.decision) : desc(preQualifications.decision)
-        );
-    } else if (sortBy === 'createdAt') {
-      bidsWithUser = await db
-        .select({
-          id: preQualifications.id,
-          userId: preQualifications.userId,
-          userName: users.name,
-          source: preQualifications.source,
-          stage: preQualifications.stage,
-          status: preQualifications.status,
-          decision: preQualifications.decision,
-          extractedRequirements: preQualifications.extractedRequirements,
-          createdAt: preQualifications.createdAt,
-        })
-        .from(preQualifications)
-        .leftJoin(users, eq(preQualifications.userId, users.id))
-        .where(eq(preQualifications.userId, session.user.id))
-        .orderBy(
-          sortOrder === 'asc' ? asc(preQualifications.createdAt) : desc(preQualifications.createdAt)
-        );
-    } else {
-      // For JSON field sorts (leadname, kunde), fetch with default ordering
-      bidsWithUser = await db
-        .select({
-          id: preQualifications.id,
-          userId: preQualifications.userId,
-          userName: users.name,
-          source: preQualifications.source,
-          stage: preQualifications.stage,
-          status: preQualifications.status,
-          decision: preQualifications.decision,
-          extractedRequirements: preQualifications.extractedRequirements,
-          createdAt: preQualifications.createdAt,
-        })
-        .from(preQualifications)
-        .leftJoin(users, eq(preQualifications.userId, users.id))
-        .where(eq(preQualifications.userId, session.user.id))
-        .orderBy(desc(preQualifications.createdAt));
-    }
+    // Determine order function
+    const orderFn = sortOrder === 'asc' ? asc : desc;
+
+    // Determine ORDER BY clause (null for JSON fields that need JS sorting)
+    const orderByField = sortFieldMap[sortBy as keyof typeof sortFieldMap];
+
+    // Build and execute query (single query, no duplication!)
+    const bidsWithUser = await db
+      .select({
+        id: preQualifications.id,
+        userId: preQualifications.userId,
+        userName: users.name,
+        source: preQualifications.source,
+        stage: preQualifications.stage,
+        status: preQualifications.status,
+        decision: preQualifications.decision,
+        extractedRequirements: preQualifications.extractedRequirements,
+        createdAt: preQualifications.createdAt,
+      })
+      .from(preQualifications)
+      .leftJoin(users, eq(preQualifications.userId, users.id))
+      .where(eq(preQualifications.userId, session.user.id))
+      .orderBy(orderByField ? orderFn(orderByField) : desc(preQualifications.createdAt));
 
     // JavaScript sorting for JSON fields (leadname, kunde)
     if (sortBy === 'leadname' || sortBy === 'kunde') {

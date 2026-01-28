@@ -1,0 +1,63 @@
+# DealHunter / Leads App - Caddy Configuration
+#
+# Copy this file to /etc/caddy/Caddyfile on your server
+# Then run: sudo systemctl reload caddy
+#
+# Caddy will automatically obtain SSL certificates from Let's Encrypt
+
+leads.adesso-dx-phpxcom.de {
+    # Reverse proxy to Next.js app running on port 3000
+    reverse_proxy localhost:3000 {
+        # Preserve important headers
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Access & Error Logs
+    log {
+        output file /var/log/caddy/leads.log {
+            roll_size 100mb
+            roll_keep 5
+            roll_keep_for 720h
+        }
+        format json
+    }
+
+    # Security Headers
+    header {
+        # HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+        # Clickjacking protection
+        X-Frame-Options "SAMEORIGIN"
+
+        # MIME sniffing protection
+        X-Content-Type-Options "nosniff"
+
+        # XSS protection
+        X-XSS-Protection "1; mode=block"
+
+        # Referrer policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+
+        # Permissions policy
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    }
+
+    # Compression
+    encode {
+        gzip 6
+        zstd
+    }
+
+    # Health check endpoint (no caching)
+    @health {
+        path /api/health
+    }
+    handle @health {
+        reverse_proxy localhost:3000
+        header Cache-Control "no-store, no-cache, must-revalidate"
+    }
+}

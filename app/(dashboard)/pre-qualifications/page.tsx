@@ -60,9 +60,14 @@ export default async function BidsPage() {
             <CardTitle className="text-3xl">
               {
                 bids.filter(b =>
-                  ['draft', 'processing', 'extracting', 'reviewing', 'quick_scanning', 'evaluating'].includes(
-                    b.status
-                  )
+                  [
+                    'draft',
+                    'processing',
+                    'extracting',
+                    'reviewing',
+                    'quick_scanning',
+                    'evaluating',
+                  ].includes(b.status)
                 ).length
               }
             </CardTitle>
@@ -99,7 +104,7 @@ export default async function BidsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>User</TableHead>
+                  <TableHead>Leadname</TableHead>
                   <TableHead>Kunde</TableHead>
                   <TableHead>Phase</TableHead>
                   <TableHead>Status</TableHead>
@@ -159,7 +164,9 @@ export default async function BidsPage() {
                       </TableCell>
                       <TableCell>
                         <Link href={`/pre-qualifications/${bid.id}`} className="block w-full">
-                          {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('de-DE') : '-'}
+                          {bid.createdAt
+                            ? new Date(bid.createdAt).toLocaleDateString('de-DE')
+                            : '-'}
                         </Link>
                       </TableCell>
                       <TableCell className="text-right">

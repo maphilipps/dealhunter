@@ -522,10 +522,14 @@ RULES:
 
 BEST PRACTICES:
 - Use Grid as root for responsive layouts
-- Group related data in ResultCards
+- CREATE MULTIPLE Cards: Use separate Section or ResultCard for each topic (tech, content, features, etc.)
+- DON'T wrap everything in ONE Section - split into logical groups
+- Example structure: Grid → [Section "Tech Stack", Section "Features", Section "Content Analysis"]
 - Show most important info first (BL Recommendation)
 - Use ScoreCard for audit scores
 - Use FeatureList for boolean checks
-- Use ContentTypeDistribution for data breakdowns`;
+- Use ContentTypeDistribution for data breakdowns
+
+CRITICAL: Create MULTIPLE Sections/ResultCards, NOT one giant Section wrapping everything!`;
 
 export type QuickScanCatalogComponents = keyof typeof quickScanCatalogSchema;

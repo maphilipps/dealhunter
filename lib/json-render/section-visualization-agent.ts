@@ -130,7 +130,12 @@ Create a well-organized visualization that:
 1. Highlights the most important findings for this section
 2. Uses appropriate components for the data types
 3. Groups related information logically
-4. Shows confidence levels where relevant`;
+4. Shows confidence levels where relevant
+
+IMPORTANT: Create MULTIPLE Sections or ResultCards (NOT one giant Section wrapping everything):
+- Separate Section for each topic (e.g., "Tech Stack", "Features", "Content Analysis")
+- Example: Grid → [Section "Tech Stack", Section "Features", Section "Content"]
+- Do NOT put everything inside a single Section/ResultCard`;
 
   // Add refinement prompt if provided
   if (refinementPrompt) {

@@ -23,6 +23,7 @@
     "db:seed:test": "npx tsx scripts/seed-test-users.ts",
     "db:seed:dax": "npx tsx scripts/seed-dax-data.ts",
     "db:seed:massive": "npx tsx scripts/seed-massive-data.ts",
+    "db:reset": "./scripts/reset-database.sh",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",

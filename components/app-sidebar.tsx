@@ -24,11 +24,11 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   };
 }
 
-// PHPXCOM Qualifier app branding
+// PHPXCOM Leads app branding
 const appBranding = {
   name: 'PHPXCOM',
   logo: '/logo.png',
-  subtitle: 'Qualifier',
+  subtitle: 'Leads',
 };
 
 type UserRole = 'bd' | 'bl' | 'admin';

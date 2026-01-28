@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 
 import { DeletePreQualificationButton } from '@/components/pre-qualifications/delete-prequalification-button';
 import { PreQualificationsEmptyStateClient } from '@/components/pre-qualifications/pre-qualifications-empty-state-client';
+import { SortableTableHead } from '@/components/pre-qualifications/sortable-table-head';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,14 +19,27 @@ import {
 import { auth } from '@/lib/auth';
 import { getBids } from '@/lib/bids/actions';
 
-export default async function BidsPage() {
+interface PreQualificationsPageProps {
+  searchParams: Promise<{ sort?: string; order?: 'asc' | 'desc' }>;
+}
+
+export default async function BidsPage({ searchParams }: PreQualificationsPageProps) {
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect('/login');
   }
 
-  const result = await getBids();
+  // Extract and validate searchParams
+  const params = await searchParams;
+  const { sort = 'createdAt', order = 'desc' } = params;
+
+  const validSortColumns = ['leadname', 'kunde', 'phase', 'entscheidung', 'createdAt'];
+  const sortBy = validSortColumns.includes(sort) ? sort : 'createdAt';
+  const sortOrder = order === 'asc' ? 'asc' : 'desc';
+
+  // Get bids with sorting
+  const result = await getBids({ sortBy, sortOrder });
   const bids = result.bids || [];
 
   return (
@@ -104,12 +118,11 @@ export default async function BidsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Leadname</TableHead>
-                  <TableHead>Kunde</TableHead>
-                  <TableHead>Phase</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Entscheidung</TableHead>
-                  <TableHead>Erstellt</TableHead>
+                  <SortableTableHead column="leadname" label="Leadname" />
+                  <SortableTableHead column="kunde" label="Kunde" />
+                  <SortableTableHead column="phase" label="Phase" />
+                  <SortableTableHead column="entscheidung" label="Entscheidung" />
+                  <SortableTableHead column="createdAt" label="Erstellt" />
                   <TableHead className="text-right">Aktionen</TableHead>
                 </TableRow>
               </TableHeader>
@@ -158,11 +171,6 @@ export default async function BidsPage() {
                       </TableCell>
                       <TableCell>
                         <Link href={`/pre-qualifications/${bid.id}`} className="block w-full">
-                          <StatusBadge status={bid.status} />
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Link href={`/pre-qualifications/${bid.id}`} className="block w-full">
                           <DecisionBadge decision={bid.decision} />
                         </Link>
                       </TableCell>
@@ -192,38 +200,6 @@ export default async function BidsPage() {
       </Card>
     </div>
   );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const statusConfig: Record<
-    string,
-    { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
-  > = {
-    // Initial & Extraction
-    draft: { label: 'Entwurf', variant: 'secondary' },
-    processing: { label: 'Wird verarbeitet', variant: 'default' },
-    extracting: { label: 'Extraktion', variant: 'default' },
-    reviewing: { label: 'Review', variant: 'default' },
-    // Evaluation
-    quick_scanning: { label: 'Qualification', variant: 'default' },
-    evaluating: { label: 'Evaluierung', variant: 'default' },
-    decision_made: { label: 'Entschieden', variant: 'outline' },
-    // NO BIT Path
-    archived: { label: 'Archiviert', variant: 'secondary' },
-    // BIT Path
-    routed: { label: 'Weitergeleitet', variant: 'outline' },
-    full_scanning: { label: 'Deep Analysis', variant: 'default' },
-    bl_reviewing: { label: 'BL-Review', variant: 'default' },
-    team_assigned: { label: 'Team zugewiesen', variant: 'outline' },
-    notified: { label: 'Benachrichtigt', variant: 'outline' },
-    handed_off: { label: 'Abgeschlossen', variant: 'outline' },
-    // Legacy
-    analysis_complete: { label: 'Analyse fertig', variant: 'outline' },
-  };
-
-  const config = statusConfig[status] || { label: status, variant: 'secondary' as const };
-
-  return <Badge variant={config.variant}>{config.label}</Badge>;
 }
 
 function DecisionBadge({ decision }: { decision: string | null }) {

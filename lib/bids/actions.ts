@@ -1,6 +1,6 @@
 'use server';
 
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, asc } from 'drizzle-orm';
 
 import { extractTextFromPdf } from './pdf-extractor';
 
@@ -25,14 +25,30 @@ function canAccessBid(bid: PreQualification, userId: string, userRole: string): 
 /**
  * Get all bids for the current user
  */
-export async function getBids() {
+export async function getBids(options?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }) {
   const session = await auth();
 
   if (!session?.user?.id) {
     return { success: false, error: 'Nicht authentifiziert', bids: [] };
   }
 
+  const { sortBy = 'createdAt', sortOrder = 'desc' } = options || {};
+
   try {
+    // Map UI sort column names to database columns
+    const sortFieldMap = {
+      phase: preQualifications.stage,
+      entscheidung: preQualifications.decision,
+      createdAt: preQualifications.createdAt,
+    } as const;
+
+    // Determine order function
+    const orderFn = sortOrder === 'asc' ? asc : desc;
+
+    // Determine ORDER BY clause (null for JSON fields that need JS sorting)
+    const orderByField = sortFieldMap[sortBy as keyof typeof sortFieldMap];
+
+    // Build and execute query (single query, no duplication!)
     const bidsWithUser = await db
       .select({
         id: preQualifications.id,
@@ -48,7 +64,21 @@ export async function getBids() {
       .from(preQualifications)
       .leftJoin(users, eq(preQualifications.userId, users.id))
       .where(eq(preQualifications.userId, session.user.id))
-      .orderBy(desc(preQualifications.createdAt));
+      .orderBy(orderByField ? orderFn(orderByField) : desc(preQualifications.createdAt));
+
+    // JavaScript sorting for JSON fields (leadname, kunde)
+    if (sortBy === 'leadname' || sortBy === 'kunde') {
+      bidsWithUser.sort((a, b) => {
+        const aData = JSON.parse(a.extractedRequirements || '{}');
+        const bData = JSON.parse(b.extractedRequirements || '{}');
+
+        const aValue = sortBy === 'leadname' ? aData.projectName || '' : aData.customerName || '';
+        const bValue = sortBy === 'leadname' ? bData.projectName || '' : bData.customerName || '';
+
+        const comparison = aValue.localeCompare(bValue, 'de');
+        return sortOrder === 'asc' ? comparison : -comparison;
+      });
+    }
 
     return { success: true, bids: bidsWithUser };
   } catch (error) {
@@ -121,7 +151,8 @@ export async function uploadPdfBid(formData: FormData) {
 
   const file = formData.get('file') as File | null;
   const source = (formData.get('source') as 'reactive' | 'proactive') || 'reactive';
-  const stage = (formData.get('stage') as 'cold' | 'warm' | 'pre-qualification') || 'pre-qualification';
+  const stage =
+    (formData.get('stage') as 'cold' | 'warm' | 'pre-qualification') || 'pre-qualification';
   const enableDSGVO = formData.get('enableDSGVO') === 'true';
   const accountId = formData.get('accountId') as string | null;
 
@@ -438,10 +469,7 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
       })
       .where(eq(preQualifications.id, bidId));
 
-    const docs = await db
-      .select()
-      .from(documents)
-      .where(eq(documents.preQualificationId, bidId));
+    const docs = await db.select().from(documents).where(eq(documents.preQualificationId, bidId));
 
     const files = docs.map(doc => ({
       name: doc.fileName,
@@ -450,7 +478,8 @@ export async function updateExtractedRequirements(bidId: string, requirements: a
     }));
 
     const websiteUrls = bid.websiteUrl ? [bid.websiteUrl] : [];
-    const additionalText = bid.rawInput && bid.rawInput !== 'Verarbeitung läuft...' ? bid.rawInput : '';
+    const additionalText =
+      bid.rawInput && bid.rawInput !== 'Verarbeitung läuft...' ? bid.rawInput : '';
 
     const [qualificationJob] = await db
       .insert(backgroundJobs)
@@ -521,7 +550,8 @@ export async function uploadCombinedBid(formData: FormData) {
   const websiteUrls = (formData.getAll('websiteUrls') as string[]).filter(url => url.trim());
   const additionalText = (formData.get('additionalText') as string)?.trim() || '';
   const source = (formData.get('source') as 'reactive' | 'proactive') || 'reactive';
-  const stage = (formData.get('stage') as 'cold' | 'warm' | 'pre-qualification') || 'pre-qualification';
+  const stage =
+    (formData.get('stage') as 'cold' | 'warm' | 'pre-qualification') || 'pre-qualification';
   const enableDSGVO = formData.get('enableDSGVO') === 'true';
   const accountId = formData.get('accountId') as string | null;
 
@@ -780,7 +810,10 @@ export async function createPendingPreQualification(formData: FormData) {
     // Validate all files first
     for (const file of files) {
       if (!allowedTypes.includes(file.type)) {
-        return { success: false, error: `${file.name}: Nur PDF-, Excel- und Word-Dateien sind erlaubt` };
+        return {
+          success: false,
+          error: `${file.name}: Nur PDF-, Excel- und Word-Dateien sind erlaubt`,
+        };
       }
       if (file.size > maxSize) {
         return { success: false, error: `${file.name}: Datei ist zu groß (max. 10 MB)` };
@@ -920,21 +953,13 @@ export async function startPreQualProcessing(bidId: string) {
     return { success: false, error: 'Bid nicht gefunden' };
   }
 
-  const processingStates = [
-    'processing',
-    'extracting',
-    'duplicate_checking',
-    'quick_scanning',
-  ];
+  const processingStates = ['processing', 'extracting', 'duplicate_checking', 'quick_scanning'];
 
   if (processingStates.includes(bid.status)) {
     return { success: false, error: 'Verarbeitung läuft bereits' };
   }
 
-  const docs = await db
-    .select()
-    .from(documents)
-    .where(eq(documents.preQualificationId, bidId));
+  const docs = await db.select().from(documents).where(eq(documents.preQualificationId, bidId));
 
   const files = docs.map(doc => ({
     name: doc.fileName,
@@ -943,7 +968,8 @@ export async function startPreQualProcessing(bidId: string) {
   }));
 
   const websiteUrls = bid.websiteUrl ? [bid.websiteUrl] : [];
-  const additionalText = bid.rawInput && bid.rawInput !== 'Verarbeitung läuft...' ? bid.rawInput : '';
+  const additionalText =
+    bid.rawInput && bid.rawInput !== 'Verarbeitung läuft...' ? bid.rawInput : '';
 
   await db
     .update(preQualifications)

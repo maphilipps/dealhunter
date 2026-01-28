@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TypographySmall } from '@/components/ui/typography';
 import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schema';
 import { cn } from '@/lib/utils';
 
@@ -102,28 +103,28 @@ export function ManagementSummaryCard({
           <div className="space-y-4">
             <h4 className="font-semibold">Key Facts</h4>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
+              <div className="grid grid-cols-[120px_1fr] gap-2">
                 <span className="text-muted-foreground">Kunde</span>
                 <span className="font-medium">{summary.keyFacts.customer}</span>
               </div>
               {summary.keyFacts.industry && (
-                <div className="flex justify-between">
+                <div className="grid grid-cols-[120px_1fr] gap-2">
                   <span className="text-muted-foreground">Branche</span>
                   <span>{summary.keyFacts.industry}</span>
                 </div>
               )}
-              <div className="flex justify-between">
+              <div className="grid grid-cols-[120px_1fr] gap-2">
                 <span className="text-muted-foreground">Projekttyp</span>
                 <span>{summary.keyFacts.projectType}</span>
               </div>
               {summary.keyFacts.estimatedValue && (
-                <div className="flex justify-between">
+                <div className="grid grid-cols-[120px_1fr] gap-2">
                   <span className="text-muted-foreground">Geschätzter Wert</span>
                   <span>{summary.keyFacts.estimatedValue}</span>
                 </div>
               )}
               {summary.keyFacts.submissionDeadline && (
-                <div className="flex items-center justify-between">
+                <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
                   <span className="text-muted-foreground">Deadline</span>
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
@@ -146,7 +147,9 @@ export function ManagementSummaryCard({
           <div className="mt-6 grid gap-4 border-t pt-4 md:grid-cols-2">
             {summary.topRisks.length > 0 && (
               <div>
-                <h5 className="mb-2 text-sm font-medium text-destructive">Top Risiken</h5>
+                <TypographySmall className="mb-2 block text-destructive">
+                  Top Risiken
+                </TypographySmall>
                 <ul className="space-y-1">
                   {summary.topRisks.map((risk, index) => (
                     <li
@@ -162,9 +165,9 @@ export function ManagementSummaryCard({
             )}
             {summary.topOpportunities.length > 0 && (
               <div>
-                <h5 className="mb-2 text-sm font-medium text-green-600 dark:text-green-500">
+                <TypographySmall className="mb-2 block text-green-600 dark:text-green-500">
                   Top Chancen
-                </h5>
+                </TypographySmall>
                 <ul className="space-y-1">
                   {summary.topOpportunities.map((opportunity, index) => (
                     <li

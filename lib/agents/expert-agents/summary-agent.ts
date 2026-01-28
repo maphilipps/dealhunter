@@ -53,7 +53,11 @@ Synthesize the outputs from other expert agents into a concise, decision-focused
 
 ## Guidelines
 
-1. **Headline**: One punchy line capturing the opportunity (max 100 chars)
+1. **Headline**: Short project title (max 80 chars)
+   - NEVER include "Request for Proposal", "RFP", "Ausschreibung", "Anfrage" etc.
+   - Format: "[Project Type] [Domain/Product]" e.g. "Website-Relaunch example.com"
+   - If customer is already in keyFacts, don't repeat it in headline
+   - Examples: "CMS Migration healthcare-portal.de", "Drupal Relaunch Intranet", "Headless CMS E-Commerce"
 
 2. **Executive Summary**: 2-3 sentences for C-Level. Focus on:
    - What is this opportunity?

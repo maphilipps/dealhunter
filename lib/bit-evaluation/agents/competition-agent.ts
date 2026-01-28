@@ -1,34 +1,16 @@
-import OpenAI from 'openai';
-
 import { competitionCheckSchema, type CompetitionCheck } from '../schema';
 
 import { createIntelligentTools } from '@/lib/agent-tools/intelligent-tools';
-import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
-
-// Intelligent Agent Framework - NEW
-
-// Security: Prompt Injection Protection
+import { generateStructuredOutput } from '@/lib/ai/config';
 import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
 
-// Initialize OpenAI client with adesso AI Hub
-const openai = new OpenAI({
-  apiKey: AI_HUB_API_KEY,
-  baseURL: AI_HUB_BASE_URL,
-});
-
 export interface CompetitionAgentInput {
-  extractedRequirements: any; // From extraction phase
-  quickScanResults?: any; // Tech stack, industry insights
-  useWebSearch?: boolean; // NEW: Web Search für aktuelle Wettbewerber-Infos
+  extractedRequirements: any;
+  quickScanResults?: any;
+  useWebSearch?: boolean;
 }
 
-/**
- * BIT-005: Competition Check Agent
- * Analyzes competitive situation and estimates win probability
- * UPGRADED: Mit Web Search für aktuelle Wettbewerber-Infos
- */
 export async function runCompetitionAgent(input: CompetitionAgentInput): Promise<CompetitionCheck> {
-  // === Intelligent Research Phase (NEW) ===
   let competitorNews = '';
   let marketInsights = '';
 
@@ -36,14 +18,12 @@ export async function runCompetitionAgent(input: CompetitionAgentInput): Promise
     const intelligentTools = createIntelligentTools({ agentName: 'Competition Researcher' });
 
     try {
-      // Extrahiere Industrie und Kunde für gezielte Recherche
       const industry =
         input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
         input.extractedRequirements?.industry ||
         '';
       const customerName = input.extractedRequirements?.customerName || '';
 
-      // Web Search für aktuelle Wettbewerber-Aktivitäten im Markt
       if (industry) {
         const marketSearch = await intelligentTools.webSearch(
           `${industry} IT consulting competitors Germany 2024 digital transformation`,
@@ -56,13 +36,11 @@ export async function runCompetitionAgent(input: CompetitionAgentInput): Promise
             .map(r => `- ${r.title}: ${r.snippet}`)
             .join('\n');
 
-          // Wrap external web search results for prompt injection protection
-          marketInsights = `\n\nAktuelle Markt-Insights (Web Search):\n${wrapUserContent(rawMarketData, 'web')}`;
+          marketInsights = `\n\n### Aktuelle Markt-Insights\n${wrapUserContent(rawMarketData, 'web')}`;
           console.log(`[Competition Agent] ${marketSearch.length} Markt-Insights gefunden`);
         }
       }
 
-      // Web Search für Kunden-spezifische IT-Projekte/Ausschreibungen
       if (customerName) {
         const customerSearch = await intelligentTools.webSearch(
           `"${customerName}" IT projekt ausschreibung tender 2024`,
@@ -75,102 +53,84 @@ export async function runCompetitionAgent(input: CompetitionAgentInput): Promise
             .map(r => `- ${r.title}: ${r.snippet}`)
             .join('\n');
 
-          // Wrap external web search results for prompt injection protection
-          competitorNews = `\n\nKunden-spezifische Insights (Web Search):\n${wrapUserContent(rawCustomerData, 'web')}`;
+          competitorNews = `\n\n### Kunden-spezifische Insights\n${wrapUserContent(rawCustomerData, 'web')}`;
           console.log(`[Competition Agent] ${customerSearch.length} Kunden-Insights gefunden`);
         }
       }
     } catch (error) {
       console.warn('[Competition Agent] Web Search fehlgeschlagen:', error);
-      // Non-critical: Continue without web search results
     }
   }
 
-  const completion = await openai.chat.completions.create({
-    model: 'gemini-3-flash-preview',
-    messages: [
-      {
-        role: 'system',
-        content: `Du bist ein erfahrener Competitive Intelligence Analyst bei adesso SE.
-Analysiere GRÜNDLICH die Wettbewerbssituation und schätze die Gewinnwahrscheinlichkeit ein.
-Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
+  const systemPrompt = `Du bist ein Competitive Intelligence Analyst bei adesso SE.
 
-WICHTIG: Gib immer eine fundierte Einschätzung ab. Alle Begründungen und Texte auf Deutsch.`,
-      },
-      {
-        role: 'user',
-        content: `Evaluate the competitive landscape and estimate our probability of winning this opportunity.
+## Deine Aufgabe
+Analysiere die Wettbewerbssituation und schätze die Gewinnwahrscheinlichkeit ein.
 
-Extracted Requirements:
+## adesso Wettbewerbsposition
+
+### Stärken
+- **Drupal-Marktführer**: 20+ Jahre Expertise in Deutschland
+- **Branchen-Expertise**: Banking, Insurance, Automotive
+- **Qualität & Zuverlässigkeit**: Komplexe Enterprise-Projekte
+- **Innovation**: Digital Transformation, Cloud, AI
+- **Deutschland-Fokus**: Starke Präsenz und Netzwerk
+- **Größe**: Groß genug für Enterprise, agil genug für Reaktionsfähigkeit
+
+### Typische Wettbewerber nach Segment
+
+| Segment | Wettbewerber |
+|---------|--------------|
+| Global System Integrators | Accenture, Capgemini, Deloitte |
+| Deutsche IT-Beratung | CGI, msg, Sopra Steria |
+| Drupal-Spezialisten | Drupalize.me Partner |
+| Digital Agencies | DEPT, SinnerSchrader |
+| Nischen-Player | Branchenspezifische Berater |
+
+### Gewinn-Faktoren (erhöhen Win-Probability)
+1. Bestehende Kundenbeziehung
+2. Incumbent-Vorteil (wir betreuen aktuelles System)
+3. Technologie-Match (Drupal oder unsere Kerntechnologien)
+4. Branchen-Expertise (Banking, Insurance, Auto)
+5. Komplexität (hohe Komplexität bevorzugt uns)
+6. Deutscher Kunde + deutsche Anforderungen
+
+### Wettbewerbslevel
+- none: Keine erkennbaren Wettbewerber
+- low: 1-2 Wettbewerber, klarer Vorteil für uns
+- medium: 3-5 Wettbewerber, ausgeglichenes Feld
+- high: 5+ Wettbewerber, starke Konkurrenz
+- very_high: Viele starke Wettbewerber, Preiskampf erwartet
+
+## Ausgabesprache
+Alle Texte auf Deutsch.`;
+
+  const userPrompt = `Analysiere die Wettbewerbssituation für diese Opportunity.
+
+## Extrahierte Anforderungen
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${
   input.quickScanResults
-    ? `
-Quick Scan Results:
-${JSON.stringify(input.quickScanResults, null, 2)}
-`
+    ? `## Quick Scan Ergebnisse
+${JSON.stringify(input.quickScanResults, null, 2)}`
     : ''
 }
 ${marketInsights}
 ${competitorNews}
 
-adesso's Competitive Position:
+## Deine Bewertung
+Analysiere und bewerte:
+1. Wettbewerbsanalyse (competitiveAnalysis: competitionLevel, knownCompetitors, ourDifferentiators, competitiveWeaknesses)
+2. Gewinn-Faktoren (winProbabilityFactors: hasIncumbentAdvantage, hasExistingRelationship, hasUniqueCapability, pricingPosition)
+3. Geschätzte Gewinnwahrscheinlichkeit (estimatedWinProbability 0-100)
+4. Confidence, reasoning, criticalBlockers (auf Deutsch)`;
 
-**Key Strengths:**
-- **Drupal Leadership:** Market leader in Drupal in Germany (20+ years)
-- **Industry Expertise:** Deep expertise in Banking, Insurance, Automotive
-- **Quality & Reliability:** Known for delivering complex enterprise projects
-- **Innovation:** Strong in digital transformation, cloud, AI integration
-- **German Market:** Strong presence and network in Germany
-- **Size & Scale:** Large enough for enterprise projects, agile enough to be responsive
-
-**Typical Competitors by Segment:**
-- **Global System Integrators:** Accenture, Capgemini, Deloitte (compete on very large deals)
-- **German IT Consulting:** CGI, msg, Sopra Steria (direct competitors)
-- **Specialized Drupal:** Drupalize.me partners (smaller, specialized)
-- **Digital Agencies:** DEPT, SinnerSchrader (compete on digital/marketing projects)
-- **Niche Players:** Industry-specific consultancies
-
-**Win Factors:**
-1. **Existing Relationship:** We're already working with the customer
-2. **Incumbent Advantage:** We built/maintain the current system
-3. **Technology Match:** Project requires Drupal or our core tech
-4. **Industry Expertise:** Project in our strong industries (Banking, Insurance, Auto)
-5. **Complexity:** High complexity favors us over smaller players
-6. **German Market:** German customer + German requirements
-
-Respond with JSON containing:
-- competitiveAnalysis (object):
-  - competitionLevel (string: "none", "low", "medium", "high", or "very_high"): Level of competition
-  - knownCompetitors (array of strings): Known/likely competitors (2-5)
-  - ourDifferentiators (array of strings): What differentiates adesso (3-5)
-  - competitiveWeaknesses (array of strings): Areas where competitors might be stronger (2-4)
-- winProbabilityFactors (object):
-  - hasIncumbentAdvantage (boolean): Are we the current vendor?
-  - hasExistingRelationship (boolean): Do we already work with this customer?
-  - hasUniqueCapability (boolean): Do we have unique capabilities competitors lack?
-  - pricingPosition (string: "low", "competitive", or "premium"): Our pricing position
-- estimatedWinProbability (number 0-100): Geschätzte Gewinnwahrscheinlichkeit
-- confidence (number 0-100): Confidence der Bewertung
-- reasoning (string): Ausführliche Begründung auf Deutsch (min. 2-3 Sätze)
-- criticalBlockers (array of strings): Wettbewerbs-bezogene Blocker auf Deutsch`,
-      },
-    ],
+  return generateStructuredOutput({
+    model: 'quality',
+    schema: competitionCheckSchema,
+    system: systemPrompt,
+    prompt: userPrompt,
     temperature: 0.3,
-    max_tokens: 4000,
   });
-
-  const responseText = completion.choices[0]?.message?.content || '{}';
-  const cleanedResponse = responseText
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '')
-    .trim();
-
-  const rawResult = JSON.parse(cleanedResponse);
-  const cleanedResult = Object.fromEntries(
-    Object.entries(rawResult).filter(([_, v]) => v !== null)
-  );
-
-  return competitionCheckSchema.parse(cleanedResult);
 }

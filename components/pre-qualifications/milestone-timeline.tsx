@@ -12,7 +12,7 @@ export interface MilestoneTimelineProps {
   className?: string;
 }
 
-function formatDate(dateString: string | undefined): string {
+function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return '–';
   try {
     const date = new Date(dateString);
@@ -26,7 +26,7 @@ function formatDate(dateString: string | undefined): string {
   }
 }
 
-function getDaysUntil(dateString: string | undefined): number | null {
+function getDaysUntil(dateString: string | null | undefined): number | null {
   if (!dateString) return null;
   try {
     const date = new Date(dateString);
@@ -136,7 +136,7 @@ export function MilestoneTimeline({ timing, className }: MilestoneTimelineProps)
       name: 'Abgabefrist',
       date: timing.submissionDeadline.date,
       dateType: 'exact',
-      description: timing.submissionDeadline.rawText || undefined,
+      description: timing.submissionDeadline.rawText || null,
       mandatory: true,
       confidence: timing.submissionDeadline.confidence,
       isDeadline: true,
@@ -149,6 +149,7 @@ export function MilestoneTimeline({ timing, className }: MilestoneTimelineProps)
       name: 'Frist für Rückfragen',
       date: timing.clarificationDeadline,
       dateType: 'exact',
+      description: null,
       mandatory: true,
       confidence: 70,
     });
@@ -160,6 +161,7 @@ export function MilestoneTimeline({ timing, className }: MilestoneTimelineProps)
       name: `Q&A Session ${timing.qaSessionDates!.length > 1 ? index + 1 : ''}`.trim(),
       date,
       dateType: 'exact',
+      description: null,
       mandatory: false,
       confidence: 60,
     });
@@ -176,6 +178,7 @@ export function MilestoneTimeline({ timing, className }: MilestoneTimelineProps)
       name: 'Zuschlagserteilung',
       date: timing.awardDate,
       dateType: 'estimated',
+      description: null,
       mandatory: false,
       confidence: 50,
     });
@@ -187,6 +190,7 @@ export function MilestoneTimeline({ timing, className }: MilestoneTimelineProps)
       name: 'Vertragsunterzeichnung',
       date: timing.contractSigningDate,
       dateType: 'estimated',
+      description: null,
       mandatory: false,
       confidence: 50,
     });
@@ -198,6 +202,7 @@ export function MilestoneTimeline({ timing, className }: MilestoneTimelineProps)
       name: 'Projektstart',
       date: timing.projectStart,
       dateType: 'estimated',
+      description: null,
       mandatory: false,
       confidence: 50,
     });
@@ -209,6 +214,7 @@ export function MilestoneTimeline({ timing, className }: MilestoneTimelineProps)
       name: 'Projektende',
       date: timing.projectEnd,
       dateType: 'estimated',
+      description: null,
       mandatory: false,
       confidence: 50,
     });

@@ -17,7 +17,10 @@ import { isProcessingState } from '@/lib/pre-qualifications/constants';
 /**
  * Fetch section highlights from dealEmbeddings
  */
-async function getSectionHighlights(preQualificationId: string): Promise<SectionHighlight[]> {
+async function getSectionHighlights(
+  preQualificationId: string,
+  isProcessing: boolean
+): Promise<SectionHighlight[]> {
   const highlights: SectionHighlight[] = [];
 
   // Get all dashboard highlights from dealEmbeddings
@@ -62,7 +65,7 @@ async function getSectionHighlights(preQualificationId: string): Promise<Section
         sectionId: section.id,
         sectionTitle: section.title,
         highlights: [],
-        status: 'pending',
+        status: isProcessing ? 'pending' : 'no_data',
       });
     }
   }
@@ -113,8 +116,11 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       }
     }
 
+    // Use canonical processing state check
+    const isProcessing = isProcessingState(preQualification.status);
+
     // Get Section Highlights
-    const sectionHighlights = await getSectionHighlights(preQualificationId);
+    const sectionHighlights = await getSectionHighlights(preQualificationId, isProcessing);
 
     // Get BU Routing from quickScan
     const quickScan = preQualification.quickScan;
@@ -123,9 +129,6 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       confidence: quickScan?.confidence ?? null,
       reasoning: quickScan?.reasoning ?? null,
     };
-
-    // Use canonical processing state check
-    const isProcessing = isProcessingState(preQualification.status);
 
     const response: DashboardSummaryResponse = {
       managementSummary,

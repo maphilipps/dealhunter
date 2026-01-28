@@ -122,7 +122,7 @@ export function TimingPageContent({ preQualificationId }: TimingPageContentProps
       </div>
 
       {loading && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6">
           <Card>
             <CardHeader>
               <Skeleton className="h-6 w-48" />
@@ -167,16 +167,12 @@ export function TimingPageContent({ preQualificationId }: TimingPageContentProps
       )}
 
       {!loading && !error && hasData && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6">
           {/* Timeline Component */}
           {timingData && <MilestoneTimeline timing={timingData} />}
 
           {/* Visualization Tree from QuickScan */}
-          {visualizationTree && (
-            <div className="lg:col-span-1">
-              <QuickScanRenderer tree={visualizationTree} />
-            </div>
-          )}
+          {visualizationTree && <QuickScanRenderer tree={visualizationTree} />}
         </div>
       )}
 

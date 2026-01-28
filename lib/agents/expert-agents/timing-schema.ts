@@ -2,40 +2,40 @@ import { z } from 'zod';
 
 export const MilestoneSchema = z.object({
   name: z.string(),
-  date: z.string().optional(),
-  dateType: z.enum(['exact', 'estimated', 'relative']).default('estimated'),
-  description: z.string().optional(),
-  mandatory: z.boolean().default(true),
-  confidence: z.number().min(0).max(100).default(50),
+  date: z.string().nullable(),
+  dateType: z.enum(['exact', 'estimated', 'relative']),
+  description: z.string().nullable(),
+  mandatory: z.boolean(),
+  confidence: z.number().min(0).max(100),
 });
 
 export const TimingAnalysisSchema = z.object({
   submissionDeadline: z
     .object({
       date: z.string(),
-      time: z.string().optional(),
-      timezone: z.string().optional(),
-      confidence: z.number().default(50),
-      rawText: z.string().default(''),
+      time: z.string().nullable(),
+      timezone: z.string().nullable(),
+      confidence: z.number(),
+      rawText: z.string(),
     })
-    .optional(),
+    .nullable(),
 
-  projectStart: z.string().optional(),
-  projectEnd: z.string().optional(),
-  projectDurationMonths: z.number().optional(),
+  projectStart: z.string().nullable(),
+  projectEnd: z.string().nullable(),
+  projectDurationMonths: z.number().nullable(),
 
-  milestones: z.array(MilestoneSchema).default([]),
+  milestones: z.array(MilestoneSchema),
 
-  clarificationDeadline: z.string().optional(),
-  qaSessionDates: z.array(z.string()).optional(),
+  clarificationDeadline: z.string().nullable(),
+  qaSessionDates: z.array(z.string()),
 
-  awardDate: z.string().optional(),
-  contractSigningDate: z.string().optional(),
+  awardDate: z.string().nullable(),
+  contractSigningDate: z.string().nullable(),
 
-  urgencyLevel: z.enum(['critical', 'high', 'medium', 'low']).default('medium'),
-  daysUntilSubmission: z.number().optional(),
+  urgencyLevel: z.enum(['critical', 'high', 'medium', 'low']),
+  daysUntilSubmission: z.number().nullable(),
 
-  confidence: z.number().min(0).max(100).default(50),
+  confidence: z.number().min(0).max(100),
 });
 
 export type TimingAnalysis = z.infer<typeof TimingAnalysisSchema>;

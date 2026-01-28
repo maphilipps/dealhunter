@@ -1,5 +1,3 @@
-import OpenAI from 'openai';
-
 import { runCapabilityAgent } from './agents/capability-agent';
 import { runCompetitionAgent } from './agents/competition-agent';
 import { runContractAgent } from './agents/contract-agent';
@@ -9,7 +7,6 @@ import { runReferenceAgent } from './agents/reference-agent';
 import { runStrategicFitAgent } from './agents/strategic-fit-agent';
 import { runCoordinatorAgent } from './coordinator-agent';
 import {
-  bitDecisionSchema,
   alternativeRecSchema,
   type BitEvaluationResult,
   type BitDecision,
@@ -23,46 +20,11 @@ import {
   type ReferenceMatch,
 } from './schema';
 
-// Intelligent Agent Framework - NEW
 import { quickEvaluate, BIT_EVALUATION_SCHEMA } from '@/lib/agent-tools/evaluator';
-import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
+import { generateStructuredOutput } from '@/lib/ai/config';
 import { calculateWeightedBitScore } from '@/lib/config/business-rules';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
-
-// Initialize OpenAI client with adesso AI Hub
-const openai = new OpenAI({
-  apiKey: AI_HUB_API_KEY,
-  baseURL: AI_HUB_BASE_URL,
-});
-
-/**
- * Helper function to call AI and parse JSON response
- */
-async function callAI<T>(systemPrompt: string, userPrompt: string, schema: any): Promise<T> {
-  const completion = await openai.chat.completions.create({
-    model: 'gemini-3-flash-preview',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
-    temperature: 0.3,
-    max_tokens: 8000,
-  });
-
-  const responseText = completion.choices[0]?.message?.content || '{}';
-  const cleanedResponse = responseText
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '')
-    .trim();
-
-  const rawResult = JSON.parse(cleanedResponse);
-  const cleanedResult = Object.fromEntries(
-    Object.entries(rawResult).filter(([_, v]) => v !== null)
-  );
-
-  return schema.parse(cleanedResult) as T;
-}
 
 export interface BitEvaluationInput {
   bidId: string;
@@ -253,97 +215,6 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
   }
 }
 
-/**
- * Generate final BIT decision using AI
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function generateBitDecision(context: {
-  scores: {
-    capability: number;
-    dealQuality: number;
-    strategicFit: number;
-    winProbability: number;
-    legal: number;
-    reference: number;
-    overall: number;
-  };
-  capabilityMatch: any;
-  dealQuality: any;
-  strategicFit: any;
-  competitionCheck: any;
-  legalAssessment: any;
-  referenceMatch: any;
-  allCriticalBlockers: string[];
-  initialRecommendation: 'bit' | 'no_bit';
-}): Promise<BitDecision> {
-  const systemPrompt = `Du bist der finale Entscheider für BIT/NO BIT Bewertungen bei adesso SE.
-Treffe fundierte Entscheidungen basierend auf allen Agent-Bewertungen.
-Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
-
-WICHTIG: Alle Texte und Begründungen müssen auf Deutsch sein.`;
-
-  const userPrompt = `Review all agent assessments and make the final decision.
-
-**Weighted Scores:**
-- Capability Match: ${context.scores.capability}/100 (25% weight)
-- Deal Quality: ${context.scores.dealQuality}/100 (20% weight)
-- Strategic Fit: ${context.scores.strategicFit}/100 (15% weight)
-- Win Probability: ${context.scores.winProbability}/100 (15% weight)
-- Legal Assessment: ${context.scores.legal}/100 (15% weight)
-- Reference Match: ${context.scores.reference}/100 (10% weight)
-- **Overall Score: ${context.scores.overall.toFixed(1)}/100**
-
-**Initial Recommendation:** ${context.initialRecommendation.toUpperCase()}
-
-**Critical Blockers Found:** ${context.allCriticalBlockers.length}
-${context.allCriticalBlockers.length > 0 ? context.allCriticalBlockers.map(b => `- ${b}`).join('\n') : 'None'}
-
-**Capability Assessment:**
-${JSON.stringify(context.capabilityMatch, null, 2)}
-
-**Deal Quality Assessment:**
-${JSON.stringify(context.dealQuality, null, 2)}
-
-**Strategic Fit Assessment:**
-${JSON.stringify(context.strategicFit, null, 2)}
-
-**Competition Assessment:**
-${JSON.stringify(context.competitionCheck, null, 2)}
-
-**Legal Assessment:**
-${JSON.stringify(context.legalAssessment, null, 2)}
-
-**Reference Match Assessment:**
-${JSON.stringify(context.referenceMatch, null, 2)}
-
-**Decision Criteria:**
-- BIT if: Overall score >= 55 AND no critical blockers
-- NO BIT if: Overall score < 55 OR critical blockers present
-
-Antworte mit JSON:
-- decision (string: "bit" oder "no_bit"): Die finale Entscheidung
-- overallConfidence (number 0-100): Gesamt-Confidence der Bewertung
-- reasoning (string): Executive Summary auf Deutsch (min. 3-4 Sätze)
-- keyStrengths (array of strings): 3-5 Schlüsselstärken auf Deutsch
-- keyRisks (array of strings): 3-5 Schlüsselrisiken auf Deutsch
-- criticalBlockers (array of strings): Alle kritischen Blocker auf Deutsch
-- nextSteps (array of strings): Empfohlene nächste Schritte auf Deutsch`;
-
-  const result = await callAI<Omit<BitDecision, 'scores'>>(
-    systemPrompt,
-    userPrompt,
-    bitDecisionSchema
-  );
-
-  return {
-    ...result,
-    scores: context.scores,
-  };
-}
-
-/**
- * Generate alternative recommendation for NO BIT decision
- */
 async function generateAlternativeRecommendation(context: {
   capabilityMatch: any;
   dealQuality: any;
@@ -351,37 +222,50 @@ async function generateAlternativeRecommendation(context: {
   competitionCheck: any;
   decision: BitDecision;
 }): Promise<AlternativeRec> {
-  const systemPrompt = `Du empfiehlst alternative Ansätze für NO BIT Entscheidungen bei adesso SE.
-Antworte IMMER mit validem JSON ohne Markdown-Code-Blöcke.
+  const systemPrompt = `Du bist ein strategischer Berater bei adesso SE.
 
-WICHTIG: Alle Texte und Begründungen müssen auf Deutsch sein.`;
+## Deine Aufgabe
+Empfehle eine konstruktive Alternative für diese NO BIT Entscheidung.
 
-  const userPrompt = `The opportunity did not meet our criteria for a full BIT, but we should suggest a constructive alternative.
+## Alternative Optionen
 
-**Decision Context:**
+| Option | Wann verwenden |
+|--------|----------------|
+| partner_collaboration | Capability-Lücken die Partner füllen können |
+| partial_scope | Vollprojekt zu groß/riskant, aber Teil machbar |
+| delay_and_reassess | Timing falsch, aber später interessant |
+| refer_to_competitor | Kein Fit, aber Beziehung pflegen |
+| decline_gracefully | Keine Alternative, aber professionell absagen |
+
+## Ausgabesprache
+Alle Texte auf Deutsch.`;
+
+  const userPrompt = `Die Opportunity erfüllt unsere BIT-Kriterien nicht. Empfehle eine konstruktive Alternative.
+
+## Entscheidungs-Kontext
 ${JSON.stringify(context.decision, null, 2)}
 
-**Assessment Summaries:**
+## Agent-Bewertungen
 - Capability: ${context.capabilityMatch.reasoning}
 - Deal Quality: ${context.dealQuality.reasoning}
 - Strategic Fit: ${context.strategicFit.reasoning}
 - Competition: ${context.competitionCheck.reasoning}
 
-**Alternative Options:**
-1. partner_collaboration - Use when we have capability gaps partners could fill
-2. partial_scope - Use when full project is too large/risky but part is viable
-3. delay_and_reassess - Use when timing is wrong but opportunity might be good later
-4. refer_to_competitor - Use when genuinely not a fit but want to maintain relationship
-5. decline_gracefully - Use when no viable alternative but maintain good relationship
+## Deine Empfehlung
+Liefere:
+1. recommendedAlternative (eine der Optionen oben)
+2. reasoning (Begründung auf Deutsch)
+3. partnerSuggestions (konkrete Partner-Vorschläge, falls applicable)
+4. reducedScopeOptions (für partial_scope: [{scope, viability}])
+5. customerCommunication (2-3 Sätze für Kundenkommunikation auf Deutsch)`;
 
-Antworte mit JSON:
-- recommendedAlternative (string: eine der Optionen oben): Die empfohlene Alternative
-- reasoning (string): Warum diese Alternative die beste ist (auf Deutsch)
-- partnerSuggestions (array of strings, optional): Konkrete Partner-Vorschläge
-- reducedScopeOptions (array of {scope: string, viability: string "low"/"medium"/"high"}, optional): Für partial_scope
-- customerCommunication (string): Professioneller 2-3 Satz Entwurf für Kundenkommunikation auf Deutsch`;
-
-  return callAI<AlternativeRec>(systemPrompt, userPrompt, alternativeRecSchema);
+  return generateStructuredOutput({
+    model: 'quality',
+    schema: alternativeRecSchema,
+    system: systemPrompt,
+    prompt: userPrompt,
+    temperature: 0.3,
+  });
 }
 
 /**

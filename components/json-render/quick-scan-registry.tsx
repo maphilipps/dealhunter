@@ -52,7 +52,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableRow } from '@/components/ui/table';
 import {
   TypographyH3,
   TypographyLarge,
@@ -407,9 +407,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
       <Table>
         <TableBody>
           <TableRow>
-            <TableCell>
-              <TypographyMuted>{label}</TypographyMuted>
-            </TableCell>
+            <TableHead scope="row">{label}</TableHead>
             <TableCell>{value}</TableCell>
           </TableRow>
         </TableBody>
@@ -428,9 +426,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
         <TableBody>
           {items.map((item, idx) => (
             <TableRow key={idx}>
-              <TableCell>
-                <TypographyMuted>{item.label}</TypographyMuted>
-              </TableCell>
+              <TableHead scope="row">{item.label}</TableHead>
               <TableCell>{item.value}</TableCell>
             </TableRow>
           ))}

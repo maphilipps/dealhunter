@@ -26,7 +26,22 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key deploy@95.216.208.185 << 'EOF'
             set -e
-            cd /var/www/dealhunter
+            cd /var/www
+
+            # Check if we need to re-clone due to permission issues
+            if [ -d "dealhunter" ] && ! touch dealhunter/.git/objects/.write-test 2>/dev/null; then
+              echo "⚠️ Permission issue detected. Re-cloning repository..."
+              rm -rf dealhunter.bak 2>/dev/null || true
+              mv dealhunter dealhunter.bak
+              git clone --depth 1 https://github.com/maphilipps/dealhunter.git dealhunter
+              # Copy .env from backup
+              cp dealhunter.bak/.env dealhunter/.env 2>/dev/null || true
+              cp dealhunter.bak/.env.local dealhunter/.env.local 2>/dev/null || true
+              rm -rf dealhunter.bak
+            fi
+            rm -f dealhunter/.git/objects/.write-test 2>/dev/null || true
+
+            cd dealhunter
 
             echo "📥 Pulling latest changes..."
             git fetch origin main

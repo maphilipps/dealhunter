@@ -82,19 +82,22 @@ export async function matchBusinessLine(
     }
 
     // STEP 2: No deterministic match - use AI for matching
-    // Get all business units with their keywords and technologies
+    // Get all business units with their keywords, technologies, and features
     const { eq } = await import('drizzle-orm');
     const allBusinessUnits = await db
       .select({
         name: businessUnits.name,
         keywords: businessUnits.keywords,
         leaderName: businessUnits.leaderName,
-        technologies: technologies.name,
+        techName: technologies.name,
+        techFeatures: technologies.features,
+        techDescription: technologies.description,
+        techUseCases: technologies.useCases,
       })
       .from(businessUnits)
       .leftJoin(technologies, eq(technologies.businessUnitId, businessUnits.id));
 
-    // Group technologies by business unit
+    // Group technologies by business unit with features
     const businessUnitsMap = allBusinessUnits.reduce(
       (acc, row) => {
         if (!acc[row.name]) {
@@ -105,8 +108,41 @@ export async function matchBusinessLine(
             leaderName: row.leaderName,
           };
         }
-        if (row.technologies) {
-          acc[row.name].technologies.push(row.technologies);
+        if (row.techName) {
+          // Parse features if available
+          let featuresStr = '';
+          if (row.techFeatures) {
+            try {
+              const features = JSON.parse(row.techFeatures) as Record<
+                string,
+                { supported: boolean; score: number }
+              >;
+              const supportedFeatures = Object.entries(features)
+                .filter(([, v]) => v.supported)
+                .map(([k, v]) => `${k}(${v.score}%)`)
+                .slice(0, 5);
+              if (supportedFeatures.length > 0) {
+                featuresStr = ` [${supportedFeatures.join(', ')}]`;
+              }
+            } catch {
+              /* ignore */
+            }
+          }
+
+          // Parse use cases if available
+          let useCasesStr = '';
+          if (row.techUseCases) {
+            try {
+              const useCases = JSON.parse(row.techUseCases) as string[];
+              if (useCases.length > 0) {
+                useCasesStr = ` - Use Cases: ${useCases.slice(0, 3).join(', ')}`;
+              }
+            } catch {
+              /* ignore */
+            }
+          }
+
+          acc[row.name].technologies.push(`${row.techName}${featuresStr}${useCasesStr}`);
         }
         return acc;
       },

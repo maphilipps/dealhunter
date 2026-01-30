@@ -790,6 +790,7 @@ export const backgroundJobs = pgTable(
         'qualification',
         'deep-analysis',
         'deep-scan',
+        'deep-scan-v2',
         'pitch',
         'quick-scan',
         'team-notification',
@@ -2157,3 +2158,207 @@ export const pitchConversationsRelations = relations(pitchConversations, ({ one 
     references: [qualifications.id],
   }),
 }));
+
+// ====== Deep Scan v2 Tables ======
+
+export const deepScanV2Runs = pgTable(
+  'deep_scan_v2_runs',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    qualificationId: text('qualification_id')
+      .notNull()
+      .references(() => qualifications.id),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+
+    // Status
+    status: text('status', {
+      enum: [
+        'pending',
+        'running',
+        'audit_complete',
+        'generating',
+        'waiting_for_user',
+        'review',
+        'completed',
+        'failed',
+      ],
+    })
+      .notNull()
+      .default('pending'),
+
+    // Snapshot
+    runNumber: integer('run_number').notNull().default(1),
+    snapshotData: text('snapshot_data'), // JSON: full orchestrator state
+
+    // CMS Context
+    targetCmsIds: text('target_cms_ids'), // JSON array
+    selectedCmsId: text('selected_cms_id').references(() => technologies.id),
+
+    // Progress
+    currentPhase: text('current_phase'),
+    progress: integer('progress').notNull().default(0),
+    currentStep: text('current_step'),
+
+    // Agent Tracking
+    completedAgents: text('completed_agents'), // JSON array
+    failedAgents: text('failed_agents'), // JSON array
+    agentConfidences: text('agent_confidences'), // JSON object
+
+    // Timing
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    qualificationIdx: index('dsv2_runs_qualification_idx').on(table.qualificationId),
+    statusIdx: index('dsv2_runs_status_idx').on(table.status),
+    userIdx: index('dsv2_runs_user_idx').on(table.userId),
+  })
+);
+
+export const deepScanV2Documents = pgTable(
+  'deep_scan_v2_documents',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    runId: text('run_id')
+      .notNull()
+      .references(() => deepScanV2Runs.id),
+    qualificationId: text('qualification_id')
+      .notNull()
+      .references(() => qualifications.id),
+
+    // Document Type
+    documentType: text('document_type', {
+      enum: ['indication', 'calculation', 'presentation', 'proposal'],
+    }).notNull(),
+    format: text('format', {
+      enum: ['html', 'xlsx', 'pptx', 'docx'],
+    }).notNull(),
+
+    // CMS Variant
+    cmsVariant: text('cms_variant'),
+    technologyId: text('technology_id').references(() => technologies.id),
+
+    // Content
+    content: text('content'), // HTML for indication
+    fileData: text('file_data'), // Base64 for binary files
+    fileName: text('file_name'),
+    fileSize: integer('file_size'),
+
+    // Quality
+    confidence: integer('confidence'),
+    flags: text('flags'), // JSON array
+
+    // Timestamps
+    generatedAt: timestamp('generated_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    runIdx: index('dsv2_docs_run_idx').on(table.runId),
+    qualificationIdx: index('dsv2_docs_qualification_idx').on(table.qualificationId),
+    typeIdx: index('dsv2_docs_type_idx').on(table.documentType),
+  })
+);
+
+export const auditResultsV2 = pgTable(
+  'audit_results_v2',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    runId: text('run_id')
+      .notNull()
+      .references(() => deepScanV2Runs.id),
+    qualificationId: text('qualification_id')
+      .notNull()
+      .references(() => qualifications.id),
+
+    // Website
+    websiteUrl: text('website_url').notNull(),
+
+    // Audit Sections (all JSON)
+    techStack: text('tech_stack'),
+    performance: text('performance'),
+    accessibility: text('accessibility'),
+    architecture: text('architecture'),
+    hosting: text('hosting'),
+    integrations: text('integrations'),
+    componentLibrary: text('component_library'),
+    screenshots: text('screenshots'),
+
+    // Scores
+    performanceScore: integer('performance_score'),
+    accessibilityScore: integer('accessibility_score'),
+    migrationComplexity: text('migration_complexity', {
+      enum: ['low', 'medium', 'high', 'very_high'],
+    }),
+    complexityScore: integer('complexity_score'),
+
+    // Share Link
+    shareToken: text('share_token').unique(),
+    shareExpiresAt: timestamp('share_expires_at'),
+
+    // Timing
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    runIdx: index('audit_v2_run_idx').on(table.runId),
+    qualificationIdx: index('audit_v2_qualification_idx').on(table.qualificationId),
+    shareTokenIdx: index('audit_v2_share_token_idx').on(table.shareToken),
+  })
+);
+
+export const deepScanV2Conversations = pgTable(
+  'deep_scan_v2_conversations',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    runId: text('run_id')
+      .notNull()
+      .references(() => deepScanV2Runs.id),
+    qualificationId: text('qualification_id')
+      .notNull()
+      .references(() => qualifications.id),
+
+    // Message
+    role: text('role', { enum: ['user', 'assistant', 'system'] }).notNull(),
+    content: text('content').notNull(),
+    messageType: text('message_type', {
+      enum: ['interview', 'progress', 'question', 'answer'],
+    }).notNull(),
+
+    // Tool Calls
+    toolCalls: text('tool_calls'), // JSON
+    toolResults: text('tool_results'), // JSON
+
+    // Ordering
+    sequenceNumber: integer('sequence_number').notNull(),
+
+    // Timestamps
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    runIdx: index('dsv2_conv_run_idx').on(table.runId),
+    qualificationIdx: index('dsv2_conv_qualification_idx').on(table.qualificationId),
+    sequenceIdx: index('dsv2_conv_sequence_idx').on(table.runId, table.sequenceNumber),
+  })
+);
+
+export type DeepScanV2Run = typeof deepScanV2Runs.$inferSelect;
+export type NewDeepScanV2Run = typeof deepScanV2Runs.$inferInsert;
+export type DeepScanV2Document = typeof deepScanV2Documents.$inferSelect;
+export type NewDeepScanV2Document = typeof deepScanV2Documents.$inferInsert;
+export type AuditResultV2 = typeof auditResultsV2.$inferSelect;
+export type NewAuditResultV2 = typeof auditResultsV2.$inferInsert;
+export type DeepScanV2Conversation = typeof deepScanV2Conversations.$inferSelect;
+export type NewDeepScanV2Conversation = typeof deepScanV2Conversations.$inferInsert;

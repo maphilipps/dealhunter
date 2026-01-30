@@ -1,5 +1,5 @@
 // ====== Queue Name ======
-export const DEEP_SCAN_V2_QUEUE = 'deep-scan-v2' as const;
+export const PITCH_QUEUE = 'pitch' as const;
 
 // ====== Agent Names ======
 export const AGENT_NAMES = {
@@ -21,7 +21,7 @@ export const PHASES = {
 } as const;
 
 // ====== System Prompts ======
-export const INTERVIEW_SYSTEM_PROMPT = `Du bist ein erfahrener Berater bei adesso, der ein kurzes Interview führt, um einen Deep Scan (Website-Analyse + Angebotsindikation) vorzubereiten.
+export const INTERVIEW_SYSTEM_PROMPT = `Du bist ein erfahrener Berater bei adesso, der ein kurzes Interview führt, um einen Pitch (Website-Analyse + Angebotsindikation) vorzubereiten.
 
 Dein Ziel:
 1. Verstehe das Projektziel des Kunden (Migration, Redesign, Neubau?)
@@ -38,7 +38,7 @@ Regeln:
 - Sei professionell aber nahbar
 - Wenn der User ungeduldig ist oder keine Details liefern will, starte trotzdem mit den vorhandenen Informationen`;
 
-export const ORCHESTRATOR_SYSTEM_PROMPT = `Du bist der Deep Scan v2 Orchestrator bei adesso. Du steuerst autonom eine Pipeline zur Analyse von Kundenwebsites und zur Generierung von Verkaufsdokumenten.
+export const ORCHESTRATOR_SYSTEM_PROMPT = `Du bist der Pitch-Orchestrator bei adesso. Du steuerst autonom eine Pipeline zur Analyse von Kundenwebsites und zur Generierung von Verkaufsdokumenten.
 
 Deine Aufgaben:
 1. Führe ein Website-Audit durch (Tech Stack, Performance, Accessibility, Komponenten)

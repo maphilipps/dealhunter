@@ -786,7 +786,16 @@ export const backgroundJobs = pgTable(
 
     // Job Details
     jobType: text('job_type', {
-      enum: ['qualification', 'deep-analysis', 'deep-scan', 'quick-scan', 'team-notification', 'cleanup', 'visualization'],
+      enum: [
+        'qualification',
+        'deep-analysis',
+        'deep-scan',
+        'pitch',
+        'quick-scan',
+        'team-notification',
+        'cleanup',
+        'visualization',
+      ],
     }).notNull(),
     inngestRunId: text('inngest_run_id'), // Inngest execution ID for tracking
     bullmqJobId: text('bullmq_job_id'), // BullMQ job ID for tracking
@@ -1824,5 +1833,327 @@ export const pitchdeckTeamMembersRelations = relations(pitchdeckTeamMembers, ({ 
   employee: one(employees, {
     fields: [pitchdeckTeamMembers.employeeId],
     references: [employees.id],
+  }),
+}));
+
+// ===== Pitch Pipeline =====
+
+export const pitchRuns = pgTable(
+  'pitch_runs',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    qualificationId: text('qualification_id')
+      .notNull()
+      .references(() => qualifications.id),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+
+    // Status
+    status: text('status', {
+      enum: [
+        'pending',
+        'running',
+        'audit_complete',
+        'generating',
+        'waiting_for_user',
+        'review',
+        'completed',
+        'failed',
+      ],
+    })
+      .notNull()
+      .default('pending'),
+
+    // Snapshot
+    runNumber: integer('run_number').notNull().default(1),
+    snapshotData: text('snapshot_data'), // JSON: full orchestrator state
+
+    // CMS Context
+    targetCmsIds: text('target_cms_ids'), // JSON array
+    selectedCmsId: text('selected_cms_id').references(() => technologies.id),
+
+    // Progress
+    currentPhase: text('current_phase'),
+    progress: integer('progress').notNull().default(0),
+    currentStep: text('current_step'),
+
+    // Agent Tracking
+    completedAgents: text('completed_agents'), // JSON array
+    failedAgents: text('failed_agents'), // JSON array
+    agentConfidences: text('agent_confidences'), // JSON object
+
+    // Timing
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    qualificationIdx: index('pitch_runs_qualification_idx').on(table.qualificationId),
+    statusIdx: index('pitch_runs_status_idx').on(table.status),
+    userIdx: index('pitch_runs_user_idx').on(table.userId),
+  })
+);
+
+export type PitchRun = typeof pitchRuns.$inferSelect;
+export type NewPitchRun = typeof pitchRuns.$inferInsert;
+
+export const pitchDocuments = pgTable(
+  'pitch_documents',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    runId: text('run_id')
+      .notNull()
+      .references(() => pitchRuns.id),
+    qualificationId: text('qualification_id')
+      .notNull()
+      .references(() => qualifications.id),
+
+    // Document Type
+    documentType: text('document_type', {
+      enum: ['indication', 'calculation', 'presentation', 'proposal'],
+    }).notNull(),
+    format: text('format', {
+      enum: ['html', 'xlsx', 'pptx', 'docx'],
+    }).notNull(),
+
+    // CMS Variant
+    cmsVariant: text('cms_variant'),
+    technologyId: text('technology_id').references(() => technologies.id),
+
+    // Content
+    content: text('content'), // HTML for indication
+    fileData: text('file_data'), // Base64 for binary files
+    fileName: text('file_name'),
+    fileSize: integer('file_size'),
+
+    // Quality
+    confidence: integer('confidence'),
+    flags: text('flags'), // JSON array
+
+    // Timestamps
+    generatedAt: timestamp('generated_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    runIdx: index('pitch_docs_run_idx').on(table.runId),
+    qualificationIdx: index('pitch_docs_qualification_idx').on(table.qualificationId),
+    typeIdx: index('pitch_docs_type_idx').on(table.documentType),
+  })
+);
+
+export type PitchDocument = typeof pitchDocuments.$inferSelect;
+export type NewPitchDocument = typeof pitchDocuments.$inferInsert;
+
+export const pitchAuditResults = pgTable(
+  'pitch_audit_results',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    runId: text('run_id')
+      .notNull()
+      .references(() => pitchRuns.id),
+    qualificationId: text('qualification_id')
+      .notNull()
+      .references(() => qualifications.id),
+
+    // Website
+    websiteUrl: text('website_url').notNull(),
+
+    // Audit Sections (all JSON)
+    techStack: text('tech_stack'),
+    performance: text('performance'),
+    accessibility: text('accessibility'),
+    architecture: text('architecture'),
+    hosting: text('hosting'),
+    integrations: text('integrations'),
+    componentLibrary: text('component_library'),
+    screenshots: text('screenshots'),
+
+    // Scores
+    performanceScore: integer('performance_score'),
+    accessibilityScore: integer('accessibility_score'),
+    migrationComplexity: text('migration_complexity', {
+      enum: ['low', 'medium', 'high', 'very_high'],
+    }),
+    complexityScore: integer('complexity_score'),
+
+    // Share Link
+    shareToken: text('share_token').unique(),
+    shareExpiresAt: timestamp('share_expires_at'),
+
+    // Timing
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    runIdx: index('pitch_audit_run_idx').on(table.runId),
+    qualificationIdx: index('pitch_audit_qualification_idx').on(table.qualificationId),
+    shareTokenIdx: index('pitch_audit_share_token_idx').on(table.shareToken),
+  })
+);
+
+export type PitchAuditResult = typeof pitchAuditResults.$inferSelect;
+export type NewPitchAuditResult = typeof pitchAuditResults.$inferInsert;
+
+export const knowledgeChunks = pgTable(
+  'knowledge_chunks',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // Content
+    content: text('content').notNull(),
+    contentHash: text('content_hash').notNull(),
+    tokenCount: integer('token_count').notNull(),
+
+    // Source
+    sourceType: text('source_type', {
+      enum: ['upload', 'reference', 'baseline', 'template'],
+    }).notNull(),
+    sourceFileName: text('source_file_name'),
+    sourceFileId: text('source_file_id'),
+
+    // Embedding
+    embedding: vector3072('embedding'),
+
+    // Metadata (MVP: 5 core fields)
+    industry: text('industry'),
+    useCase: text('use_case'),
+    cms: text('cms'),
+    phase: text('phase'),
+    documentType: text('document_type'),
+    effortRange: text('effort_range'),
+    confidence: integer('confidence').notNull().default(50),
+    businessUnit: text('business_unit'),
+
+    // Extended metadata (nullable, filled post-MVP)
+    customerSize: text('customer_size'),
+    projectVolume: text('project_volume'),
+    contractType: text('contract_type'),
+    region: text('region'),
+    competitorContext: text('competitor_context'),
+    legalRequirements: text('legal_requirements'),
+    accessibilityLevel: text('accessibility_level'),
+    hostingModel: text('hosting_model'),
+
+    // Timestamps
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    contentHashIdx: index('knowledge_chunks_hash_idx').on(table.contentHash),
+    cmsIdx: index('knowledge_chunks_cms_idx').on(table.cms),
+    industryIdx: index('knowledge_chunks_industry_idx').on(table.industry),
+    sourceTypeIdx: index('knowledge_chunks_source_type_idx').on(table.sourceType),
+    businessUnitIdx: index('knowledge_chunks_bu_idx').on(table.businessUnit),
+  })
+);
+
+export type KnowledgeChunkRow = typeof knowledgeChunks.$inferSelect;
+export type NewKnowledgeChunkRow = typeof knowledgeChunks.$inferInsert;
+
+export const pitchConversations = pgTable(
+  'pitch_conversations',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    runId: text('run_id')
+      .notNull()
+      .references(() => pitchRuns.id),
+    qualificationId: text('qualification_id')
+      .notNull()
+      .references(() => qualifications.id),
+
+    // Message
+    role: text('role', { enum: ['user', 'assistant', 'system'] }).notNull(),
+    content: text('content').notNull(),
+    messageType: text('message_type', {
+      enum: ['interview', 'progress', 'question', 'answer'],
+    }).notNull(),
+
+    // Tool Calls
+    toolCalls: text('tool_calls'), // JSON
+    toolResults: text('tool_results'), // JSON
+
+    // Ordering
+    sequenceNumber: integer('sequence_number').notNull(),
+
+    // Timestamps
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    runIdx: index('pitch_conv_run_idx').on(table.runId),
+    qualificationIdx: index('pitch_conv_qualification_idx').on(table.qualificationId),
+    sequenceIdx: index('pitch_conv_sequence_idx').on(table.runId, table.sequenceNumber),
+  })
+);
+
+export type PitchConversation = typeof pitchConversations.$inferSelect;
+export type NewPitchConversation = typeof pitchConversations.$inferInsert;
+
+// ===== Pitch Relations =====
+
+export const pitchRunsRelations = relations(pitchRuns, ({ one, many }) => ({
+  qualification: one(qualifications, {
+    fields: [pitchRuns.qualificationId],
+    references: [qualifications.id],
+  }),
+  user: one(users, {
+    fields: [pitchRuns.userId],
+    references: [users.id],
+  }),
+  selectedCms: one(technologies, {
+    fields: [pitchRuns.selectedCmsId],
+    references: [technologies.id],
+  }),
+  documents: many(pitchDocuments),
+  auditResults: many(pitchAuditResults),
+  conversations: many(pitchConversations),
+}));
+
+export const pitchDocumentsRelations = relations(pitchDocuments, ({ one }) => ({
+  run: one(pitchRuns, {
+    fields: [pitchDocuments.runId],
+    references: [pitchRuns.id],
+  }),
+  qualification: one(qualifications, {
+    fields: [pitchDocuments.qualificationId],
+    references: [qualifications.id],
+  }),
+  technology: one(technologies, {
+    fields: [pitchDocuments.technologyId],
+    references: [technologies.id],
+  }),
+}));
+
+export const pitchAuditResultsRelations = relations(pitchAuditResults, ({ one }) => ({
+  run: one(pitchRuns, {
+    fields: [pitchAuditResults.runId],
+    references: [pitchRuns.id],
+  }),
+  qualification: one(qualifications, {
+    fields: [pitchAuditResults.qualificationId],
+    references: [qualifications.id],
+  }),
+}));
+
+export const pitchConversationsRelations = relations(pitchConversations, ({ one }) => ({
+  run: one(pitchRuns, {
+    fields: [pitchConversations.runId],
+    references: [pitchRuns.id],
+  }),
+  qualification: one(qualifications, {
+    fields: [pitchConversations.qualificationId],
+    references: [qualifications.id],
   }),
 }));

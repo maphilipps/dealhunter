@@ -2,8 +2,7 @@ import { sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
-import type { KnowledgeChunk } from '../types';
-import type { KnowledgeChunkMetadata } from '../types';
+import type { KnowledgeChunk, KnowledgeChunkMetadata } from '../types';
 import { RAG_DEFAULTS } from '../constants';
 
 export async function queryKnowledge(params: {

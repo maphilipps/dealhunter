@@ -13,6 +13,7 @@ import { getConnection } from './connection';
  */
 export const QUEUE_NAMES = {
   DEEP_SCAN: 'deep-scan',
+  DEEP_SCAN_V2: 'deep-scan-v2',
   PITCH: 'pitch',
   PREQUAL_PROCESSING: 'prequal-processing',
   QUICK_SCAN: 'quick-scan',
@@ -580,6 +581,86 @@ export function getPitchBackoffDelay(attemptsMade: number): number {
   return delays[attemptsMade - 1] ?? delays[delays.length - 1];
 }
 
+// ============================================================================
+// Deep Scan V2 Queue
+// ============================================================================
+
+import type { DeepScanV2JobData, DeepScanV2JobResult } from '@/lib/deep-scan-v2/types';
+
+let deepScanV2Queue: Queue<DeepScanV2JobData, DeepScanV2JobResult, string> | null = null;
+
+/**
+ * Get or create the Deep Scan V2 queue
+ */
+export function getDeepScanV2Queue(): Queue<DeepScanV2JobData, DeepScanV2JobResult, string> {
+  if (!deepScanV2Queue) {
+    deepScanV2Queue = new Queue<DeepScanV2JobData, DeepScanV2JobResult, string>(
+      QUEUE_NAMES.DEEP_SCAN_V2,
+      {
+        connection: getConnection(),
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: {
+            type: 'custom',
+          },
+          removeOnComplete: {
+            age: 24 * 60 * 60,
+            count: 100,
+          },
+          removeOnFail: {
+            age: 7 * 24 * 60 * 60,
+            count: 500,
+          },
+        },
+      }
+    );
+
+    console.log('[BullMQ] Deep Scan V2 queue initialized');
+  }
+
+  return deepScanV2Queue;
+}
+
+let deepScanV2QueueEvents: QueueEvents | null = null;
+
+export function getDeepScanV2QueueEvents(): QueueEvents {
+  if (!deepScanV2QueueEvents) {
+    deepScanV2QueueEvents = new QueueEvents(QUEUE_NAMES.DEEP_SCAN_V2, {
+      connection: getConnection(),
+    });
+  }
+
+  return deepScanV2QueueEvents;
+}
+
+export async function addDeepScanV2Job(data: DeepScanV2JobData, jobId?: string) {
+  const queue = getDeepScanV2Queue();
+
+  const job = await queue.add('process', data, {
+    jobId: jobId || data.runId,
+  });
+
+  console.log(
+    `[BullMQ] Added deep scan v2 job ${job.id} for qualification ${data.qualificationId}`
+  );
+
+  return job;
+}
+
+export async function getDeepScanV2Job(jobId: string) {
+  const queue = getDeepScanV2Queue();
+  return queue.getJob(jobId);
+}
+
+/**
+ * Custom backoff strategy for deep scan v2 jobs
+ * Attempt 1: 1 minute, Attempt 2: 5 minutes, Attempt 3: 15 minutes
+ */
+export function getDeepScanV2BackoffDelay(attemptsMade: number): number {
+  const delays = [60_000, 300_000, 900_000];
+  return delays[attemptsMade - 1] ?? delays[delays.length - 1];
+}
+
 /**
  * Close all queue connections
  * Call this on graceful shutdown
@@ -623,6 +704,16 @@ export async function closeQueues(): Promise<void> {
   if (pitchQueueEvents) {
     await pitchQueueEvents.close();
     pitchQueueEvents = null;
+  }
+
+  if (deepScanV2Queue) {
+    await deepScanV2Queue.close();
+    deepScanV2Queue = null;
+  }
+
+  if (deepScanV2QueueEvents) {
+    await deepScanV2QueueEvents.close();
+    deepScanV2QueueEvents = null;
   }
 
   console.log('[BullMQ] All queues closed');

@@ -43,6 +43,24 @@ async function seedTestUsers() {
       role: 'admin' as const,
       password: 'admin123',
     },
+    {
+      email: 'francesco.raaphost@adesso.de',
+      name: 'Francesco Raaphost',
+      role: 'admin' as const,
+      password: 'admin123',
+    },
+    {
+      email: 'solano.morales@adesso.de',
+      name: 'Solano Morales',
+      role: 'admin' as const,
+      password: 'admin123',
+    },
+    {
+      email: 'christian.huschke@adesso.de',
+      name: 'Christian Huschke',
+      role: 'admin' as const,
+      password: 'admin123',
+    },
   ];
 
   for (const user of testUsers) {
@@ -69,6 +87,9 @@ async function seedTestUsers() {
   console.log('- Admin: admin@test.com / Test1234');
   console.log('- Sven Lahann: sven.lahann@adesso.de / admin123');
   console.log('- Marc Philipps: marc.philipps@adesso.de / admin123');
+  console.log('- Francesco Raaphost: francesco.raaphost@adesso.de / admin123');
+  console.log('- Solano Morales: solano.morales@adesso.de / admin123');
+  console.log('- Christian Huschke: christian.huschke@adesso.de / admin123');
 }
 
 seedTestUsers()

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { deepScanV2Runs } from '@/lib/db/schema';
@@ -31,7 +31,12 @@ export async function loadCheckpoint(runId: string): Promise<OrchestratorCheckpo
 
   if (!run?.snapshotData) return null;
 
-  return JSON.parse(run.snapshotData) as OrchestratorCheckpoint;
+  try {
+    return JSON.parse(run.snapshotData) as OrchestratorCheckpoint;
+  } catch (e) {
+    console.error(`[Checkpoint] Failed to parse snapshot for run ${runId}:`, e);
+    return null;
+  }
 }
 
 export async function updateRunStatus(
@@ -40,7 +45,6 @@ export async function updateRunStatus(
   extra?: {
     progress?: number;
     currentStep?: string;
-    error?: string;
     completedAt?: Date;
   }
 ): Promise<void> {
@@ -49,66 +53,50 @@ export async function updateRunStatus(
     .set({
       status,
       ...(extra?.progress !== undefined && { progress: extra.progress }),
-      ...(extra?.currentStep && { currentStep: extra.currentStep }),
+      ...(extra?.currentStep !== undefined && { currentStep: extra.currentStep }),
       ...(extra?.completedAt && { completedAt: extra.completedAt }),
       updatedAt: new Date(),
     })
     .where(eq(deepScanV2Runs.id, runId));
 }
 
+// Note: markAgentComplete and markAgentFailed use atomic SQL JSON operations
+// to avoid read-modify-write race conditions when agents complete concurrently.
+
 export async function markAgentComplete(
   runId: string,
   agentName: string,
   confidence: number
 ): Promise<void> {
-  const [run] = await db
-    .select({
-      completedAgents: deepScanV2Runs.completedAgents,
-      agentConfidences: deepScanV2Runs.agentConfidences,
-    })
-    .from(deepScanV2Runs)
-    .where(eq(deepScanV2Runs.id, runId))
-    .limit(1);
-
-  const completed: string[] = run?.completedAgents ? JSON.parse(run.completedAgents) : [];
-  const confidences: Record<string, number> = run?.agentConfidences
-    ? JSON.parse(run.agentConfidences)
-    : {};
-
-  if (!completed.includes(agentName)) {
-    completed.push(agentName);
-  }
-  confidences[agentName] = confidence;
-
-  await db
-    .update(deepScanV2Runs)
-    .set({
-      completedAgents: JSON.stringify(completed),
-      agentConfidences: JSON.stringify(confidences),
-      updatedAt: new Date(),
-    })
-    .where(eq(deepScanV2Runs.id, runId));
+  // Atomic append to JSON array + merge confidence, no read-modify-write
+  await db.execute(sql`
+    UPDATE deep_scan_v2_runs
+    SET
+      completed_agents = CASE
+        WHEN completed_agents IS NULL THEN ${JSON.stringify([agentName])}
+        WHEN completed_agents::jsonb ? ${agentName} THEN completed_agents
+        ELSE (completed_agents::jsonb || ${JSON.stringify([agentName])}::jsonb)::text
+      END,
+      agent_confidences = CASE
+        WHEN agent_confidences IS NULL THEN ${JSON.stringify({ [agentName]: confidence })}
+        ELSE (agent_confidences::jsonb || ${JSON.stringify({ [agentName]: confidence })}::jsonb)::text
+      END,
+      updated_at = NOW()
+    WHERE id = ${runId}
+  `);
 }
 
 export async function markAgentFailed(runId: string, agentName: string): Promise<void> {
-  const [run] = await db
-    .select({
-      failedAgents: deepScanV2Runs.failedAgents,
-    })
-    .from(deepScanV2Runs)
-    .where(eq(deepScanV2Runs.id, runId))
-    .limit(1);
-
-  const failed: string[] = run?.failedAgents ? JSON.parse(run.failedAgents) : [];
-  if (!failed.includes(agentName)) {
-    failed.push(agentName);
-  }
-
-  await db
-    .update(deepScanV2Runs)
-    .set({
-      failedAgents: JSON.stringify(failed),
-      updatedAt: new Date(),
-    })
-    .where(eq(deepScanV2Runs.id, runId));
+  // Atomic append to JSON array, no read-modify-write
+  await db.execute(sql`
+    UPDATE deep_scan_v2_runs
+    SET
+      failed_agents = CASE
+        WHEN failed_agents IS NULL THEN ${JSON.stringify([agentName])}
+        WHEN failed_agents::jsonb ? ${agentName} THEN failed_agents
+        ELSE (failed_agents::jsonb || ${JSON.stringify([agentName])}::jsonb)::text
+      END,
+      updated_at = NOW()
+    WHERE id = ${runId}
+  `);
 }

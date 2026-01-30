@@ -14,6 +14,7 @@ export async function ingestDocument(params: {
 
   const chunkIds: string[] = [];
 
+  // TODO: Batch embedding generation for performance (currently N separate API calls)
   for (const chunk of chunks) {
     const id = await upsertKnowledgeChunk({
       content: chunk.content,

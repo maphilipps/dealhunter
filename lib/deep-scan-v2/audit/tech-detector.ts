@@ -2,7 +2,6 @@ import * as cheerio from 'cheerio';
 import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
-import { fetchHtml } from './fetch-html';
 
 export const techStackSchema = z.object({
   cms: z
@@ -102,9 +101,11 @@ function extractTechIndicators(html: string, headers: Record<string, string>): s
   return indicators.join('\n');
 }
 
-export async function detectTechStack(url: string): Promise<TechStackResult> {
-  const { html, headers } = await fetchHtml(url);
-  const indicators = extractTechIndicators(html, headers);
+export async function detectTechStack(
+  url: string,
+  page: { html: string; headers: Record<string, string> }
+): Promise<TechStackResult> {
+  const indicators = extractTechIndicators(page.html, page.headers);
 
   const result = await generateStructuredOutput({
     model: 'fast',

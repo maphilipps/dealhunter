@@ -3,9 +3,8 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import type { ComponentAnalysis } from '../types';
-import { fetchHtml } from './fetch-html';
 
-const componentAnalysisSchema = z.object({
+export const componentAnalysisSchema = z.object({
   components: z.array(
     z.object({
       name: z.string(),
@@ -96,8 +95,11 @@ function extractPageStructure(html: string): string {
   return structure.join('\n');
 }
 
-export async function analyzeComponents(url: string): Promise<ComponentAnalysis> {
-  const { html } = await fetchHtml(url);
+export async function analyzeComponents(
+  url: string,
+  page: { html: string }
+): Promise<ComponentAnalysis> {
+  const { html } = page;
   const pageStructure = extractPageStructure(html);
 
   const result = await generateStructuredOutput({

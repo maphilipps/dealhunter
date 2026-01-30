@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
-import { fetchHtml } from './fetch-html';
 
 export const performanceSchema = z.object({
   scores: z.object({
@@ -89,7 +88,11 @@ async function fetchPageSpeedData(url: string): Promise<string | null> {
     }
 
     return summary.join('\n');
-  } catch {
+  } catch (error) {
+    console.warn(
+      '[PageSpeed] Failed to fetch data:',
+      error instanceof Error ? error.message : error
+    );
     return null;
   }
 }
@@ -115,8 +118,12 @@ function extractPerformanceIndicators(html: string): string {
   return indicators.join('\n');
 }
 
-export async function auditPerformance(url: string): Promise<PerformanceResult> {
-  const [{ html }, pageSpeedData] = await Promise.all([fetchHtml(url), fetchPageSpeedData(url)]);
+export async function auditPerformance(
+  url: string,
+  page: { html: string }
+): Promise<PerformanceResult> {
+  const pageSpeedData = await fetchPageSpeedData(url);
+  const { html } = page;
 
   const htmlIndicators = extractPerformanceIndicators(html);
   const context = pageSpeedData

@@ -13,6 +13,7 @@ import { getConnection } from './connection';
  */
 export const QUEUE_NAMES = {
   DEEP_SCAN: 'deep-scan',
+  PITCH: 'pitch',
   PREQUAL_PROCESSING: 'prequal-processing',
   QUICK_SCAN: 'quick-scan',
   VISUALIZATION: 'visualization',
@@ -288,24 +289,27 @@ let quickScanQueue: Queue<QuickScanJobData, QuickScanJobResult, string> | null =
  */
 export function getQuickScanQueue(): Queue<QuickScanJobData, QuickScanJobResult, string> {
   if (!quickScanQueue) {
-    quickScanQueue = new Queue<QuickScanJobData, QuickScanJobResult, string>(QUEUE_NAMES.QUICK_SCAN, {
-      connection: getConnection(),
-      defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 30000,
+    quickScanQueue = new Queue<QuickScanJobData, QuickScanJobResult, string>(
+      QUEUE_NAMES.QUICK_SCAN,
+      {
+        connection: getConnection(),
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 30000,
+          },
+          removeOnComplete: {
+            age: 24 * 60 * 60,
+            count: 100,
+          },
+          removeOnFail: {
+            age: 7 * 24 * 60 * 60,
+            count: 500,
+          },
         },
-        removeOnComplete: {
-          age: 24 * 60 * 60,
-          count: 100,
-        },
-        removeOnFail: {
-          age: 7 * 24 * 60 * 60,
-          count: 500,
-        },
-      },
-    });
+      }
+    );
 
     console.log('[BullMQ] Quick Scan queue initialized');
   }
@@ -342,9 +346,7 @@ export async function addQuickScanJob(data: QuickScanJobData) {
 
   const job = await queue.add('process', data);
 
-  console.log(
-    `[BullMQ] Added quick scan job ${job.id} for prequal ${data.preQualificationId}`
-  );
+  console.log(`[BullMQ] Added quick scan job ${job.id} for prequal ${data.preQualificationId}`);
 
   return job;
 }
@@ -444,7 +446,11 @@ let visualizationQueue: Queue<VisualizationJobData, VisualizationJobResult, stri
 /**
  * Get or create the Visualization queue
  */
-export function getVisualizationQueue(): Queue<VisualizationJobData, VisualizationJobResult, string> {
+export function getVisualizationQueue(): Queue<
+  VisualizationJobData,
+  VisualizationJobResult,
+  string
+> {
   if (!visualizationQueue) {
     visualizationQueue = new Queue<VisualizationJobData, VisualizationJobResult, string>(
       QUEUE_NAMES.VISUALIZATION,
@@ -499,6 +505,81 @@ export async function getVisualizationJob(jobId: string) {
   return queue.getJob(jobId);
 }
 
+// ============================================================================
+// Pitch Queue
+// ============================================================================
+
+import type { PitchJobData, PitchJobResult } from '@/lib/pitch/types';
+
+let pitchQueue: Queue<PitchJobData, PitchJobResult, string> | null = null;
+
+/**
+ * Get or create the Pitch queue
+ */
+export function getPitchQueue(): Queue<PitchJobData, PitchJobResult, string> {
+  if (!pitchQueue) {
+    pitchQueue = new Queue<PitchJobData, PitchJobResult, string>(QUEUE_NAMES.PITCH, {
+      connection: getConnection(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'custom',
+        },
+        removeOnComplete: {
+          age: 24 * 60 * 60,
+          count: 100,
+        },
+        removeOnFail: {
+          age: 7 * 24 * 60 * 60,
+          count: 500,
+        },
+      },
+    });
+
+    console.log('[BullMQ] Pitch queue initialized');
+  }
+
+  return pitchQueue;
+}
+
+let pitchQueueEvents: QueueEvents | null = null;
+
+export function getPitchQueueEvents(): QueueEvents {
+  if (!pitchQueueEvents) {
+    pitchQueueEvents = new QueueEvents(QUEUE_NAMES.PITCH, {
+      connection: getConnection(),
+    });
+  }
+
+  return pitchQueueEvents;
+}
+
+export async function addPitchJob(data: PitchJobData, jobId?: string) {
+  const queue = getPitchQueue();
+
+  const job = await queue.add('process', data, {
+    jobId: jobId || data.runId,
+  });
+
+  console.log(`[BullMQ] Added pitch job ${job.id} for qualification ${data.qualificationId}`);
+
+  return job;
+}
+
+export async function getPitchJob(jobId: string) {
+  const queue = getPitchQueue();
+  return queue.getJob(jobId);
+}
+
+/**
+ * Custom backoff strategy for pitch jobs
+ * Attempt 1: 1 minute, Attempt 2: 5 minutes, Attempt 3: 15 minutes
+ */
+export function getPitchBackoffDelay(attemptsMade: number): number {
+  const delays = [60_000, 300_000, 900_000];
+  return delays[attemptsMade - 1] ?? delays[delays.length - 1];
+}
+
 /**
  * Close all queue connections
  * Call this on graceful shutdown
@@ -532,6 +613,16 @@ export async function closeQueues(): Promise<void> {
   if (quickScanQueueEvents) {
     await quickScanQueueEvents.close();
     quickScanQueueEvents = null;
+  }
+
+  if (pitchQueue) {
+    await pitchQueue.close();
+    pitchQueue = null;
+  }
+
+  if (pitchQueueEvents) {
+    await pitchQueueEvents.close();
+    pitchQueueEvents = null;
   }
 
   console.log('[BullMQ] All queues closed');

@@ -2,7 +2,6 @@ import * as cheerio from 'cheerio';
 import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
-import { fetchHtml } from './fetch-html';
 
 export const accessibilitySchema = z.object({
   score: z.number().min(0).max(100),
@@ -93,8 +92,11 @@ function runStaticA11yChecks(html: string): string {
   return findings.join('\n');
 }
 
-export async function auditAccessibility(url: string): Promise<AccessibilityResult> {
-  const { html } = await fetchHtml(url);
+export async function auditAccessibility(
+  url: string,
+  page: { html: string }
+): Promise<AccessibilityResult> {
+  const { html } = page;
   const staticChecks = runStaticA11yChecks(html);
 
   const result = await generateStructuredOutput({

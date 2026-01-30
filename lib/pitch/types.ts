@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // ====== Run Status ======
-export const deepScanV2StatusEnum = [
+export const pitchStatusEnum = [
   'pending',
   'running',
   'audit_complete',
@@ -12,7 +12,7 @@ export const deepScanV2StatusEnum = [
   'failed',
 ] as const;
 
-export type DeepScanV2Status = (typeof deepScanV2StatusEnum)[number];
+export type PitchStatus = (typeof pitchStatusEnum)[number];
 
 // ====== Document Types ======
 export const documentTypeEnum = ['indication', 'calculation', 'presentation', 'proposal'] as const;
@@ -77,7 +77,7 @@ export interface ProgressEvent {
 }
 
 // ====== BullMQ Job Types ======
-export interface DeepScanV2JobData {
+export interface PitchJobData {
   runId: string;
   qualificationId: string;
   websiteUrl: string;
@@ -89,7 +89,7 @@ export interface DeepScanV2JobData {
   forceReset?: boolean;
 }
 
-export interface DeepScanV2JobResult {
+export interface PitchJobResult {
   success: boolean;
   phase: 'audit' | 'analysis' | 'generation' | 'waiting_for_user' | 'complete';
   completedAgents: string[];

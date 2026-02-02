@@ -1,11 +1,13 @@
 'use server';
 
+import { createId } from '@paralleldrive/cuid2';
 import { eq, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
+import { addPitchJob } from '@/lib/bullmq/queues';
 import { db } from '@/lib/db';
 import {
   backgroundJobs,
@@ -16,15 +18,86 @@ import {
   pitchdeckDeliverables,
   pitchdeckTeamMembers,
   pitchdecks,
+  pitchRuns,
   preQualifications,
   ptEstimations,
   pitchSectionData,
   pitches,
   businessUnits,
   referenceMatches,
+  technologies,
   users,
   websiteAudits,
 } from '@/lib/db/schema';
+
+/**
+ * Start the pitch scan pipeline directly (without interview).
+ * Uses existing RAG data from the pre-qualification phase.
+ */
+export async function startPitchScan(
+  pitchId: string
+): Promise<{ success: boolean; runId?: string; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    const [lead] = await db.select().from(pitches).where(eq(pitches.id, pitchId)).limit(1);
+    if (!lead) {
+      return { success: false, error: 'Lead nicht gefunden' };
+    }
+
+    // Resolve available CMS technologies for the lead's business unit
+    const availableCms = await db
+      .select({ id: technologies.id })
+      .from(technologies)
+      .where(eq(technologies.businessUnitId, lead.businessUnitId));
+
+    const targetCmsIds = availableCms.map(c => c.id);
+
+    const runId = createId();
+    const jobId = createId();
+
+    // Create pitch run record
+    await db.insert(pitchRuns).values({
+      id: runId,
+      pitchId,
+      userId: session.user.id,
+      status: 'pending',
+      targetCmsIds: JSON.stringify(targetCmsIds),
+    });
+
+    // Create background job record for tracking
+    await db.insert(backgroundJobs).values({
+      id: jobId,
+      jobType: 'pitch',
+      status: 'pending',
+      userId: session.user.id,
+      pitchId,
+      progress: 0,
+      currentStep: 'Pipeline wird gestartet...',
+    });
+
+    // Enqueue BullMQ job (no interviewResults — RAG data is sufficient)
+    await addPitchJob({
+      runId,
+      pitchId,
+      websiteUrl: lead.websiteUrl ?? '',
+      userId: session.user.id,
+      targetCmsIds,
+    });
+
+    revalidatePath(`/pitches/${pitchId}`);
+    return { success: true, runId };
+  } catch (error) {
+    console.error('Error starting pitch scan:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
+}
 
 export interface ConvertRfpToLeadInput {
   preQualificationId: string;

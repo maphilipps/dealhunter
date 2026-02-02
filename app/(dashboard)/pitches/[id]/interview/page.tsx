@@ -1,9 +1,9 @@
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, notInArray } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches } from '@/lib/db/schema';
+import { pitches, pitchRuns } from '@/lib/db/schema';
 
 import { InterviewClient } from './interview-client';
 
@@ -25,5 +25,19 @@ export default async function InterviewPage({ params }: { params: Promise<{ id: 
     redirect('/pitches');
   }
 
-  return <InterviewClient pitchId={lead.id} customerName={lead.customerName} />;
+  // Check for an existing active run — prevents re-starting the interview
+  const [activeRun] = await db
+    .select({ id: pitchRuns.id })
+    .from(pitchRuns)
+    .where(and(eq(pitchRuns.pitchId, id), notInArray(pitchRuns.status, ['completed', 'failed'])))
+    .orderBy(desc(pitchRuns.createdAt))
+    .limit(1);
+
+  return (
+    <InterviewClient
+      pitchId={lead.id}
+      customerName={lead.customerName}
+      activeRunId={activeRun?.id ?? null}
+    />
+  );
 }

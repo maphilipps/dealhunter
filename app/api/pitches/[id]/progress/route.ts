@@ -1,10 +1,11 @@
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import Redis from 'ioredis';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { pitches, users, pitchRuns } from '@/lib/db/schema';
+import { buildSnapshotEvent } from '@/lib/pitch/checkpoints';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -63,8 +64,30 @@ export async function GET(
     }
 
     const runId = run.id;
+    const snapshot = buildSnapshotEvent(run);
+    const isTerminal = ['completed', 'failed'].includes(run.status);
 
-    // Set up SSE stream via Redis pub/sub
+    // For terminal runs, send snapshot and close immediately (no Redis needed)
+    if (isTerminal) {
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(`data: ${JSON.stringify({ type: 'connected', runId })}\n\n`);
+          controller.enqueue(`data: ${JSON.stringify(snapshot)}\n\n`);
+          controller.close();
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+          'X-Accel-Buffering': 'no',
+          Connection: 'keep-alive',
+        },
+      });
+    }
+
+    // Set up SSE stream via Redis pub/sub for active runs
     const subscriber = new Redis(REDIS_URL, {
       maxRetriesPerRequest: 3,
       enableReadyCheck: false,
@@ -115,7 +138,10 @@ export async function GET(
         });
 
         await subscriber.subscribe(channel);
+
+        // Send connected + DB snapshot so client has immediate state
         controller.enqueue(`data: ${JSON.stringify({ type: 'connected', runId })}\n\n`);
+        controller.enqueue(`data: ${JSON.stringify(snapshot)}\n\n`);
       },
       cancel() {
         subscriber.disconnect();

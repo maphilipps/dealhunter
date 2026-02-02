@@ -15,20 +15,30 @@ function getPublisher(): Redis {
       maxRetriesPerRequest: 3,
       enableReadyCheck: false,
     });
+    publisher.on('error', err => {
+      console.error('[Progress] Redis publisher error:', err);
+    });
   }
   return publisher;
+}
+
+/**
+ * Publish any JSON payload to a pitch progress channel via Redis pub/sub.
+ */
+export async function publishToChannel(runId: string, payload: object): Promise<void> {
+  try {
+    const redis = getPublisher();
+    await redis.publish(`pitch:progress:${runId}`, JSON.stringify(payload));
+  } catch (error) {
+    console.error('[Progress] Failed to publish to channel:', error);
+  }
 }
 
 /**
  * Publish a progress event via Redis pub/sub for SSE consumption.
  */
 async function publishProgress(runId: string, event: ProgressEvent): Promise<void> {
-  try {
-    const redis = getPublisher();
-    await redis.publish(`pitch:progress:${runId}`, JSON.stringify(event));
-  } catch (error) {
-    console.error('[Progress] Failed to publish event:', error);
-  }
+  await publishToChannel(runId, event);
 }
 
 /**

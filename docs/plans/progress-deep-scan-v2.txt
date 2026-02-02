@@ -1,0 +1,132 @@
+# Deep Scan v2 MVP — Progress Tracker
+# Updated: 2026-02-01
+
+## NAMING CONVENTION (post-rename):
+# - Module path: lib/pitch/ (NOT lib/deep-scan-v2/)
+# - Worker: workers/pitch.ts
+# - Queue: PITCH (in QUEUE_NAMES)
+# - DB tables: pitchRuns, pitchDocuments, pitchAuditResults, pitchConversations
+# - FK columns: pitchId (NOT qualificationId)
+# - Schema imports: pitches (NOT qualifications)
+# - Dashboard route: /pitches/[id]/ (NOT /qualifications/[id]/)
+# - API route: /api/v2/deep-scan/ (stays — versioned API)
+
+## COMPLETED (Tasks 1-15)
+# ═══════════════════════════════════════════
+
+[x] Task 1: Types & Constants
+    lib/pitch/types.ts, lib/pitch/constants.ts
+    Commit: 65e8d37
+
+[x] Task 2: Database Schema
+    lib/db/schema.ts (pitchRuns, pitchDocuments, pitchAuditResults, pitchConversations, knowledgeChunks)
+    Commit: 6a69e55
+
+[x] Task 3: BullMQ Queue Setup
+    lib/bullmq/queues.ts (PITCH queue), workers/pitch.ts, lib/pitch/processor.ts (placeholder)
+    Commit: 5722973
+
+[x] Task 4: Checkpoint System
+    lib/pitch/checkpoints.ts
+    Commits: 97f3707, 6a65474 (review fixes)
+
+[x] Task 5: RAG Foundation
+    lib/pitch/rag/knowledge-service.ts, lib/pitch/rag/retrieval.ts
+    Commit: 2cc8834
+
+[x] Task 6: RAG Ingest Pipeline
+    lib/pitch/rag/chunking.ts, lib/pitch/rag/ingest-pipeline.ts
+    Commit: 2cc8834
+
+[x] Task 7: Audit: Tech Detection
+    lib/pitch/audit/tech-detector.ts
+    Commit: 98e71c4
+
+[x] Task 8: Audit: Performance
+    lib/pitch/audit/performance-auditor.ts
+    Commit: 98e71c4
+
+[x] Task 9: Audit: Accessibility
+    lib/pitch/audit/a11y-auditor.ts
+    Commit: 98e71c4
+
+[x] Task 10: Audit: Component Analysis
+    lib/pitch/audit/component-analyzer.ts
+    Commit: 98e71c4
+
+[x] Task 11: Expert Agent: CMS
+    lib/pitch/agents/cms-agent.ts
+    Commit: bd46297
+
+[x] Task 12: Expert Agent: Industry
+    lib/pitch/agents/industry-agent.ts
+    Commit: bd46297
+
+[x] Task 13: Orchestrator Agent
+    lib/pitch/orchestrator.ts
+    - generateText + tools + stopWhen: stepCountIs(50) (AI SDK v6)
+    - Load checkpoint (resume from askUser)
+    - AskUserInterrupt for graceful pause
+    - Run audit → CMS → Industry → Indication generation
+    - Redis pub/sub for SSE progress events
+
+[x] Task 14: Orchestrator Tools
+    lib/pitch/tools/
+    - ask-user.ts (checkpoint + AskUserInterrupt)
+    - audit-tool.ts (delegates to runFullAudit)
+    - rag-query-tool.ts (CMS + Industry expert agents)
+    - progress-tool.ts (DB + Redis pub/sub SSE)
+    - uncertainty-tool.ts (flag low confidence)
+    - generation-tools.ts (indication generation + DB storage)
+
+[x] Task 15: Indication Generator
+    lib/pitch/generators/indication-generator.ts
+    - generateText + Output.object({ schema: indicationDocumentSchema }) (AI SDK v6)
+    - Called by generateIndication tool
+    - Result stored in pitchDocuments table by the tool
+
+## NOTES on AI SDK v6 changes (applied in Tasks 13-15):
+# - maxSteps: 50 → stopWhen: stepCountIs(50)
+# - parameters → inputSchema (in tool definition)
+# - generateObject → generateText + Output.object({ schema })
+# - z.record(value) → z.record(key, value) (Zod v4)
+# - .result → .output (on TypedToolResult)
+# - maxTokens → maxOutputTokens
+
+## NEXT BATCH (Tasks 16-18: APIs)
+# ═══════════════════════════════════════════
+
+[ ] Task 16: Interview Chat API
+    Target: app/api/v2/deep-scan/chat/route.ts
+    - POST with streamText + startPipeline tool
+    - Uses pitches table (NOT qualifications)
+    - Uses pitchId (NOT qualificationId)
+
+[ ] Task 17: Pipeline Control APIs
+    Target: app/api/v2/deep-scan/[runId]/ (status, answer, progress SSE, retry)
+
+[ ] Task 18: Results APIs
+    Target: app/api/v2/deep-scan/[runId]/audit, documents, download
+    Target: app/api/v2/audit/share/[token]/ (public)
+
+## PENDING (Tasks 19-24)
+# ═══════════════════════════════════════════
+
+[ ] Task 19: Knowledge Management APIs
+    Target: app/api/v2/knowledge/ (upload, search, delete)
+
+[ ] Task 20: Chat UI Component
+    Target: components/deep-scan-v2/ (chat.tsx, progress-indicator.tsx, pipeline-status.tsx)
+
+[ ] Task 21: Audit In-App View
+    Target: components/deep-scan-v2/audit-view.tsx + audit-sections/
+
+[ ] Task 22: Deep Scan Page
+    Target: app/(dashboard)/pitches/[id]/deep-scan-v2/ (page.tsx, layout.tsx)
+    NOTE: Was /qualifications/ in plan — now /pitches/
+
+[ ] Task 23: Wire Up Worker
+    Target: lib/pitch/processor.ts (replace placeholder)
+
+[ ] Task 24: Integration Testing
+    Target: lib/pitch/__tests__/ (orchestrator, checkpoint, rag-retrieval)

@@ -5,7 +5,7 @@ import { NextResponse, after } from 'next/server';
 
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { db } from '@/lib/db';
-import { qualifications, pitchdecks, preQualifications } from '@/lib/db/schema';
+import { pitches, pitchdecks, preQualifications } from '@/lib/db/schema';
 
 // ============================================================================
 // GET /api/cron/check-pitchdeck-deadlines
@@ -60,12 +60,12 @@ export async function GET(request: Request) {
     const activePitchdecks = await db
       .select({
         pitchdeck: pitchdecks,
-        lead: qualifications,
+        lead: pitches,
         preQualification: preQualifications,
       })
       .from(pitchdecks)
-      .innerJoin(qualifications, eq(pitchdecks.qualificationId, qualifications.id))
-      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
+      .innerJoin(pitches, eq(pitchdecks.pitchId, pitches.id))
+      .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
       .where(
         and(
           ne(pitchdecks.status, 'submitted'),
@@ -87,7 +87,9 @@ export async function GET(request: Request) {
             rfpDeadline = new Date(requirements.deadline);
           }
         } catch {
-          console.error(`[Cron] Failed to parse extractedRequirements for Pre-Qualification ${preQualification.id}`);
+          console.error(
+            `[Cron] Failed to parse extractedRequirements for Pre-Qualification ${preQualification.id}`
+          );
           continue;
         }
       }

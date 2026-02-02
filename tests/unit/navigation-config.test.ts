@@ -9,7 +9,7 @@ import {
   getRAGQueryTemplate,
   getSynthesizerAgent,
   type LeadNavigationSection,
-} from '@/lib/qualifications/navigation-config';
+} from '@/lib/pitches/navigation-config';
 
 describe('navigation-config', () => {
   describe('QUALIFICATION_NAVIGATION_SECTIONS', () => {

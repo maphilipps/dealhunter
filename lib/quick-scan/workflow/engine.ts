@@ -85,7 +85,7 @@ export class WorkflowEngine {
             existingChunks.length > 0 ? Math.max(...existingChunks.map(c => c.chunkIndex)) + 1 : 0;
 
           await db.insert(dealEmbeddings).values({
-            qualificationId: null,
+            pitchId: null,
             preQualificationId: preQualId,
             agentName,
             chunkType: input.chunkType,
@@ -107,7 +107,7 @@ export class WorkflowEngine {
         // Store a visualization
         storeVisualization: async (input: VisualizationInput) => {
           await db.insert(dealEmbeddings).values({
-            qualificationId: null,
+            pitchId: null,
             preQualificationId: preQualId,
             agentName,
             chunkType: 'visualization',
@@ -157,7 +157,7 @@ export class WorkflowEngine {
             indexMap.set(finding.chunkType, newIndex);
 
             return {
-              qualificationId: null,
+              pitchId: null,
               preQualificationId: preQualId,
               agentName,
               chunkType: finding.chunkType,

@@ -94,7 +94,7 @@ export function DecisionForm({
 
         if (result.success) {
           if (result.leadId) {
-            router.push(`/qualifications/${result.leadId}`);
+            router.push(`/pitches/${result.leadId}`);
           } else {
             router.push(`/pre-qualifications/${preQualificationId}`);
           }
@@ -200,7 +200,9 @@ export function DecisionForm({
                   <XCircle className="h-5 w-5 text-red-600" />
                   <div>
                     <p className="font-semibold">NO-BID</p>
-                    <p className="text-sm text-muted-foreground">Opportunity ablehnen & archivieren</p>
+                    <p className="text-sm text-muted-foreground">
+                      Opportunity ablehnen & archivieren
+                    </p>
                   </div>
                 </div>
               </Label>
@@ -294,7 +296,12 @@ export function DecisionForm({
 
       {/* Submit Buttons */}
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.back()}
+          disabled={isSubmitting}
+        >
           Abbrechen
         </Button>
         <Button

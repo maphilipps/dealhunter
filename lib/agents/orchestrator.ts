@@ -1,7 +1,7 @@
 /**
  * Agent Orchestrator & Background Jobs
  *
- * Orchestrates Deep-Scan Agents for Phase 2 Lead Analysis:
+ * Orchestrates Analysis Agents for Phase 2 Lead Analysis:
  * 1. Full-Scan Agent (tech stack detection) - runs first
  * 2. Content Architecture + Migration Complexity + Accessibility - run in parallel
  *
@@ -26,7 +26,7 @@ import {
   analyzeMigrationComplexity,
   type MigrationComplexityResult,
 } from './migration-complexity-agent';
-import { qualifications, backgroundJobs } from '../db/schema';
+import { pitches, backgroundJobs } from '../db/schema';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -53,7 +53,7 @@ export interface OrchestrationResult {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Run Deep-Scan Agents in sequence with background job tracking
+ * Run Analysis Agents in sequence with background job tracking
  *
  * Workflow:
  * 1. Create background job record
@@ -68,8 +68,8 @@ export interface OrchestrationResult {
  * @param input - Lead ID, website URL, user ID
  * @returns Orchestration result with all agent outputs
  */
-export async function runDeepScanAgents(input: OrchestrationInput): Promise<OrchestrationResult> {
-  console.error(`[Orchestrator] Starting deep scan for lead ${input.leadId}`);
+export async function runAnalysisAgents(input: OrchestrationInput): Promise<OrchestrationResult> {
+  console.error(`[Orchestrator] Starting analysis for lead ${input.leadId}`);
 
   const errors: string[] = [];
   let backgroundJobId: string | null = null;
@@ -149,9 +149,9 @@ export async function runDeepScanAgents(input: OrchestrationInput): Promise<Orch
       errors: errors.length > 0 ? errors : undefined,
     });
 
-    await updateJobProgress(backgroundJobId, 100, 'Deep scan completed');
+    await updateJobProgress(backgroundJobId, 100, 'Analysis completed');
 
-    console.error(`[Orchestrator] Deep scan completed for lead ${input.leadId}`);
+    console.error(`[Orchestrator] Analysis completed for lead ${input.leadId}`);
     console.error(
       `[Orchestrator] Success: ${errors.length === 0}, Partial Success: ${errors.length > 0 && errors.length < 3}`
     );
@@ -400,7 +400,7 @@ async function createBackgroundJob(leadId: string, userId: string): Promise<stri
       userId,
       status: 'running',
       progress: 0,
-      currentStep: 'Initializing deep scan',
+      currentStep: 'Initializing analysis',
       startedAt: new Date(),
     })
     .returning();
@@ -464,12 +464,12 @@ async function updateLeadStatus(
   status: 'full_scanning' | 'bl_reviewing'
 ): Promise<void> {
   await db
-    .update(qualifications)
+    .update(pitches)
     .set({
       status,
       updatedAt: new Date(),
     })
-    .where(eq(qualifications.id, leadId));
+    .where(eq(pitches.id, leadId));
 
   console.error(`[Orchestrator] Lead status updated to: ${status}`);
 }

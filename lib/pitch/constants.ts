@@ -1,3 +1,5 @@
+// lib/pitch/constants.ts
+
 // ====== Queue Name ======
 export const PITCH_QUEUE = 'pitch' as const;
 
@@ -21,7 +23,7 @@ export const PHASES = {
 } as const;
 
 // ====== System Prompts ======
-export const INTERVIEW_SYSTEM_PROMPT = `Du bist ein erfahrener Berater bei adesso, der ein kurzes Interview führt, um einen Pitch (Website-Analyse + Angebotsindikation) vorzubereiten.
+export const INTERVIEW_SYSTEM_PROMPT = `Du bist ein erfahrener Berater bei adesso, der ein kurzes Interview führt, um einen Deep Scan (Website-Analyse + Angebotsindikation) vorzubereiten.
 
 Dein Ziel:
 1. Verstehe das Projektziel des Kunden (Migration, Redesign, Neubau?)

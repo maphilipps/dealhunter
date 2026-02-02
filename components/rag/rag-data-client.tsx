@@ -280,7 +280,9 @@ function CombinedStatsCard({ stats, isLoading }: { stats: CombinedStats; isLoadi
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalRfpEmbeddings.toLocaleString('de-DE')}</div>
-            <p className="text-xs text-muted-foreground">{preQualification?.agentStats.length ?? 0} Agents</p>
+            <p className="text-xs text-muted-foreground">
+              {preQualification?.agentStats.length ?? 0} Agents
+            </p>
           </CardContent>
         </Card>
 
@@ -416,7 +418,7 @@ function LeadEmbeddingsBrowser({ leadId }: { leadId: string }) {
     setIsLoading(true);
     try {
       const result = await getLeadEmbeddings({
-        qualificationId: leadId,
+        pitchId: leadId,
         agentName: agentFilter,
         chunkType: typeFilter,
         search: debouncedSearch || undefined,

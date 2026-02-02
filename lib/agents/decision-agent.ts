@@ -22,12 +22,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import {
-  qualifications,
-  qualificationSectionData,
-  quickScans,
-  dealEmbeddings,
-} from '@/lib/db/schema';
+import { pitches, pitchSectionData, quickScans, dealEmbeddings } from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -114,17 +109,20 @@ const CATEGORIES = [
  * @param preQualificationId - Pre-Qualification ID
  * @returns Decision analysis with BID/NO-BID recommendation
  */
-export async function runDecisionAgent(leadId: string, preQualificationId: string): Promise<DecisionAnalysis> {
+export async function runDecisionAgent(
+  leadId: string,
+  preQualificationId: string
+): Promise<DecisionAnalysis> {
   // 1. Fetch lead data
   const [leadData] = await db
     .select({
-      customerName: qualifications.customerName,
-      industry: qualifications.industry,
-      projectDescription: qualifications.projectDescription,
-      quickScanId: qualifications.quickScanId,
+      customerName: pitches.customerName,
+      industry: pitches.industry,
+      projectDescription: pitches.projectDescription,
+      quickScanId: pitches.quickScanId,
     })
-    .from(qualifications)
-    .where(eq(qualifications.id, leadId))
+    .from(pitches)
+    .where(eq(pitches.id, leadId))
     .limit(1);
 
   if (!leadData) {
@@ -160,13 +158,13 @@ export async function runDecisionAgent(leadId: string, preQualificationId: strin
   // 3. Fetch all section data from Deep Scan
   const sectionResults = await db
     .select({
-      sectionId: qualificationSectionData.sectionId,
-      content: qualificationSectionData.content,
-      confidence: qualificationSectionData.confidence,
-      sources: qualificationSectionData.sources,
+      sectionId: pitchSectionData.sectionId,
+      content: pitchSectionData.content,
+      confidence: pitchSectionData.confidence,
+      sources: pitchSectionData.sources,
     })
-    .from(qualificationSectionData)
-    .where(eq(qualificationSectionData.qualificationId, leadId));
+    .from(pitchSectionData)
+    .where(eq(pitchSectionData.pitchId, leadId));
 
   // Parse section data
   const sectionDataMap: Record<string, { content: unknown; confidence: number | null }> = {};
@@ -288,7 +286,7 @@ ${result.reasoning}`;
 
   if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
     await db.insert(dealEmbeddings).values({
-      qualificationId: leadId,
+      pitchId: leadId,
       preQualificationId: preQualificationId,
       agentName: 'decision',
       chunkType: 'analysis',

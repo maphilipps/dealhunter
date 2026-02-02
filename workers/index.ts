@@ -2,8 +2,10 @@
  * BullMQ Combined Worker
  *
  * Single worker process that handles all queues:
- * - deep-scan
+ * - pitch
  * - prequal-processing
+ * - quick-scan
+ * - visualization
  *
  * Run with: npm run worker
  */
@@ -11,8 +13,8 @@
 import { Worker } from 'bullmq';
 
 import { getConnectionOptions, closeConnection } from '../lib/bullmq/connection';
-import { QUEUE_NAMES, getDeepScanBackoffDelay, closeQueues } from '../lib/bullmq/queues';
-import { processDeepScanJob } from '../lib/bullmq/workers/deep-scan-processor';
+import { QUEUE_NAMES, getPitchBackoffDelay, closeQueues } from '../lib/bullmq/queues';
+import { processPitchJob } from '../lib/pitch/processor';
 import { processPreQualJob } from '../lib/bullmq/workers/prequal-processing-worker';
 import { processQuickScanJob } from '../lib/bullmq/workers/quick-scan-processor';
 import { processVisualizationJob } from '../lib/bullmq/workers/visualization-processor';
@@ -20,7 +22,7 @@ import { processVisualizationJob } from '../lib/bullmq/workers/visualization-pro
 /**
  * Worker concurrency settings
  */
-const DEEP_SCAN_CONCURRENCY = parseInt(process.env.DEEP_SCAN_CONCURRENCY || '2', 10);
+const PITCH_CONCURRENCY = parseInt(process.env.PITCH_CONCURRENCY || '2', 10);
 const PREQUAL_CONCURRENCY = parseInt(process.env.PREQUAL_CONCURRENCY || '1', 10);
 const QUICK_SCAN_CONCURRENCY = parseInt(process.env.QUICK_SCAN_CONCURRENCY || '3', 10);
 const VISUALIZATION_CONCURRENCY = parseInt(process.env.VISUALIZATION_CONCURRENCY || '2', 10);
@@ -35,38 +37,38 @@ async function main() {
   const workers: Worker[] = [];
 
   // ============================================================================
-  // Deep Scan Worker
+  // Pitch Worker
   // ============================================================================
-  const deepScanWorker = new Worker(
-    QUEUE_NAMES.DEEP_SCAN,
+  const pitchWorker = new Worker(
+    QUEUE_NAMES.PITCH,
     async job => {
-      console.log(`[DeepScan] Processing job ${job.id}`);
-      return processDeepScanJob(job);
+      console.log(`[Pitch] Processing job ${job.id}`);
+      return processPitchJob(job);
     },
     {
       connection: connectionOptions,
-      concurrency: DEEP_SCAN_CONCURRENCY,
+      concurrency: PITCH_CONCURRENCY,
       settings: {
         backoffStrategy: (attemptsMade: number) => {
-          return getDeepScanBackoffDelay(attemptsMade);
+          return getPitchBackoffDelay(attemptsMade);
         },
       },
     }
   );
 
-  deepScanWorker.on('ready', () => {
-    console.log(`[DeepScan] Ready (concurrency: ${DEEP_SCAN_CONCURRENCY})`);
+  pitchWorker.on('ready', () => {
+    console.log(`[Pitch] Ready (concurrency: ${PITCH_CONCURRENCY})`);
   });
 
-  deepScanWorker.on('completed', (job, result) => {
+  pitchWorker.on('completed', (job, result) => {
     console.log(
-      `[DeepScan] Job ${job.id} completed. Success: ${result.success}, ` +
-        `Experts: ${result.completedExperts.length}/${result.completedExperts.length + result.failedExperts.length}`
+      `[Pitch] Job ${job.id} completed. Success: ${result.success}, ` +
+        `Agents: ${result.completedAgents.length}/${result.completedAgents.length + result.failedAgents.length}`
     );
   });
 
-  deepScanWorker.on('failed', (job, error) => {
-    console.error(`[DeepScan] Job ${job?.id} failed:`, {
+  pitchWorker.on('failed', (job, error) => {
+    console.error(`[Pitch] Job ${job?.id} failed:`, {
       message: error.message,
       stack: error.stack,
       jobData: job?.data,
@@ -74,7 +76,7 @@ async function main() {
     });
   });
 
-  workers.push(deepScanWorker);
+  workers.push(pitchWorker);
 
   // ============================================================================
   // PreQual Processing Worker
@@ -137,9 +139,7 @@ async function main() {
   });
 
   quickScanWorker.on('completed', (job, result) => {
-    console.log(
-      `[QuickScan] Job ${job.id} completed. Success: ${result.success}`
-    );
+    console.log(`[QuickScan] Job ${job.id} completed. Success: ${result.success}`);
   });
 
   quickScanWorker.on('failed', (job, error) => {

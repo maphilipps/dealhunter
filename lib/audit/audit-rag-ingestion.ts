@@ -11,7 +11,7 @@ import { parseAuditDirectory, getAuditStats } from './audit-file-parser';
 
 import { isEmbeddingEnabled } from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
-import { qualifications, dealEmbeddings } from '@/lib/db/schema';
+import { pitches, dealEmbeddings } from '@/lib/db/schema';
 import { estimateTokens } from '@/lib/rag/raw-chunk-service';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -115,7 +115,7 @@ function splitContentForEmbedding(content: string): string[] {
 
 export interface IngestionResult {
   success: boolean;
-  qualificationId: string;
+  pitchId: string;
   projectName: string;
   stats: {
     filesProcessed: number;
@@ -138,7 +138,7 @@ export interface IngestionProgress {
  */
 export async function findLeadByName(projectName: string): Promise<string | null> {
   const normalizedName = projectName.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const existingQualifications = await db.select().from(qualifications);
+  const existingQualifications = await db.select().from(pitches);
 
   for (const qualification of existingQualifications) {
     const qualificationCustomer = (qualification.customerName || '')
@@ -158,48 +158,36 @@ export async function findLeadByName(projectName: string): Promise<string | null
 /**
  * Verify a qualification exists by ID
  */
-export async function verifyLeadExists(qualificationId: string): Promise<boolean> {
+export async function verifyLeadExists(pitchId: string): Promise<boolean> {
   const result = await db
-    .select({ id: qualifications.id })
-    .from(qualifications)
-    .where(eq(qualifications.id, qualificationId))
+    .select({ id: pitches.id })
+    .from(pitches)
+    .where(eq(pitches.id, pitchId))
     .limit(1);
 
   return result.length > 0;
 }
 
 /**
- * Get all qualifications for selection
+ * Get all pitches for selection
  */
 export async function getAllLeads(): Promise<Array<{ id: string; customerName: string }>> {
-  return db
-    .select({ id: qualifications.id, customerName: qualifications.customerName })
-    .from(qualifications);
+  return db.select({ id: pitches.id, customerName: pitches.customerName }).from(pitches);
 }
 
 /**
  * Delete existing audit chunks for a lead (idempotent)
  */
-async function deleteExistingAuditChunks(qualificationId: string): Promise<number> {
+async function deleteExistingAuditChunks(pitchId: string): Promise<number> {
   const existing = await db
     .select({ id: dealEmbeddings.id })
     .from(dealEmbeddings)
-    .where(
-      and(
-        eq(dealEmbeddings.qualificationId, qualificationId),
-        eq(dealEmbeddings.agentName, AGENT_NAME)
-      )
-    );
+    .where(and(eq(dealEmbeddings.pitchId, pitchId), eq(dealEmbeddings.agentName, AGENT_NAME)));
 
   if (existing.length > 0) {
     await db
       .delete(dealEmbeddings)
-      .where(
-        and(
-          eq(dealEmbeddings.qualificationId, qualificationId),
-          eq(dealEmbeddings.agentName, AGENT_NAME)
-        )
-      );
+      .where(and(eq(dealEmbeddings.pitchId, pitchId), eq(dealEmbeddings.agentName, AGENT_NAME)));
   }
 
   return existing.length;
@@ -211,20 +199,20 @@ async function deleteExistingAuditChunks(qualificationId: string): Promise<numbe
  * Each file is stored as a single raw chunk with its full content.
  *
  * @param auditPath - Path to the audit directory
- * @param qualificationId - Qualification ID to associate data with (required)
+ * @param pitchId - Qualification ID to associate data with (required)
  * @param onProgress - Optional callback for progress updates
  * @returns Ingestion result with statistics
  */
 export async function ingestAuditToRAG(
   auditPath: string,
-  qualificationId: string,
+  pitchId: string,
   onProgress?: (progress: IngestionProgress) => void
 ): Promise<IngestionResult> {
   // Check if embeddings are enabled
   if (!isEmbeddingEnabled()) {
     return {
       success: false,
-      qualificationId: '',
+      pitchId: '',
       projectName: '',
       stats: { filesProcessed: 0, chunksCreated: 0, totalTokens: 0, embeddingsGenerated: 0 },
       error: 'Embeddings are not enabled. Set OPENAI_EMBEDDING_API_KEY in your environment.',
@@ -232,14 +220,14 @@ export async function ingestAuditToRAG(
   }
 
   // Verify qualification exists
-  const qualificationExists = await verifyLeadExists(qualificationId);
+  const qualificationExists = await verifyLeadExists(pitchId);
   if (!qualificationExists) {
     return {
       success: false,
-      qualificationId: '',
+      pitchId: '',
       projectName: '',
       stats: { filesProcessed: 0, chunksCreated: 0, totalTokens: 0, embeddingsGenerated: 0 },
-      error: `Qualification not found: ${qualificationId}`,
+      error: `Qualification not found: ${pitchId}`,
     };
   }
 
@@ -251,7 +239,7 @@ export async function ingestAuditToRAG(
     const auditStats = getAuditStats(audit);
 
     // 2. Delete existing audit chunks (idempotent)
-    await deleteExistingAuditChunks(qualificationId);
+    await deleteExistingAuditChunks(pitchId);
 
     // 3. Store all files as raw chunks (split if too large)
     let chunksCreated = 0;
@@ -306,7 +294,7 @@ export async function ingestAuditToRAG(
         const withEmbedding = await generateRawChunkEmbeddings([rawChunk]);
 
         await db.insert(dealEmbeddings).values({
-          qualificationId,
+          pitchId,
           agentName: AGENT_NAME,
           chunkType,
           chunkIndex: globalChunkIndex++,
@@ -339,7 +327,7 @@ export async function ingestAuditToRAG(
 
     return {
       success: true,
-      qualificationId,
+      pitchId,
       projectName: audit.projectName,
       stats: {
         filesProcessed: auditStats.totalFiles,
@@ -352,7 +340,7 @@ export async function ingestAuditToRAG(
     console.error('[Audit Ingestion] Failed:', error);
     return {
       success: false,
-      qualificationId: '',
+      pitchId: '',
       projectName: '',
       stats: { filesProcessed: 0, chunksCreated: 0, totalTokens: 0, embeddingsGenerated: 0 },
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -363,16 +351,11 @@ export async function ingestAuditToRAG(
 /**
  * Check if a qualification has audit data in the RAG system
  */
-export async function hasAuditData(qualificationId: string): Promise<boolean> {
+export async function hasAuditData(pitchId: string): Promise<boolean> {
   const result = await db
     .select({ id: dealEmbeddings.id })
     .from(dealEmbeddings)
-    .where(
-      and(
-        eq(dealEmbeddings.qualificationId, qualificationId),
-        eq(dealEmbeddings.agentName, AGENT_NAME)
-      )
-    )
+    .where(and(eq(dealEmbeddings.pitchId, pitchId), eq(dealEmbeddings.agentName, AGENT_NAME)))
     .limit(1);
 
   return result.length > 0;
@@ -381,16 +364,11 @@ export async function hasAuditData(qualificationId: string): Promise<boolean> {
 /**
  * Get audit chunk count for a qualification
  */
-export async function getAuditChunkCount(qualificationId: string): Promise<number> {
+export async function getAuditChunkCount(pitchId: string): Promise<number> {
   const result = await db
     .select({ id: dealEmbeddings.id })
     .from(dealEmbeddings)
-    .where(
-      and(
-        eq(dealEmbeddings.qualificationId, qualificationId),
-        eq(dealEmbeddings.agentName, AGENT_NAME)
-      )
-    );
+    .where(and(eq(dealEmbeddings.pitchId, pitchId), eq(dealEmbeddings.agentName, AGENT_NAME)));
 
   return result.length;
 }

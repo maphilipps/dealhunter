@@ -15,7 +15,7 @@ import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
 
 export interface VisualizationWriteToolContext {
-  qualificationId?: string;
+  pitchId?: string;
   preQualificationId?: string;
   agentName: string;
 }
@@ -62,8 +62,8 @@ type JsonRenderTree = z.infer<typeof jsonRenderTreeSchema>;
  * ```
  */
 export function createVisualizationWriteTool(context: VisualizationWriteToolContext) {
-  if (!context.qualificationId && !context.preQualificationId) {
-    throw new Error('Either qualificationId or preQualificationId must be provided');
+  if (!context.pitchId && !context.preQualificationId) {
+    throw new Error('Either pitchId or preQualificationId must be provided');
   }
 
   return tool({
@@ -151,7 +151,7 @@ Example:
 
       // Store visualization as a special chunk type
       await db.insert(dealEmbeddings).values({
-        qualificationId: context.qualificationId ?? null,
+        pitchId: context.pitchId ?? null,
         preQualificationId: context.preQualificationId ?? null,
         agentName: context.agentName,
         chunkType: 'visualization',

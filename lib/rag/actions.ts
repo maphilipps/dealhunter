@@ -27,12 +27,7 @@ import type {
 
 import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
-import {
-  dealEmbeddings,
-  rawChunks,
-  qualificationSectionData,
-  qualifications,
-} from '@/lib/db/schema';
+import { dealEmbeddings, rawChunks, pitchSectionData, pitches } from '@/lib/db/schema';
 
 // ============================================================================
 // Validation Schemas
@@ -59,13 +54,13 @@ const getRawChunksSchema = z.object({
 });
 
 const getSectionDataSchema = z.object({
-  qualificationId: z.string().min(1, 'Qualification ID is required'),
+  pitchId: z.string().min(1, 'Qualification ID is required'),
   sectionId: z.string().optional(),
 });
 
 const searchSimilarSchema = z.object({
-  preQualificationId: z.string().optional(), // Now optional - can search by qualificationId instead
-  qualificationId: z.string().optional(), // New: search in dealEmbeddings
+  preQualificationId: z.string().optional(), // Now optional - can search by pitchId instead
+  pitchId: z.string().optional(), // New: search in dealEmbeddings
   query: z.string().min(1, 'Query is required'),
   threshold: z.number().min(0).max(1).default(0.5),
   maxResults: z.number().int().positive().max(50).default(10),
@@ -148,17 +143,17 @@ export async function getRAGStats(
 
     // Get qualification ID for this prequalification to query section data
     const [qualification] = await db
-      .select({ id: qualifications.id })
-      .from(qualifications)
-      .where(eq(qualifications.preQualificationId, preQualificationId))
+      .select({ id: pitches.id })
+      .from(pitches)
+      .where(eq(pitches.preQualificationId, preQualificationId))
       .limit(1);
 
     let sectionCount = 0;
     if (qualification) {
       const [sectionDataCount] = await db
         .select({ count: count() })
-        .from(qualificationSectionData)
-        .where(eq(qualificationSectionData.qualificationId, qualification.id));
+        .from(pitchSectionData)
+        .where(eq(pitchSectionData.pitchId, qualification.id));
       sectionCount = sectionDataCount.count;
     }
 
@@ -386,14 +381,14 @@ export async function getSectionData(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const { qualificationId, sectionId } = parsed.data;
+  const { pitchId, sectionId } = parsed.data;
 
   try {
     // Build where conditions
-    const conditions = [eq(qualificationSectionData.qualificationId, qualificationId)];
+    const conditions = [eq(pitchSectionData.pitchId, pitchId)];
 
     if (sectionId) {
-      conditions.push(eq(qualificationSectionData.sectionId, sectionId));
+      conditions.push(eq(pitchSectionData.sectionId, sectionId));
     }
 
     const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
@@ -401,9 +396,9 @@ export async function getSectionData(
     // Get items
     const items = await db
       .select()
-      .from(qualificationSectionData)
+      .from(pitchSectionData)
       .where(whereClause)
-      .orderBy(qualificationSectionData.sectionId);
+      .orderBy(pitchSectionData.sectionId);
 
     return {
       success: true,
@@ -438,13 +433,13 @@ export async function searchSimilar(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const { preQualificationId, qualificationId, query, threshold, maxResults, includeRawChunks } =
+  const { preQualificationId, pitchId, query, threshold, maxResults, includeRawChunks } =
     parsed.data;
   const startTime = Date.now();
 
-  // Need either preQualificationId or qualificationId
-  if (!preQualificationId && !qualificationId) {
-    return { success: false, error: 'Either preQualificationId or qualificationId is required' };
+  // Need either preQualificationId or pitchId
+  if (!preQualificationId && !pitchId) {
+    return { success: false, error: 'Either preQualificationId or pitchId is required' };
   }
 
   try {
@@ -464,8 +459,8 @@ export async function searchSimilar(
 
     const results: SimilarityResult[] = [];
 
-    // Search in dealEmbeddings if qualificationId provided
-    if (qualificationId) {
+    // Search in dealEmbeddings if pitchId provided
+    if (pitchId) {
       const qualificationChunks = await db
         .select({
           id: dealEmbeddings.id,
@@ -477,7 +472,7 @@ export async function searchSimilar(
           metadata: dealEmbeddings.metadata,
         })
         .from(dealEmbeddings)
-        .where(eq(dealEmbeddings.qualificationId, qualificationId));
+        .where(eq(dealEmbeddings.pitchId, pitchId));
 
       for (const chunk of qualificationChunks) {
         const chunkEmbedding = chunk.embedding;
@@ -589,14 +584,12 @@ export async function searchSimilar(
 /**
  * Get Pre-Qualification ID for a lead (helper for client components)
  */
-export async function getRfpIdForLead(
-  qualificationId: string
-): Promise<ActionResult<string | null>> {
+export async function getRfpIdForLead(pitchId: string): Promise<ActionResult<string | null>> {
   try {
     const [lead] = await db
-      .select({ preQualificationId: qualifications.preQualificationId })
-      .from(qualifications)
-      .where(eq(qualifications.id, qualificationId))
+      .select({ preQualificationId: pitches.preQualificationId })
+      .from(pitches)
+      .where(eq(pitches.id, pitchId))
       .limit(1);
 
     return {
@@ -611,11 +604,11 @@ export async function getRfpIdForLead(
 
 // ============================================================================
 // Lead Embeddings Actions (for Audit Ingestion)
-// Now using unified dealEmbeddings table with qualificationId filter
+// Now using unified dealEmbeddings table with pitchId filter
 // ============================================================================
 
 const getLeadEmbeddingsSchema = z.object({
-  qualificationId: z.string().min(1, 'Qualification ID is required'),
+  pitchId: z.string().min(1, 'Qualification ID is required'),
   agentName: z.string().optional(),
   chunkType: z.string().optional(),
   search: z.string().optional(),
@@ -652,12 +645,12 @@ export async function getLeadEmbeddings(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const { qualificationId, agentName, chunkType, search, page, pageSize } = parsed.data;
+  const { pitchId, agentName, chunkType, search, page, pageSize } = parsed.data;
   const offset = (page - 1) * pageSize;
 
   try {
     // Build where conditions
-    const conditions = [eq(dealEmbeddings.qualificationId, qualificationId)];
+    const conditions = [eq(dealEmbeddings.pitchId, pitchId)];
 
     if (agentName) {
       conditions.push(eq(dealEmbeddings.agentName, agentName));
@@ -723,7 +716,7 @@ export async function getLeadEmbeddings(
  * Get lead embeddings stats
  */
 export async function getLeadEmbeddingsStats(
-  qualificationId: string
+  pitchId: string
 ): Promise<
   ActionResult<{ total: number; byAgent: Record<string, number>; byType: Record<string, number> }>
 > {
@@ -732,7 +725,7 @@ export async function getLeadEmbeddingsStats(
     const [totalResult] = await db
       .select({ count: count() })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.qualificationId, qualificationId));
+      .where(eq(dealEmbeddings.pitchId, pitchId));
 
     // Get counts by agent
     const agentCounts = await db
@@ -741,7 +734,7 @@ export async function getLeadEmbeddingsStats(
         count: count(),
       })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.qualificationId, qualificationId))
+      .where(eq(dealEmbeddings.pitchId, pitchId))
       .groupBy(dealEmbeddings.agentName);
 
     // Get counts by type
@@ -751,7 +744,7 @@ export async function getLeadEmbeddingsStats(
         count: count(),
       })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.qualificationId, qualificationId))
+      .where(eq(dealEmbeddings.pitchId, pitchId))
       .groupBy(dealEmbeddings.chunkType);
 
     const byAgent: Record<string, number> = {};
@@ -781,14 +774,12 @@ export async function getLeadEmbeddingsStats(
 /**
  * Get unique agent names for lead embeddings
  */
-export async function getLeadEmbeddingAgents(
-  qualificationId: string
-): Promise<ActionResult<string[]>> {
+export async function getLeadEmbeddingAgents(pitchId: string): Promise<ActionResult<string[]>> {
   try {
     const agents = await db
       .selectDistinct({ agentName: dealEmbeddings.agentName })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.qualificationId, qualificationId))
+      .where(eq(dealEmbeddings.pitchId, pitchId))
       .orderBy(dealEmbeddings.agentName);
 
     return {
@@ -804,14 +795,12 @@ export async function getLeadEmbeddingAgents(
 /**
  * Get unique chunk types for lead embeddings
  */
-export async function getLeadEmbeddingTypes(
-  qualificationId: string
-): Promise<ActionResult<string[]>> {
+export async function getLeadEmbeddingTypes(pitchId: string): Promise<ActionResult<string[]>> {
   try {
     const types = await db
       .selectDistinct({ chunkType: dealEmbeddings.chunkType })
       .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.qualificationId, qualificationId))
+      .where(eq(dealEmbeddings.pitchId, pitchId))
       .orderBy(dealEmbeddings.chunkType);
 
     return {

@@ -22,6 +22,13 @@
       "when": 1769789679136,
       "tag": "0002_nasty_firelord",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1769990400000,
+      "tag": "0003_rename_qualifications_to_pitches",
+      "breakpoints": true
     }
   ]
 }

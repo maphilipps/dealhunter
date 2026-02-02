@@ -2,9 +2,9 @@ import type { Job } from 'bullmq';
 import { and, eq, sql } from 'drizzle-orm';
 
 import { db } from '../../db';
-import { backgroundJobs, dealEmbeddings, qualifications } from '../../db/schema';
+import { backgroundJobs, dealEmbeddings, pitches } from '../../db/schema';
 import { generateSectionVisualization } from '../../json-render/section-visualization-agent';
-import { QUALIFICATION_NAVIGATION_SECTIONS } from '../../qualifications/navigation-config';
+import { QUALIFICATION_NAVIGATION_SECTIONS } from '../../pitches/navigation-config';
 import type { VisualizationJobData, VisualizationJobResult } from '../queues';
 
 /**
@@ -15,9 +15,9 @@ import type { VisualizationJobData, VisualizationJobResult } from '../queues';
 export async function processVisualizationJob(
   job: Job<VisualizationJobData, VisualizationJobResult, string>
 ): Promise<VisualizationJobResult> {
-  const { qualificationId, sectionIds, dbJobId, focusPrompt, userId } = job.data;
+  const { pitchId, sectionIds, dbJobId, focusPrompt, userId } = job.data;
 
-  console.log(`[VisualizationProcessor] Starting job ${job.id} for qualification ${qualificationId}`);
+  console.log(`[VisualizationProcessor] Starting job ${job.id} for qualification ${pitchId}`);
 
   try {
     // Update job status to running
@@ -31,8 +31,8 @@ export async function processVisualizationJob(
       .where(eq(backgroundJobs.id, dbJobId));
 
     // Get qualification with project context
-    const qualification = await db.query.qualifications.findFirst({
-      where: eq(qualifications.id, qualificationId),
+    const qualification = await db.query.pitches.findFirst({
+      where: eq(pitches.id, pitchId),
     });
 
     if (!qualification) {
@@ -55,7 +55,7 @@ export async function processVisualizationJob(
       for (const sectionId of allSectionIds) {
         const hasRagData = await db.query.dealEmbeddings.findFirst({
           where: and(
-            eq(dealEmbeddings.qualificationId, qualificationId),
+            eq(dealEmbeddings.pitchId, pitchId),
             sql`(metadata::jsonb)->>'sectionId' = ${sectionId}`,
             sql`chunk_type != 'visualization'`
           ),
@@ -65,7 +65,7 @@ export async function processVisualizationJob(
 
         const hasVisualization = await db.query.dealEmbeddings.findFirst({
           where: and(
-            eq(dealEmbeddings.qualificationId, qualificationId),
+            eq(dealEmbeddings.pitchId, pitchId),
             eq(dealEmbeddings.chunkType, 'visualization'),
             sql`(metadata::jsonb)->>'sectionId' = ${sectionId}`
           ),
@@ -119,7 +119,7 @@ export async function processVisualizationJob(
         // Get RAG chunks for this section
         const ragChunks = await db.query.dealEmbeddings.findMany({
           where: and(
-            eq(dealEmbeddings.qualificationId, qualificationId),
+            eq(dealEmbeddings.pitchId, pitchId),
             sql`(metadata::jsonb)->>'sectionId' = ${sectionId}`,
             sql`chunk_type != 'visualization'`
           ),
@@ -133,7 +133,7 @@ export async function processVisualizationJob(
         }
 
         const result = await generateSectionVisualization({
-          qualificationId,
+          pitchId,
           sectionId,
           ragChunks: ragChunks.map(chunk => ({
             content: chunk.content,
@@ -155,10 +155,7 @@ export async function processVisualizationJob(
 
         // Update progress
         const progress = Math.round((completed / sectionsToProcess.length) * 100);
-        await db
-          .update(backgroundJobs)
-          .set({ progress })
-          .where(eq(backgroundJobs.id, dbJobId));
+        await db.update(backgroundJobs).set({ progress }).where(eq(backgroundJobs.id, dbJobId));
 
         // Update job progress for BullMQ
         await job.updateProgress(progress);

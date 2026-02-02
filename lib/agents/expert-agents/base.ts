@@ -67,7 +67,10 @@ export async function storeAgentResult(
       .select({ chunkIndex: dealEmbeddings.chunkIndex })
       .from(dealEmbeddings)
       .where(
-        and(eq(dealEmbeddings.preQualificationId, preQualificationId), eq(dealEmbeddings.agentName, agentName))
+        and(
+          eq(dealEmbeddings.preQualificationId, preQualificationId),
+          eq(dealEmbeddings.agentName, agentName)
+        )
       );
 
     const nextChunkIndex =
@@ -75,7 +78,7 @@ export async function storeAgentResult(
 
     await db.insert(dealEmbeddings).values({
       preQualificationId: preQualificationId,
-      qualificationId: null,
+      pitchId: null,
       agentName,
       chunkType: `${agentName}_result`,
       chunkIndex: nextChunkIndex,

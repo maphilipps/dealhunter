@@ -255,7 +255,7 @@ async function saveToDatabase(
     const [existingAudit] = await db
       .select()
       .from(websiteAudits)
-      .where(eq(websiteAudits.qualificationId, leadId))
+      .where(eq(websiteAudits.pitchId, leadId))
       .limit(1);
 
     const auditData = {
@@ -277,7 +277,7 @@ async function saveToDatabase(
     } else {
       // Create new
       await db.insert(websiteAudits).values({
-        qualificationId: leadId,
+        pitchId: leadId,
         websiteUrl,
         ...auditData,
         startedAt: new Date(),

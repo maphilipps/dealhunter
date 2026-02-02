@@ -10,7 +10,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { db } from '../lib/db';
 import {
   preQualifications,
-  qualifications,
+  pitches,
   quickScans,
   dealEmbeddings,
   websiteAudits,
@@ -84,7 +84,7 @@ async function seedLocarnoLead() {
 
   // Generate IDs
   const preQualificationId = createId();
-  const qualificationId = createId();
+  const pitchId = createId();
   const quickScanId = createId();
   const websiteAuditId = createId();
 
@@ -215,8 +215,8 @@ Zeitplan: Go-Live Mitte April 2025`,
 
   // 3. Create Lead
   console.log('\n👤 Creating Lead...');
-  await db.insert(qualifications).values({
-    id: qualificationId,
+  await db.insert(pitches).values({
+    id: pitchId,
     preQualificationId: preQualificationId,
     status: 'bl_reviewing',
     customerName: 'Locarno Film Festival',
@@ -243,10 +243,8 @@ Zeitplan: Go-Live Mitte April 2025`,
       { name: 'IT Manager', role: 'Technischer Ansprechpartner' },
       { name: 'Marketing Director', role: 'Stakeholder' },
     ]),
-    deepScanStatus: 'completed',
-    deepScanCompletedAt: new Date(),
   });
-  console.log('✅ Lead created:', qualificationId);
+  console.log('✅ Lead created:', pitchId);
 
   // 4. Create WebsiteAudit
   console.log('\n🌐 Creating Website Audit...');
@@ -255,7 +253,7 @@ Zeitplan: Go-Live Mitte April 2025`,
 
   await db.insert(websiteAudits).values({
     id: websiteAuditId,
-    qualificationId: qualificationId,
+    pitchId: pitchId,
     status: 'completed',
     websiteUrl: 'https://www.locarnofestival.ch',
     cms: 'Magnolia CMS 6.3',
@@ -556,7 +554,7 @@ Performance-Erwartungen:
   for (const embedding of embeddings) {
     await db.insert(dealEmbeddings).values({
       id: createId(),
-      qualificationId: qualificationId,
+      pitchId: pitchId,
       agentName: embedding.agentName,
       chunkType: embedding.chunkType,
       content: embedding.content,
@@ -570,12 +568,12 @@ Performance-Erwartungen:
   console.log('🎉 Locarno Film Festival Lead erfolgreich erstellt!\n');
   console.log('IDs:');
   console.log(`  - RFP ID:          ${preQualificationId}`);
-  console.log(`  - Lead ID:         ${qualificationId}`);
+  console.log(`  - Lead ID:         ${pitchId}`);
   console.log(`  - QuickScan ID:    ${quickScanId}`);
   console.log(`  - WebsiteAudit ID: ${websiteAuditId}`);
   console.log('\nZugriff:');
-  console.log(`  - Lead Details:  http://localhost:3000/qualifications/${qualificationId}`);
-  console.log(`  - Lead Audit:    http://localhost:3000/qualifications/${qualificationId}/audit`);
+  console.log(`  - Lead Details:  http://localhost:3000/pitches/${pitchId}`);
+  console.log(`  - Lead Audit:    http://localhost:3000/pitches/${pitchId}/audit`);
   console.log('='.repeat(60));
 }
 

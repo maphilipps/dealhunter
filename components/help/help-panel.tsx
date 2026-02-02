@@ -82,7 +82,7 @@ const defaultQuickLinks: QuickLink[] = [
   },
   {
     label: 'Qualifications Dashboard',
-    href: '/qualifications',
+    href: '/pitches',
     description: 'Aktuelle Qualifications und Status',
   },
   {

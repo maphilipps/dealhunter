@@ -8,12 +8,7 @@ async function checkJob() {
   const jobs = await db
     .select()
     .from(backgroundJobs)
-    .where(
-      or(
-        eq(backgroundJobs.qualificationId, qualId),
-        eq(backgroundJobs.preQualificationId, qualId)
-      )
-    )
+    .where(or(eq(backgroundJobs.pitchId, qualId), eq(backgroundJobs.preQualificationId, qualId)))
     .orderBy(backgroundJobs.createdAt)
     .limit(10);
 

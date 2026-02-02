@@ -1,7 +1,7 @@
 /**
  * Legal Check Agent (DEA-149)
  *
- * Performs industry-specific legal compliance analysis for qualifications.
+ * Performs industry-specific legal compliance analysis for pitches.
  * Checks for GDPR, Cookie Consent, Impressum, Privacy Policy and other requirements.
  *
  * Features:
@@ -16,7 +16,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { qualifications, dealEmbeddings } from '@/lib/db/schema';
+import { pitches, dealEmbeddings } from '@/lib/db/schema';
 import { queryRagForLead, formatLeadContext } from '@/lib/rag/lead-retrieval-service';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -145,19 +145,22 @@ function getIndustryRequirements(industry: string | null): string[] {
  * @param preQualificationId - Pre-Qualification ID for RAG storage
  * @returns Legal check results
  */
-export async function runLegalCheckAgent(leadId: string, preQualificationId: string): Promise<LegalCheckResult> {
+export async function runLegalCheckAgent(
+  leadId: string,
+  preQualificationId: string
+): Promise<LegalCheckResult> {
   console.error(`[Legal Check Agent] Starting analysis for lead ${leadId}`);
 
   try {
     // 1. Fetch lead data
     const leadData = await db
       .select({
-        customerName: qualifications.customerName,
-        websiteUrl: qualifications.websiteUrl,
-        industry: qualifications.industry,
+        customerName: pitches.customerName,
+        websiteUrl: pitches.websiteUrl,
+        industry: pitches.industry,
       })
-      .from(qualifications)
-      .where(eq(qualifications.id, leadId));
+      .from(pitches)
+      .where(eq(pitches.id, leadId));
 
     if (leadData.length === 0) {
       throw new Error(`Lead ${leadId} not found`);
@@ -172,10 +175,10 @@ export async function runLegalCheckAgent(leadId: string, preQualificationId: str
 
     // 2. Query RAG for existing website analysis
     const ragResults = await queryRagForLead({
-      qualificationId: leadId,
+      pitchId: leadId,
       question:
         'Website legal compliance: privacy policy, cookie consent, impressum, terms of service, GDPR, data protection',
-      agentNameFilter: ['website-analysis', 'deep-scan-website-analysis', 'component_library'],
+      agentNameFilter: ['website-analysis', 'component_library'],
       maxResults: 10,
     });
 
@@ -235,7 +238,11 @@ Please provide a comprehensive legal compliance assessment including:
 /**
  * Store legal check results in RAG
  */
-async function storeInRAG(preQualificationId: string, leadId: string, result: LegalCheckResult): Promise<void> {
+async function storeInRAG(
+  preQualificationId: string,
+  leadId: string,
+  result: LegalCheckResult
+): Promise<void> {
   try {
     // Build searchable content
     const criticalIssuesText =

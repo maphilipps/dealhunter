@@ -8,7 +8,7 @@ import {
   businessUnits,
   accounts,
   preQualifications,
-  qualifications,
+  pitches,
   quickScans,
 } from '../lib/db/schema';
 import { embedAgentOutput } from '../lib/rag/embedding-service';
@@ -236,7 +236,8 @@ async function seedMassiveData() {
       const projectName = `${account.name.replace(' AG', '').replace(' SE', '')} ${template.title}`;
 
       const source = Math.random() > 0.5 ? 'reactive' : 'proactive';
-      const stage = Math.random() > 0.7 ? 'preQualification' : Math.random() > 0.5 ? 'warm' : 'cold';
+      const stage =
+        Math.random() > 0.7 ? 'preQualification' : Math.random() > 0.5 ? 'warm' : 'cold';
       const inputType = ['pdf', 'email', 'crm', 'freetext'][Math.floor(Math.random() * 4)];
 
       const confidence = tech.confidence + Math.floor((Math.random() - 0.5) * 20);
@@ -360,13 +361,15 @@ async function seedMassiveData() {
     const leadStatus = blVote === 'BID' ? 'bid_voted' : 'archived';
 
     const [lead] = await db
-      .insert(qualifications)
+      .insert(pitches)
       .values({
         preQualificationId: preQualification.id,
         status: leadStatus as any,
         customerName: requirements.projectName || 'Unknown Customer',
         websiteUrl: preQualification.websiteUrl,
-        industry: preQualification.extractedRequirements ? JSON.parse(preQualification.extractedRequirements).industry : null,
+        industry: preQualification.extractedRequirements
+          ? JSON.parse(preQualification.extractedRequirements).industry
+          : null,
         projectDescription: requirements.description,
         budget: requirements.budget,
         requirements: JSON.stringify(requirements.requirements),
@@ -412,7 +415,11 @@ async function seedMassiveData() {
         });
 
         // Embed RFP Requirements
-        await embedAgentOutput(preQualification.id, 'extraction', JSON.parse(preQualification.extractedRequirements || '{}'));
+        await embedAgentOutput(
+          preQualification.id,
+          'extraction',
+          JSON.parse(preQualification.extractedRequirements || '{}')
+        );
 
         embeddingCount++;
 

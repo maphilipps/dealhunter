@@ -15,7 +15,7 @@ import {
 const routeLabels: Record<string, string> = {
   bids: 'Leads',
   'pre-qualifications': 'Leads',
-  qualifications: 'Qualifications',
+  pitches: 'Pitches',
   new: 'Neu',
   accounts: 'Accounts',
   analytics: 'Analytics',

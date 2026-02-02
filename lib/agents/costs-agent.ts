@@ -21,12 +21,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import {
-  qualifications,
-  quickScans,
-  qualificationSectionData,
-  dealEmbeddings,
-} from '@/lib/db/schema';
+import { pitches, quickScans, pitchSectionData, dealEmbeddings } from '@/lib/db/schema';
 import { calculatePTEstimation, type PTEstimationResult } from '@/lib/estimations/pt-calculator';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -132,16 +127,19 @@ const HOURS_PER_PT = 8;
  * @param preQualificationId - Pre-Qualification ID
  * @returns Costs analysis with budget fit
  */
-export async function runCostsAgent(leadId: string, preQualificationId: string): Promise<CostsAnalysis> {
+export async function runCostsAgent(
+  leadId: string,
+  preQualificationId: string
+): Promise<CostsAnalysis> {
   // 1. Fetch lead data
   const [leadData] = await db
     .select({
-      customerName: qualifications.customerName,
-      selectedCmsId: qualifications.selectedCmsId,
-      quickScanId: qualifications.quickScanId,
+      customerName: pitches.customerName,
+      selectedCmsId: pitches.selectedCmsId,
+      quickScanId: pitches.quickScanId,
     })
-    .from(qualifications)
-    .where(eq(qualifications.id, leadId))
+    .from(pitches)
+    .where(eq(pitches.id, leadId))
     .limit(1);
 
   if (!leadData) {
@@ -178,11 +176,11 @@ export async function runCostsAgent(leadId: string, preQualificationId: string):
   // 3. Fetch existing section data for content architecture and migration complexity
   const sectionResults = await db
     .select({
-      sectionId: qualificationSectionData.sectionId,
-      content: qualificationSectionData.content,
+      sectionId: pitchSectionData.sectionId,
+      content: pitchSectionData.content,
     })
-    .from(qualificationSectionData)
-    .where(eq(qualificationSectionData.qualificationId, leadId));
+    .from(pitchSectionData)
+    .where(eq(pitchSectionData.pitchId, leadId));
 
   const sectionDataMap: Record<string, unknown> = {};
   for (const section of sectionResults) {
@@ -359,7 +357,7 @@ ${result.assumptions.map(a => `- ${a}`).join('\n')}`;
 
   if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
     await db.insert(dealEmbeddings).values({
-      qualificationId: leadId,
+      pitchId: leadId,
       preQualificationId: preQualificationId,
       agentName: 'costs',
       chunkType: 'analysis',

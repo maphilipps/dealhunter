@@ -31,7 +31,11 @@ interface RoutingFormProps {
   allBusinessUnits: BusinessUnit[];
 }
 
-export function RoutingForm({ preQualificationId, blRecommendation, allBusinessUnits }: RoutingFormProps) {
+export function RoutingForm({
+  preQualificationId,
+  blRecommendation,
+  allBusinessUnits,
+}: RoutingFormProps) {
   const router = useRouter();
 
   // Find the ID of the recommended business unit by matching the name
@@ -74,7 +78,7 @@ export function RoutingForm({ preQualificationId, blRecommendation, allBusinessU
         if (result.success) {
           // Redirect zum Lead falls einer erstellt wurde, sonst zum Pre-Qualification
           if (result.leadId) {
-            router.push(`/qualifications/${result.leadId}`);
+            router.push(`/pitches/${result.leadId}`);
           } else {
             router.push(`/pre-qualifications/${preQualificationId}`);
           }

@@ -26,7 +26,7 @@ async function main() {
   try {
     console.log('Querying RAG for lead...');
     const results = await queryRagForLead({
-      qualificationId: leadId,
+      pitchId: leadId,
       sectionId,
       question: 'What is the current technology stack?',
       maxResults: 5,

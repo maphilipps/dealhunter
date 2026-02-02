@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 
 export interface BackgroundJob {
   id: string;
-  jobType: 'deep-scan' | 'deep-analysis' | 'team-notification' | 'cleanup';
+  jobType: 'deep-analysis' | 'pitch' | 'team-notification' | 'cleanup';
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
   progress: number;
   currentStep: string | null;

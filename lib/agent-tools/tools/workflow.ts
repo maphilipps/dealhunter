@@ -5,89 +5,14 @@ import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { backgroundJobs, qualifications, preQualifications } from '@/lib/db/schema';
+import { backgroundJobs, pitches, preQualifications } from '@/lib/db/schema';
 
 /**
  * Sprint 4.1: Workflow Orchestration Tools
  *
- * Tools for managing background jobs (Deep Scan, Team Notification, etc.)
- * Provides full lifecycle: start, cancel, status, list, retry
+ * Tools for managing background jobs (Team Notification, etc.)
+ * Provides full lifecycle: cancel, status, list, retry
  */
-
-// ============================================================================
-// workflow.startDeepScan
-// ============================================================================
-
-const startDeepScanInputSchema = z.object({
-  leadId: z.string(),
-});
-
-registry.register({
-  name: 'workflow.startDeepScan',
-  description:
-    'Start a Deep Scan background job for a lead. Creates job and updates lead status to running.',
-  category: 'workflow',
-  inputSchema: startDeepScanInputSchema,
-  async execute(input, context: ToolContext) {
-    // Get lead with preQualificationId (check authorization via preQualification.userId)
-    const [leadData] = await db
-      .select({ lead: qualifications, preQualification: preQualifications })
-      .from(qualifications)
-      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
-      .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
-      .limit(1);
-
-    if (!leadData) {
-      return { success: false, error: 'Lead not found or no access' };
-    }
-
-    const lead = leadData.lead;
-
-    if (lead.deepScanStatus === 'running') {
-      return { success: false, error: 'Deep Scan already running for this lead' };
-    }
-
-    if (lead.deepScanStatus === 'completed') {
-      return {
-        success: false,
-        error: 'Deep Scan already completed. Use workflow.retryJob to re-run.',
-      };
-    }
-
-    // Create background job
-    const [job] = await db
-      .insert(backgroundJobs)
-      .values({
-        jobType: 'deep-analysis',
-        preQualificationId: lead.preQualificationId,
-        userId: context.userId,
-        status: 'pending',
-        progress: 0,
-        currentStep: 'Initializing Deep Scan',
-      })
-      .returning();
-
-    // Update lead status
-    await db
-      .update(qualifications)
-      .set({
-        deepScanStatus: 'running',
-        deepScanStartedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(qualifications.id, input.leadId));
-
-    return {
-      success: true,
-      data: {
-        jobId: job.id,
-        leadId: input.leadId,
-        status: job.status,
-        message: 'Deep Scan job created successfully',
-      },
-    };
-  },
-});
 
 // ============================================================================
 // workflow.cancelJob
@@ -131,27 +56,6 @@ registry.register({
         updatedAt: new Date(),
       })
       .where(eq(backgroundJobs.id, input.jobId));
-
-    // If Deep Analysis job, update lead status
-    if (job.jobType === 'deep-analysis' && job.preQualificationId) {
-      // Find lead by preQualificationId
-      const [lead] = await db
-        .select()
-        .from(qualifications)
-        .where(eq(qualifications.preQualificationId, job.preQualificationId))
-        .limit(1);
-
-      if (lead) {
-        await db
-          .update(qualifications)
-          .set({
-            deepScanStatus: 'failed',
-            deepScanError: 'Job cancelled by user',
-            updatedAt: new Date(),
-          })
-          .where(eq(qualifications.id, lead.id));
-      }
-    }
 
     return {
       success: true,
@@ -232,12 +136,10 @@ registry.register({
     // Filter by leadId (via preQualificationId, authorize via preQualification.userId)
     if (input.leadId) {
       const [leadData] = await db
-        .select({ lead: qualifications, preQualification: preQualifications })
-        .from(qualifications)
-        .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
-        .where(
-          and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId))
-        )
+        .select({ lead: pitches, preQualification: preQualifications })
+        .from(pitches)
+        .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
+        .where(and(eq(pitches.id, input.leadId), eq(preQualifications.userId, context.userId)))
         .limit(1);
 
       if (!leadData) {
@@ -261,11 +163,7 @@ registry.register({
     const conditions = [eq(backgroundJobs.userId, context.userId)];
 
     if (input.leadId) {
-      const [lead] = await db
-        .select()
-        .from(qualifications)
-        .where(eq(qualifications.id, input.leadId))
-        .limit(1);
+      const [lead] = await db.select().from(pitches).where(eq(pitches.id, input.leadId)).limit(1);
       if (lead?.preQualificationId) {
         conditions.push(eq(backgroundJobs.preQualificationId, lead.preQualificationId));
       }
@@ -340,26 +238,6 @@ registry.register({
         updatedAt: new Date(),
       })
       .where(eq(backgroundJobs.id, input.jobId));
-
-    // If Deep Analysis job, update lead status
-    if (job.jobType === 'deep-analysis' && job.preQualificationId) {
-      const [lead] = await db
-        .select()
-        .from(qualifications)
-        .where(eq(qualifications.preQualificationId, job.preQualificationId))
-        .limit(1);
-
-      if (lead) {
-        await db
-          .update(qualifications)
-          .set({
-            deepScanStatus: 'pending',
-            deepScanError: null,
-            updatedAt: new Date(),
-          })
-          .where(eq(qualifications.id, lead.id));
-      }
-    }
 
     return {
       success: true,

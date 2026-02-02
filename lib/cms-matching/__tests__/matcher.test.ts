@@ -148,7 +148,7 @@ describe('CMS Matcher', () => {
 
   function createMockInput(partial?: Partial<CMSMatcherInput>): CMSMatcherInput {
     return {
-      qualificationId: 'lead-123',
+      pitchId: 'lead-123',
       industry: 'Public Sector',
       budget: '50-100k EUR',
       pageCount: 500,
@@ -519,7 +519,7 @@ describe('CMS Matcher', () => {
         createMockTechnology({ id: 'tech-2', name: 'Sulu' }),
       ]);
 
-      const input = createMockInput({ qualificationId: 'lead-999' });
+      const input = createMockInput({ pitchId: 'lead-999' });
       await matchCMS(input);
 
       // Should delete existing results
@@ -603,7 +603,7 @@ describe('CMS Matcher', () => {
       ];
 
       const input = createMockInput({
-        qualificationId: 'lead-integration',
+        pitchId: 'lead-integration',
         industry: 'Public Sector',
         budget: '75k EUR',
         pageCount: 800,

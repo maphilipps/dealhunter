@@ -7,12 +7,12 @@ import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
 import {
-  qualifications,
+  pitches,
   users,
   preQualifications,
   teamAssignments,
   employees,
-  qualificationSectionData,
+  pitchSectionData,
 } from '@/lib/db/schema';
 import { sendTeamNotificationEmails } from '@/lib/notifications/email';
 
@@ -42,10 +42,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Get lead (authorize via preQualification.userId)
     const [leadData] = await db
-      .select({ lead: qualifications, preQualification: preQualifications })
-      .from(qualifications)
-      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
-      .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
+      .select({ lead: pitches, preQualification: preQualifications })
+      .from(pitches)
+      .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
+      .where(and(eq(pitches.id, input.leadId), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!leadData) {
@@ -79,7 +79,11 @@ registry.register({
     }));
 
     // Get BL leader name (preQualification owner)
-    const [blLeader] = await db.select().from(users).where(eq(users.id, preQualification.userId)).limit(1);
+    const [blLeader] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, preQualification.userId))
+      .limit(1);
 
     // Send notifications
     try {
@@ -90,7 +94,7 @@ registry.register({
         projectDescription: input.message || lead.projectDescription || 'No description available',
         teamMembers: teamDetails,
         blLeaderName: blLeader?.name || 'Unknown',
-        projectUrl: `/qualifications/${lead.id}`, // Override to use lead URL instead of Pre-Qualification
+        projectUrl: `/pitches/${lead.id}`, // Override to use lead URL instead of Pre-Qualification
       });
 
       return {
@@ -147,10 +151,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Get lead (authorize via preQualification.userId)
     const [leadData] = await db
-      .select({ lead: qualifications, preQualification: preQualifications })
-      .from(qualifications)
-      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
-      .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
+      .select({ lead: pitches, preQualification: preQualifications })
+      .from(pitches)
+      .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
+      .where(and(eq(pitches.id, input.leadId), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!leadData) {
@@ -173,14 +177,14 @@ registry.register({
       return { success: false, error: 'Scheduled time must be in the future' };
     }
 
-    // Get existing reminders from qualificationSectionData (sectionId="_reminders")
+    // Get existing reminders from pitchSectionData (sectionId="_reminders")
     const [existingSection] = await db
       .select()
-      .from(qualificationSectionData)
+      .from(pitchSectionData)
       .where(
         and(
-          eq(qualificationSectionData.qualificationId, input.leadId),
-          eq(qualificationSectionData.sectionId, '_reminders')
+          eq(pitchSectionData.pitchId, input.leadId),
+          eq(pitchSectionData.sectionId, '_reminders')
         )
       )
       .limit(1);
@@ -205,15 +209,15 @@ registry.register({
     // Upsert reminders section
     if (existingSection) {
       await db
-        .update(qualificationSectionData)
+        .update(pitchSectionData)
         .set({
           content: JSON.stringify(updatedReminders),
           updatedAt: new Date(),
         })
-        .where(eq(qualificationSectionData.id, existingSection.id));
+        .where(eq(pitchSectionData.id, existingSection.id));
     } else {
-      await db.insert(qualificationSectionData).values({
-        qualificationId: input.leadId,
+      await db.insert(pitchSectionData).values({
+        pitchId: input.leadId,
         sectionId: '_reminders',
         content: JSON.stringify(updatedReminders),
         confidence: 100,
@@ -256,24 +260,24 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Get lead (authorize via preQualification.userId)
     const [leadData] = await db
-      .select({ lead: qualifications, preQualification: preQualifications })
-      .from(qualifications)
-      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
-      .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
+      .select({ lead: pitches, preQualification: preQualifications })
+      .from(pitches)
+      .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
+      .where(and(eq(pitches.id, input.leadId), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!leadData) {
       return { success: false, error: 'Lead not found or no access' };
     }
 
-    // Get reminders from qualificationSectionData
+    // Get reminders from pitchSectionData
     const [remindersSection] = await db
       .select()
-      .from(qualificationSectionData)
+      .from(pitchSectionData)
       .where(
         and(
-          eq(qualificationSectionData.qualificationId, input.leadId),
-          eq(qualificationSectionData.sectionId, '_reminders')
+          eq(pitchSectionData.pitchId, input.leadId),
+          eq(pitchSectionData.sectionId, '_reminders')
         )
       )
       .limit(1);
@@ -315,24 +319,24 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Get lead (authorize via preQualification.userId)
     const [leadData] = await db
-      .select({ lead: qualifications, preQualification: preQualifications })
-      .from(qualifications)
-      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
-      .where(and(eq(qualifications.id, input.leadId), eq(preQualifications.userId, context.userId)))
+      .select({ lead: pitches, preQualification: preQualifications })
+      .from(pitches)
+      .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
+      .where(and(eq(pitches.id, input.leadId), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!leadData) {
       return { success: false, error: 'Lead not found or no access' };
     }
 
-    // Get reminders from qualificationSectionData
+    // Get reminders from pitchSectionData
     const [remindersSection] = await db
       .select()
-      .from(qualificationSectionData)
+      .from(pitchSectionData)
       .where(
         and(
-          eq(qualificationSectionData.qualificationId, input.leadId),
-          eq(qualificationSectionData.sectionId, '_reminders')
+          eq(pitchSectionData.pitchId, input.leadId),
+          eq(pitchSectionData.sectionId, '_reminders')
         )
       )
       .limit(1);
@@ -364,14 +368,14 @@ registry.register({
       status: 'cancelled',
     };
 
-    // Update qualificationSectionData
+    // Update pitchSectionData
     await db
-      .update(qualificationSectionData)
+      .update(pitchSectionData)
       .set({
         content: JSON.stringify(updatedReminders),
         updatedAt: new Date(),
       })
-      .where(eq(qualificationSectionData.id, remindersSection.id));
+      .where(eq(pitchSectionData.id, remindersSection.id));
 
     return {
       success: true,

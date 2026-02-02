@@ -1,13 +1,10 @@
 'use client';
 
 import * as Icons from 'lucide-react';
-import { Bot, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
-import { PipelineProgress } from '@/components/pitches/pipeline-progress';
-import { PitchChat } from '@/components/pitches/pitch-chat';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Sidebar,
@@ -33,10 +30,7 @@ interface LeadSidebarRightProps {
 
 export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRightProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['overview']));
-  const [chatOpen, setChatOpen] = useState(false);
-  const [runId, setRunId] = useState<string | null>(null);
 
   const toggleSection = (sectionId: string) => {
     setOpenSections(prev => {
@@ -52,7 +46,7 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
 
   return (
     <Sidebar collapsible="none" variant="sidebar" side="right">
-      <SidebarContent className="flex flex-col">
+      <SidebarContent>
         {/* Lead Metadata */}
         <SidebarGroup>
           <SidebarGroupLabel>Lead Navigation</SidebarGroupLabel>
@@ -65,7 +59,7 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
         </SidebarGroup>
 
         {/* Navigation Sections */}
-        <SidebarGroup className="flex-1 overflow-auto">
+        <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               {QUALIFICATION_NAVIGATION_SECTIONS.map(section => {
@@ -167,40 +161,6 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {/* Pipeline Progress (when active) */}
-        {runId && (
-          <SidebarGroup className="shrink-0 border-t">
-            <SidebarGroupLabel>Pipeline-Fortschritt</SidebarGroupLabel>
-            <SidebarGroupContent className="px-2">
-              <PipelineProgress
-                pitchId={leadId}
-                runId={runId}
-                compact
-                onComplete={() => router.push(`/pitches/${leadId}`)}
-              />
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* Collapsible Chat Panel */}
-        <div className="shrink-0 border-t">
-          <button
-            onClick={() => setChatOpen(prev => !prev)}
-            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-medium hover:bg-sidebar-accent transition-colors"
-          >
-            <Bot className="h-4 w-4 text-primary" />
-            <span className="flex-1 text-left">Pitch-Interview</span>
-            <ChevronDown
-              className={`h-4 w-4 text-muted-foreground transition-transform ${chatOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
-          {chatOpen && (
-            <div className="h-[350px]">
-              <PitchChat pitchId={leadId} compact onPipelineStarted={id => setRunId(id)} />
-            </div>
-          )}
-        </div>
       </SidebarContent>
     </Sidebar>
   );

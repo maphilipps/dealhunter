@@ -37,7 +37,7 @@ export default async function LeadDashboardLayout({
     <LeadLayoutClient leadId={id}>
       <div className="flex h-full w-full gap-4">
         <div className="flex-1 overflow-auto">{children}</div>
-        {/* Right Sidebar: Lead-specific Navigation - sticky for scroll persistence */}
+        {/* Right Sidebar: Lead-specific Navigation */}
         <div className="sticky top-0 h-screen shrink-0">
           <LeadSidebarRight
             leadId={id}

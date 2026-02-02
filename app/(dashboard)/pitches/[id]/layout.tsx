@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, notInArray } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
 import { LeadLayoutClient } from './layout-client';
@@ -6,7 +6,7 @@ import { LeadLayoutClient } from './layout-client';
 import { LeadSidebarRight } from '@/components/pitches/pitch-sidebar-right';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches } from '@/lib/db/schema';
+import { pitches, pitchRuns } from '@/lib/db/schema';
 
 export default async function LeadDashboardLayout({
   children,
@@ -33,19 +33,31 @@ export default async function LeadDashboardLayout({
     );
   }
 
+  // Check for an active (non-terminal) pipeline run
+  const [activeRun] = await db
+    .select({ id: pitchRuns.id })
+    .from(pitchRuns)
+    .where(and(eq(pitchRuns.pitchId, id), notInArray(pitchRuns.status, ['completed', 'failed'])))
+    .orderBy(desc(pitchRuns.createdAt))
+    .limit(1);
+
+  // Sidebar nur rendern wenn Pipeline-Daten vorhanden (nicht bei frischen Pitches)
+  const hasData = lead.status !== 'routed';
+
   return (
-    <LeadLayoutClient leadId={id}>
+    <LeadLayoutClient leadId={id} activeRunId={activeRun?.id ?? null}>
       <div className="flex h-full w-full gap-4">
         <div className="flex-1 overflow-auto">{children}</div>
-        {/* Right Sidebar: Lead-specific Navigation */}
-        <div className="sticky top-0 h-screen shrink-0">
-          <LeadSidebarRight
-            leadId={id}
-            customerName={lead.customerName}
-            status={lead.status}
-            blVote={lead.blVote}
-          />
-        </div>
+        {hasData && (
+          <div className="sticky top-0 h-screen shrink-0">
+            <LeadSidebarRight
+              leadId={id}
+              customerName={lead.customerName}
+              status={lead.status}
+              blVote={lead.blVote}
+            />
+          </div>
+        )}
       </div>
     </LeadLayoutClient>
   );

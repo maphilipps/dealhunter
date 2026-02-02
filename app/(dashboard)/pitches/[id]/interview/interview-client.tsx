@@ -3,17 +3,19 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { PitchChat } from '@/components/pitches/pitch-chat';
 import { PipelineProgress } from '@/components/pitches/pipeline-progress';
+import { PitchChat } from '@/components/pitches/pitch-chat';
 
 interface InterviewClientProps {
   pitchId: string;
   customerName: string;
+  /** If a run is already active, show its progress instead of starting a new chat */
+  activeRunId: string | null;
 }
 
-export function InterviewClient({ pitchId, customerName }: InterviewClientProps) {
+export function InterviewClient({ pitchId, customerName, activeRunId }: InterviewClientProps) {
   const router = useRouter();
-  const [runId, setRunId] = useState<string | null>(null);
+  const [runId, setRunId] = useState<string | null>(activeRunId);
 
   return (
     <div className="space-y-6">
@@ -25,12 +27,12 @@ export function InterviewClient({ pitchId, customerName }: InterviewClientProps)
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <PitchChat pitchId={pitchId} onPipelineStarted={id => setRunId(id)} />
-
-        {runId && (
+        {/* Only show chat if no run is active yet */}
+        {!runId ? (
+          <PitchChat pitchId={pitchId} onPipelineStarted={id => setRunId(id)} />
+        ) : (
           <PipelineProgress
             pitchId={pitchId}
-            runId={runId}
             onComplete={() => router.push(`/pitches/${pitchId}`)}
           />
         )}

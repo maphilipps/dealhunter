@@ -1,16 +1,10 @@
 import { desc, eq } from 'drizzle-orm';
-import {
-  AlertTriangle,
-  CheckCircle2,
-  FileText,
-  Globe,
-  MessageSquare,
-  Package,
-  TrendingUp,
-} from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileText, Globe, Package, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
+
+import { AutoScanStarter } from './auto-scan-starter';
 
 import { AuditStatusBadge } from '@/components/pitches/audit-status-badge';
 import { BulkVisualizationGenerator } from '@/components/pitches/bulk-visualization-generator';
@@ -35,6 +29,7 @@ import {
 } from '@/lib/db/projections';
 import {
   pitches,
+  pitchRuns,
   preQualifications,
   businessUnits,
   websiteAudits,
@@ -160,6 +155,28 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
     ptEstimation,
     refMatches,
   } = data;
+
+  // Routed-Pitch → Scan starten oder Fortschritt anzeigen (nicht die leere Overview)
+  if (lead.status === 'routed') {
+    const [latestRun] = await db
+      .select({ id: pitchRuns.id, status: pitchRuns.status })
+      .from(pitchRuns)
+      .where(eq(pitchRuns.pitchId, id))
+      .orderBy(desc(pitchRuns.createdAt))
+      .limit(1);
+
+    // Nur laufende Runs für Progress-Anzeige durchreichen.
+    // Terminal (completed/failed) bei status='routed' = Pipeline hat Status nicht geschalten → neuen Scan starten.
+    const isActive = latestRun && !['completed', 'failed'].includes(latestRun.status);
+
+    return (
+      <AutoScanStarter
+        pitchId={id}
+        customerName={lead.customerName}
+        activeRunId={isActive ? latestRun.id : null}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -510,24 +527,6 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
           </CardContent>
         </Card>
       )}
-
-      {/* Pitch Interview CTA */}
-      <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-blue-600" />
-            <CardTitle>Pitch-Interview</CardTitle>
-          </div>
-          <CardDescription>
-            Starten Sie ein KI-gestütztes Interview, um Pitch-Dokumente zu generieren
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild>
-            <Link href={`/pitches/${id}/interview`}>Interview starten</Link>
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* Quick Actions */}
       <Card>

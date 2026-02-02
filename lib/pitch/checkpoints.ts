@@ -2,7 +2,8 @@ import { eq, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { pitchRuns } from '@/lib/db/schema';
-import type { OrchestratorCheckpoint, PitchStatus } from './types';
+import type { OrchestratorCheckpoint, PitchStatus, SnapshotEvent } from './types';
+import { publishToChannel } from './tools/progress-tool';
 
 export async function saveCheckpoint(
   runId: string,
@@ -68,8 +69,8 @@ export async function markAgentComplete(
   agentName: string,
   confidence: number
 ): Promise<void> {
-  // Atomic append to JSON array + merge confidence, no read-modify-write
-  await db.execute(sql`
+  // Atomic append + RETURNING to avoid read-after-write race
+  const rows = await db.execute<typeof pitchRuns.$inferSelect>(sql`
     UPDATE pitch_runs
     SET
       completed_agents = CASE
@@ -83,12 +84,19 @@ export async function markAgentComplete(
       END,
       updated_at = NOW()
     WHERE id = ${runId}
+    RETURNING *
   `);
+
+  // Publish snapshot from the RETURNING row (no separate SELECT needed)
+  const run = rows.rows?.[0];
+  if (run) {
+    await publishSnapshotSafe(runId, run);
+  }
 }
 
 export async function markAgentFailed(runId: string, agentName: string): Promise<void> {
-  // Atomic append to JSON array, no read-modify-write
-  await db.execute(sql`
+  // Atomic append + RETURNING to avoid read-after-write race
+  const rows = await db.execute<typeof pitchRuns.$inferSelect>(sql`
     UPDATE pitch_runs
     SET
       failed_agents = CASE
@@ -98,5 +106,52 @@ export async function markAgentFailed(runId: string, agentName: string): Promise
       END,
       updated_at = NOW()
     WHERE id = ${runId}
+    RETURNING *
   `);
+
+  // Publish snapshot from the RETURNING row (no separate SELECT needed)
+  const run = rows.rows?.[0];
+  if (run) {
+    await publishSnapshotSafe(runId, run);
+  }
+}
+
+export function buildSnapshotEvent(run: typeof pitchRuns.$inferSelect): SnapshotEvent {
+  let completedAgents: string[] = [];
+  let failedAgents: string[] = [];
+  let agentConfidences: Record<string, number> = {};
+
+  try {
+    completedAgents = run.completedAgents ? JSON.parse(run.completedAgents) : [];
+    failedAgents = run.failedAgents ? JSON.parse(run.failedAgents) : [];
+    agentConfidences = run.agentConfidences ? JSON.parse(run.agentConfidences) : {};
+  } catch (e) {
+    console.error(`[Checkpoint] Malformed JSON in run ${run.id}:`, e);
+  }
+
+  return {
+    type: 'snapshot',
+    runId: run.id,
+    status: run.status as PitchStatus,
+    progress: run.progress,
+    currentPhase: run.currentPhase,
+    currentStep: run.currentStep,
+    completedAgents,
+    failedAgents,
+    agentConfidences,
+    startedAt: run.startedAt?.toISOString() ?? null,
+    completedAt: run.completedAt?.toISOString() ?? null,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+async function publishSnapshotSafe(
+  runId: string,
+  run: typeof pitchRuns.$inferSelect
+): Promise<void> {
+  try {
+    await publishToChannel(runId, buildSnapshotEvent(run));
+  } catch (error) {
+    console.error(`[Checkpoint] Failed to publish snapshot for run ${runId}:`, error);
+  }
 }

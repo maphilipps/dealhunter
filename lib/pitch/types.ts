@@ -77,6 +77,22 @@ export interface ProgressEvent {
   timestamp: string;
 }
 
+// ====== Snapshot Event (SSE) ======
+export interface SnapshotEvent {
+  type: 'snapshot';
+  runId: string;
+  status: PitchStatus;
+  progress: number;
+  currentPhase: string | null;
+  currentStep: string | null;
+  completedAgents: string[];
+  failedAgents: string[];
+  agentConfidences: Record<string, number>;
+  startedAt: string | null;
+  completedAt: string | null;
+  timestamp: string;
+}
+
 // ====== BullMQ Job Types ======
 export interface PitchJobData {
   runId: string;

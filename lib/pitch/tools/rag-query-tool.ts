@@ -40,8 +40,17 @@ export function createCmsQueryTool(params: {
 
         return result;
       } catch (error) {
+        console.error(`[CMS Agent] Failed for run ${params.runId}:`, error);
         await markAgentFailed(params.runId, AGENT_NAMES.CMS);
-        throw error;
+        // Return degraded result so the pipeline can continue (best-effort)
+        return {
+          recommendedCms: params.targetCmsIds[0] ?? 'unknown',
+          reasoning: 'CMS-Analyse fehlgeschlagen — Empfehlung basiert auf Ziel-CMS.',
+          migrationComplexity: 'medium',
+          migrationStrategy: 'Standardmigration — manuelle Prüfung empfohlen.',
+          alternatives: [],
+          confidence: 0,
+        };
       }
     },
   });
@@ -81,8 +90,23 @@ export function createIndustryQueryTool(params: {
 
         return result;
       } catch (error) {
+        console.error(`[Industry Agent] Failed for run ${params.runId}:`, error);
         await markAgentFailed(params.runId, AGENT_NAMES.INDUSTRY);
-        throw error;
+        // Return degraded result so the pipeline can continue (best-effort)
+        return {
+          industry: params.industry ?? 'unbekannt',
+          industryRequirements: [],
+          competitiveInsights: [],
+          riskFactors: [
+            {
+              risk: 'Branchenanalyse fehlgeschlagen — keine branchenspezifischen Daten verfügbar.',
+              severity: 'medium',
+              mitigation: 'Manuelle Branchenrecherche empfohlen.',
+            },
+          ],
+          recommendations: ['Branchenanalyse manuell nachholen.'],
+          confidence: 0,
+        };
       }
     },
   });

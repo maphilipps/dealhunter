@@ -388,6 +388,15 @@ export const QUALIFICATION_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
     ],
   },
   {
+    id: 'interview',
+    label: 'Pitch-Interview',
+    icon: 'MessageSquare',
+    route: 'interview',
+    ragQueryTemplate: '',
+    synthesizerAgent: undefined,
+    collapsed: false,
+  },
+  {
     id: 'rag-data',
     label: 'RAG Data (Debug)',
     icon: 'Database',

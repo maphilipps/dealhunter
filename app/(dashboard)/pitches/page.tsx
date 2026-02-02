@@ -1,4 +1,4 @@
-import { Eye } from 'lucide-react';
+import { Eye, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
@@ -132,8 +132,13 @@ export default async function QualificationsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        <Link href={`/pitches/${lead.id}/interview`}>
+                          <Button variant="ghost" size="sm" title="Pitch-Interview">
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        </Link>
                         <Link href={`/pitches/${lead.id}`}>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" title="Details ansehen">
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>

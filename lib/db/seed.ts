@@ -11,10 +11,10 @@ import {
   competitors,
   employees,
   preQualifications,
-  qualifications,
+  pitches,
   quickScans,
   websiteAudits,
-  qualificationSectionData,
+  pitchSectionData,
   cmsMatchResults,
   ptEstimations,
   references,
@@ -294,7 +294,7 @@ async function seed() {
       .where(eq(preQualifications.id, preQualification.id));
 
     const [lead] = await db
-      .insert(qualifications)
+      .insert(pitches)
       .values({
         preQualificationId: preQualification.id,
         status: scenario.status as any,
@@ -332,8 +332,8 @@ async function seed() {
 
     const sections = ['executive-summary', 'technology-fit', 'commercial-aspects'];
     for (const section of sections) {
-      await db.insert(qualificationSectionData).values({
-        qualificationId: lead.id,
+      await db.insert(pitchSectionData).values({
+        pitchId: lead.id,
         sectionId: section,
         content: JSON.stringify({
           summary: faker.lorem.paragraph(),
@@ -344,7 +344,7 @@ async function seed() {
     }
 
     await db.insert(websiteAudits).values({
-      qualificationId: lead.id,
+      pitchId: lead.id,
       status: 'completed',
       websiteUrl: account.website || faker.internet.url(),
       performanceScore: faker.number.int({ min: 40, max: 90 }),
@@ -357,7 +357,7 @@ async function seed() {
     if (allTechs.length > 0) {
       const tech = random(allTechs);
       await db.insert(cmsMatchResults).values({
-        qualificationId: lead.id,
+        pitchId: lead.id,
         technologyId: tech.id,
         totalScore: faker.number.int({ min: 70, max: 95 }),
         featureScore: 80,
@@ -372,7 +372,7 @@ async function seed() {
     }
 
     await db.insert(ptEstimations).values({
-      qualificationId: lead.id,
+      pitchId: lead.id,
       totalPT: faker.number.int({ min: 100, max: 1000 }),
       totalCost: faker.number.int({ min: 100000, max: 1000000 }),
       durationMonths: faker.number.int({ min: 3, max: 12 }),
@@ -386,7 +386,7 @@ async function seed() {
 
     if (allReferences.length > 0) {
       await db.insert(referenceMatches).values({
-        qualificationId: lead.id,
+        pitchId: lead.id,
         referenceId: random(allReferences).id,
         totalScore: 85,
         techStackScore: 90,
@@ -398,7 +398,7 @@ async function seed() {
 
     if (allCompetitors.length > 0) {
       await db.insert(competitorMatches).values({
-        qualificationId: lead.id,
+        pitchId: lead.id,
         competitorId: random(allCompetitors).id,
         source: 'database',
         relevanceScore: 90,

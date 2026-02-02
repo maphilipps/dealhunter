@@ -11,8 +11,8 @@ import {
   accounts,
   preQualifications,
   quickScans,
-  qualifications,
-  qualificationSectionData,
+  pitches,
+  pitchSectionData,
   websiteAudits,
   cmsMatchResults,
   baselineComparisons,
@@ -790,7 +790,7 @@ async function seedCompleteLead() {
   console.log('🎯 Creating Lead...');
 
   const [lead] = await db
-    .insert(qualifications)
+    .insert(pitches)
     .values({
       preQualificationId: preQualification.id,
       status: 'bl_reviewing',
@@ -803,9 +803,6 @@ async function seedCompleteLead() {
       quickScanId: quickScan.id,
       decisionMakers: JSON.stringify(extractedRequirements.decisionMakers),
       businessUnitId: phpBU.id,
-      deepScanStatus: 'completed',
-      deepScanStartedAt: new Date(Date.now() - 1000 * 60 * 45),
-      deepScanCompletedAt: new Date(Date.now() - 1000 * 60 * 5),
       selectedCmsId: drupalTech.id,
       routedAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
     })
@@ -820,7 +817,7 @@ async function seedCompleteLead() {
 
   const sectionDataEntries = [
     {
-      qualificationId: lead.id,
+      pitchId: lead.id,
       sectionId: 'technology',
       content: JSON.stringify({
         currentStack: {
@@ -852,7 +849,7 @@ async function seedCompleteLead() {
       sources: JSON.stringify(['Wappalyzer', 'BuiltWith', 'Manual Inspection']),
     },
     {
-      qualificationId: lead.id,
+      pitchId: lead.id,
       sectionId: 'website-analysis',
       content: JSON.stringify({
         structure: {
@@ -882,7 +879,7 @@ async function seedCompleteLead() {
       sources: JSON.stringify(['Lighthouse', 'axe-core', 'Wave']),
     },
     {
-      qualificationId: lead.id,
+      pitchId: lead.id,
       sectionId: 'cms-comparison',
       content: JSON.stringify({
         evaluated: ['Drupal', 'Ibexa', 'Magnolia'],
@@ -906,7 +903,7 @@ async function seedCompleteLead() {
       sources: JSON.stringify(['CMS Feature Matrix', 'adesso Knowledge Base']),
     },
     {
-      qualificationId: lead.id,
+      pitchId: lead.id,
       sectionId: 'legal-check',
       content: JSON.stringify({
         gdprCompliance: {
@@ -938,7 +935,7 @@ async function seedCompleteLead() {
       sources: JSON.stringify(['Legal Review', 'Privacy Audit']),
     },
     {
-      qualificationId: lead.id,
+      pitchId: lead.id,
       sectionId: 'references',
       content: JSON.stringify({
         matched: [
@@ -970,7 +967,7 @@ async function seedCompleteLead() {
     },
   ];
 
-  await db.insert(qualificationSectionData).values(sectionDataEntries);
+  await db.insert(pitchSectionData).values(sectionDataEntries);
   console.log(`  ✓ ${sectionDataEntries.length} Section Data entries created\n`);
 
   // ===========================================
@@ -981,7 +978,7 @@ async function seedCompleteLead() {
   const [websiteAudit] = await db
     .insert(websiteAudits)
     .values({
-      qualificationId: lead.id,
+      pitchId: lead.id,
       status: 'completed',
       websiteUrl: 'https://www.stv-fst.ch',
       homepage: JSON.stringify({
@@ -1082,7 +1079,7 @@ async function seedCompleteLead() {
 
   await db.insert(cmsMatchResults).values([
     {
-      qualificationId: lead.id,
+      pitchId: lead.id,
       technologyId: drupalTech.id,
       totalScore: 92,
       featureScore: 94,
@@ -1103,7 +1100,7 @@ async function seedCompleteLead() {
       isRecommended: true,
     },
     {
-      qualificationId: lead.id,
+      pitchId: lead.id,
       technologyId: ibexaTech.id,
       totalScore: 78,
       featureScore: 82,
@@ -1123,7 +1120,7 @@ async function seedCompleteLead() {
       isRecommended: false,
     },
     {
-      qualificationId: lead.id,
+      pitchId: lead.id,
       technologyId: magnoliaTech.id,
       totalScore: 72,
       featureScore: 75,
@@ -1147,7 +1144,7 @@ async function seedCompleteLead() {
   console.log('📊 Creating Baseline Comparison...');
 
   await db.insert(baselineComparisons).values({
-    qualificationId: lead.id,
+    pitchId: lead.id,
     technologyId: drupalTech.id,
     baselineName: 'adessoCMS Drupal',
     baselineHours: 693,
@@ -1187,7 +1184,7 @@ async function seedCompleteLead() {
   console.log('💰 Creating PT Estimation...');
 
   await db.insert(ptEstimations).values({
-    qualificationId: lead.id,
+    pitchId: lead.id,
     totalPT: 873,
     totalCost: 960000,
     durationMonths: 9,
@@ -1241,7 +1238,7 @@ async function seedCompleteLead() {
 
   await db.insert(referenceMatches).values([
     {
-      qualificationId: lead.id,
+      pitchId: lead.id,
       referenceId: reference1.id,
       totalScore: 94,
       techStackScore: 95,
@@ -1253,7 +1250,7 @@ async function seedCompleteLead() {
       rank: 1,
     },
     {
-      qualificationId: lead.id,
+      pitchId: lead.id,
       referenceId: reference2.id,
       totalScore: 91,
       techStackScore: 88,
@@ -1275,7 +1272,7 @@ async function seedCompleteLead() {
 
   await db.insert(competitorMatches).values([
     {
-      qualificationId: lead.id,
+      pitchId: lead.id,
       competitorId: competitor1.id,
       source: 'database',
       relevanceScore: 85,
@@ -1287,7 +1284,7 @@ async function seedCompleteLead() {
       ]),
     },
     {
-      qualificationId: lead.id,
+      pitchId: lead.id,
       competitorId: competitor2.id,
       source: 'database',
       relevanceScore: 78,
@@ -1308,7 +1305,7 @@ async function seedCompleteLead() {
   const [pitchdeck] = await db
     .insert(pitchdecks)
     .values({
-      qualificationId: lead.id,
+      pitchId: lead.id,
       status: 'team_proposed',
     })
     .returning();

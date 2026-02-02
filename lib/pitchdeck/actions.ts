@@ -9,7 +9,7 @@ import { generateCompleteSolution, type SolutionInput } from '@/lib/agents/solut
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
-  qualifications,
+  pitches,
   pitchdecks,
   pitchdeckDeliverables,
   preQualifications,
@@ -37,10 +37,10 @@ export interface CreatePitchdeckResult {
  *
  * This is called automatically after a BID vote is cast.
  *
- * @param qualificationId - The qualification ID to create pitchdeck for
+ * @param pitchId - The qualification ID to create pitchdeck for
  * @returns Pitchdeck ID if successful
  */
-export async function createPitchdeck(qualificationId: string): Promise<CreatePitchdeckResult> {
+export async function createPitchdeck(pitchId: string): Promise<CreatePitchdeckResult> {
   // Security: Authentication check
   const session = await auth();
   if (!session?.user?.id) {
@@ -49,11 +49,7 @@ export async function createPitchdeck(qualificationId: string): Promise<CreatePi
 
   try {
     // Get lead
-    const [lead] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, qualificationId))
-      .limit(1);
+    const [lead] = await db.select().from(pitches).where(eq(pitches.id, pitchId)).limit(1);
 
     if (!lead) {
       return {
@@ -74,7 +70,7 @@ export async function createPitchdeck(qualificationId: string): Promise<CreatePi
     const existingPitchdeck = await db
       .select()
       .from(pitchdecks)
-      .where(eq(pitchdecks.qualificationId, qualificationId))
+      .where(eq(pitchdecks.pitchId, pitchId))
       .limit(1);
 
     if (existingPitchdeck.length > 0) {
@@ -102,7 +98,7 @@ export async function createPitchdeck(qualificationId: string): Promise<CreatePi
     const [newPitchdeck] = await db
       .insert(pitchdecks)
       .values({
-        qualificationId: qualificationId,
+        pitchId: pitchId,
         status: 'draft',
       })
       .returning();
@@ -113,7 +109,10 @@ export async function createPitchdeck(qualificationId: string): Promise<CreatePi
 
     if (preQualification.extractedRequirements) {
       try {
-        const extractedReqs = JSON.parse(preQualification.extractedRequirements) as Record<string, unknown>;
+        const extractedReqs = JSON.parse(preQualification.extractedRequirements) as Record<
+          string,
+          unknown
+        >;
         if (Array.isArray(extractedReqs.requiredDeliverables)) {
           requiredDeliverables = extractedReqs.requiredDeliverables as {
             name: string;
@@ -163,7 +162,7 @@ export async function createPitchdeck(qualificationId: string): Promise<CreatePi
     await createAuditLog({
       action: 'create',
       entityType: 'qualification',
-      entityId: qualificationId,
+      entityId: pitchId,
       previousValue: null,
       newValue: JSON.stringify({
         pitchdeckId: newPitchdeck.id,
@@ -174,7 +173,7 @@ export async function createPitchdeck(qualificationId: string): Promise<CreatePi
     });
 
     // Revalidate cache
-    revalidatePath(`/qualifications/${qualificationId}`);
+    revalidatePath(`/pitches/${pitchId}`);
     revalidatePath('/leads');
 
     return {
@@ -236,8 +235,8 @@ export async function suggestPitchdeckTeam(
     // Get lead
     const [lead] = await db
       .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .from(pitches)
+      .where(eq(pitches.id, pitchdeck.pitchId))
       .limit(1);
 
     if (!lead) {
@@ -265,7 +264,7 @@ export async function suggestPitchdeckTeam(
     const [ptEstimation] = await db
       .select()
       .from(ptEstimations)
-      .where(eq(ptEstimations.qualificationId, lead.id))
+      .where(eq(ptEstimations.pitchId, lead.id))
       .limit(1);
 
     // Get Quick Scan results if available
@@ -345,8 +344,8 @@ export async function suggestPitchdeckTeam(
     });
 
     // Revalidate cache
-    revalidatePath(`/qualifications/${lead.id}/pitchdeck`);
-    revalidatePath(`/qualifications/${lead.id}`);
+    revalidatePath(`/pitches/${lead.id}/pitchdeck`);
+    revalidatePath(`/pitches/${lead.id}`);
 
     return {
       success: true,
@@ -406,8 +405,8 @@ export async function confirmPitchdeckTeam(
     // Get lead
     const [lead] = await db
       .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .from(pitches)
+      .where(eq(pitches.id, pitchdeck.pitchId))
       .limit(1);
 
     if (!lead) {
@@ -486,8 +485,8 @@ export async function confirmPitchdeckTeam(
     });
 
     // Revalidate cache
-    revalidatePath(`/qualifications/${lead.id}/pitchdeck`);
-    revalidatePath(`/qualifications/${lead.id}`);
+    revalidatePath(`/pitches/${lead.id}/pitchdeck`);
+    revalidatePath(`/pitches/${lead.id}`);
 
     return {
       success: true,
@@ -576,8 +575,8 @@ export async function updateDeliverableStatus(
     // Get lead for audit trail
     const [lead] = await db
       .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .from(pitches)
+      .where(eq(pitches.id, pitchdeck.pitchId))
       .limit(1);
 
     if (!lead) {
@@ -607,8 +606,8 @@ export async function updateDeliverableStatus(
     });
 
     // Revalidate cache
-    revalidatePath(`/qualifications/${lead.id}/pitchdeck`);
-    revalidatePath(`/qualifications/${lead.id}`);
+    revalidatePath(`/pitches/${lead.id}/pitchdeck`);
+    revalidatePath(`/pitches/${lead.id}`);
 
     return {
       success: true,
@@ -684,8 +683,8 @@ export async function generateSolutionSketches(
     // Get lead
     const [lead] = await db
       .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .from(pitches)
+      .where(eq(pitches.id, pitchdeck.pitchId))
       .limit(1);
 
     if (!lead) {
@@ -716,7 +715,10 @@ export async function generateSolutionSketches(
 
     if (preQualification.extractedRequirements) {
       try {
-        const extractedReqs = JSON.parse(preQualification.extractedRequirements) as Record<string, unknown>;
+        const extractedReqs = JSON.parse(preQualification.extractedRequirements) as Record<
+          string,
+          unknown
+        >;
         customerName = extractedReqs.customerName as string | undefined;
         projectDescription = extractedReqs.projectDescription as string | undefined;
 
@@ -791,8 +793,8 @@ export async function generateSolutionSketches(
     });
 
     // Revalidate cache
-    revalidatePath(`/qualifications/${lead.id}/pitchdeck`);
-    revalidatePath(`/qualifications/${lead.id}`);
+    revalidatePath(`/pitches/${lead.id}/pitchdeck`);
+    revalidatePath(`/pitches/${lead.id}`);
 
     console.error(
       `[Generate Solution Sketches] Success for deliverable: ${deliverable.deliverableName}`,

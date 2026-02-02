@@ -98,7 +98,7 @@ export function DeliverableCard({ deliverable, leadId }: DeliverableCardProps) {
 
     try {
       const response = await fetch(
-        `/api/qualifications/${leadId}/pitchdeck/deliverables/${deliverable.id}/regenerate`,
+        `/api/pitches/${leadId}/pitchdeck/deliverables/${deliverable.id}/regenerate`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

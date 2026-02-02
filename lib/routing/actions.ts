@@ -153,7 +153,7 @@ export async function assignBusinessUnit(
       .where(eq(preQualifications.id, bidId));
 
     // DEA-38: Auto-convert to Lead when status becomes 'routed'
-    const { convertRfpToLead } = await import('@/lib/qualifications/actions');
+    const { convertRfpToLead } = await import('@/lib/pitches/actions');
     const leadResult = await convertRfpToLead({ preQualificationId: bidId });
 
     let leadId: string | undefined;
@@ -169,7 +169,7 @@ export async function assignBusinessUnit(
     revalidatePath('/bl-review');
     revalidatePath('/leads');
     if (leadId) {
-      revalidatePath(`/qualifications/${leadId}`);
+      revalidatePath(`/pitches/${leadId}`);
     }
 
     // ROUTE-003: Send email notification to BL leader

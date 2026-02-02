@@ -13,7 +13,7 @@ import {
   cmsMatchResults,
   referenceMatches,
   competitorMatches,
-  qualifications,
+  pitches,
   preQualifications,
 } from '@/lib/db/schema';
 
@@ -37,7 +37,7 @@ const deleteCmsMatchInputSchema = z.object({
 
 // ReferenceMatch Schemas
 const createReferenceMatchInputSchema = z.object({
-  qualificationId: z.string(),
+  pitchId: z.string(),
   referenceId: z.string(),
   totalScore: z.number().min(0).max(100),
   techStackScore: z.number().min(0).max(100),
@@ -65,7 +65,7 @@ const deleteReferenceMatchInputSchema = z.object({
 
 // CompetitorMatch Schemas
 const createCompetitorMatchInputSchema = z.object({
-  qualificationId: z.string(),
+  pitchId: z.string(),
   competitorId: z.string(),
   source: z.enum(['database', 'web_search']),
   relevanceScore: z.number().min(0).max(100).optional(),
@@ -225,15 +225,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Verify lead access via preQualification.userId
     const [leadData] = await db
-      .select({ lead: qualifications, preQualification: preQualifications })
-      .from(qualifications)
-      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
-      .where(
-        and(
-          eq(qualifications.id, input.qualificationId),
-          eq(preQualifications.userId, context.userId)
-        )
-      )
+      .select({ lead: pitches, preQualification: preQualifications })
+      .from(pitches)
+      .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
+      .where(and(eq(pitches.id, input.pitchId), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!leadData) {
@@ -243,7 +238,7 @@ registry.register({
     const [match] = await db
       .insert(referenceMatches)
       .values({
-        qualificationId: input.qualificationId,
+        pitchId: input.pitchId,
         referenceId: input.referenceId,
         totalScore: input.totalScore,
         techStackScore: input.techStackScore,
@@ -261,7 +256,7 @@ registry.register({
       success: true,
       data: {
         id: match.id,
-        qualificationId: match.qualificationId,
+        pitchId: match.pitchId,
         referenceId: match.referenceId,
         totalScore: match.totalScore,
         rank: match.rank,
@@ -278,10 +273,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Fetch existing match and verify access via lead → preQualification
     const [existing] = await db
-      .select({ match: referenceMatches, lead: qualifications, preQualification: preQualifications })
+      .select({ match: referenceMatches, lead: pitches, preQualification: preQualifications })
       .from(referenceMatches)
-      .innerJoin(qualifications, eq(referenceMatches.qualificationId, qualifications.id))
-      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
+      .innerJoin(pitches, eq(referenceMatches.pitchId, pitches.id))
+      .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
       .where(and(eq(referenceMatches.id, input.id), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
@@ -318,10 +313,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Fetch existing match and verify access via lead → preQualification
     const [existing] = await db
-      .select({ match: referenceMatches, lead: qualifications, preQualification: preQualifications })
+      .select({ match: referenceMatches, lead: pitches, preQualification: preQualifications })
       .from(referenceMatches)
-      .innerJoin(qualifications, eq(referenceMatches.qualificationId, qualifications.id))
-      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
+      .innerJoin(pitches, eq(referenceMatches.pitchId, pitches.id))
+      .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
       .where(and(eq(referenceMatches.id, input.id), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
@@ -352,15 +347,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Verify lead access via preQualification.userId
     const [leadData] = await db
-      .select({ lead: qualifications, preQualification: preQualifications })
-      .from(qualifications)
-      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
-      .where(
-        and(
-          eq(qualifications.id, input.qualificationId),
-          eq(preQualifications.userId, context.userId)
-        )
-      )
+      .select({ lead: pitches, preQualification: preQualifications })
+      .from(pitches)
+      .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
+      .where(and(eq(pitches.id, input.pitchId), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
     if (!leadData) {
@@ -370,7 +360,7 @@ registry.register({
     const [match] = await db
       .insert(competitorMatches)
       .values({
-        qualificationId: input.qualificationId,
+        pitchId: input.pitchId,
         competitorId: input.competitorId,
         source: input.source,
         relevanceScore: input.relevanceScore || null,
@@ -384,7 +374,7 @@ registry.register({
       success: true,
       data: {
         id: match.id,
-        qualificationId: match.qualificationId,
+        pitchId: match.pitchId,
         competitorId: match.competitorId,
         source: match.source,
         likelyInvolved: match.likelyInvolved,
@@ -401,10 +391,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Fetch existing match and verify access via lead → preQualification
     const [existing] = await db
-      .select({ match: competitorMatches, lead: qualifications, preQualification: preQualifications })
+      .select({ match: competitorMatches, lead: pitches, preQualification: preQualifications })
       .from(competitorMatches)
-      .innerJoin(qualifications, eq(competitorMatches.qualificationId, qualifications.id))
-      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
+      .innerJoin(pitches, eq(competitorMatches.pitchId, pitches.id))
+      .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
       .where(and(eq(competitorMatches.id, input.id), eq(preQualifications.userId, context.userId)))
       .limit(1);
 
@@ -437,10 +427,10 @@ registry.register({
   async execute(input, context: ToolContext) {
     // Fetch existing match and verify access via lead → preQualification
     const [existing] = await db
-      .select({ match: competitorMatches, lead: qualifications, preQualification: preQualifications })
+      .select({ match: competitorMatches, lead: pitches, preQualification: preQualifications })
       .from(competitorMatches)
-      .innerJoin(qualifications, eq(competitorMatches.qualificationId, qualifications.id))
-      .innerJoin(preQualifications, eq(qualifications.preQualificationId, preQualifications.id))
+      .innerJoin(pitches, eq(competitorMatches.pitchId, pitches.id))
+      .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
       .where(and(eq(competitorMatches.id, input.id), eq(preQualifications.userId, context.userId)))
       .limit(1);
 

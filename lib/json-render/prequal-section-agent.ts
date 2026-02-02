@@ -157,7 +157,7 @@ Beispiel:
 
       // Store visualization in DB
       await db.insert(dealEmbeddings).values({
-        qualificationId: null,
+        pitchId: null,
         preQualificationId,
         agentName: 'prequal_section_agent',
         chunkType: 'visualization',
@@ -219,7 +219,7 @@ Regeln:
       }
 
       await db.insert(dealEmbeddings).values({
-        qualificationId: null,
+        pitchId: null,
         preQualificationId,
         agentName: `dashboard_${sectionId}`,
         chunkType: 'dashboard_highlight',

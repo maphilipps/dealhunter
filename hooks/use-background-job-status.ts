@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
  * Background Job Status Hook
  *
  * Polls the background job API for status updates with:
- * - Configurable polling interval (default 10s for deep scan)
+ * - Configurable polling interval (default 10s for background job)
  * - Page Visibility API integration (pauses when tab is hidden)
  * - Automatic stop when job is terminal (completed/failed/cancelled)
  * - Support for job type filtering
@@ -18,30 +18,24 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 
 export interface BackgroundJob {
   id: string;
-  jobType: 'deep-scan' | 'deep-analysis' | 'team-notification' | 'cleanup';
+  jobType: 'deep-analysis' | 'pitch' | 'team-notification' | 'cleanup';
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
   progress: number;
   currentStep: string | null;
   errorMessage: string | null;
   startedAt: string | null;
   completedAt: string | null;
-  // Deep scan specific fields
-  currentExpert: string | null;
-  currentPhase: 'scraping' | 'phase2' | 'phase3' | 'completed';
-  completedExperts: string[];
-  pendingExperts: string[];
-  sectionConfidences: Record<string, number>;
   bullmqJobId: string | null;
 }
 
 export interface UseBackgroundJobStatusOptions {
   leadId: string;
-  /** Polling interval in milliseconds (default: 10000 for deep scan) */
+  /** Polling interval in milliseconds (default: 10000 for background job) */
   pollingInterval?: number;
   /** Enable/disable polling */
   enabled?: boolean;
   /** Filter by job type */
-  jobType?: 'deep-scan' | 'deep-analysis';
+  jobType?: 'deep-analysis' | 'pitch';
   /** Pause polling when tab is hidden (default: true) */
   pauseOnHidden?: boolean;
 }
@@ -84,8 +78,8 @@ export function useBackgroundJobStatus({
 
   // Build API URL with optional job type filter
   const apiUrl = jobType
-    ? `/api/qualifications/${leadId}/background-job?type=${jobType}`
-    : `/api/qualifications/${leadId}/background-job`;
+    ? `/api/pitches/${leadId}/background-job?type=${jobType}`
+    : `/api/pitches/${leadId}/background-job`;
 
   // Fetch with abort support and race condition prevention
   const fetchJobStatus = useCallback(async () => {

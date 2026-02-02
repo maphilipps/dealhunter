@@ -16,7 +16,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { qualifications, references, dealEmbeddings } from '@/lib/db/schema';
+import { pitches, references, dealEmbeddings } from '@/lib/db/schema';
 import { queryRagForLead, formatLeadContext } from '@/lib/rag/lead-retrieval-service';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -160,19 +160,22 @@ function calculateOverallScore(industryScore: number, technologyScore: number): 
  * @param preQualificationId - Pre-Qualification ID for RAG storage
  * @returns Reference recommendations
  */
-export async function runReferencesAgent(leadId: string, preQualificationId: string): Promise<ReferencesResult> {
+export async function runReferencesAgent(
+  leadId: string,
+  preQualificationId: string
+): Promise<ReferencesResult> {
   console.error(`[References Agent] Starting analysis for lead ${leadId}`);
 
   try {
     // 1. Fetch lead data
     const leadData = await db
       .select({
-        customerName: qualifications.customerName,
-        industry: qualifications.industry,
-        requirements: qualifications.requirements,
+        customerName: pitches.customerName,
+        industry: pitches.industry,
+        requirements: pitches.requirements,
       })
-      .from(qualifications)
-      .where(eq(qualifications.id, leadId));
+      .from(pitches)
+      .where(eq(pitches.id, leadId));
 
     if (leadData.length === 0) {
       throw new Error(`Lead ${leadId} not found`);
@@ -182,9 +185,9 @@ export async function runReferencesAgent(leadId: string, preQualificationId: str
 
     // 2. Query RAG for technology requirements
     const ragResults = await queryRagForLead({
-      qualificationId: leadId,
+      pitchId: leadId,
       question: 'Technology stack, technical requirements, CMS, frameworks, programming languages',
-      agentNameFilter: ['technology', 'deep-scan-technology', 'quick_scan'],
+      agentNameFilter: ['technology', 'quick_scan'],
       maxResults: 5,
     });
 
@@ -539,7 +542,11 @@ function generateSummary(recommendations: ReferenceRecommendation[], leadIndustr
 /**
  * Store references results in RAG
  */
-async function storeInRAG(preQualificationId: string, leadId: string, result: ReferencesResult): Promise<void> {
+async function storeInRAG(
+  preQualificationId: string,
+  leadId: string,
+  result: ReferencesResult
+): Promise<void> {
   try {
     const recommendationDetails = result.recommendations
       .map(

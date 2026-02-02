@@ -20,7 +20,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { dealEmbeddings, qualifications } from '@/lib/db/schema';
+import { dealEmbeddings, pitches } from '@/lib/db/schema';
 import type { ChunkCategory } from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -238,10 +238,7 @@ interface ContextData {
  */
 async function getExistingCalcSheetData(leadId: string): Promise<CalcSheet | null> {
   try {
-    const chunks = await db
-      .select()
-      .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.qualificationId, leadId));
+    const chunks = await db.select().from(dealEmbeddings).where(eq(dealEmbeddings.pitchId, leadId));
 
     // Look for calc-sheet specific chunks
     const calcSheetChunks = chunks.filter(
@@ -298,8 +295,8 @@ async function gatherContext(leadId: string): Promise<ContextData> {
 
   try {
     // Get lead data
-    const lead = await db.query.qualifications.findFirst({
-      where: eq(qualifications.id, leadId),
+    const lead = await db.query.pitches.findFirst({
+      where: eq(pitches.id, leadId),
       with: {
         quickScan: true,
       },
@@ -348,10 +345,7 @@ async function gatherContext(leadId: string): Promise<ContextData> {
     }
 
     // Get RAG embeddings for additional context
-    const chunks = await db
-      .select()
-      .from(dealEmbeddings)
-      .where(eq(dealEmbeddings.qualificationId, leadId));
+    const chunks = await db.select().from(dealEmbeddings).where(eq(dealEmbeddings.pitchId, leadId));
 
     // Extract components from component_library agent
     const componentChunks = chunks.filter(c => c.agentName === 'component_library');
@@ -604,7 +598,7 @@ ${riskList}`;
 
     if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
       await db.insert(dealEmbeddings).values({
-        qualificationId: leadId,
+        pitchId: leadId,
         agentName: 'calc_sheet_generator',
         chunkType: 'calc_sheet',
         chunkIndex: 0,

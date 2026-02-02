@@ -2,9 +2,6 @@ import { z } from 'zod';
 
 import { registry } from './registry';
 
-import { cacheAuditPagesFromEmbeddings } from '@/lib/deep-scan/audit-cache';
-import { queryLeadRag } from '@/lib/deep-scan/experts/base';
-import { embedScrapedPage, scrapeSite } from '@/lib/deep-scan/scraper';
 import { queryRAG } from '@/lib/rag/retrieval-service';
 import { searchAndContents, getContents } from '@/lib/search/web-search';
 
@@ -60,90 +57,21 @@ registry.register({
 
 registry.register({
   name: 'scan.rag.query',
-  description: 'Query RAG for either a pre-qualification or lead',
+  description: 'Query RAG for a pre-qualification',
   category: 'scan',
   inputSchema: z.object({
-    preQualificationId: z.string().optional(),
-    leadId: z.string().optional(),
+    preQualificationId: z.string(),
     query: z.string(),
-    agentFilter: z.string().optional(),
     techStackFilter: z.string().optional(),
     maxResults: z.number().min(1).max(20).default(10),
   }),
   async execute(input) {
-    if (input.leadId) {
-      const results = await queryLeadRag(
-        input.leadId,
-        input.query,
-        input.agentFilter,
-        input.maxResults
-      );
-      return { success: true, data: results };
-    }
-
-    if (input.preQualificationId) {
-      const results = await queryRAG({
-        preQualificationId: input.preQualificationId,
-        question: input.query,
-        techStackFilter: input.techStackFilter,
-        maxResults: input.maxResults,
-      });
-      return { success: true, data: results };
-    }
-
-    return { success: false, error: 'Either leadId or preQualificationId is required' };
-  },
-});
-
-registry.register({
-  name: 'scan.scrapeSite',
-  description: 'Scrape a website and store page data in the scan RAG store (leadId required)',
-  category: 'scan',
-  inputSchema: z.object({
-    leadId: z.string(),
-    websiteUrl: z.string().url(),
-    maxPages: z.number().min(1).max(60).default(30),
-    maxDepth: z.number().min(1).max(6).default(3),
-    includeScreenshots: z.boolean().default(true),
-    includeMobile: z.boolean().default(false),
-  }),
-  async execute(input) {
-    const pages: number[] = [];
-    const result = await scrapeSite(
-      input.websiteUrl,
-      {
-        maxPages: input.maxPages,
-        maxDepth: input.maxDepth,
-        includeScreenshots: input.includeScreenshots,
-        includeMobile: input.includeMobile,
-      },
-      async page => {
-        await embedScrapedPage(input.leadId, page);
-        pages.push(1);
-      }
-    );
-
-    return {
-      success: result.success,
-      data: {
-        pagesScraped: pages.length,
-        sitemapFound: result.sitemapFound,
-        techStack: result.techStack,
-        errors: result.errors,
-      },
-    };
-  },
-});
-
-registry.register({
-  name: 'scan.cacheAuditPages',
-  description: 'Cache audit section pages from existing audit embeddings (leadId required)',
-  category: 'scan',
-  inputSchema: z.object({
-    leadId: z.string(),
-  }),
-  async execute(input) {
-    const result = await cacheAuditPagesFromEmbeddings(input.leadId);
-    return { success: result.success, data: result };
+    const results = await queryRAG({
+      preQualificationId: input.preQualificationId,
+      question: input.query,
+      techStackFilter: input.techStackFilter,
+      maxResults: input.maxResults,
+    });
+    return { success: true, data: results };
   },
 });

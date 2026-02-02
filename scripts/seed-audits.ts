@@ -2,7 +2,7 @@
  * Seed Pre-Qualifications and Qualifications from Audit Folders
  *
  * This script:
- * 1. Clears existing qualifications and pre-qualifications
+ * 1. Clears existing pitches and pre-qualifications
  * 2. Creates pre-qualifications from audit folders
  * 3. Routes all to PHP business line
  * 4. Imports all MD and JSON files as RAG embeddings
@@ -13,7 +13,7 @@
 import { db } from '../lib/db';
 import {
   preQualifications,
-  qualifications,
+  pitches,
   dealEmbeddings,
   businessUnits,
   users,
@@ -25,7 +25,7 @@ import {
   documents,
   pitchdecks,
   ptEstimations,
-  qualificationSectionData,
+  pitchSectionData,
   quickScans,
   rawChunks,
   referenceMatches,
@@ -261,7 +261,7 @@ async function seedAudits() {
   // Clear existing data (in order due to FK constraints)
   console.log('🗑️  Clearing existing data...');
 
-  // Tables referencing qualifications
+  // Tables referencing pitches
   await db.delete(backgroundJobs);
   await db.delete(baselineComparisons);
   await db.delete(cmsMatchResults);
@@ -269,7 +269,7 @@ async function seedAudits() {
   await db.delete(dealEmbeddings);
   await db.delete(pitchdecks);
   await db.delete(ptEstimations);
-  await db.delete(qualificationSectionData);
+  await db.delete(pitchSectionData);
   await db.delete(referenceMatches);
   await db.delete(websiteAudits);
 
@@ -280,14 +280,14 @@ async function seedAudits() {
   await db.delete(subjectiveAssessments);
   await db.delete(teamAssignments);
 
-  // Clear qualifications BEFORE quick_scans
-  await db.delete(qualifications);
+  // Clear pitches BEFORE quick_scans
+  await db.delete(pitches);
   await db.delete(quickScans);
   await db.delete(preQualifications);
 
   console.log('✅ All tables cleared\n');
 
-  // Create pre-qualifications and qualifications for each audit
+  // Create pre-qualifications and pitches for each audit
   const auditsDir = join(process.cwd(), 'audits');
   let totalChunks = 0;
 
@@ -339,7 +339,7 @@ async function seedAudits() {
 
     // Create qualification (routed to PHP)
     const [qual] = await db
-      .insert(qualifications)
+      .insert(pitches)
       .values({
         preQualificationId: preQual.id,
         customerName: config.customerName,
@@ -347,8 +347,7 @@ async function seedAudits() {
         industry: config.industry,
         projectDescription: config.projectDescription,
         businessUnitId: phpBU.id,
-        status: 'bl_reviewing', // Set to bl_reviewing so deep scan can be triggered
-        deepScanStatus: 'pending', // Allow deep scans to be triggered
+        status: 'bl_reviewing',
       })
       .returning();
 
@@ -398,7 +397,7 @@ async function seedAudits() {
             const embedding = await generateQueryEmbedding(chunk);
 
             await db.insert(dealEmbeddings).values({
-              qualificationId: qual.id,
+              pitchId: qual.id,
               preQualificationId: preQual.id,
               agentName: 'audit_import',
               chunkType,
@@ -436,7 +435,7 @@ async function seedAudits() {
 
   console.log(`\n${'═'.repeat(60)}`);
   console.log(`🎉 Audit seeding completed!`);
-  console.log(`   Total qualifications: ${AUDIT_CONFIGS.length}`);
+  console.log(`   Total pitches: ${AUDIT_CONFIGS.length}`);
   console.log(`   Total RAG chunks: ${totalChunks}`);
   console.log(`${'═'.repeat(60)}`);
 }

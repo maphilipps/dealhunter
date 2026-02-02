@@ -15,7 +15,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { qualifications, quickScans, dealEmbeddings } from '@/lib/db/schema';
+import { pitches, quickScans, dealEmbeddings } from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -88,16 +88,19 @@ export type HostingAnalysis = z.infer<typeof HostingAnalysisSchema>;
  * @param preQualificationId - Pre-Qualification ID
  * @returns Hosting analysis with recommendations
  */
-export async function runHostingAgent(leadId: string, preQualificationId: string): Promise<HostingAnalysis> {
+export async function runHostingAgent(
+  leadId: string,
+  preQualificationId: string
+): Promise<HostingAnalysis> {
   // 1. Fetch lead and Quick Scan data
   const [leadData] = await db
     .select({
-      customerName: qualifications.customerName,
-      websiteUrl: qualifications.websiteUrl,
-      quickScanId: qualifications.quickScanId,
+      customerName: pitches.customerName,
+      websiteUrl: pitches.websiteUrl,
+      quickScanId: pitches.quickScanId,
     })
-    .from(qualifications)
-    .where(eq(qualifications.id, leadId))
+    .from(pitches)
+    .where(eq(pitches.id, leadId))
     .limit(1);
 
   if (!leadData) {
@@ -215,7 +218,7 @@ ${result.migrationRisk.factors.map(f => `- ${f}`).join('\n')}`;
 
   if (chunksWithEmbeddings && chunksWithEmbeddings.length > 0) {
     await db.insert(dealEmbeddings).values({
-      qualificationId: leadId,
+      pitchId: leadId,
       preQualificationId: preQualificationId,
       agentName: 'hosting',
       chunkType: 'analysis',

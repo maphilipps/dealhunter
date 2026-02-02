@@ -18,8 +18,8 @@ import {
   pitchdecks,
   preQualifications,
   ptEstimations,
-  qualificationSectionData,
-  qualifications,
+  pitchSectionData,
+  pitches,
   quickScans,
   rawChunks,
   referenceMatches,
@@ -178,17 +178,17 @@ export async function deletePreQualificationHard(preQualificationId: string) {
         .where(eq(preQualifications.id, preQualificationId));
 
       const qualificationRows = await tx
-        .select({ id: qualifications.id })
-        .from(qualifications)
-        .where(eq(qualifications.preQualificationId, preQualificationId));
+        .select({ id: pitches.id })
+        .from(pitches)
+        .where(eq(pitches.preQualificationId, preQualificationId));
 
-      const qualificationIds = qualificationRows.map(row => row.id);
+      const pitchIds = qualificationRows.map(row => row.id);
 
-      if (qualificationIds.length > 0) {
+      if (pitchIds.length > 0) {
         const pitchdeckRows = await tx
           .select({ id: pitchdecks.id })
           .from(pitchdecks)
-          .where(inArray(pitchdecks.qualificationId, qualificationIds));
+          .where(inArray(pitchdecks.pitchId, pitchIds));
 
         const pitchdeckIds = pitchdeckRows.map(row => row.id);
 
@@ -202,42 +202,28 @@ export async function deletePreQualificationHard(preQualificationId: string) {
           await tx.delete(pitchdecks).where(inArray(pitchdecks.id, pitchdeckIds));
         }
 
-        await tx
-          .delete(qualificationSectionData)
-          .where(inArray(qualificationSectionData.qualificationId, qualificationIds));
-        await tx
-          .delete(websiteAudits)
-          .where(inArray(websiteAudits.qualificationId, qualificationIds));
-        await tx
-          .delete(cmsMatchResults)
-          .where(inArray(cmsMatchResults.qualificationId, qualificationIds));
-        await tx
-          .delete(baselineComparisons)
-          .where(inArray(baselineComparisons.qualificationId, qualificationIds));
-        await tx
-          .delete(ptEstimations)
-          .where(inArray(ptEstimations.qualificationId, qualificationIds));
-        await tx
-          .delete(referenceMatches)
-          .where(inArray(referenceMatches.qualificationId, qualificationIds));
-        await tx
-          .delete(competitorMatches)
-          .where(inArray(competitorMatches.qualificationId, qualificationIds));
-        await tx
-          .delete(dealEmbeddings)
-          .where(inArray(dealEmbeddings.qualificationId, qualificationIds));
-        await tx
-          .delete(backgroundJobs)
-          .where(inArray(backgroundJobs.qualificationId, qualificationIds));
-        await tx.delete(qualifications).where(inArray(qualifications.id, qualificationIds));
+        await tx.delete(pitchSectionData).where(inArray(pitchSectionData.pitchId, pitchIds));
+        await tx.delete(websiteAudits).where(inArray(websiteAudits.pitchId, pitchIds));
+        await tx.delete(cmsMatchResults).where(inArray(cmsMatchResults.pitchId, pitchIds));
+        await tx.delete(baselineComparisons).where(inArray(baselineComparisons.pitchId, pitchIds));
+        await tx.delete(ptEstimations).where(inArray(ptEstimations.pitchId, pitchIds));
+        await tx.delete(referenceMatches).where(inArray(referenceMatches.pitchId, pitchIds));
+        await tx.delete(competitorMatches).where(inArray(competitorMatches.pitchId, pitchIds));
+        await tx.delete(dealEmbeddings).where(inArray(dealEmbeddings.pitchId, pitchIds));
+        await tx.delete(backgroundJobs).where(inArray(backgroundJobs.pitchId, pitchIds));
+        await tx.delete(pitches).where(inArray(pitches.id, pitchIds));
       }
 
       await tx.delete(documents).where(eq(documents.preQualificationId, preQualificationId));
-      await tx.delete(teamAssignments).where(eq(teamAssignments.preQualificationId, preQualificationId));
+      await tx
+        .delete(teamAssignments)
+        .where(eq(teamAssignments.preQualificationId, preQualificationId));
       await tx
         .delete(subjectiveAssessments)
         .where(eq(subjectiveAssessments.preQualificationId, preQualificationId));
-      await tx.delete(backgroundJobs).where(eq(backgroundJobs.preQualificationId, preQualificationId));
+      await tx
+        .delete(backgroundJobs)
+        .where(eq(backgroundJobs.preQualificationId, preQualificationId));
       await tx
         .delete(dealEmbeddings)
         .where(eq(dealEmbeddings.preQualificationId, preQualificationId));

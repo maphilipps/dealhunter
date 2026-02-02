@@ -16,7 +16,7 @@ import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
 
 export interface RagWriteToolContext {
-  qualificationId?: string;
+  pitchId?: string;
   preQualificationId?: string;
   agentName: string;
 }
@@ -34,11 +34,7 @@ const findingSchema = z.object({
   content: z
     .string()
     .describe('The finding content - be specific and detailed for good semantic search'),
-  confidence: z
-    .number()
-    .min(0)
-    .max(100)
-    .describe('How confident are you in this finding (0-100)'),
+  confidence: z.number().min(0).max(100).describe('How confident are you in this finding (0-100)'),
   requiresValidation: z
     .boolean()
     .optional()
@@ -66,8 +62,8 @@ type FindingInput = z.infer<typeof findingSchema>;
  * ```
  */
 export function createRagWriteTool(context: RagWriteToolContext) {
-  if (!context.qualificationId && !context.preQualificationId) {
-    throw new Error('Either qualificationId or preQualificationId must be provided');
+  if (!context.pitchId && !context.preQualificationId) {
+    throw new Error('Either pitchId or preQualificationId must be provided');
   }
 
   return tool({
@@ -106,8 +102,8 @@ Examples:
       const existingChunks = await db.query.dealEmbeddings.findMany({
         where: (de, { and, eq }) =>
           and(
-            context.qualificationId
-              ? eq(de.qualificationId, context.qualificationId)
+            context.pitchId
+              ? eq(de.pitchId, context.pitchId)
               : eq(de.preQualificationId, context.preQualificationId!),
             eq(de.agentName, context.agentName),
             eq(de.chunkType, chunkType)
@@ -119,7 +115,7 @@ Examples:
         existingChunks.length > 0 ? Math.max(...existingChunks.map(c => c.chunkIndex)) + 1 : 0;
 
       await db.insert(dealEmbeddings).values({
-        qualificationId: context.qualificationId ?? null,
+        pitchId: context.pitchId ?? null,
         preQualificationId: context.preQualificationId ?? null,
         agentName: context.agentName,
         chunkType,
@@ -143,11 +139,7 @@ Examples:
 
 // Zod schema for batch findings input
 const batchFindingsSchema = z.object({
-  findings: z
-    .array(findingSchema)
-    .min(1)
-    .max(20)
-    .describe('Array of findings to store (max 20)'),
+  findings: z.array(findingSchema).min(1).max(20).describe('Array of findings to store (max 20)'),
 });
 
 type BatchFindingsInput = z.infer<typeof batchFindingsSchema>;
@@ -157,8 +149,8 @@ type BatchFindingsInput = z.infer<typeof batchFindingsSchema>;
  * More efficient when an agent has multiple findings to persist
  */
 export function createBatchRagWriteTool(context: RagWriteToolContext) {
-  if (!context.qualificationId && !context.preQualificationId) {
-    throw new Error('Either qualificationId or preQualificationId must be provided');
+  if (!context.pitchId && !context.preQualificationId) {
+    throw new Error('Either pitchId or preQualificationId must be provided');
   }
 
   return tool({
@@ -177,8 +169,8 @@ Each finding will get its own embedding for semantic search.`,
       const existingChunks = await db.query.dealEmbeddings.findMany({
         where: (de, { and, eq }) =>
           and(
-            context.qualificationId
-              ? eq(de.qualificationId, context.qualificationId)
+            context.pitchId
+              ? eq(de.pitchId, context.pitchId)
               : eq(de.preQualificationId, context.preQualificationId!),
             eq(de.agentName, context.agentName)
           ),
@@ -201,7 +193,7 @@ Each finding will get its own embedding for semantic search.`,
         indexMap.set(finding.chunkType, newIndex);
 
         return {
-          qualificationId: context.qualificationId ?? null,
+          pitchId: context.pitchId ?? null,
           preQualificationId: context.preQualificationId ?? null,
           agentName: context.agentName,
           chunkType: finding.chunkType,

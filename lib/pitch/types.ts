@@ -1,3 +1,4 @@
+// lib/pitch/types.ts
 import { z } from 'zod';
 
 // ====== Run Status ======
@@ -79,7 +80,7 @@ export interface ProgressEvent {
 // ====== BullMQ Job Types ======
 export interface PitchJobData {
   runId: string;
-  qualificationId: string;
+  pitchId: string;
   websiteUrl: string;
   userId: string;
   targetCmsIds: string[];

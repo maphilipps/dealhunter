@@ -94,7 +94,7 @@ export function QuickScanProvider({
   }
 
   async function startQuickScan() {
-    const err = new Error('Qualification startet automatisch. Manuelles Starten ist deaktiviert.');
+    const err = new Error('Pitch startet automatisch. Manuelles Starten ist deaktiviert.');
     setError(err);
     throw err;
   }

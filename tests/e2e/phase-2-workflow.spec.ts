@@ -188,11 +188,11 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
       // Try direct URL navigation
       const leadUrl = page.url();
       const leadId = leadUrl.split('/').pop();
-      await page.goto(`/qualifications/${leadId}/website-audit`);
+      await page.goto(`/pitches/${leadId}/website-audit`);
 
       // Should either show page or redirect
       await page.waitForLoadState('networkidle');
-      expect(page.url()).toContain('/qualifications/');
+      expect(page.url()).toContain('/pitches/');
     }
   });
 
@@ -223,11 +223,11 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
       // Try direct URL navigation
       const leadUrl = page.url();
       const leadId = leadUrl.split('/').pop();
-      await page.goto(`/qualifications/${leadId}/estimation`);
+      await page.goto(`/pitches/${leadId}/estimation`);
 
       // Should either show page or redirect
       await page.waitForLoadState('networkidle');
-      expect(page.url()).toContain('/qualifications/');
+      expect(page.url()).toContain('/pitches/');
     }
   });
 
@@ -284,11 +284,11 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
       // Try direct URL navigation
       const leadUrl = page.url();
       const leadId = leadUrl.split('/').pop();
-      await page.goto(`/qualifications/${leadId}/decision`);
+      await page.goto(`/pitches/${leadId}/decision`);
 
       // Should either show page or redirect
       await page.waitForLoadState('networkidle');
-      expect(page.url()).toContain('/qualifications/');
+      expect(page.url()).toContain('/pitches/');
     }
   });
 

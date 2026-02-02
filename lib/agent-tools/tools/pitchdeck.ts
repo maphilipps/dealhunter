@@ -9,7 +9,7 @@ import {
   pitchdecks,
   pitchdeckDeliverables,
   pitchdeckTeamMembers,
-  qualifications,
+  pitches,
   employees,
   type PitchdeckDeliverable,
   type Employee,
@@ -87,11 +87,7 @@ registry.register({
   inputSchema: createPitchdeckInputSchema,
   async execute(input, context: ToolContext) {
     // Verify lead exists
-    const [lead] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, input.leadId))
-      .limit(1);
+    const [lead] = await db.select().from(pitches).where(eq(pitches.id, input.leadId)).limit(1);
 
     if (!lead) {
       return { success: false, error: 'Lead not found' };
@@ -106,7 +102,7 @@ registry.register({
     const [existing] = await db
       .select()
       .from(pitchdecks)
-      .where(eq(pitchdecks.qualificationId, input.leadId))
+      .where(eq(pitchdecks.pitchId, input.leadId))
       .limit(1);
 
     if (existing) {
@@ -116,7 +112,7 @@ registry.register({
     const [newPitchdeck] = await db
       .insert(pitchdecks)
       .values({
-        qualificationId: input.leadId,
+        pitchId: input.leadId,
         status: 'draft',
       })
       .returning();
@@ -149,8 +145,8 @@ registry.register({
     // Get lead to check BU access
     const [lead] = await db
       .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .from(pitches)
+      .where(eq(pitches.id, pitchdeck.pitchId))
       .limit(1);
 
     if (!lead) {
@@ -211,11 +207,7 @@ registry.register({
   inputSchema: listPitchdecksInputSchema,
   async execute(input, context: ToolContext) {
     // Get lead to check BU access
-    const [lead] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, input.leadId))
-      .limit(1);
+    const [lead] = await db.select().from(pitches).where(eq(pitches.id, input.leadId)).limit(1);
 
     if (!lead) {
       return { success: false, error: 'Lead not found' };
@@ -229,7 +221,7 @@ registry.register({
     const results = await db
       .select()
       .from(pitchdecks)
-      .where(eq(pitchdecks.qualificationId, input.leadId))
+      .where(eq(pitchdecks.pitchId, input.leadId))
       .orderBy(desc(pitchdecks.createdAt));
 
     return {
@@ -258,11 +250,7 @@ registry.register({
     }
 
     // Get lead to check BU access
-    const [lead] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, existing.qualificationId))
-      .limit(1);
+    const [lead] = await db.select().from(pitches).where(eq(pitches.id, existing.pitchId)).limit(1);
 
     if (!lead) {
       return { success: false, error: 'Associated lead not found' };
@@ -313,8 +301,8 @@ registry.register({
     // Get lead to check BU access
     const [lead] = await db
       .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .from(pitches)
+      .where(eq(pitches.id, pitchdeck.pitchId))
       .limit(1);
 
     if (!lead) {
@@ -376,8 +364,8 @@ registry.register({
 
     const [lead] = await db
       .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .from(pitches)
+      .where(eq(pitches.id, pitchdeck.pitchId))
       .limit(1);
 
     if (!lead) {
@@ -443,8 +431,8 @@ registry.register({
     // Get lead to check BU access
     const [lead] = await db
       .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .from(pitches)
+      .where(eq(pitches.id, pitchdeck.pitchId))
       .limit(1);
 
     if (!lead) {
@@ -521,8 +509,8 @@ registry.register({
 
     const [lead] = await db
       .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, pitchdeck.qualificationId))
+      .from(pitches)
+      .where(eq(pitches.id, pitchdeck.pitchId))
       .limit(1);
 
     if (!lead) {

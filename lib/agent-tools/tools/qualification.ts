@@ -5,7 +5,7 @@ import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { qualifications, qualificationSectionData, preQualifications } from '@/lib/db/schema';
+import { pitches, pitchSectionData, preQualifications } from '@/lib/db/schema';
 
 // ===== Input Schemas =====
 
@@ -54,11 +54,6 @@ const transitionStatusInputSchema = z.object({
   reason: z.string().optional(),
 });
 
-const triggerDeepScanInputSchema = z.object({
-  id: z.string(),
-  force: z.boolean().default(false), // Force restart even if already running
-});
-
 const requestMoreInfoInputSchema = z.object({
   id: z.string(),
   notes: z.string().min(1),
@@ -99,19 +94,15 @@ registry.register({
         ? context.businessUnitId
         : input.businessUnitId;
 
-    let query = db
-      .select()
-      .from(qualifications)
-      .orderBy(desc(qualifications.createdAt))
-      .limit(input.limit);
+    let query = db.select().from(pitches).orderBy(desc(pitches.createdAt)).limit(input.limit);
 
     // Build WHERE conditions
     const conditions = [];
     if (filterBusinessUnitId) {
-      conditions.push(eq(qualifications.businessUnitId, filterBusinessUnitId));
+      conditions.push(eq(pitches.businessUnitId, filterBusinessUnitId));
     }
     if (input.status) {
-      conditions.push(eq(qualifications.status, input.status));
+      conditions.push(eq(pitches.status, input.status));
     }
 
     if (conditions.length > 0) {
@@ -130,11 +121,7 @@ registry.register({
   category: 'lead',
   inputSchema: getLeadInputSchema,
   async execute(input, context: ToolContext) {
-    const [lead] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, input.id))
-      .limit(1);
+    const [lead] = await db.select().from(pitches).where(eq(pitches.id, input.id)).limit(1);
 
     if (!lead) {
       return { success: false, error: 'Lead not found' };
@@ -154,8 +141,8 @@ registry.register({
     if (input.includeSections) {
       sections = await db
         .select()
-        .from(qualificationSectionData)
-        .where(eq(qualificationSectionData.qualificationId, input.id));
+        .from(pitchSectionData)
+        .where(eq(pitchSectionData.pitchId, input.id));
     }
 
     return {
@@ -179,7 +166,10 @@ registry.register({
       .select()
       .from(preQualifications)
       .where(
-        and(eq(preQualifications.id, input.preQualificationId), eq(preQualifications.userId, context.userId))
+        and(
+          eq(preQualifications.id, input.preQualificationId),
+          eq(preQualifications.userId, context.userId)
+        )
       )
       .limit(1);
 
@@ -191,15 +181,16 @@ registry.register({
     if (!['decision_made', 'bid_voted', 'routed'].includes(preQualification.status)) {
       return {
         success: false,
-        error: 'Pre-Qualification must be in decision_made, bid_voted, or routed status to create a Lead',
+        error:
+          'Pre-Qualification must be in decision_made, bid_voted, or routed status to create a Lead',
       };
     }
 
     // Check if Lead already exists for this Pre-Qualification
     const [existing] = await db
       .select()
-      .from(qualifications)
-      .where(eq(qualifications.preQualificationId, input.preQualificationId))
+      .from(pitches)
+      .where(eq(pitches.preQualificationId, input.preQualificationId))
       .limit(1);
 
     if (existing) {
@@ -212,7 +203,7 @@ registry.register({
 
     // Create Lead
     const [lead] = await db
-      .insert(qualifications)
+      .insert(pitches)
       .values({
         preQualificationId: input.preQualificationId,
         customerName: input.customerName,
@@ -237,11 +228,7 @@ registry.register({
   category: 'lead',
   inputSchema: updateLeadInputSchema,
   async execute(input, context: ToolContext) {
-    const [existing] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, input.id))
-      .limit(1);
+    const [existing] = await db.select().from(pitches).where(eq(pitches.id, input.id)).limit(1);
 
     if (!existing) {
       return { success: false, error: 'Lead not found' };
@@ -268,9 +255,9 @@ registry.register({
     if (input.selectedCmsId) updateData.selectedCmsId = input.selectedCmsId;
 
     const [updated] = await db
-      .update(qualifications)
+      .update(pitches)
       .set(updateData)
-      .where(eq(qualifications.id, input.id))
+      .where(eq(pitches.id, input.id))
       .returning();
 
     return { success: true, data: updated };
@@ -283,11 +270,7 @@ registry.register({
   category: 'lead',
   inputSchema: deleteLeadInputSchema,
   async execute(input, context: ToolContext) {
-    const [existing] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, input.id))
-      .limit(1);
+    const [existing] = await db.select().from(pitches).where(eq(pitches.id, input.id)).limit(1);
 
     if (!existing) {
       return { success: false, error: 'Lead not found' };
@@ -303,9 +286,9 @@ registry.register({
     }
 
     const [archived] = await db
-      .update(qualifications)
+      .update(pitches)
       .set({ status: 'archived', updatedAt: new Date() })
-      .where(eq(qualifications.id, input.id))
+      .where(eq(pitches.id, input.id))
       .returning();
 
     return { success: true, data: { id: archived.id, status: 'archived' } };
@@ -318,11 +301,7 @@ registry.register({
   category: 'lead',
   inputSchema: transitionStatusInputSchema,
   async execute(input, context: ToolContext) {
-    const [existing] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, input.id))
-      .limit(1);
+    const [existing] = await db.select().from(pitches).where(eq(pitches.id, input.id)).limit(1);
 
     if (!existing) {
       return { success: false, error: 'Lead not found' };
@@ -358,61 +337,10 @@ registry.register({
     }
 
     const [updated] = await db
-      .update(qualifications)
+      .update(pitches)
       .set({ status: targetStatus, updatedAt: new Date() })
-      .where(eq(qualifications.id, input.id))
+      .where(eq(pitches.id, input.id))
       .returning();
-
-    return { success: true, data: updated };
-  },
-});
-
-registry.register({
-  name: 'lead.triggerDeepScan',
-  description: 'Trigger a Deep Scan for a Lead',
-  category: 'lead',
-  inputSchema: triggerDeepScanInputSchema,
-  async execute(input, context: ToolContext) {
-    const [existing] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, input.id))
-      .limit(1);
-
-    if (!existing) {
-      return { success: false, error: 'Lead not found' };
-    }
-
-    // BL users can only trigger deep scan for leads from their own business unit
-    if (
-      context.userRole === 'bl' &&
-      context.businessUnitId &&
-      existing.businessUnitId !== context.businessUnitId
-    ) {
-      return { success: false, error: 'Access denied: Lead belongs to different business unit' };
-    }
-
-    // Check if Deep Scan is already running
-    if (existing.deepScanStatus === 'running' && !input.force) {
-      return { success: false, error: 'Deep Scan is already running. Use force=true to restart.' };
-    }
-
-    // Update Deep Scan status
-    const [updated] = await db
-      .update(qualifications)
-      .set({
-        deepScanStatus: 'running',
-        deepScanStartedAt: new Date(),
-        deepScanCompletedAt: null, // Clear completion timestamp
-        deepScanError: null, // Clear previous errors
-        status: 'full_scanning', // Transition to full_scanning status
-        updatedAt: new Date(),
-      })
-      .where(eq(qualifications.id, input.id))
-      .returning();
-
-    // TODO: Trigger actual Deep Scan background job here
-    // This would typically trigger an Inngest function or Workflow
 
     return { success: true, data: updated };
   },
@@ -424,11 +352,7 @@ registry.register({
   category: 'lead',
   inputSchema: requestMoreInfoInputSchema,
   async execute(input, context: ToolContext) {
-    const [existing] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, input.id))
-      .limit(1);
+    const [existing] = await db.select().from(pitches).where(eq(pitches.id, input.id)).limit(1);
 
     if (!existing) {
       return { success: false, error: 'Lead not found' };
@@ -444,14 +368,14 @@ registry.register({
     }
 
     const [updated] = await db
-      .update(qualifications)
+      .update(pitches)
       .set({
         moreInfoRequested: true,
         moreInfoRequestedAt: new Date(),
         moreInfoNotes: input.notes,
         updatedAt: new Date(),
       })
-      .where(eq(qualifications.id, input.id))
+      .where(eq(pitches.id, input.id))
       .returning();
 
     // TODO: Send notification to BD user (original Pre-Qualification creator)
@@ -467,11 +391,7 @@ registry.register({
   category: 'lead',
   inputSchema: submitBLVoteInputSchema,
   async execute(input, context: ToolContext) {
-    const [existing] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, input.id))
-      .limit(1);
+    const [existing] = await db.select().from(pitches).where(eq(pitches.id, input.id)).limit(1);
 
     if (!existing) {
       return { success: false, error: 'Lead not found' };
@@ -489,7 +409,7 @@ registry.register({
 
     // Update Lead with BL vote
     const [updated] = await db
-      .update(qualifications)
+      .update(pitches)
       .set({
         blVote: input.vote,
         blVotedAt: new Date(),
@@ -499,7 +419,7 @@ registry.register({
         status: input.vote === 'BID' ? 'bid_voted' : 'archived', // BID -> bid_voted, NO-BID -> archived
         updatedAt: new Date(),
       })
-      .where(eq(qualifications.id, input.id))
+      .where(eq(pitches.id, input.id))
       .returning();
 
     return { success: true, data: updated };
@@ -513,11 +433,7 @@ registry.register({
   inputSchema: updateLeadSectionInputSchema,
   async execute(input, context: ToolContext) {
     // Verify Lead access
-    const [lead] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, input.leadId))
-      .limit(1);
+    const [lead] = await db.select().from(pitches).where(eq(pitches.id, input.leadId)).limit(1);
 
     if (!lead) {
       return { success: false, error: 'Lead not found' };
@@ -535,11 +451,11 @@ registry.register({
     // Check if section already exists
     const [existing] = await db
       .select()
-      .from(qualificationSectionData)
+      .from(pitchSectionData)
       .where(
         and(
-          eq(qualificationSectionData.qualificationId, input.leadId),
-          eq(qualificationSectionData.sectionId, input.sectionId)
+          eq(pitchSectionData.pitchId, input.leadId),
+          eq(pitchSectionData.sectionId, input.sectionId)
         )
       )
       .limit(1);
@@ -554,18 +470,18 @@ registry.register({
       if (input.sources !== undefined) updateData.sources = JSON.stringify(input.sources);
 
       const [updated] = await db
-        .update(qualificationSectionData)
+        .update(pitchSectionData)
         .set(updateData)
-        .where(eq(qualificationSectionData.id, existing.id))
+        .where(eq(pitchSectionData.id, existing.id))
         .returning();
 
       return { success: true, data: updated, operation: 'updated' };
     } else {
       // Create new section
       const [created] = await db
-        .insert(qualificationSectionData)
+        .insert(pitchSectionData)
         .values({
-          qualificationId: input.leadId,
+          pitchId: input.leadId,
           sectionId: input.sectionId,
           content: input.content,
           confidence: input.confidence || null,
@@ -585,11 +501,7 @@ registry.register({
   inputSchema: deleteLeadSectionInputSchema,
   async execute(input, context: ToolContext) {
     // Verify Lead access
-    const [lead] = await db
-      .select()
-      .from(qualifications)
-      .where(eq(qualifications.id, input.leadId))
-      .limit(1);
+    const [lead] = await db.select().from(pitches).where(eq(pitches.id, input.leadId)).limit(1);
 
     if (!lead) {
       return { success: false, error: 'Lead not found' };
@@ -607,11 +519,11 @@ registry.register({
     // Find and delete section
     const [existing] = await db
       .select()
-      .from(qualificationSectionData)
+      .from(pitchSectionData)
       .where(
         and(
-          eq(qualificationSectionData.qualificationId, input.leadId),
-          eq(qualificationSectionData.sectionId, input.sectionId)
+          eq(pitchSectionData.pitchId, input.leadId),
+          eq(pitchSectionData.sectionId, input.sectionId)
         )
       )
       .limit(1);
@@ -620,7 +532,7 @@ registry.register({
       return { success: false, error: 'Section not found' };
     }
 
-    await db.delete(qualificationSectionData).where(eq(qualificationSectionData.id, existing.id));
+    await db.delete(pitchSectionData).where(eq(pitchSectionData.id, existing.id));
 
     return {
       success: true,

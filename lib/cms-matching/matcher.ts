@@ -54,7 +54,7 @@ export interface CMSMatchScore {
 }
 
 export interface CMSMatcherInput {
-  qualificationId: string;
+  pitchId: string;
   industry?: string | null;
   budget?: string | null;
   pageCount: number;
@@ -129,11 +129,11 @@ const SIZE_AFFINITY = {
  * @returns Top 3 CMS matches with scores and reasoning
  */
 export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult> {
-  console.error(`[CMS Matcher] Starting CMS matching for lead ${input.qualificationId}`);
+  console.error(`[CMS Matcher] Starting CMS matching for lead ${input.pitchId}`);
 
   try {
     const {
-      qualificationId,
+      pitchId,
       industry,
       budget,
       pageCount,
@@ -187,7 +187,7 @@ export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult
     });
 
     // 4. Save results to database
-    await saveCMSMatchResults(qualificationId, rankedMatches);
+    await saveCMSMatchResults(pitchId, rankedMatches);
 
     return {
       success: true,
@@ -496,19 +496,16 @@ ${input.matchedFeatures.map(f => `- ${f.feature}: ${f.supported ? '✓' : '✗'}
 /**
  * Save CMS match results to database
  */
-async function saveCMSMatchResults(
-  qualificationId: string,
-  matches: CMSMatchScore[]
-): Promise<void> {
-  console.error(`[CMS Matcher] Saving ${matches.length} match results for lead ${qualificationId}`);
+async function saveCMSMatchResults(pitchId: string, matches: CMSMatchScore[]): Promise<void> {
+  console.error(`[CMS Matcher] Saving ${matches.length} match results for lead ${pitchId}`);
 
   // Delete existing results for this lead
-  await db.delete(cmsMatchResults).where(eq(cmsMatchResults.qualificationId, qualificationId));
+  await db.delete(cmsMatchResults).where(eq(cmsMatchResults.pitchId, pitchId));
 
   // Insert new results
   for (const match of matches) {
     await db.insert(cmsMatchResults).values({
-      qualificationId,
+      pitchId,
       technologyId: match.technologyId,
       totalScore: match.totalScore,
       featureScore: match.featureScore,

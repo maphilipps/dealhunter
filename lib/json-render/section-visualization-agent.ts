@@ -46,7 +46,7 @@ interface ProjectContext {
 }
 
 interface GenerateVisualizationInput {
-  qualificationId: string;
+  pitchId: string;
   sectionId: string;
   ragChunks: RagChunk[];
   projectContext: ProjectContext;
@@ -92,7 +92,7 @@ function parseJsonlPatches(jsonl: string): JsonRenderTree {
 export async function generateSectionVisualization(
   input: GenerateVisualizationInput
 ): Promise<GenerateVisualizationResult> {
-  const { qualificationId, sectionId, ragChunks, projectContext, refinementPrompt } = input;
+  const { pitchId, sectionId, ragChunks, projectContext, refinementPrompt } = input;
 
   console.log(
     `[SectionVizAgent] Generating visualization for ${sectionId}, chunks: ${ragChunks.length}`
@@ -177,7 +177,7 @@ Please adjust the visualization according to the user's request while maintainin
     );
 
     // Store the visualization in the database
-    await storeVisualization(qualificationId, sectionId, tree, avgConfidence);
+    await storeVisualization(pitchId, sectionId, tree, avgConfidence);
 
     console.log(
       `[SectionVizAgent] Generated visualization with ${Object.keys(tree.elements).length} elements`
@@ -201,7 +201,7 @@ Please adjust the visualization according to the user's request while maintainin
  * Store visualization in the database, replacing any existing one
  */
 async function storeVisualization(
-  qualificationId: string,
+  pitchId: string,
   sectionId: string,
   tree: JsonRenderTree,
   confidence: number
@@ -211,7 +211,7 @@ async function storeVisualization(
     .delete(dealEmbeddings)
     .where(
       and(
-        eq(dealEmbeddings.qualificationId, qualificationId),
+        eq(dealEmbeddings.pitchId, pitchId),
         eq(dealEmbeddings.chunkType, 'visualization'),
         sql`(metadata::jsonb)->>'sectionId' = ${sectionId}`
       )
@@ -219,7 +219,7 @@ async function storeVisualization(
 
   // Insert new visualization
   await db.insert(dealEmbeddings).values({
-    qualificationId,
+    pitchId,
     preQualificationId: null,
     agentName: 'section_visualization_agent',
     chunkType: 'visualization',

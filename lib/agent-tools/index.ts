@@ -20,7 +20,6 @@ import './tools/workflow';
 import './tools/notification';
 import './tools/extraction';
 import './scan-tools';
-import './deep-scan-tools';
 
 // QuickScan 2.0 Agent Tools
 import './quick-scan-tools';

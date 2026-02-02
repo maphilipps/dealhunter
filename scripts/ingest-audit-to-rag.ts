@@ -184,7 +184,7 @@ async function main() {
   if (result.success) {
     console.log('✅ Ingestion Complete!');
     console.log('═'.repeat(50));
-    console.log(`   Qualification ID: ${result.qualificationId}`);
+    console.log(`   Qualification ID: ${result.pitchId}`);
     console.log(`   Project: ${result.projectName}`);
     console.log(`   Files Processed: ${result.stats.filesProcessed}`);
     console.log(`   Chunks Created: ${result.stats.chunksCreated}`);
@@ -192,9 +192,7 @@ async function main() {
     console.log(`   Embeddings Generated: ${result.stats.embeddingsGenerated}`);
     console.log('');
     console.log('🎉 Audit data is now available for RAG queries!');
-    console.log(
-      `📍 View at: http://localhost:3000/qualifications/${result.qualificationId}/rag-data`
-    );
+    console.log(`📍 View at: http://localhost:3000/pitches/${result.pitchId}/rag-data`);
   } else {
     console.error('\n❌ Ingestion Failed!');
     console.error(`   Error: ${result.error}`);

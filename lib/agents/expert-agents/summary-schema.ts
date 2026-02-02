@@ -10,11 +10,11 @@ export const ManagementSummarySchema = z.object({
   // Key facts
   keyFacts: z.object({
     customer: z.string(),
-    industry: z.string().nullable(),
+    industry: z.string().optional(),
     projectType: z.string(),
-    estimatedValue: z.string().nullable(),
-    submissionDeadline: z.string().nullable(),
-    daysRemaining: z.number().nullable(),
+    estimatedValue: z.string().optional(),
+    submissionDeadline: z.string().optional(),
+    daysRemaining: z.number().optional(),
   }),
 
   // Top 3-5 deliverables

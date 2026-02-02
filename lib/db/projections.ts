@@ -11,12 +11,12 @@
  * const [lead] = await db
  *   .select(LEAD_PUBLIC_FIELDS)
  *   .from(leads)
- *   .where(eq(qualifications.id, id));
+ *   .where(eq(pitches.id, id));
  * ```
  */
 
 import {
-  qualifications,
+  pitches,
   preQualifications,
   accounts,
   businessUnits,
@@ -31,22 +31,22 @@ import {
  * Excludes: internal metadata, timestamps used only for server-side logic
  */
 export const LEAD_PUBLIC_FIELDS = {
-  id: qualifications.id,
-  customerName: qualifications.customerName,
-  industry: qualifications.industry,
-  budget: qualifications.budget,
-  websiteUrl: qualifications.websiteUrl,
-  projectDescription: qualifications.projectDescription,
-  status: qualifications.status,
-  blVote: qualifications.blVote,
-  blConfidenceScore: qualifications.blConfidenceScore,
-  blReasoning: qualifications.blReasoning,
-  blVotedAt: qualifications.blVotedAt,
-  createdAt: qualifications.createdAt,
-  businessUnitId: qualifications.businessUnitId,
-  preQualificationId: qualifications.preQualificationId,
-  quickScanId: qualifications.quickScanId,
-  selectedCmsId: qualifications.selectedCmsId,
+  id: pitches.id,
+  customerName: pitches.customerName,
+  industry: pitches.industry,
+  budget: pitches.budget,
+  websiteUrl: pitches.websiteUrl,
+  projectDescription: pitches.projectDescription,
+  status: pitches.status,
+  blVote: pitches.blVote,
+  blConfidenceScore: pitches.blConfidenceScore,
+  blReasoning: pitches.blReasoning,
+  blVotedAt: pitches.blVotedAt,
+  createdAt: pitches.createdAt,
+  businessUnitId: pitches.businessUnitId,
+  preQualificationId: pitches.preQualificationId,
+  quickScanId: pitches.quickScanId,
+  selectedCmsId: pitches.selectedCmsId,
 } as const;
 
 /**
@@ -55,7 +55,7 @@ export const LEAD_PUBLIC_FIELDS = {
  */
 export const LEAD_INTERNAL_FIELDS = {
   ...LEAD_PUBLIC_FIELDS,
-  updatedAt: qualifications.updatedAt,
+  updatedAt: pitches.updatedAt,
 } as const;
 
 /**
@@ -100,7 +100,7 @@ export const BUSINESS_UNIT_PUBLIC_FIELDS = {
  */
 export const WEBSITE_AUDIT_PUBLIC_FIELDS = {
   id: websiteAudits.id,
-  qualificationId: websiteAudits.qualificationId,
+  pitchId: websiteAudits.pitchId,
   status: websiteAudits.status,
   performanceScore: websiteAudits.performanceScore,
   accessibilityScore: websiteAudits.accessibilityScore,
@@ -114,7 +114,7 @@ export const WEBSITE_AUDIT_PUBLIC_FIELDS = {
  */
 export const PT_ESTIMATION_PUBLIC_FIELDS = {
   id: ptEstimations.id,
-  qualificationId: ptEstimations.qualificationId,
+  pitchId: ptEstimations.pitchId,
   totalPT: ptEstimations.totalPT,
   durationMonths: ptEstimations.durationMonths,
   confidenceLevel: ptEstimations.confidenceLevel,
@@ -126,7 +126,7 @@ export const PT_ESTIMATION_PUBLIC_FIELDS = {
  */
 export const CMS_MATCH_PUBLIC_FIELDS = {
   id: cmsMatchResults.id,
-  qualificationId: cmsMatchResults.qualificationId,
+  pitchId: cmsMatchResults.pitchId,
   technologyId: cmsMatchResults.technologyId,
   rank: cmsMatchResults.rank,
   totalScore: cmsMatchResults.totalScore,
@@ -143,7 +143,7 @@ export const CMS_MATCH_PUBLIC_FIELDS = {
  */
 export const REFERENCE_MATCH_PUBLIC_FIELDS = {
   id: referenceMatches.id,
-  qualificationId: referenceMatches.qualificationId,
+  pitchId: referenceMatches.pitchId,
   referenceId: referenceMatches.referenceId,
   rank: referenceMatches.rank,
   totalScore: referenceMatches.totalScore,

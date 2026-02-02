@@ -48,8 +48,8 @@ const allNavItems: Array<{
     roles: ['bd', 'bl', 'admin'],
   },
   {
-    title: 'Qualifications',
-    url: '/qualifications',
+    title: 'Pitches',
+    url: '/pitches',
     icon: ListChecks,
     roles: ['bl', 'admin'],
   },

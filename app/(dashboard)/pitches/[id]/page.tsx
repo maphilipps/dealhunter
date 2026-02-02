@@ -1,5 +1,13 @@
 import { desc, eq } from 'drizzle-orm';
-import { AlertTriangle, CheckCircle2, FileText, Globe, Package, TrendingUp } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileText,
+  Globe,
+  MessageSquare,
+  Package,
+  TrendingUp,
+} from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
@@ -502,6 +510,24 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
           </CardContent>
         </Card>
       )}
+
+      {/* Pitch Interview CTA */}
+      <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-blue-600" />
+            <CardTitle>Pitch-Interview</CardTitle>
+          </div>
+          <CardDescription>
+            Starten Sie ein KI-gestütztes Interview, um Pitch-Dokumente zu generieren
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild>
+            <Link href={`/pitches/${id}/interview`}>Interview starten</Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <Card>

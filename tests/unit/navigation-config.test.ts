@@ -13,8 +13,8 @@ import {
 
 describe('navigation-config', () => {
   describe('QUALIFICATION_NAVIGATION_SECTIONS', () => {
-    it('should have 14 sections', () => {
-      expect(QUALIFICATION_NAVIGATION_SECTIONS).toHaveLength(14);
+    it('should have 15 sections', () => {
+      expect(QUALIFICATION_NAVIGATION_SECTIONS).toHaveLength(15);
     });
 
     it('should have all required section IDs', () => {
@@ -32,6 +32,7 @@ describe('navigation-config', () => {
         'calc-sheet',
         'decision',
         'audit',
+        'interview',
         'rag-data',
       ];
 
@@ -63,9 +64,9 @@ describe('navigation-config', () => {
       });
     });
 
-    it('should have RAG query templates for all main sections (except debug)', () => {
+    it('should have RAG query templates for all main sections (except debug and interview)', () => {
       QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
-        if (section.id === 'rag-data') return;
+        if (section.id === 'rag-data' || section.id === 'interview') return;
         expect(section.ragQueryTemplate).toBeTruthy();
         expect(section.ragQueryTemplate!.length).toBeGreaterThan(10);
       });
@@ -73,7 +74,7 @@ describe('navigation-config', () => {
 
     it('should have synthesizer agents for all standard sections', () => {
       QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
-        if (section.id === 'rag-data') return;
+        if (section.id === 'rag-data' || section.id === 'interview') return;
         expect(section.synthesizerAgent).toBeTruthy();
       });
     });
@@ -129,9 +130,9 @@ describe('navigation-config', () => {
   });
 
   describe('getAllSections', () => {
-    it('should return all 14 sections', () => {
+    it('should return all 15 sections', () => {
       const sections = getAllSections();
-      expect(sections).toHaveLength(14);
+      expect(sections).toHaveLength(15);
     });
 
     it('should return the same reference as QUALIFICATION_NAVIGATION_SECTIONS', () => {
@@ -141,9 +142,9 @@ describe('navigation-config', () => {
   });
 
   describe('getAllSectionIds', () => {
-    it('should return array of 14 section IDs', () => {
+    it('should return array of 15 section IDs', () => {
       const ids = getAllSectionIds();
-      expect(ids).toHaveLength(14);
+      expect(ids).toHaveLength(15);
     });
 
     it('should return correct IDs in order', () => {
@@ -212,19 +213,24 @@ describe('navigation-config', () => {
       expect(agent).toBeUndefined();
     });
 
-    it('should return agents for all sections (except debug)', () => {
+    it('should return agents for all sections (except debug and interview)', () => {
       QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
-        if (section.id === 'rag-data') return;
+        if (section.id === 'rag-data' || section.id === 'interview') return;
         const agent = getSynthesizerAgent(section.id);
         expect(agent).toBeDefined();
         expect(agent).toBe(section.synthesizerAgent);
       });
     });
 
-    it('should follow naming convention *-synthesizer (except calc-sheet, audit)', () => {
+    it('should follow naming convention *-synthesizer (except calc-sheet, audit, interview)', () => {
       QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
         // Skip sections without synthesizer or with special agent names
-        if (section.id === 'rag-data' || section.id === 'calc-sheet' || section.id === 'audit')
+        if (
+          section.id === 'rag-data' ||
+          section.id === 'calc-sheet' ||
+          section.id === 'audit' ||
+          section.id === 'interview'
+        )
           return;
         const agent = getSynthesizerAgent(section.id);
         expect(agent).toMatch(/-synthesizer$/);

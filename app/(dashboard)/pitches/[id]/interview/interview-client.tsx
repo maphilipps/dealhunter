@@ -19,7 +19,9 @@ export function InterviewClient({ pitchId, customerName }: InterviewClientProps)
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Pitch-Interview</h1>
-        <p className="text-muted-foreground">{customerName}</p>
+        <p className="text-muted-foreground">
+          {customerName} — Die KI stellt Fragen, um die Analyse vorzubereiten.
+        </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

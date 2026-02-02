@@ -11,6 +11,8 @@ interface PipelineProgressProps {
   pitchId: string;
   runId: string;
   onComplete?: () => void;
+  /** Compact mode for sidebar embedding */
+  compact?: boolean;
 }
 
 interface RunStatus {
@@ -20,7 +22,7 @@ interface RunStatus {
   completedAgents: string[];
 }
 
-export function PipelineProgress({ pitchId, runId, onComplete }: PipelineProgressProps) {
+export function PipelineProgress({ pitchId, runId, onComplete, compact }: PipelineProgressProps) {
   const [runStatus, setRunStatus] = useState<RunStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +89,25 @@ export function PipelineProgress({ pitchId, runId, onComplete }: PipelineProgres
       return <AlertTriangle className="h-4 w-4 text-destructive" />;
     return <Loader2 className="h-4 w-4 animate-spin" />;
   };
+
+  if (compact) {
+    return (
+      <div className="space-y-2 py-2">
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-xs font-medium">
+            {statusIcon()}
+            {statusLabels[runStatus?.status ?? 'pending'] ?? runStatus?.status}
+          </span>
+          <span className="text-xs text-muted-foreground">{runStatus?.progress ?? 0}%</span>
+        </div>
+        <Progress value={runStatus?.progress ?? 0} className="h-1.5" />
+        {runStatus?.currentStep && (
+          <p className="text-xs text-muted-foreground truncate">{runStatus.currentStep}</p>
+        )}
+        {error && <p className="text-xs text-destructive">{error}</p>}
+      </div>
+    );
+  }
 
   return (
     <Card>

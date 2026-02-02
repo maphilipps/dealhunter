@@ -6,19 +6,21 @@ import { Bot, Send, User, Loader2 } from 'lucide-react';
 import { useRef, useEffect, useState, useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface PitchChatProps {
   pitchId: string;
   onPipelineStarted?: (runId: string) => void;
+  /** Compact mode for sidebar embedding (smaller, no card wrapper) */
+  compact?: boolean;
 }
 
-export function PitchChat({ pitchId, onPipelineStarted }: PitchChatProps) {
+export function PitchChat({ pitchId, onPipelineStarted, compact }: PitchChatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState('');
   const pipelineNotifiedRef = useRef(false);
+  const autoStartedRef = useRef(false);
 
   const transport = useMemo(
     () => new DefaultChatTransport({ api: `/api/pitches/${pitchId}/chat` }),
@@ -28,6 +30,13 @@ export function PitchChat({ pitchId, onPipelineStarted }: PitchChatProps) {
   const { messages, sendMessage, status, error } = useChat({ transport });
 
   const isLoading = status === 'streaming' || status === 'submitted';
+
+  // Auto-start: AI asks the first question
+  useEffect(() => {
+    if (autoStartedRef.current) return;
+    autoStartedRef.current = true;
+    void sendMessage({ text: 'Bitte starte das Interview.' });
+  }, [sendMessage]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -65,42 +74,48 @@ export function PitchChat({ pitchId, onPipelineStarted }: PitchChatProps) {
     setInput('');
   };
 
+  // Filter out the auto-start trigger from display
+  const visibleMessages = messages.filter(
+    (msg, idx) =>
+      !(
+        idx === 0 &&
+        msg.role === 'user' &&
+        msg.parts.some(p => p.type === 'text' && p.text === 'Bitte starte das Interview.')
+      )
+  );
+
+  const wrapperClass = compact
+    ? 'flex flex-col h-full'
+    : 'flex flex-col h-[600px] rounded-lg border bg-card text-card-foreground shadow-sm';
+
   return (
-    <Card className="flex h-[600px] flex-col">
-      <CardHeader className="shrink-0 border-b pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Bot className="h-5 w-5 text-primary" />
-          Pitch-Interview
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Beantworte ein paar Fragen, damit wir die Analyse starten können.
-        </p>
-      </CardHeader>
+    <div className={wrapperClass}>
+      {!compact && (
+        <div className="shrink-0 border-b px-4 py-3">
+          <h3 className="flex items-center gap-2 text-lg font-semibold">
+            <Bot className="h-5 w-5 text-primary" />
+            Pitch-Interview
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Die KI stellt dir ein paar Fragen, um die Analyse vorzubereiten.
+          </p>
+        </div>
+      )}
 
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-        <div className="space-y-4">
-          {messages.length === 0 && (
-            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-4">
-              <Bot className="h-8 w-8 shrink-0 text-primary" />
-              <p className="text-sm text-muted-foreground">
-                Hallo! Ich werde dir ein paar Fragen zum Projekt stellen, um die Analyse
-                vorzubereiten. Los geht&apos;s — erzähl mir einfach vom Projekt.
-              </p>
-            </div>
-          )}
-
-          {messages.map(message => (
+      <ScrollArea className="flex-1 p-3" ref={scrollRef}>
+        <div className="space-y-3">
+          {visibleMessages.map(message => (
             <div
               key={message.id}
-              className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {message.role === 'assistant' && (
-                <Bot className="mt-1 h-6 w-6 shrink-0 text-primary" />
+                <Bot className={`mt-1 shrink-0 text-primary ${compact ? 'h-4 w-4' : 'h-6 w-6'}`} />
               )}
               <div
-                className={`max-w-[80%] rounded-lg px-4 py-2.5 text-sm ${
-                  message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                }`}
+                className={`rounded-lg px-3 py-2 text-sm ${
+                  compact ? 'max-w-[90%]' : 'max-w-[80%]'
+                } ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
               >
                 {message.parts.map((part, i) => {
                   if (part.type === 'text') {
@@ -124,16 +139,16 @@ export function PitchChat({ pitchId, onPipelineStarted }: PitchChatProps) {
                   return null;
                 })}
               </div>
-              {message.role === 'user' && (
+              {message.role === 'user' && !compact && (
                 <User className="mt-1 h-6 w-6 shrink-0 text-muted-foreground" />
               )}
             </div>
           ))}
 
-          {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-            <div className="flex gap-3">
-              <Bot className="mt-1 h-6 w-6 shrink-0 text-primary" />
-              <div className="rounded-lg bg-muted px-4 py-2.5">
+          {isLoading && visibleMessages[visibleMessages.length - 1]?.role !== 'assistant' && (
+            <div className="flex gap-2">
+              <Bot className={`mt-1 shrink-0 text-primary ${compact ? 'h-4 w-4' : 'h-6 w-6'}`} />
+              <div className="rounded-lg bg-muted px-3 py-2">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
             </div>
@@ -142,23 +157,28 @@ export function PitchChat({ pitchId, onPipelineStarted }: PitchChatProps) {
       </ScrollArea>
 
       {error && (
-        <div className="mx-4 mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="mx-3 mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
           Fehler: {error.message}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex shrink-0 gap-2 border-t p-4">
+      <form onSubmit={handleSubmit} className="flex shrink-0 gap-2 border-t p-3">
         <Input
           value={input}
           onChange={e => setInput(e.target.value)}
           placeholder="Nachricht eingeben..."
           disabled={isLoading}
-          className="flex-1"
+          className={compact ? 'h-8 text-sm flex-1' : 'flex-1'}
         />
-        <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-          <Send className="h-4 w-4" />
+        <Button
+          type="submit"
+          size="icon"
+          disabled={isLoading || !input.trim()}
+          className={compact ? 'h-8 w-8' : ''}
+        >
+          <Send className={compact ? 'h-3 w-3' : 'h-4 w-4'} />
         </Button>
       </form>
-    </Card>
+    </div>
   );
 }

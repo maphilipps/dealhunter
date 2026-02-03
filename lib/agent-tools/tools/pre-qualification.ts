@@ -360,6 +360,105 @@ const makeDecisionInputSchema = z.object({
   reason: z.string().optional().describe('Optional reason for the decision'),
 });
 
+// ===== Business Unit Assignment Tools =====
+
+const assignBusinessUnitInputSchema = z.object({
+  bidId: z.string().describe('Pre-Qualification/Bid ID to assign'),
+  businessLineName: z.string().describe('Name of the Business Unit to assign'),
+  overrideReason: z
+    .string()
+    .optional()
+    .describe('Required if overriding AI recommendation - explain why'),
+});
+
+registry.register({
+  name: 'routing.assignBusinessUnit',
+  description:
+    'Assign a Pre-Qualification/Bid to a Business Unit. Validates routing-ready status, creates audit log for overrides, auto-converts to Lead, and sends email notification to BL leader.',
+  category: 'routing',
+  inputSchema: assignBusinessUnitInputSchema,
+  async execute(input, context: ToolContext) {
+    // Import server action
+    const { assignBusinessUnit } = await import('@/lib/routing/actions');
+
+    // Call the server action
+    const result = await assignBusinessUnit({
+      bidId: input.bidId,
+      businessLineName: input.businessLineName,
+      overrideReason: input.overrideReason,
+    });
+
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    return {
+      success: true,
+      data: {
+        leadId: result.leadId,
+        warning: result.warning,
+      },
+    };
+  },
+});
+
+const getBusinessLineRecommendationInputSchema = z.object({
+  bidId: z.string().describe('Pre-Qualification/Bid ID to get recommendation for'),
+});
+
+registry.register({
+  name: 'routing.getRecommendation',
+  description:
+    'Get AI-powered Business Line recommendation for a bid. Returns recommended BU with confidence score and reasoning.',
+  category: 'routing',
+  inputSchema: getBusinessLineRecommendationInputSchema,
+  async execute(input, _context: ToolContext) {
+    // Import server action
+    const { getBusinessLineRecommendation } = await import('@/lib/routing/actions');
+
+    // Call the server action
+    const result = await getBusinessLineRecommendation(input.bidId);
+
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    return {
+      success: true,
+      data: result.recommendation,
+    };
+  },
+});
+
+const archiveAsNoBidInputSchema = z.object({
+  preQualificationId: z.string().describe('Pre-Qualification ID to archive'),
+  reason: z.string().describe('Reason for the NO-BID decision'),
+});
+
+registry.register({
+  name: 'routing.archiveAsNoBid',
+  description:
+    'Archive a Pre-Qualification as NO-BID with a reason. Sets decision to no_bid and status to archived.',
+  category: 'routing',
+  inputSchema: archiveAsNoBidInputSchema,
+  async execute(input, _context: ToolContext) {
+    // Import server action
+    const { archiveAsNoBid } = await import('@/lib/routing/actions');
+
+    // Call the server action
+    const result = await archiveAsNoBid({
+      preQualificationId: input.preQualificationId,
+      reason: input.reason,
+    });
+
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    return { success: true, data: { archived: true } };
+  },
+});
+
 registry.register({
   name: 'preQualification.makeDecision',
   description:

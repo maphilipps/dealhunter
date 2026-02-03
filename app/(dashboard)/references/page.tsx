@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
+import { ReferencesEmptyStateClient } from '@/components/references/references-empty-state-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,12 +35,7 @@ export default async function ReferencesPage() {
       </div>
 
       {userReferences.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">Noch keine Referenzen erstellt</p>
-          <Button asChild variant="link">
-            <Link href="/references/new">Erste Referenz erstellen</Link>
-          </Button>
-        </div>
+        <ReferencesEmptyStateClient />
       ) : (
         <div className="grid gap-4">
           {userReferences.map(ref => (

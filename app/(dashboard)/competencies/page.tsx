@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
+import { CompetenciesEmptyStateClient } from '@/components/competencies/competencies-empty-state-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,12 +27,7 @@ export default async function CompetenciesPage() {
       </div>
 
       {competencies.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">Noch keine Kompetenzen erfasst</p>
-          <Button asChild variant="link">
-            <Link href="/competencies/new">Erste Kompetenz erstellen</Link>
-          </Button>
-        </div>
+        <CompetenciesEmptyStateClient />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {competencies.map(comp => (

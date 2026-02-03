@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
+import { AccountsEmptyStateClient } from '@/components/accounts/accounts-empty-state-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getAccounts } from '@/lib/accounts-actions';
@@ -25,15 +26,7 @@ export default async function AccountsPage() {
       </div>
 
       {!accounts || accounts.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">Noch keine Accounts vorhanden</p>
-          <Button asChild>
-            <Link href="/accounts/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Ersten Account erstellen
-            </Link>
-          </Button>
-        </div>
+        <AccountsEmptyStateClient />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {accounts.map(account => (

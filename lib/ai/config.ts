@@ -6,7 +6,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 
 import { getProviderForSlot } from './providers';
@@ -184,9 +184,9 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
     : controller.signal;
 
   try {
-    const { object, usage } = await generateObject({
+    const { output, usage } = await generateText({
       model: getProviderForSlot(modelKey)(modelName),
-      schema: options.schema as any,
+      output: Output.object({ schema: options.schema }),
       system: options.system,
       prompt: options.prompt,
       temperature: options.temperature ?? defaultSettings.deterministic.temperature,
@@ -198,7 +198,9 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
     // Log token usage for monitoring
     console.log(`[AI] Generated object with ${modelName}: ${usage.totalTokens} tokens`);
 
-    return object as z.infer<T>;
+    // Type assertion: Output.object infers the schema type correctly,
+    // but TypeScript can't unify it with z.infer<T> across the generic boundary
+    return output as z.infer<T>;
   } catch (error) {
     // Enhance timeout errors with more context
     if (error instanceof Error && error.name === 'AbortError') {

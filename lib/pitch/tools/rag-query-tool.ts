@@ -14,7 +14,9 @@ export type { CmsAnalysisResult } from '../agents/cms-agent';
 export type { IndustryAnalysisResult } from '../agents/industry-agent';
 
 // ============================================================================
-// Primitive Tool - Generic RAG Query
+// PRIMITIVE TOOLS
+// These are atomic operations that do ONE thing each.
+// The agent should compose these rather than using the convenience wrappers.
 // ============================================================================
 
 /**
@@ -90,16 +92,61 @@ export function createKnowledgeQueryTool() {
   });
 }
 
+/**
+ * PRIMITIVE: Mark an agent as complete in the database.
+ * Records agent completion with confidence score for tracking.
+ * Does NOT run any agent logic - just the checkpoint.
+ */
+export function createMarkAgentCompleteTool(params: { runId: string }) {
+  return tool({
+    description:
+      'Markiere einen Agenten als abgeschlossen mit Konfidenzwert. ' +
+      'Nutze dieses Tool NACH einer erfolgreichen Agentenausführung.',
+    inputSchema: z.object({
+      agentName: z.string().describe('Name des Agenten (z.B. "cms", "industry")'),
+      confidence: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe('Konfidenzwert des Agenten-Ergebnisses (0-100)'),
+    }),
+    execute: async ({ agentName, confidence }) => {
+      await markAgentComplete(params.runId, agentName, confidence);
+      return { marked: true, agentName, confidence, status: 'complete' };
+    },
+  });
+}
+
+/**
+ * PRIMITIVE: Mark an agent as failed in the database.
+ * Records agent failure for tracking and debugging.
+ * Does NOT run any agent logic - just the checkpoint.
+ */
+export function createMarkAgentFailedTool(params: { runId: string }) {
+  return tool({
+    description:
+      'Markiere einen Agenten als fehlgeschlagen. ' +
+      'Nutze dieses Tool wenn ein Agent einen Fehler produziert hat.',
+    inputSchema: z.object({
+      agentName: z.string().describe('Name des fehlgeschlagenen Agenten'),
+    }),
+    execute: async ({ agentName }) => {
+      await markAgentFailed(params.runId, agentName);
+      return { marked: true, agentName, status: 'failed' };
+    },
+  });
+}
+
 // ============================================================================
-// Agent Wrapper Tools - For backward compatibility and convenience
+// CONVENIENCE WRAPPERS (for backward compatibility)
+// These combine multiple primitives. Prefer using primitives above.
 // ============================================================================
 
 /**
- * Agent Wrapper: CMS analysis with RAG enrichment.
+ * CONVENIENCE WRAPPER: CMS analysis with RAG enrichment.
  *
- * This wraps the CMS agent which internally uses RAG.
- * Use createKnowledgeQueryTool() if you want raw RAG access.
- * The orchestrator can combine queryKnowledge + LLM for custom analysis.
+ * Combines: RAG query + LLM agent + checkpoint marking.
+ * @deprecated Prefer composing primitives: queryKnowledge + your LLM call + markAgentComplete/Failed
  */
 export function createCmsQueryTool(params: {
   runId: string;
@@ -146,11 +193,10 @@ export function createCmsQueryTool(params: {
 }
 
 /**
- * Agent Wrapper: Industry analysis with RAG enrichment.
+ * CONVENIENCE WRAPPER: Industry analysis with RAG enrichment.
  *
- * This wraps the Industry agent which internally uses RAG.
- * Use createKnowledgeQueryTool() if you want raw RAG access.
- * The orchestrator can combine queryKnowledge + LLM for custom analysis.
+ * Combines: RAG query + LLM agent + checkpoint marking.
+ * @deprecated Prefer composing primitives: queryKnowledge + your LLM call + markAgentComplete/Failed
  */
 export function createIndustryQueryTool(params: {
   runId: string;
@@ -207,12 +253,25 @@ export function createIndustryQueryTool(params: {
 // ============================================================================
 
 /**
- * Returns the RAG primitive tool.
- * Use this when you want the agent to have direct RAG access.
+ * Returns RAG primitive tool (queryKnowledge only).
+ * Use this when you want stateless RAG access without checkpoints.
  */
 export function createRagPrimitiveTools() {
   return {
     queryKnowledge: createKnowledgeQueryTool(),
+  };
+}
+
+/**
+ * Returns RAG primitives with checkpoint marking tools.
+ * Use these when you want the agent to compose RAG + checkpoints.
+ * Requires runId for checkpoint tools.
+ */
+export function createRagPrimitiveToolsWithCheckpoints(params: { runId: string }) {
+  return {
+    queryKnowledge: createKnowledgeQueryTool(),
+    markAgentComplete: createMarkAgentCompleteTool({ runId: params.runId }),
+    markAgentFailed: createMarkAgentFailedTool({ runId: params.runId }),
   };
 }
 

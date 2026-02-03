@@ -500,6 +500,49 @@ registry.register({
   },
 });
 
+// ===== Input Creation Tools =====
+
+const createFromFreetextInputSchema = z.object({
+  projectDescription: z.string().min(50).describe('Project description (min 50 characters)'),
+  customerName: z.string().min(1).describe('Customer name'),
+  source: z.enum(['reactive', 'proactive']).default('reactive'),
+  stage: z.enum(['cold', 'warm', 'pre-qualification']).default('warm'),
+  accountId: z.string().optional().describe('Optional Account ID to link'),
+});
+
+registry.register({
+  name: 'preQualification.createFromFreetext',
+  description:
+    'Create a new Pre-Qualification from freetext input (customer name + project description). Automatically triggers the extraction workflow. This is the agent equivalent of the user "Upload Freetext" action.',
+  category: 'pre-qualification',
+  inputSchema: createFromFreetextInputSchema,
+  async execute(input, _context: ToolContext) {
+    // Import server action
+    const { uploadFreetextBid } = await import('@/lib/bids/actions');
+
+    // Call the server action
+    const result = await uploadFreetextBid({
+      projectDescription: input.projectDescription,
+      customerName: input.customerName,
+      source: input.source,
+      stage: input.stage,
+      accountId: input.accountId,
+    });
+
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    return {
+      success: true,
+      data: {
+        bidId: result.bidId,
+        message: 'Pre-Qualification created and extraction workflow triggered',
+      },
+    };
+  },
+});
+
 // ===== Extraction Tools =====
 
 const startExtractionInputSchema = z.object({

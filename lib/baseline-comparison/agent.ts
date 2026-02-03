@@ -1,4 +1,4 @@
-import { generateObject } from 'ai';
+import { generateStructuredOutput } from '@/lib/ai/config';
 
 import { baselineComparisonResultSchema, type BaselineComparisonResult } from './schema';
 
@@ -67,14 +67,37 @@ export async function runBaselineComparison(
     .map(m => `- ${m.pageType} → ${m.drupalContentType} (Konfidenz: ${m.confidence}%)`)
     .join('\n');
 
-  const { object } = await generateObject({
-    model: 'gemini-3-flash-preview',
+  const result = await generateStructuredOutput({
+    model: 'fast',
     schema: baselineComparisonResultSchema,
-    prompt: `Du bist ein Experte für Software-Projektschätzung bei adesso SE.
+    system: `Du bist ein Experte für Software-Projektschätzung bei adesso SE.
 
 Deine Aufgabe ist es, die analysierte Anforderungsstruktur mit einer vorhandenen Baseline/Referenzimplementierung zu vergleichen - technologie-agnostisch.
 
-## Baseline: ${baselineName}
+## Kategorisierungslogik (technologie-agnostisch)
+
+**Typische Baseline-Features (wiederverwendbar):**
+- Standard-Datenstrukturen: Artikel, Seiten, News, Events, Personen, FAQ
+- Standard-UI-Komponenten: Text, Bild, Galerie, CTA, Zitat, Akkordeon, Tabs
+- Standard-Features: Suche, Kontaktformular, Sitemap, Breadcrumbs
+- Standard-Integrationen: Analytics, Cookie-Consent, Newsletter
+
+**Typische Neuentwicklung:**
+- Branchenspezifische Strukturen (Produkte, Immobilien, Kurse, etc.)
+- Komplexe Komponenten (Konfiguratoren, Rechner, Dashboards)
+- Custom-Integrationen (ERP, CRM, spezifische APIs)
+- Geschäftslogik und Workflows
+
+## Stundenberechnung (FAIR)
+
+- Baseline-Feature: 0 PT (bereits vorhanden)
+- Einfaches Custom Feature: 8-16 PT
+- Mittleres Custom Feature: 16-40 PT
+- Komplexes Custom Feature: 40-80 PT
+
+**WICHTIG:** Sei fair und objektiv. Überschätze die Baseline-Abdeckung NICHT.
+Wenn etwas unklar ist, tendiere zur Neuentwicklung.`,
+    prompt: `## Baseline: ${baselineName}
 
 Die Baseline enthält folgende vorkonfigurierte Komponenten:
 - Content/Daten-Strukturen: ${baseline.content_types || 12}
@@ -108,33 +131,9 @@ ${contentMappingInfo}
 3. **Berechne** die Baseline-Abdeckung (Prozentsatz) - SEI REALISTISCH
 4. **Schätze** Aufwandsersparnis durch Baseline vs. Neuentwicklung
 
-## Kategorisierungslogik (technologie-agnostisch)
-
-**Typische Baseline-Features (wiederverwendbar):**
-- Standard-Datenstrukturen: Artikel, Seiten, News, Events, Personen, FAQ
-- Standard-UI-Komponenten: Text, Bild, Galerie, CTA, Zitat, Akkordeon, Tabs
-- Standard-Features: Suche, Kontaktformular, Sitemap, Breadcrumbs
-- Standard-Integrationen: Analytics, Cookie-Consent, Newsletter
-
-**Typische Neuentwicklung:**
-- Branchenspezifische Strukturen (Produkte, Immobilien, Kurse, etc.)
-- Komplexe Komponenten (Konfiguratoren, Rechner, Dashboards)
-- Custom-Integrationen (ERP, CRM, spezifische APIs)
-- Geschäftslogik und Workflows
-
-## Stundenberechnung (FAIR)
-
-- Baseline-Feature: 0 PT (bereits vorhanden)
-- Einfaches Custom Feature: 8-16 PT
-- Mittleres Custom Feature: 16-40 PT
-- Komplexes Custom Feature: 40-80 PT
-
-**WICHTIG:** Sei fair und objektiv. Überschätze die Baseline-Abdeckung NICHT.
-Wenn etwas unklar ist, tendiere zur Neuentwicklung.
-
 Antworte im vorgegebenen JSON-Schema.`,
     temperature: 0.3,
   });
 
-  return object;
+  return result;
 }

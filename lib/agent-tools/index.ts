@@ -12,6 +12,7 @@ import './tools/competitor';
 import './tools/employee';
 import './tools/technology';
 import './tools/business-unit';
+import './tools/user';
 import './tools/staffing';
 import './tools/quickscan';
 import './tools/analysis';

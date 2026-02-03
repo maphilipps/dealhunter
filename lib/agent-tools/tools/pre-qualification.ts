@@ -5,7 +5,7 @@ import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { preQualifications, documents, quickScans } from '@/lib/db/schema';
+import { preQualifications, documents, quickScans, businessUnits } from '@/lib/db/schema';
 
 const listPreQualificationsInputSchema = z.object({
   status: z
@@ -31,7 +31,8 @@ const listPreQualificationsInputSchema = z.object({
 
 registry.register({
   name: 'preQualification.list',
-  description: 'List all Pre-Qualifications/Bids for the current user, optionally filtered by status',
+  description:
+    'List all Pre-Qualifications/Bids for the current user, optionally filtered by status',
   category: 'pre-qualification',
   inputSchema: listPreQualificationsInputSchema,
   async execute(input, context: ToolContext) {
@@ -224,7 +225,10 @@ registry.register({
       .select()
       .from(preQualifications)
       .where(
-        and(eq(preQualifications.id, input.preQualificationId), eq(preQualifications.userId, context.userId))
+        and(
+          eq(preQualifications.id, input.preQualificationId),
+          eq(preQualifications.userId, context.userId)
+        )
       )
       .limit(1);
 
@@ -260,7 +264,10 @@ registry.register({
       .select()
       .from(preQualifications)
       .where(
-        and(eq(preQualifications.id, input.preQualificationId), eq(preQualifications.userId, context.userId))
+        and(
+          eq(preQualifications.id, input.preQualificationId),
+          eq(preQualifications.userId, context.userId)
+        )
       )
       .limit(1);
 
@@ -282,5 +289,114 @@ registry.register({
       .orderBy(desc(documents.uploadedAt));
 
     return { success: true, data: docs };
+  },
+});
+
+// ===== Routing Tools =====
+
+const routeToBusinessUnitInputSchema = z.object({
+  id: z.string().describe('Pre-Qualification ID to route'),
+  businessUnitId: z.string().describe('Target Business Unit ID'),
+});
+
+registry.register({
+  name: 'preQualification.route',
+  description:
+    'Route a Pre-Qualification to a Business Unit for BL review. Validates business unit exists and updates status to bl_reviewing.',
+  category: 'pre-qualification',
+  inputSchema: routeToBusinessUnitInputSchema,
+  async execute(input, context: ToolContext) {
+    // Verify Pre-Qualification exists and user has access
+    const [preQualification] = await db
+      .select()
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, input.id), eq(preQualifications.userId, context.userId)))
+      .limit(1);
+
+    if (!preQualification) {
+      return { success: false, error: 'Pre-Qualification not found or no access' };
+    }
+
+    // Verify Business Unit exists
+    const [businessUnit] = await db
+      .select()
+      .from(businessUnits)
+      .where(eq(businessUnits.id, input.businessUnitId))
+      .limit(1);
+
+    if (!businessUnit) {
+      return { success: false, error: 'Business Unit not found' };
+    }
+
+    // Update Pre-Qualification with business unit assignment and status
+    const [updated] = await db
+      .update(preQualifications)
+      .set({
+        assignedBusinessUnitId: input.businessUnitId,
+        status: 'bl_reviewing',
+        updatedAt: new Date(),
+      })
+      .where(eq(preQualifications.id, input.id))
+      .returning();
+
+    return {
+      success: true,
+      data: {
+        id: updated.id,
+        status: updated.status,
+        businessUnit: {
+          id: businessUnit.id,
+          name: businessUnit.name,
+          leaderName: businessUnit.leaderName,
+        },
+      },
+    };
+  },
+});
+
+const makeDecisionInputSchema = z.object({
+  id: z.string().describe('Pre-Qualification ID'),
+  decision: z.enum(['bid', 'no_bid']).describe('BID or NO-BID decision'),
+  reason: z.string().optional().describe('Optional reason for the decision'),
+});
+
+registry.register({
+  name: 'preQualification.makeDecision',
+  description:
+    'Make a BID or NO-BID decision for a Pre-Qualification. BID moves to routed status, NO-BID archives.',
+  category: 'pre-qualification',
+  inputSchema: makeDecisionInputSchema,
+  async execute(input, context: ToolContext) {
+    // Verify Pre-Qualification exists and user has access
+    const [preQualification] = await db
+      .select()
+      .from(preQualifications)
+      .where(and(eq(preQualifications.id, input.id), eq(preQualifications.userId, context.userId)))
+      .limit(1);
+
+    if (!preQualification) {
+      return { success: false, error: 'Pre-Qualification not found or no access' };
+    }
+
+    // Update Pre-Qualification with decision
+    const [updated] = await db
+      .update(preQualifications)
+      .set({
+        decision: input.decision,
+        status: input.decision === 'bid' ? 'routed' : 'archived',
+        alternativeRecommendation: input.reason || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(preQualifications.id, input.id))
+      .returning();
+
+    return {
+      success: true,
+      data: {
+        id: updated.id,
+        decision: updated.decision,
+        status: updated.status,
+      },
+    };
   },
 });

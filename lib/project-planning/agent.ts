@@ -1,4 +1,4 @@
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 
 import { projectPlanSchema, type ProjectPlan } from './schema';
 
@@ -38,9 +38,9 @@ export async function generateProjectPlan(input: ProjectPlanningInput): Promise<
   const newDevHours = baselineComparison?.estimatedSavings.hoursNewDevelopment || totalHours;
   const baselineCoverage = baselineComparison?.baselineCoverage || 0;
 
-  const { object } = await generateObject({
+  const { output } = await generateText({
     model: 'gemini-3-flash-preview',
-    schema: projectPlanSchema,
+    output: Output.object({ schema: projectPlanSchema }),
     prompt: `Du bist ein erfahrener Projektplaner bei adesso SE.
 
 Erstelle einen realistischen Projekt-Plan basierend auf der PT-Schätzung - TECHNOLOGIE-AGNOSTISCH.
@@ -133,5 +133,5 @@ Antworte im vorgegebenen JSON-Schema.`,
     temperature: 0.3,
   });
 
-  return object;
+  return output;
 }

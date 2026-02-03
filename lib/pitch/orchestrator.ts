@@ -1,5 +1,8 @@
-import { generateText, stepCountIs } from 'ai';
+import { ToolLoopAgent, stepCountIs } from 'ai';
+import { eq } from 'drizzle-orm';
 
+import { db } from '@/lib/db';
+import { pitchDocuments } from '@/lib/db/schema';
 import { getModel } from '@/lib/ai/model-config';
 import { loadCheckpoint, saveCheckpoint, updateRunStatus } from './checkpoints';
 import { ORCHESTRATOR_SYSTEM_PROMPT, PHASES } from './constants';
@@ -16,15 +19,8 @@ import { createGenerateIndicationTool } from './tools/generation-tools';
 /**
  * Run the pitch orchestrator agent.
  *
- * This is the core autonomous pipeline that:
- * 1. Loads checkpoint if resuming from an askUser pause
- * 2. Executes website audit
- * 3. Runs CMS + Industry expert analysis
- * 4. Flags uncertainties
- * 5. Generates the indication document
- * 6. Reports completion
- *
- * Uses AI SDK v6 generateText with tools and stopWhen for autonomous control.
+ * Uses AI SDK v6 ToolLoopAgent for autonomous pipeline control.
+ * The agent loops through tools until stepCountIs(50) is reached.
  */
 export async function runOrchestrator(jobData: PitchJobData): Promise<PitchJobResult> {
   const { runId, pitchId, websiteUrl, targetCmsIds, interviewResults } = jobData;
@@ -117,18 +113,42 @@ export async function runOrchestrator(jobData: PitchJobData): Promise<PitchJobRe
     contextParts.push(`User-Antworten: ${JSON.stringify(checkpoint.collectedAnswers)}`);
   }
 
+  // Injiziere bisherige Tool-Ergebnisse
+  if (Object.keys(checkpoint.agentResults).length > 0) {
+    contextParts.push(`Bisherige Analyse-Ergebnisse:
+${Object.entries(checkpoint.agentResults)
+  .map(
+    ([agent, result]) => `### ${agent}\n${JSON.stringify(result, null, 2).substring(0, 1000)}...`
+  )
+  .join('\n\n')}`);
+  }
+
+  // Zeige was für diesen Pitch bereits existiert
+  const existingDocs = await db
+    .select({ id: pitchDocuments.id, type: pitchDocuments.documentType })
+    .from(pitchDocuments)
+    .where(eq(pitchDocuments.pitchId, pitchId));
+
+  if (existingDocs.length > 0) {
+    contextParts.push(
+      `Existierende Dokumente für diesen Pitch: ${existingDocs.map(d => d.type).join(', ')}`
+    );
+  }
+
   const prompt = contextParts.join('\n\n');
 
+  // Create the ToolLoopAgent
+  const agent = new ToolLoopAgent({
+    model: getModel('quality'),
+    instructions: ORCHESTRATOR_SYSTEM_PROMPT,
+    tools,
+    stopWhen: stepCountIs(50),
+    temperature: 0.3,
+    maxOutputTokens: 8000,
+  });
+
   try {
-    const result = await generateText({
-      model: getModel('quality'),
-      system: ORCHESTRATOR_SYSTEM_PROMPT,
-      prompt,
-      tools,
-      stopWhen: stepCountIs(50),
-      temperature: 0.3,
-      maxOutputTokens: 8000,
-    });
+    const result = await agent.generate({ prompt });
 
     // Update checkpoint with final state
     checkpoint.phase = PHASES.REVIEW;

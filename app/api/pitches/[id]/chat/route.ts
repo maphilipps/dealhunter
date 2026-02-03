@@ -1,4 +1,11 @@
-import { streamText, tool, stepCountIs, convertToModelMessages, type UIMessage } from 'ai';
+import {
+  streamText,
+  tool,
+  stepCountIs,
+  convertToModelMessages,
+  consumeStream,
+  type UIMessage,
+} from 'ai';
 import { createId } from '@paralleldrive/cuid2';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
@@ -10,6 +17,11 @@ import { db } from '@/lib/db';
 import { backgroundJobs, pitchRuns, pitches, technologies, users } from '@/lib/db/schema';
 import { INTERVIEW_SYSTEM_PROMPT } from '@/lib/pitch/constants';
 import { interviewResultsSchema } from '@/lib/pitch/types';
+
+// Next.js Route Segment Config for streaming
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 /**
  * POST /api/pitches/[id]/chat
@@ -81,6 +93,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
       model: getModel('quality'),
       system: INTERVIEW_SYSTEM_PROMPT + cmsContext,
       messages: await convertToModelMessages(messages),
+      abortSignal: req.signal,
       tools: {
         startPipeline: tool({
           description:
@@ -88,50 +101,69 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
             'Fasse die Interview-Ergebnisse zusammen und starte die Analyse.',
           inputSchema: interviewResultsSchema,
           execute: async interviewResults => {
-            const runId = createId();
-            const jobId = createId();
+            try {
+              const runId = createId();
+              const jobId = createId();
 
-            // Resolve target CMS IDs from available technologies
-            const targetCmsIds = availableCms.map(c => c.id);
+              // Resolve target CMS IDs from available technologies
+              const targetCmsIds = availableCms.map(c => c.id);
 
-            // Create pitch run record
-            await db.insert(pitchRuns).values({
-              id: runId,
-              pitchId,
-              userId,
-              status: 'pending',
-              targetCmsIds: JSON.stringify(targetCmsIds),
-            });
+              // Create pitch run record
+              await db.insert(pitchRuns).values({
+                id: runId,
+                pitchId,
+                userId,
+                status: 'pending',
+                targetCmsIds: JSON.stringify(targetCmsIds),
+              });
 
-            // Create background job record
-            await db.insert(backgroundJobs).values({
-              id: jobId,
-              jobType: 'pitch',
-              status: 'pending',
-              userId,
-              pitchId,
-              progress: 0,
-              currentStep: 'Interview abgeschlossen, Pipeline wird gestartet...',
-            });
+              // Create background job record
+              await db.insert(backgroundJobs).values({
+                id: jobId,
+                jobType: 'pitch',
+                status: 'pending',
+                userId,
+                pitchId,
+                progress: 0,
+                currentStep: 'Interview abgeschlossen, Pipeline wird gestartet...',
+              });
 
-            // Enqueue BullMQ job
-            await addPitchJob({
-              runId,
-              pitchId,
-              websiteUrl: lead.websiteUrl ?? '',
-              userId,
-              targetCmsIds,
-              interviewResults,
-            });
+              // Enqueue BullMQ job
+              await addPitchJob({
+                runId,
+                pitchId,
+                websiteUrl: lead.websiteUrl ?? '',
+                userId,
+                targetCmsIds,
+                interviewResults,
+              });
 
-            return { started: true, runId };
+              return { started: true, runId };
+            } catch (error) {
+              console.error('[startPipeline] Tool execution failed:', error);
+              return {
+                started: false,
+                error: 'Pipeline konnte nicht gestartet werden. Bitte versuche es erneut.',
+              };
+            }
           },
         }),
       },
       stopWhen: stepCountIs(10),
     });
 
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      onFinish: async ({ isAborted }) => {
+        if (isAborted) {
+          console.log('[POST /api/pitches/:id/chat] Stream aborted by client');
+        }
+      },
+      onError: error => {
+        console.error('[POST /api/pitches/:id/chat] Stream error:', error);
+        return 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.';
+      },
+      consumeSseStream: consumeStream,
+    });
   } catch (error) {
     console.error('[POST /api/pitches/:id/chat] Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -1,6 +1,7 @@
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 
-import { generateStructuredOutput } from '@/lib/ai/config';
+import { getModel } from '@/lib/ai/model-config';
 
 export const performanceSchema = z.object({
   scores: z.object({
@@ -130,14 +131,14 @@ export async function auditPerformance(
     ? `PageSpeed Insights:\n${pageSpeedData}\n\nHTML-Analyse:\n${htmlIndicators}`
     : `(PageSpeed API nicht verfügbar — Analyse nur auf HTML-Basis)\n\nHTML-Analyse:\n${htmlIndicators}`;
 
-  const result = await generateStructuredOutput({
-    model: 'fast',
-    schema: performanceSchema,
+  const result = await generateText({
+    model: getModel('fast'),
+    output: Output.object({ schema: performanceSchema }),
     system: `Du bist ein Web-Performance-Experte. Analysiere die Performance einer Website anhand der bereitgestellten Daten. Gib Core Web Vitals Schätzungen ab und identifiziere Performance-Probleme.`,
     prompt: `Website: ${url}\n\n${context}`,
     temperature: 0.1,
-    timeout: 30_000,
+    maxOutputTokens: 8000,
   });
 
-  return result;
+  return result.output!;
 }

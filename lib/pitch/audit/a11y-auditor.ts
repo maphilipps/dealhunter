@@ -1,7 +1,8 @@
 import * as cheerio from 'cheerio';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 
-import { generateStructuredOutput } from '@/lib/ai/config';
+import { getModel } from '@/lib/ai/model-config';
 
 export const accessibilitySchema = z.object({
   score: z.number().min(0).max(100),
@@ -99,14 +100,14 @@ export async function auditAccessibility(
   const { html } = page;
   const staticChecks = runStaticA11yChecks(html);
 
-  const result = await generateStructuredOutput({
-    model: 'default',
-    schema: accessibilitySchema,
+  const result = await generateText({
+    model: getModel('default'),
+    output: Output.object({ schema: accessibilitySchema }),
     system: `Du bist ein WCAG-Barrierefreiheits-Experte. Analysiere die statischen Prüfergebnisse einer Website und bewerte die Barrierefreiheit gemäß WCAG 2.1 Richtlinien. Beachte: Dies ist eine statische Analyse — dynamische Aspekte (Farbe, Kontrast, Tastaturnavigation) können nur geschätzt werden.`,
     prompt: `Website: ${url}\n\nStatische Prüfergebnisse:\n${staticChecks}\n\nHTML-Auszug (erste 3000 Zeichen):\n${html.slice(0, 3000)}`,
     temperature: 0.1,
-    timeout: 45_000,
+    maxOutputTokens: 8000,
   });
 
-  return result;
+  return result.output!;
 }

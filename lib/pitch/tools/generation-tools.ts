@@ -77,8 +77,16 @@ export function createGenerateIndicationTool(params: {
           flagCount: indication.flags.length,
         };
       } catch (error) {
+        console.error(`[Generation Tool] Failed for run ${params.runId}:`, error);
         await markAgentFailed(params.runId, AGENT_NAMES.QUALITY);
-        throw error;
+        return {
+          documentId: null,
+          executiveSummary:
+            'Indikation konnte nicht generiert werden — manuelle Erstellung erforderlich.',
+          recommendation: 'unbekannt',
+          totalEstimate: 'nicht verfügbar',
+          flagCount: 0,
+        };
       }
     },
   });

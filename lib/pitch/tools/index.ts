@@ -60,7 +60,16 @@ export {
 // Generation Tools
 // ============================================================================
 
-export { createGenerateIndicationTool } from './generation-tools';
+export {
+  // Primitives
+  createRenderIndicationTool,
+  createStoreIndicationDocumentTool,
+  // Convenience wrapper
+  createGenerateIndicationTool,
+  // Collections
+  createGenerationPrimitiveTools,
+  createGenerationPrimitiveToolsWithStorage,
+} from './generation-tools';
 
 // ============================================================================
 // User Interaction Tools

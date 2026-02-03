@@ -5,7 +5,44 @@ import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { preQualifications, documents, quickScans, businessUnits } from '@/lib/db/schema';
+import {
+  preQualifications,
+  documents,
+  quickScans,
+  businessUnits,
+  auditTrails,
+} from '@/lib/db/schema';
+
+// Valid PreQualification status transitions
+// Based on workflow: draft → processing → extracting → reviewing → quick_scanning → decision_made → routed → ...
+const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
+  draft: ['processing', 'extracting', 'archived'],
+  processing: ['duplicate_checking', 'extracting', 'archived'],
+  duplicate_checking: ['duplicate_warning', 'duplicate_check_failed', 'extracting', 'archived'],
+  duplicate_check_failed: ['extracting', 'archived'],
+  duplicate_warning: ['extracting', 'archived'],
+  extracting: ['extraction_failed', 'manual_extraction', 'reviewing', 'archived'],
+  extraction_failed: ['manual_extraction', 'archived'],
+  manual_extraction: ['reviewing', 'archived'],
+  reviewing: ['quick_scanning', 'archived'],
+  quick_scanning: ['quick_scan_failed', 'bit_pending', 'questions_ready', 'archived'],
+  quick_scan_failed: ['bit_pending', 'questions_ready', 'archived'],
+  bit_pending: ['timeline_estimating', 'decision_made', 'archived'],
+  questions_ready: ['evaluating', 'decision_made', 'archived'],
+  timeline_estimating: ['timeline_failed', 'decision_made', 'archived'],
+  timeline_failed: ['decision_made', 'archived'],
+  evaluating: ['decision_made', 'archived'],
+  decision_made: ['routed', 'bid_voted', 'archived'],
+  bid_voted: ['routed', 'archived'],
+  routed: ['full_scanning', 'bl_reviewing', 'archived'],
+  full_scanning: ['bl_reviewing', 'archived'],
+  bl_reviewing: ['team_assigned', 'archived'],
+  team_assigned: ['notified', 'archived'],
+  notified: ['handed_off', 'analysis_complete', 'archived'],
+  handed_off: ['analysis_complete', 'archived'],
+  analysis_complete: ['archived'],
+  archived: [], // Terminal state - no transitions out
+};
 
 const listPreQualificationsInputSchema = z.object({
   status: z
@@ -181,24 +218,163 @@ registry.register({
   },
 });
 
+// ===== Status Update Tool (with validation + audit trail) =====
+
+const updateStatusInputSchema = z.object({
+  id: z.string().describe('Pre-Qualification ID'),
+  targetStatus: z
+    .enum([
+      'draft',
+      'processing',
+      'duplicate_checking',
+      'duplicate_check_failed',
+      'duplicate_warning',
+      'extracting',
+      'extraction_failed',
+      'manual_extraction',
+      'reviewing',
+      'quick_scanning',
+      'quick_scan_failed',
+      'bit_pending',
+      'questions_ready',
+      'timeline_estimating',
+      'timeline_failed',
+      'evaluating',
+      'decision_made',
+      'bid_voted',
+      'archived',
+      'routed',
+      'full_scanning',
+      'bl_reviewing',
+      'team_assigned',
+      'notified',
+      'handed_off',
+      'analysis_complete',
+    ])
+    .describe('Target status to transition to'),
+  reason: z
+    .string()
+    .optional()
+    .describe('Optional reason for the status change (recorded in audit trail)'),
+});
+
+registry.register({
+  name: 'preQualification.updateStatus',
+  description:
+    'Update the status of a Pre-Qualification with validation. Enforces valid status transitions and creates an audit trail. Admin users can bypass ownership checks.',
+  category: 'pre-qualification',
+  inputSchema: updateStatusInputSchema,
+  async execute(input, context: ToolContext) {
+    // Build access query - admin can access any, others only their own
+    const isAdmin = context.userRole === 'admin';
+
+    let existing;
+    if (isAdmin) {
+      [existing] = await db
+        .select()
+        .from(preQualifications)
+        .where(eq(preQualifications.id, input.id))
+        .limit(1);
+    } else {
+      [existing] = await db
+        .select()
+        .from(preQualifications)
+        .where(
+          and(eq(preQualifications.id, input.id), eq(preQualifications.userId, context.userId))
+        )
+        .limit(1);
+    }
+
+    if (!existing) {
+      return { success: false, error: 'Pre-Qualification not found or no access' };
+    }
+
+    const currentStatus = existing.status;
+    const targetStatus = input.targetStatus;
+
+    // Validate status transition
+    const validTransitions = VALID_STATUS_TRANSITIONS[currentStatus] || [];
+    if (!validTransitions.includes(targetStatus)) {
+      return {
+        success: false,
+        error: `Invalid status transition: ${currentStatus} -> ${targetStatus}. Valid transitions: ${validTransitions.join(', ') || 'none'}`,
+      };
+    }
+
+    // Update status
+    const [updated] = await db
+      .update(preQualifications)
+      .set({ status: targetStatus, updatedAt: new Date() })
+      .where(eq(preQualifications.id, input.id))
+      .returning();
+
+    // Create audit trail entry
+    await db.insert(auditTrails).values({
+      userId: context.userId,
+      action: 'status_change',
+      entityType: 'pre_qualification',
+      entityId: input.id,
+      previousValue: JSON.stringify({ status: currentStatus }),
+      newValue: JSON.stringify({ status: targetStatus }),
+      reason: input.reason || null,
+    });
+
+    return {
+      success: true,
+      data: {
+        id: updated.id,
+        previousStatus: currentStatus,
+        status: updated.status,
+        auditLogged: true,
+      },
+    };
+  },
+});
+
 const deletePreQualificationInputSchema = z.object({
-  id: z.string(),
+  id: z.string().describe('Pre-Qualification ID to delete'),
+  reason: z.string().optional().describe('Optional reason for deletion (recorded in audit trail)'),
 });
 
 registry.register({
   name: 'preQualification.delete',
-  description: 'Delete an Pre-Qualification/Bid (archives it)',
+  description:
+    'Soft-delete a Pre-Qualification/Bid (archives it). Admin users can delete any Pre-Qualification. Creates an audit trail entry.',
   category: 'pre-qualification',
   inputSchema: deletePreQualificationInputSchema,
   async execute(input, context: ToolContext) {
-    const [existing] = await db
-      .select()
-      .from(preQualifications)
-      .where(and(eq(preQualifications.id, input.id), eq(preQualifications.userId, context.userId)))
-      .limit(1);
+    // Build access query - admin can access any, others only their own
+    const isAdmin = context.userRole === 'admin';
+
+    let existing;
+    if (isAdmin) {
+      [existing] = await db
+        .select()
+        .from(preQualifications)
+        .where(eq(preQualifications.id, input.id))
+        .limit(1);
+    } else {
+      [existing] = await db
+        .select()
+        .from(preQualifications)
+        .where(
+          and(eq(preQualifications.id, input.id), eq(preQualifications.userId, context.userId))
+        )
+        .limit(1);
+    }
 
     if (!existing) {
       return { success: false, error: 'Pre-Qualification not found or no access' };
+    }
+
+    const previousStatus = existing.status as string;
+
+    // Already archived - nothing to do
+    if (existing.status === 'archived') {
+      return {
+        success: true,
+        data: { id: existing.id, status: 'archived', previousStatus, alreadyArchived: true },
+      };
     }
 
     const [archived] = await db
@@ -207,7 +383,21 @@ registry.register({
       .where(eq(preQualifications.id, input.id))
       .returning();
 
-    return { success: true, data: { id: archived.id, status: 'archived' } };
+    // Create audit trail entry
+    await db.insert(auditTrails).values({
+      userId: context.userId,
+      action: 'delete',
+      entityType: 'pre_qualification',
+      entityId: input.id,
+      previousValue: JSON.stringify({ status: previousStatus }),
+      newValue: JSON.stringify({ status: 'archived' }),
+      reason: input.reason || null,
+    });
+
+    return {
+      success: true,
+      data: { id: archived.id, status: 'archived', previousStatus, alreadyArchived: false },
+    };
   },
 });
 

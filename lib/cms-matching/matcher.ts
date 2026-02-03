@@ -13,13 +13,12 @@
  * Returns top 3 ranked CMS options with reasoning.
  */
 
-import { generateObject, type LanguageModel } from 'ai';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { ContentArchitectureResult } from '../agents/content-architecture-agent';
 import type { MigrationComplexityResult } from '../agents/migration-complexity-agent';
-import { openai } from '../ai/providers';
+import { generateStructuredOutput } from '../ai/config';
 import { db } from '../db';
 import { technologies, cmsMatchResults, type Technology } from '../db/schema';
 
@@ -455,9 +454,11 @@ async function generateReasoning(input: GenerateReasoningInput): Promise<string>
   });
 
   try {
-    const { object } = await generateObject({
-      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
+    const result = await generateStructuredOutput({
+      model: 'fast',
       schema: ReasoningSchema,
+      system:
+        'You are a CMS recommendation expert. Generate concise, professional reasoning for CMS matches.',
       prompt: `Generate a concise recommendation reasoning for this CMS match.
 
 **CMS:** ${input.technologyName}
@@ -480,7 +481,7 @@ ${input.matchedFeatures.map(f => `- ${f.feature}: ${f.supported ? '✓' : '✗'}
 - Be specific about industry/size/budget fit if relevant`,
     });
 
-    return object.reasoning;
+    return result.reasoning;
   } catch (error) {
     console.error('[CMS Matcher] Failed to generate reasoning:', error);
 

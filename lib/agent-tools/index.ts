@@ -8,6 +8,7 @@ import './tools/qualification';
 import './tools/account';
 import './tools/reference';
 import './tools/competency';
+import './tools/competitor';
 import './tools/employee';
 import './tools/technology';
 import './tools/business-unit';

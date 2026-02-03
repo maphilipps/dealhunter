@@ -28,6 +28,7 @@ export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
     | 'account'
     | 'reference'
     | 'competency'
+    | 'competitor'
     | 'employee'
     | 'technology'
     | 'business-unit'
@@ -83,6 +84,7 @@ export const TOOL_CATEGORIES = {
   account: 'Account Management',
   reference: 'Reference Management',
   competency: 'Competency Management',
+  competitor: 'Competitor Intelligence Management',
   employee: 'Employee Management',
   technology: 'Technology Management',
   'business-unit': 'Business Unit Management',

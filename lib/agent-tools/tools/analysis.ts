@@ -86,6 +86,56 @@ const deleteCompetitorMatchInputSchema = z.object({
   id: z.string(),
 });
 
+// ===== Helper Functions =====
+
+// Helper: Get pitch IDs the user owns via PreQualification
+async function getUserOwnedPitchIds(userId: string): Promise<string[]> {
+  const owned = await db
+    .select({ pitchId: pitches.id })
+    .from(pitches)
+    .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
+    .where(eq(preQualifications.userId, userId));
+  return owned.map(r => r.pitchId);
+}
+
+// Helper: Verify user has access to a pitch
+async function verifyPitchAccess(
+  pitchId: string,
+  context: ToolContext
+): Promise<{ success: true } | { success: false; error: string }> {
+  if (context.userRole === 'admin') {
+    // Admin has access to all pitches
+    const [pitch] = await db.select().from(pitches).where(eq(pitches.id, pitchId)).limit(1);
+    if (!pitch) {
+      return { success: false, error: 'Pitch not found' };
+    }
+    return { success: true };
+  }
+
+  // Non-admin: verify ownership via PreQualification
+  const [pitchData] = await db
+    .select({ pitch: pitches, preQualification: preQualifications })
+    .from(pitches)
+    .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
+    .where(and(eq(pitches.id, pitchId), eq(preQualifications.userId, context.userId)))
+    .limit(1);
+
+  if (!pitchData) {
+    return { success: false, error: 'Pitch not found or no access' };
+  }
+  return { success: true };
+}
+
+// Helper: Parse JSON field safely
+function parseJsonField(value: string | null): unknown {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
 // ===== Tool Implementations =====
 
 registry.register({
@@ -156,11 +206,7 @@ registry.register({
   category: 'analysis',
   inputSchema: deletePtEstimationInputSchema,
   async execute(input, context: ToolContext) {
-    // Only BD and Admin can delete estimations
-    if (context.userRole === 'bl') {
-      return { success: false, error: 'Access denied: BL users cannot delete estimations' };
-    }
-
+    // Fetch existing estimation
     const [existing] = await db
       .select()
       .from(ptEstimations)
@@ -171,12 +217,357 @@ registry.register({
       return { success: false, error: 'PT Estimation not found' };
     }
 
+    // Verify pitch access
+    const accessCheck = await verifyPitchAccess(existing.pitchId, context);
+    if (!accessCheck.success) {
+      return accessCheck;
+    }
+
     await db.delete(ptEstimations).where(eq(ptEstimations.id, input.id));
 
     return {
       success: true,
       message: 'PT Estimation deleted successfully',
       deletedId: input.id,
+    };
+  },
+});
+
+// ============================================================================
+// PtEstimation CRUD (expanded from delete-only)
+// ============================================================================
+
+// Input Schemas for PtEstimation CRUD
+const listPtEstimationInputSchema = z.object({
+  pitchId: z.string().optional(),
+  confidenceLevel: z.enum(['low', 'medium', 'high']).optional(),
+  minTotalPT: z.number().min(0).optional(),
+  maxTotalPT: z.number().min(0).optional(),
+  limit: z.number().min(1).max(100).default(50),
+});
+
+const getPtEstimationInputSchema = z.object({
+  id: z.string(),
+});
+
+const listPtEstimationByPitchInputSchema = z.object({
+  pitchId: z.string(),
+});
+
+const createPtEstimationInputSchema = z.object({
+  pitchId: z.string(),
+  totalPT: z.number().min(0),
+  totalCost: z.number().min(0).optional(),
+  durationMonths: z.number().min(1).optional(),
+  phases: z.array(z.any()).optional(),
+  disciplines: z.record(z.string(), z.number()).optional(),
+  timeline: z.array(z.any()).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  riskBuffer: z.number().min(0).max(100).optional(),
+  confidenceLevel: z.enum(['low', 'medium', 'high']).optional(),
+  assumptions: z.array(z.string()).optional(),
+});
+
+const updatePtEstimationInputSchema = z.object({
+  id: z.string(),
+  totalPT: z.number().min(0).optional(),
+  totalCost: z.number().min(0).optional(),
+  durationMonths: z.number().min(1).optional(),
+  phases: z.array(z.any()).optional(),
+  disciplines: z.record(z.string(), z.number()).optional(),
+  timeline: z.array(z.any()).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  riskBuffer: z.number().min(0).max(100).optional(),
+  confidenceLevel: z.enum(['low', 'medium', 'high']).optional(),
+  assumptions: z.array(z.string()).optional(),
+});
+
+// analysis.listPtEstimation - List PT estimations with filters
+registry.register({
+  name: 'analysis.listPtEstimation',
+  description:
+    'List PT estimations. Filter by pitchId, confidenceLevel, or totalPT range. Non-admin users only see results for pitches they own.',
+  category: 'analysis',
+  inputSchema: listPtEstimationInputSchema,
+  async execute(input, context: ToolContext) {
+    const conditions = [];
+
+    // Access control: non-admin users can only see their own pitches
+    if (context.userRole !== 'admin') {
+      const ownedPitchIds = await getUserOwnedPitchIds(context.userId);
+      if (ownedPitchIds.length === 0) {
+        return { success: true, data: [], metadata: { count: 0, filters: input } };
+      }
+      conditions.push(inArray(ptEstimations.pitchId, ownedPitchIds));
+    }
+
+    if (input.pitchId) {
+      conditions.push(eq(ptEstimations.pitchId, input.pitchId));
+    }
+
+    if (input.confidenceLevel) {
+      conditions.push(eq(ptEstimations.confidenceLevel, input.confidenceLevel));
+    }
+
+    const results = await db
+      .select({
+        id: ptEstimations.id,
+        pitchId: ptEstimations.pitchId,
+        totalPT: ptEstimations.totalPT,
+        totalCost: ptEstimations.totalCost,
+        durationMonths: ptEstimations.durationMonths,
+        phases: ptEstimations.phases,
+        disciplines: ptEstimations.disciplines,
+        timeline: ptEstimations.timeline,
+        startDate: ptEstimations.startDate,
+        endDate: ptEstimations.endDate,
+        riskBuffer: ptEstimations.riskBuffer,
+        confidenceLevel: ptEstimations.confidenceLevel,
+        assumptions: ptEstimations.assumptions,
+        createdAt: ptEstimations.createdAt,
+      })
+      .from(ptEstimations)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(ptEstimations.createdAt))
+      .limit(input.limit);
+
+    // Apply totalPT range filter in-memory
+    let filtered = results;
+    if (input.minTotalPT !== undefined) {
+      filtered = filtered.filter(r => r.totalPT >= input.minTotalPT!);
+    }
+    if (input.maxTotalPT !== undefined) {
+      filtered = filtered.filter(r => r.totalPT <= input.maxTotalPT!);
+    }
+
+    return {
+      success: true,
+      data: filtered.map(r => ({
+        ...r,
+        phases: parseJsonField(r.phases),
+        disciplines: parseJsonField(r.disciplines),
+        timeline: parseJsonField(r.timeline),
+        assumptions: parseJsonField(r.assumptions),
+      })),
+      metadata: {
+        count: filtered.length,
+        filters: input,
+      },
+    };
+  },
+});
+
+// analysis.getPtEstimation - Get a single PT estimation by ID
+registry.register({
+  name: 'analysis.getPtEstimation',
+  description:
+    'Get a single PT estimation by ID. Returns full details including parsed JSON fields for phases, disciplines, timeline, and assumptions.',
+  category: 'analysis',
+  inputSchema: getPtEstimationInputSchema,
+  async execute(input, context: ToolContext) {
+    const [result] = await db
+      .select({
+        id: ptEstimations.id,
+        pitchId: ptEstimations.pitchId,
+        totalPT: ptEstimations.totalPT,
+        totalCost: ptEstimations.totalCost,
+        durationMonths: ptEstimations.durationMonths,
+        phases: ptEstimations.phases,
+        disciplines: ptEstimations.disciplines,
+        timeline: ptEstimations.timeline,
+        startDate: ptEstimations.startDate,
+        endDate: ptEstimations.endDate,
+        riskBuffer: ptEstimations.riskBuffer,
+        confidenceLevel: ptEstimations.confidenceLevel,
+        assumptions: ptEstimations.assumptions,
+        createdAt: ptEstimations.createdAt,
+      })
+      .from(ptEstimations)
+      .where(eq(ptEstimations.id, input.id))
+      .limit(1);
+
+    if (!result) {
+      return { success: false, error: 'PT Estimation not found' };
+    }
+
+    // Access control: non-admin must own the pitch
+    if (context.userRole !== 'admin') {
+      const accessCheck = await verifyPitchAccess(result.pitchId, context);
+      if (!accessCheck.success) {
+        return { success: false, error: 'Access denied' };
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        ...result,
+        phases: parseJsonField(result.phases),
+        disciplines: parseJsonField(result.disciplines),
+        timeline: parseJsonField(result.timeline),
+        assumptions: parseJsonField(result.assumptions),
+      },
+    };
+  },
+});
+
+// analysis.listPtEstimationByPitch - List all PT estimations for a specific pitch
+registry.register({
+  name: 'analysis.listPtEstimationByPitch',
+  description:
+    'List all PT estimations for a specific pitch, sorted by creation date (newest first). Returns full details with parsed JSON fields.',
+  category: 'analysis',
+  inputSchema: listPtEstimationByPitchInputSchema,
+  async execute(input, context: ToolContext) {
+    // Verify pitch access
+    const accessCheck = await verifyPitchAccess(input.pitchId, context);
+    if (!accessCheck.success) {
+      return accessCheck;
+    }
+
+    const results = await db
+      .select({
+        id: ptEstimations.id,
+        pitchId: ptEstimations.pitchId,
+        totalPT: ptEstimations.totalPT,
+        totalCost: ptEstimations.totalCost,
+        durationMonths: ptEstimations.durationMonths,
+        phases: ptEstimations.phases,
+        disciplines: ptEstimations.disciplines,
+        timeline: ptEstimations.timeline,
+        startDate: ptEstimations.startDate,
+        endDate: ptEstimations.endDate,
+        riskBuffer: ptEstimations.riskBuffer,
+        confidenceLevel: ptEstimations.confidenceLevel,
+        assumptions: ptEstimations.assumptions,
+        createdAt: ptEstimations.createdAt,
+      })
+      .from(ptEstimations)
+      .where(eq(ptEstimations.pitchId, input.pitchId))
+      .orderBy(desc(ptEstimations.createdAt));
+
+    return {
+      success: true,
+      data: results.map(r => ({
+        ...r,
+        phases: parseJsonField(r.phases),
+        disciplines: parseJsonField(r.disciplines),
+        timeline: parseJsonField(r.timeline),
+        assumptions: parseJsonField(r.assumptions),
+      })),
+      metadata: {
+        pitchId: input.pitchId,
+        count: results.length,
+      },
+    };
+  },
+});
+
+// analysis.createPtEstimation - Create a new PT estimation
+registry.register({
+  name: 'analysis.createPtEstimation',
+  description:
+    'Create a new PT estimation for a pitch with hours, cost, duration, phase breakdown, discipline matrix, timeline, and assumptions.',
+  category: 'analysis',
+  inputSchema: createPtEstimationInputSchema,
+  async execute(input, context: ToolContext) {
+    // Verify pitch access
+    const accessCheck = await verifyPitchAccess(input.pitchId, context);
+    if (!accessCheck.success) {
+      return accessCheck;
+    }
+
+    const [estimation] = await db
+      .insert(ptEstimations)
+      .values({
+        pitchId: input.pitchId,
+        totalPT: input.totalPT,
+        totalCost: input.totalCost ?? null,
+        durationMonths: input.durationMonths ?? null,
+        phases: input.phases ? JSON.stringify(input.phases) : null,
+        disciplines: input.disciplines ? JSON.stringify(input.disciplines) : null,
+        timeline: input.timeline ? JSON.stringify(input.timeline) : null,
+        startDate: input.startDate ?? null,
+        endDate: input.endDate ?? null,
+        riskBuffer: input.riskBuffer ?? null,
+        confidenceLevel: input.confidenceLevel ?? null,
+        assumptions: input.assumptions ? JSON.stringify(input.assumptions) : null,
+      })
+      .returning();
+
+    return {
+      success: true,
+      data: {
+        id: estimation.id,
+        pitchId: estimation.pitchId,
+        totalPT: estimation.totalPT,
+        totalCost: estimation.totalCost,
+        durationMonths: estimation.durationMonths,
+        confidenceLevel: estimation.confidenceLevel,
+        createdAt: estimation.createdAt,
+      },
+    };
+  },
+});
+
+// analysis.updatePtEstimation - Update a PT estimation
+registry.register({
+  name: 'analysis.updatePtEstimation',
+  description:
+    'Update a PT estimation with new hours, cost, duration, phases, disciplines, timeline, risk buffer, confidence, or assumptions.',
+  category: 'analysis',
+  inputSchema: updatePtEstimationInputSchema,
+  async execute(input, context: ToolContext) {
+    // Fetch existing estimation
+    const [existing] = await db
+      .select()
+      .from(ptEstimations)
+      .where(eq(ptEstimations.id, input.id))
+      .limit(1);
+
+    if (!existing) {
+      return { success: false, error: 'PT Estimation not found' };
+    }
+
+    // Verify pitch access
+    const accessCheck = await verifyPitchAccess(existing.pitchId, context);
+    if (!accessCheck.success) {
+      return accessCheck;
+    }
+
+    const updateData: Record<string, unknown> = {};
+    if (input.totalPT !== undefined) updateData.totalPT = input.totalPT;
+    if (input.totalCost !== undefined) updateData.totalCost = input.totalCost;
+    if (input.durationMonths !== undefined) updateData.durationMonths = input.durationMonths;
+    if (input.startDate !== undefined) updateData.startDate = input.startDate;
+    if (input.endDate !== undefined) updateData.endDate = input.endDate;
+    if (input.riskBuffer !== undefined) updateData.riskBuffer = input.riskBuffer;
+    if (input.confidenceLevel !== undefined) updateData.confidenceLevel = input.confidenceLevel;
+    if (input.phases !== undefined) {
+      updateData.phases = JSON.stringify(input.phases);
+    }
+    if (input.disciplines !== undefined) {
+      updateData.disciplines = JSON.stringify(input.disciplines);
+    }
+    if (input.timeline !== undefined) {
+      updateData.timeline = JSON.stringify(input.timeline);
+    }
+    if (input.assumptions !== undefined) {
+      updateData.assumptions = JSON.stringify(input.assumptions);
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return { success: false, error: 'No fields to update' };
+    }
+
+    await db.update(ptEstimations).set(updateData).where(eq(ptEstimations.id, input.id));
+
+    return {
+      success: true,
+      message: 'PT Estimation updated successfully',
+      updatedId: input.id,
     };
   },
 });
@@ -215,54 +606,6 @@ registry.register({
 // ============================================================================
 // CmsMatchResult CRUD (expanded from delete-only)
 // ============================================================================
-
-// Helper: Get pitch IDs the user owns via PreQualification
-async function getUserOwnedPitchIds(userId: string): Promise<string[]> {
-  const owned = await db
-    .select({ pitchId: pitches.id })
-    .from(pitches)
-    .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
-    .where(eq(preQualifications.userId, userId));
-  return owned.map(r => r.pitchId);
-}
-
-// Helper: Verify user has access to a pitch
-async function verifyPitchAccess(
-  pitchId: string,
-  context: ToolContext
-): Promise<{ success: true } | { success: false; error: string }> {
-  if (context.userRole === 'admin') {
-    // Admin has access to all pitches
-    const [pitch] = await db.select().from(pitches).where(eq(pitches.id, pitchId)).limit(1);
-    if (!pitch) {
-      return { success: false, error: 'Pitch not found' };
-    }
-    return { success: true };
-  }
-
-  // Non-admin: verify ownership via PreQualification
-  const [pitchData] = await db
-    .select({ pitch: pitches, preQualification: preQualifications })
-    .from(pitches)
-    .innerJoin(preQualifications, eq(pitches.preQualificationId, preQualifications.id))
-    .where(and(eq(pitches.id, pitchId), eq(preQualifications.userId, context.userId)))
-    .limit(1);
-
-  if (!pitchData) {
-    return { success: false, error: 'Pitch not found or no access' };
-  }
-  return { success: true };
-}
-
-// Helper: Parse JSON field safely
-function parseJsonField(value: string | null): unknown {
-  if (!value) return null;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
-}
 
 // Input Schemas for CmsMatchResult CRUD
 const listCmsMatchInputSchema = z.object({

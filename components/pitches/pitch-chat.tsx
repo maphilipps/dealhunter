@@ -2,12 +2,23 @@
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { Bot, Send, User, Loader2 } from 'lucide-react';
+import { Bot, Send, User, Loader2, Sparkles } from 'lucide-react';
 import { useRef, useEffect, useState, useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+/**
+ * Suggested prompts for capability discovery.
+ * Users can click these to quickly send common responses during the interview.
+ */
+const SUGGESTED_PROMPTS = [
+  { label: 'Website-Relaunch', description: 'Wir planen einen kompletten Relaunch' },
+  { label: 'CMS-Migration', description: 'Wir möchten unser CMS wechseln' },
+  { label: 'Performance verbessern', description: 'Die aktuelle Seite ist zu langsam' },
+  { label: 'Barrierefreiheit', description: 'WCAG-Konformität ist wichtig für uns' },
+] as const;
 
 interface PitchChatProps {
   pitchId: string;
@@ -161,6 +172,34 @@ export function PitchChat({ pitchId, onPipelineStarted, compact }: PitchChatProp
           Fehler: {error.message}
         </div>
       )}
+
+      {/* Suggested prompts for capability discovery */}
+      {!compact &&
+        !isLoading &&
+        visibleMessages.some(m => m.role === 'assistant') &&
+        visibleMessages[visibleMessages.length - 1]?.role === 'assistant' && (
+          <div className="border-t px-3 py-2">
+            <div className="mb-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+              <Sparkles className="h-3 w-3" />
+              <span>Schnellantworten</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {SUGGESTED_PROMPTS.map(prompt => (
+                <button
+                  key={prompt.label}
+                  type="button"
+                  onClick={() => {
+                    setInput(prompt.description);
+                  }}
+                  className="rounded-full border bg-background px-2.5 py-1 text-xs transition-colors hover:bg-muted hover:border-primary/50"
+                  title={prompt.description}
+                >
+                  {prompt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
       <form onSubmit={handleSubmit} className="flex shrink-0 gap-2 border-t p-3">
         <Input

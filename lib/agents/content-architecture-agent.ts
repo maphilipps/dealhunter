@@ -9,11 +9,9 @@
  * - Content volume analysis
  */
 
-import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
 
-import { AI_TIMEOUTS } from '../ai/config';
-import { openai } from '../ai/providers';
+import { AI_TIMEOUTS, generateStructuredOutput } from '../ai/config';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -192,23 +190,15 @@ export async function analyzeContentArchitecture(
     });
 
     // Use AI to analyze patterns in sample pages with adesso/Drupal expertise
-    const { object: analysis } = await generateObject({
-      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
+    const analysis = await generateStructuredOutput({
+      model: 'fast',
       schema: ContentArchitectureAnalysisSchema,
-      maxRetries: 2,
-      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),
-      prompt: `You are a senior Drupal architect at adesso SE, analyzing a website for migration to Drupal.
+      timeout: AI_TIMEOUTS.AGENT_COMPLEX,
+      system: `You are a senior Drupal architect at adesso SE, analyzing a website for migration to Drupal.
 
 ## Context
 adesso SE is a leading German IT consultancy specializing in Drupal CMS implementations.
 You are preparing a content architecture analysis for the adesso Calculator 2.01 project estimation tool.
-
-## Website to Analyze
-Website: ${websiteUrl}
-Homepage: ${crawlData.homepage?.title || 'Unknown'}
-
-Sample Pages (${samplePages.length} crawled):
-${samplePages.map((url, i) => `${i + 1}. ${url}`).join('\n')}
 
 ## Analysis Tasks
 
@@ -261,6 +251,12 @@ For each distinct content type:
 - Add 2-4h per external integration
 
 Provide realistic estimates based on the sample. Be conservative if uncertain.`,
+      prompt: `## Website to Analyze
+Website: ${websiteUrl}
+Homepage: ${crawlData.homepage?.title || 'Unknown'}
+
+Sample Pages (${samplePages.length} crawled):
+${samplePages.map((url, i) => `${i + 1}. ${url}`).join('\n')}`,
     });
 
     console.error('[Content Architecture Agent] AI analysis completed', {

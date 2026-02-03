@@ -11,11 +11,9 @@
  * and optionally performs web research for best practices.
  */
 
-import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
 
-import { AI_TIMEOUTS } from '../ai/config';
-import { openai } from '../ai/providers';
+import { AI_TIMEOUTS, generateStructuredOutput } from '../ai/config';
 import { queryRAG } from '../rag/retrieval-service';
 
 // Security: Prompt Injection Protection
@@ -184,24 +182,13 @@ export async function generateOutline(input: SolutionInput): Promise<SolutionOut
     });
 
     // 3. Generate outline using AI
-    const { object: outlineData } = await generateObject({
-      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
+    const outlineData = await generateStructuredOutput({
+      model: 'fast',
       schema: OutlineSchema,
-      maxRetries: 2,
-      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),
-      prompt: `You are a technical solution architect creating a structured outline for a pitchdeck deliverable.
+      timeout: AI_TIMEOUTS.AGENT_COMPLEX,
+      system: `You are a technical solution architect creating a structured outline for a pitchdeck deliverable.
 
-**Deliverable:** ${input.deliverableName}
-**Customer:** ${input.customerName || 'Unknown Customer'}
-**Project:** ${input.projectDescription || 'No description available'}
-
-**Key Requirements:**
-${input.requirements?.map(r => `- ${r}`).join('\n') || 'No specific requirements'}
-
-**Context from Deep Scan Analysis:**
-${ragContext || 'No Deep Scan data available yet'}
-
-Create a professional, structured outline for this deliverable with the following guidelines:
+Create a professional, structured outline for deliverables with the following guidelines:
 
 1. **Minimum 3 main chapters** (level 1 headings, ##)
 2. **Logical structure** - Introduction → Analysis → Solution → Conclusion
@@ -224,6 +211,15 @@ For example, for a "Technical Offer" deliverable:
 Provide the outline structure with level numbers (1, 2, 3) and brief descriptions of what each section should cover.
 
 Estimate the total word count for the final document based on the outline complexity (typically 500-2000 words).`,
+      prompt: `**Deliverable:** ${input.deliverableName}
+**Customer:** ${input.customerName || 'Unknown Customer'}
+**Project:** ${input.projectDescription || 'No description available'}
+
+**Key Requirements:**
+${input.requirements?.map(r => `- ${r}`).join('\n') || 'No specific requirements'}
+
+**Context from Deep Scan Analysis:**
+${ragContext || 'No Deep Scan data available yet'}`,
     });
 
     console.error('[Solution Agent] Outline generated', {
@@ -307,24 +303,13 @@ export async function generateDraft(
     });
 
     // 3. Generate draft using AI
-    const { object: draftData } = await generateObject({
-      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
+    const draftData = await generateStructuredOutput({
+      model: 'fast',
       schema: DraftSchema,
-      maxRetries: 2,
-      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_HEAVY),
-      prompt: `You are a technical solution architect creating a professional pitchdeck deliverable.
+      timeout: AI_TIMEOUTS.AGENT_HEAVY,
+      system: `You are a technical solution architect creating a professional pitchdeck deliverable.
 
-**Deliverable:** ${input.deliverableName}
-**Customer:** ${input.customerName || 'Unknown Customer'}
-**Project:** ${input.projectDescription || 'No description available'}
-
-**Outline to Follow:**
-${outline.outline.map(s => `${'#'.repeat(s.level + 1)} ${s.heading}${s.description ? `\n${s.description}` : ''}`).join('\n\n')}
-
-**Context from Deep Scan Analysis:**
-${ragContext || 'No Deep Scan data available yet'}
-
-Write a complete, professional markdown document following the outline above.
+Write a complete, professional markdown document following the provided outline.
 
 **Requirements:**
 - Minimum 500 words
@@ -339,10 +324,19 @@ Write a complete, professional markdown document following the outline above.
 **Structure:**
 Follow the provided outline exactly. Fill each section with relevant, detailed content based on the Deep Scan analysis context.
 
-**Available Context Sources:**
-${Object.keys(contextByAgent).join(', ')}
-
 Provide a comprehensive, ready-to-present draft that demonstrates deep understanding of the project requirements and technical solution. Where relevant, mention which agent analysis informed your recommendations.`,
+      prompt: `**Deliverable:** ${input.deliverableName}
+**Customer:** ${input.customerName || 'Unknown Customer'}
+**Project:** ${input.projectDescription || 'No description available'}
+
+**Outline to Follow:**
+${outline.outline.map(s => `${'#'.repeat(s.level + 1)} ${s.heading}${s.description ? `\n${s.description}` : ''}`).join('\n\n')}
+
+**Context from Deep Scan Analysis:**
+${ragContext || 'No Deep Scan data available yet'}
+
+**Available Context Sources:**
+${Object.keys(contextByAgent).join(', ')}`,
     });
 
     console.error('[Solution Agent] Draft generated', {
@@ -448,21 +442,13 @@ export async function generateTalkingPoints(
     });
 
     // 3. Generate talking points using AI
-    const { object: talkingPointsData } = await generateObject({
-      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
+    const talkingPointsData = await generateStructuredOutput({
+      model: 'fast',
       schema: TalkingPointsSchema,
-      maxRetries: 2,
-      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),
-      prompt: `You are a presentation coach creating talking points for a technical pitch.
+      timeout: AI_TIMEOUTS.AGENT_COMPLEX,
+      system: `You are a presentation coach creating talking points for a technical pitch.
 
-**Deliverable:** ${input.deliverableName}
-**Outline:**
-${outline.outline.map(s => `${'#'.repeat(s.level + 1)} ${s.heading}`).join('\n')}
-
-**Context from Deep Scan Agents:**
-${ragContext || 'No context available'}
-
-Create concise, impactful talking points for a presentation of this deliverable.
+Create concise, impactful talking points for a presentation of deliverables.
 
 **Guidelines:**
 - Maximum 10 bullet points per topic
@@ -474,6 +460,12 @@ Create concise, impactful talking points for a presentation of this deliverable.
 - Where relevant, reference specific findings (e.g., "Budget aligned with COMMERCIAL analysis")
 
 Organize talking points by the main chapters from the outline. Each topic should have 3-7 bullet points.`,
+      prompt: `**Deliverable:** ${input.deliverableName}
+**Outline:**
+${outline.outline.map(s => `${'#'.repeat(s.level + 1)} ${s.heading}`).join('\n')}
+
+**Context from Deep Scan Agents:**
+${ragContext || 'No context available'}`,
     });
 
     console.error('[Solution Agent] Talking points generated', {
@@ -550,19 +542,13 @@ export async function generateVisualIdeas(input: SolutionInput): Promise<Solutio
     });
 
     // 3. Generate visual ideas using AI
-    const { object: visualData } = await generateObject({
-      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
+    const visualData = await generateStructuredOutput({
+      model: 'fast',
       schema: VisualIdeasSchema,
-      maxRetries: 2,
-      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),
-      prompt: `You are a presentation designer suggesting visuals for a technical deliverable.
+      timeout: AI_TIMEOUTS.AGENT_COMPLEX,
+      system: `You are a presentation designer suggesting visuals for a technical deliverable.
 
-**Deliverable:** ${input.deliverableName}
-
-**Available Context from Deep Scan Agents:**
-${ragContext || 'No context available'}
-
-Suggest minimum 3 impactful visualizations that would enhance this deliverable based on the agent analyses.
+Suggest minimum 3 impactful visualizations that would enhance deliverables based on agent analyses.
 
 **Visual Types:**
 - **diagram**: Flowcharts, process diagrams, decision trees
@@ -583,6 +569,10 @@ For each visual:
    - "From PT Estimation based on requirements"
 
 Focus on visuals that tell a story, support key messages, and leverage the comprehensive agent data.`,
+      prompt: `**Deliverable:** ${input.deliverableName}
+
+**Available Context from Deep Scan Agents:**
+${ragContext || 'No context available'}`,
     });
 
     console.error('[Solution Agent] Visual ideas generated', {

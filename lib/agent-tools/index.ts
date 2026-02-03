@@ -19,6 +19,7 @@ import './tools/quickscan';
 import './tools/analysis';
 import './tools/pitchdeck';
 import './tools/audit';
+import './tools/audit-trail';
 import './tools/workflow';
 import './tools/notification';
 import './tools/extraction';

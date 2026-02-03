@@ -1,7 +1,8 @@
 import * as cheerio from 'cheerio';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 
-import { generateStructuredOutput } from '@/lib/ai/config';
+import { getModel } from '@/lib/ai/model-config';
 
 export const techStackSchema = z.object({
   cms: z
@@ -107,14 +108,14 @@ export async function detectTechStack(
 ): Promise<TechStackResult> {
   const indicators = extractTechIndicators(page.html, page.headers);
 
-  const result = await generateStructuredOutput({
-    model: 'fast',
-    schema: techStackSchema,
+  const result = await generateText({
+    model: getModel('fast'),
+    output: Output.object({ schema: techStackSchema }),
     system: `Du bist ein Website-Technologie-Experte. Analysiere die technischen Indikatoren einer Website und identifiziere den Tech-Stack.`,
     prompt: `Website: ${url}\n\nTechnische Indikatoren:\n${indicators}`,
     temperature: 0.1,
-    timeout: 30_000,
+    maxOutputTokens: 8000,
   });
 
-  return result;
+  return result.output!;
 }

@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pitch Pipeline — Architecture &amp; Plan Explorer</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface-2: #242836;
+    --border: #2e3345;
+    --text: #e4e6ed;
+    --text-muted: #8b8fa3;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --blue: #3b82f6;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --purple: #a855f7;
+    --pink: #ec4899;
+    --orange: #f97316;
+    --cyan: #06b6d4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Top tab bar */
+  .tab-bar {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    gap: 0;
+  }
+  .tab-btn {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .tab-content { display: none; height: calc(100vh - 45px); }
+  .tab-content.active { display: grid; }
+
+  /* ========== ARCHITECTURE TAB ========== */
+  .arch-layout {
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  .sidebar {
+    grid-row: 1 / 3;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px;
+  }
+  .sidebar h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 12px; }
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 16px 0 6px; }
+  .presets { display: flex; flex-direction: column; gap: 4px; }
+  .preset-btn {
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; text-align: left; transition: all 0.15s;
+  }
+  .preset-btn:hover { border-color: var(--accent); }
+  .preset-btn.active { border-color: var(--accent); background: rgba(99,102,241,0.15); }
+  .checkbox-group { display: flex; flex-direction: column; gap: 5px; }
+  .checkbox-item { display: flex; align-items: center; gap: 7px; font-size: 12px; cursor: pointer; }
+  .checkbox-item input[type="checkbox"] {
+    appearance: none; width: 14px; height: 14px; border: 1px solid var(--border);
+    border-radius: 3px; background: var(--surface-2); cursor: pointer; position: relative; flex-shrink: 0;
+  }
+  .checkbox-item input:checked { background: var(--accent); border-color: var(--accent); }
+  .checkbox-item input:checked::after { content: '\2713'; position: absolute; top: -1px; left: 2px; font-size: 11px; color: white; }
+  .color-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .comments-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .comment-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-size: 11px; }
+  .comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+  .comment-target { font-weight: 600; color: var(--accent); font-size: 10px; }
+  .comment-delete { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 0 2px; line-height: 1; }
+  .comment-delete:hover { color: var(--red); }
+  .comment-text { color: var(--text-muted); line-height: 1.3; }
+  .empty-state { color: var(--text-muted); font-size: 11px; font-style: italic; padding: 6px 0; }
+  .canvas-area { position: relative; overflow: hidden; background: var(--bg); }
+  .canvas-area svg { width: 100%; height: 100%; }
+  .zoom-controls { position: absolute; top: 10px; right: 10px; display: flex; gap: 3px; z-index: 10; }
+  .zoom-btn {
+    width: 28px; height: 28px; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); border-radius: 5px; cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+  }
+  .zoom-btn:hover { border-color: var(--accent); }
+  .phase-strip { position: absolute; top: 10px; left: 10px; display: flex; gap: 5px; z-index: 10; }
+  .phase-tag {
+    font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 3px 8px; border-radius: 16px; opacity: 0.5; transition: all 0.2s; cursor: pointer;
+  }
+  .phase-tag.active { opacity: 1; }
+  .legend {
+    position: absolute; bottom: 10px; left: 10px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px;
+    display: flex; gap: 14px; font-size: 10px; z-index: 10;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; color: var(--text-muted); }
+
+  /* ========== PLAN TAB ========== */
+  .plan-layout {
+    grid-template-columns: 300px 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  .plan-sidebar {
+    grid-row: 1 / 3;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px;
+  }
+  .plan-sidebar h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 12px; }
+  .batch-card {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 10px; overflow: hidden; cursor: pointer; transition: all 0.15s;
+  }
+  .batch-card.active { border-color: var(--accent); }
+  .batch-card:hover { border-color: var(--accent); }
+  .batch-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; font-size: 12px; font-weight: 600;
+  }
+  .batch-progress-bar {
+    height: 3px; background: var(--border); border-radius: 0 0 8px 8px;
+  }
+  .batch-progress-fill { height: 100%; border-radius: 0 0 8px 8px; transition: width 0.3s; }
+  .batch-badge {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500;
+  }
+
+  /* Plan main area */
+  .plan-main {
+    overflow-y: auto;
+    padding: 24px;
+  }
+  .plan-batch-title {
+    font-size: 18px; font-weight: 700; margin-bottom: 4px;
+  }
+  .plan-batch-subtitle {
+    font-size: 12px; color: var(--text-muted); margin-bottom: 20px;
+  }
+  .task-list { display: flex; flex-direction: column; gap: 8px; }
+  .task-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .task-item:hover { border-color: var(--accent); }
+  .task-item.done { opacity: 0.6; }
+  .task-check {
+    width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 50%;
+    flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; font-size: 11px; color: transparent;
+  }
+  .task-item.done .task-check { border-color: var(--green); background: var(--green); color: white; }
+  .task-content { flex: 1; }
+  .task-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .task-item.done .task-title { text-decoration: line-through; color: var(--text-muted); }
+  .task-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+  .task-files {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
+  }
+  .task-file {
+    font-family: 'SF Mono', monospace; font-size: 10px; padding: 2px 6px;
+    background: var(--surface-2); border-radius: 4px; color: var(--text-muted);
+  }
+  .task-file.delete { color: var(--red); background: rgba(239,68,68,0.1); }
+  .task-file.edit { color: var(--amber); background: rgba(245,158,11,0.1); }
+  .task-file.rename { color: var(--blue); background: rgba(59,130,246,0.1); }
+
+  /* Shared prompt area */
+  .prompt-area {
+    border-top: 1px solid var(--border); background: var(--surface);
+    padding: 10px 16px; display: flex; flex-direction: column; gap: 6px;
+    max-height: 180px; overflow-y: auto;
+  }
+  .prompt-header { display: flex; justify-content: space-between; align-items: center; }
+  .prompt-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+  .copy-btn {
+    background: var(--accent); border: none; color: white; padding: 5px 12px;
+    border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.15s;
+  }
+  .copy-btn:hover { background: var(--accent-hover); }
+  .prompt-text { font-family: 'SF Mono', monospace; font-size: 11px; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: none; align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; width: 400px; max-width: 90vw; }
+  .modal h3 { font-size: 15px; margin-bottom: 3px; }
+  .modal .subtitle { font-size: 11px; color: var(--text-muted); font-family: monospace; margin-bottom: 12px; }
+  .modal textarea {
+    width: 100%; height: 80px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); padding: 8px; font-family: inherit; font-size: 12px; resize: vertical;
+  }
+  .modal textarea:focus { outline: none; border-color: var(--accent); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+  .modal-btn { padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); transition: all 0.15s; }
+  .modal-btn.cancel { background: var(--surface-2); color: var(--text); }
+  .modal-btn.save { background: var(--accent); border-color: var(--accent); color: white; }
+  .modal-btn:hover { opacity: 0.85; }
+</style>
+</head>
+<body>
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('arch')">Architektur</button>
+  <button class="tab-btn" onclick="switchTab('plan')">Implementation Plan</button>
+</div>
+
+<!-- ==================== ARCHITECTURE TAB ==================== -->
+<div class="tab-content arch-layout active" id="tab-arch">
+  <div class="sidebar">
+    <h2>Pitch Pipeline</h2>
+    <div class="section-label">Ansichten</div>
+    <div class="presets" id="presets"></div>
+    <div class="section-label">Layer</div>
+    <div class="checkbox-group" id="layers"></div>
+    <div class="section-label">Verbindungen</div>
+    <div class="checkbox-group" id="connections"></div>
+    <div class="section-label">Kommentare (<span id="comment-count">0</span>)</div>
+    <div id="comments-list" class="comments-list">
+      <div class="empty-state">Klicke auf eine Komponente.</div>
+    </div>
+  </div>
+  <div class="canvas-area" id="canvas-area">
+    <div class="phase-strip" id="phase-strip"></div>
+    <div class="zoom-controls">
+      <button class="zoom-btn" onclick="zoom(0.1)">+</button>
+      <button class="zoom-btn" onclick="zoom(-0.1)">&minus;</button>
+      <button class="zoom-btn" onclick="resetZoom()">&#8634;</button>
+    </div>
+    <svg id="diagram" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="legend" id="legend"></div>
+  </div>
+  <div class="prompt-area" id="arch-prompt">
+    <div class="prompt-header">
+      <span class="prompt-label">Generierter Prompt</span>
+      <button class="copy-btn" onclick="copyPrompt('arch')">Kopieren</button>
+    </div>
+    <div class="prompt-text" id="arch-prompt-output"></div>
+  </div>
+</div>
+
+<!-- ==================== PLAN TAB ==================== -->
+<div class="tab-content plan-layout" id="tab-plan">
+  <div class="plan-sidebar">
+    <h2>Refactoring Plan</h2>
+    <div class="section-label">Fortschritt</div>
+    <div id="total-progress" style="font-size:24px; font-weight:700; margin: 8px 0 16px;">0 / 0</div>
+    <div class="section-label">Batches</div>
+    <div id="batch-list"></div>
+  </div>
+  <div class="plan-main" id="plan-main"></div>
+  <div class="prompt-area" id="plan-prompt">
+    <div class="prompt-header">
+      <span class="prompt-label">Generierter Prompt</span>
+      <button class="copy-btn" onclick="copyPrompt('plan')">Kopieren</button>
+    </div>
+    <div class="prompt-text" id="plan-prompt-output"></div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <div class="subtitle" id="modal-subtitle"></div>
+    <textarea id="modal-input" placeholder="Dein Kommentar..."></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="modal-btn save" onclick="saveComment()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================================
+// TAB SWITCHING
+// ============================================================================
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelector(`.tab-btn[onclick="switchTab('${id}')"]`).classList.add('active');
+  if (id === 'arch') renderDiagram();
+  if (id === 'plan') renderPlan();
+}
+
+// ============================================================================
+// ARCHITECTURE DATA
+// ============================================================================
+const LAYERS = {
+  queue:    { label: 'Queue / Worker',     color: '#fef3c7', border: '#f59e0b' },
+  audit:    { label: 'Audit Module',       color: '#dbeafe', border: '#3b82f6' },
+  agents:   { label: 'AI Agents',          color: '#dcfce7', border: '#10b981' },
+  rag:      { label: 'RAG / Knowledge',    color: '#f3e8ff', border: '#a855f7' },
+  db:       { label: 'Database',           color: '#fce7f3', border: '#ec4899' },
+  output:   { label: 'Output / Documents', color: '#fff7ed', border: '#f97316' },
+  external: { label: 'External Services',  color: '#e0f2fe', border: '#06b6d4' },
+};
+const CONN_TYPES = {
+  'data-flow':   { label: 'Data Flow',     color: '#3b82f6', dash: '' },
+  'tool-call':   { label: 'Tool / Agent',  color: '#10b981', dash: '6,3' },
+  'event':       { label: 'Event / SSE',   color: '#ef4444', dash: '4,4' },
+  'rag-query':   { label: 'RAG Query',     color: '#a855f7', dash: '8,4' },
+  'db-write':    { label: 'DB Write',      color: '#ec4899', dash: '2,4' },
+};
+const PHASES = [
+  { id: 'interview', label: 'Interview',  color: '#f59e0b' },
+  { id: 'audit',     label: 'Audit',      color: '#3b82f6' },
+  { id: 'analysis',  label: 'Analyse',    color: '#10b981' },
+  { id: 'generation',label: 'Generierung',color: '#a855f7' },
+  { id: 'review',    label: 'Review',     color: '#f97316' },
+];
+const nodes = [
+  { id: 'bullmq',     label: 'BullMQ Worker',      subtitle: 'workers/pitch.ts',                x: 80,  y: 40,  w: 150, h: 48, layer: 'queue',  phase: 'interview' },
+  { id: 'processor',  label: 'Pitch Processor',     subtitle: 'lib/pitch/processor.ts',          x: 300, y: 40,  w: 150, h: 48, layer: 'queue',  phase: 'interview' },
+  { id: 'checkpoint', label: 'Checkpoint Mgr',      subtitle: 'lib/pitch/checkpoints.ts',        x: 520, y: 40,  w: 150, h: 48, layer: 'queue',  phase: 'interview' },
+  { id: 'interview',  label: 'Interview Agent',     subtitle: 'constants.ts (INTERVIEW_PROMPT)', x: 80,  y: 130, w: 160, h: 48, layer: 'agents', phase: 'interview' },
+  { id: 'conversation',label: 'Conversations',      subtitle: 'pitch_conversations',             x: 300, y: 130, w: 150, h: 48, layer: 'db',     phase: 'interview' },
+  { id: 'fetch-html', label: 'HTML Fetcher',        subtitle: 'audit/fetch-html.ts',             x: 80,  y: 230, w: 140, h: 48, layer: 'audit',  phase: 'audit' },
+  { id: 'tech-detect',label: 'Tech Detection',      subtitle: 'audit/tech-detector.ts',          x: 260, y: 230, w: 145, h: 48, layer: 'audit',  phase: 'audit' },
+  { id: 'perf-audit', label: 'Performance',          subtitle: 'audit/performance-auditor.ts',    x: 440, y: 230, w: 135, h: 48, layer: 'audit',  phase: 'audit' },
+  { id: 'a11y-audit', label: 'Accessibility',        subtitle: 'audit/a11y-auditor.ts',           x: 610, y: 230, w: 135, h: 48, layer: 'audit',  phase: 'audit' },
+  { id: 'comp-audit', label: 'Component Analyzer',  subtitle: 'audit/component-analyzer.ts',     x: 780, y: 230, w: 160, h: 48, layer: 'audit',  phase: 'audit' },
+  { id: 'audit-idx',  label: 'Audit Orchestrator',  subtitle: 'audit/index.ts',                  x: 440, y: 310, w: 165, h: 48, layer: 'audit',  phase: 'audit' },
+  { id: 'pagespeed',  label: 'PageSpeed API',       subtitle: 'Google Lighthouse',               x: 440, y: 150, w: 145, h: 44, layer: 'external',phase: 'audit' },
+  { id: 'website',    label: 'Target Website',      subtitle: 'Customer URL',                    x: 80,  y: 310, w: 140, h: 44, layer: 'external',phase: 'audit' },
+  { id: 'cms-agent',  label: 'CMS Agent',           subtitle: 'agents/cms-agent.ts',             x: 80,  y: 420, w: 140, h: 48, layer: 'agents', phase: 'analysis' },
+  { id: 'ind-agent',  label: 'Industry Agent',      subtitle: 'agents/industry-agent.ts',        x: 260, y: 420, w: 155, h: 48, layer: 'agents', phase: 'analysis' },
+  { id: 'orchestrator',label: 'Orchestrator',       subtitle: 'constants.ts (ORCH_PROMPT)',      x: 460, y: 420, w: 150, h: 48, layer: 'agents', phase: 'analysis' },
+  { id: 'retrieval',  label: 'RAG Retrieval',       subtitle: 'rag/retrieval.ts',                x: 80,  y: 510, w: 145, h: 48, layer: 'rag',    phase: 'analysis' },
+  { id: 'knowledge',  label: 'Knowledge Service',   subtitle: 'rag/knowledge-service.ts',        x: 260, y: 510, w: 165, h: 48, layer: 'rag',    phase: 'analysis' },
+  { id: 'chunking',   label: 'Chunking',            subtitle: 'rag/chunking.ts',                 x: 460, y: 510, w: 130, h: 48, layer: 'rag',    phase: 'analysis' },
+  { id: 'ingest',     label: 'Ingest Pipeline',     subtitle: 'rag/ingest-pipeline.ts',          x: 630, y: 510, w: 150, h: 48, layer: 'rag',    phase: 'analysis' },
+  { id: 'db-runs',    label: 'pitch_runs',          subtitle: 'Status, Checkpoints, Progress',   x: 730, y: 40,  w: 145, h: 44, layer: 'db',     phase: 'interview' },
+  { id: 'db-audit',   label: 'pitch_audit_results', subtitle: 'Scores, JSON Results',            x: 650, y: 310, w: 170, h: 44, layer: 'db',     phase: 'audit' },
+  { id: 'db-chunks',  label: 'knowledge_chunks',    subtitle: 'vector[3072], Metadata',          x: 460, y: 590, w: 160, h: 44, layer: 'db',     phase: 'analysis' },
+  { id: 'indication', label: 'Indication Document',  subtitle: 'pitchDocuments (HTML)',           x: 260, y: 620, w: 170, h: 48, layer: 'output', phase: 'generation' },
+  { id: 'db-docs',    label: 'pitch_documents',     subtitle: 'Type, Format, Content, Flags',    x: 80,  y: 620, w: 155, h: 44, layer: 'db',     phase: 'generation' },
+];
+const archConnections = [
+  { from: 'bullmq',     to: 'processor',   type: 'data-flow', label: 'Job' },
+  { from: 'processor',  to: 'checkpoint',  type: 'data-flow', label: 'State' },
+  { from: 'checkpoint', to: 'db-runs',     type: 'db-write' },
+  { from: 'processor',  to: 'interview',    type: 'tool-call',  label: 'Phase 1' },
+  { from: 'interview',  to: 'conversation', type: 'db-write' },
+  { from: 'processor',  to: 'audit-idx',    type: 'tool-call',  label: 'Phase 2' },
+  { from: 'audit-idx',  to: 'fetch-html',   type: 'data-flow' },
+  { from: 'fetch-html', to: 'website',      type: 'data-flow',  label: 'HTTP' },
+  { from: 'audit-idx',  to: 'tech-detect',  type: 'tool-call',  label: 'parallel' },
+  { from: 'audit-idx',  to: 'perf-audit',   type: 'tool-call',  label: 'parallel' },
+  { from: 'audit-idx',  to: 'a11y-audit',   type: 'tool-call',  label: 'parallel' },
+  { from: 'audit-idx',  to: 'comp-audit',   type: 'tool-call',  label: 'parallel' },
+  { from: 'perf-audit', to: 'pagespeed',    type: 'data-flow',  label: 'API' },
+  { from: 'audit-idx',  to: 'db-audit',     type: 'db-write' },
+  { from: 'processor',  to: 'orchestrator', type: 'tool-call',  label: 'Phase 3' },
+  { from: 'orchestrator',to: 'cms-agent',   type: 'tool-call' },
+  { from: 'orchestrator',to: 'ind-agent',   type: 'tool-call' },
+  { from: 'cms-agent',  to: 'retrieval',    type: 'rag-query',  label: 'baseline' },
+  { from: 'ind-agent',  to: 'retrieval',    type: 'rag-query',  label: 'industry' },
+  { from: 'retrieval',  to: 'db-chunks',    type: 'rag-query',  label: 'cosine' },
+  { from: 'ingest',     to: 'chunking',     type: 'data-flow' },
+  { from: 'ingest',     to: 'knowledge',    type: 'data-flow' },
+  { from: 'knowledge',  to: 'db-chunks',    type: 'db-write',   label: 'embed' },
+  { from: 'orchestrator',to: 'indication',  type: 'tool-call',  label: 'Phase 4' },
+  { from: 'indication', to: 'db-docs',      type: 'db-write' },
+  { from: 'processor',  to: 'db-runs',      type: 'event',      label: 'SSE' },
+];
+
+// ============================================================================
+// PLAN DATA
+// ============================================================================
+const PLAN_BATCHES = [
+  {
+    id: 'b1', title: 'V1 Deep-Scan entfernen', color: '#ef4444',
+    desc: 'Alle v1 Deep-Scan Dateien, Context, Components und Agent-Tools loeschen.',
+    tasks: [
+      { id: 't1', title: 'Deep-Scan Library loeschen', desc: 'Gesamtes lib/deep-scan/ Verzeichnis entfernen',
+        files: [{ path: 'lib/deep-scan/', type: 'delete' }] },
+      { id: 't2', title: 'Deep-Scan Orchestrator entfernen', desc: 'Agent + Tests loeschen',
+        files: [{ path: 'lib/agents/deep-scan-orchestrator.ts', type: 'delete' }, { path: 'lib/agents/__tests__/deep-scan-orchestrator.test.ts', type: 'delete' }] },
+      { id: 't3', title: 'Deep-Scan Tools entfernen', desc: 'Agent-Tools fuer Deep-Scan',
+        files: [{ path: 'lib/agent-tools/deep-scan-tools.ts', type: 'delete' }] },
+      { id: 't4', title: 'Deep-Scan Context entfernen', desc: 'React Context + Provider',
+        files: [{ path: 'contexts/deep-scan-context.tsx', type: 'delete' }] },
+      { id: 't5', title: 'Deep-Scan UI Components entfernen', desc: '4 Components: progress, overview, results-preview, status-banner',
+        files: [{ path: 'components/qualifications/deep-scan-*.tsx', type: 'delete' }] },
+      { id: 't6', title: 'Schema bereinigen', desc: 'deepScanStatus, deepScanStartedAt etc. Spalten aus qualifications Tabelle entfernen',
+        files: [{ path: 'lib/db/schema.ts', type: 'edit' }] },
+      { id: 't7', title: 'Referenzen bereinigen', desc: 'Imports/Referenzen in orchestrator.ts, legal-check, references-agent, hooks, layout-client etc.',
+        files: [{ path: 'lib/agents/orchestrator.ts', type: 'edit' }, { path: 'hooks/use-background-job-status.ts', type: 'edit' }, { path: 'app/(dashboard)/qualifications/[id]/layout-client.tsx', type: 'edit' }] },
+    ]
+  },
+  {
+    id: 'b2', title: 'DB Schema: qualifications → pitches', color: '#ec4899',
+    desc: 'Drizzle Schema umbenennen + Migration generieren. Hoechstes Risiko.',
+    tasks: [
+      { id: 't8', title: 'qualifications Tabelle → pitches', desc: 'pgTable Name + Export umbenennen in schema.ts',
+        files: [{ path: 'lib/db/schema.ts', type: 'edit' }] },
+      { id: 't9', title: 'FK-Spalten umbenennen', desc: 'qualificationId → pitchId in 10+ verwandten Tabellen',
+        files: [{ path: 'lib/db/schema.ts', type: 'edit' }] },
+      { id: 't10', title: 'Relations updaten', desc: 'qualificationsRelations → pitchesRelations, alle FK-Referenzen',
+        files: [{ path: 'lib/db/schema.ts', type: 'edit' }] },
+      { id: 't11', title: 'Type-Exports updaten', desc: 'Qualification → Pitch, NewQualification → NewPitch',
+        files: [{ path: 'lib/db/schema.ts', type: 'edit' }] },
+      { id: 't12', title: 'Drizzle Migration generieren', desc: 'npm run db:generate, Migration SQL pruefen',
+        files: [{ path: 'drizzle/', type: 'edit' }] },
+    ]
+  },
+  {
+    id: 'b3', title: 'Backend Code Rename', color: '#3b82f6',
+    desc: 'API Routes, Library Code, Agent-Tools umbenennen.',
+    tasks: [
+      { id: 't13', title: 'lib/qualifications/ → lib/pitches/', desc: 'Verzeichnis per git mv umbenennen',
+        files: [{ path: 'lib/qualifications/', type: 'rename' }, { path: 'lib/pitches/', type: 'rename' }] },
+      { id: 't14', title: 'API Routes umbenennen', desc: 'app/api/qualifications/ → app/api/pitches/ (14 Endpoints)',
+        files: [{ path: 'app/api/qualifications/', type: 'rename' }, { path: 'app/api/pitches/', type: 'rename' }] },
+      { id: 't15', title: 'Backend Variablen umbenennen', desc: 'qualificationId → pitchId in allen lib/ Dateien',
+        files: [{ path: 'lib/**/*.ts', type: 'edit' }] },
+      { id: 't16', title: 'Agent-Tools updaten', desc: 'lib/agent-tools/tools/qualification.ts umbenennen',
+        files: [{ path: 'lib/agent-tools/tools/qualification.ts', type: 'rename' }] },
+      { id: 't17', title: 'Fetch URLs updaten', desc: 'Alle /api/qualifications/ → /api/pitches/ in Components + Hooks',
+        files: [{ path: 'components/**/*.tsx', type: 'edit' }, { path: 'hooks/*.ts', type: 'edit' }] },
+    ]
+  },
+  {
+    id: 'b4', title: 'Frontend Pages + Components', color: '#f59e0b',
+    desc: 'Dashboard Routes, UI Components, Navigation umbenennen.',
+    tasks: [
+      { id: 't18', title: 'Dashboard Routes umbenennen', desc: 'app/(dashboard)/qualifications/ → app/(dashboard)/pitches/ (51 Seiten)',
+        files: [{ path: 'app/(dashboard)/qualifications/', type: 'rename' }, { path: 'app/(dashboard)/pitches/', type: 'rename' }] },
+      { id: 't19', title: 'Components umbenennen', desc: 'components/qualifications/ → components/pitches/',
+        files: [{ path: 'components/qualifications/', type: 'rename' }, { path: 'components/pitches/', type: 'rename' }] },
+      { id: 't20', title: 'Sidebar Navigation', desc: 'URL + Label: Qualifications → Pitches',
+        files: [{ path: 'components/app-sidebar.tsx', type: 'edit' }] },
+      { id: 't21', title: 'Breadcrumbs updaten', desc: 'qualifications Label → Pitches',
+        files: [{ path: 'components/dynamic-breadcrumb.tsx', type: 'edit' }] },
+      { id: 't22', title: 'URL Redirects einrichten', desc: '/qualifications/* → /pitches/* Redirects in next.config.ts',
+        files: [{ path: 'next.config.ts', type: 'edit' }] },
+    ]
+  },
+  {
+    id: 'b5', title: 'Cleanup + Verifizierung', color: '#10b981',
+    desc: 'Globales Search & Replace, Tests, Final Check.',
+    tasks: [
+      { id: 't23', title: 'Globales Search & Replace', desc: 'Alle verbleibenden "qualification" String-Literale ersetzen',
+        files: [{ path: '**/*.ts{,x}', type: 'edit' }] },
+      { id: 't24', title: 'Tests updaten', desc: 'Unit + E2E Tests anpassen',
+        files: [{ path: 'tests/', type: 'edit' }, { path: 'lib/**/__tests__/', type: 'edit' }] },
+      { id: 't25', title: 'Seed Scripts updaten', desc: 'seed-complete-lead.ts, seed-audits.ts etc.',
+        files: [{ path: 'scripts/', type: 'edit' }] },
+      { id: 't26', title: 'TypeCheck + Tests', desc: 'npx tsc --noEmit && npm run test:run',
+        files: [] },
+      { id: 't27', title: 'Playground updaten', desc: 'Pipeline Playground mit finaler Architektur aktualisieren',
+        files: [{ path: 'pitch-pipeline-playground.html', type: 'edit' }] },
+    ]
+  },
+];
+
+// ============================================================================
+// STATE
+// ============================================================================
+const state = {
+  // Architecture
+  preset: 'full-system', layers: {}, connTypes: {},
+  zoom: 1, panX: 0, panY: 0, comments: [], modalNodeId: null, highlightPhase: null,
+  // Plan
+  activeBatch: 'b1', doneTasks: new Set(),
+};
+Object.keys(LAYERS).forEach(k => state.layers[k] = true);
+Object.keys(CONN_TYPES).forEach(k => state.connTypes[k] = true);
+
+const PRESETS = {
+  'full-system':  { label: 'Gesamtsystem',   layers: Object.fromEntries(Object.keys(LAYERS).map(k => [k, true])),  connTypes: Object.fromEntries(Object.keys(CONN_TYPES).map(k => [k, true])),  phase: null },
+  'audit-flow':   { label: 'Audit Pipeline',  layers: { queue:true, audit:true, external:true, db:true, agents:false, rag:false, output:false },  connTypes: { 'data-flow':true, 'tool-call':true, 'event':false, 'rag-query':false, 'db-write':true },  phase: 'audit' },
+  'agent-system': { label: 'Agent System',    layers: { queue:true, audit:false, agents:true, rag:true, db:true, output:true, external:false },  connTypes: { 'data-flow':true, 'tool-call':true, 'event':false, 'rag-query':true, 'db-write':true },  phase: 'analysis' },
+  'data-flow':    { label: 'Datenfluss',      layers: Object.fromEntries(Object.keys(LAYERS).map(k => [k, true])),  connTypes: { 'data-flow':true, 'tool-call':false, 'event':false, 'rag-query':false, 'db-write':true },  phase: null },
+  'rag-pipeline': { label: 'RAG Pipeline',    layers: { queue:false, audit:false, agents:true, rag:true, db:true, output:false, external:false },  connTypes: { 'data-flow':true, 'tool-call':false, 'event':false, 'rag-query':true, 'db-write':true },  phase: 'analysis' },
+};
+
+// ============================================================================
+// ARCHITECTURE RENDERING
+// ============================================================================
+function renderArchControls() {
+  document.getElementById('presets').innerHTML = Object.entries(PRESETS).map(([id, p]) =>
+    `<button class="preset-btn ${state.preset===id?'active':''}" onclick="applyPreset('${id}')">${p.label}</button>`).join('');
+  document.getElementById('layers').innerHTML = Object.entries(LAYERS).map(([id, l]) =>
+    `<label class="checkbox-item"><input type="checkbox" ${state.layers[id]?'checked':''} onchange="toggleLayer('${id}',this.checked)"><span class="color-dot" style="background:${l.border}"></span>${l.label}</label>`).join('');
+  document.getElementById('connections').innerHTML = Object.entries(CONN_TYPES).map(([id, c]) =>
+    `<label class="checkbox-item"><input type="checkbox" ${state.connTypes[id]?'checked':''} onchange="toggleConn('${id}',this.checked)"><span class="color-dot" style="background:${c.color}"></span>${c.label}</label>`).join('');
+  document.getElementById('phase-strip').innerHTML = PHASES.map(p =>
+    `<div class="phase-tag ${!state.highlightPhase||state.highlightPhase===p.id?'active':''}" style="background:${p.color}22;color:${p.color};border:1px solid ${p.color}44;" onclick="togglePhase('${p.id}')">${p.label}</div>`).join('');
+  document.getElementById('legend').innerHTML = Object.entries(CONN_TYPES).filter(([id])=>state.connTypes[id]).map(([id,c])=>
+    `<div class="legend-item"><svg width="20" height="2"><line x1="0" y1="1" x2="20" y2="1" stroke="${c.color}" stroke-width="2" ${c.dash?`stroke-dasharray="${c.dash}"`:''}/></svg>${c.label}</div>`).join('');
+  renderArchComments();
+}
+
+function renderArchComments() {
+  const list = document.getElementById('comments-list');
+  document.getElementById('comment-count').textContent = state.comments.length;
+  if (!state.comments.length) { list.innerHTML = '<div class="empty-state">Klicke auf eine Komponente.</div>'; return; }
+  list.innerHTML = state.comments.map((c,i) =>
+    `<div class="comment-card"><div class="comment-header"><span class="comment-target">${c.targetLabel}</span><button class="comment-delete" onclick="deleteComment(${i})">&times;</button></div><div class="comment-text">${c.text}</div></div>`).join('');
+}
+
+function renderDiagram() {
+  const svg = document.getElementById('diagram');
+  let defs = '<defs>';
+  Object.entries(CONN_TYPES).forEach(([id,c]) => { defs += `<marker id="arrow-${id}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="${c.color}"/></marker>`; });
+  defs += '</defs>';
+  const vis = nodes.filter(n => state.layers[n.layer] && (!state.highlightPhase || n.phase === state.highlightPhase));
+  const ids = new Set(vis.map(n => n.id));
+  let cSvg = '';
+  archConnections.filter(c => state.connTypes[c.type] && ids.has(c.from) && ids.has(c.to)).forEach(c => {
+    const f = nodes.find(n=>n.id===c.from), t = nodes.find(n=>n.id===c.to);
+    if (!f||!t) return;
+    const ct = CONN_TYPES[c.type], x1=f.x+f.w/2, y1=f.y+f.h/2, x2=t.x+t.w/2, y2=t.y+t.h/2;
+    const dx=x2-x1;
+    cSvg += `<path d="M${x1},${y1} C${x1+dx*0.4},${y1} ${x2-dx*0.4},${y2} ${x2},${y2}" fill="none" stroke="${ct.color}" stroke-width="1.5" opacity="0.6" ${ct.dash?`stroke-dasharray="${ct.dash}"`:''} marker-end="url(#arrow-${c.type})"/>`;
+    if (c.label) { const mx=(x1+x2)/2, my=(y1+y2)/2-8; cSvg += `<text x="${mx}" y="${my}" fill="${ct.color}" font-size="9" text-anchor="middle" opacity="0.7" font-family="system-ui">${c.label}</text>`; }
+  });
+  let nSvg = '';
+  vis.forEach(n => {
+    const l = LAYERS[n.layer], hc = state.comments.some(c=>c.target===n.id);
+    const brd = hc ? `stroke="#ef4444" stroke-width="2.5"` : `stroke="${l.border}" stroke-width="1.5"`;
+    nSvg += `<g style="cursor:pointer" onclick="openModal('${n.id}')"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="8" fill="${l.color}" ${brd} opacity="0.95"/><text x="${n.x+n.w/2}" y="${n.y+18}" fill="#1a1d27" font-size="12" font-weight="600" text-anchor="middle" font-family="system-ui">${n.label}</text><text x="${n.x+n.w/2}" y="${n.y+33}" fill="#555" font-size="9" text-anchor="middle" font-family="monospace">${n.subtitle.length>28?n.subtitle.slice(0,26)+'..':n.subtitle}</text>${hc?`<circle cx="${n.x+n.w-6}" cy="${n.y+6}" r="5" fill="#ef4444"/>`:''}</g>`;
+  });
+  svg.innerHTML = `${defs}<g transform="translate(${state.panX},${state.panY}) scale(${state.zoom})">${cSvg}${nSvg}</g>`;
+}
+
+function updateArchPrompt() {
+  const el = document.getElementById('arch-prompt-output');
+  const vl = Object.entries(state.layers).filter(([_,v])=>v).map(([k])=>LAYERS[k].label);
+  const pl = PRESETS[state.preset]?.label||'Custom';
+  const ph = state.highlightPhase ? PHASES.find(p=>p.id===state.highlightPhase)?.label : null;
+  let p = ['Dies ist die Pitch-Pipeline Architektur des adesso Deal Hunter Projekts.'];
+  if (pl !== 'Gesamtsystem') p.push(`Ansicht: ${pl}.`);
+  if (ph) p.push(`Fokus: ${ph}.`);
+  if (vl.length < Object.keys(LAYERS).length) p.push(`Layer: ${vl.join(', ')}.`);
+  if (state.comments.length) { p.push('','Feedback:'); state.comments.forEach(c => { p.push('',`**${c.targetLabel}** (${c.targetFile}):`, c.text); }); }
+  el.textContent = p.join('\n');
+}
+
+// ============================================================================
+// PLAN RENDERING
+// ============================================================================
+function renderPlan() {
+  const totalTasks = PLAN_BATCHES.reduce((s,b) => s + b.tasks.length, 0);
+  const doneTasks = state.doneTasks.size;
+  document.getElementById('total-progress').textContent = `${doneTasks} / ${totalTasks}`;
+  document.getElementById('total-progress').style.color = doneTasks === totalTasks ? 'var(--green)' : 'var(--text)';
+
+  // Batch list
+  document.getElementById('batch-list').innerHTML = PLAN_BATCHES.map(b => {
+    const done = b.tasks.filter(t => state.doneTasks.has(t.id)).length;
+    const pct = Math.round(done / b.tasks.length * 100);
+    const active = state.activeBatch === b.id;
+    return `<div class="batch-card ${active?'active':''}" onclick="selectBatch('${b.id}')">
+      <div class="batch-header">
+        <span>${b.title}</span>
+        <span class="batch-badge" style="background:${b.color}22;color:${b.color}">${done}/${b.tasks.length}</span>
+      </div>
+      <div class="batch-progress-bar"><div class="batch-progress-fill" style="width:${pct}%;background:${b.color}"></div></div>
+    </div>`;
+  }).join('');
+
+  // Main area
+  const batch = PLAN_BATCHES.find(b => b.id === state.activeBatch);
+  if (!batch) return;
+  const main = document.getElementById('plan-main');
+  main.innerHTML = `
+    <div class="plan-batch-title" style="color:${batch.color}">${batch.title}</div>
+    <div class="plan-batch-subtitle">${batch.desc}</div>
+    <div class="task-list">
+      ${batch.tasks.map(t => {
+        const done = state.doneTasks.has(t.id);
+        return `<div class="task-item ${done?'done':''}" onclick="toggleTask('${t.id}')">
+          <div class="task-check">${done?'\u2713':''}</div>
+          <div class="task-content">
+            <div class="task-title">${t.title}</div>
+            <div class="task-desc">${t.desc}</div>
+            ${t.files.length ? `<div class="task-files">${t.files.map(f =>
+              `<span class="task-file ${f.type}">${f.type === 'delete' ? '\u2717 ' : f.type === 'rename' ? '\u2194 ' : '\u270E '}${f.path}</span>`
+            ).join('')}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  updatePlanPrompt();
+}
+
+function updatePlanPrompt() {
+  const el = document.getElementById('plan-prompt-output');
+  const batch = PLAN_BATCHES.find(b => b.id === state.activeBatch);
+  if (!batch) return;
+  const pending = batch.tasks.filter(t => !state.doneTasks.has(t.id));
+  if (!pending.length) { el.textContent = `Batch "${batch.title}" ist komplett. Weiter mit dem naechsten Batch.`; return; }
+
+  let p = [`Fuehre Batch "${batch.title}" aus dem Refactoring-Plan aus.`, '', 'Aufgaben:'];
+  pending.forEach(t => {
+    p.push(`- ${t.title}: ${t.desc}`);
+    if (t.files.length) {
+      t.files.forEach(f => {
+        const action = f.type === 'delete' ? 'Loeschen' : f.type === 'rename' ? 'Umbenennen' : 'Editieren';
+        p.push(`  ${action}: ${f.path}`);
+      });
+    }
+  });
+  p.push('', 'Verifizierung: npx tsc --noEmit nach jedem Batch.');
+  el.textContent = p.join('\n');
+}
+
+// ============================================================================
+// INTERACTIONS
+// ============================================================================
+function applyPreset(id) { const p=PRESETS[id]; state.preset=id; Object.assign(state.layers,p.layers); Object.assign(state.connTypes,p.connTypes); state.highlightPhase=p.phase; state.zoom=1;state.panX=0;state.panY=0; updateArch(); }
+function toggleLayer(id,v) { state.layers[id]=v; state.preset='custom'; updateArch(); }
+function toggleConn(id,v) { state.connTypes[id]=v; state.preset='custom'; updateArch(); }
+function togglePhase(id) { state.highlightPhase = state.highlightPhase===id?null:id; updateArch(); }
+function zoom(d) { state.zoom=Math.max(0.4,Math.min(2.5,state.zoom+d)); renderDiagram(); }
+function resetZoom() { state.zoom=1; state.panX=0; state.panY=0; renderDiagram(); }
+function selectBatch(id) { state.activeBatch=id; renderPlan(); }
+function toggleTask(id) { state.doneTasks.has(id)?state.doneTasks.delete(id):state.doneTasks.add(id); renderPlan(); }
+
+function updateArch() { renderArchControls(); renderDiagram(); updateArchPrompt(); }
+
+// Pan
+let isPan=false, panS={x:0,y:0};
+document.getElementById('canvas-area').addEventListener('mousedown', e => {
+  if (e.target.closest('g')||e.target.closest('.zoom-btn')||e.target.closest('.phase-tag')||e.target.closest('.legend')) return;
+  isPan=true; panS={x:e.clientX-state.panX,y:e.clientY-state.panY}; e.preventDefault();
+});
+document.addEventListener('mousemove', e => { if(!isPan)return; state.panX=e.clientX-panS.x; state.panY=e.clientY-panS.y; renderDiagram(); });
+document.addEventListener('mouseup', () => { isPan=false; });
+document.getElementById('canvas-area').addEventListener('wheel', e => { e.preventDefault(); state.zoom=Math.max(0.4,Math.min(2.5,state.zoom+(e.deltaY>0?-0.08:0.08))); renderDiagram(); }, {passive:false});
+
+// Modal
+function openModal(nId) {
+  const n=nodes.find(x=>x.id===nId); if(!n)return;
+  state.modalNodeId=nId;
+  document.getElementById('modal-title').textContent=n.label;
+  document.getElementById('modal-subtitle').textContent=n.subtitle;
+  const ex=state.comments.find(c=>c.target===nId);
+  document.getElementById('modal-input').value=ex?ex.text:'';
+  document.getElementById('modal').classList.add('open');
+  setTimeout(()=>document.getElementById('modal-input').focus(),50);
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); state.modalNodeId=null; }
+function saveComment() {
+  const txt=document.getElementById('modal-input').value.trim(); if(!txt){closeModal();return;}
+  const n=nodes.find(x=>x.id===state.modalNodeId), idx=state.comments.findIndex(c=>c.target===state.modalNodeId);
+  if(idx>=0) state.comments[idx].text=txt;
+  else state.comments.push({id:Date.now(),target:state.modalNodeId,targetLabel:n.label,targetFile:n.subtitle,text:txt});
+  closeModal(); updateArch();
+}
+function deleteComment(i) { state.comments.splice(i,1); updateArch(); }
+
+// Copy
+function copyPrompt(tab) {
+  const el = document.getElementById(tab+'-prompt-output');
+  navigator.clipboard.writeText(el.textContent).then(()=>{
+    const btn=el.closest('.prompt-area').querySelector('.copy-btn');
+    btn.textContent='Kopiert!'; setTimeout(()=>{btn.textContent='Kopieren';},1500);
+  });
+}
+
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape') closeModal();
+  if(e.key==='Enter'&&document.getElementById('modal').classList.contains('open')&&(e.metaKey||e.ctrlKey)) saveComment();
+});
+
+// ============================================================================
+// INIT
+// ============================================================================
+window.addEventListener('resize', () => { if(document.getElementById('tab-arch').classList.contains('active')) renderDiagram(); });
+updateArch();
+renderPlan();
+</script>
+</body>
+</html>

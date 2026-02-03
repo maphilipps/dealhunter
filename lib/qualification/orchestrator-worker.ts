@@ -11,7 +11,7 @@
  * Performance: ~120s (sequentiell) → ~25-35s (parallel)
  */
 
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 
 import { getModelForSlot } from '@/lib/ai/providers';
@@ -204,9 +204,9 @@ async function planSectionExecution(preQualificationId: string): Promise<Orchest
 
   const model = getModelForSlot('default');
 
-  const { object: plan } = await generateObject({
+  const { output: plan } = await generateText({
     model,
-    schema: OrchestratorPlanSchema,
+    output: Output.object({ schema: OrchestratorPlanSchema }),
     prompt: `Du bist ein Orchestrator für die Analyse von öffentlichen Ausschreibungen.
 
 DOKUMENT-PREVIEW:
@@ -397,9 +397,9 @@ async function generateBidDecision(
 
   const model = getModelForSlot('quality');
 
-  const { object: decision } = await generateObject({
+  const { output: decision } = await generateText({
     model,
-    schema: DecisionSchema,
+    output: Output.object({ schema: DecisionSchema }),
     prompt: `Du bist ein Experte für öffentliche Ausschreibungen und hilfst bei der Bid/No-Bid Entscheidung.
 
 SECTION RESULTS:

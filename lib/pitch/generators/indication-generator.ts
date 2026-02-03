@@ -22,10 +22,11 @@ export async function generateIndication(params: {
       ? `\n\nUnsicherheiten/Flags:\n${params.flags.map(f => `- [${f.severity}] ${f.area}: ${f.message} (Confidence: ${f.confidence}%)`).join('\n')}`
       : '';
 
-  const result = await generateText({
-    model: getModel('quality'),
-    output: Output.object({ schema: indicationDocumentSchema }),
-    system: `Du bist ein Senior-Berater bei adesso und erstellst eine professionelle Indikation (erste Einschätzung) für ein Website-Relaunch-Projekt.
+  try {
+    const result = await generateText({
+      model: getModel('quality'),
+      output: Output.object({ schema: indicationDocumentSchema }),
+      system: `Du bist ein Senior-Berater bei adesso und erstellst eine professionelle Indikation (erste Einschätzung) für ein Website-Relaunch-Projekt.
 
 Die Indikation soll:
 - Dem Vertrieb als Grundlage für das Erstgespräch dienen
@@ -36,7 +37,7 @@ Die Indikation soll:
 - Nächste Schritte empfehlen
 
 Wichtig: Kennzeichne unsichere Bereiche mit entsprechenden Flags.`,
-    prompt: `Erstelle eine Indikation basierend auf folgenden Analyseergebnissen:
+      prompt: `Erstelle eine Indikation basierend auf folgenden Analyseergebnissen:
 
 ## Audit-Ergebnisse
 ${JSON.stringify(params.auditResults, null, 2)}
@@ -49,9 +50,17 @@ ${JSON.stringify(params.industryAnalysis, null, 2)}
 
 ## Interview-Kontext
 ${JSON.stringify(params.interviewContext, null, 2)}${flagSection}`,
-    temperature: 0.3,
-    maxOutputTokens: 16000,
-  });
+      temperature: 0.3,
+      maxOutputTokens: 16000,
+    });
 
-  return result.output!;
+    if (!result.output) {
+      throw new Error('generateText returned empty output');
+    }
+
+    return result.output;
+  } catch (error) {
+    console.error('[Indication Generator] Failed:', error);
+    throw error;
+  }
 }

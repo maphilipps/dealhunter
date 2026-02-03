@@ -1,4 +1,4 @@
-import { Experimental_Agent as Agent, stepCountIs, tool, generateObject, generateText } from 'ai';
+import { Experimental_Agent as Agent, stepCountIs, tool, generateText, Output } from 'ai';
 import { z } from 'zod';
 
 import { searchAndContents, getContents } from '@/lib/search/web-search';
@@ -9,15 +9,15 @@ import { FormSchema, QualificationSchema, qualificationSchema } from '@/lib/type
  * Qualify the lead
  */
 export async function qualify(lead: FormSchema, research: string): Promise<QualificationSchema> {
-  const { object } = await generateObject({
+  const { output } = await generateText({
     model: 'openai/gpt-5',
-    schema: qualificationSchema,
+    output: Output.object({ schema: qualificationSchema }),
     prompt: `Qualify the lead and give a reason for the qualification based on the following information: LEAD DATA: ${JSON.stringify(
       lead
     )} and RESEARCH: ${research}`,
   });
 
-  return object;
+  return output!;
 }
 
 /**

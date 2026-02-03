@@ -11,12 +11,19 @@ import { auditPerformance } from './performance-auditor';
 import { auditAccessibility } from './a11y-auditor';
 import { analyzeComponents } from './component-analyzer';
 import { fetchHtml } from './fetch-html';
+import {
+  scoreComplexity,
+  deriveMigrationComplexityFallback,
+  type ComplexityResult,
+} from './complexity-scorer';
 
 export { detectTechStack } from './tech-detector';
 export { auditPerformance } from './performance-auditor';
 export { auditAccessibility } from './a11y-auditor';
 export { analyzeComponents } from './component-analyzer';
 export { fetchHtml } from './fetch-html';
+export { scoreComplexity, deriveMigrationComplexityFallback } from './complexity-scorer';
+export type { ComplexityResult } from './complexity-scorer';
 
 export interface FullAuditResult {
   auditId: string;
@@ -28,24 +35,9 @@ export interface FullAuditResult {
   accessibilityScore: number;
   complexityScore: number;
   migrationComplexity: 'low' | 'medium' | 'high' | 'very_high';
+  complexityReasoning?: string;
+  complexityFactors?: ComplexityResult['factors'];
   failedModules: string[];
-}
-
-function deriveMigrationComplexity(
-  componentCount: number,
-  performanceScore: number
-): {
-  score: number;
-  level: 'low' | 'medium' | 'high' | 'very_high';
-} {
-  // Components drive complexity; poor performance adds risk
-  let score = Math.min(componentCount * 5, 80);
-  if (performanceScore < 50) score += 10;
-  if (performanceScore < 30) score += 10;
-  score = Math.min(score, 100);
-
-  const level = score <= 25 ? 'low' : score <= 50 ? 'medium' : score <= 75 ? 'high' : 'very_high';
-  return { score, level };
 }
 
 export async function runFullAudit(params: {
@@ -91,10 +83,17 @@ export async function runFullAudit(params: {
 
   const performanceScore = performance?.scores.overall ?? 0;
   const accessibilityScore = accessibility?.score ?? 0;
-  const { score: complexityScore, level: migrationComplexity } = deriveMigrationComplexity(
-    componentLibrary?.components.length ?? 0,
-    performanceScore
-  );
+
+  // Use LLM-based complexity scoring with fallback
+  const complexityResult = await scoreComplexity({
+    componentCount: componentLibrary?.components.length ?? 0,
+    performanceScore,
+    accessibilityScore,
+    techStack: techStack as Record<string, unknown> | null,
+  });
+
+  const complexityScore = complexityResult.score;
+  const migrationComplexity = complexityResult.complexity;
 
   const auditId = createId();
 
@@ -125,6 +124,8 @@ export async function runFullAudit(params: {
     accessibilityScore,
     complexityScore,
     migrationComplexity,
+    complexityReasoning: complexityResult.reasoning,
+    complexityFactors: complexityResult.factors,
     failedModules,
   };
 }

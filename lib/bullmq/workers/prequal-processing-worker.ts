@@ -12,7 +12,7 @@
  * Progress is tracked via preQualifications.status field.
  */
 
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import type { Job } from 'bullmq';
 import { eq, ilike } from 'drizzle-orm';
 import { z } from 'zod';
@@ -311,9 +311,9 @@ async function inferCustomerNameFromRAG(preQualificationId: string): Promise<str
       customerName: z.string().nullable(),
     });
 
-    const result = await generateObject({
+    const result = await generateText({
       model: getProviderForSlot('fast')(modelNames.fast),
-      schema,
+      output: Output.object({ schema }),
       prompt: `Extrahiere den Namen der ausschreibenden Organisation (Auftraggeber/Vergabestelle) aus diesem Kontext.
 
 WICHTIG:
@@ -326,7 +326,7 @@ ${context}`,
       temperature: 0,
     });
 
-    const name = result.object.customerName?.trim();
+    const name = result.output?.customerName?.trim();
     if (name && /^\d+\.\d+/.test(name)) {
       return null; // Reject chapter headings
     }
@@ -359,14 +359,14 @@ Text:
 ${rawInput.slice(0, 12000)}`;
 
   try {
-    const result = await generateObject({
+    const result = await generateText({
       model: getProviderForSlot('fast')(modelNames.fast),
-      schema,
+      output: Output.object({ schema }),
       prompt,
       temperature: 0,
       maxOutputTokens: 200,
     });
-    const name = result.object.customerName?.trim();
+    const name = result.output?.customerName?.trim();
     // Validate: reject obvious non-customer names (chapter headings, etc.)
     if (name && /^\d+\.\d+/.test(name)) {
       console.log(
@@ -432,15 +432,15 @@ ${QUALIFICATION_QUESTIONS.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 Gib für alle 10 Fragen eine Antwort.`;
 
   try {
-    const result = await generateObject({
+    const result = await generateText({
       model: getProviderForSlot('fast')(modelNames.fast),
-      schema: questionsSchema,
+      output: Output.object({ schema: questionsSchema }),
       prompt,
       temperature: 0,
     });
 
     // Map agent responses to TenQuestionsPayload format
-    const answersMap = new Map(result.object.answers.map(a => [a.questionId, a]));
+    const answersMap = new Map(result.output!.answers.map(a => [a.questionId, a]));
 
     const questions = QUALIFICATION_QUESTIONS.map((question, index) => {
       const id = index + 1;

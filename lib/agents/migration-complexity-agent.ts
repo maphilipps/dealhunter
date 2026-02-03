@@ -11,7 +11,7 @@
  * - Framework Complexity (modern SPA vs traditional)
  */
 
-import { generateObject, type LanguageModel } from 'ai';
+import { generateText, Output, type LanguageModel } from 'ai';
 import { z } from 'zod';
 
 import type { ContentArchitectureResult } from './content-architecture-agent';
@@ -132,9 +132,9 @@ export async function analyzeMigrationComplexity(
     });
 
     // Use AI to analyze complexity
-    const { object: analysis } = await generateObject({
+    const { output: analysis } = await generateText({
       model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
-      schema: MigrationComplexityAnalysisSchema,
+      output: Output.object({ schema: MigrationComplexityAnalysisSchema }),
       maxRetries: 2,
       abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),
       prompt: `Analyze the migration complexity for the following website migration.
@@ -190,13 +190,13 @@ Be realistic and thorough in your analysis.`,
     });
 
     console.error('[Migration Complexity Agent] AI analysis completed', {
-      factorsCount: analysis.complexityFactors.length,
-      risksCount: analysis.risks.length,
+      factorsCount: analysis!.complexityFactors.length,
+      risksCount: analysis!.risks.length,
     });
 
     // Calculate complexity score
     const { complexityScore, complexityCategory } = calculateComplexityScore(
-      analysis.complexityFactors,
+      analysis!.complexityFactors,
       contentArchitecture.pageCount
     );
 
@@ -204,9 +204,9 @@ Be realistic and thorough in your analysis.`,
       success: true,
       complexityScore,
       complexityCategory,
-      factors: analysis.complexityFactors,
-      risks: analysis.risks,
-      recommendations: analysis.recommendations,
+      factors: analysis!.complexityFactors,
+      risks: analysis!.risks,
+      recommendations: analysis!.recommendations,
       analyzedAt: new Date().toISOString(),
     };
   } catch (error) {

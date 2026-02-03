@@ -1,7 +1,8 @@
 import * as cheerio from 'cheerio';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 
-import { generateStructuredOutput } from '@/lib/ai/config';
+import { getModel } from '@/lib/ai/model-config';
 import type { ComponentAnalysis } from '../types';
 
 export const componentAnalysisSchema = z.object({
@@ -102,14 +103,14 @@ export async function analyzeComponents(
   const { html } = page;
   const pageStructure = extractPageStructure(html);
 
-  const result = await generateStructuredOutput({
-    model: 'quality',
-    schema: componentAnalysisSchema,
+  const result = await generateText({
+    model: getModel('quality'),
+    output: Output.object({ schema: componentAnalysisSchema }),
     system: `Du bist ein Frontend-Architektur-Experte. Analysiere die Seitenstruktur einer Website und identifiziere alle UI-Komponenten, Content-Typen, Formulare und interaktive Elemente. Bewerte die Komplexität jeder Komponente im Hinblick auf eine CMS-Migration.`,
     prompt: `Website: ${url}\n\nSeitenstruktur:\n${pageStructure}\n\nHTML-Auszug (erste 5000 Zeichen):\n${html.slice(0, 5000)}`,
     temperature: 0.2,
-    timeout: 60_000,
+    maxOutputTokens: 8000,
   });
 
-  return result;
+  return result.output!;
 }

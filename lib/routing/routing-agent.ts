@@ -1,12 +1,10 @@
 'use server';
 
-import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
 
 import { type BusinessLineRoutingResult, type RouteBusinessUnitInput } from './schemas';
 
-import { AI_TIMEOUTS } from '@/lib/ai/config';
-import { openai } from '@/lib/ai/providers';
+import { AI_TIMEOUTS, generateStructuredOutput } from '@/lib/ai/config';
 import { TECH_TO_BU_MAPPING } from '@/lib/config/business-rules';
 import { db } from '@/lib/db';
 import { businessUnits, technologies } from '@/lib/db/schema';
@@ -218,11 +216,10 @@ Technologies: ${bu.technologies.join(', ') || 'Keine'}
       .join('\n\n---\n\n');
 
     // Call AI to match business line with dynamic schema
-    const result = await generateObject({
-      model: openai('gemini-3-flash-preview') as unknown as LanguageModel,
+    const result = await generateStructuredOutput({
+      model: 'fast',
       schema: DynamicRoutingSchema,
-      maxRetries: 2,
-      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_STANDARD),
+      timeout: AI_TIMEOUTS.AGENT_STANDARD,
       system: `Du bist ein Business Line Routing Agent für adesso SE.
 
 Deine Aufgabe ist es, Projekt-Anforderungen zu analysieren und die passende Business Line zu empfehlen.
@@ -259,7 +256,7 @@ Erstelle jetzt eine fundierte Empfehlung mit Confidence Score, Reasoning und Alt
 
     return {
       success: true,
-      result: result.object,
+      result: result,
     };
   } catch (error) {
     console.error('Business Line Matching Error:', error);

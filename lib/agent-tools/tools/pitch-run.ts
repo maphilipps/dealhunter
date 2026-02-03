@@ -5,7 +5,13 @@ import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
 import { db } from '@/lib/db';
-import { pitchRuns, pitchAuditResults, pitchDocuments, pitches } from '@/lib/db/schema';
+import {
+  pitchRuns,
+  pitchAuditResults,
+  pitchDocuments,
+  pitches,
+  technologies,
+} from '@/lib/db/schema';
 
 /**
  * PitchRun & PitchAuditResult CRUD Tools
@@ -19,6 +25,123 @@ import { pitchRuns, pitchAuditResults, pitchDocuments, pitches } from '@/lib/db/
  * - Update run status
  * - Access generated documents
  */
+
+// ============================================================================
+// pitchRun.create - Create a new pitch run for a lead
+// ============================================================================
+
+const createPitchRunInputSchema = z.object({
+  pitchId: z.string(),
+  status: z
+    .enum([
+      'pending',
+      'running',
+      'audit_complete',
+      'generating',
+      'waiting_for_user',
+      'review',
+      'completed',
+      'failed',
+    ])
+    .default('pending'),
+  targetCmsIds: z.array(z.string()).optional(),
+  selectedCmsId: z.string().optional(),
+  currentPhase: z.string().optional(),
+  currentStep: z.string().optional(),
+});
+
+registry.register({
+  name: 'pitchRun.create',
+  description:
+    'Create a new pitch run for a lead. Automatically resolves available CMS technologies from the business unit.',
+  category: 'pitch-run',
+  inputSchema: createPitchRunInputSchema,
+  async execute(input, context: ToolContext) {
+    // Verify pitch/lead exists and user has access
+    const [lead] = await db.select().from(pitches).where(eq(pitches.id, input.pitchId)).limit(1);
+
+    if (!lead) {
+      return { success: false, error: 'Lead not found' };
+    }
+
+    // BL users can only create runs for leads in their BU
+    if (
+      context.userRole === 'bl' &&
+      context.businessUnitId &&
+      lead.businessUnitId !== context.businessUnitId
+    ) {
+      return { success: false, error: 'Access denied: Lead belongs to different business unit' };
+    }
+
+    // Calculate next run number for this pitch
+    const existingRuns = await db
+      .select({ runNumber: pitchRuns.runNumber })
+      .from(pitchRuns)
+      .where(eq(pitchRuns.pitchId, input.pitchId))
+      .orderBy(desc(pitchRuns.runNumber))
+      .limit(1);
+
+    const nextRunNumber = existingRuns.length > 0 ? existingRuns[0].runNumber + 1 : 1;
+
+    // Resolve target CMS IDs if not provided
+    let targetCmsIds = input.targetCmsIds;
+    if (!targetCmsIds && lead.businessUnitId) {
+      const availableCms = await db
+        .select({ id: technologies.id })
+        .from(technologies)
+        .where(eq(technologies.businessUnitId, lead.businessUnitId));
+
+      targetCmsIds = availableCms.map(c => c.id);
+    }
+
+    // Set timestamps based on status
+    const timestamps: Record<string, Date> = {
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    if (input.status === 'running') {
+      timestamps.startedAt = new Date();
+    } else if (input.status === 'completed' || input.status === 'failed') {
+      timestamps.startedAt = new Date();
+      timestamps.completedAt = new Date();
+    }
+
+    // Create the pitch run
+    const [created] = await db
+      .insert(pitchRuns)
+      .values({
+        pitchId: input.pitchId,
+        userId: context.userId,
+        status: input.status,
+        runNumber: nextRunNumber,
+        targetCmsIds: targetCmsIds ? JSON.stringify(targetCmsIds) : null,
+        selectedCmsId: input.selectedCmsId,
+        currentPhase: input.currentPhase,
+        currentStep: input.currentStep,
+        progress: 0,
+        ...timestamps,
+      })
+      .returning();
+
+    return {
+      success: true,
+      data: {
+        id: created.id,
+        pitchId: created.pitchId,
+        userId: created.userId,
+        status: created.status,
+        runNumber: created.runNumber,
+        targetCmsIds: targetCmsIds,
+        selectedCmsId: created.selectedCmsId,
+        currentPhase: created.currentPhase,
+        currentStep: created.currentStep,
+        progress: created.progress,
+        createdAt: created.createdAt,
+      },
+    };
+  },
+});
 
 // ============================================================================
 // pitchRun.list - List all pitch runs

@@ -20,6 +20,7 @@ import './tools/workflow';
 import './tools/notification';
 import './tools/extraction';
 import './tools/pitch-run';
+import './tools/team-assignment';
 import './scan-tools';
 
 // QuickScan 2.0 Agent Tools

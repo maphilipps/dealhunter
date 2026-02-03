@@ -19,6 +19,7 @@ import './tools/audit';
 import './tools/workflow';
 import './tools/notification';
 import './tools/extraction';
+import './tools/pitch-run';
 import './scan-tools';
 
 // QuickScan 2.0 Agent Tools

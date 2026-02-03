@@ -1,10 +1,8 @@
-import { generateObject } from 'ai';
 import { z } from 'zod';
 
 import { registry } from '@/lib/agent-tools';
 import type { ToolContext } from '@/lib/agent-tools';
-import { modelNames, AI_TIMEOUTS } from '@/lib/ai/config';
-import { getProviderForSlot } from '@/lib/ai/providers';
+import { generateStructuredOutput, AI_TIMEOUTS } from '@/lib/ai/config';
 import { QUALIFICATION_QUESTIONS, type TenQuestionsPayload } from '@/lib/bids/ten-questions';
 
 interface TenQuestionsAgentInput {
@@ -66,23 +64,18 @@ export async function runTenQuestionsAgent(
     })
   );
 
-  const { object } = await generateObject({
-    model: getProviderForSlot('quality')(modelNames.quality),
+  const payload = await generateStructuredOutput({
+    model: 'quality',
     schema: completionSchema,
-    maxRetries: 2,
-    abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_HEAVY),
-    prompt: [
+    system: [
       'Du berätst mich in der Analyse der beigefügten Ausschreibung.',
       'Beziehe Dich bei den Antworten immer ausschließlich auf die bereitgestellten Dokumente.',
       'Wenn keine Evidenz vorhanden ist, setze answer=null und evidence=[].',
       'Evidence-Snippets müssen direkte Ausschnitte aus dem Kontext sein.',
-      '',
-      'Kontext je Frage (nur Dokumente):',
-      JSON.stringify(contexts, null, 2),
     ].join('\n'),
+    prompt: `Kontext je Frage (nur Dokumente):\n${JSON.stringify(contexts, null, 2)}`,
+    timeout: AI_TIMEOUTS.AGENT_HEAVY,
   });
-
-  const payload = object;
 
   const questions = payload.questions.map(item => ({
     id: item.id,

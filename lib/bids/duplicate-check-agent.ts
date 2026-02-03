@@ -1,9 +1,7 @@
-import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
 
 import { checkForDuplicates, type DuplicateCheckResult } from './duplicate-check';
-import { modelNames } from '../ai/config';
-import { getProviderForSlot } from '../ai/providers';
+import { generateStructuredOutput } from '../ai/config';
 import type { ExtractedRequirements } from '../extraction/schema';
 
 /**
@@ -85,13 +83,18 @@ export async function runDuplicateCheckAgent(params: {
 
   // Use AI to analyze duplicate result and provide structured recommendation
 
-  const result = await generateObject({
-    model: getProviderForSlot('default')(modelNames.default) as unknown as LanguageModel,
+  const result = await generateStructuredOutput({
+    model: 'default',
     schema: DuplicateCheckAgentOutputSchema,
-    prompt: `
-Du bist ein Duplicate Detection Agent. Analysiere die gefundenen Duplikate und gib eine strukturierte Empfehlung.
+    system: `Du bist ein Duplicate Detection Agent. Analysiere die gefundenen Duplikate und gib eine strukturierte Empfehlung.
 
-**Neuer Pre-Qualification:**
+**Entscheidungsregeln:**
+- > 90% Similarity: "merge" (automatisch zusammenführen)
+- 70-90% Similarity: "manual_review" (manuelle Prüfung)
+- < 70% Similarity: "create_new" (neuer Pre-Qualification)
+
+Analysiere die Matches und gib eine Empfehlung mit Begründung.`,
+    prompt: `**Neuer Pre-Qualification:**
 - Kunde: ${extractedRequirements.customerName || 'Unbekannt'}
 - Projekt: ${extractedRequirements.projectName || 'Unbekannt'}
 - Beschreibung: ${extractedRequirements.projectDescription || 'Keine Beschreibung'}
@@ -103,17 +106,9 @@ Exakte Matches (${duplicateResult.exactMatches.length}):
 ${duplicateResult.exactMatches.map(m => `- ${m.customerName} (${m.reason})`).join('\n') || 'Keine'}
 
 Ähnliche Matches (${duplicateResult.similarMatches.length}):
-${duplicateResult.similarMatches.map(m => `- ${m.customerName} (${m.similarity}%: ${m.reason})`).join('\n') || 'Keine'}
-
-**Entscheidungsregeln:**
-- > 90% Similarity: "merge" (automatisch zusammenführen)
-- 70-90% Similarity: "manual_review" (manuelle Prüfung)
-- < 70% Similarity: "create_new" (neuer Pre-Qualification)
-
-Analysiere die Matches und gib eine Empfehlung mit Begründung.
-    `.trim(),
+${duplicateResult.similarMatches.map(m => `- ${m.customerName} (${m.similarity}%: ${m.reason})`).join('\n') || 'Keine'}`,
     temperature: 0.3,
   });
 
-  return result.object;
+  return result;
 }

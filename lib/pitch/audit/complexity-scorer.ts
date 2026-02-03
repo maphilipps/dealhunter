@@ -1,6 +1,5 @@
-import { generateObject } from 'ai';
 import { z } from 'zod';
-import { getModel } from '@/lib/ai/model-config';
+import { generateStructuredOutput } from '@/lib/ai/config';
 
 const complexitySchema = z.object({
   complexity: z.enum(['low', 'medium', 'high', 'very_high']),
@@ -98,8 +97,8 @@ export function deriveMigrationComplexityFallback(
  */
 export async function scoreComplexity(params: ComplexityScorerParams): Promise<ComplexityResult> {
   try {
-    const { object } = await generateObject({
-      model: getModel('fast'),
+    const result = await generateStructuredOutput({
+      model: 'fast',
       schema: complexitySchema,
       system: `Du bist ein Migration-Complexity-Experte. Bewerte die Komplexität einer Website-Migration basierend auf technischen Metriken.
 
@@ -129,10 +128,10 @@ Erstelle eine detaillierte Komplexitätsbewertung mit:
 3. Begründung der Bewertung
 4. Einzelne Faktoren mit ihrem Einfluss (positive/neutral/negative) und Gewichtung`,
       temperature: 0.2,
-      maxOutputTokens: 1000,
+      maxTokens: 1000,
     });
 
-    return object;
+    return result;
   } catch (error) {
     console.error('[Complexity Scorer] LLM scoring failed, using fallback:', error);
     return deriveMigrationComplexityFallback(

@@ -8,6 +8,37 @@ import { db } from '@/lib/db';
 import { quickScans, preQualifications } from '@/lib/db/schema';
 
 // ============================================================================
+// Helper: Check access to PreQualification for creating QuickScan
+// ============================================================================
+
+async function checkPreQualificationAccess(
+  preQualificationId: string,
+  context: ToolContext
+): Promise<{ allowed: boolean; preQual?: typeof preQualifications.$inferSelect; error?: string }> {
+  const [preQual] = await db
+    .select()
+    .from(preQualifications)
+    .where(eq(preQualifications.id, preQualificationId))
+    .limit(1);
+
+  if (!preQual) {
+    return { allowed: false, error: 'PreQualification not found' };
+  }
+
+  // Admin can access all
+  if (context.userRole === 'admin') {
+    return { allowed: true, preQual };
+  }
+
+  // Check ownership
+  if (preQual.userId !== context.userId) {
+    return { allowed: false, error: 'No access to this PreQualification' };
+  }
+
+  return { allowed: true, preQual };
+}
+
+// ============================================================================
 // Helper: Parse JSON fields for consistent response format
 // ============================================================================
 
@@ -72,6 +103,90 @@ async function checkQuickScanAccess(
 
   return { allowed: true, scan };
 }
+
+// ============================================================================
+// scan.quickscan.create - Create a new QuickScan for a PreQualification
+// ============================================================================
+
+const createQuickScanInputSchema = z.object({
+  preQualificationId: z.string(),
+  websiteUrl: z.string().url(),
+  status: z.enum(['pending', 'running', 'completed', 'failed']).default('pending'),
+});
+
+registry.register({
+  name: 'scan.quickscan.create',
+  description:
+    'Create a new QuickScan for a PreQualification. Only one QuickScan per PreQualification is allowed.',
+  category: 'scan',
+  inputSchema: createQuickScanInputSchema,
+  async execute(input, context: ToolContext) {
+    // Check PreQualification access
+    const access = await checkPreQualificationAccess(input.preQualificationId, context);
+    if (!access.allowed) {
+      return { success: false, error: access.error };
+    }
+
+    // Check if QuickScan already exists for this PreQualification
+    const [existingScan] = await db
+      .select({ id: quickScans.id })
+      .from(quickScans)
+      .where(eq(quickScans.preQualificationId, input.preQualificationId))
+      .limit(1);
+
+    if (existingScan) {
+      return {
+        success: false,
+        error: 'QuickScan already exists for this PreQualification',
+        existingId: existingScan.id,
+      };
+    }
+
+    // Set timestamps based on status
+    const timestamps: Record<string, Date> = {
+      createdAt: new Date(),
+    };
+
+    if (input.status === 'running') {
+      timestamps.startedAt = new Date();
+    } else if (input.status === 'completed' || input.status === 'failed') {
+      timestamps.startedAt = new Date();
+      timestamps.completedAt = new Date();
+    }
+
+    // Create the QuickScan
+    const [created] = await db
+      .insert(quickScans)
+      .values({
+        preQualificationId: input.preQualificationId,
+        websiteUrl: input.websiteUrl,
+        status: input.status,
+        ...timestamps,
+      })
+      .returning();
+
+    // Update PreQualification with quickScanId reference
+    await db
+      .update(preQualifications)
+      .set({
+        quickScanId: created.id,
+        websiteUrl: input.websiteUrl,
+        updatedAt: new Date(),
+      })
+      .where(eq(preQualifications.id, input.preQualificationId));
+
+    return {
+      success: true,
+      data: {
+        id: created.id,
+        preQualificationId: created.preQualificationId,
+        websiteUrl: created.websiteUrl,
+        status: created.status,
+        createdAt: created.createdAt,
+      },
+    };
+  },
+});
 
 // ============================================================================
 // scan.quickscan.list - List QuickScans with optional filters

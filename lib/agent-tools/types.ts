@@ -46,7 +46,8 @@ export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
     | 'decision'
     | 'scan'
     | 'quickscan'
-    | 'extraction';
+    | 'extraction'
+    | 'pitch-run';
   inputSchema: z.ZodSchema<TInput>;
   execute: (input: TInput, context: ToolContext) => Promise<ToolResult<TOutput>>;
 }
@@ -100,4 +101,5 @@ export const TOOL_CATEGORIES = {
   scan: 'Scan Primitives',
   quickscan: 'Quick Scan Tools',
   extraction: 'Document Extraction',
+  'pitch-run': 'Pitch Run & Audit Management',
 } as const;

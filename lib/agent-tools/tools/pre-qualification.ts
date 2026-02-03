@@ -499,3 +499,67 @@ registry.register({
     };
   },
 });
+
+// ===== Extraction Tools =====
+
+const startExtractionInputSchema = z.object({
+  bidId: z.string().describe('Pre-Qualification/Bid ID to extract requirements from'),
+});
+
+registry.register({
+  name: 'extraction.start',
+  description:
+    'Start the extraction process for a Pre-Qualification. Extracts structured requirements from the raw document text using AI. Status transitions: draft → extracting → reviewing.',
+  category: 'extraction',
+  inputSchema: startExtractionInputSchema,
+  async execute(input, _context: ToolContext) {
+    // Import server action
+    const { startExtraction } = await import('@/lib/bids/actions');
+
+    // Call the server action
+    const result = await startExtraction(input.bidId);
+
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    return {
+      success: true,
+      data: {
+        requirements: result.requirements,
+      },
+    };
+  },
+});
+
+// ===== Pitch Scan Tools =====
+
+const startPitchScanInputSchema = z.object({
+  pitchId: z.string().describe('Lead/Pitch ID to start the scan pipeline for'),
+});
+
+registry.register({
+  name: 'pitchScan.start',
+  description:
+    'Start the pitch scan pipeline for a Lead. Creates a pitch run, enqueues background processing job, and begins website analysis. Requires Lead to have a websiteUrl. Returns the runId for progress tracking.',
+  category: 'scan',
+  inputSchema: startPitchScanInputSchema,
+  async execute(input, _context: ToolContext) {
+    // Import server action
+    const { startPitchScan } = await import('@/lib/pitches/actions');
+
+    // Call the server action
+    const result = await startPitchScan(input.pitchId);
+
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    return {
+      success: true,
+      data: {
+        runId: result.runId,
+      },
+    };
+  },
+});

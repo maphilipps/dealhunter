@@ -43,7 +43,8 @@ export async function GET() {
       {
         id: 'extraction',
         name: 'Extraction Agent',
-        description: 'Extrahiert strukturierte Daten aus Pre-Qualification-Dokumenten (PDF, E-Mail, Text)',
+        description:
+          'Extrahiert strukturierte Daten aus Pre-Qualification-Dokumenten (PDF, E-Mail, Text)',
         status: 'active',
       },
       {
@@ -64,6 +65,13 @@ export async function GET() {
         id: 'team',
         name: 'Team Agent',
         description: 'Schlägt passende Team-Zusammensetzungen für Bid-Responses vor',
+        status: 'active',
+      },
+      {
+        id: 'deep-scan',
+        name: 'Deep Scan Agent',
+        description:
+          'Führt umfassende Website-Analyse durch: Tech-Stack, Performance, Accessibility, Component-Analyse und generiert Indication-Dokumente',
         status: 'active',
       },
     ];

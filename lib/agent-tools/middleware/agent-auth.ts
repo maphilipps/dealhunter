@@ -42,6 +42,7 @@ const TOOL_PERMISSIONS: Record<string, ToolPermission> = {
   'scan.deepscan.retry': { minRole: 'bd', level: 'write' },
   'scan.deepscan.activity': { minRole: 'bd', level: 'read' },
   'scan.deepscan.list': { minRole: 'bd', level: 'read' },
+  'scan.deepscan.answer': { minRole: 'bd', level: 'write' },
 
   // Default permission for unknown tools
   default: { minRole: 'admin', level: 'admin' },
@@ -70,12 +71,56 @@ function hasMinimumRole(userRole: string, minRole: string): boolean {
   return (ROLE_HIERARCHY[userRole] ?? 0) >= (ROLE_HIERARCHY[minRole] ?? 999);
 }
 
-async function validateUserExists(userId: string): Promise<boolean> {
+interface UserValidationResult {
+  valid: boolean;
+  actualRole?: 'bd' | 'bl' | 'admin';
+  actualEmail?: string;
+  actualName?: string;
+  mismatchReason?: string;
+}
+
+async function validateUserExists(
+  userId: string,
+  claimedRole: string,
+  claimedEmail: string
+): Promise<UserValidationResult> {
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
-    columns: { id: true, deletedAt: true },
+    columns: { id: true, deletedAt: true, role: true, email: true, name: true },
   });
-  return user !== undefined && user.deletedAt === null;
+
+  if (!user || user.deletedAt !== null) {
+    return { valid: false, mismatchReason: 'User not found or inactive' };
+  }
+
+  // CRITICAL: Verify claimed role matches database to prevent privilege escalation
+  if (user.role !== claimedRole) {
+    console.warn(
+      `[SECURITY] Role mismatch for user ${userId}: claimed="${claimedRole}", actual="${user.role}"`
+    );
+    return {
+      valid: false,
+      mismatchReason: `Role mismatch: claimed ${claimedRole}, actual ${user.role}`,
+    };
+  }
+
+  // CRITICAL: Verify claimed email matches database to prevent impersonation
+  if (user.email !== claimedEmail) {
+    console.warn(
+      `[SECURITY] Email mismatch for user ${userId}: claimed="${claimedEmail}", actual="${user.email}"`
+    );
+    return {
+      valid: false,
+      mismatchReason: `Email mismatch: claimed ${claimedEmail}, actual ${user.email}`,
+    };
+  }
+
+  return {
+    valid: true,
+    actualRole: user.role as 'bd' | 'bl' | 'admin',
+    actualEmail: user.email,
+    actualName: user.name ?? undefined,
+  };
 }
 
 /**
@@ -131,34 +176,52 @@ export async function validateAgentAuth(
 
   const context = parseResult.data;
 
-  // 2. Verify user exists and is active
-  const userExists = await validateUserExists(context.userId);
-  if (!userExists) {
-    return {
-      success: false,
-      error: 'User not found or inactive',
-      statusCode: 401,
-    };
-  }
+  // 2. Verify user exists and claimed context matches database
+  const userValidation = await validateUserExists(
+    context.userId,
+    context.userRole,
+    context.userEmail
+  );
 
-  // 3. Check tool permissions
-  const permission = TOOL_PERMISSIONS[toolName] ?? TOOL_PERMISSIONS.default;
-
-  if (!hasMinimumRole(context.userRole, permission.minRole)) {
-    logAuditTrail(toolName, context, 'permission_denied', {
-      requiredRole: permission.minRole,
-      actualRole: context.userRole,
+  if (!userValidation.valid) {
+    // Log security event for context mismatch attempts
+    logAuditTrail(toolName, context, 'context_validation_failed', {
+      reason: userValidation.mismatchReason,
     });
 
     return {
       success: false,
-      error: `Insufficient permissions. Required role: ${permission.minRole}, your role: ${context.userRole}`,
+      error: userValidation.mismatchReason ?? 'User validation failed',
+      statusCode: 401,
+    };
+  }
+
+  // Use the verified role from database, not the client-provided one
+  const verifiedContext: ToolContext = {
+    ...context,
+    userRole: userValidation.actualRole!,
+    userEmail: userValidation.actualEmail!,
+    userName: userValidation.actualName ?? context.userName,
+  };
+
+  // 3. Check tool permissions using VERIFIED role from database
+  const permission = TOOL_PERMISSIONS[toolName] ?? TOOL_PERMISSIONS.default;
+
+  if (!hasMinimumRole(verifiedContext.userRole, permission.minRole)) {
+    logAuditTrail(toolName, verifiedContext, 'permission_denied', {
+      requiredRole: permission.minRole,
+      actualRole: verifiedContext.userRole,
+    });
+
+    return {
+      success: false,
+      error: `Insufficient permissions. Required role: ${permission.minRole}, your role: ${verifiedContext.userRole}`,
       statusCode: 403,
     };
   }
 
   // 4. Check business unit requirement
-  if (permission.requireBusinessUnit && !context.businessUnitId) {
+  if (permission.requireBusinessUnit && !verifiedContext.businessUnitId) {
     return {
       success: false,
       error: 'Business unit ID required for this operation',
@@ -166,12 +229,12 @@ export async function validateAgentAuth(
     };
   }
 
-  // 5. Log successful auth
-  logAuditTrail(toolName, context, 'tool_invoked');
+  // 5. Log successful auth with verified context
+  logAuditTrail(toolName, verifiedContext, 'tool_invoked');
 
   return {
     success: true,
-    context,
+    context: verifiedContext,
   };
 }
 

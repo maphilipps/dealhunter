@@ -56,28 +56,6 @@ export const interviewResultsSchema = z.object({
 
 export type InterviewResults = z.infer<typeof interviewResultsSchema>;
 
-// ====== Orchestrator Checkpoint ======
-
-export interface OrchestratorCheckpoint {
-  runId: string;
-  phase: string;
-  completedAgents: string[];
-  agentResults: Record<string, unknown>;
-  conversationHistory: Array<{
-    role: 'assistant' | 'user';
-    content: string;
-  }>;
-  collectedAnswers: Record<string, string>;
-  pendingQuestion: PendingQuestion | null;
-}
-
-export interface PendingQuestion {
-  question: string;
-  context: string;
-  options?: string[];
-  defaultAnswer?: string;
-}
-
 // ====== Activity Log (A7 - Structured Observability) ======
 
 export const activityLogEntryTypeEnum = [
@@ -97,6 +75,7 @@ export const activityLogEntryTypeEnum = [
   'run_completed',
   'run_failed',
   'run_cancelled',
+  'run_deleted',
   'retry_attempted',
 ] as const;
 
@@ -121,56 +100,6 @@ export const activityLogEntrySchema = z.object({
   phase: z.string().optional(),
   durationMs: z.number().optional(),
 });
-
-// ====== Progress Events (SSE) ======
-
-export interface ProgressEvent {
-  type:
-    | 'phase_start'
-    | 'agent_start'
-    | 'agent_complete'
-    | 'document_ready'
-    | 'question'
-    | 'answer_received'
-    | 'complete'
-    | 'error';
-  phase: string;
-  agent?: string;
-  progress: number;
-  message: string;
-  confidence?: number;
-  documentId?: string;
-  question?: {
-    text: string;
-    options?: string[];
-    context?: string;
-  };
-  timestamp: string;
-}
-
-// ====== BullMQ Job Types ======
-
-export interface DeepScanV2JobData {
-  runId: string;
-  qualificationId: string;
-  websiteUrl: string;
-  userId: string;
-  targetCmsIds: string[];
-  interviewResults?: InterviewResults;
-  checkpointId?: string;
-  userAnswer?: string;
-  forceReset?: boolean;
-}
-
-export interface DeepScanV2JobResult {
-  success: boolean;
-  phase: 'audit' | 'analysis' | 'generation' | 'waiting_for_user' | 'complete';
-  completedAgents: string[];
-  failedAgents: string[];
-  generatedDocuments: string[];
-  checkpointId?: string;
-  error?: string;
-}
 
 // ====== Audit Result Types ======
 
@@ -368,3 +297,11 @@ export const listDeepScansInputSchema = z.object({
 });
 
 export type ListDeepScansInput = z.infer<typeof listDeepScansInputSchema>;
+
+export const answerDeepScanInputSchema = z.object({
+  runId: z.string().describe('ID of the Deep Scan run waiting for answer'),
+  answer: z.string().describe('Answer to the pending question'),
+  reasoning: z.string().optional().describe('Agent reasoning for the answer (for audit trail)'),
+});
+
+export type AnswerDeepScanInput = z.infer<typeof answerDeepScanInputSchema>;

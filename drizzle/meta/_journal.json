@@ -50,6 +50,20 @@
       "when": 1770350400000,
       "tag": "0006_deep_scan_v2_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1770436800000,
+      "tag": "0007_add_deep_scan_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1770523200000,
+      "tag": "0008_add_deep_scan_constraints",
+      "breakpoints": true
     }
   ]
 }

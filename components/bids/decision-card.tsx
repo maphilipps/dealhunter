@@ -1,17 +1,15 @@
 'use client';
 
-import {
-  CheckCircle2,
-  AlertTriangle,
-  ThumbsUp,
-  ThumbsDown,
-  GitBranch,
-} from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ThumbsUp, ThumbsDown, GitBranch } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { CompetitorWarning } from './competitor-warning';
-import { ConfidenceIndicator, ConfidenceBreakdown } from './confidence-indicator';
 import { DecisionTree } from './decision-tree';
+
+import {
+  ConfidenceIndicator,
+  ConfidenceBreakdown,
+} from '@/components/ai-elements/confidence-indicator';
 import { RedFlagAlert } from './red-flag-alert';
 import { ReferenceMatchCard } from './reference-match-card';
 import type { RedFlag, Competitor, ReferenceMatch } from './types';
@@ -200,6 +198,7 @@ export function DecisionCard({ result }: DecisionCardProps) {
         label="Gesamt-Confidence"
         showThreshold={true}
         threshold={70}
+        variant="card"
       />
 
       {/* Tabbed Views */}

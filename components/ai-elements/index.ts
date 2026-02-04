@@ -52,3 +52,6 @@ export { Loader, type LoaderProps } from './loader';
 
 // Shimmer component
 export { Shimmer, type ShimmerProps } from './shimmer';
+
+// Confidence Indicator component
+export { ConfidenceIndicator, ConfidenceBreakdown } from './confidence-indicator';

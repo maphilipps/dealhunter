@@ -13,6 +13,13 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import {
+  getAgentColorClasses,
+  getPhaseColorClasses,
+  formatAgentTime,
+  MIN_EXPECTED_AGENTS,
+} from './constants';
+
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -189,7 +196,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
   // Calculate overall progress
   const progress = useMemo(() => {
     const completed = agentGroups.filter(g => g.status === 'complete').length;
-    const total = Math.max(agentGroups.length, 5); // At least 5 expected agents
+    const total = Math.max(agentGroups.length, MIN_EXPECTED_AGENTS);
     return Math.round((completed / total) * 100);
   }, [agentGroups]);
 
@@ -218,50 +225,6 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
     }
   };
 
-  const getAgentColor = (agent: string) => {
-    const colors: Record<string, string> = {
-      // Phase 1: Bootstrap
-      'Website Crawler': 'bg-cyan-500/10 text-cyan-700 border-cyan-200',
-      Wappalyzer: 'bg-cyan-500/10 text-cyan-700 border-cyan-200',
-      'Sitemap Parser': 'bg-cyan-500/10 text-cyan-700 border-cyan-200',
-      // Phase 1.2: Multi-Page
-      'Link Discovery': 'bg-purple-500/10 text-purple-700 border-purple-200',
-      'Page Sampler': 'bg-purple-500/10 text-purple-700 border-purple-200',
-      'Multi-Page Fetcher': 'bg-purple-500/10 text-purple-700 border-purple-200',
-      'Multi-Page Tech Analyzer': 'bg-purple-500/10 text-purple-700 border-purple-200',
-      'Component Extractor': 'bg-purple-500/10 text-purple-700 border-purple-200',
-      // Phase 1.3: Analysis
-      'Tech Stack Analyzer': 'bg-violet-500/10 text-violet-700 border-violet-200',
-      'Content Analyzer': 'bg-emerald-500/10 text-emerald-700 border-emerald-200',
-      'Feature Detector': 'bg-amber-500/10 text-amber-700 border-amber-200',
-      Coordinator: 'bg-indigo-500/10 text-indigo-700 border-indigo-200',
-      // Intelligent Agent Framework
-      Researcher: 'bg-sky-500/10 text-sky-700 border-sky-200',
-      Evaluator: 'bg-lime-500/10 text-lime-700 border-lime-200',
-      Optimizer: 'bg-orange-500/10 text-orange-700 border-orange-200',
-      // Phase 4: Enhanced Audits
-      Playwright: 'bg-teal-500/10 text-teal-700 border-teal-200',
-      'Accessibility Audit': 'bg-teal-500/10 text-teal-700 border-teal-200',
-      'Navigation Analyzer': 'bg-teal-500/10 text-teal-700 border-teal-200',
-      'Performance Analyzer': 'bg-teal-500/10 text-teal-700 border-teal-200',
-      'SEO Audit': 'bg-teal-500/10 text-teal-700 border-teal-200',
-      'Legal Compliance': 'bg-teal-500/10 text-teal-700 border-teal-200',
-      'Company Intelligence': 'bg-blue-500/10 text-blue-700 border-blue-200',
-      'Enhanced Tech Stack': 'bg-violet-500/10 text-violet-700 border-violet-200',
-      'httpx Tech Detection': 'bg-violet-500/10 text-violet-700 border-violet-200',
-      // QuickScan 2.0
-      'Content Classifier': 'bg-emerald-500/10 text-emerald-700 border-emerald-200',
-      'Migration Analyzer': 'bg-amber-500/10 text-amber-700 border-amber-200',
-      'Decision Maker Research': 'bg-blue-500/10 text-blue-700 border-blue-200',
-      // Phase 2: Synthesis
-      'Business Analyst': 'bg-rose-500/10 text-rose-700 border-rose-200',
-      'AI Reasoning': 'bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-200',
-      'Quick Scan': 'bg-indigo-500/10 text-indigo-700 border-indigo-200',
-      Qualification: 'bg-indigo-500/10 text-indigo-700 border-indigo-200',
-    };
-    return colors[agent] || 'bg-gray-500/10 text-gray-700 border-gray-200';
-  };
-
   // Calculate earliest timestamp from all events for relative timing
   const streamStartTime = useMemo(() => {
     if (events.length === 0) return Date.now();
@@ -276,14 +239,6 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
     const durationSec = Math.round(relativeEnd / 1000);
     // Show completion time from stream start, not internal duration
     return `${durationSec}s`;
-  };
-
-  const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString('de-DE', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
   };
 
   const getPhaseIcon = (phase: QuickScanPhase) => {
@@ -316,22 +271,6 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
     }
   };
 
-  const getPhaseColor = (phase: QuickScanPhase, isActive: boolean) => {
-    if (!isActive) return 'bg-green-100 text-green-800 border-green-200';
-    switch (phase) {
-      case 'bootstrap':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'multi_page':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'analysis':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'synthesis':
-        return 'bg-pink-100 text-pink-800 border-pink-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -355,7 +294,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
                 <Badge
                   key={phase.phase + '-' + idx}
                   variant="outline"
-                  className={`flex items-center gap-1.5 ${getPhaseColor(phase.phase, isActive)}`}
+                  className={`flex items-center gap-1.5 ${getPhaseColorClasses(phase.phase, isActive)}`}
                 >
                   {isActive ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -402,12 +341,17 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
             <CollapsibleTrigger className="w-full">
               <div
                 className={`flex items-center justify-between p-3 rounded-lg border transition-colors hover:bg-muted/50 ${
-                  group.status === 'running' ? 'border-blue-200 bg-blue-50/50' : ''
+                  group.status === 'running'
+                    ? 'border-[var(--phase-bootstrap-border)] bg-[var(--phase-bootstrap-bg)]/50'
+                    : ''
                 }`}
               >
                 <div className="flex items-center gap-3">
                   {getStatusIcon(group.status)}
-                  <Badge variant="outline" className={`${getAgentColor(group.name)} font-medium`}>
+                  <Badge
+                    variant="outline"
+                    className={`${getAgentColorClasses(group.name)} font-medium`}
+                  >
                     {group.name}
                   </Badge>
                   <span className="text-sm text-muted-foreground">
@@ -435,7 +379,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
                   return (
                     <div key={event.id} className="flex items-start gap-2 text-sm py-1">
                       <span className="text-xs text-muted-foreground font-mono min-w-[60px]">
-                        {formatTime(event.timestamp)}
+                        {formatAgentTime(event.timestamp)}
                       </span>
                       <span className="text-foreground">{data.message || 'Verarbeitung...'}</span>
                     </div>
@@ -447,11 +391,13 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
         ))}
 
         {!isStreaming && agentGroups.length > 0 && (
-          <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg mt-4">
-            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+          <div className="flex items-center gap-3 p-3 bg-[var(--phase-complete-bg)] border border-[var(--phase-complete-border)] rounded-lg mt-4">
+            <CheckCircle2 className="h-5 w-5 text-[var(--phase-complete-text)] flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-green-900">Analyse abgeschlossen</p>
-              <p className="text-xs text-green-700">
+              <p className="text-sm font-medium text-[var(--phase-complete-text)]">
+                Analyse abgeschlossen
+              </p>
+              <p className="text-xs text-[var(--phase-complete-text)] opacity-80">
                 {agentGroups.filter(g => g.status === 'complete').length} von {agentGroups.length}{' '}
                 Agents fertig
               </p>

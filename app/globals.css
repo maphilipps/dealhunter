@@ -104,6 +104,103 @@
   --sidebar-accent-foreground: oklch(0 0 0);
   --sidebar-border: oklch(0.83 0.005 75);
   --sidebar-ring: oklch(0.52 0.16 246);
+
+  /* ===== Agent Category Colors ===== */
+  /* Bootstrap / Crawler agents */
+  --agent-crawler-bg: oklch(0.95 0.05 195);
+  --agent-crawler-text: oklch(0.45 0.12 195);
+  --agent-crawler-border: oklch(0.85 0.08 195);
+
+  /* Multi-page / Discovery agents */
+  --agent-discovery-bg: oklch(0.95 0.06 290);
+  --agent-discovery-text: oklch(0.45 0.15 290);
+  --agent-discovery-border: oklch(0.85 0.1 290);
+
+  /* Analysis agents */
+  --agent-analysis-bg: oklch(0.95 0.06 280);
+  --agent-analysis-text: oklch(0.45 0.15 280);
+  --agent-analysis-border: oklch(0.85 0.1 280);
+
+  /* Content analysis */
+  --agent-content-bg: oklch(0.95 0.06 165);
+  --agent-content-text: oklch(0.45 0.12 165);
+  --agent-content-border: oklch(0.85 0.08 165);
+
+  /* Feature detection */
+  --agent-feature-bg: oklch(0.95 0.08 85);
+  --agent-feature-text: oklch(0.45 0.12 85);
+  --agent-feature-border: oklch(0.85 0.1 85);
+
+  /* Coordinator / orchestration */
+  --agent-coordinator-bg: oklch(0.95 0.06 270);
+  --agent-coordinator-text: oklch(0.45 0.15 270);
+  --agent-coordinator-border: oklch(0.85 0.1 270);
+
+  /* Research agents */
+  --agent-research-bg: oklch(0.95 0.05 210);
+  --agent-research-text: oklch(0.45 0.12 210);
+  --agent-research-border: oklch(0.85 0.08 210);
+
+  /* Evaluation agents */
+  --agent-evaluation-bg: oklch(0.95 0.06 130);
+  --agent-evaluation-text: oklch(0.45 0.12 130);
+  --agent-evaluation-border: oklch(0.85 0.08 130);
+
+  /* Optimization agents */
+  --agent-optimization-bg: oklch(0.95 0.08 60);
+  --agent-optimization-text: oklch(0.45 0.12 60);
+  --agent-optimization-border: oklch(0.85 0.1 60);
+
+  /* Audit agents (Playwright, SEO, etc.) */
+  --agent-audit-bg: oklch(0.95 0.05 175);
+  --agent-audit-text: oklch(0.45 0.12 175);
+  --agent-audit-border: oklch(0.85 0.08 175);
+
+  /* Company intelligence */
+  --agent-intelligence-bg: oklch(0.95 0.05 246);
+  --agent-intelligence-text: oklch(0.45 0.12 246);
+  --agent-intelligence-border: oklch(0.85 0.08 246);
+
+  /* Business / synthesis */
+  --agent-business-bg: oklch(0.95 0.06 15);
+  --agent-business-text: oklch(0.45 0.15 15);
+  --agent-business-border: oklch(0.85 0.1 15);
+
+  /* AI Reasoning */
+  --agent-reasoning-bg: oklch(0.95 0.07 320);
+  --agent-reasoning-text: oklch(0.45 0.15 320);
+  --agent-reasoning-border: oklch(0.85 0.1 320);
+
+  /* Error state */
+  --agent-error-bg: oklch(0.95 0.08 28);
+  --agent-error-text: oklch(0.45 0.18 28);
+  --agent-error-border: oklch(0.85 0.12 28);
+
+  /* Default / fallback */
+  --agent-default-bg: oklch(0.95 0.01 75);
+  --agent-default-text: oklch(0.45 0.02 75);
+  --agent-default-border: oklch(0.85 0.01 75);
+
+  /* Phase colors for workflow display */
+  --phase-bootstrap-bg: oklch(0.93 0.05 246);
+  --phase-bootstrap-text: oklch(0.4 0.12 246);
+  --phase-bootstrap-border: oklch(0.85 0.08 246);
+
+  --phase-multipage-bg: oklch(0.93 0.06 290);
+  --phase-multipage-text: oklch(0.4 0.15 290);
+  --phase-multipage-border: oklch(0.85 0.1 290);
+
+  --phase-analysis-bg: oklch(0.93 0.08 85);
+  --phase-analysis-text: oklch(0.4 0.12 85);
+  --phase-analysis-border: oklch(0.85 0.1 85);
+
+  --phase-synthesis-bg: oklch(0.93 0.07 340);
+  --phase-synthesis-text: oklch(0.4 0.15 340);
+  --phase-synthesis-border: oklch(0.85 0.1 340);
+
+  --phase-complete-bg: oklch(0.93 0.06 145);
+  --phase-complete-text: oklch(0.4 0.12 145);
+  --phase-complete-border: oklch(0.85 0.08 145);
 }
 
 .dark {
@@ -153,6 +250,103 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.62 0.16 246);
+
+  /* ===== Agent Category Colors (Dark Mode) ===== */
+  /* Bootstrap / Crawler agents */
+  --agent-crawler-bg: oklch(0.25 0.04 195);
+  --agent-crawler-text: oklch(0.75 0.08 195);
+  --agent-crawler-border: oklch(0.35 0.06 195);
+
+  /* Multi-page / Discovery agents */
+  --agent-discovery-bg: oklch(0.25 0.05 290);
+  --agent-discovery-text: oklch(0.75 0.1 290);
+  --agent-discovery-border: oklch(0.35 0.07 290);
+
+  /* Analysis agents */
+  --agent-analysis-bg: oklch(0.25 0.05 280);
+  --agent-analysis-text: oklch(0.75 0.1 280);
+  --agent-analysis-border: oklch(0.35 0.07 280);
+
+  /* Content analysis */
+  --agent-content-bg: oklch(0.25 0.04 165);
+  --agent-content-text: oklch(0.75 0.08 165);
+  --agent-content-border: oklch(0.35 0.06 165);
+
+  /* Feature detection */
+  --agent-feature-bg: oklch(0.25 0.06 85);
+  --agent-feature-text: oklch(0.75 0.1 85);
+  --agent-feature-border: oklch(0.35 0.08 85);
+
+  /* Coordinator / orchestration */
+  --agent-coordinator-bg: oklch(0.25 0.05 270);
+  --agent-coordinator-text: oklch(0.75 0.1 270);
+  --agent-coordinator-border: oklch(0.35 0.07 270);
+
+  /* Research agents */
+  --agent-research-bg: oklch(0.25 0.04 210);
+  --agent-research-text: oklch(0.75 0.08 210);
+  --agent-research-border: oklch(0.35 0.06 210);
+
+  /* Evaluation agents */
+  --agent-evaluation-bg: oklch(0.25 0.04 130);
+  --agent-evaluation-text: oklch(0.75 0.08 130);
+  --agent-evaluation-border: oklch(0.35 0.06 130);
+
+  /* Optimization agents */
+  --agent-optimization-bg: oklch(0.25 0.06 60);
+  --agent-optimization-text: oklch(0.75 0.1 60);
+  --agent-optimization-border: oklch(0.35 0.08 60);
+
+  /* Audit agents (Playwright, SEO, etc.) */
+  --agent-audit-bg: oklch(0.25 0.04 175);
+  --agent-audit-text: oklch(0.75 0.08 175);
+  --agent-audit-border: oklch(0.35 0.06 175);
+
+  /* Company intelligence */
+  --agent-intelligence-bg: oklch(0.25 0.04 246);
+  --agent-intelligence-text: oklch(0.75 0.08 246);
+  --agent-intelligence-border: oklch(0.35 0.06 246);
+
+  /* Business / synthesis */
+  --agent-business-bg: oklch(0.25 0.05 15);
+  --agent-business-text: oklch(0.75 0.1 15);
+  --agent-business-border: oklch(0.35 0.07 15);
+
+  /* AI Reasoning */
+  --agent-reasoning-bg: oklch(0.25 0.05 320);
+  --agent-reasoning-text: oklch(0.75 0.1 320);
+  --agent-reasoning-border: oklch(0.35 0.07 320);
+
+  /* Error state */
+  --agent-error-bg: oklch(0.25 0.06 28);
+  --agent-error-text: oklch(0.75 0.12 28);
+  --agent-error-border: oklch(0.35 0.08 28);
+
+  /* Default / fallback */
+  --agent-default-bg: oklch(0.25 0.01 75);
+  --agent-default-text: oklch(0.75 0.02 75);
+  --agent-default-border: oklch(0.35 0.01 75);
+
+  /* Phase colors for workflow display */
+  --phase-bootstrap-bg: oklch(0.25 0.04 246);
+  --phase-bootstrap-text: oklch(0.75 0.08 246);
+  --phase-bootstrap-border: oklch(0.35 0.06 246);
+
+  --phase-multipage-bg: oklch(0.25 0.05 290);
+  --phase-multipage-text: oklch(0.75 0.1 290);
+  --phase-multipage-border: oklch(0.35 0.07 290);
+
+  --phase-analysis-bg: oklch(0.25 0.06 85);
+  --phase-analysis-text: oklch(0.75 0.1 85);
+  --phase-analysis-border: oklch(0.35 0.08 85);
+
+  --phase-synthesis-bg: oklch(0.25 0.05 340);
+  --phase-synthesis-text: oklch(0.75 0.1 340);
+  --phase-synthesis-border: oklch(0.35 0.07 340);
+
+  --phase-complete-bg: oklch(0.25 0.04 145);
+  --phase-complete-text: oklch(0.75 0.08 145);
+  --phase-complete-border: oklch(0.35 0.06 145);
 }
 
 @layer base {

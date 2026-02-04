@@ -1,6 +1,8 @@
 'use client';
 
-import { Plus, X, Loader2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { Plus, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -261,7 +263,7 @@ export function TechnologyForm({ businessUnits }: TechnologyFormProps) {
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader size="sm" className="mr-2" />
               Wird gespeichert...
             </>
           ) : (

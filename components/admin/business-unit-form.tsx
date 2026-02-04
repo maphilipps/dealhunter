@@ -1,6 +1,8 @@
 'use client';
 
-import { Loader2, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -180,7 +182,7 @@ export function BusinessUnitForm() {
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader size="sm" />
               Wird gespeichert...
             </>
           ) : (

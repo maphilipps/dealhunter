@@ -1,6 +1,8 @@
 'use client';
 
-import { Loader2, Play, Calendar, Users, Clock } from 'lucide-react';
+import { Play, Calendar, Users, Clock } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useState, useTransition } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -106,7 +108,7 @@ export function ProjectPlanningCard({
           <Button onClick={handleGenerate} disabled={isPending}>
             {isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Generiere Plan...
               </>
             ) : (

@@ -1,10 +1,11 @@
 'use client';
 
-import { Loader2, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { Loader } from '@/components/ai-elements/loader';
 import { createCompetency } from '@/lib/competencies/actions';
 
 export function CompetencyForm() {
@@ -85,7 +86,9 @@ export function CompetencyForm() {
             id="category"
             value={category}
             onChange={e =>
-              setCategory(e.target.value as 'technology' | 'methodology' | 'industry' | 'soft_skill')
+              setCategory(
+                e.target.value as 'technology' | 'methodology' | 'industry' | 'soft_skill'
+              )
             }
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
@@ -192,7 +195,7 @@ export function CompetencyForm() {
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader size="sm" />
               Wird gespeichert...
             </>
           ) : (

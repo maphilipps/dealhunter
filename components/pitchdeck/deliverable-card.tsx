@@ -2,10 +2,11 @@
 
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { RefreshCw, Loader2, Check, FileText, MessageSquare, Lightbulb, Eye } from 'lucide-react';
+import { RefreshCw, Check, FileText, MessageSquare, Lightbulb, Eye } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
+import { Loader } from '@/components/ai-elements/loader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -179,7 +180,7 @@ export function DeliverableCard({ deliverable, leadId }: DeliverableCardProps) {
             >
               {isRegenerating ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Regeneriert...
                 </>
               ) : confirmState === 'confirming' ? (

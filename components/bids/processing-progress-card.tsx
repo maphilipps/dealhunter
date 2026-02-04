@@ -1,6 +1,7 @@
 'use client';
 
-import { CheckCircle2, Circle, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { CheckCircle2, Circle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 
@@ -160,7 +161,7 @@ export function ProcessingProgressCard({ bidId }: ProcessingProgressCardProps) {
           ) : status?.isComplete ? (
             <CheckCircle2 className="h-6 w-6 text-green-500" />
           ) : (
-            <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
+            <Loader size="md" className="text-blue-500" />
           )}
           <div>
             <CardTitle className="text-blue-900 dark:text-blue-100">
@@ -210,7 +211,7 @@ export function ProcessingProgressCard({ bidId }: ProcessingProgressCardProps) {
                   {isCompleted ? (
                     <CheckCircle2 className="h-5 w-5 text-green-500" />
                   ) : isActive ? (
-                    <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+                    <Loader size="md" className="text-blue-500" />
                   ) : (
                     <Circle className="h-5 w-5 text-gray-300 dark:text-gray-600" />
                   )}

@@ -9,8 +9,9 @@ import {
   ChevronLeft,
   CheckCircle2,
   Circle,
-  Loader2,
 } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 
@@ -204,7 +205,7 @@ export default async function BLReviewDetailPage({
               {step.completed ? (
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
               ) : step.current ? (
-                <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                <Loader size="md" className="text-primary" />
               ) : (
                 <Circle className="h-5 w-5 text-muted-foreground" />
               )}

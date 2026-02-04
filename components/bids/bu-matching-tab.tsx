@@ -1,6 +1,7 @@
 'use client';
 
-import { Loader2, TrendingUp, FileText, Building2, Tags, Zap } from 'lucide-react';
+import { TrendingUp, FileText, Building2, Tags, Zap } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +56,7 @@ export function BUMatchingTab({ quickScan, bidId }: BUMatchingTabProps) {
       <Card>
         <CardContent className="py-12">
           <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <Loader size="lg" className="text-muted-foreground" />
             <p className="text-sm text-muted-foreground">Berechne Business Unit Matching...</p>
           </div>
         </CardContent>

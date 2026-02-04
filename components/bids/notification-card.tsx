@@ -1,6 +1,8 @@
 'use client';
 
-import { Loader2, Send, CheckCircle2, XCircle, Mail, Clock, AlertCircle } from 'lucide-react';
+import { Send, CheckCircle2, XCircle, Mail, Clock, AlertCircle } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useState, useTransition } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -159,7 +161,7 @@ export function NotificationCard({
             <Button onClick={handleSend} disabled={isPending} variant="outline">
               {isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Sende erneut...
                 </>
               ) : (
@@ -198,7 +200,7 @@ export function NotificationCard({
         <Button onClick={handleSend} disabled={isPending}>
           {isPending ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader size="sm" className="mr-2" />
               Sende Benachrichtigungen...
             </>
           ) : (

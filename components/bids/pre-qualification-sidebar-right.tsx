@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -71,16 +71,20 @@ export function PreQualificationSidebarRight({
                       !qualificationRunning || isOverview
                         ? isNavigationItemEnabled(item, dataAvailability)
                         : false;
-                    const Icon = qualificationRunning && !isOverview ? Loader2 : item.icon;
+                    const IconComponent = item.icon;
+
+                    const showLoader = qualificationRunning && !isOverview;
 
                     if (isEnabled) {
                       return (
                         <SidebarMenuItem key={item.title}>
                           <SidebarMenuButton asChild isActive={isActive}>
                             <Link href={item.url}>
-                              <Icon
-                                className={`h-4 w-4${Icon === Loader2 ? ' animate-spin' : ''}`}
-                              />
+                              {showLoader ? (
+                                <Loader size="sm" />
+                              ) : (
+                                <IconComponent className="h-4 w-4" />
+                              )}
                               <span>{item.title}</span>
                             </Link>
                           </SidebarMenuButton>
@@ -94,9 +98,11 @@ export function PreQualificationSidebarRight({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <SidebarMenuButton className="cursor-not-allowed opacity-50" disabled>
-                              <Icon
-                                className={`h-4 w-4${Icon === Loader2 ? ' animate-spin' : ''}`}
-                              />
+                              {showLoader ? (
+                                <Loader size="sm" />
+                              ) : (
+                                <IconComponent className="h-4 w-4" />
+                              )}
                               <span>{item.title}</span>
                             </SidebarMenuButton>
                           </TooltipTrigger>

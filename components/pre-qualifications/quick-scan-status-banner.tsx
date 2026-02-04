@@ -7,7 +7,9 @@
 
 'use client';
 
-import { Loader2, AlertTriangle, CheckCircle2, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, X } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useState } from 'react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -56,7 +58,7 @@ export function QuickScanStatusBanner({
   if (status === 'pending') {
     return (
       <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950">
-        <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
+        <Loader size="sm" className="text-yellow-600" />
         <div>
           <AlertTitle className="text-yellow-800 dark:text-yellow-200">
             Qualification wartet in der Warteschlange...
@@ -70,7 +72,7 @@ export function QuickScanStatusBanner({
   if (status === 'running') {
     return (
       <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950">
-        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+        <Loader size="sm" className="text-blue-600" />
         <div className="flex flex-1 flex-col gap-3">
           <div className="flex items-center justify-between">
             <AlertTitle className="text-blue-800 dark:text-blue-200">

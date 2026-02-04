@@ -1,8 +1,9 @@
 'use client';
 
-import { type LucideIcon, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
+import { type LucideIcon, ChevronRight, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
+import { Loader } from '@/components/ai-elements/loader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -59,7 +60,7 @@ export function SectionCard({
         <CardContent className="pt-0">
           {showHighlights && isLoading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
+              <Loader size="xs" />
               <span>Wird analysiert...</span>
             </div>
           )}

@@ -1,14 +1,7 @@
 'use client';
 
-import {
-  BarChart3,
-  CheckCircle2,
-  Loader2,
-  ArrowRight,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-} from 'lucide-react';
+import { BarChart3, CheckCircle2, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import { useState, useEffect } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -89,7 +82,7 @@ export function BUComparisonPhase({ quickScan, preQualificationId }: BUCompariso
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground mb-4" />
+          <Loader size="lg" className="mx-auto text-muted-foreground mb-4" />
           <p className="text-muted-foreground">Berechne BU-Matches...</p>
         </CardContent>
       </Card>

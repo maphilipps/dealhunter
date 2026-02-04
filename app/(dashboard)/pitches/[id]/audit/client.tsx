@@ -1,6 +1,8 @@
 'use client';
 
-import { Play, RefreshCw, Globe, Check, Loader2 } from 'lucide-react';
+import { Play, RefreshCw, Globe, Check } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
@@ -89,7 +91,7 @@ export function AuditClient({
                     title={suggestion.description}
                   >
                     {isPending ? (
-                      <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                      <Loader size="xs" className="mr-2" />
                     ) : (
                       <Check className="mr-2 h-3 w-3" />
                     )}
@@ -108,7 +110,7 @@ export function AuditClient({
               className="flex-1"
             />
             <Button onClick={handleSaveUrl} disabled={isPending || !urlInput}>
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Speichern'}
+              {isPending ? <Loader size="sm" /> : 'Speichern'}
             </Button>
           </div>
         </CardContent>

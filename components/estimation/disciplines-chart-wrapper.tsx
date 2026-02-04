@@ -1,8 +1,8 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
+import { Loader } from '@/components/ai-elements/loader';
 import type { DisciplineAllocation } from '@/lib/estimations/pt-calculator';
 
 // Dynamic import for Recharts (saves ~150KB bundle)
@@ -12,7 +12,7 @@ const DisciplinesChart = dynamic(
     ssr: false,
     loading: () => (
       <div className="h-80 w-full flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <Loader size="md" className="text-muted-foreground" />
       </div>
     ),
   }

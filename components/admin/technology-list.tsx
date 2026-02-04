@@ -1,6 +1,8 @@
 'use client';
 
-import { Trash2, RefreshCw, ExternalLink, Github, Star, Loader2 } from 'lucide-react';
+import { Trash2, RefreshCw, ExternalLink, Github, Star } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -151,7 +153,7 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
                   title="AI-Recherche starten"
                 >
                   {isResearching ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader size="sm" />
                   ) : (
                     <RefreshCw className="h-4 w-4 text-primary" />
                   )}

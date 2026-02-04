@@ -1,6 +1,8 @@
 'use client';
 
-import { CheckCircle2, XCircle, ChevronDown, Loader2, Play, Sparkles } from 'lucide-react';
+import { CheckCircle2, XCircle, ChevronDown, Play, Sparkles } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useState, useTransition } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -111,7 +113,7 @@ export function BaselineComparisonCard({
           <Button onClick={handleTrigger} disabled={isPending}>
             {isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Analysiere...
               </>
             ) : (

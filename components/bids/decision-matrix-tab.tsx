@@ -1,6 +1,7 @@
 'use client';
 
-import { Search, Loader2, CheckCircle2, Send, ArrowRight, Building2, Sparkles } from 'lucide-react';
+import { Search, CheckCircle2, Send, ArrowRight, Building2, Sparkles } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
@@ -201,7 +202,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
     return (
       <Card className="border-slate-200">
         <CardContent className="py-12 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-400 mb-4" />
+          <Loader size="lg" className="mx-auto text-slate-400 mb-4" />
           <p className="text-muted-foreground">Qualification wird ausgeführt...</p>
           <p className="text-sm text-muted-foreground mt-2">
             Die Entscheidungsmatrix ist verfügbar, sobald der Scan abgeschlossen ist.
@@ -244,7 +245,9 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
             </div>
             {quickScan.reasoning && (
               <div className="rounded-lg bg-white p-4 border border-blue-200">
-                <p className="text-sm font-medium text-muted-foreground mb-2">Qualification Analyse</p>
+                <p className="text-sm font-medium text-muted-foreground mb-2">
+                  Qualification Analyse
+                </p>
                 <p className="text-sm text-foreground">{quickScan.reasoning}</p>
               </div>
             )}
@@ -256,7 +259,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
             >
               {isForwarding ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Weiterleiten...
                 </>
               ) : (
@@ -322,7 +325,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
             {isLoadingEvaluation && (
               <Card className="border-slate-200">
                 <CardContent className="py-8 text-center">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-400 mb-2" />
+                  <Loader size="md" className="mx-auto text-slate-400 mb-2" />
                   <p className="text-sm text-muted-foreground">Lade gespeicherte Evaluation...</p>
                 </CardContent>
               </Card>
@@ -356,7 +359,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
             {isEvaluating && (
               <Card className="border-blue-200 bg-blue-50">
                 <CardContent className="py-8 text-center">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600 mb-4" />
+                  <Loader size="lg" className="mx-auto text-blue-600 mb-4" />
                   <p className="text-blue-700 font-medium">CMS-Evaluation läuft...</p>
                   <p className="text-sm text-blue-600">
                     Anforderungen werden gegen CMS-Systeme gematched (mit Web Search)
@@ -384,7 +387,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
                   >
                     {isEvaluating ? (
                       <>
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        <Loader size="xs" className="mr-1" />
                         Recherchiere...
                       </>
                     ) : (
@@ -491,7 +494,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
                     >
                       {isForwarding ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader size="sm" className="mr-2" />
                           Weiterleiten...
                         </>
                       ) : (

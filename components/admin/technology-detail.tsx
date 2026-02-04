@@ -5,7 +5,6 @@ import {
   RefreshCw,
   ExternalLink,
   Star,
-  Loader2,
   CheckCircle2,
   XCircle,
   Clock,
@@ -18,6 +17,8 @@ import {
   Search,
   HelpCircle,
 } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -515,7 +516,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
         <Button onClick={handleResearch} disabled={isResearching}>
           {isResearching ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader size="sm" className="mr-2" />
               Recherchiert...
             </>
           ) : (
@@ -755,7 +756,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
                 >
                   {isResearchingFeature ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader size="sm" className="mr-2" />
                       Recherchiert...
                     </>
                   ) : (
@@ -772,7 +773,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
                 >
                   {isOrchestratorRunning ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader size="sm" className="mr-2" />
                       Orchestrator läuft...
                     </>
                   ) : (
@@ -835,7 +836,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
                 >
                   {isReviewingFeatures ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader size="sm" className="mr-2" />
                       Reviewt...
                     </>
                   ) : (
@@ -853,7 +854,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
                 >
                   {isReviewingFeatures ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader size="sm" className="mr-2" />
                       Deep Review...
                     </>
                   ) : (

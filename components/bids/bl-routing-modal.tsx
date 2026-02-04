@@ -1,6 +1,8 @@
 'use client';
 
-import { Building2, Loader2, Sparkles } from 'lucide-react';
+import { Building2, Sparkles } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -133,7 +135,7 @@ export function BLRoutingModal({
 
         {isLoading ? (
           <div className="py-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+            <Loader size="lg" className="mx-auto text-muted-foreground" />
             <p className="text-sm text-muted-foreground mt-2">Lade Business Units...</p>
           </div>
         ) : (
@@ -221,7 +223,7 @@ export function BLRoutingModal({
           >
             {isForwarding ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Weiterleiten...
               </>
             ) : (

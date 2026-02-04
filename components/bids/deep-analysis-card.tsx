@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  Loader2,
   Play,
   CheckCircle2,
   XCircle,
@@ -14,6 +13,8 @@ import {
   AlertTriangle,
   RotateCcw,
 } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -215,7 +216,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
               <Button onClick={handleStartAnalysis} disabled={isStarting}>
                 {isStarting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader size="sm" className="mr-2" />
                     Wird gestartet...
                   </>
                 ) : (
@@ -238,7 +239,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader size="md" />
             Deep Analysis läuft
           </CardTitle>
           <CardDescription>Bitte warten - dies dauert ca. 25-30 Minuten</CardDescription>
@@ -249,7 +250,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
               {contentArchitecture ? (
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
               ) : (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader size="sm" />
               )}
               <span className={contentArchitecture ? 'text-green-700' : ''}>
                 Content-Architektur
@@ -259,7 +260,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
               {migrationComplexity ? (
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
               ) : (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <Loader size="sm" className="text-muted-foreground" />
               )}
               <span className={migrationComplexity ? 'text-green-700' : 'text-muted-foreground'}>
                 Migration-Komplexität
@@ -269,7 +270,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
               {accessibilityAudit ? (
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
               ) : (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <Loader size="sm" className="text-muted-foreground" />
               )}
               <span className={accessibilityAudit ? 'text-green-700' : 'text-muted-foreground'}>
                 Barrierefreiheit
@@ -279,7 +280,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
               {ptEstimation ? (
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
               ) : (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <Loader size="sm" className="text-muted-foreground" />
               )}
               <span className={ptEstimation ? 'text-green-700' : 'text-muted-foreground'}>
                 PT-Schätzung
@@ -306,7 +307,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
           <Button onClick={handleStartAnalysis} disabled={isStarting} variant="outline">
             {isStarting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Wird gestartet...
               </>
             ) : (
@@ -332,7 +333,7 @@ export function DeepAnalysisCard({ bidId, websiteUrl, existingAnalysis }: DeepAn
         </div>
         <Button variant="outline" size="sm" onClick={handleStartAnalysis} disabled={isStarting}>
           {isStarting ? (
-            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            <Loader size="sm" className="mr-1" />
           ) : (
             <RotateCcw className="h-4 w-4 mr-1" />
           )}

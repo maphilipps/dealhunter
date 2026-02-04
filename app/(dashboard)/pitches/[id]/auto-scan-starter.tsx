@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
@@ -50,7 +50,7 @@ export function AutoScanStarter({ pitchId, customerName, activeRunId }: AutoScan
         <PipelineProgress pitchId={pitchId} onComplete={() => router.refresh()} />
       ) : (
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader size="sm" />
           <span>Scan wird gestartet...</span>
         </div>
       )}

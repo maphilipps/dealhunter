@@ -16,7 +16,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
-  Loader2,
   Code,
   Image as ImageIcon,
   Send,
@@ -32,6 +31,7 @@ import {
   Copy,
   ExternalLink,
 } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -482,7 +482,6 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [selectedCMS, setSelectedCMS] = useState<string>('');
 
-
   // Load business units
   useEffect(() => {
     async function loadBUs() {
@@ -561,7 +560,7 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground mb-4" />
+          <Loader size="lg" className="mx-auto text-muted-foreground mb-4" />
           <p className="text-muted-foreground">Qualification wird gestartet...</p>
         </CardContent>
       </Card>
@@ -572,7 +571,7 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
     return (
       <Card className="border-blue-200 bg-blue-50">
         <CardContent className="py-12 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600 mb-4" />
+          <Loader size="lg" className="mx-auto text-blue-600 mb-4" />
           <p className="text-blue-700 font-medium">Qualification läuft...</p>
           <p className="text-sm text-blue-600">Analyse von {quickScan.websiteUrl}</p>
         </CardContent>
@@ -1954,7 +1953,7 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
           {isEvaluating && (
             <Card className="border-blue-200 bg-blue-50">
               <CardContent className="py-8 text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600 mb-4" />
+                <Loader size="lg" className="mx-auto text-blue-600 mb-4" />
                 <p className="text-blue-700 font-medium">CMS-Evaluation läuft...</p>
                 <p className="text-sm text-blue-600">
                   Anforderungen werden gegen CMS-Systeme gematched (mit Web Search)
@@ -2040,7 +2039,7 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
                   >
                     {isForwarding ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader size="sm" className="mr-2" />
                         Weiterleiten...
                       </>
                     ) : (

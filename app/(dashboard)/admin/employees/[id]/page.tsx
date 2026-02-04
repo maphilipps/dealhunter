@@ -1,6 +1,8 @@
 'use client';
 
-import { Plus, X, Loader2, ArrowLeft } from 'lucide-react';
+import { Plus, X, ArrowLeft } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter, useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -258,7 +260,7 @@ export default function EditEmployeePage() {
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Wird gespeichert...
                 </>
               ) : (

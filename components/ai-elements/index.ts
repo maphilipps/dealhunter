@@ -55,3 +55,17 @@ export { Shimmer, type ShimmerProps } from './shimmer';
 
 // Confidence Indicator component
 export { ConfidenceIndicator, ConfidenceBreakdown } from './confidence-indicator';
+
+// Constants and utilities
+export {
+  getAgentColorClasses,
+  getPhaseColorClasses,
+  formatAgentTime,
+  AGENT_CATEGORIES,
+  AGENT_COLOR_CLASSES,
+  PHASE_COLOR_CLASSES,
+  CONFIDENCE_HIGH_THRESHOLD,
+  CONFIDENCE_MEDIUM_THRESHOLD,
+  MIN_EXPECTED_AGENTS,
+  type AgentCategory,
+} from './constants';

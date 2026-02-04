@@ -3,6 +3,7 @@
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
 import { deleteBusinessUnit } from '@/lib/admin/business-units-actions';
 
 interface BusinessUnit {
@@ -60,13 +61,15 @@ export function BusinessUnitList({ businessUnits }: BusinessUnitListProps) {
           <div key={bu.id} className="rounded-lg border bg-card p-6">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-semibold">{bu.name}</h3>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => void handleDelete(bu.id, bu.name)}
-                className="text-destructive hover:text-destructive/80"
+                className="h-8 w-8 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                 title="Löschen"
               >
                 <Trash2 className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
 
             <div className="space-y-3 text-sm">

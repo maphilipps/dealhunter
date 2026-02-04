@@ -8,6 +8,7 @@ import { Loader } from '@/components/ai-elements/loader';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getBidDocuments } from '@/lib/bids/actions';
 
@@ -124,15 +125,17 @@ export function DocumentsSidebar({ bidId }: DocumentsSidebarProps) {
                 </span>
               </div>
             </div>
-            <button
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={e => {
                 e.stopPropagation();
                 handleDownload(doc.id, doc.fileName);
               }}
             >
               <Download className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-            </button>
+            </Button>
           </div>
         ))}
       </CardContent>

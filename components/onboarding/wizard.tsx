@@ -108,20 +108,22 @@ export function OnboardingWizard({
             const isCurrent = idx === currentStepIndex;
 
             return (
-              <button
+              <Button
                 key={step.id}
+                variant="ghost"
+                size="icon"
                 onClick={() => setCurrentStepIndex(idx)}
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-colors',
+                  'h-8 w-8 rounded-full text-xs font-medium',
                   isCompleted && 'bg-primary text-primary-foreground hover:bg-primary/90',
                   isCurrent &&
-                    'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2',
+                    'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 hover:bg-primary/90',
                   !isCompleted && !isCurrent && 'bg-muted text-muted-foreground hover:bg-muted/80'
                 )}
                 disabled={idx > currentStepIndex}
               >
                 {isCompleted ? <Check className="h-4 w-4" /> : idx + 1}
-              </button>
+              </Button>
             );
           })}
         </div>

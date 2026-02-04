@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Loader } from '@/components/ai-elements/loader';
+import { Button } from '@/components/ui/button';
 import { validateReference } from '@/lib/references/actions';
 
 interface ReferenceValidationButtonProps {
@@ -52,11 +53,7 @@ export function ReferenceValidationButton({
   }
 
   return (
-    <button
-      onClick={handleValidate}
-      disabled={isValidating}
-      className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-    >
+    <Button onClick={handleValidate} disabled={isValidating} size="lg" className="px-6">
       {isValidating ? (
         <>
           <Loader size="sm" />
@@ -68,6 +65,6 @@ export function ReferenceValidationButton({
           Referenz validieren
         </>
       )}
-    </button>
+    </Button>
   );
 }

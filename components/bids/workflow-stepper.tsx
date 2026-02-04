@@ -125,12 +125,13 @@ export function WorkflowStepper({
               return (
                 <div key={phase.id} className="flex items-center flex-1">
                   {/* Phase Indicator */}
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => status !== 'pending' && setActivePhase(phase.id)}
                     disabled={status === 'pending'}
-                    className={`flex items-center gap-3 p-3 rounded-lg transition-colors w-full ${
+                    className={`flex h-auto items-center gap-3 p-3 rounded-lg transition-colors w-full ${
                       isActive
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                         : status === 'completed'
                           ? 'bg-green-50 text-green-700 hover:bg-green-100'
                           : 'bg-slate-50 text-slate-400 cursor-not-allowed'
@@ -165,7 +166,7 @@ export function WorkflowStepper({
                     >
                       {phase.route}
                     </Badge>
-                  </button>
+                  </Button>
 
                   {/* Connector */}
                   {index < phases.length - 1 && (

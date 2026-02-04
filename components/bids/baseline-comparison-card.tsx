@@ -195,7 +195,10 @@ export function BaselineComparisonCard({
               onOpenChange={() => toggleCategory(cat.category)}
             >
               <CollapsibleTrigger asChild>
-                <button className="flex w-full items-center justify-between rounded-lg border p-3 text-left hover:bg-muted/50">
+                <Button
+                  variant="ghost"
+                  className="flex h-auto w-full items-center justify-between rounded-lg border p-3 text-left hover:bg-muted/50"
+                >
                   <div className="flex items-center gap-3">
                     <span className="font-medium">{categoryLabels[cat.category]}</span>
                     <Badge variant="outline" className="text-xs">
@@ -210,7 +213,7 @@ export function BaselineComparisonCard({
                       className={`h-4 w-4 transition-transform ${openCategories.has(cat.category) ? 'rotate-180' : ''}`}
                     />
                   </div>
-                </button>
+                </Button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="mt-2 space-y-1 pl-4">

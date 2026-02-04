@@ -5,6 +5,8 @@ import { DefaultChatTransport } from 'ai';
 import { Bot, Sparkles, User } from 'lucide-react';
 import { useRef, useEffect, useMemo, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+
 import {
   Conversation,
   ConversationContent,
@@ -191,17 +193,19 @@ export function PitchChat({ pitchId, onPipelineStarted, compact }: PitchChatProp
           </div>
           <div className="flex flex-wrap gap-1.5">
             {SUGGESTED_PROMPTS.map(prompt => (
-              <button
+              <Button
                 key={prompt.label}
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setInput(prompt.description);
                 }}
-                className="rounded-full border bg-background px-2.5 py-1 text-xs transition-colors hover:bg-muted hover:border-primary/50"
+                className="h-auto rounded-full px-2.5 py-1 text-xs hover:border-primary/50"
                 title={prompt.description}
               >
                 {prompt.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

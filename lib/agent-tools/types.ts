@@ -46,7 +46,12 @@ export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
     | 'decision'
     | 'scan'
     | 'quickscan'
-    | 'extraction';
+    | 'extraction'
+    | 'pitch-run'
+    | 'team-assignment'
+    | 'audit-trail'
+    | 'export'
+    | 'deep-scan';
   inputSchema: z.ZodSchema<TInput>;
   execute: (input: TInput, context: ToolContext) => Promise<ToolResult<TOutput>>;
 }
@@ -100,4 +105,8 @@ export const TOOL_CATEGORIES = {
   scan: 'Scan Primitives',
   quickscan: 'Quick Scan Tools',
   extraction: 'Document Extraction',
+  'pitch-run': 'Pitch Run & Audit Management',
+  'team-assignment': 'Team Assignment Management',
+  'audit-trail': 'Audit Trail & History',
+  'deep-scan': 'Deep Scan v2 Pipeline',
 } as const;

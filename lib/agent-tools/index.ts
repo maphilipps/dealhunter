@@ -19,6 +19,10 @@ import './tools/audit';
 import './tools/workflow';
 import './tools/notification';
 import './tools/extraction';
+import './tools/pitch-run';
+import './tools/team-assignment';
+import './tools/export';
+import './tools/deep-scan';
 import './scan-tools';
 import './deep-scan-tools';
 
@@ -81,4 +85,25 @@ export {
 } from './tools/visualization-write-tool';
 
 // RAG Read Tool (Agent queries knowledge base)
-export { createRagTool } from './tools/rag-tool';
+export { createRagTool, type RagToolOptions } from './tools/rag-tool';
+
+// RAG Enhanced Retrieval
+export {
+  queryRAGEnhanced,
+  type EnhancedRAGQuery,
+  type EnhancedRAGResult,
+} from '@/lib/rag/retrieval-service';
+
+export { ENHANCEMENT_PRESETS, type EnhancementPreset } from '@/lib/rag/query-enhancement-config';
+
+// Deep Scan v2 Agent Tools
+export { DEEP_SCAN_TOOL_NAMES } from '@/lib/deep-scan-v2/constants';
+
+// Agent Auth Middleware
+export {
+  validateAgentAuth,
+  withAgentAuth,
+  withAgentAuthAndRateLimit,
+  checkRateLimit,
+  type AgentAuthResult,
+} from './middleware/agent-auth';

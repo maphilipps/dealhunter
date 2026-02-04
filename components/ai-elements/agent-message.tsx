@@ -10,8 +10,12 @@ import { Sources } from './sources';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import type { AgentEvent } from '@/lib/streaming/event-types';
-import { AgentEventType } from '@/lib/streaming/event-types';
+import type { AgentEvent, AgentProgressData, AgentCompleteData } from '@/lib/streaming/event-types';
+import {
+  AgentEventType,
+  isAgentProgressData,
+  isAgentCompleteData,
+} from '@/lib/streaming/event-types';
 
 interface AgentMessageProps {
   event: AgentEvent;
@@ -30,34 +34,34 @@ interface AgentMessageProps {
 export function AgentMessage({ event }: AgentMessageProps) {
   const [copied, setCopied] = useState(false);
 
-  // Only render progress and complete events
-  if (
-    event.type !== AgentEventType.AGENT_PROGRESS &&
-    event.type !== AgentEventType.AGENT_COMPLETE
-  ) {
+  // Only render progress and complete events with valid data
+  const isProgress =
+    event.type === AgentEventType.AGENT_PROGRESS && isAgentProgressData(event.data);
+  const isComplete =
+    event.type === AgentEventType.AGENT_COMPLETE && isAgentCompleteData(event.data);
+
+  if (!isProgress && !isComplete) {
     return null;
   }
 
-  const data = event.data as {
-    agent: string;
-    message?: string;
-    details?: string;
-    reasoning?: string;
-    toolCalls?: Array<{
-      name: string;
-      args: Record<string, unknown>;
-      result?: unknown;
-    }>;
-    confidence?: number;
-    sources?: Array<{
-      type: 'reference' | 'competitor' | 'technology';
-      title: string;
-      content?: string;
-    }>;
-  };
+  // Type-safe access: use AgentProgressData for both since it's a superset
+  // AgentCompleteData events may not have message/reasoning/toolCalls
+  const progressData = isProgress ? (event.data as AgentProgressData) : null;
+  const completeData = isComplete ? (event.data as AgentCompleteData) : null;
+
+  // Common fields (both types have agent)
+  const agent = progressData?.agent ?? completeData?.agent ?? 'Unknown';
+  // Fields that may only exist on progress events
+  const message = progressData?.message;
+  const details = progressData?.details;
+  const reasoning = progressData?.reasoning;
+  const toolCalls = progressData?.toolCalls;
+  // Fields available on both (optional)
+  const confidence = progressData?.confidence ?? completeData?.confidence;
+  const sources = progressData?.sources ?? completeData?.sources;
 
   const handleCopy = async () => {
-    const text = data.message || JSON.stringify(data, null, 2);
+    const text = message || JSON.stringify(event.data, null, 2);
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -74,34 +78,32 @@ export function AgentMessage({ event }: AgentMessageProps) {
         {/* Agent Badge */}
         <Badge
           variant="outline"
-          className={`${getAgentColorClasses(data.agent)} font-medium min-w-[100px] justify-center`}
+          className={`${getAgentColorClasses(agent)} font-medium min-w-[100px] justify-center`}
         >
-          {data.agent}
+          {agent}
         </Badge>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Message */}
-          {data.message && <p className="text-sm text-foreground font-medium">{data.message}</p>}
+          {message && <p className="text-sm text-foreground font-medium">{message}</p>}
 
           {/* Details (Chain of Thought) */}
-          {data.details && (
-            <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">
-              {data.details}
-            </p>
+          {details && (
+            <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{details}</p>
           )}
 
           {/* Confidence Indicator */}
-          {data.confidence !== undefined && (
+          {confidence !== undefined && (
             <div className="mt-2">
-              <ConfidenceIndicator confidence={data.confidence} />
+              <ConfidenceIndicator confidence={confidence} />
             </div>
           )}
 
           {/* Tool Calls */}
-          {data.toolCalls && data.toolCalls.length > 0 && (
+          {toolCalls && toolCalls.length > 0 && (
             <div className="mt-2 space-y-1">
-              {data.toolCalls.map((tool, idx) => (
+              {toolCalls.map((tool, idx) => (
                 <div key={idx} className="text-xs p-2 bg-muted rounded border font-mono">
                   <span className="font-semibold">{tool.name}</span>
                   <span className="text-muted-foreground">
@@ -113,20 +115,20 @@ export function AgentMessage({ event }: AgentMessageProps) {
           )}
 
           {/* Reasoning */}
-          {data.reasoning && (
+          {reasoning && (
             <Reasoning className="mt-2" defaultOpen={false}>
               <ReasoningTrigger
                 className="text-xs"
                 getThinkingMessage={() => <span>Reasoning</span>}
               />
               <ReasoningContent className="mt-1 text-xs p-3 bg-muted rounded border">
-                {data.reasoning}
+                {reasoning}
               </ReasoningContent>
             </Reasoning>
           )}
 
           {/* Sources */}
-          {data.sources && <Sources sources={data.sources} />}
+          {sources && <Sources sources={sources} />}
         </div>
 
         {/* Message Actions */}

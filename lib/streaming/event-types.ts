@@ -90,6 +90,7 @@ export type TechFindingCategory =
 export interface AgentProgressData {
   agent: string;
   message: string;
+  details?: string;
   reasoning?: string;
   toolCalls?: Array<{
     name: string;
@@ -97,6 +98,11 @@ export interface AgentProgressData {
     result?: unknown;
   }>;
   confidence?: number;
+  sources?: Array<{
+    type: 'reference' | 'competitor' | 'technology';
+    title: string;
+    content?: string;
+  }>;
 }
 
 export interface AgentCompleteData {
@@ -203,4 +209,85 @@ export interface StreamState {
     totalSteps: number;
     percentage: number;
   } | null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TYPE GUARDS
+// Safe runtime type narrowing for event data (replaces unsafe `as` assertions)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Type guard for PhaseStartData
+ */
+export function isPhaseStartData(data: unknown): data is PhaseStartData {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'phase' in data &&
+    'message' in data &&
+    'timestamp' in data &&
+    typeof (data as PhaseStartData).phase === 'string' &&
+    typeof (data as PhaseStartData).message === 'string' &&
+    typeof (data as PhaseStartData).timestamp === 'number'
+  );
+}
+
+/**
+ * Type guard for AnalysisCompleteData
+ */
+export function isAnalysisCompleteData(data: unknown): data is AnalysisCompleteData {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'analysis' in data &&
+    'success' in data &&
+    'duration' in data &&
+    typeof (data as AnalysisCompleteData).analysis === 'string' &&
+    typeof (data as AnalysisCompleteData).success === 'boolean' &&
+    typeof (data as AnalysisCompleteData).duration === 'number'
+  );
+}
+
+/**
+ * Type guard for AgentProgressData
+ */
+export function isAgentProgressData(data: unknown): data is AgentProgressData {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'agent' in data &&
+    typeof (data as AgentProgressData).agent === 'string'
+  );
+}
+
+/**
+ * Type guard for AgentCompleteData
+ */
+export function isAgentCompleteData(data: unknown): data is AgentCompleteData {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'agent' in data &&
+    'result' in data &&
+    typeof (data as AgentCompleteData).agent === 'string'
+  );
+}
+
+/**
+ * Type guard for data with agent field (common to both progress and complete events)
+ */
+export function hasAgentField(data: unknown): data is { agent: string; message?: string } {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'agent' in data &&
+    typeof (data as { agent: string }).agent === 'string'
+  );
+}
+
+/**
+ * Type guard for data with optional message field
+ */
+export function hasMessageField(data: unknown): data is { message?: string } {
+  return typeof data === 'object' && data !== null;
 }

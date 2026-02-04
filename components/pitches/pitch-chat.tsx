@@ -2,12 +2,21 @@
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { Bot, Send, User, Loader2, Sparkles } from 'lucide-react';
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { Bot, Loader2, Sparkles, User } from 'lucide-react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import { Loader } from '@/components/ai-elements/loader';
+import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
+import {
+  PromptInput,
+  PromptInputSubmit,
+  PromptInputTextarea,
+} from '@/components/ai-elements/prompt-input';
 
 /**
  * Suggested prompts for capability discovery.
@@ -28,7 +37,6 @@ interface PitchChatProps {
 }
 
 export function PitchChat({ pitchId, onPipelineStarted, compact }: PitchChatProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState('');
   const pipelineNotifiedRef = useRef(false);
   const autoStartedRef = useRef(false);
@@ -48,13 +56,6 @@ export function PitchChat({ pitchId, onPipelineStarted, compact }: PitchChatProp
     autoStartedRef.current = true;
     void sendMessage({ text: 'Bitte starte das Interview.' });
   }, [sendMessage]);
-
-  // Auto-scroll on new messages
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
 
   // Detect startPipeline tool completion
   useEffect(() => {
@@ -99,6 +100,12 @@ export function PitchChat({ pitchId, onPipelineStarted, compact }: PitchChatProp
     ? 'flex flex-col h-full'
     : 'flex flex-col h-[600px] rounded-lg border bg-card text-card-foreground shadow-sm';
 
+  const showSuggestedPrompts =
+    !compact &&
+    !isLoading &&
+    visibleMessages.some(m => m.role === 'assistant') &&
+    visibleMessages[visibleMessages.length - 1]?.role === 'assistant';
+
   return (
     <div className={wrapperClass}>
       {!compact && (
@@ -113,59 +120,61 @@ export function PitchChat({ pitchId, onPipelineStarted, compact }: PitchChatProp
         </div>
       )}
 
-      <ScrollArea className="flex-1 p-3" ref={scrollRef}>
-        <div className="space-y-3">
+      <Conversation className={compact ? 'p-2' : 'p-3'}>
+        <ConversationContent className={compact ? 'gap-3' : 'gap-4'}>
           {visibleMessages.map(message => (
-            <div
-              key={message.id}
-              className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              {message.role === 'assistant' && (
-                <Bot className={`mt-1 shrink-0 text-primary ${compact ? 'h-4 w-4' : 'h-6 w-6'}`} />
-              )}
+            <Message key={message.id} from={message.role}>
               <div
-                className={`rounded-lg px-3 py-2 text-sm ${
-                  compact ? 'max-w-[90%]' : 'max-w-[80%]'
-                } ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+                className={`flex gap-2 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
               >
-                {message.parts.map((part, i) => {
-                  if (part.type === 'text') {
-                    return (
-                      <p key={i} className="whitespace-pre-wrap">
-                        {part.text}
-                      </p>
-                    );
-                  }
-                  if (part.type === 'dynamic-tool' && part.toolName === 'startPipeline') {
-                    return (
-                      <div
-                        key={i}
-                        className="mt-2 flex items-center gap-2 rounded bg-green-50 p-2 text-green-700 dark:bg-green-950 dark:text-green-300"
-                      >
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span className="text-xs font-medium">Pipeline wird gestartet...</span>
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+                {message.role === 'assistant' && (
+                  <Bot
+                    className={`mt-1 shrink-0 text-primary ${compact ? 'h-4 w-4' : 'h-6 w-6'}`}
+                  />
+                )}
+                <MessageContent
+                  className={`rounded-lg px-3 py-2 ${compact ? 'max-w-[90%]' : 'max-w-[80%]'} ${
+                    message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                  }`}
+                >
+                  {message.parts.map((part, i) => {
+                    if (part.type === 'text') {
+                      return <MessageResponse key={i}>{part.text}</MessageResponse>;
+                    }
+                    if (part.type === 'dynamic-tool' && part.toolName === 'startPipeline') {
+                      return (
+                        <div
+                          key={i}
+                          className="mt-2 flex items-center gap-2 rounded bg-green-50 p-2 text-green-700 dark:bg-green-950 dark:text-green-300"
+                        >
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-xs font-medium">Pipeline wird gestartet...</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </MessageContent>
+                {message.role === 'user' && !compact && (
+                  <User className="mt-1 h-6 w-6 shrink-0 text-muted-foreground" />
+                )}
               </div>
-              {message.role === 'user' && !compact && (
-                <User className="mt-1 h-6 w-6 shrink-0 text-muted-foreground" />
-              )}
-            </div>
+            </Message>
           ))}
 
           {isLoading && visibleMessages[visibleMessages.length - 1]?.role !== 'assistant' && (
-            <div className="flex gap-2">
-              <Bot className={`mt-1 shrink-0 text-primary ${compact ? 'h-4 w-4' : 'h-6 w-6'}`} />
-              <div className="rounded-lg bg-muted px-3 py-2">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <Message from="assistant">
+              <div className="flex gap-2">
+                <Bot className={`mt-1 shrink-0 text-primary ${compact ? 'h-4 w-4' : 'h-6 w-6'}`} />
+                <div className="rounded-lg bg-muted px-3 py-2">
+                  <Loader size="sm" className="p-0" />
+                </div>
               </div>
-            </div>
+            </Message>
           )}
-        </div>
-      </ScrollArea>
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
 
       {error && (
         <div className="mx-3 mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -174,50 +183,40 @@ export function PitchChat({ pitchId, onPipelineStarted, compact }: PitchChatProp
       )}
 
       {/* Suggested prompts for capability discovery */}
-      {!compact &&
-        !isLoading &&
-        visibleMessages.some(m => m.role === 'assistant') &&
-        visibleMessages[visibleMessages.length - 1]?.role === 'assistant' && (
-          <div className="border-t px-3 py-2">
-            <div className="mb-1.5 flex items-center gap-1 text-xs text-muted-foreground">
-              <Sparkles className="h-3 w-3" />
-              <span>Schnellantworten</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {SUGGESTED_PROMPTS.map(prompt => (
-                <button
-                  key={prompt.label}
-                  type="button"
-                  onClick={() => {
-                    setInput(prompt.description);
-                  }}
-                  className="rounded-full border bg-background px-2.5 py-1 text-xs transition-colors hover:bg-muted hover:border-primary/50"
-                  title={prompt.description}
-                >
-                  {prompt.label}
-                </button>
-              ))}
-            </div>
+      {showSuggestedPrompts && (
+        <div className="border-t px-3 py-2">
+          <div className="mb-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+            <Sparkles className="h-3 w-3" />
+            <span>Schnellantworten</span>
           </div>
-        )}
+          <div className="flex flex-wrap gap-1.5">
+            {SUGGESTED_PROMPTS.map(prompt => (
+              <button
+                key={prompt.label}
+                type="button"
+                onClick={() => {
+                  setInput(prompt.description);
+                }}
+                className="rounded-full border bg-background px-2.5 py-1 text-xs transition-colors hover:bg-muted hover:border-primary/50"
+                title={prompt.description}
+              >
+                {prompt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
-      <form onSubmit={handleSubmit} className="flex shrink-0 gap-2 border-t p-3">
-        <Input
+      <PromptInput onSubmit={handleSubmit} className="shrink-0 border-t p-3">
+        <PromptInputTextarea
           value={input}
           onChange={e => setInput(e.target.value)}
           placeholder="Nachricht eingeben..."
           disabled={isLoading}
-          className={compact ? 'h-8 text-sm flex-1' : 'flex-1'}
+          className={compact ? 'min-h-8 text-sm' : ''}
         />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={isLoading || !input.trim()}
-          className={compact ? 'h-8 w-8' : ''}
-        >
-          <Send className={compact ? 'h-3 w-3' : 'h-4 w-4'} />
-        </Button>
-      </form>
+        <PromptInputSubmit status={status} disabled={isLoading || !input.trim()} />
+      </PromptInput>
     </div>
   );
 }

@@ -1826,3 +1826,600 @@ export const pitchdeckTeamMembersRelations = relations(pitchdeckTeamMembers, ({ 
     references: [employees.id],
   }),
 }));
+
+// ===== Pitch Pipeline =====
+
+export const pitchRuns = pgTable(
+  'pitch_runs',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    pitchId: text('pitch_id')
+      .notNull()
+      .references(() => pitches.id),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+
+    // Status
+    status: text('status', {
+      enum: [
+        'pending',
+        'running',
+        'audit_complete',
+        'generating',
+        'waiting_for_user',
+        'review',
+        'completed',
+        'failed',
+      ],
+    })
+      .notNull()
+      .default('pending'),
+
+    // Snapshot
+    runNumber: integer('run_number').notNull().default(1),
+    snapshotData: text('snapshot_data'), // JSON: full orchestrator state
+
+    // CMS Context
+    targetCmsIds: text('target_cms_ids'), // JSON array
+    selectedCmsId: text('selected_cms_id').references(() => technologies.id),
+
+    // Progress
+    currentPhase: text('current_phase'),
+    progress: integer('progress').notNull().default(0),
+    currentStep: text('current_step'),
+
+    // Agent Tracking
+    completedAgents: text('completed_agents'), // JSON array
+    failedAgents: text('failed_agents'), // JSON array
+    agentConfidences: text('agent_confidences'), // JSON object
+
+    // Timing
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    pitchIdx: index('pitch_runs_pitch_idx').on(table.pitchId),
+    statusIdx: index('pitch_runs_status_idx').on(table.status),
+    userIdx: index('pitch_runs_user_idx').on(table.userId),
+  })
+);
+
+export type PitchRun = typeof pitchRuns.$inferSelect;
+export type NewPitchRun = typeof pitchRuns.$inferInsert;
+
+export const pitchDocuments = pgTable(
+  'pitch_documents',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    runId: text('run_id')
+      .notNull()
+      .references(() => pitchRuns.id),
+    pitchId: text('pitch_id')
+      .notNull()
+      .references(() => pitches.id),
+
+    // Document Type
+    documentType: text('document_type', {
+      enum: ['indication', 'calculation', 'presentation', 'proposal'],
+    }).notNull(),
+    format: text('format', {
+      enum: ['html', 'xlsx', 'pptx', 'docx'],
+    }).notNull(),
+
+    // CMS Variant
+    cmsVariant: text('cms_variant'),
+    technologyId: text('technology_id').references(() => technologies.id),
+
+    // Content
+    content: text('content'), // HTML for indication
+    fileData: text('file_data'), // Base64 for binary files
+    fileName: text('file_name'),
+    fileSize: integer('file_size'),
+
+    // Quality
+    confidence: integer('confidence'),
+    flags: text('flags'), // JSON array
+
+    // Timestamps
+    generatedAt: timestamp('generated_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    runIdx: index('pitch_docs_run_idx').on(table.runId),
+    pitchIdx: index('pitch_docs_pitch_idx').on(table.pitchId),
+    typeIdx: index('pitch_docs_type_idx').on(table.documentType),
+  })
+);
+
+export type PitchDocument = typeof pitchDocuments.$inferSelect;
+export type NewPitchDocument = typeof pitchDocuments.$inferInsert;
+
+export const pitchAuditResults = pgTable(
+  'pitch_audit_results',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    runId: text('run_id')
+      .notNull()
+      .references(() => pitchRuns.id),
+    pitchId: text('pitch_id')
+      .notNull()
+      .references(() => pitches.id),
+
+    // Website
+    websiteUrl: text('website_url').notNull(),
+
+    // Audit Sections (all JSON)
+    techStack: text('tech_stack'),
+    performance: text('performance'),
+    accessibility: text('accessibility'),
+    architecture: text('architecture'),
+    hosting: text('hosting'),
+    integrations: text('integrations'),
+    componentLibrary: text('component_library'),
+    screenshots: text('screenshots'),
+
+    // Scores
+    performanceScore: integer('performance_score'),
+    accessibilityScore: integer('accessibility_score'),
+    migrationComplexity: text('migration_complexity', {
+      enum: ['low', 'medium', 'high', 'very_high'],
+    }),
+    complexityScore: integer('complexity_score'),
+
+    // Share Link
+    shareToken: text('share_token').unique(),
+    shareExpiresAt: timestamp('share_expires_at'),
+
+    // Timing
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    runIdx: index('pitch_audit_run_idx').on(table.runId),
+    pitchIdx: index('pitch_audit_pitch_idx').on(table.pitchId),
+    shareTokenIdx: index('pitch_audit_share_token_idx').on(table.shareToken),
+  })
+);
+
+export type PitchAuditResult = typeof pitchAuditResults.$inferSelect;
+export type NewPitchAuditResult = typeof pitchAuditResults.$inferInsert;
+
+export const knowledgeChunks = pgTable(
+  'knowledge_chunks',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // Content
+    content: text('content').notNull(),
+    contentHash: text('content_hash').notNull(),
+    tokenCount: integer('token_count').notNull(),
+
+    // Source
+    sourceType: text('source_type', {
+      enum: ['upload', 'reference', 'baseline', 'template'],
+    }).notNull(),
+    sourceFileName: text('source_file_name'),
+    sourceFileId: text('source_file_id'),
+
+    // Embedding
+    embedding: vector3072('embedding'),
+
+    // Metadata (MVP: 5 core fields)
+    industry: text('industry'),
+    useCase: text('use_case'),
+    cms: text('cms'),
+    phase: text('phase'),
+    documentType: text('document_type'),
+    effortRange: text('effort_range'),
+    confidence: integer('confidence').notNull().default(50),
+    businessUnit: text('business_unit'),
+
+    // Extended metadata (nullable, filled post-MVP)
+    customerSize: text('customer_size'),
+    projectVolume: text('project_volume'),
+    contractType: text('contract_type'),
+    region: text('region'),
+    competitorContext: text('competitor_context'),
+    legalRequirements: text('legal_requirements'),
+    accessibilityLevel: text('accessibility_level'),
+    hostingModel: text('hosting_model'),
+
+    // Timestamps
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    contentHashIdx: index('knowledge_chunks_hash_idx').on(table.contentHash),
+    cmsIdx: index('knowledge_chunks_cms_idx').on(table.cms),
+    industryIdx: index('knowledge_chunks_industry_idx').on(table.industry),
+    sourceTypeIdx: index('knowledge_chunks_source_type_idx').on(table.sourceType),
+    businessUnitIdx: index('knowledge_chunks_bu_idx').on(table.businessUnit),
+  })
+);
+
+export type KnowledgeChunkRow = typeof knowledgeChunks.$inferSelect;
+export type NewKnowledgeChunkRow = typeof knowledgeChunks.$inferInsert;
+
+export const pitchConversations = pgTable(
+  'pitch_conversations',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    runId: text('run_id')
+      .notNull()
+      .references(() => pitchRuns.id),
+    pitchId: text('pitch_id')
+      .notNull()
+      .references(() => pitches.id),
+
+    // Message
+    role: text('role', { enum: ['user', 'assistant', 'system'] }).notNull(),
+    content: text('content').notNull(),
+    messageType: text('message_type', {
+      enum: ['interview', 'progress', 'question', 'answer'],
+    }).notNull(),
+
+    // Tool Calls
+    toolCalls: text('tool_calls'), // JSON
+    toolResults: text('tool_results'), // JSON
+
+    // Ordering
+    sequenceNumber: integer('sequence_number').notNull(),
+
+    // Timestamps
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    runIdx: index('pitch_conv_run_idx').on(table.runId),
+    pitchIdx: index('pitch_conv_pitch_idx').on(table.pitchId),
+    sequenceIdx: index('pitch_conv_sequence_idx').on(table.runId, table.sequenceNumber),
+  })
+);
+
+export type PitchConversation = typeof pitchConversations.$inferSelect;
+export type NewPitchConversation = typeof pitchConversations.$inferInsert;
+
+// ===== Pitch Relations =====
+
+export const pitchRunsRelations = relations(pitchRuns, ({ one, many }) => ({
+  pitch: one(pitches, {
+    fields: [pitchRuns.pitchId],
+    references: [pitches.id],
+  }),
+  user: one(users, {
+    fields: [pitchRuns.userId],
+    references: [users.id],
+  }),
+  selectedCms: one(technologies, {
+    fields: [pitchRuns.selectedCmsId],
+    references: [technologies.id],
+  }),
+  documents: many(pitchDocuments),
+  auditResults: many(pitchAuditResults),
+  conversations: many(pitchConversations),
+}));
+
+export const pitchDocumentsRelations = relations(pitchDocuments, ({ one }) => ({
+  run: one(pitchRuns, {
+    fields: [pitchDocuments.runId],
+    references: [pitchRuns.id],
+  }),
+  pitch: one(pitches, {
+    fields: [pitchDocuments.pitchId],
+    references: [pitches.id],
+  }),
+  technology: one(technologies, {
+    fields: [pitchDocuments.technologyId],
+    references: [technologies.id],
+  }),
+}));
+
+export const pitchAuditResultsRelations = relations(pitchAuditResults, ({ one }) => ({
+  run: one(pitchRuns, {
+    fields: [pitchAuditResults.runId],
+    references: [pitchRuns.id],
+  }),
+  pitch: one(pitches, {
+    fields: [pitchAuditResults.pitchId],
+    references: [pitches.id],
+  }),
+}));
+
+export const pitchConversationsRelations = relations(pitchConversations, ({ one }) => ({
+  run: one(pitchRuns, {
+    fields: [pitchConversations.runId],
+    references: [pitchRuns.id],
+  }),
+  pitch: one(pitches, {
+    fields: [pitchConversations.pitchId],
+    references: [pitches.id],
+  }),
+}));
+
+// ===== AI Provider & Model Configuration (Admin UI) =====
+
+export const aiProviderConfigs = pgTable('ai_provider_configs', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  providerKey: text('provider_key', { enum: ['ai-hub', 'openai', 'vercel'] })
+    .notNull()
+    .unique(),
+  apiKey: text('api_key'), // Encrypted
+  baseUrl: text('base_url'),
+  isEnabled: boolean('is_enabled').notNull().default(true),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+});
+
+export type AIProviderConfig = typeof aiProviderConfigs.$inferSelect;
+export type NewAIProviderConfig = typeof aiProviderConfigs.$inferInsert;
+
+export const aiModelSlotConfigs = pgTable('ai_model_slot_configs', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  slot: text('slot', {
+    enum: [
+      'fast',
+      'default',
+      'quality',
+      'premium',
+      'synthesizer',
+      'research',
+      'vision',
+      'embedding',
+    ],
+  })
+    .notNull()
+    .unique(),
+  providerId: text('provider_id')
+    .notNull()
+    .references(() => aiProviderConfigs.id),
+  modelName: text('model_name').notNull(),
+  isOverridden: boolean('is_overridden').notNull().default(false),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+});
+
+export type AIModelSlotConfig = typeof aiModelSlotConfigs.$inferSelect;
+export type NewAIModelSlotConfig = typeof aiModelSlotConfigs.$inferInsert;
+
+export const aiProviderConfigsRelations = relations(aiProviderConfigs, ({ many }) => ({
+  modelSlots: many(aiModelSlotConfigs),
+}));
+
+export const aiModelSlotConfigsRelations = relations(aiModelSlotConfigs, ({ one }) => ({
+  provider: one(aiProviderConfigs, {
+    fields: [aiModelSlotConfigs.providerId],
+    references: [aiProviderConfigs.id],
+  }),
+}));
+
+// ===== Deep Scan v2 Tables =====
+
+/**
+ * Deep Scan v2 Runs - Main run tracking table
+ * Tracks each deep scan execution with checkpoints for agent-native workflows
+ */
+export const deepScanV2Runs = pgTable(
+  'deep_scan_v2_runs',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // References
+    preQualificationId: text('pre_qualification_id')
+      .notNull()
+      .references(() => preQualifications.id),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+
+    // Configuration
+    websiteUrl: text('website_url').notNull(),
+    targetCmsIds: text('target_cms_ids'), // JSON array of CMS IDs
+    interviewResults: text('interview_results'), // JSON - InterviewResults
+
+    // Status
+    status: text('status', {
+      enum: [
+        'pending',
+        'running',
+        'audit_complete',
+        'generating',
+        'waiting_for_user',
+        'review',
+        'completed',
+        'failed',
+        'cancelled',
+      ],
+    })
+      .notNull()
+      .default('pending'),
+
+    // Progress tracking
+    progress: integer('progress').notNull().default(0),
+    currentPhase: text('current_phase'), // Current processing phase
+    currentAgent: text('current_agent'), // Currently running agent
+
+    // Checkpoint system for Human-in-the-Loop
+    checkpoint: text('checkpoint'), // JSON - OrchestratorCheckpoint
+    pendingQuestion: text('pending_question'), // JSON - question waiting for user answer
+
+    // Results
+    auditResults: text('audit_results'), // JSON - aggregated audit results
+    analysisResults: text('analysis_results'), // JSON - expert agent analyses
+    confidence: integer('confidence'), // Overall confidence score 0-100
+
+    // Structured Observability (A7 - JSONB activity log)
+    activityLog: text('activity_log'), // JSON array of ActivityLogEntry
+
+    // Error tracking
+    errorMessage: text('error_message'),
+    errorDetails: text('error_details'), // JSON - detailed error info
+
+    // Retry tracking
+    attemptNumber: integer('attempt_number').notNull().default(1),
+    maxAttempts: integer('max_attempts').notNull().default(3),
+
+    // BullMQ job tracking
+    bullmqJobId: text('bullmq_job_id'),
+
+    // Timestamps
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    preQualificationIdx: index('deep_scan_v2_runs_pre_qualification_idx').on(
+      table.preQualificationId
+    ),
+    userIdx: index('deep_scan_v2_runs_user_idx').on(table.userId),
+    statusIdx: index('deep_scan_v2_runs_status_idx').on(table.status),
+    createdAtIdx: index('deep_scan_v2_runs_created_at_idx').on(table.createdAt),
+  })
+);
+
+export type DeepScanV2Run = typeof deepScanV2Runs.$inferSelect;
+export type NewDeepScanV2Run = typeof deepScanV2Runs.$inferInsert;
+
+/**
+ * Deep Scan v2 Documents - Generated documents from runs
+ */
+export const deepScanV2Documents = pgTable(
+  'deep_scan_v2_documents',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // References
+    runId: text('run_id')
+      .notNull()
+      .references(() => deepScanV2Runs.id, { onDelete: 'cascade' }),
+
+    // Document info
+    type: text('type', {
+      enum: ['indication', 'calculation', 'presentation', 'proposal'],
+    }).notNull(),
+    format: text('format', {
+      enum: ['html', 'xlsx', 'pptx', 'docx', 'pdf'],
+    }).notNull(),
+    title: text('title').notNull(),
+
+    // Storage
+    storagePath: text('storage_path'), // Path in storage system
+    publicUrl: text('public_url'), // Signed URL for sharing
+    publicUrlExpiresAt: timestamp('public_url_expires_at'),
+
+    // Metadata
+    version: integer('version').notNull().default(1),
+    metadata: text('metadata'), // JSON - additional document metadata
+
+    // Timestamps
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    runIdx: index('deep_scan_v2_documents_run_idx').on(table.runId),
+    typeIdx: index('deep_scan_v2_documents_type_idx').on(table.type),
+  })
+);
+
+export type DeepScanV2Document = typeof deepScanV2Documents.$inferSelect;
+export type NewDeepScanV2Document = typeof deepScanV2Documents.$inferInsert;
+
+/**
+ * Deep Scan v2 Audit Results - Individual audit module results
+ */
+export const deepScanV2AuditResults = pgTable(
+  'deep_scan_v2_audit_results',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+
+    // References
+    runId: text('run_id')
+      .notNull()
+      .references(() => deepScanV2Runs.id, { onDelete: 'cascade' }),
+
+    // Audit info
+    auditType: text('audit_type', {
+      enum: [
+        'tech_detection',
+        'performance',
+        'accessibility',
+        'component_analysis',
+        'seo',
+        'security',
+      ],
+    }).notNull(),
+
+    // Results
+    results: text('results').notNull(), // JSON - audit-specific results
+    score: integer('score'), // Normalized score 0-100
+    confidence: integer('confidence'), // Confidence in results 0-100
+
+    // Provenance (A5 - Answer Provenance)
+    sources: text('sources'), // JSON array of source URLs/evidence
+    methodology: text('methodology'), // How the result was determined
+
+    // Timestamps
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    runIdx: index('deep_scan_v2_audit_results_run_idx').on(table.runId),
+    auditTypeIdx: index('deep_scan_v2_audit_results_audit_type_idx').on(table.auditType),
+  })
+);
+
+export type DeepScanV2AuditResult = typeof deepScanV2AuditResults.$inferSelect;
+export type NewDeepScanV2AuditResult = typeof deepScanV2AuditResults.$inferInsert;
+
+// ===== Deep Scan v2 Relations =====
+
+export const deepScanV2RunsRelations = relations(deepScanV2Runs, ({ one, many }) => ({
+  preQualification: one(preQualifications, {
+    fields: [deepScanV2Runs.preQualificationId],
+    references: [preQualifications.id],
+  }),
+  user: one(users, {
+    fields: [deepScanV2Runs.userId],
+    references: [users.id],
+  }),
+  documents: many(deepScanV2Documents),
+  auditResults: many(deepScanV2AuditResults),
+}));
+
+export const deepScanV2DocumentsRelations = relations(deepScanV2Documents, ({ one }) => ({
+  run: one(deepScanV2Runs, {
+    fields: [deepScanV2Documents.runId],
+    references: [deepScanV2Runs.id],
+  }),
+}));
+
+export const deepScanV2AuditResultsRelations = relations(deepScanV2AuditResults, ({ one }) => ({
+  run: one(deepScanV2Runs, {
+    fields: [deepScanV2AuditResults.runId],
+    references: [deepScanV2Runs.id],
+  }),
+}));

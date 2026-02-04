@@ -1,6 +1,8 @@
 'use client';
 
-import { Database, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Database, CheckCircle2, AlertCircle } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useState, useEffect } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -71,7 +73,7 @@ export function AuditStatusBadge({ leadId, variant = 'badge' }: AuditStatusBadge
   if (isLoading) {
     return variant === 'badge' ? (
       <Badge variant="outline" className="gap-1">
-        <Loader2 className="h-3 w-3 animate-spin" />
+        <Loader size="xs" />
         Prüfe Audit-Daten...
       </Badge>
     ) : null;
@@ -123,7 +125,7 @@ export function AuditStatusBadge({ leadId, variant = 'badge' }: AuditStatusBadge
             >
               {isIngesting ? (
                 <>
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <Loader size="xs" />
                   Importiere...
                 </>
               ) : (
@@ -161,7 +163,7 @@ export function AuditStatusBadge({ leadId, variant = 'badge' }: AuditStatusBadge
           <Button onClick={handleIngest} disabled={isIngesting} size="sm">
             {isIngesting ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Importiere Audit-Daten...
               </>
             ) : (

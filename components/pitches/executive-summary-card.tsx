@@ -21,12 +21,13 @@ import {
   DollarSign,
   FileText,
   Globe,
-  Loader2,
   RefreshCw,
   Sparkles,
   Target,
   TrendingUp,
 } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import Link from 'next/link';
 import { useCallback, useState } from 'react';
 import useSWR from 'swr';
@@ -298,11 +299,7 @@ export function ExecutiveSummaryCard({
               disabled={isRefreshing}
               className="h-8 w-8"
             >
-              {isRefreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
+              {isRefreshing ? <Loader size="sm" /> : <RefreshCw className="h-4 w-4" />}
             </Button>
           </div>
         </div>

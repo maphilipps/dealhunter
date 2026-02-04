@@ -1,6 +1,8 @@
 'use client';
 
-import { AlertCircle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -121,7 +123,7 @@ export function BulkVisualizationGenerator({ leadId }: BulkVisualizationGenerato
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader size="md" />
             Visualisierungen werden generiert...
           </CardTitle>
           <CardDescription>
@@ -176,11 +178,7 @@ export function BulkVisualizationGenerator({ leadId }: BulkVisualizationGenerato
             className="min-h-[40px] resize-none"
           />
           <Button onClick={handleGenerateAll} disabled={submitting} className="shrink-0">
-            {submitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
+            {submitting ? <Loader size="sm" /> : <Sparkles className="h-4 w-4" />}
           </Button>
         </div>
       </CardContent>

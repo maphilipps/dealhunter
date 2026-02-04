@@ -1,6 +1,8 @@
 'use client';
 
-import { Loader2, AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react';
+
+import { Loader } from './loader';
 import { useRef, useEffect } from 'react';
 
 import { AbortButton } from './abort-button';
@@ -125,7 +127,7 @@ export function ActivityStream({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            {isStreaming && <Loader2 className="h-5 w-5 animate-spin" />}
+            {isStreaming && <Loader size="md" />}
             {title}
           </CardTitle>
           {isStreaming && <AbortButton onAbort={abort} />}
@@ -138,7 +140,7 @@ export function ActivityStream({
               <div className="flex items-center justify-center h-[400px] text-muted-foreground">
                 {isStreaming ? (
                   <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="h-8 w-8 animate-spin" />
+                    <Loader size="lg" />
                     <p className="text-sm">Starte Analyse...</p>
                   </div>
                 ) : (

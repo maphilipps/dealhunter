@@ -14,7 +14,6 @@ import {
   BarChart3,
   CheckCircle2,
   Clock,
-  Loader2,
   Play,
   Scale,
   Sparkles,
@@ -23,6 +22,8 @@ import {
   ThumbsUp,
   XCircle,
 } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import Link from 'next/link';
 import { useCallback, useState } from 'react';
 import useSWR from 'swr';
@@ -276,7 +277,7 @@ function NoDataView({
         <Button onClick={() => void onRunAnalysis()} disabled={isRunning} size="lg">
           {isRunning ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader size="sm" className="mr-2" />
               Analyse läuft...
             </>
           ) : (
@@ -345,11 +346,7 @@ function RecommendationCard({
             onClick={() => void onRefresh()}
             disabled={isRefreshing}
           >
-            {isRefreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
+            {isRefreshing ? <Loader size="sm" /> : <Sparkles className="h-4 w-4" />}
           </Button>
         </div>
       </CardHeader>

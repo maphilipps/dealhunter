@@ -1,6 +1,8 @@
 'use client';
 
-import { CheckCircle2, Circle, Loader2, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, Circle, AlertTriangle } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useEffect, useMemo, useRef } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +29,7 @@ function PhaseStatusIcon({ status, className }: { status: PhaseStatus; className
     case 'completed':
       return <CheckCircle2 className={cn(base, 'text-green-600')} />;
     case 'active':
-      return <Loader2 className={cn(base, 'animate-spin text-primary')} />;
+      return <Loader size="sm" className={cn(base, 'text-primary')} />;
     case 'failed':
       return <AlertTriangle className={cn(base, 'text-destructive')} />;
     default:
@@ -42,7 +44,7 @@ function AgentStatusIcon({ status, className }: { status: PhaseStatus; className
     case 'completed':
       return <CheckCircle2 className={cn(base, 'text-green-600')} />;
     case 'active':
-      return <Loader2 className={cn(base, 'animate-spin text-primary')} />;
+      return <Loader size="sm" className={cn(base, 'text-primary')} />;
     case 'failed':
       return <AlertTriangle className={cn(base, 'text-destructive')} />;
     default:
@@ -150,7 +152,7 @@ export function PipelineProgress({ pitchId, onComplete }: PipelineProgressProps)
           </div>
         </div>
         <div className="flex items-center gap-2 px-3 py-4 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader size="sm" />
           <span className="text-xs">Verbindung zur Pipeline wird hergestellt...</span>
         </div>
       </div>

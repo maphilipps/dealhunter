@@ -1,7 +1,9 @@
 'use client';
 
 import type { ChatStatus } from 'ai';
-import { CornerDownLeftIcon, Loader2Icon, SquareIcon, XIcon } from 'lucide-react';
+import { CornerDownLeftIcon, SquareIcon, XIcon } from 'lucide-react';
+
+import { Loader } from './loader';
 import type { ComponentProps, FormEventHandler, KeyboardEventHandler } from 'react';
 import { useState } from 'react';
 
@@ -78,7 +80,7 @@ export const PromptInputSubmit = ({
   let Icon = <CornerDownLeftIcon className="size-4" />;
 
   if (status === 'submitted') {
-    Icon = <Loader2Icon className="size-4 animate-spin" />;
+    Icon = <Loader size="sm" />;
   } else if (status === 'streaming') {
     Icon = <SquareIcon className="size-4" />;
   } else if (status === 'error') {

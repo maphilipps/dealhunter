@@ -2,7 +2,7 @@
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { Bot, Loader2, Sparkles, User } from 'lucide-react';
+import { Bot, Sparkles, User } from 'lucide-react';
 import { useRef, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -147,7 +147,7 @@ export function PitchChat({ pitchId, onPipelineStarted, compact }: PitchChatProp
                           key={i}
                           className="mt-2 flex items-center gap-2 rounded bg-green-50 p-2 text-green-700 dark:bg-green-950 dark:text-green-300"
                         >
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader size="sm" />
                           <span className="text-xs font-medium">Pipeline wird gestartet...</span>
                         </div>
                       );

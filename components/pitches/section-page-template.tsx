@@ -1,6 +1,8 @@
 'use client';
 
-import { AlertCircle, Loader2, RefreshCw, Sparkles, TrendingUp } from 'lucide-react';
+import { AlertCircle, RefreshCw, Sparkles, TrendingUp } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useCallback, useEffect, useState } from 'react';
 
 import { QuickScanRenderer, type RenderTree } from '@/components/json-render/quick-scan-registry';
@@ -172,7 +174,7 @@ export function SectionPageTemplate({
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Laden...
               </>
             ) : (
@@ -279,11 +281,7 @@ export function SectionPageTemplate({
                 disabled={isGeneratingViz}
                 className="shrink-0"
               >
-                {isGeneratingViz ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
+                {isGeneratingViz ? <Loader size="sm" /> : <Sparkles className="h-4 w-4" />}
               </Button>
             </div>
           </CardContent>

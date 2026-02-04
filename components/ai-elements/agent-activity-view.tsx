@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  Loader2,
   CheckCircle2,
   AlertCircle,
   Clock,
@@ -11,6 +10,8 @@ import {
   Search,
   Sparkles,
 } from 'lucide-react';
+
+import { Loader } from './loader';
 import { useMemo, useState } from 'react';
 
 import {
@@ -222,7 +223,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
   const getStatusIcon = (status: AgentGroup['status']) => {
     switch (status) {
       case 'running':
-        return <Loader2 className="h-4 w-4 animate-spin text-blue-600" />;
+        return <Loader size="sm" className="text-blue-600" />;
       case 'complete':
         return <CheckCircle2 className="h-4 w-4 text-green-600" />;
       case 'error':
@@ -259,7 +260,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
       case 'synthesis':
         return <Sparkles className="h-4 w-4" />;
       default:
-        return <Loader2 className="h-4 w-4" />;
+        return <Loader size="sm" />;
     }
   };
 
@@ -283,7 +284,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
-            {isStreaming && <Loader2 className="h-5 w-5 animate-spin" />}
+            {isStreaming && <Loader size="md" />}
             Agent Aktivität
           </CardTitle>
           <Badge variant="outline" className="font-mono">
@@ -303,11 +304,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
                   variant="outline"
                   className={`flex items-center gap-1.5 ${getPhaseColorClasses(phase.phase, isActive)}`}
                 >
-                  {isActive ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    getPhaseIcon(phase.phase)
-                  )}
+                  {isActive ? <Loader size="xs" /> : getPhaseIcon(phase.phase)}
                   {getPhaseLabel(phase.phase)}
                   {phase.analyses.length > 0 && (
                     <span className="ml-1 text-xs opacity-70">
@@ -330,7 +327,7 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
           <div className="flex items-center justify-center h-32 text-muted-foreground">
             {isStreaming ? (
               <div className="flex flex-col items-center gap-2">
-                <Loader2 className="h-8 w-8 animate-spin" />
+                <Loader size="lg" />
                 <p className="text-sm">Starte Analyse...</p>
               </div>
             ) : (

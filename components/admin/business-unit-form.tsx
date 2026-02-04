@@ -3,6 +3,7 @@
 import { Plus, X } from 'lucide-react';
 
 import { Loader } from '@/components/ai-elements/loader';
+import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -39,14 +40,10 @@ function KeywordInput({ keywords, setKeywords }: KeywordInputProps) {
           placeholder="Keyword eingeben"
           className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
-        <button
-          type="button"
-          onClick={handleAddKeyword}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 flex items-center gap-2"
-        >
+        <Button type="button" onClick={handleAddKeyword}>
           <Plus className="h-4 w-4" />
           Hinzufügen
-        </button>
+        </Button>
       </div>
 
       {keywords.length > 0 && (
@@ -57,13 +54,15 @@ function KeywordInput({ keywords, setKeywords }: KeywordInputProps) {
               className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm"
             >
               {keyword}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="h-4 w-4 p-0 hover:text-destructive hover:bg-transparent"
                 onClick={() => handleRemoveKeyword(keyword)}
-                className="hover:text-destructive"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             </span>
           ))}
         </div>
@@ -168,27 +167,19 @@ export function BusinessUnitForm() {
       </div>
 
       <div className="flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="rounded-md border border-input px-6 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-        >
+        <Button type="button" variant="outline" size="lg" onClick={() => router.back()}>
           Abbrechen
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-        >
+        </Button>
+        <Button type="submit" size="lg" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader size="sm" />
               Wird gespeichert...
             </>
           ) : (
-            <>Speichern</>
+            'Speichern'
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -4,6 +4,7 @@ import { Expand } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
+import { Button } from '@/components/ui/button';
 import {
   Carousel,
   CarouselContent,
@@ -39,12 +40,13 @@ export function ScreenshotGallery({ screenshots }: ScreenshotGalleryProps) {
       {/* Thumbnail Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {screenshots.map((screenshot, index) => (
-          <button
+          <Button
             key={index}
+            variant="ghost"
             onClick={() => handleThumbnailClick(index)}
-            className="relative group overflow-hidden rounded-lg border border-slate-200 hover:border-blue-500 transition-all duration-200 bg-slate-50"
+            className="relative group overflow-hidden rounded-lg border border-slate-200 hover:border-blue-500 transition-all duration-200 bg-slate-50 h-auto p-0 flex flex-col"
           >
-            <div className="relative aspect-video">
+            <div className="relative aspect-video w-full">
               <Image
                 src={screenshot}
                 alt={`Screenshot ${index + 1}`}
@@ -58,10 +60,10 @@ export function ScreenshotGallery({ screenshots }: ScreenshotGalleryProps) {
               </div>
             </div>
             {/* Caption */}
-            <div className="p-2 text-xs text-muted-foreground text-center bg-white">
+            <div className="p-2 text-xs text-muted-foreground text-center bg-white w-full">
               Screenshot {index + 1}
             </div>
-          </button>
+          </Button>
         ))}
       </div>
 

@@ -13,6 +13,7 @@ import { Loader } from '@/components/ai-elements/loader';
 import { useState } from 'react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useQuickScan } from '@/contexts/quick-scan-context';
 
@@ -131,13 +132,15 @@ export function QuickScanStatusBanner({
             )}
           </div>
           {dismissible && (
-            <button
-              className="ml-4 inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-4 h-8 w-8"
               onClick={() => setIsDismissed(true)}
               aria-label="Banner schließen"
             >
               <X className="h-4 w-4" />
-            </button>
+            </Button>
           )}
         </div>
       </Alert>
@@ -161,13 +164,15 @@ export function QuickScanStatusBanner({
             )}
           </div>
           {dismissible && (
-            <button
-              className="ml-4 inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-4 h-8 w-8"
               onClick={() => setIsDismissed(true)}
               aria-label="Banner schließen"
             >
               <X className="h-4 w-4" />
-            </button>
+            </Button>
           )}
         </div>
       </Alert>

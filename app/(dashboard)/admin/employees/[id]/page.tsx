@@ -11,6 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { getBusinessUnits } from '@/lib/admin/business-units-actions';
 import { getEmployee, updateEmployee } from '@/lib/admin/employees-actions';
 
@@ -61,13 +68,15 @@ function TagInput({
           {items.map(item => (
             <Badge key={item} variant="secondary" className="text-sm">
               {item}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setItems(items.filter(i => i !== item))}
-                className="ml-1"
+                className="ml-1 h-auto p-0"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             </Badge>
           ))}
         </div>
@@ -201,20 +210,18 @@ export default function EditEmployeePage() {
 
             <div className="space-y-2">
               <Label htmlFor="businessLine">Business Unit *</Label>
-              <select
-                id="businessLine"
-                value={businessUnitId}
-                onChange={e => setBusinessUnitId(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                required
-              >
-                <option value="">Business Unit auswählen</option>
-                {businessUnits.map(bl => (
-                  <option key={bl.id} value={bl.id}>
-                    {bl.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={businessUnitId} onValueChange={setBusinessUnitId} required>
+                <SelectTrigger id="businessLine" className="w-full">
+                  <SelectValue placeholder="Business Unit auswählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {businessUnits.map(bl => (
+                    <SelectItem key={bl.id} value={bl.id}>
+                      {bl.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -238,18 +245,21 @@ export default function EditEmployeePage() {
 
             <div className="space-y-2">
               <Label htmlFor="availability">Verfügbarkeit *</Label>
-              <select
-                id="availability"
+              <Select
                 value={availability}
-                onChange={e =>
-                  setAvailability(e.target.value as 'available' | 'on_project' | 'unavailable')
+                onValueChange={value =>
+                  setAvailability(value as 'available' | 'on_project' | 'unavailable')
                 }
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <option value="available">Verfügbar</option>
-                <option value="on_project">Im Projekt</option>
-                <option value="unavailable">Nicht verfügbar</option>
-              </select>
+                <SelectTrigger id="availability" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="available">Verfügbar</SelectItem>
+                  <SelectItem value="on_project">Im Projekt</SelectItem>
+                  <SelectItem value="unavailable">Nicht verfügbar</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

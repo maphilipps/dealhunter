@@ -21,6 +21,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { suggestWebsiteUrlsAction } from '@/lib/bids/actions';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
@@ -241,19 +248,21 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         {/* Company Size */}
         <div className="space-y-2">
           <Label htmlFor="companySize">Unternehmensgröße</Label>
-          <select
-            id="companySize"
+          <Select
             value={data.companySize || ''}
-            onChange={e => setData({ ...data, companySize: e.target.value as any })}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            onValueChange={value => setData({ ...data, companySize: value as any })}
           >
-            <option value="">-- Bitte wählen --</option>
-            <option value="startup">Startup</option>
-            <option value="small">Klein (1-50 MA)</option>
-            <option value="medium">Mittel (51-250 MA)</option>
-            <option value="large">Groß (251-1000 MA)</option>
-            <option value="enterprise">Enterprise (1000+ MA)</option>
-          </select>
+            <SelectTrigger id="companySize">
+              <SelectValue placeholder="-- Bitte wählen --" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="startup">Startup</SelectItem>
+              <SelectItem value="small">Klein (1-50 MA)</SelectItem>
+              <SelectItem value="medium">Mittel (51-250 MA)</SelectItem>
+              <SelectItem value="large">Groß (251-1000 MA)</SelectItem>
+              <SelectItem value="enterprise">Enterprise (1000+ MA)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Employee Count Range */}
@@ -285,17 +294,19 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
         {/* Procurement Type */}
         <div className="space-y-2">
           <Label htmlFor="procurementType">Beschaffungstyp</Label>
-          <select
-            id="procurementType"
+          <Select
             value={data.procurementType || ''}
-            onChange={e => setData({ ...data, procurementType: e.target.value as any })}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            onValueChange={value => setData({ ...data, procurementType: value as any })}
           >
-            <option value="">-- Bitte wählen --</option>
-            <option value="public">Öffentlich</option>
-            <option value="private">Privat</option>
-            <option value="semi-public">Halböffentlich</option>
-          </select>
+            <SelectTrigger id="procurementType">
+              <SelectValue placeholder="-- Bitte wählen --" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="public">Öffentlich</SelectItem>
+              <SelectItem value="private">Privat</SelectItem>
+              <SelectItem value="semi-public">Halböffentlich</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Industry Vertical */}
@@ -529,13 +540,15 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
           {data.technologies.map((tech, idx) => (
             <Badge key={idx} variant="secondary" className="pl-3 pr-1">
               {tech}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => handleRemoveTechnology(idx)}
-                className="ml-2 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                className="ml-1 h-4 w-4 rounded-full p-0 hover:bg-muted-foreground/20"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             </Badge>
           ))}
         </div>
@@ -891,18 +904,21 @@ function RequiredDeliverablesCard({
                         <p className="text-xs text-muted-foreground truncate">{item.description}</p>
                       )}
                     </div>
-                    <select
+                    <Select
                       value={item.format || ''}
-                      onChange={e => handleUpdateFormat(idx, e.target.value)}
-                      className="text-xs border rounded px-2 py-1 bg-background"
+                      onValueChange={value => handleUpdateFormat(idx, value)}
                     >
-                      <option value="">Format</option>
-                      <option value="PDF">PDF</option>
-                      <option value="Word">Word</option>
-                      <option value="Excel">Excel</option>
-                      <option value="Hardcopy">Ausdruck</option>
-                      <option value="Digital">Digital</option>
-                    </select>
+                      <SelectTrigger className="h-7 w-24 text-xs">
+                        <SelectValue placeholder="Format" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PDF">PDF</SelectItem>
+                        <SelectItem value="Word">Word</SelectItem>
+                        <SelectItem value="Excel">Excel</SelectItem>
+                        <SelectItem value="Hardcopy">Ausdruck</SelectItem>
+                        <SelectItem value="Digital">Digital</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Badge
                       variant={item.mandatory ? 'default' : 'secondary'}
                       className="shrink-0 cursor-pointer"

@@ -9,9 +9,17 @@ import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { createTechnology } from '@/lib/admin/technologies-actions';
 
 interface BusinessUnitOption {
@@ -71,13 +79,15 @@ function EntityCountsInput({ entityCounts, setEntityCounts }: EntityCountsProps)
           {Object.entries(entityCounts).map(([name, count]) => (
             <Badge key={name} variant="secondary" className="text-sm">
               {name}: {count}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => handleRemoveEntity(name)}
-                className="ml-1 hover:text-destructive"
+                className="ml-1 h-auto p-0 hover:text-destructive"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             </Badge>
           ))}
         </div>
@@ -156,29 +166,25 @@ export function TechnologyForm({ businessUnits }: TechnologyFormProps) {
 
         <div className="space-y-2">
           <Label htmlFor="businessLine">Business Unit *</Label>
-          <select
-            id="businessLine"
-            value={businessUnitId}
-            onChange={e => setBusinessUnitId(e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            required
-          >
-            <option value="">Business Unit auswählen</option>
-            {(businessUnits || []).map(bl => (
-              <option key={bl.id} value={bl.id}>
-                {bl.name}
-              </option>
-            ))}
-          </select>
+          <Select value={businessUnitId} onValueChange={setBusinessUnitId} required>
+            <SelectTrigger id="businessLine" className="w-full">
+              <SelectValue placeholder="Business Unit auswählen" />
+            </SelectTrigger>
+            <SelectContent>
+              {(businessUnits || []).map(bl => (
+                <SelectItem key={bl.id} value={bl.id}>
+                  {bl.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="isDefault"
             checked={isDefault}
-            onChange={e => setIsDefault(e.target.checked)}
-            className="h-4 w-4"
+            onCheckedChange={checked => setIsDefault(checked === true)}
           />
           <Label htmlFor="isDefault" className="cursor-pointer">
             Als Default für diese Business Unit setzen

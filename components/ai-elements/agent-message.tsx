@@ -1,14 +1,14 @@
 'use client';
 
-import { Copy, ChevronDown, Check } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 
 import { ConfidenceIndicator } from './confidence-indicator';
+import { Reasoning, ReasoningTrigger, ReasoningContent } from './reasoning';
 import { Sources } from './sources';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { AgentEvent } from '@/lib/streaming/event-types';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
@@ -28,7 +28,6 @@ interface AgentMessageProps {
  */
 export function AgentMessage({ event }: AgentMessageProps) {
   const [copied, setCopied] = useState(false);
-  const [reasoningOpen, setReasoningOpen] = useState(false);
 
   // Only render progress and complete events
   if (
@@ -149,21 +148,17 @@ export function AgentMessage({ event }: AgentMessageProps) {
             </div>
           )}
 
-          {/* Reasoning (Collapsible) */}
+          {/* Reasoning */}
           {data.reasoning && (
-            <Collapsible open={reasoningOpen} onOpenChange={setReasoningOpen} className="mt-2">
-              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-                <ChevronDown
-                  className={`h-3 w-3 transition-transform ${reasoningOpen ? 'rotate-180' : ''}`}
-                />
-                Reasoning
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-1">
-                <div className="text-xs p-3 bg-muted rounded border">
-                  <p className="text-muted-foreground whitespace-pre-wrap">{data.reasoning}</p>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+            <Reasoning className="mt-2" defaultOpen={false}>
+              <ReasoningTrigger
+                className="text-xs"
+                getThinkingMessage={() => <span>Reasoning</span>}
+              />
+              <ReasoningContent className="mt-1 text-xs p-3 bg-muted rounded border">
+                {data.reasoning}
+              </ReasoningContent>
+            </Reasoning>
           )}
 
           {/* Sources */}

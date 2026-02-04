@@ -73,15 +73,17 @@ function ScoreCell({
             <div className="flex items-center justify-center gap-1 px-2 py-1 rounded bg-slate-100 text-slate-500">
               <span className="text-sm font-medium">n/a</span>
               {onResearch && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={e => {
                     e.stopPropagation();
                     onResearch();
                   }}
-                  className="ml-1 p-0.5 hover:bg-slate-200 rounded"
+                  className="ml-1 h-auto p-0.5"
                 >
                   <Search className="h-3 w-3" />
-                </button>
+                </Button>
               )}
             </div>
           </TooltipTrigger>
@@ -248,13 +250,14 @@ export function CMSEvaluationMatrix({
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {result.comparedTechnologies.map(cms => (
-              <button
+              <Button
                 key={cms.id}
+                variant="ghost"
                 onClick={() => onSelectCMS?.(cms.id)}
-                className={`p-4 rounded-lg border-2 transition-all text-left ${
+                className={`h-auto p-4 rounded-lg border-2 transition-all text-left flex flex-col items-stretch ${
                   selectedCMS === cms.id
                     ? 'border-blue-500 bg-blue-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                    : 'border-slate-200 hover:border-slate-300 hover:bg-transparent'
                 } ${cms.id === result.comparedTechnologies[0].id ? 'ring-2 ring-green-500 ring-offset-2' : ''}`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -279,7 +282,7 @@ export function CMSEvaluationMatrix({
                     Beste Übereinstimmung
                   </div>
                 )}
-              </button>
+              </Button>
             ))}
           </div>
         </CardContent>

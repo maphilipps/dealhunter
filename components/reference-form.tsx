@@ -183,9 +183,15 @@ export function ReferenceForm() {
               {technologies.map(tech => (
                 <Badge key={tech} variant="secondary">
                   {tech}
-                  <button type="button" onClick={() => removeTechnology(tech)} className="ml-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => removeTechnology(tech)}
+                    className="ml-1 h-auto p-0"
+                  >
                     <X className="h-3 w-3" />
-                  </button>
+                  </Button>
                 </Badge>
               ))}
             </div>
@@ -208,9 +214,15 @@ export function ReferenceForm() {
               {highlights.map(highlight => (
                 <Badge key={highlight} variant="secondary">
                   {highlight}
-                  <button type="button" onClick={() => removeHighlight(highlight)} className="ml-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => removeHighlight(highlight)}
+                    className="ml-1 h-auto p-0"
+                  >
                     <X className="h-3 w-3" />
-                  </button>
+                  </Button>
                 </Badge>
               ))}
             </div>

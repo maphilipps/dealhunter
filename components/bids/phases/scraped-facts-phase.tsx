@@ -1623,15 +1623,17 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
                             <td className="px-3 py-2">
                               {dm.email ? (
                                 <div className="flex items-center gap-2">
-                                  <button
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
                                     onClick={() => copyToClipboard(dm.email!)}
-                                    className="text-left hover:bg-slate-100 rounded px-1 flex items-center gap-1"
+                                    className="h-auto py-1 px-1 text-left justify-start"
                                     title="Klicken zum Kopieren"
                                   >
                                     <Mail className="h-3 w-3" />
                                     <span className="truncate max-w-32">{dm.email}</span>
                                     <Copy className="h-3 w-3 text-muted-foreground" />
-                                  </button>
+                                  </Button>
                                   <EmailConfidenceBadge confidence={dm.emailConfidence} />
                                 </div>
                               ) : (
@@ -1651,29 +1653,33 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
                     {decisionMakers.genericContacts.mainEmail && (
                       <div className="p-2 bg-slate-50 rounded">
                         <p className="text-xs text-muted-foreground">Allgemein</p>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() =>
                             copyToClipboard(decisionMakers.genericContacts!.mainEmail!)
                           }
-                          className="text-sm font-medium flex items-center gap-1 hover:text-blue-600"
+                          className="h-auto py-0 px-0 text-sm font-medium hover:text-blue-600"
                         >
                           <Mail className="h-3 w-3" />
                           {decisionMakers.genericContacts.mainEmail}
-                        </button>
+                        </Button>
                       </div>
                     )}
                     {decisionMakers.genericContacts.salesEmail && (
                       <div className="p-2 bg-slate-50 rounded">
                         <p className="text-xs text-muted-foreground">Vertrieb</p>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() =>
                             copyToClipboard(decisionMakers.genericContacts!.salesEmail!)
                           }
-                          className="text-sm font-medium flex items-center gap-1 hover:text-blue-600"
+                          className="h-auto py-0 px-0 text-sm font-medium hover:text-blue-600"
                         >
                           <Mail className="h-3 w-3" />
                           {decisionMakers.genericContacts.salesEmail}
-                        </button>
+                        </Button>
                       </div>
                     )}
                     {decisionMakers.genericContacts.phone && (

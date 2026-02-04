@@ -24,13 +24,14 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Progress } from '@/components/ui/progress';
-import type {
-  AgentEvent,
-  PhaseStartData,
-  AnalysisCompleteData,
-  QuickScanPhase,
+import type { AgentEvent, QuickScanPhase } from '@/lib/streaming/event-types';
+import {
+  AgentEventType,
+  isPhaseStartData,
+  isAnalysisCompleteData,
+  hasAgentField,
+  hasMessageField,
 } from '@/lib/streaming/event-types';
-import { AgentEventType } from '@/lib/streaming/event-types';
 
 interface AgentGroup {
   name: string;
@@ -66,25 +67,27 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
     let currentPhase: PhaseInfo | null = null;
 
     events.forEach(event => {
-      if (event.type === AgentEventType.PHASE_START && event.data) {
-        const data = event.data as PhaseStartData;
+      if (event.type === AgentEventType.PHASE_START && isPhaseStartData(event.data)) {
         // Save previous phase if exists
         if (currentPhase) {
           phases.push(currentPhase);
         }
         currentPhase = {
-          phase: data.phase,
-          message: data.message,
-          timestamp: data.timestamp,
+          phase: event.data.phase,
+          message: event.data.message,
+          timestamp: event.data.timestamp,
           analyses: [],
         };
-      } else if (event.type === AgentEventType.ANALYSIS_COMPLETE && event.data && currentPhase) {
-        const data = event.data as AnalysisCompleteData;
+      } else if (
+        event.type === AgentEventType.ANALYSIS_COMPLETE &&
+        isAnalysisCompleteData(event.data) &&
+        currentPhase
+      ) {
         currentPhase.analyses.push({
-          name: data.analysis,
-          success: data.success,
-          duration: data.duration,
-          details: data.details,
+          name: event.data.analysis,
+          success: event.data.success,
+          duration: event.data.duration,
+          details: event.data.details,
         });
       }
     });
@@ -163,8 +166,12 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
         return;
       }
 
-      const data = event.data as { agent: string; message?: string };
-      const agentName = data.agent;
+      // Type guard ensures data has agent field
+      if (!hasAgentField(event.data)) {
+        return;
+      }
+
+      const agentName = event.data.agent;
 
       if (!groups[agentName]) {
         groups[agentName] = {
@@ -375,13 +382,15 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
             <CollapsibleContent>
               <div className="ml-4 mt-1 space-y-1 border-l-2 border-muted pl-4 py-2">
                 {group.events.map(event => {
-                  const data = event.data as { message?: string };
+                  const message = hasMessageField(event.data)
+                    ? (event.data as { message?: string }).message
+                    : undefined;
                   return (
                     <div key={event.id} className="flex items-start gap-2 text-sm py-1">
                       <span className="text-xs text-muted-foreground font-mono min-w-[60px]">
                         {formatAgentTime(event.timestamp)}
                       </span>
-                      <span className="text-foreground">{data.message || 'Verarbeitung...'}</span>
+                      <span className="text-foreground">{message || 'Verarbeitung...'}</span>
                     </div>
                   );
                 })}

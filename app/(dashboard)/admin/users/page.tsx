@@ -8,6 +8,13 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { getUsers, updateUserRole, deleteUser } from '@/lib/admin/users-actions';
 
 type User = {
@@ -123,17 +130,21 @@ export default function UsersPage() {
                   {user.id !== currentUserId && (
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">Rolle ändern:</span>
-                      <select
+                      <Select
                         value={user.role}
-                        onChange={e =>
-                          handleRoleChange(user.id, e.target.value as 'bd' | 'bl' | 'admin')
+                        onValueChange={value =>
+                          handleRoleChange(user.id, value as 'bd' | 'bl' | 'admin')
                         }
-                        className="rounded-md border border-input bg-background px-3 py-1 text-sm"
                       >
-                        <option value="bd">BD</option>
-                        <option value="bl">BL</option>
-                        <option value="admin">Admin</option>
-                      </select>
+                        <SelectTrigger className="w-24 h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bd">BD</SelectItem>
+                          <SelectItem value="bl">BL</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
                 </CardContent>

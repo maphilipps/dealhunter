@@ -1,6 +1,8 @@
 'use client';
 
-import { Loader2, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
@@ -12,16 +14,22 @@ interface RunExpertAgentsButtonProps {
   hasResults?: boolean;
 }
 
-export function RunExpertAgentsButton({ preQualificationId, hasResults }: RunExpertAgentsButtonProps) {
+export function RunExpertAgentsButton({
+  preQualificationId,
+  hasResults,
+}: RunExpertAgentsButtonProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const handleClick = () => {
     startTransition(async () => {
       try {
-        const response = await fetch(`/api/pre-qualifications/${preQualificationId}/run-expert-agents`, {
-          method: 'POST',
-        });
+        const response = await fetch(
+          `/api/pre-qualifications/${preQualificationId}/run-expert-agents`,
+          {
+            method: 'POST',
+          }
+        );
 
         if (!response.ok) {
           throw new Error('Failed to run expert agents');
@@ -47,7 +55,7 @@ export function RunExpertAgentsButton({ preQualificationId, hasResults }: RunExp
     <Button onClick={handleClick} disabled={isPending} variant={hasResults ? 'outline' : 'default'}>
       {isPending ? (
         <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Loader size="sm" className="mr-2" />
           Analysiere...
         </>
       ) : (

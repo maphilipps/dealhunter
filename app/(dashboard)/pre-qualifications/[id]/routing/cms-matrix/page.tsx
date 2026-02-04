@@ -1,4 +1,6 @@
-import { AlertCircle, Loader2, Target } from 'lucide-react';
+import { AlertCircle, Target } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { notFound, redirect } from 'next/navigation';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -99,7 +101,7 @@ export default async function CMSMatrixPage({ params }: { params: Promise<{ id: 
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
+              <Loader size="md" className="text-muted-foreground" />
               <div>
                 <CardTitle>CMS-Matrix wird erstellt...</CardTitle>
                 <CardDescription>

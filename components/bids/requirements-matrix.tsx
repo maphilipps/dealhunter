@@ -1,6 +1,8 @@
 'use client';
 
-import { Loader2, Play, RefreshCw, CheckCircle2, AlertCircle, Info, Zap } from 'lucide-react';
+import { Play, RefreshCw, CheckCircle2, AlertCircle, Info, Zap } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -118,7 +120,7 @@ function MatrixCellDisplay({ cell }: { cell: MatrixCell | undefined }) {
   if (cell.status === 'running') {
     return (
       <div className="flex items-center justify-center">
-        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+        <Loader size="sm" className="text-blue-600" />
       </div>
     );
   }
@@ -306,7 +308,7 @@ export function RequirementsMatrix({ preQualificationId, initialMatrix }: Requir
           >
             {isLoading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader size="sm" className="mr-2" />
                 Recherchiere...
               </>
             ) : matrix ? (

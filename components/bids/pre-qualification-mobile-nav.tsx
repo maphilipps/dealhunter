@@ -1,6 +1,8 @@
 'use client';
 
-import { Loader2, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
@@ -71,7 +73,8 @@ export function PreQualificationMobileNav({
                     !qualificationRunning || isOverview
                       ? isNavigationItemEnabled(item, dataAvailability)
                       : false;
-                  const Icon = qualificationRunning && !isOverview ? Loader2 : item.icon;
+                  const showLoader = qualificationRunning && !isOverview;
+                  const Icon = item.icon;
 
                   if (isEnabled) {
                     return (
@@ -85,7 +88,7 @@ export function PreQualificationMobileNav({
                             : 'hover:bg-accent/50'
                         }`}
                       >
-                        <Icon className={`size-4${Icon === Loader2 ? ' animate-spin' : ''}`} />
+                        {showLoader ? <Loader size="sm" /> : <Icon className="size-4" />}
                         <span>{item.title}</span>
                       </Link>
                     );
@@ -102,7 +105,7 @@ export function PreQualificationMobileNav({
                           : 'Qualification Daten fehlen'
                       }
                     >
-                      <Icon className={`size-4${Icon === Loader2 ? ' animate-spin' : ''}`} />
+                      {showLoader ? <Loader size="sm" /> : <Icon className="size-4" />}
                       <span>{item.title}</span>
                     </div>
                   );

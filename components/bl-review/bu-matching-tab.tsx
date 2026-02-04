@@ -1,10 +1,11 @@
 'use client';
 
-import { Building2, CheckCircle2, RefreshCw, Loader2 } from 'lucide-react';
+import { Building2, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { Loader } from '@/components/ai-elements/loader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -167,7 +168,7 @@ export function BUMatchingTab({
         <CardContent className="flex gap-3">
           <Button variant="outline" onClick={handleReassign} disabled={isReassigning}>
             {isReassigning ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader size="sm" className="mr-2" />
             ) : (
               <RefreshCw className="h-4 w-4 mr-2" />
             )}

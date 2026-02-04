@@ -1,14 +1,8 @@
 'use client';
 
-import {
-  CheckCircle2,
-  XCircle,
-  HelpCircle,
-  Search,
-  Loader2,
-  Trophy,
-  TrendingUp,
-} from 'lucide-react';
+import { CheckCircle2, XCircle, HelpCircle, Search, Trophy, TrendingUp } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { Fragment, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -63,7 +57,7 @@ function ScoreCell({
   if (isResearching) {
     return (
       <div className="flex items-center justify-center px-2 py-1">
-        <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+        <Loader size="sm" className="text-blue-500" />
       </div>
     );
   }
@@ -194,7 +188,7 @@ export function CMSEvaluationMatrix({
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600 mb-4" />
+          <Loader size="lg" className="mx-auto text-blue-600 mb-4" />
           <p className="text-muted-foreground">CMS-Evaluation läuft...</p>
           <p className="text-sm text-muted-foreground mt-2">
             Anforderungen werden gegen verfügbare CMS-Systeme gematched

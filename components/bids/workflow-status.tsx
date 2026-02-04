@@ -1,6 +1,7 @@
 'use client';
 
-import { Loader2, ArrowRight, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { ArrowRight, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -75,7 +76,7 @@ export function WorkflowStatus({ preQualification }: WorkflowStatusProps) {
           {isProcessing && (
             <>
               <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+              <Loader size="sm" className="text-blue-600" />
             </>
           )}
         </div>
@@ -91,9 +92,7 @@ export function WorkflowStatus({ preQualification }: WorkflowStatusProps) {
               <div key={step.name} className="flex items-center gap-3">
                 {/* Status Icon */}
                 {isCompleted && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-                {isCurrent && isProcessing && (
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                )}
+                {isCurrent && isProcessing && <Loader size="sm" className="text-blue-600" />}
                 {isCurrent && !isProcessing && <AlertCircle className="h-4 w-4 text-amber-600" />}
                 {isPending && <Clock className="h-4 w-4 text-gray-400" />}
 
@@ -126,8 +125,8 @@ export function WorkflowStatus({ preQualification }: WorkflowStatusProps) {
           <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-900">
             <p className="font-medium">Duplikat gefunden</p>
             <p className="mt-1 text-amber-700">
-              Ein ähnliches Pre-Qualification existiert bereits. Bitte prüfen Sie die Duplikate und entscheiden
-              Sie, ob Sie fortfahren möchten.
+              Ein ähnliches Pre-Qualification existiert bereits. Bitte prüfen Sie die Duplikate und
+              entscheiden Sie, ob Sie fortfahren möchten.
             </p>
           </div>
         )}

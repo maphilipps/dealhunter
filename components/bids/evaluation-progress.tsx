@@ -1,6 +1,8 @@
 'use client';
 
-import { Loader2, CheckCircle2, Cpu, DollarSign, Target, Users } from 'lucide-react';
+import { CheckCircle2, Cpu, DollarSign, Target, Users } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -51,7 +53,7 @@ export function EvaluationProgress({ status }: EvaluationProgressProps) {
         <CardTitle className="flex items-center gap-2">
           {status === 'evaluating' ? (
             <>
-              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+              <Loader size="md" className="text-blue-600" />
               BIT/NO BIT Evaluierung läuft
             </>
           ) : (
@@ -76,7 +78,7 @@ export function EvaluationProgress({ status }: EvaluationProgressProps) {
                   {agent.status === 'completed' ? (
                     <CheckCircle2 className="h-6 w-6 text-green-600" />
                   ) : agent.status === 'running' ? (
-                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                    <Loader size="md" className="text-blue-600" />
                   ) : (
                     <div className="h-6 w-6 rounded-full border-2 border-muted" />
                   )}

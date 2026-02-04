@@ -1,6 +1,8 @@
 'use client';
 
-import { Loader2, Globe, Sparkles, Plus, X, ExternalLink, Check } from 'lucide-react';
+import { Globe, Sparkles, Plus, X, ExternalLink, Check } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -147,7 +149,7 @@ export function WebsiteUrlInput({
           >
             {isLoadingSuggestions ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Lade Vorschläge...
               </>
             ) : urls.length > 0 ? (
@@ -249,7 +251,7 @@ export function WebsiteUrlInput({
             <Button onClick={handleSubmit} disabled={selectedCount === 0 || isSubmitting}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Wird gestartet...
                 </>
               ) : (

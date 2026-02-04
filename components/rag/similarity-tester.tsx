@@ -7,10 +7,12 @@
  * Shows results with similarity scores for debugging retrieval.
  */
 
-import { Search, Loader2, Bot, FileText, Clock, AlertCircle } from 'lucide-react';
+import { Search, Bot, FileText, Clock, AlertCircle } from 'lucide-react';
 import { useState, useCallback } from 'react';
 
 import { ChunkDetailDialog } from './chunk-detail-dialog';
+
+import { Loader } from '@/components/ai-elements/loader';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -98,11 +100,7 @@ export function SimilarityTester({ preQualificationId, leadId }: SimilarityTeste
               disabled={isLoading}
             />
             <Button onClick={handleSearch} disabled={isLoading || !query.trim()}>
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="h-4 w-4" />
-              )}
+              {isLoading ? <Loader size="sm" /> : <Search className="h-4 w-4" />}
               <span className="ml-2">Suchen</span>
             </Button>
           </div>

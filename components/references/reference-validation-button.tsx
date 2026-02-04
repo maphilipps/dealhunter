@@ -1,10 +1,11 @@
 'use client';
 
-import { Loader2, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { Loader } from '@/components/ai-elements/loader';
 import { validateReference } from '@/lib/references/actions';
 
 interface ReferenceValidationButtonProps {
@@ -58,7 +59,7 @@ export function ReferenceValidationButton({
     >
       {isValidating ? (
         <>
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader size="sm" />
           Wird validiert...
         </>
       ) : (

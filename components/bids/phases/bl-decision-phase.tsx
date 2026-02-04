@@ -6,11 +6,11 @@ import {
   ThumbsDown,
   MessageSquare,
   Send,
-  Loader2,
   CheckCircle2,
   XCircle,
   AlertTriangle,
 } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -247,7 +247,7 @@ export function BLDecisionPhase({ quickScan, preQualificationId }: BLDecisionPha
           >
             {submitting ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Wird gespeichert...
               </>
             ) : (

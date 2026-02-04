@@ -2,7 +2,9 @@
 
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Download, FileText, Loader2 } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -63,7 +65,7 @@ export function DocumentsSidebar({ bidId }: DocumentsSidebarProps) {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <Loader size="md" className="text-muted-foreground" />
           </div>
         </CardContent>
       </Card>

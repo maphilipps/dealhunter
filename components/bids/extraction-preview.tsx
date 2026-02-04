@@ -3,7 +3,6 @@
 import {
   X,
   Plus,
-  Loader2,
   Globe,
   Sparkles,
   Check,
@@ -13,6 +12,7 @@ import {
   FileText,
   AlertTriangle,
 } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -343,7 +343,7 @@ export function ExtractionPreview({ initialData, onConfirm }: ExtractionPreviewP
           >
             {isLoadingSuggestions ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Lade Vorschläge...
               </>
             ) : (

@@ -1,6 +1,8 @@
 'use client';
 
-import { ThumbsUp, ThumbsDown, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, AlertTriangle, CheckCircle2 } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -187,7 +189,7 @@ export function BitDecisionActions({
               disabled={isSubmitting}
             >
               {isSubmitting ? (
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                <Loader size="md" className="mr-2" />
               ) : (
                 <ThumbsUp className="h-5 w-5 mr-2" />
               )}
@@ -233,7 +235,7 @@ export function BitDecisionActions({
               disabled={isSubmitting || !noBitReason.trim()}
             >
               {isSubmitting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader size="sm" className="mr-2" />
               ) : (
                 <CheckCircle2 className="h-4 w-4 mr-2" />
               )}

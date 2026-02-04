@@ -1,6 +1,8 @@
 'use client';
 
-import { AlertCircle, Globe2, Loader2, RefreshCw, TrendingUp } from 'lucide-react';
+import { AlertCircle, Globe2, RefreshCw, TrendingUp } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useCallback, useEffect, useState } from 'react';
 
 import { QuickScanRenderer, type RenderTree } from '@/components/json-render/quick-scan-registry';
@@ -108,7 +110,7 @@ export function TimingPageContent({ preQualificationId }: TimingPageContentProps
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Laden...
               </>
             ) : (

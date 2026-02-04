@@ -1,6 +1,7 @@
 'use client';
 
-import { Loader2, CheckCircle2, RotateCcw, ArrowRight, Building2 } from 'lucide-react';
+import { CheckCircle2, RotateCcw, ArrowRight, Building2 } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -68,12 +69,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
   // Phase 1.1: Ref to prevent double-start race condition in React Strict Mode
 
   useEffect(() => {
-    const processingStates = [
-      'processing',
-      'extracting',
-      'duplicate_checking',
-      'quick_scanning',
-    ];
+    const processingStates = ['processing', 'extracting', 'duplicate_checking', 'quick_scanning'];
     setIsExtracting(processingStates.includes(bid.status));
   }, [bid.status]);
 
@@ -236,7 +232,9 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
         <Card>
           <CardHeader>
             <CardTitle>Nächster Schritt</CardTitle>
-            <CardDescription>Die Qualification startet automatisch nach dem Anlegen.</CardDescription>
+            <CardDescription>
+              Die Qualification startet automatisch nach dem Anlegen.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
@@ -340,7 +338,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader size="sm" />
                   <span className="text-sm text-muted-foreground">
                     Lade Qualification Ergebnisse...
                   </span>
@@ -350,11 +348,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
           )}
 
           {quickScan && (
-            <QuickScanResults
-              quickScan={quickScan}
-              bidId={bid.id}
-              onRefresh={handleRefresh}
-            />
+            <QuickScanResults quickScan={quickScan} bidId={bid.id} onRefresh={handleRefresh} />
           )}
 
           {/* BD Qualification Decision (questions_ready or bit_pending status) */}
@@ -431,7 +425,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
                 <Card>
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader size="sm" />
                       <span className="text-sm text-muted-foreground">Lade BIT Evaluierung...</span>
                     </div>
                   </CardContent>
@@ -449,7 +443,7 @@ export function BidDetailClient({ bid }: BidDetailClientProps) {
                       disabled={isRetriggeringBit}
                     >
                       {isRetriggeringBit ? (
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        <Loader size="sm" className="mr-1" />
                       ) : (
                         <RotateCcw className="h-4 w-4 mr-1" />
                       )}

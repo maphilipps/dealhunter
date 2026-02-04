@@ -11,10 +11,10 @@ import {
   ArrowRight,
   CheckCircle2,
   AlertCircle,
-  Loader2,
   TrendingUp,
   BarChart3,
 } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import { useState, useEffect } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -99,7 +99,11 @@ function parseJsonField<T>(value: string | null | undefined): T | null {
   }
 }
 
-export function BLAssignmentView({ quickScan, extractedData, preQualificationId }: BLAssignmentViewProps) {
+export function BLAssignmentView({
+  quickScan,
+  extractedData,
+  preQualificationId,
+}: BLAssignmentViewProps) {
   const [buMatches, setBuMatches] = useState<BUMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState<string | null>(null);
@@ -331,7 +335,7 @@ export function BLAssignmentView({ quickScan, extractedData, preQualificationId 
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader size="md" className="text-muted-foreground" />
               <span className="ml-2 text-muted-foreground">Berechne Matches...</span>
             </div>
           ) : buMatches.length === 0 ? (
@@ -441,7 +445,7 @@ export function BLAssignmentView({ quickScan, extractedData, preQualificationId 
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <Loader size="md" className="text-muted-foreground" />
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -458,7 +462,7 @@ export function BLAssignmentView({ quickScan, extractedData, preQualificationId 
                     <div className="text-xs opacity-70">{Math.round(match.totalScore)}% Match</div>
                   </div>
                   {assigning === match.businessUnit.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader size="sm" />
                   ) : (
                     <ArrowRight className="h-4 w-4" />
                   )}

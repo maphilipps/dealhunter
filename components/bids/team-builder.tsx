@@ -1,14 +1,7 @@
 'use client';
 
-import {
-  Loader2,
-  Users,
-  CheckCircle2,
-  AlertTriangle,
-  Sparkles,
-  Mail,
-  Calendar,
-} from 'lucide-react';
+import { Users, CheckCircle2, AlertTriangle, Sparkles, Mail, Calendar } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
@@ -191,7 +184,7 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader size="sm" />
             <span className="text-sm text-muted-foreground">AI generiert Team-Empfehlung...</span>
           </div>
         </CardContent>
@@ -464,7 +457,7 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
           <Button onClick={handlePrepareAssignment} disabled={isAssigning} className="w-full">
             {isAssigning ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Wird verarbeitet...
               </>
             ) : sendNotifications ? (
@@ -558,7 +551,7 @@ export function TeamBuilder({ bidId }: TeamBuilderProps) {
             <Button onClick={handleAssignTeam} disabled={isAssigning}>
               {isAssigning ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Wird verarbeitet...
                 </>
               ) : (

@@ -1,10 +1,11 @@
 'use client';
 
-import { Loader2, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { Loader } from '@/components/ai-elements/loader';
 import { createReference } from '@/lib/references/actions';
 
 interface ReferenceFormProps {
@@ -354,7 +355,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader size="sm" />
               Wird gespeichert...
             </>
           ) : (

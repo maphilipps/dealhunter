@@ -1,6 +1,7 @@
 'use client';
 
-import { Upload, FileText, Loader2, Type, X } from 'lucide-react';
+import { Upload, FileText, Type, X } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -343,7 +344,7 @@ export function UploadBidForm({ userId: _userId, accounts: _accounts }: UploadBi
             >
               {isUploading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Wird verarbeitet...
                 </>
               ) : (

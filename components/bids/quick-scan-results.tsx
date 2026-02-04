@@ -1,6 +1,8 @@
 'use client';
 
-import { Loader2, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+
+import { Loader } from '@/components/ai-elements/loader';
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -119,7 +121,7 @@ export function QuickScanResults({
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                <Loader size="md" className="text-blue-600" />
                 <CardTitle className="text-blue-900">Qualification läuft</CardTitle>
               </div>
               <Badge variant="secondary" className="bg-blue-100 text-blue-800">
@@ -150,7 +152,7 @@ export function QuickScanResults({
           <Card className="border-amber-200 bg-amber-50">
             <CardContent className="py-4">
               <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+                <Loader size="sm" className="text-amber-600" />
                 <span className="text-sm text-amber-700">Warte auf Scan-Ergebnisse...</span>
               </div>
             </CardContent>
@@ -188,7 +190,7 @@ export function QuickScanResults({
       <Card className="border-slate-200">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Loader2 className="h-5 w-5 text-slate-400" />
+            <Loader size="md" className="text-slate-400" />
             <CardTitle className="text-slate-700">Qualification ausstehend</CardTitle>
           </div>
           <CardDescription className="text-slate-500">

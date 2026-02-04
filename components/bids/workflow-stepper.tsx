@@ -8,8 +8,8 @@ import {
   Users,
   Gavel,
   ChevronRight,
-  Loader2,
 } from 'lucide-react';
+import { Loader } from '@/components/ai-elements/loader';
 import { useState } from 'react';
 
 import { BLDecisionPhase } from './phases/bl-decision-phase';
@@ -84,7 +84,11 @@ function getPhaseStatus(
   return 'pending';
 }
 
-export function WorkflowStepper({ preQualification, quickScan, extractedData }: WorkflowStepperProps) {
+export function WorkflowStepper({
+  preQualification,
+  quickScan,
+  extractedData,
+}: WorkflowStepperProps) {
   const [activePhase, setActivePhase] = useState<WorkflowPhase>(() => {
     if (!quickScan || quickScan.status !== 'completed') return 'facts';
     if (!quickScan.recommendedBusinessUnit) return 'comparison';
@@ -182,7 +186,11 @@ export function WorkflowStepper({ preQualification, quickScan, extractedData }: 
       <div className="min-h-[500px]">
         {activePhase === 'facts' && (
           <div className="space-y-4">
-            <ScrapedFactsPhase quickScan={quickScan} extractedData={extractedData} bidId={preQualification.id} />
+            <ScrapedFactsPhase
+              quickScan={quickScan}
+              extractedData={extractedData}
+              bidId={preQualification.id}
+            />
 
             {/* Trigger Workflow 2 Button */}
             {quickScan?.status === 'completed' && (
@@ -205,7 +213,7 @@ export function WorkflowStepper({ preQualification, quickScan, extractedData }: 
                     >
                       {triggeringWorkflow2 ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader size="sm" className="mr-2" />
                           Starte...
                         </>
                       ) : (

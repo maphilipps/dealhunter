@@ -6,6 +6,14 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Loader } from '@/components/ai-elements/loader';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { createCompetency } from '@/lib/competencies/actions';
 
 export function CompetencyForm() {
@@ -82,41 +90,45 @@ export function CompetencyForm() {
           <label htmlFor="category" className="block text-sm font-medium mb-2">
             Kategorie *
           </label>
-          <select
-            id="category"
+          <Select
             value={category}
-            onChange={e =>
-              setCategory(
-                e.target.value as 'technology' | 'methodology' | 'industry' | 'soft_skill'
-              )
+            onValueChange={value =>
+              setCategory(value as 'technology' | 'methodology' | 'industry' | 'soft_skill')
             }
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
             required
           >
-            <option value="technology">Technologie</option>
-            <option value="methodology">Methodik</option>
-            <option value="industry">Industrie</option>
-            <option value="soft_skill">Soft Skill</option>
-          </select>
+            <SelectTrigger id="category" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="technology">Technologie</SelectItem>
+              <SelectItem value="methodology">Methodik</SelectItem>
+              <SelectItem value="industry">Industrie</SelectItem>
+              <SelectItem value="soft_skill">Soft Skill</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div>
           <label htmlFor="level" className="block text-sm font-medium mb-2">
             Level *
           </label>
-          <select
-            id="level"
+          <Select
             value={level}
-            onChange={e => setLevel(e.target.value as 'basic' | 'advanced' | 'expert')}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            onValueChange={value => setLevel(value as 'basic' | 'advanced' | 'expert')}
             disabled={isSubmitting}
             required
           >
-            <option value="basic">Basic</option>
-            <option value="advanced">Advanced</option>
-            <option value="expert">Expert</option>
-          </select>
+            <SelectTrigger id="level" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="basic">Basic</SelectItem>
+              <SelectItem value="advanced">Advanced</SelectItem>
+              <SelectItem value="expert">Expert</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -147,14 +159,9 @@ export function CompetencyForm() {
             className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
           />
-          <button
-            type="button"
-            onClick={handleAddCert}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            disabled={isSubmitting}
-          >
+          <Button type="button" onClick={handleAddCert} size="icon" disabled={isSubmitting}>
             <Plus className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
 
         {certifications.length > 0 && (
@@ -165,14 +172,16 @@ export function CompetencyForm() {
                 className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm"
               >
                 {cert}
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => handleRemoveCert(cert)}
-                  className="hover:text-destructive"
+                  className="h-4 w-4 p-0 hover:text-destructive"
                   disabled={isSubmitting}
                 >
                   <X className="h-3 w-3" />
-                </button>
+                </Button>
               </span>
             ))}
           </div>
@@ -180,19 +189,16 @@ export function CompetencyForm() {
       </div>
 
       <div className="flex justify-end gap-4">
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="lg"
           onClick={() => router.back()}
-          className="rounded-md border border-input px-6 py-3 text-sm font-medium hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isSubmitting}
         >
           Abbrechen
-        </button>
-        <button
-          type="submit"
-          className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          disabled={isSubmitting || !name.trim()}
-        >
+        </Button>
+        <Button type="submit" size="lg" disabled={isSubmitting || !name.trim()}>
           {isSubmitting ? (
             <>
               <Loader size="sm" />
@@ -201,7 +207,7 @@ export function CompetencyForm() {
           ) : (
             'Kompetenz speichern'
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -48,6 +48,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -918,7 +919,10 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
     return (
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
-          <button className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+          <Button
+            variant="ghost"
+            className="w-full flex items-center justify-between p-3 h-auto rounded-lg border hover:bg-muted/50"
+          >
             <div className="flex items-center gap-2">
               <Image className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium text-sm">Screenshots</span>
@@ -935,7 +939,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
               )}
               <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
             </div>
-          </button>
+          </Button>
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className="pt-4 space-y-4">
@@ -1185,10 +1189,11 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
       return (
         <div className="border-l border-muted ml-2">
-          <button
+          <Button
+            variant="ghost"
             onClick={() => hasChildren && toggleNode(pathKey)}
             className={cn(
-              'w-full flex items-center justify-between py-1.5 px-2 hover:bg-muted/50 text-left text-sm',
+              'w-full flex items-center justify-between py-1.5 px-2 h-auto rounded-none text-left text-sm',
               hasChildren ? 'cursor-pointer' : 'cursor-default'
             )}
             style={{ paddingLeft: `${paddingLeft}px` }}
@@ -1223,7 +1228,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
             <Badge variant="outline" className="text-xs ml-2 shrink-0">
               {node.count}
             </Badge>
-          </button>
+          </Button>
           {isExpanded && hasChildren && (
             <div className="bg-muted/20">
               {node.children!.map((child, idx) => (
@@ -1370,12 +1375,14 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
               <p className="text-sm font-medium text-muted-foreground">
                 Vollständige Seitenstruktur
               </p>
-              <button
+              <Button
+                variant="link"
+                size="sm"
                 onClick={toggleExpandAll}
-                className="text-xs text-blue-600 hover:text-blue-800"
+                className="text-xs h-auto p-0"
               >
                 {expandAll ? 'Alle einklappen' : 'Alle aufklappen'}
-              </button>
+              </Button>
             </div>
             <div className="border rounded-lg overflow-hidden max-h-[500px] overflow-y-auto">
               {sections.map((section, idx) => {
@@ -1385,10 +1392,11 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
 
                 return (
                   <div key={idx} className="border-b last:border-b-0">
-                    <button
+                    <Button
+                      variant="ghost"
                       onClick={() => hasChildren && toggleNode(sectionKey)}
                       className={cn(
-                        'w-full flex items-center justify-between p-2 hover:bg-muted/50 text-left',
+                        'w-full flex items-center justify-between p-2 h-auto rounded-none text-left',
                         hasChildren ? 'cursor-pointer' : 'cursor-default'
                       )}
                     >
@@ -1417,7 +1425,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
                         )}
                         <Badge variant="secondary">{section.count}</Badge>
                       </div>
-                    </button>
+                    </Button>
                     {isExpanded && hasChildren && (
                       <div className="border-t bg-muted/10">
                         {section.children!.map((child, cidx) => (
@@ -1783,9 +1791,10 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
       count: number;
       sectionKey: string;
     }) => (
-      <button
+      <Button
+        variant="ghost"
         onClick={() => toggleSection(sectionKey)}
-        className="w-full flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg hover:bg-muted/80 transition-colors"
+        className="w-full flex items-center justify-between py-2 px-3 h-auto bg-muted/50 rounded-lg hover:bg-muted/80"
       >
         <div className="flex items-center gap-2">
           {expandedSections[sectionKey] ? (
@@ -1796,7 +1805,7 @@ export const quickScanRegistry: Record<string, ComponentType<RegistryComponentPr
           <span className="font-medium text-sm">{title}</span>
         </div>
         <Badge variant="secondary">{count}</Badge>
-      </button>
+      </Button>
     );
 
     return (

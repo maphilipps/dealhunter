@@ -6,6 +6,14 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Loader } from '@/components/ai-elements/loader';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { createReference } from '@/lib/references/actions';
 
 interface ReferenceFormProps {
@@ -155,15 +163,10 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
             className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
           />
-          <button
-            type="button"
-            onClick={handleAddTech}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            disabled={isSubmitting}
-          >
+          <Button type="button" onClick={handleAddTech} disabled={isSubmitting}>
             <Plus className="h-4 w-4" />
             Hinzufügen
-          </button>
+          </Button>
         </div>
 
         {technologies.length > 0 && (
@@ -174,14 +177,16 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
                 className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm"
               >
                 {tech}
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => handleRemoveTech(tech)}
-                  className="hover:text-destructive"
+                  className="h-4 w-4 p-0 hover:text-destructive"
                   disabled={isSubmitting}
                 >
                   <X className="h-3 w-3" />
-                </button>
+                </Button>
               </span>
             ))}
           </div>
@@ -254,42 +259,41 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
             <label htmlFor="budgetRange" className="block text-sm font-medium mb-2">
               Budget-Bereich *
             </label>
-            <select
-              id="budgetRange"
+            <Select
               value={budgetRange}
-              onChange={e => setBudgetRange(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              onValueChange={setBudgetRange}
               disabled={isSubmitting}
               required
             >
-              <option value="">Bitte wählen...</option>
-              <option value="< 50k">&lt; 50.000 €</option>
-              <option value="50k - 100k">50.000 - 100.000 €</option>
-              <option value="100k - 250k">100.000 - 250.000 €</option>
-              <option value="250k - 500k">250.000 - 500.000 €</option>
-              <option value="500k - 1M">500.000 - 1.000.000 €</option>
-              <option value="> 1M">&gt; 1.000.000 €</option>
-            </select>
+              <SelectTrigger id="budgetRange" className="w-full">
+                <SelectValue placeholder="Bitte wählen..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="< 50k">&lt; 50.000 €</SelectItem>
+                <SelectItem value="50k - 100k">50.000 - 100.000 €</SelectItem>
+                <SelectItem value="100k - 250k">100.000 - 250.000 €</SelectItem>
+                <SelectItem value="250k - 500k">250.000 - 500.000 €</SelectItem>
+                <SelectItem value="500k - 1M">500.000 - 1.000.000 €</SelectItem>
+                <SelectItem value="> 1M">&gt; 1.000.000 €</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
             <label htmlFor="outcome" className="block text-sm font-medium mb-2">
               Ergebnis *
             </label>
-            <select
-              id="outcome"
-              value={outcome}
-              onChange={e => setOutcome(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={isSubmitting}
-              required
-            >
-              <option value="">Bitte wählen...</option>
-              <option value="success">Erfolgreich abgeschlossen</option>
-              <option value="on_track">Im Zeitplan und im Budget</option>
-              <option value="delayed">Mit Verzögerungen abgeschlossen</option>
-              <option value="over_budget">Über Budget abgeschlossen</option>
-            </select>
+            <Select value={outcome} onValueChange={setOutcome} disabled={isSubmitting} required>
+              <SelectTrigger id="outcome" className="w-full">
+                <SelectValue placeholder="Bitte wählen..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="success">Erfolgreich abgeschlossen</SelectItem>
+                <SelectItem value="on_track">Im Zeitplan und im Budget</SelectItem>
+                <SelectItem value="delayed">Mit Verzögerungen abgeschlossen</SelectItem>
+                <SelectItem value="over_budget">Über Budget abgeschlossen</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -308,15 +312,10 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
             className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
           />
-          <button
-            type="button"
-            onClick={handleAddHighlight}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            disabled={isSubmitting}
-          >
+          <Button type="button" onClick={handleAddHighlight} disabled={isSubmitting}>
             <Plus className="h-4 w-4" />
             Hinzufügen
-          </button>
+          </Button>
         </div>
 
         {highlights.length > 0 && (
@@ -324,14 +323,16 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
             {highlights.map((highlight, index) => (
               <li key={index} className="flex items-start gap-2 rounded-lg bg-muted p-3">
                 <span className="flex-1 text-sm">{highlight}</span>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => handleRemoveHighlight(index)}
-                  className="text-muted-foreground hover:text-destructive"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
                   disabled={isSubmitting}
                 >
                   <X className="h-4 w-4" />
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -340,19 +341,16 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
 
       {/* Submit */}
       <div className="flex justify-end gap-4">
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="lg"
           onClick={() => router.back()}
-          className="rounded-md border border-input px-6 py-3 text-sm font-medium hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isSubmitting}
         >
           Abbrechen
-        </button>
-        <button
-          type="submit"
-          className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          disabled={isSubmitting || technologies.length === 0}
-        >
+        </Button>
+        <Button type="submit" size="lg" disabled={isSubmitting || technologies.length === 0}>
           {isSubmitting ? (
             <>
               <Loader size="sm" />
@@ -361,7 +359,7 @@ export function ReferenceForm({ userId }: ReferenceFormProps) {
           ) : (
             'Referenz speichern'
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

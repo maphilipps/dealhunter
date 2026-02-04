@@ -50,7 +50,6 @@ interface FactsTabProps {
  * All cards use ShadCN components only.
  */
 export function FactsTab({ quickScan, bidId }: FactsTabProps) {
-
   // Helper to safely parse JSON fields (may already be objects from Drizzle)
   const safeJsonParse = <T,>(value: string | T | null | undefined): T | null => {
     if (!value) return null;
@@ -699,13 +698,16 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
                   <p className="text-sm font-medium">Desktop</p>
                   <Dialog>
                     <DialogTrigger asChild>
-                      <button className="relative w-full overflow-hidden rounded-lg border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer">
+                      <Button
+                        variant="ghost"
+                        className="relative h-auto w-full overflow-hidden rounded-lg border border-slate-200 p-0 hover:border-slate-300"
+                      >
                         <img
                           src={screenshots.homepage.desktop}
                           alt="Desktop Screenshot"
                           className="w-full h-auto"
                         />
-                      </button>
+                      </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl">
                       <img
@@ -724,13 +726,16 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
                   <p className="text-sm font-medium">Mobile</p>
                   <Dialog>
                     <DialogTrigger asChild>
-                      <button className="relative w-full overflow-hidden rounded-lg border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer">
+                      <Button
+                        variant="ghost"
+                        className="relative h-auto w-full overflow-hidden rounded-lg border border-slate-200 p-0 hover:border-slate-300"
+                      >
                         <img
                           src={screenshots.homepage.mobile}
                           alt="Mobile Screenshot"
                           className="w-full h-auto"
                         />
-                      </button>
+                      </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-xl">
                       <img

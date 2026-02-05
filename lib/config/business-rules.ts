@@ -33,6 +33,49 @@ export const BIT_EVALUATION_WEIGHTS = {
 export const BIT_THRESHOLD = 55;
 
 /**
+ * CMS Scoring Weights
+ *
+ * Gewichtung der einzelnen Faktoren beim CMS-Matching.
+ * Summe muss 1.0 ergeben.
+ */
+export const CMS_SCORING_WEIGHTS = {
+  feature: 0.4, // 40% - Feature Match
+  industry: 0.2, // 20% - Industry Fit
+  size: 0.15, // 15% - Size Match
+  budget: 0.15, // 15% - Budget Match
+  migration: 0.1, // 10% - Migration Complexity
+} as const;
+
+export type CmsScoringWeights = {
+  [K in keyof typeof CMS_SCORING_WEIGHTS]: number;
+};
+
+/**
+ * Helper: Calculate weighted CMS score
+ *
+ * Accepts optional weights parameter to allow injecting custom weights
+ * (e.g. from database or A/B test config). Defaults to CMS_SCORING_WEIGHTS.
+ */
+export function calculateWeightedCmsScore(
+  scores: {
+    feature: number;
+    industry: number;
+    size: number;
+    budget: number;
+    migration: number;
+  },
+  weights: CmsScoringWeights = CMS_SCORING_WEIGHTS
+): number {
+  return Math.round(
+    scores.feature * weights.feature +
+      scores.industry * weights.industry +
+      scores.size * weights.size +
+      scores.budget * weights.budget +
+      scores.migration * weights.migration
+  );
+}
+
+/**
  * CMS Industry Affinity
  *
  * Branchen-spezifische CMS-Präferenzen (0-100 Scores).

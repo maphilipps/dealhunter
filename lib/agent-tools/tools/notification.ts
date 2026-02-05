@@ -14,17 +14,128 @@ import {
   employees,
   pitchSectionData,
 } from '@/lib/db/schema';
-import { sendTeamNotificationEmails } from '@/lib/notifications/email';
+import { sendEmail, sendTeamNotificationEmails } from '@/lib/notifications/email';
 
 /**
- * Sprint 4.1: Notification Tools
+ * Notification Tools — Primitives for sending emails and managing reminders.
  *
- * Tools for sending team alerts and scheduling reminders.
- * Wraps existing email infrastructure with agent-callable tools.
+ * Primitive tools (data in, action out):
+ * - notification.send_email — send a single email
+ * - notification.send_team_emails — send batch emails to team members
+ *
+ * Team resolution is the agent's job:
+ *   1. Use teamAssignment.listByPreQualification to get team
+ *   2. Use user.get for BL leader details
+ *   3. Call notification.send_team_emails with the gathered data
  */
 
 // ============================================================================
-// notification.sendTeamAlert
+// notification.send_email — generic email-sending primitive
+// ============================================================================
+
+const sendEmailInputSchema = z.object({
+  to: z.string().email(),
+  subject: z.string().min(1),
+  body: z.string().min(1),
+});
+
+registry.register({
+  name: 'notification.send_email',
+  description:
+    'Send a single email. Takes recipient, subject, and HTML body. No data fetching — agent provides all content.',
+  category: 'notification',
+  inputSchema: sendEmailInputSchema,
+  async execute(input, _context: ToolContext) {
+    try {
+      const result = await sendEmail({
+        to: input.to,
+        subject: input.subject,
+        html: input.body,
+      });
+      return {
+        success: result.success,
+        data: {
+          to: input.to,
+          subject: input.subject,
+        },
+        ...(result.error ? { error: result.error } : {}),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to send email',
+      };
+    }
+  },
+});
+
+// ============================================================================
+// notification.send_team_emails — batch email primitive
+// ============================================================================
+
+const sendTeamEmailsInputSchema = z.object({
+  teamMembers: z.array(
+    z.object({
+      employeeId: z.string(),
+      employeeName: z.string(),
+      employeeEmail: z.string().email(),
+      role: z.string(),
+      roleLabel: z.string(),
+    })
+  ),
+  projectName: z.string(),
+  customerName: z.string(),
+  projectDescription: z.string(),
+  blLeaderName: z.string(),
+  projectUrl: z.string(),
+  bidId: z.string(),
+});
+
+registry.register({
+  name: 'notification.send_team_emails',
+  description:
+    'Send project assignment emails to a list of team members. Agent provides all team and project data — no data fetching.',
+  category: 'notification',
+  inputSchema: sendTeamEmailsInputSchema,
+  async execute(input, _context: ToolContext) {
+    if (input.teamMembers.length === 0) {
+      return { success: false, error: 'No team members provided' };
+    }
+
+    try {
+      const result = await sendTeamNotificationEmails({
+        bidId: input.bidId,
+        projectName: input.projectName,
+        customerName: input.customerName,
+        projectDescription: input.projectDescription,
+        teamMembers: input.teamMembers,
+        blLeaderName: input.blLeaderName,
+        projectUrl: input.projectUrl,
+      });
+
+      return {
+        success: result.success,
+        data: {
+          recipientCount: input.teamMembers.length,
+          recipients: input.teamMembers.map(t => ({
+            email: t.employeeEmail,
+            role: t.role,
+            name: t.employeeName,
+          })),
+          results: result.results,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to send team emails',
+      };
+    }
+  },
+});
+
+// ============================================================================
+// notification.sendTeamAlert — DEPRECATED, use notification.send_team_emails
 // ============================================================================
 
 const sendTeamAlertInputSchema = z.object({
@@ -36,7 +147,7 @@ const sendTeamAlertInputSchema = z.object({
 registry.register({
   name: 'notification.sendTeamAlert',
   description:
-    'Send notification emails to all team members assigned to a lead. Includes project details and custom message.',
+    '[DEPRECATED: use teamAssignment.listByPreQualification + user.get + notification.send_team_emails] Send notification emails to all team members assigned to a lead.',
   category: 'notification',
   inputSchema: sendTeamAlertInputSchema,
   async execute(input, context: ToolContext) {
@@ -74,8 +185,8 @@ registry.register({
       employeeId: a.employee.id,
       employeeName: a.employee.name,
       employeeEmail: a.employee.email,
-      role: a.assignment.role, // Technical role identifier
-      roleLabel: a.assignment.role, // Human-readable label (same for now)
+      role: a.assignment.role,
+      roleLabel: a.assignment.role,
     }));
 
     // Get BL leader name (preQualification owner)
@@ -94,7 +205,7 @@ registry.register({
         projectDescription: input.message || lead.projectDescription || 'No description available',
         teamMembers: teamDetails,
         blLeaderName: blLeader?.name || 'Unknown',
-        projectUrl: `/pitches/${lead.id}`, // Override to use lead URL instead of Pre-Qualification
+        projectUrl: `/pitches/${lead.id}`,
       });
 
       return {

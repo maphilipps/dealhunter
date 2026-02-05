@@ -76,6 +76,74 @@ export function calculateWeightedCmsScore(
 }
 
 /**
+ * CMS Size Affinity
+ *
+ * Größenbasierte CMS-Eignung (nach Seitenanzahl).
+ * Jeder Tier definiert einen Seitenanzahl-Bereich und CMS-Scores (0-100).
+ */
+export const CMS_SIZE_AFFINITY = {
+  small: {
+    min: 0,
+    max: 100,
+    cms: { Sulu: 90, Drupal: 75, Ibexa: 70, Magnolia: 60, FirstSpirit: 50 } as Record<
+      string,
+      number
+    >,
+  },
+  medium: {
+    min: 100,
+    max: 1000,
+    cms: { Drupal: 90, Sulu: 85, Ibexa: 80, Magnolia: 75, FirstSpirit: 70 } as Record<
+      string,
+      number
+    >,
+  },
+  large: {
+    min: 1000,
+    max: 10000,
+    cms: { Drupal: 85, Ibexa: 90, Magnolia: 85, FirstSpirit: 80, Sulu: 60 } as Record<
+      string,
+      number
+    >,
+  },
+  enterprise: {
+    min: 10000,
+    max: Infinity,
+    cms: { Magnolia: 95, FirstSpirit: 95, Ibexa: 85, Drupal: 80, Sulu: 40 } as Record<
+      string,
+      number
+    >,
+  },
+} as const;
+
+export type SizeAffinityTier = {
+  min: number;
+  max: number;
+  cms: Record<string, number>;
+};
+
+export type SizeAffinityConfig = Record<string, SizeAffinityTier>;
+
+/**
+ * Helper: Get CMS size affinity score for a given page count
+ *
+ * Accepts optional sizeAffinity parameter to allow injecting custom tiers
+ * (e.g. from database or A/B test config). Defaults to CMS_SIZE_AFFINITY.
+ */
+export function getCmsSizeAffinityScore(
+  cmsName: string,
+  pageCount: number,
+  sizeAffinity: SizeAffinityConfig = CMS_SIZE_AFFINITY
+): number {
+  for (const tier of Object.values(sizeAffinity)) {
+    if (pageCount >= tier.min && pageCount < tier.max) {
+      return tier.cms[cmsName] ?? 70;
+    }
+  }
+  return 70; // Fallback for unmatched range
+}
+
+/**
  * CMS Industry Affinity
  *
  * Branchen-spezifische CMS-Präferenzen (0-100 Scores).

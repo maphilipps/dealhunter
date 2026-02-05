@@ -25,7 +25,9 @@ import { technologies, cmsMatchResults, type Technology } from '../db/schema';
 import {
   CMS_INDUSTRY_AFFINITY,
   calculateWeightedCmsScore,
+  getCmsSizeAffinityScore,
   type CmsScoringWeights,
+  type SizeAffinityConfig,
 } from '@/lib/config/business-rules';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -66,6 +68,7 @@ export interface CMSMatcherInput {
   migrationComplexity: MigrationComplexityResult;
   requiredBusinessUnitId?: string; // Optional: filter to specific BU
   scoringWeights?: CmsScoringWeights; // Optional: override default scoring weights
+  sizeAffinity?: SizeAffinityConfig; // Optional: override default size affinity tiers
 }
 
 export interface CMSMatcherResult {
@@ -87,29 +90,8 @@ const INDUSTRY_AFFINITY = CMS_INDUSTRY_AFFINITY;
 
 /**
  * Size-based CMS affinity (based on page count)
+ * Now sourced from centralized config (CMS_SIZE_AFFINITY in business-rules.ts)
  */
-const SIZE_AFFINITY = {
-  small: {
-    min: 0,
-    max: 100,
-    cms: { Sulu: 90, Drupal: 75, Ibexa: 70, Magnolia: 60, FirstSpirit: 50 },
-  },
-  medium: {
-    min: 100,
-    max: 1000,
-    cms: { Drupal: 90, Sulu: 85, Ibexa: 80, Magnolia: 75, FirstSpirit: 70 },
-  },
-  large: {
-    min: 1000,
-    max: 10000,
-    cms: { Drupal: 85, Ibexa: 90, Magnolia: 85, FirstSpirit: 80, Sulu: 60 },
-  },
-  enterprise: {
-    min: 10000,
-    max: Infinity,
-    cms: { Magnolia: 95, FirstSpirit: 95, Ibexa: 85, Drupal: 80, Sulu: 40 },
-  },
-};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN FUNCTION
@@ -135,6 +117,7 @@ export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult
       migrationComplexity,
       requiredBusinessUnitId,
       scoringWeights,
+      sizeAffinity,
     } = input;
 
     // 1. Fetch all available CMS technologies
@@ -163,6 +146,7 @@ export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult
         contentArchitecture,
         migrationComplexity,
         scoringWeights,
+        sizeAffinity,
       });
 
       scoredMatches.push(score);
@@ -214,6 +198,7 @@ interface ScoreCMSInput {
   contentArchitecture: ContentArchitectureResult;
   migrationComplexity: MigrationComplexityResult;
   scoringWeights?: CmsScoringWeights;
+  sizeAffinity?: SizeAffinityConfig;
 }
 
 /**
@@ -228,6 +213,7 @@ async function scoreCMS(input: ScoreCMSInput): Promise<CMSMatchScore> {
     featureRequirements,
     migrationComplexity,
     scoringWeights,
+    sizeAffinity,
   } = input;
 
   // 1. Feature Score (40%)
@@ -237,7 +223,7 @@ async function scoreCMS(input: ScoreCMSInput): Promise<CMSMatchScore> {
   const industryScore = calculateIndustryScore(technology.name, industry);
 
   // 3. Size Score (15%)
-  const sizeScore = calculateSizeScore(technology.name, pageCount);
+  const sizeScore = calculateSizeScore(technology.name, pageCount, sizeAffinity);
 
   // 4. Budget Score (15%)
   const budgetScore = calculateBudgetScore(technology, budget);
@@ -347,18 +333,15 @@ function calculateIndustryScore(cmsName: string, industry?: string | null): numb
 
 /**
  * Calculate size match score (15% weight)
+ *
+ * Uses centralized getCmsSizeAffinityScore with optional custom tiers.
  */
-function calculateSizeScore(cmsName: string, pageCount: number): number {
-  for (const sizeCategory of Object.values(SIZE_AFFINITY)) {
-    if (pageCount >= sizeCategory.min && pageCount < sizeCategory.max) {
-      if (cmsName in sizeCategory.cms) {
-        return sizeCategory.cms[cmsName as keyof typeof sizeCategory.cms];
-      }
-      return 70;
-    }
-  }
-
-  return 70; // Fallback
+function calculateSizeScore(
+  cmsName: string,
+  pageCount: number,
+  sizeAffinity?: SizeAffinityConfig
+): number {
+  return getCmsSizeAffinityScore(cmsName, pageCount, sizeAffinity);
 }
 
 /**

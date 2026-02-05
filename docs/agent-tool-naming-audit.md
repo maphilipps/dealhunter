@@ -251,14 +251,300 @@ The primary gap is the lack of explicit documentation for multi-word entity nami
 
 The remaining non-conforming tools (search tools, action-oriented tools) represent opportunities for incremental improvement but do not indicate systemic issues with the naming conventions.
 
+## Migration Plan
+
+This section provides concrete migration paths for the 12 non-conforming tools identified in the audit.
+
+### Phase 1: Convention Clarification (Immediate - P1)
+
+**Objective:** Clarify multi-word entity naming in CLAUDE.md
+
+**Decision:** Accept camelCase as valid for multi-word entity names
+
+**Rationale:**
+
+- 40+ tools already use camelCase pattern (`preQualification.*`, `businessUnit.*`, `teamAssignment.*`, `pitchRun.*`)
+- Massive refactor risk to change to snake_case
+- TypeScript/JavaScript convention preference for camelCase
+
+**Action Items:**
+
+1. Update CLAUDE.md "Standard CRUD Tools" section:
+
+   ```markdown
+   **Entity Naming:**
+
+   - Single-word entities: lowercase (e.g., `reference`, `competency`, `employee`)
+   - Multi-word entities: camelCase (e.g., `preQualification`, `businessUnit`, `teamAssignment`)
+   ```
+
+2. Fix `audittrail.*` inconsistency:
+   - Rename `audittrail.*` → `auditTrail.*` for consistency
+   - Migration: Create aliases for 1 release, then remove
+
+**Impact:** Reduces non-conforming tools from 12 → 7 (5 camelCase tools now conforming)
+
+---
+
+### Phase 2: Search Tool Migration (Short-term - P2)
+
+**Objective:** Replace action-verb `search` tools with CRUD-compliant `list` tools
+
+#### Tool 1: `competitor.search` → `competitor.list`
+
+**Current Implementation:**
+
+```typescript
+// lib/agent-tools/tools/competitor.ts
+competitor.search(query: string) → Competitor[]
+```
+
+**Migration Path:**
+
+1. **Week 1:** Add `competitor.list` with optional query parameter
+
+   ```typescript
+   competitor.list({
+     query?: string,
+     limit?: number,
+     offset?: number
+   }) → { items: Competitor[], total: number }
+   ```
+
+2. **Week 2:** Mark `competitor.search` as deprecated
+
+   ```typescript
+   /**
+    * @deprecated Use competitor.list({ query }) instead
+    * Will be removed in v2.0.0 (2026-04-01)
+    */
+   ```
+
+3. **Week 3:** Update all consuming agents to use `competitor.list`
+   - Search for `competitor.search` usage in codebase
+   - Replace with `competitor.list({ query })`
+
+4. **Month 3:** Remove `competitor.search` (sunset: 2026-05-01)
+
+**Breaking Change:** No (backwards compatible via deprecation)
+
+#### Tool 2: `user.search` → `user.list`
+
+**Current Implementation:**
+
+```typescript
+// lib/agent-tools/tools/user.ts
+user.search(query: string) → User[]
+```
+
+**Migration Path:** Same as `competitor.search` above
+
+**Timeline:** Same as above (parallel migration)
+
+---
+
+### Phase 3: Nested Entity Evaluation (Medium-term - P3)
+
+**Objective:** Evaluate action-oriented tools for potential nested entity patterns
+
+#### Category A: Deliverable Tools (3 tools)
+
+**Current Tools:**
+
+- `pitchdeck.addDeliverable`
+- `pitchdeck.updateDeliverable`
+- `pitchdeck.deleteDeliverable`
+
+**Option 1: Keep as-is (Recommended)**
+
+- **Rationale:** Deliverables are tightly coupled to pitch decks, not standalone entities
+- **Action:** Document in CLAUDE.md as acceptable nested entity pattern
+  ```markdown
+  **Nested Entity Pattern:**
+  When entities are tightly coupled to a parent and rarely accessed independently,
+  use `parent.verbNoun` pattern (e.g., `pitchdeck.addDeliverable`).
+  ```
+
+**Option 2: Create separate entity**
+
+- **Pattern:** `deliverable.create`, `deliverable.update`, `deliverable.delete`
+- **Cons:** Deliverables rarely exist without pitch deck context
+- **Decision:** Not recommended
+
+**Recommendation:** Keep as-is, add documentation ✅
+
+#### Category B: Team Member Tools (2 tools)
+
+**Current Tools:**
+
+- `pitchdeck.addTeamMember`
+- `pitchdeck.removeTeamMember`
+
+**Analysis:** Same as deliverables — tightly coupled to parent
+
+**Recommendation:** Keep as-is, add documentation ✅
+
+#### Category C: Encounter Tools (1 tool)
+
+**Current Tool:**
+
+- `competitor.addEncounter`
+
+**Option 1: Keep as-is**
+
+- Encounters are competitor interactions (meetings, events)
+- Tightly coupled to competitor entity
+
+**Option 2: Create separate entity**
+
+- Pattern: `encounter.create`
+- Requires scope: `encounter.create({ competitorId, ... })`
+
+**Recommendation:**
+
+- If encounters grow complex (update, delete, list needed), migrate to separate entity
+- For now, keep as-is with documentation ✅
+
+#### Category D: Workflow Status Tools (3 tools)
+
+**Current Tools:**
+
+- `lead.transitionStatus`
+- `lead.requestMoreInfo`
+- `lead.submitBLVote`
+
+**Analysis:** These are workflow orchestration tools, not CRUD operations
+
+**Recommendation:**
+
+1. **`lead.transitionStatus`** → Simplify to `lead.update({ status })`
+   - Migration: Add deprecation warning, redirect internally to `lead.update`
+   - Timeline: Same as search tools (P2)
+
+2. **`lead.requestMoreInfo`** → Keep as workflow tool
+   - Triggers side effects (email, audit trail, status change)
+   - Correctly categorized as workflow orchestration
+   - Document as valid workflow pattern ✅
+
+3. **`lead.submitBLVote`** → Keep as workflow tool
+   - Complex orchestration (vote recording, decision making, notifications)
+   - Document as valid workflow pattern ✅
+
+---
+
+### Phase 4: Deprecated Tool Sunset (Long-term - P4)
+
+**Objective:** Remove tools marked as deprecated
+
+#### Tool 1: `decision.aggregate`
+
+**Status:** Already marked as deprecated
+**Replacement:** `decision.list_sections` + `decision.section_stats`
+
+**Timeline:**
+
+- ✅ Already deprecated in code (commit 963ff333)
+- **2026-03-01:** Search for all usages, migrate to new primitives
+- **2026-04-01:** Remove from codebase (3-month deprecation window)
+
+#### Tool 2: `notification.sendTeamAlert`
+
+**Status:** Already marked as deprecated
+**Replacement:** `notification.send_team_emails`
+
+**Timeline:**
+
+- ✅ Already deprecated in code
+- **2026-03-01:** Search for all usages, migrate to new tool
+- **2026-04-01:** Remove from codebase (3-month deprecation window)
+
+---
+
+## Migration Timeline Summary
+
+| Phase                                 | Priority | Timeline  | Tools Affected          | Status     |
+| ------------------------------------- | -------- | --------- | ----------------------- | ---------- |
+| **Phase 1: Convention Clarification** | P1       | Week 1    | 5 camelCase tools       | ⏳ Pending |
+| **Phase 2: Search Tools**             | P2       | Weeks 1-4 | 2 search tools          | ⏳ Pending |
+| **Phase 3: Nested Entity Evaluation** | P3       | Month 2   | 9 action-oriented tools | ⏳ Pending |
+| **Phase 4: Deprecated Sunset**        | P4       | Month 3   | 2 deprecated tools      | ⏳ Pending |
+
+---
+
+## Implementation Checklist
+
+### Phase 1: Convention Clarification
+
+- [ ] Update CLAUDE.md with multi-word entity naming guidance
+- [ ] Rename `audittrail.*` → `auditTrail.*` in tool registry
+- [ ] Add alias for backwards compatibility
+- [ ] Update tool documentation
+
+### Phase 2: Search Tool Migration
+
+- [ ] Implement `competitor.list({ query })` with filtering
+- [ ] Implement `user.list({ query })` with filtering
+- [ ] Mark `competitor.search` as deprecated with sunset date
+- [ ] Mark `user.search` as deprecated with sunset date
+- [ ] Update consuming agents (scan agents, routing agents)
+- [ ] Test backwards compatibility
+- [ ] Remove deprecated tools after 3-month window
+
+### Phase 3: Nested Entity Documentation
+
+- [ ] Document nested entity pattern in CLAUDE.md
+- [ ] Add examples: `pitchdeck.addDeliverable`, `competitor.addEncounter`
+- [ ] Document workflow tool exceptions
+- [ ] Simplify `lead.transitionStatus` → `lead.update({ status })`
+
+### Phase 4: Deprecated Tool Removal
+
+- [ ] Audit codebase for `decision.aggregate` usage
+- [ ] Migrate usages to `decision.list_sections` + `decision.section_stats`
+- [ ] Audit codebase for `notification.sendTeamAlert` usage
+- [ ] Migrate usages to `notification.send_team_emails`
+- [ ] Remove both tools from registry
+- [ ] Update documentation
+
+---
+
+## Success Metrics
+
+**Pre-Migration:**
+
+- Conformance Rate: 92% (141/153 tools)
+- Non-Conforming: 12 tools
+
+**Post-Migration Target:**
+
+- Conformance Rate: 100% (153/153 tools)
+- Non-Conforming: 0 tools
+- All exceptions documented in CLAUDE.md
+
+---
+
+## Risk Assessment
+
+| Risk                                       | Impact | Likelihood | Mitigation                                |
+| ------------------------------------------ | ------ | ---------- | ----------------------------------------- |
+| Breaking changes in production agents      | High   | Low        | Use deprecation warnings + 3-month window |
+| Developer confusion during transition      | Medium | Medium     | Clear documentation + Slack announcements |
+| Tool registry inconsistencies              | Low    | Low        | Automated tests for naming patterns       |
+| Performance regression from list filtering | Low    | Low        | Add database indexes for query fields     |
+
+---
+
 ## Next Steps
 
 - [x] Task 1: Convention documented in CLAUDE.md ✅ (Commit 1360982)
-- [x] Task 2: Audit existing tools against convention ✅ (This document)
-- [ ] Task 3: Create migration plan for non-conforming tools (Issue #103)
+- [x] Task 2: Audit existing tools against convention ✅ (Commit 6a7d10f)
+- [x] Task 3: Create migration plan for non-conforming tools ✅ (This section)
+
+**Ready for Implementation:** Phase 1 can begin immediately.
 
 ---
 
 **Audit conducted by:** Claude Code (RALPH)
 **Tools analyzed:** 153 tools across 28 files
 **Methodology:** Pattern matching + manual categorization
+**Migration plan created:** 2026-02-05

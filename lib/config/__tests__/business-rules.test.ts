@@ -7,6 +7,8 @@ import {
   meetsBidThreshold,
   getCmsAffinityScore,
   getBusinessUnitForTech,
+  CMS_SCORING_WEIGHTS,
+  calculateWeightedCmsScore,
 } from '../business-rules';
 
 describe('BIT_EVALUATION_WEIGHTS', () => {
@@ -136,5 +138,80 @@ describe('getBusinessUnitForTech', () => {
 
   it('returns null for unknown tech', () => {
     expect(getBusinessUnitForTech('react')).toBeNull();
+  });
+});
+
+describe('CMS_SCORING_WEIGHTS', () => {
+  it('sums to 1.0', () => {
+    const sum = Object.values(CMS_SCORING_WEIGHTS).reduce((a, b) => a + b, 0);
+    expect(Math.abs(sum - 1.0)).toBeLessThan(0.001);
+  });
+
+  it('has all required keys', () => {
+    expect(CMS_SCORING_WEIGHTS).toHaveProperty('feature');
+    expect(CMS_SCORING_WEIGHTS).toHaveProperty('industry');
+    expect(CMS_SCORING_WEIGHTS).toHaveProperty('size');
+    expect(CMS_SCORING_WEIGHTS).toHaveProperty('budget');
+    expect(CMS_SCORING_WEIGHTS).toHaveProperty('migration');
+  });
+});
+
+describe('calculateWeightedCmsScore', () => {
+  const uniformScores = {
+    feature: 80,
+    industry: 80,
+    size: 80,
+    budget: 80,
+    migration: 80,
+  };
+
+  it('returns 80 when all scores are 80 (default weights)', () => {
+    expect(calculateWeightedCmsScore(uniformScores)).toBe(80);
+  });
+
+  it('returns 0 when all scores are 0', () => {
+    const zeroScores = { feature: 0, industry: 0, size: 0, budget: 0, migration: 0 };
+    expect(calculateWeightedCmsScore(zeroScores)).toBe(0);
+  });
+
+  it('weights feature highest with default weights', () => {
+    const featureOnly = { feature: 100, industry: 0, size: 0, budget: 0, migration: 0 };
+    expect(calculateWeightedCmsScore(featureOnly)).toBe(40);
+  });
+
+  it('weights industry second highest with default weights', () => {
+    const industryOnly = { feature: 0, industry: 100, size: 0, budget: 0, migration: 0 };
+    expect(calculateWeightedCmsScore(industryOnly)).toBe(20);
+  });
+
+  it('accepts custom weights', () => {
+    const customWeights = {
+      feature: 0.6,
+      industry: 0.1,
+      size: 0.1,
+      budget: 0.1,
+      migration: 0.1,
+    };
+
+    const scores = { feature: 100, industry: 0, size: 0, budget: 0, migration: 0 };
+    expect(calculateWeightedCmsScore(scores, customWeights)).toBe(60);
+  });
+
+  it('uses default weights when none provided', () => {
+    const result1 = calculateWeightedCmsScore(uniformScores);
+    const result2 = calculateWeightedCmsScore(uniformScores, CMS_SCORING_WEIGHTS);
+    expect(result1).toBe(result2);
+  });
+
+  it('rounds to nearest integer', () => {
+    const scores = { feature: 33, industry: 67, size: 51, budget: 89, migration: 12 };
+    const result = calculateWeightedCmsScore(scores);
+    expect(Number.isInteger(result)).toBe(true);
+  });
+
+  it('handles equal custom weights', () => {
+    const equalWeights = { feature: 0.2, industry: 0.2, size: 0.2, budget: 0.2, migration: 0.2 };
+    const scores = { feature: 100, industry: 50, size: 50, budget: 50, migration: 50 };
+    expect(calculateWeightedCmsScore(scores, equalWeights)).toBe(60);
   });
 });

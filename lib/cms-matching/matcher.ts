@@ -3,7 +3,7 @@
  *
  * Matches Lead requirements against available CMS technologies using multi-criteria scoring.
  *
- * Scoring Weights:
+ * Default Scoring Weights (injectable via scoringWeights param):
  * - Feature Matching: 40%
  * - Industry Fit: 20%
  * - Size Match: 15%
@@ -22,7 +22,11 @@ import { generateStructuredOutput } from '../ai/config';
 import { db } from '../db';
 import { technologies, cmsMatchResults, type Technology } from '../db/schema';
 
-import { CMS_INDUSTRY_AFFINITY } from '@/lib/config/business-rules';
+import {
+  CMS_INDUSTRY_AFFINITY,
+  calculateWeightedCmsScore,
+  type CmsScoringWeights,
+} from '@/lib/config/business-rules';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -61,6 +65,7 @@ export interface CMSMatcherInput {
   contentArchitecture: ContentArchitectureResult;
   migrationComplexity: MigrationComplexityResult;
   requiredBusinessUnitId?: string; // Optional: filter to specific BU
+  scoringWeights?: CmsScoringWeights; // Optional: override default scoring weights
 }
 
 export interface CMSMatcherResult {
@@ -73,17 +78,6 @@ export interface CMSMatcherResult {
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * Scoring weights for different criteria
- */
-const SCORING_WEIGHTS = {
-  feature: 0.4, // 40%
-  industry: 0.2, // 20%
-  size: 0.15, // 15%
-  budget: 0.15, // 15%
-  migration: 0.1, // 10%
-};
 
 /**
  * Industry-to-CMS affinity mapping (0-100 scores)
@@ -140,6 +134,7 @@ export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult
       contentArchitecture,
       migrationComplexity,
       requiredBusinessUnitId,
+      scoringWeights,
     } = input;
 
     // 1. Fetch all available CMS technologies
@@ -167,6 +162,7 @@ export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult
         featureRequirements,
         contentArchitecture,
         migrationComplexity,
+        scoringWeights,
       });
 
       scoredMatches.push(score);
@@ -217,14 +213,22 @@ interface ScoreCMSInput {
   featureRequirements: FeatureRequirement[];
   contentArchitecture: ContentArchitectureResult;
   migrationComplexity: MigrationComplexityResult;
+  scoringWeights?: CmsScoringWeights;
 }
 
 /**
  * Calculate total score for a CMS technology
  */
 async function scoreCMS(input: ScoreCMSInput): Promise<CMSMatchScore> {
-  const { technology, industry, budget, pageCount, featureRequirements, migrationComplexity } =
-    input;
+  const {
+    technology,
+    industry,
+    budget,
+    pageCount,
+    featureRequirements,
+    migrationComplexity,
+    scoringWeights,
+  } = input;
 
   // 1. Feature Score (40%)
   const { featureScore, matchedFeatures } = calculateFeatureScore(technology, featureRequirements);
@@ -241,13 +245,16 @@ async function scoreCMS(input: ScoreCMSInput): Promise<CMSMatchScore> {
   // 5. Migration Score (10%)
   const migrationScore = calculateMigrationScore(migrationComplexity);
 
-  // 6. Calculate weighted total score
-  const totalScore = Math.round(
-    featureScore * SCORING_WEIGHTS.feature +
-      industryScore * SCORING_WEIGHTS.industry +
-      sizeScore * SCORING_WEIGHTS.size +
-      budgetScore * SCORING_WEIGHTS.budget +
-      migrationScore * SCORING_WEIGHTS.migration
+  // 6. Calculate weighted total score (uses injectable weights or defaults)
+  const totalScore = calculateWeightedCmsScore(
+    {
+      feature: featureScore,
+      industry: industryScore,
+      size: sizeScore,
+      budget: budgetScore,
+      migration: migrationScore,
+    },
+    scoringWeights
   );
 
   // 7. Generate reasoning with AI

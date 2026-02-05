@@ -1,20 +1,17 @@
 /**
  * Agent Results Optimizer
  *
- * Verbesserungslogik basierend auf Evaluator-Feedback.
- * Nutzt Intelligent Tools um fehlende Informationen zu recherchieren.
+ * Decomposed into pure primitives:
+ * - Pattern matching: matchCMSPatterns, extractEmployeeCount, extractIndustry, detectFeatures
+ * - Data gathering: use IntelligentTools directly (webSearch, githubRepo, crawlSite, etc.)
+ * - Orchestration: agent's job — decide what tools to call and how to interpret results
  *
- * Verwendung:
- * ```ts
- * const evaluation = await evaluateResults(results, schema);
- * if (evaluation.qualityScore < 80 && evaluation.canImprove) {
- *   const optimized = await optimizeResults(results, evaluation, tools);
- * }
- * ```
+ * @deprecated The orchestration functions (optimizeResults, optimizeArea, etc.) are deprecated.
+ * Use the primitives directly and let the agent orchestrate.
  */
 
 import type { EvaluationResult, EvaluationIssue } from './evaluator';
-import type { IntelligentTools } from './intelligent-tools';
+import type { IntelligentTools, SearchResult } from './intelligent-tools';
 
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
@@ -37,6 +34,143 @@ export interface OptimizationResult<T> {
   finalScore: number;
 }
 
+// ========================================
+// Primitive Types
+// ========================================
+
+export interface CMSMatch {
+  name: string;
+  matchedPattern: string;
+}
+
+export interface EmployeeExtraction {
+  raw: string;
+  source: 'pattern-match';
+}
+
+export interface FeatureDetection {
+  feature: string;
+  detected: boolean;
+}
+
+// ========================================
+// Pattern-Matching Primitives (pure, no I/O, no side effects)
+// ========================================
+
+const CMS_PATTERNS = [
+  { name: 'WordPress', patterns: ['wordpress', 'wp-content', 'wp-includes'] },
+  { name: 'Drupal', patterns: ['drupal', '/sites/default/', '/modules/'] },
+  { name: 'TYPO3', patterns: ['typo3', 'typo3conf', 'typo3temp'] },
+  { name: 'Joomla', patterns: ['joomla', '/components/', '/modules/'] },
+  { name: 'Shopify', patterns: ['shopify', 'cdn.shopify.com'] },
+  { name: 'Magento', patterns: ['magento', 'mage', '/skin/'] },
+] as const;
+
+/**
+ * Match CMS patterns against text content.
+ * Pure function — no I/O, no event emission.
+ * Agent calls webSearch/crawlSite to get text, then passes it here.
+ */
+export function matchCMSPatterns(text: string): CMSMatch | null {
+  const lower = text.toLowerCase();
+  for (const cms of CMS_PATTERNS) {
+    const matched = cms.patterns.find(p => lower.includes(p));
+    if (matched) {
+      return { name: cms.name, matchedPattern: matched };
+    }
+  }
+  return null;
+}
+
+const EMPLOYEE_PATTERNS = [
+  /(\d{1,3}(?:,\d{3})*(?:\s*-\s*\d{1,3}(?:,\d{3})*)?)\s*(?:employees|mitarbeiter)/i,
+  /(\d+)\+?\s*(?:employees|mitarbeiter)/i,
+];
+
+/**
+ * Extract employee count from text.
+ * Pure function — no I/O, no event emission.
+ * Agent calls webSearch to get text, then passes it here.
+ */
+export function extractEmployeeCount(text: string): EmployeeExtraction | null {
+  for (const pattern of EMPLOYEE_PATTERNS) {
+    const match = text.match(pattern);
+    if (match) {
+      return { raw: match[1], source: 'pattern-match' };
+    }
+  }
+  return null;
+}
+
+const KNOWN_INDUSTRIES = [
+  'IT',
+  'Finance',
+  'Healthcare',
+  'Manufacturing',
+  'Retail',
+  'Education',
+  'Media',
+] as const;
+
+/**
+ * Extract industry from text by matching against known industries.
+ * Pure function — no I/O, no event emission.
+ * Agent calls webSearch to get text, then passes it here.
+ */
+export function extractIndustry(text: string): string | null {
+  const lower = text.toLowerCase();
+  for (const industry of KNOWN_INDUSTRIES) {
+    if (lower.includes(industry.toLowerCase())) {
+      return industry;
+    }
+  }
+  return null;
+}
+
+const FEATURE_PATTERNS: Record<string, RegExp[]> = {
+  ecommerce: [/warenkorb|cart|shop|produkt|kaufen|bestellen|checkout/i],
+  userAccounts: [/login|anmelden|registrieren|mein konto|account|passwort/i],
+  search: [/suche|search|durchsuchen/i],
+  multiLanguage: [/lang=|hreflang|\/de\/|\/en\/|\/fr\/|sprache|language/i],
+  blog: [/blog|news|aktuell|artikel|beitrag/i],
+  forms: [/kontakt|contact|formular|form|anfrage/i],
+  api: [/api|endpoint|rest|graphql/i],
+};
+
+/**
+ * Detect website features from text content.
+ * Pure function — no I/O, no event emission.
+ * Agent calls crawlSite to get page text, then passes it here.
+ */
+export function detectFeatures(text: string): FeatureDetection[] {
+  return Object.entries(FEATURE_PATTERNS).map(([feature, patterns]) => ({
+    feature,
+    detected: patterns.some(p => p.test(text)),
+  }));
+}
+
+/**
+ * Parse confidence field name from an issue description.
+ * Pure function — extracts the field prefix before the first colon.
+ */
+export function parseConfidenceField(description: string): string | null {
+  const match = description.match(/^([^:]+):/);
+  return match ? match[1].toLowerCase() : null;
+}
+
+/**
+ * Concatenate search result snippets into a single text block.
+ * Utility for feeding search results into pattern-matching primitives.
+ */
+export function flattenSearchResults(results: SearchResult[], includeTitle = true): string {
+  return results.map(r => (includeTitle ? `${r.title} ${r.snippet}` : r.snippet)).join(' ');
+}
+
+// ============================================================================
+// DEPRECATED: Orchestration functions below
+// Use primitives above + IntelligentTools directly. Agent orchestrates.
+// ============================================================================
+
 interface IssueHandler {
   areas: string[];
   handler: (
@@ -47,13 +181,6 @@ interface IssueHandler {
   ) => Promise<Record<string, unknown>>;
 }
 
-// ========================================
-// Issue Handlers
-// ========================================
-
-/**
- * Handler für Tech Stack Issues
- */
 // Type for tech stack within results
 interface TechStackField {
   cms?: string;
@@ -79,7 +206,6 @@ async function handleTechStackIssue(
     },
   });
 
-  // Try to improve CMS detection via GitHub
   if (techStack?.cms && !techStack?.cmsVersion) {
     const githubInfo = await tools.githubRepo(techStack.cms);
     if (githubInfo.latestVersion) {
@@ -93,39 +219,23 @@ async function handleTechStackIssue(
     }
   }
 
-  // Try web search for tech stack verification
   const websiteUrl = results.websiteUrl as string | undefined;
   if (websiteUrl) {
     const siteSearch = await tools.webSearch(
       `site:${new URL(websiteUrl).hostname} technology stack`
     );
     if (siteSearch.length > 0) {
-      // Extract tech mentions from search results
-      const techMentions = siteSearch.map(r => r.snippet).join(' ');
-
-      // Common CMS patterns
-      const cmsPatterns = [
-        { name: 'WordPress', patterns: ['wordpress', 'wp-content', 'wp-includes'] },
-        { name: 'Drupal', patterns: ['drupal', '/sites/default/', '/modules/'] },
-        { name: 'TYPO3', patterns: ['typo3', 'typo3conf', 'typo3temp'] },
-        { name: 'Joomla', patterns: ['joomla', '/components/', '/modules/'] },
-        { name: 'Shopify', patterns: ['shopify', 'cdn.shopify.com'] },
-        { name: 'Magento', patterns: ['magento', 'mage', '/skin/'] },
-      ];
+      const techMentions = flattenSearchResults(siteSearch, false);
+      const cmsMatch = matchCMSPatterns(techMentions);
 
       const currentTechStack = optimized.techStack as TechStackField | undefined;
-      for (const cms of cmsPatterns) {
-        if (cms.patterns.some(p => techMentions.toLowerCase().includes(p))) {
-          if (!currentTechStack?.cms || (currentTechStack.cmsConfidence ?? 0) < 80) {
-            optimized.techStack = {
-              ...(optimized.techStack as object),
-              cms: cms.name,
-              cmsConfidence: 75,
-              detectedVia: 'web-search',
-            };
-            break;
-          }
-        }
+      if (cmsMatch && (!currentTechStack?.cms || (currentTechStack.cmsConfidence ?? 0) < 80)) {
+        optimized.techStack = {
+          ...(optimized.techStack as object),
+          cms: cmsMatch.name,
+          cmsConfidence: 75,
+          detectedVia: 'web-search',
+        };
       }
     }
   }
@@ -133,9 +243,6 @@ async function handleTechStackIssue(
   return optimized;
 }
 
-/**
- * Handler für Company Info Issues
- */
 async function handleCompanyIssue(
   results: Record<string, any>,
   issue: EvaluationIssue,
@@ -152,7 +259,6 @@ async function handleCompanyIssue(
     },
   });
 
-  // Search for company information
   const companyName =
     results.companyIntelligence?.basicInfo?.name ||
     results.extractedRequirements?.customerName ||
@@ -164,52 +270,28 @@ async function handleCompanyIssue(
     );
 
     if (searchResults.length > 0) {
-      const allText = searchResults
-        .map(r => `${r.title} ${r.snippet}`)
-        .join(' ')
-        .toLowerCase();
+      const allText = flattenSearchResults(searchResults);
 
-      // Extract employee count patterns
-      const employeePatterns = [
-        /(\d{1,3}(?:,\d{3})*(?:\s*-\s*\d{1,3}(?:,\d{3})*)?)\s*(?:employees|mitarbeiter)/i,
-        /(\d+)\+?\s*(?:employees|mitarbeiter)/i,
-      ];
-
-      for (const pattern of employeePatterns) {
-        const match = allText.match(pattern);
-        if (match) {
-          optimized.companyIntelligence = {
-            ...optimized.companyIntelligence,
-            basicInfo: {
-              ...optimized.companyIntelligence?.basicInfo,
-              employeeCount: match[1],
-            },
-          };
-          break;
-        }
+      const employee = extractEmployeeCount(allText);
+      if (employee) {
+        optimized.companyIntelligence = {
+          ...optimized.companyIntelligence,
+          basicInfo: {
+            ...optimized.companyIntelligence?.basicInfo,
+            employeeCount: employee.raw,
+          },
+        };
       }
 
-      // Extract industry from search results
-      const industries = [
-        'IT',
-        'Finance',
-        'Healthcare',
-        'Manufacturing',
-        'Retail',
-        'Education',
-        'Media',
-      ];
-      for (const industry of industries) {
-        if (allText.includes(industry.toLowerCase())) {
-          optimized.companyIntelligence = {
-            ...optimized.companyIntelligence,
-            basicInfo: {
-              ...optimized.companyIntelligence?.basicInfo,
-              industry,
-            },
-          };
-          break;
-        }
+      const industry = extractIndustry(allText);
+      if (industry) {
+        optimized.companyIntelligence = {
+          ...optimized.companyIntelligence,
+          basicInfo: {
+            ...optimized.companyIntelligence?.basicInfo,
+            industry,
+          },
+        };
       }
     }
   }
@@ -217,9 +299,6 @@ async function handleCompanyIssue(
   return optimized;
 }
 
-/**
- * Handler für Content/Features Issues
- */
 async function handleFeaturesIssue(
   results: Record<string, any>,
   issue: EvaluationIssue,
@@ -236,36 +315,21 @@ async function handleFeaturesIssue(
     },
   });
 
-  // Crawl more pages if page count is low or features are missing
   if (results.websiteUrl) {
     const crawlResult = await tools.crawlSite(results.websiteUrl, { maxDepth: 2, maxPages: 30 });
 
     if (crawlResult.pages.length > 0) {
-      // Analyze all pages for features
-      const allText = crawlResult.pages
-        .map(p => p.text || '')
-        .join(' ')
-        .toLowerCase();
+      const allText = crawlResult.pages.map(p => p.text || '').join(' ');
 
-      // Detect features
-      const featurePatterns: Record<string, RegExp[]> = {
-        ecommerce: [/warenkorb|cart|shop|produkt|kaufen|bestellen|checkout/i],
-        userAccounts: [/login|anmelden|registrieren|mein konto|account|passwort/i],
-        search: [/suche|search|durchsuchen/i],
-        multiLanguage: [/lang=|hreflang|\/de\/|\/en\/|\/fr\/|sprache|language/i],
-        blog: [/blog|news|aktuell|artikel|beitrag/i],
-        forms: [/kontakt|contact|formular|form|anfrage/i],
-        api: [/api|endpoint|rest|graphql/i],
-      };
+      const features = detectFeatures(allText);
 
       optimized.features = { ...optimized.features };
-      for (const [feature, patterns] of Object.entries(featurePatterns)) {
-        if (patterns.some(p => p.test(allText))) {
+      for (const { feature, detected } of features) {
+        if (detected) {
           optimized.features[feature] = true;
         }
       }
 
-      // Update page count
       optimized.contentVolume = {
         ...optimized.contentVolume,
         estimatedPageCount: Math.max(
@@ -279,9 +343,6 @@ async function handleFeaturesIssue(
   return optimized;
 }
 
-/**
- * Handler für Page Count Issues
- */
 async function handlePageCountIssue(
   results: Record<string, any>,
   issue: EvaluationIssue,
@@ -299,7 +360,6 @@ async function handlePageCountIssue(
   });
 
   if (results.websiteUrl) {
-    // Try sitemap first
     const sitemapResult = await tools.fetchSitemap(results.websiteUrl);
 
     if (sitemapResult.found && sitemapResult.urls.length > 0) {
@@ -310,7 +370,6 @@ async function handlePageCountIssue(
         pageCountConfidence: 95,
       };
     } else {
-      // Fallback to quick nav scan
       const navResult = await tools.quickNavScan(results.websiteUrl);
       optimized.contentVolume = {
         ...optimized.contentVolume,
@@ -324,9 +383,6 @@ async function handlePageCountIssue(
   return optimized;
 }
 
-/**
- * Handler für Confidence Issues
- */
 async function handleConfidenceIssue(
   results: Record<string, any>,
   issue: EvaluationIssue,
@@ -343,21 +399,15 @@ async function handleConfidenceIssue(
     },
   });
 
-  // Parse which field has low confidence
-  const fieldMatch = issue.description.match(/^([^:]+):/);
-  if (!fieldMatch) return optimized;
+  const field = parseConfidenceField(issue.description);
+  if (!field) return optimized;
 
-  const field = fieldMatch[1].toLowerCase();
-
-  // Verify via additional sources
   if (field.includes('cms') && results.techStack?.cms) {
-    // Double-check CMS via web search
     const searchResults = await tools.webSearch(
       `"${results.techStack.cms}" CMS latest version features`
     );
 
     if (searchResults.length > 0) {
-      // Get GitHub info for authoritative version
       const githubInfo = await tools.githubRepo(results.techStack.cms);
 
       if (githubInfo.latestVersion) {
@@ -372,9 +422,6 @@ async function handleConfidenceIssue(
   }
 
   if (field.includes('bl') && results.blRecommendation) {
-    // BL recommendation confidence can be improved by verifying against more data
-    // This would typically involve checking against internal BL capabilities
-    // For now, we just note that verification was attempted
     optimized.blRecommendation = {
       ...optimized.blRecommendation,
       verificationAttempted: true,
@@ -383,10 +430,6 @@ async function handleConfidenceIssue(
 
   return optimized;
 }
-
-// ========================================
-// Issue Handler Registry
-// ========================================
 
 const issueHandlers: IssueHandler[] = [
   {
@@ -411,9 +454,6 @@ const issueHandlers: IssueHandler[] = [
   },
 ];
 
-/**
- * Find handler for an issue
- */
 function findHandler(issue: EvaluationIssue): IssueHandler | undefined {
   const normalizedArea = issue.area.toLowerCase();
   return issueHandlers.find(h =>
@@ -421,15 +461,10 @@ function findHandler(issue: EvaluationIssue): IssueHandler | undefined {
   );
 }
 
-// ========================================
-// Main Optimizer Function
-// ========================================
-
 /**
- * Optimize Agent Results
- *
- * Takes evaluation results and uses intelligent tools to improve data quality.
- * Runs iteratively until target score is reached or max iterations exceeded.
+ * @deprecated Use primitives (matchCMSPatterns, extractEmployeeCount, extractIndustry,
+ * detectFeatures, parseConfidenceField, flattenSearchResults) + IntelligentTools directly.
+ * Agent should orchestrate which tools to call and interpret results via LLM.
  */
 export async function optimizeResults<T extends Record<string, any>>(
   results: T,
@@ -453,7 +488,6 @@ export async function optimizeResults<T extends Record<string, any>>(
     },
   });
 
-  // Filter to auto-fixable issues and sort by severity
   const fixableIssues = evaluation.issues
     .filter(i => i.canAutoFix)
     .sort((a, b) => {
@@ -492,12 +526,10 @@ export async function optimizeResults<T extends Record<string, any>>(
     try {
       const improved = await handler.handler(optimized, issue, tools, ctx);
 
-      // Check if something actually changed
       if (JSON.stringify(improved) !== JSON.stringify(optimized)) {
         optimized = improved as T;
         iterations++;
 
-        // Estimate score improvement based on severity
         const scoreBoost = issue.severity === 'critical' ? 15 : issue.severity === 'major' ? 10 : 5;
         currentScore = Math.min(100, currentScore + scoreBoost);
 
@@ -534,7 +566,7 @@ export async function optimizeResults<T extends Record<string, any>>(
 }
 
 /**
- * Quick optimization for a single area
+ * @deprecated Use primitives + IntelligentTools directly.
  */
 export async function optimizeArea<T extends Record<string, any>>(
   results: T,
@@ -558,12 +590,8 @@ export async function optimizeArea<T extends Record<string, any>>(
   return handler.handler(results, fakeIssue, tools, ctx) as Promise<T>;
 }
 
-// ========================================
-// Specialized Optimizers
-// ========================================
-
 /**
- * Optimize QuickScan Results
+ * @deprecated Use primitives + IntelligentTools directly.
  */
 export async function optimizeQuickScanResults(
   results: Record<string, any>,
@@ -579,7 +607,7 @@ export async function optimizeQuickScanResults(
 }
 
 /**
- * Optimize CMS Matching Results
+ * @deprecated Use primitives + IntelligentTools directly.
  */
 export async function optimizeCMSMatchingResults(
   results: Record<string, any>,
@@ -595,9 +623,7 @@ export async function optimizeCMSMatchingResults(
 }
 
 /**
- * Full Evaluator-Optimizer Loop
- *
- * Convenience function that runs evaluation and optimization in one call.
+ * @deprecated Use primitives + IntelligentTools directly.
  */
 export async function evaluateAndOptimize<T extends Record<string, any>>(
   results: T,

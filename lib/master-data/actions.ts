@@ -803,3 +803,91 @@ export async function deleteTechnology(id: string) {
     return { success: false, error: 'Fehler beim Löschen der Technologie' };
   }
 }
+
+// ============================================================================
+// Business Units Actions
+// ============================================================================
+
+export async function getBusinessUnits() {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error('Unauthorized');
+  }
+
+  try {
+    const units = await db.select().from(businessUnits).orderBy(businessUnits.createdAt);
+    return { success: true, businessUnits: units };
+  } catch (error) {
+    console.error('Error fetching business units:', error);
+    return { success: false, error: 'Fehler beim Laden der Business Units' };
+  }
+}
+
+const createBusinessUnitSchema = z.object({
+  name: z.string().min(1).max(200),
+  leaderName: z.string().min(1).max(200),
+  leaderEmail: z.string().email().max(200),
+  keywords: z.array(z.string()).min(1),
+});
+
+export async function createBusinessUnit(data: z.infer<typeof createBusinessUnitSchema>) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  if (session.user.role !== 'admin') {
+    return { success: false, error: 'Forbidden' };
+  }
+
+  const parsed = createBusinessUnitSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid input', details: parsed.error };
+  }
+
+  try {
+    const [businessUnit] = await db
+      .insert(businessUnits)
+      .values({
+        name: parsed.data.name.trim(),
+        leaderName: parsed.data.leaderName.trim(),
+        leaderEmail: parsed.data.leaderEmail.trim(),
+        keywords: JSON.stringify(parsed.data.keywords),
+      })
+      .returning();
+
+    revalidatePath('/master-data/business-units');
+
+    return { success: true, data: businessUnit };
+  } catch (error) {
+    console.error('createBusinessUnit error:', error);
+    return { success: false, error: 'Failed to create business unit' };
+  }
+}
+
+export async function deleteBusinessUnit(id: string) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  if (session.user.role !== 'admin') {
+    return { success: false, error: 'Forbidden' };
+  }
+
+  try {
+    const [existing] = await db.select().from(businessUnits).where(eq(businessUnits.id, id));
+
+    if (!existing) {
+      return { success: false, error: 'Not found' };
+    }
+
+    await db.delete(businessUnits).where(eq(businessUnits.id, id));
+
+    revalidatePath('/master-data/business-units');
+    return { success: true };
+  } catch (error) {
+    console.error('deleteBusinessUnit error:', error);
+    return { success: false, error: 'Failed to delete business unit' };
+  }
+}

@@ -53,7 +53,7 @@ const navigationItems: CommandPaletteItem[] = [
 const adminItems: CommandPaletteItem[] = [
   {
     label: 'Business Units',
-    href: '/admin/business-units',
+    href: '/master-data/business-units',
     icon: Database,
   },
   {
@@ -63,7 +63,7 @@ const adminItems: CommandPaletteItem[] = [
   },
   {
     label: 'Employees',
-    href: '/admin/employees',
+    href: '/master-data/employees',
     icon: Database,
   },
   {

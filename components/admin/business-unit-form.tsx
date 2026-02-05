@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { createBusinessUnit } from '@/lib/admin/business-units-actions';
+import { createBusinessUnit } from '@/lib/master-data/actions';
 
 interface KeywordInputProps {
   keywords: string[];
@@ -99,7 +99,7 @@ export function BusinessUnitForm() {
 
       if (result.success) {
         toast.success('Business Unit erfolgreich erstellt');
-        router.push('/admin/business-units');
+        router.push('/master-data/business-units');
         router.refresh();
       } else {
         toast.error(result.error || 'Fehler beim Erstellen');

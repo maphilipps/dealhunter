@@ -81,7 +81,7 @@ const allMasterDataItems: Array<{
   },
   {
     name: 'Business Units',
-    url: '/admin/business-units',
+    url: '/master-data/business-units',
     icon: Database,
     roles: ['bd', 'bl', 'admin'],
   },

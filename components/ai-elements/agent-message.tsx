@@ -119,7 +119,7 @@ export function AgentMessage({ event }: AgentMessageProps) {
             <Reasoning className="mt-2" defaultOpen={false}>
               <ReasoningTrigger
                 className="text-xs"
-                getThinkingMessage={() => <span>Reasoning</span>}
+                getThinkingMessage={() => <span>Begründung</span>}
               />
               <ReasoningContent className="mt-1 text-xs p-3 bg-muted rounded border">
                 {reasoning}

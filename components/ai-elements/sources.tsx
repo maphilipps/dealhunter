@@ -54,7 +54,7 @@ export function Sources({ sources }: SourcesProps) {
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mt-4">
       <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
         <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-        Sources ({sources.length})
+        Quellen ({sources.length})
       </CollapsibleTrigger>
       <CollapsibleContent className="mt-2 space-y-2">
         {sources.map((source, index) => (

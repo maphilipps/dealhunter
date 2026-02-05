@@ -189,6 +189,72 @@ export async function getUserCompetencies() {
   return items;
 }
 
+export async function getCompetency(id: string) {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error('Unauthorized');
+  }
+
+  const [item] = await db.select().from(competencies).where(eq(competencies.id, id));
+
+  if (!item) {
+    return null;
+  }
+
+  if (session.user.role !== 'admin' && item.userId !== session.user.id) {
+    throw new Error('Forbidden');
+  }
+
+  return item;
+}
+
+export async function updateCompetency(id: string, data: z.infer<typeof createCompetencySchema>) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const parsed = createCompetencySchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid input', details: parsed.error };
+  }
+
+  try {
+    const [existing] = await db.select().from(competencies).where(eq(competencies.id, id));
+
+    if (!existing) {
+      return { success: false, error: 'Not found' };
+    }
+
+    if (session.user.role !== 'admin' && existing.userId !== session.user.id) {
+      return { success: false, error: 'Forbidden' };
+    }
+
+    const [updated] = await db
+      .update(competencies)
+      .set({
+        name: parsed.data.name,
+        category: parsed.data.category,
+        level: parsed.data.level,
+        description: parsed.data.description ?? null,
+        certifications: parsed.data.certifications
+          ? JSON.stringify(parsed.data.certifications)
+          : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(competencies.id, id))
+      .returning();
+
+    revalidatePath('/master-data/competencies');
+    revalidatePath('/admin/validations');
+
+    return { success: true, data: updated };
+  } catch (error) {
+    console.error('updateCompetency error:', error);
+    return { success: false, error: 'Failed to update competency' };
+  }
+}
+
 export async function deleteCompetency(id: string) {
   const session = await auth();
   if (!session?.user) {

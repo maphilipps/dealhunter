@@ -8,66 +8,51 @@ import { db } from '@/lib/db';
 import { pitches, pitchSectionData } from '@/lib/db/schema';
 
 /**
- * Sprint 4.1: Decision Aggregation Tools
+ * Decision Tools — Primitives for BID/NO-BID decision support.
  *
- * Aggregates insights from all section synthesizers to support BID/NO-BID decision making.
- * Provides consolidated view of technology, costs, risks, timeline, team requirements.
+ * These are data-retrieval and stateless-calculation tools.
+ * Insight extraction and interpretation is the agent's job (via LLM).
  */
 
 // ============================================================================
-// decision.aggregate
+// Critical sections used for decision completeness checks
 // ============================================================================
 
-const aggregateInputSchema = z.object({
+const CRITICAL_SECTIONS = [
+  'overview',
+  'technology',
+  'costs',
+  'timeline',
+  'project-org',
+  'audit',
+] as const;
+
+// ============================================================================
+// decision.list_sections — raw section data for a lead
+// ============================================================================
+
+const listSectionsInputSchema = z.object({
   leadId: z.string(),
 });
 
-interface AggregatedDecisionData {
-  leadId: string;
-  leadStatus: string;
-  blVote: string | null;
-  sections: {
-    sectionId: string;
-    confidence: number | null;
-    content: Record<string, unknown>;
-    createdAt: Date | null;
-  }[];
-  summary: {
-    totalSections: number;
-    completedSections: number;
-    avgConfidence: number;
-    missingCriticalSections: string[];
-    keyInsights: {
-      technology?: string[];
-      risks?: string[];
-      estimatedCosts?: string;
-      timeline?: string;
-      teamRequirements?: string[];
-    };
-  };
-}
-
 registry.register({
-  name: 'decision.aggregate',
+  name: 'decision.list_sections',
   description:
-    'Aggregate all section insights for a lead. Returns consolidated data to support BID/NO-BID decision.',
+    'List all pitch sections for a lead. Returns raw section data (id, confidence, content, timestamps).',
   category: 'decision',
-  inputSchema: aggregateInputSchema,
+  inputSchema: listSectionsInputSchema,
   async execute(input, _context: ToolContext) {
-    // Get lead
     const [lead] = await db.select().from(pitches).where(eq(pitches.id, input.leadId)).limit(1);
 
     if (!lead) {
       return { success: false, error: 'Lead not found' };
     }
 
-    // Get all section data for this lead
     const sections = await db
       .select()
       .from(pitchSectionData)
       .where(eq(pitchSectionData.pitchId, input.leadId));
 
-    // Parse section content and extract key insights
     const parsedSections = sections.map(s => ({
       sectionId: s.sectionId,
       confidence: s.confidence,
@@ -75,103 +60,120 @@ registry.register({
       createdAt: s.createdAt,
     }));
 
-    // Calculate summary metrics
-    const completedSections = sections.length;
-    const avgConfidence =
-      sections.length > 0
-        ? sections.reduce((sum, s) => sum + (s.confidence || 0), 0) / sections.length
-        : 0;
-
-    // Define critical sections for decision making
-    const criticalSections = [
-      'overview',
-      'technology',
-      'costs',
-      'timeline',
-      'project-org',
-      'audit',
-    ];
-    const completedSectionIds = new Set(sections.map(s => s.sectionId));
-    const missingCriticalSections = criticalSections.filter(cs => !completedSectionIds.has(cs));
-
-    // Extract key insights from section content
-    const keyInsights: AggregatedDecisionData['summary']['keyInsights'] = {};
-
-    for (const section of parsedSections) {
-      switch (section.sectionId) {
-        case 'technology': {
-          const content = section.content as {
-            detectedTechnologies?: Array<{ name: string }>;
-            techStack?: { stack?: string[] };
-          };
-          keyInsights.technology =
-            content.detectedTechnologies?.map(t => t.name) || content.techStack?.stack || [];
-          break;
-        }
-
-        case 'costs': {
-          const content = section.content as {
-            totalEstimatedCosts?: { total?: string; range?: string };
-          };
-          keyInsights.estimatedCosts =
-            content.totalEstimatedCosts?.total || content.totalEstimatedCosts?.range;
-          break;
-        }
-
-        case 'timeline': {
-          const content = section.content as {
-            projectDuration?: string;
-            estimatedDuration?: string;
-          };
-          keyInsights.timeline = content.projectDuration || content.estimatedDuration;
-          break;
-        }
-
-        case 'project-org': {
-          const content = section.content as {
-            teamStructure?: Record<string, { count?: number; totalPT?: number }>;
-            organizationRecommendation?: { teamSize?: number };
-          };
-          const teamSize =
-            content.organizationRecommendation?.teamSize ||
-            Object.values(content.teamStructure || {}).reduce(
-              (sum, role) => sum + (role.count || 0),
-              0
-            );
-          keyInsights.teamRequirements = teamSize ? [`${teamSize} team members required`] : [];
-          break;
-        }
-
-        case 'audit': {
-          const content = section.content as {
-            risks?: Array<{ risk: string; impact: string }>;
-          };
-          keyInsights.risks =
-            content.risks
-              ?.filter(r => r.impact === 'high' || r.impact === 'critical')
-              .map(r => r.risk) || [];
-          break;
-        }
-      }
-    }
-
-    const aggregatedData: AggregatedDecisionData = {
-      leadId: input.leadId,
-      leadStatus: lead.status,
-      blVote: lead.blVote,
-      sections: parsedSections,
-      summary: {
-        totalSections: criticalSections.length,
-        completedSections,
-        avgConfidence: Math.round(avgConfidence * 100) / 100,
-        missingCriticalSections,
-        keyInsights,
+    return {
+      success: true,
+      data: {
+        leadId: input.leadId,
+        leadStatus: lead.status,
+        blVote: lead.blVote,
+        sections: parsedSections,
       },
     };
+  },
+});
+
+// ============================================================================
+// decision.section_stats — completeness and confidence metrics
+// ============================================================================
+
+const sectionStatsInputSchema = z.object({
+  leadId: z.string(),
+});
+
+registry.register({
+  name: 'decision.section_stats',
+  description:
+    'Calculate section completeness and confidence stats for a lead. Returns counts, average confidence, and missing critical sections.',
+  category: 'decision',
+  inputSchema: sectionStatsInputSchema,
+  async execute(input, _context: ToolContext) {
+    const sections = await db
+      .select({
+        sectionId: pitchSectionData.sectionId,
+        confidence: pitchSectionData.confidence,
+      })
+      .from(pitchSectionData)
+      .where(eq(pitchSectionData.pitchId, input.leadId));
+
+    const completedSectionIds = new Set(sections.map(s => s.sectionId));
+    const missingCriticalSections = CRITICAL_SECTIONS.filter(cs => !completedSectionIds.has(cs));
+
+    const avgConfidence =
+      sections.length > 0
+        ? Math.round(
+            (sections.reduce((sum, s) => sum + (s.confidence || 0), 0) / sections.length) * 100
+          ) / 100
+        : 0;
 
     return {
       success: true,
-      data: aggregatedData,
+      data: {
+        totalCriticalSections: CRITICAL_SECTIONS.length,
+        completedSections: sections.length,
+        missingCriticalSections,
+        avgConfidence,
+      },
+    };
+  },
+});
+
+// ============================================================================
+// decision.aggregate — DEPRECATED, use decision.list_sections + decision.section_stats
+// ============================================================================
+
+const aggregateInputSchema = z.object({
+  leadId: z.string(),
+});
+
+registry.register({
+  name: 'decision.aggregate',
+  description:
+    '[DEPRECATED: use decision.list_sections + decision.section_stats] Aggregate all section insights for a lead.',
+  category: 'decision',
+  inputSchema: aggregateInputSchema,
+  async execute(input, _context: ToolContext) {
+    const [lead] = await db.select().from(pitches).where(eq(pitches.id, input.leadId)).limit(1);
+
+    if (!lead) {
+      return { success: false, error: 'Lead not found' };
+    }
+
+    const sections = await db
+      .select()
+      .from(pitchSectionData)
+      .where(eq(pitchSectionData.pitchId, input.leadId));
+
+    const parsedSections = sections.map(s => ({
+      sectionId: s.sectionId,
+      confidence: s.confidence,
+      content: typeof s.content === 'string' ? JSON.parse(s.content) : s.content,
+      createdAt: s.createdAt,
+    }));
+
+    const completedSectionIds = new Set(sections.map(s => s.sectionId));
+    const missingCriticalSections = CRITICAL_SECTIONS.filter(cs => !completedSectionIds.has(cs));
+    const avgConfidence =
+      sections.length > 0
+        ? Math.round(
+            (sections.reduce((sum, s) => sum + (s.confidence || 0), 0) / sections.length) * 100
+          ) / 100
+        : 0;
+
+    return {
+      success: true,
+      data: {
+        leadId: input.leadId,
+        leadStatus: lead.status,
+        blVote: lead.blVote,
+        sections: parsedSections,
+        summary: {
+          totalSections: CRITICAL_SECTIONS.length,
+          completedSections: sections.length,
+          avgConfidence,
+          missingCriticalSections,
+          keyInsights: {},
+        },
+      },
     };
   },
 });

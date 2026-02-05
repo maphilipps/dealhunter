@@ -10,6 +10,45 @@ function getResendClient(): Resend {
   return resend;
 }
 
+// ============================================
+// Generic email-sending primitive
+// ============================================
+
+export interface SendEmailInput {
+  to: string;
+  subject: string;
+  html: string;
+}
+
+export async function sendEmail(
+  input: SendEmailInput
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (process.env.NODE_ENV === 'development' && !process.env.RESEND_API_KEY) {
+      console.log('📧 [DEV MODE] Email:', {
+        to: input.to,
+        subject: input.subject,
+      });
+      return { success: true };
+    }
+
+    await getResendClient().emails.send({
+      from: 'Dealhunter <noreply@dealhunter.adesso.de>',
+      to: input.to,
+      subject: input.subject,
+      html: input.html,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send email',
+    };
+  }
+}
+
 export interface SendBLAssignmentEmailInput {
   blLeaderName: string;
   blLeaderEmail: string;

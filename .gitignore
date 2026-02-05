@@ -70,3 +70,6 @@ local.db
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# RALPH worktrees and locks
+.worktrees/

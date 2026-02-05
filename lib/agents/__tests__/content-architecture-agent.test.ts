@@ -5,9 +5,11 @@ import {
   type AnalyzeContentArchitectureInput,
 } from '@/lib/agents/content-architecture-agent';
 
-// Mock generateObject
-vi.mock('ai', () => ({
-  generateObject: vi.fn(),
+// Mock generateStructuredOutput (the wrapper used by content-architecture-agent)
+const mockGenerateStructuredOutput = vi.fn();
+vi.mock('@/lib/ai/config', () => ({
+  generateStructuredOutput: (...args: unknown[]) => mockGenerateStructuredOutput(...args),
+  AI_TIMEOUTS: { AGENT_COMPLEX: 60000 },
 }));
 
 // Mock AI provider
@@ -53,35 +55,31 @@ describe('Content Architecture Agent', () => {
     });
 
     it('should analyze content architecture with valid crawl data', async () => {
-      const { generateObject } = await import('ai');
-
-      // Mock AI response
-      vi.mocked(generateObject).mockResolvedValue({
-        object: {
-          pageCountEstimate: 150,
-          pageCountConfidence: 'medium' as const,
-          contentTypes: [
-            {
-              name: 'News Article',
-              pattern: '/news/',
-              estimatedCount: 50,
-              characteristics: ['Has publish date', 'Has author'],
-            },
-            {
-              name: 'Product Page',
-              pattern: '/products/',
-              estimatedCount: 30,
-              characteristics: ['Has price', 'Has images'],
-            },
-          ],
-          navigationDepth: 3,
-          navigationBreadth: 5,
-          mainNavItems: ['Home', 'Products', 'About', 'Contact'],
-          imageCount: 500,
-          videoCount: 10,
-          documentCount: 20,
-        },
-      } as never);
+      // generateStructuredOutput returns the parsed object directly
+      mockGenerateStructuredOutput.mockResolvedValue({
+        pageCountEstimate: 150,
+        pageCountConfidence: 'medium' as const,
+        contentTypes: [
+          {
+            name: 'News Article',
+            pattern: '/news/',
+            estimatedCount: 50,
+            characteristics: ['Has publish date', 'Has author'],
+          },
+          {
+            name: 'Product Page',
+            pattern: '/products/',
+            estimatedCount: 30,
+            characteristics: ['Has price', 'Has images'],
+          },
+        ],
+        navigationDepth: 3,
+        navigationBreadth: 5,
+        mainNavItems: ['Home', 'Products', 'About', 'Contact'],
+        imageCount: 500,
+        videoCount: 10,
+        documentCount: 20,
+      });
 
       const input: AnalyzeContentArchitectureInput = {
         websiteUrl: 'https://example.com',
@@ -125,21 +123,17 @@ describe('Content Architecture Agent', () => {
     });
 
     it('should generate site tree with homepage', async () => {
-      const { generateObject } = await import('ai');
-
-      vi.mocked(generateObject).mockResolvedValue({
-        object: {
-          pageCountEstimate: 50,
-          pageCountConfidence: 'high' as const,
-          contentTypes: [],
-          navigationDepth: 2,
-          navigationBreadth: 4,
-          mainNavItems: ['Home', 'About'],
-          imageCount: 100,
-          videoCount: 0,
-          documentCount: 5,
-        },
-      } as never);
+      mockGenerateStructuredOutput.mockResolvedValue({
+        pageCountEstimate: 50,
+        pageCountConfidence: 'high' as const,
+        contentTypes: [],
+        navigationDepth: 2,
+        navigationBreadth: 4,
+        mainNavItems: ['Home', 'About'],
+        imageCount: 100,
+        videoCount: 0,
+        documentCount: 5,
+      });
 
       const input: AnalyzeContentArchitectureInput = {
         websiteUrl: 'https://example.com',
@@ -165,9 +159,7 @@ describe('Content Architecture Agent', () => {
     });
 
     it('should handle AI errors gracefully', async () => {
-      const { generateObject } = await import('ai');
-
-      vi.mocked(generateObject).mockRejectedValue(new Error('AI service unavailable'));
+      mockGenerateStructuredOutput.mockRejectedValue(new Error('AI service unavailable'));
 
       const input: AnalyzeContentArchitectureInput = {
         websiteUrl: 'https://example.com',
@@ -191,22 +183,18 @@ describe('Content Architecture Agent', () => {
     });
 
     it('should handle different confidence levels correctly', async () => {
-      const { generateObject } = await import('ai');
-
       for (const confidence of ['low', 'medium', 'high'] as const) {
-        vi.mocked(generateObject).mockResolvedValue({
-          object: {
-            pageCountEstimate: 100,
-            pageCountConfidence: confidence,
-            contentTypes: [],
-            navigationDepth: 2,
-            navigationBreadth: 3,
-            mainNavItems: [],
-            imageCount: 50,
-            videoCount: 0,
-            documentCount: 0,
-          },
-        } as never);
+        mockGenerateStructuredOutput.mockResolvedValue({
+          pageCountEstimate: 100,
+          pageCountConfidence: confidence,
+          contentTypes: [],
+          navigationDepth: 2,
+          navigationBreadth: 3,
+          mainNavItems: [],
+          imageCount: 50,
+          videoCount: 0,
+          documentCount: 0,
+        });
 
         const input: AnalyzeContentArchitectureInput = {
           websiteUrl: 'https://example.com',
@@ -224,21 +212,17 @@ describe('Content Architecture Agent', () => {
     });
 
     it('should include analyzed timestamp', async () => {
-      const { generateObject } = await import('ai');
-
-      vi.mocked(generateObject).mockResolvedValue({
-        object: {
-          pageCountEstimate: 100,
-          pageCountConfidence: 'medium' as const,
-          contentTypes: [],
-          navigationDepth: 2,
-          navigationBreadth: 3,
-          mainNavItems: [],
-          imageCount: 50,
-          videoCount: 0,
-          documentCount: 0,
-        },
-      } as never);
+      mockGenerateStructuredOutput.mockResolvedValue({
+        pageCountEstimate: 100,
+        pageCountConfidence: 'medium' as const,
+        contentTypes: [],
+        navigationDepth: 2,
+        navigationBreadth: 3,
+        mainNavItems: [],
+        imageCount: 50,
+        videoCount: 0,
+        documentCount: 0,
+      });
 
       const input: AnalyzeContentArchitectureInput = {
         websiteUrl: 'https://example.com',

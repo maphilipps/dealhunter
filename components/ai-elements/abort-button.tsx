@@ -43,22 +43,22 @@ export function AbortButton({ onAbort, disabled = false }: AbortButtonProps) {
         className="gap-2"
       >
         <StopCircle className="h-4 w-4" />
-        Cancel Analysis
+        Analyse abbrechen
       </Button>
 
       <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel analysis?</AlertDialogTitle>
+            <AlertDialogTitle>Analyse abbrechen?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will stop the current evaluation. Any partial results will be lost. Are you sure
-              you want to continue?
+              Dies stoppt die aktuelle Auswertung. Bisherige Teilergebnisse gehen verloren. Möchten
+              Sie wirklich fortfahren?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep running</AlertDialogCancel>
+            <AlertDialogCancel>Weiter ausführen</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirm} className="bg-red-600">
-              Yes, cancel
+              Ja, abbrechen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

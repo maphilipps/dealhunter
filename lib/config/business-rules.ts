@@ -124,32 +124,49 @@ export function getCmsAffinityScore(industry: string, cms: string): number {
   return industryMapping[cms] || industryMapping.Drupal || 70;
 }
 
+export type BitWeights = {
+  [K in keyof typeof BIT_EVALUATION_WEIGHTS]: number;
+};
+
 /**
  * Helper: Calculate weighted BIT score
+ *
+ * Accepts optional weights parameter to allow injecting custom weights
+ * (e.g. from database or A/B test config). Defaults to BIT_EVALUATION_WEIGHTS.
  */
-export function calculateWeightedBitScore(scores: {
-  capability: number;
-  dealQuality: number;
-  strategicFit: number;
-  winProbability: number;
-  legal: number;
-  reference: number;
-}): number {
+export function calculateWeightedBitScore(
+  scores: {
+    capability: number;
+    dealQuality: number;
+    strategicFit: number;
+    winProbability: number;
+    legal: number;
+    reference: number;
+  },
+  weights: BitWeights = BIT_EVALUATION_WEIGHTS
+): number {
   return (
-    scores.capability * BIT_EVALUATION_WEIGHTS.capability +
-    scores.dealQuality * BIT_EVALUATION_WEIGHTS.dealQuality +
-    scores.strategicFit * BIT_EVALUATION_WEIGHTS.strategicFit +
-    scores.winProbability * BIT_EVALUATION_WEIGHTS.winProbability +
-    scores.legal * BIT_EVALUATION_WEIGHTS.legal +
-    scores.reference * BIT_EVALUATION_WEIGHTS.reference
+    scores.capability * weights.capability +
+    scores.dealQuality * weights.dealQuality +
+    scores.strategicFit * weights.strategicFit +
+    scores.winProbability * weights.winProbability +
+    scores.legal * weights.legal +
+    scores.reference * weights.reference
   );
 }
 
 /**
  * Helper: Check if score meets BID threshold
+ *
+ * Accepts optional threshold parameter to allow injecting custom thresholds
+ * (e.g. from database or A/B test config). Defaults to BIT_THRESHOLD.
  */
-export function meetsBidThreshold(score: number, hasCriticalBlockers: boolean): boolean {
-  return score >= BIT_THRESHOLD && !hasCriticalBlockers;
+export function meetsBidThreshold(
+  score: number,
+  hasCriticalBlockers: boolean,
+  threshold: number = BIT_THRESHOLD
+): boolean {
+  return score >= threshold && !hasCriticalBlockers;
 }
 
 /**

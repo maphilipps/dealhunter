@@ -13,32 +13,40 @@ import {
 } from './schema';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
-import { meetsBidThreshold } from '@/lib/config/business-rules';
+import {
+  BIT_EVALUATION_WEIGHTS,
+  BIT_THRESHOLD,
+  meetsBidThreshold,
+  type BitWeights,
+} from '@/lib/config/business-rules';
 
 /**
  * Decision Tree Builder
  * Generates a hierarchical decision tree from agent results
  */
-export function buildDecisionTree(context: {
-  scores: {
-    capability: number;
-    dealQuality: number;
-    strategicFit: number;
-    winProbability: number;
-    legal: number;
-    reference: number;
-    overall: number;
-  };
-  capabilityMatch: CapabilityMatch;
-  dealQuality: DealQuality;
-  strategicFit: StrategicFit;
-  competitionCheck: CompetitionCheck;
-  legalAssessment: LegalAssessment;
-  contractAnalysis: ContractAnalysis;
-  referenceMatch: ReferenceMatch;
-  allCriticalBlockers: string[];
-  recommendation: 'bit' | 'no_bit';
-}): DecisionNode {
+export function buildDecisionTree(
+  context: {
+    scores: {
+      capability: number;
+      dealQuality: number;
+      strategicFit: number;
+      winProbability: number;
+      legal: number;
+      reference: number;
+      overall: number;
+    };
+    capabilityMatch: CapabilityMatch;
+    dealQuality: DealQuality;
+    strategicFit: StrategicFit;
+    competitionCheck: CompetitionCheck;
+    legalAssessment: LegalAssessment;
+    contractAnalysis: ContractAnalysis;
+    referenceMatch: ReferenceMatch;
+    allCriticalBlockers: string[];
+    recommendation: 'bit' | 'no_bit';
+  },
+  weights: BitWeights = BIT_EVALUATION_WEIGHTS
+): DecisionNode {
   const { scores, allCriticalBlockers, recommendation } = context;
 
   // Root decision node
@@ -77,7 +85,7 @@ export function buildDecisionTree(context: {
     type: 'criterion',
     label: 'Capability Match',
     score: scores.capability,
-    weight: 0.25,
+    weight: weights.capability,
     sentiment:
       scores.capability >= 70 ? 'positive' : scores.capability >= 50 ? 'neutral' : 'negative',
     reasoning: context.capabilityMatch.reasoning,
@@ -108,7 +116,7 @@ export function buildDecisionTree(context: {
     type: 'criterion',
     label: 'Deal Quality',
     score: scores.dealQuality,
-    weight: 0.2,
+    weight: weights.dealQuality,
     sentiment:
       scores.dealQuality >= 70 ? 'positive' : scores.dealQuality >= 50 ? 'neutral' : 'negative',
     reasoning: context.dealQuality.reasoning,
@@ -160,7 +168,7 @@ export function buildDecisionTree(context: {
     type: 'criterion',
     label: 'Strategic Fit',
     score: scores.strategicFit,
-    weight: 0.15,
+    weight: weights.strategicFit,
     sentiment:
       scores.strategicFit >= 70 ? 'positive' : scores.strategicFit >= 50 ? 'neutral' : 'negative',
     reasoning: context.strategicFit.reasoning,
@@ -195,7 +203,7 @@ export function buildDecisionTree(context: {
     type: 'criterion',
     label: 'Win Probability',
     score: scores.winProbability,
-    weight: 0.15,
+    weight: weights.winProbability,
     sentiment:
       scores.winProbability >= 70
         ? 'positive'
@@ -236,7 +244,7 @@ export function buildDecisionTree(context: {
     type: 'criterion',
     label: 'Legal Assessment',
     score: scores.legal,
-    weight: 0.15,
+    weight: weights.legal,
     sentiment: scores.legal >= 70 ? 'positive' : scores.legal >= 50 ? 'neutral' : 'negative',
     reasoning: context.legalAssessment.reasoning,
     children: [
@@ -273,7 +281,7 @@ export function buildDecisionTree(context: {
     type: 'criterion',
     label: 'Reference Match',
     score: scores.reference,
-    weight: 0.1,
+    weight: weights.reference,
     sentiment:
       scores.reference >= 70 ? 'positive' : scores.reference >= 50 ? 'neutral' : 'negative',
     reasoning: context.referenceMatch.reasoning,
@@ -360,35 +368,46 @@ export function calculateConfidence(context: {
  * Coordinator Agent
  * Synthesizes all agent results and creates final decision with tree
  */
-export async function runCoordinatorAgent(context: {
-  capabilityMatch: CapabilityMatch;
-  dealQuality: DealQuality;
-  strategicFit: StrategicFit;
-  competitionCheck: CompetitionCheck;
-  legalAssessment: LegalAssessment;
-  contractAnalysis: ContractAnalysis;
-  referenceMatch: ReferenceMatch;
-  scores: {
-    capability: number;
-    dealQuality: number;
-    strategicFit: number;
-    winProbability: number;
-    legal: number;
-    reference: number;
-    overall: number;
-  };
-  allCriticalBlockers: string[];
-}): Promise<CoordinatorOutput> {
-  // Calculate initial recommendation using centralized config
+export async function runCoordinatorAgent(
+  context: {
+    capabilityMatch: CapabilityMatch;
+    dealQuality: DealQuality;
+    strategicFit: StrategicFit;
+    competitionCheck: CompetitionCheck;
+    legalAssessment: LegalAssessment;
+    contractAnalysis: ContractAnalysis;
+    referenceMatch: ReferenceMatch;
+    scores: {
+      capability: number;
+      dealQuality: number;
+      strategicFit: number;
+      winProbability: number;
+      legal: number;
+      reference: number;
+      overall: number;
+    };
+    allCriticalBlockers: string[];
+  },
+  config: { weights?: BitWeights; threshold?: number } = {}
+): Promise<CoordinatorOutput> {
+  const weights = config.weights ?? BIT_EVALUATION_WEIGHTS;
+  const threshold = config.threshold ?? BIT_THRESHOLD;
+
+  const pct = (v: number) => `${Math.round(v * 100)}%`;
+
+  // Calculate initial recommendation using config
   const hasCriticalBlockers = context.allCriticalBlockers.length > 0;
-  const shouldBit = meetsBidThreshold(context.scores.overall, hasCriticalBlockers);
+  const shouldBit = meetsBidThreshold(context.scores.overall, hasCriticalBlockers, threshold);
   const recommendation = shouldBit ? 'bit' : 'no_bit';
 
   // Build decision tree
-  const decisionTree = buildDecisionTree({
-    ...context,
-    recommendation,
-  });
+  const decisionTree = buildDecisionTree(
+    {
+      ...context,
+      recommendation,
+    },
+    weights
+  );
 
   // Calculate confidence
   const confidence = calculateConfidence(context);
@@ -414,12 +433,15 @@ adesso SE ist Deutschlands größter unabhängiger IT-Dienstleister mit:
 
 | Agent | Gewicht | Fokus |
 |-------|---------|-------|
-| Capability | 25% | Technische Fähigkeiten, Team-Verfügbarkeit |
-| Deal Quality | 20% | Budget, Timeline, Commercial Viability |
-| Strategic Fit | 15% | Kunde, Branche, Wachstumspotenzial |
-| Competition | 15% | Wettbewerb, Win Probability |
-| Legal | 15% | Vertragsrisiken, Compliance |
-| Reference | 10% | Erfahrung mit ähnlichen Projekten |
+| Capability | ${pct(weights.capability)} | Technische Fähigkeiten, Team-Verfügbarkeit |
+| Deal Quality | ${pct(weights.dealQuality)} | Budget, Timeline, Commercial Viability |
+| Strategic Fit | ${pct(weights.strategicFit)} | Kunde, Branche, Wachstumspotenzial |
+| Competition | ${pct(weights.winProbability)} | Wettbewerb, Win Probability |
+| Legal | ${pct(weights.legal)} | Vertragsrisiken, Compliance |
+| Reference | ${pct(weights.reference)} | Erfahrung mit ähnlichen Projekten |
+
+## BIT-Schwelle
+Score >= ${threshold}/100 UND keine kritischen Blocker → BIT-Empfehlung
 
 ## Synthese-Anweisungen
 1. Identifiziere die 3-5 stärksten Pro-Argumente (auch bei NO BIT)
@@ -436,12 +458,12 @@ Alle Texte auf Deutsch. Professioneller Business-Ton.`;
 
 | Dimension | Score | Gewicht |
 |-----------|-------|---------|
-| Capability Match | ${context.scores.capability}/100 | 25% |
-| Deal Quality | ${context.scores.dealQuality}/100 | 20% |
-| Strategic Fit | ${context.scores.strategicFit}/100 | 15% |
-| Win Probability | ${context.scores.winProbability}/100 | 15% |
-| Legal Assessment | ${context.scores.legal}/100 | 15% |
-| Reference Match | ${context.scores.reference}/100 | 10% |
+| Capability Match | ${context.scores.capability}/100 | ${pct(weights.capability)} |
+| Deal Quality | ${context.scores.dealQuality}/100 | ${pct(weights.dealQuality)} |
+| Strategic Fit | ${context.scores.strategicFit}/100 | ${pct(weights.strategicFit)} |
+| Win Probability | ${context.scores.winProbability}/100 | ${pct(weights.winProbability)} |
+| Legal Assessment | ${context.scores.legal}/100 | ${pct(weights.legal)} |
+| Reference Match | ${context.scores.reference}/100 | ${pct(weights.reference)} |
 | **GESAMT** | **${context.scores.overall.toFixed(1)}/100** | |
 
 ## Kritische Blocker (${context.allCriticalBlockers.length})

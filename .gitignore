@@ -73,3 +73,7 @@ local.db
 
 # RALPH worktrees and locks
 .worktrees/
+
+# Large presentation files
+*.pptx
+*.PPTX

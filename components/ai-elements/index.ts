@@ -80,6 +80,20 @@ export {
   type ActivityStreamCompleteProps,
 } from './activity-stream';
 
+// Agent Activity View components
+export {
+  AgentActivityView,
+  AgentActivityHeader,
+  AgentActivityEmpty,
+  AgentActivityGroup,
+  AgentActivityComplete,
+  type AgentActivityViewProps,
+  type AgentActivityHeaderProps,
+  type AgentActivityEmptyProps,
+  type AgentActivityGroupProps,
+  type AgentActivityCompleteProps,
+} from './agent-activity-view';
+
 // Constants and utilities
 export {
   getAgentColorClasses,

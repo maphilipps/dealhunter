@@ -9,6 +9,8 @@ import {
   getBusinessUnitForTech,
   CMS_SCORING_WEIGHTS,
   calculateWeightedCmsScore,
+  CMS_SIZE_AFFINITY,
+  getCmsSizeAffinityScore,
 } from '../business-rules';
 
 describe('BIT_EVALUATION_WEIGHTS', () => {
@@ -213,5 +215,80 @@ describe('calculateWeightedCmsScore', () => {
     const equalWeights = { feature: 0.2, industry: 0.2, size: 0.2, budget: 0.2, migration: 0.2 };
     const scores = { feature: 100, industry: 50, size: 50, budget: 50, migration: 50 };
     expect(calculateWeightedCmsScore(scores, equalWeights)).toBe(60);
+  });
+});
+
+describe('CMS_SIZE_AFFINITY', () => {
+  it('has all four size tiers', () => {
+    expect(CMS_SIZE_AFFINITY).toHaveProperty('small');
+    expect(CMS_SIZE_AFFINITY).toHaveProperty('medium');
+    expect(CMS_SIZE_AFFINITY).toHaveProperty('large');
+    expect(CMS_SIZE_AFFINITY).toHaveProperty('enterprise');
+  });
+
+  it('has contiguous page count ranges with no gaps', () => {
+    expect(CMS_SIZE_AFFINITY.small.min).toBe(0);
+    expect(CMS_SIZE_AFFINITY.small.max).toBe(CMS_SIZE_AFFINITY.medium.min);
+    expect(CMS_SIZE_AFFINITY.medium.max).toBe(CMS_SIZE_AFFINITY.large.min);
+    expect(CMS_SIZE_AFFINITY.large.max).toBe(CMS_SIZE_AFFINITY.enterprise.min);
+    expect(CMS_SIZE_AFFINITY.enterprise.max).toBe(Infinity);
+  });
+
+  it('has CMS scores in each tier', () => {
+    for (const tier of Object.values(CMS_SIZE_AFFINITY)) {
+      expect(Object.keys(tier.cms).length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('getCmsSizeAffinityScore', () => {
+  it('returns correct score for small site (Sulu)', () => {
+    expect(getCmsSizeAffinityScore('Sulu', 50)).toBe(90);
+  });
+
+  it('returns correct score for medium site (Drupal)', () => {
+    expect(getCmsSizeAffinityScore('Drupal', 500)).toBe(90);
+  });
+
+  it('returns correct score for large site (Ibexa)', () => {
+    expect(getCmsSizeAffinityScore('Ibexa', 5000)).toBe(90);
+  });
+
+  it('returns correct score for enterprise site (Magnolia)', () => {
+    expect(getCmsSizeAffinityScore('Magnolia', 20000)).toBe(95);
+  });
+
+  it('returns 70 fallback for unknown CMS in known tier', () => {
+    expect(getCmsSizeAffinityScore('UnknownCMS', 50)).toBe(70);
+  });
+
+  it('returns score at exact tier boundary (lower bound inclusive)', () => {
+    // 100 pages = medium tier (min: 100, max: 1000)
+    expect(getCmsSizeAffinityScore('Drupal', 100)).toBe(90);
+  });
+
+  it('returns score at tier boundary (upper bound exclusive)', () => {
+    // 99 pages = small tier (min: 0, max: 100)
+    expect(getCmsSizeAffinityScore('Drupal', 99)).toBe(75);
+  });
+
+  it('handles 0 page count (small tier)', () => {
+    expect(getCmsSizeAffinityScore('Sulu', 0)).toBe(90);
+  });
+
+  it('accepts custom size affinity tiers', () => {
+    const customTiers = {
+      tiny: { min: 0, max: 10, cms: { CustomCMS: 99 } as Record<string, number> },
+      huge: { min: 10, max: Infinity, cms: { CustomCMS: 50 } as Record<string, number> },
+    };
+
+    expect(getCmsSizeAffinityScore('CustomCMS', 5, customTiers)).toBe(99);
+    expect(getCmsSizeAffinityScore('CustomCMS', 100, customTiers)).toBe(50);
+  });
+
+  it('uses default tiers when none provided', () => {
+    const result1 = getCmsSizeAffinityScore('Drupal', 500);
+    const result2 = getCmsSizeAffinityScore('Drupal', 500, CMS_SIZE_AFFINITY);
+    expect(result1).toBe(result2);
   });
 });

@@ -26,6 +26,7 @@ import {
   calculateWeightedCmsScore,
   getCmsAffinityScore,
   getCmsSizeAffinityScore,
+  loadBusinessRulesConfig,
   type CmsScoringWeights,
   type IndustryAffinityConfig,
   type SizeAffinityConfig,
@@ -103,6 +104,9 @@ export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult
   console.error(`[CMS Matcher] Starting CMS matching for lead ${input.pitchId}`);
 
   try {
+    // Load business rules config from DB (falls back to hardcoded defaults)
+    const businessConfig = await loadBusinessRulesConfig();
+
     const {
       pitchId,
       industry,
@@ -112,9 +116,9 @@ export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult
       contentArchitecture,
       migrationComplexity,
       requiredBusinessUnitId,
-      scoringWeights,
-      sizeAffinity,
-      industryAffinity,
+      scoringWeights = businessConfig.cmsScoringWeights,
+      sizeAffinity = businessConfig.cmsSizeAffinity,
+      industryAffinity = businessConfig.cmsIndustryAffinity,
     } = input;
 
     // 1. Fetch all available CMS technologies

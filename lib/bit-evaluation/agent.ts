@@ -22,7 +22,7 @@ import {
 
 import { quickEvaluate, BIT_EVALUATION_SCHEMA } from '@/lib/agent-tools/evaluator';
 import { generateStructuredOutput } from '@/lib/ai/config';
-import { calculateWeightedBitScore } from '@/lib/config/business-rules';
+import { calculateWeightedBitScore, loadBusinessRulesConfig } from '@/lib/config/business-rules';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
@@ -57,6 +57,9 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
 
   try {
     logActivity('Starting BIT evaluation', `Bid ID: ${input.bidId}`);
+
+    // Load business rules config from DB (falls back to hardcoded defaults)
+    const businessConfig = await loadBusinessRulesConfig();
 
     // Run all seven agents in parallel (including Contract Agent - DEA-7)
     logActivity('Running parallel agent evaluation');
@@ -131,7 +134,7 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
 
     const weightedScores = {
       ...individualScores,
-      overall: calculateWeightedBitScore(individualScores),
+      overall: calculateWeightedBitScore(individualScores, businessConfig.bitWeights),
     };
 
     // Collect all critical blockers (including Contract Agent - DEA-7)
@@ -148,17 +151,20 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
     // Run Coordinator Agent for decision synthesis
     logActivity('Running Coordinator Agent', 'Synthesizing results and building decision tree');
 
-    const coordinatorOutput = await runCoordinatorAgent({
-      capabilityMatch,
-      dealQuality,
-      strategicFit,
-      competitionCheck,
-      legalAssessment,
-      contractAnalysis,
-      referenceMatch,
-      scores: weightedScores,
-      allCriticalBlockers,
-    });
+    const coordinatorOutput = await runCoordinatorAgent(
+      {
+        capabilityMatch,
+        dealQuality,
+        strategicFit,
+        competitionCheck,
+        legalAssessment,
+        contractAnalysis,
+        referenceMatch,
+        scores: weightedScores,
+        allCriticalBlockers,
+      },
+      { weights: businessConfig.bitWeights, threshold: businessConfig.bitThreshold }
+    );
 
     logActivity(
       'Coordinator completed',
@@ -287,6 +293,9 @@ export async function runBitEvaluationWithStreaming(
         message: 'Starting BIT evaluation...',
       },
     });
+
+    // Load business rules config from DB (falls back to hardcoded defaults)
+    const businessConfig = await loadBusinessRulesConfig();
 
     // Run all seven agents in parallel (best practice: async-parallel)
     // Emit progress as each agent starts
@@ -456,7 +465,7 @@ export async function runBitEvaluationWithStreaming(
 
     const weightedScores = {
       ...individualScores,
-      overall: calculateWeightedBitScore(individualScores),
+      overall: calculateWeightedBitScore(individualScores, businessConfig.bitWeights),
     };
 
     // Collect all critical blockers (including Contract Agent - DEA-7)
@@ -479,17 +488,20 @@ export async function runBitEvaluationWithStreaming(
       },
     });
 
-    const coordinatorOutput = await runCoordinatorAgent({
-      capabilityMatch,
-      dealQuality,
-      strategicFit,
-      competitionCheck,
-      legalAssessment,
-      contractAnalysis,
-      referenceMatch,
-      scores: weightedScores,
-      allCriticalBlockers,
-    });
+    const coordinatorOutput = await runCoordinatorAgent(
+      {
+        capabilityMatch,
+        dealQuality,
+        strategicFit,
+        competitionCheck,
+        legalAssessment,
+        contractAnalysis,
+        referenceMatch,
+        scores: weightedScores,
+        allCriticalBlockers,
+      },
+      { weights: businessConfig.bitWeights, threshold: businessConfig.bitThreshold }
+    );
 
     emit({
       type: AgentEventType.AGENT_COMPLETE,

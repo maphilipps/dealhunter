@@ -30,6 +30,21 @@ vi.mock('../../db', () => ({
   },
 }));
 
+// Mock loadBusinessRulesConfig to avoid next-auth/DB dependency in tests
+vi.mock('@/lib/config/business-rules', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/config/business-rules')>();
+  return {
+    ...actual,
+    loadBusinessRulesConfig: vi.fn().mockResolvedValue({
+      bitWeights: actual.BIT_EVALUATION_WEIGHTS,
+      bitThreshold: actual.BIT_THRESHOLD,
+      cmsScoringWeights: actual.CMS_SCORING_WEIGHTS,
+      cmsSizeAffinity: actual.CMS_SIZE_AFFINITY,
+      cmsIndustryAffinity: actual.CMS_INDUSTRY_AFFINITY,
+    }),
+  };
+});
+
 // Mock AI SDK
 vi.mock('ai', () => ({
   generateObject: vi.fn().mockResolvedValue({

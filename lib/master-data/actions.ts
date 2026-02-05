@@ -341,6 +341,74 @@ export async function getUserCompetitors() {
   return items;
 }
 
+export async function getCompetitor(id: string) {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error('Unauthorized');
+  }
+
+  const [item] = await db.select().from(competitors).where(eq(competitors.id, id));
+
+  if (!item) {
+    return null;
+  }
+
+  if (session.user.role !== 'admin' && item.userId !== session.user.id) {
+    throw new Error('Forbidden');
+  }
+
+  return item;
+}
+
+export async function updateCompetitor(id: string, data: z.infer<typeof createCompetitorSchema>) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const parsed = createCompetitorSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid input', details: parsed.error };
+  }
+
+  try {
+    const [existing] = await db.select().from(competitors).where(eq(competitors.id, id));
+
+    if (!existing) {
+      return { success: false, error: 'Not found' };
+    }
+
+    if (session.user.role !== 'admin' && existing.userId !== session.user.id) {
+      return { success: false, error: 'Forbidden' };
+    }
+
+    const [updated] = await db
+      .update(competitors)
+      .set({
+        companyName: parsed.data.companyName,
+        website: parsed.data.website ?? null,
+        industry: parsed.data.industry ? JSON.stringify(parsed.data.industry) : null,
+        description: parsed.data.description ?? null,
+        strengths: parsed.data.strengths ? JSON.stringify(parsed.data.strengths) : null,
+        weaknesses: parsed.data.weaknesses ? JSON.stringify(parsed.data.weaknesses) : null,
+        typicalMarkets: parsed.data.typicalMarkets
+          ? JSON.stringify(parsed.data.typicalMarkets)
+          : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(competitors.id, id))
+      .returning();
+
+    revalidatePath('/master-data/competitors');
+    revalidatePath('/admin/validations');
+
+    return { success: true, data: updated };
+  } catch (error) {
+    console.error('updateCompetitor error:', error);
+    return { success: false, error: 'Failed to update competitor' };
+  }
+}
+
 export async function deleteCompetitor(id: string) {
   const session = await auth();
   if (!session?.user) {

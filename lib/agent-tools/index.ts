@@ -31,7 +31,21 @@ import './scan-tools';
 import './quick-scan-tools';
 export { QUICKSCAN_TOOLS, type QuickScanToolName } from './quick-scan-tools';
 
-// Intelligent Agent Framework
+// Intelligent Agent Framework — Raw Primitives (preferred)
+export {
+  createRawTools,
+  webSearch,
+  fetchUrl,
+  githubRepo,
+  crawlPage,
+  crawlSite,
+  quickNavScan,
+  screenshot,
+  fetchSitemap,
+  getSearchProvider,
+} from './intelligent-tools';
+
+// Intelligent Agent Framework — Deprecated (use raw primitives above)
 export {
   createIntelligentTools,
   webSearchAITool,

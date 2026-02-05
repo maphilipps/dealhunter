@@ -1,14 +1,11 @@
 /**
  * Intelligent Agent Tools
  *
- * Unified interface für alle Intelligence Tools - macht jeden Agent "intelligent"
- * durch Zugriff auf Web Search, Crawling, GitHub API und mehr.
+ * Raw tool primitives for web search, crawling, GitHub API, and more.
+ * Tools return data only — event emission is the agent orchestrator's concern.
  *
- * Diese Tools werden von allen Agenten genutzt:
- * - Quick Scan Agent
- * - CMS Matching Agent
- * - BIT Evaluation Agents
- * - Company Research Agent
+ * Preferred: createRawTools() — raw primitives without side effects
+ * Deprecated: createIntelligentTools() — backward-compatible wrapper with emission
  */
 
 import { tool } from 'ai';
@@ -121,7 +118,7 @@ export interface IntelligentTools {
 }
 
 /**
- * Context für Tool-Erstellung
+ * @deprecated Use createRawTools() instead. Event emission is the orchestrator's concern.
  */
 export interface IntelligentToolsContext {
   emit?: EventEmitter;
@@ -130,485 +127,483 @@ export interface IntelligentToolsContext {
 }
 
 // ========================================
-// Tool Implementations
+// Raw Tool Primitives (no event emission)
 // ========================================
 
 /**
- * Web Search via EXA (with DuckDuckGo fallback)
+ * Web Search via EXA (with DuckDuckGo fallback).
+ * Returns data only — no side effects.
  */
-function createWebSearch(ctx: IntelligentToolsContext) {
-  return async (query: string, numResults = 5): Promise<SearchResult[]> => {
-    const startTime = Date.now();
-    const searchProvider = isExaSearchAvailable() ? 'EXA' : 'DuckDuckGo';
+export async function webSearch(query: string, numResults = 5): Promise<SearchResult[]> {
+  try {
+    const { results } = await searchAndContents(query, { numResults });
+    return results.map(r => ({
+      title: r.title,
+      url: r.url,
+      snippet: r.text || r.summary || '',
+    }));
+  } catch (error) {
+    console.error('[Web Search] Error:', error);
+    return [];
+  }
+}
 
-    ctx.emit?.({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: ctx.agentName || 'Researcher',
-        message: `Suche [${searchProvider}]: "${query}"`,
-        toolCalls: [{ name: 'webSearch', args: { query, numResults } }],
-      },
-    });
+/**
+ * URL Content Fetching via EXA (with fetch fallback).
+ * Returns data only — no side effects.
+ */
+export async function fetchUrl(url: string): Promise<{ content: string; error?: string }> {
+  try {
+    const result = await getContents(url, { text: true });
+    return { content: result.text || '', error: result.error };
+  } catch (error) {
+    return {
+      content: '',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
 
+/**
+ * GitHub Repository Info.
+ * Returns data only — no side effects.
+ */
+export async function githubRepo(urlOrName: string): Promise<GitHubInfo> {
+  const githubUrl = urlOrName.includes('github.com') ? urlOrName : findGitHubUrl(urlOrName);
+  if (!githubUrl) {
+    return { error: `No GitHub URL found for: ${urlOrName}` };
+  }
+  try {
+    return await fetchGitHubRepoInfo(githubUrl);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Single Page Crawling.
+ * Returns data only — no side effects.
+ */
+export async function crawlPage(url: string): Promise<PageContent> {
+  try {
+    const fetchResult = await getContents(url, { text: true });
+    const content = fetchResult.text || '';
+
+    if (fetchResult.error) {
+      return { url, html: '', links: [], error: fetchResult.error };
+    }
+
+    const linkRegex = /href=["']([^"']+)["']/gi;
+    const links: string[] = [];
+    let match;
+    while ((match = linkRegex.exec(content)) !== null) {
+      links.push(match[1]);
+    }
+
+    const titleMatch = /<title>([^<]+)<\/title>/i.exec(content);
+    const title = titleMatch ? titleMatch[1].trim() : undefined;
+
+    return {
+      url,
+      html: content,
+      title,
+      text: content
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 10000),
+      links: links.slice(0, 100),
+    };
+  } catch (error) {
+    return {
+      url,
+      html: '',
+      links: [],
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Multi-Page Site Crawling.
+ * Returns data only — no side effects.
+ */
+export async function crawlSite(
+  url: string,
+  options?: { maxDepth?: number; maxPages?: number }
+): Promise<SiteCrawlResult> {
+  const maxDepth = options?.maxDepth ?? 3;
+  const maxPages = options?.maxPages ?? 50;
+
+  try {
+    const result = await crawlNavigation(url, { maxDepth, maxPages });
+
+    const urlsToFetch = result.discoveredUrls.slice(0, Math.min(maxPages, 50));
+    const pages: PageContent[] = [];
+
+    for (const pageUrl of urlsToFetch) {
+      try {
+        const fetchResult = await getContents(pageUrl, { text: true });
+        const content = fetchResult.text || '';
+        if (content) {
+          pages.push({
+            url: pageUrl,
+            html: content.slice(0, 50000),
+            text: content
+              .replace(/<[^>]+>/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .slice(0, 5000),
+            links: [],
+          });
+        }
+      } catch {
+        // Skip failed pages
+      }
+    }
+
+    return {
+      pages,
+      totalUrls: result.discoveredUrls.length,
+      siteTree: result.siteTree,
+      errors: result.errors,
+    };
+  } catch (error) {
+    return {
+      pages: [],
+      totalUrls: 0,
+      siteTree: null,
+      errors: [error instanceof Error ? error.message : 'Unknown error'],
+    };
+  }
+}
+
+/**
+ * Quick Navigation Scan.
+ * Returns data only — no side effects.
+ */
+export async function quickNavScan(url: string) {
+  return quickNavigationScan(url);
+}
+
+/**
+ * Screenshot Tool.
+ * Returns data only — no side effects.
+ */
+export async function screenshot(url: string, outputPath: string): Promise<ScreenshotResult> {
+  await takeScreenshot(url, outputPath);
+  return { path: outputPath };
+}
+
+/**
+ * Sitemap Fetching.
+ * Returns data only — no side effects.
+ */
+export async function fetchSitemap(url: string): Promise<SitemapResult> {
+  const baseUrl = url.startsWith('http') ? url : `https://${url}`;
+  const sitemapPaths = [
+    '/sitemap.xml',
+    '/sitemap_index.xml',
+    '/sitemap/sitemap.xml',
+    '/page-sitemap.xml',
+  ];
+
+  for (const path of sitemapPaths) {
     try {
-      const { results } = await searchAndContents(query, { numResults });
+      const sitemapUrl = new URL(path, baseUrl).toString();
+      const response = await fetch(sitemapUrl, {
+        headers: { 'User-Agent': 'DealHunterBot/1.0' },
+        signal: AbortSignal.timeout(10000),
+      });
 
-      const searchResults = results.map(r => ({
-        title: r.title,
-        url: r.url,
-        snippet: r.text || r.summary || '',
-      }));
+      if (response.ok) {
+        const xml = await response.text();
 
-      ctx.emit?.({
+        const urlRegex = /<loc>([^<]+)<\/loc>/gi;
+        const urls: string[] = [];
+        let match;
+        while ((match = urlRegex.exec(xml)) !== null && urls.length < 10000) {
+          urls.push(match[1]);
+        }
+
+        if (urls.length > 0) {
+          return { urls, found: true, sitemapUrl };
+        }
+      }
+    } catch {
+      // Try next path
+    }
+  }
+
+  return { urls: [], found: false };
+}
+
+/**
+ * Returns the search provider name (EXA or DuckDuckGo).
+ * Useful for orchestrators that want to include provider info in progress events.
+ */
+export function getSearchProvider(): string {
+  return isExaSearchAvailable() ? 'EXA' : 'DuckDuckGo';
+}
+
+// ========================================
+// Raw Tools Factory (preferred)
+// ========================================
+
+/**
+ * Create raw tools — pure data primitives without event emission.
+ * The agent orchestrator handles progress reporting.
+ *
+ * Usage:
+ * ```ts
+ * const tools = createRawTools();
+ * const results = await tools.webSearch('Drupal 10 features');
+ * const info = await tools.githubRepo('drupal');
+ * ```
+ */
+export function createRawTools(): IntelligentTools {
+  const toolCalls: ToolCall[] = [];
+
+  return {
+    webSearch,
+    fetchUrl,
+    githubRepo,
+    crawlPage,
+    crawlSite,
+    quickNavScan,
+    screenshot,
+    fetchSitemap,
+    findGitHubUrl: (techName: string) => findGitHubUrl(techName),
+    trackToolCall: (call: ToolCall) => toolCalls.push(call),
+    getToolCalls: () => [...toolCalls],
+  };
+}
+
+// ========================================
+// Deprecated Factory (backward compatible)
+// ========================================
+
+/**
+ * @deprecated Use createRawTools() instead. Event emission should be handled
+ * by the agent orchestrator, not embedded in tool implementations.
+ *
+ * This wrapper composes raw tool primitives with event emission internally.
+ * Existing consumers remain unchanged.
+ */
+export function createIntelligentTools(ctx: IntelligentToolsContext = {}): IntelligentTools {
+  const raw = createRawTools();
+
+  // If no emit, just return raw tools (no wrapping needed)
+  if (!ctx.emit) {
+    return raw;
+  }
+
+  const emit = ctx.emit;
+  const agent = ctx.agentName;
+
+  return {
+    ...raw,
+    webSearch: async (query: string, numResults = 5) => {
+      const startTime = Date.now();
+      const searchProvider = getSearchProvider();
+      emit({
         type: AgentEventType.AGENT_PROGRESS,
         data: {
-          agent: ctx.agentName || 'Researcher',
-          message: `${searchResults.length} Ergebnisse gefunden`,
+          agent: agent || 'Researcher',
+          message: `Suche [${searchProvider}]: "${query}"`,
+          toolCalls: [{ name: 'webSearch', args: { query, numResults } }],
+        },
+      });
+      const results = await raw.webSearch(query, numResults);
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: agent || 'Researcher',
+          message: `${results.length} Ergebnisse gefunden`,
           toolCalls: [
             {
               name: 'webSearch',
               args: { query },
-              result: { count: searchResults.length, provider: searchProvider },
+              result: { count: results.length, provider: searchProvider },
               duration: Date.now() - startTime,
             },
           ],
         },
       });
-
-      return searchResults;
-    } catch (error) {
-      console.error('[Web Search] Error:', error);
-      return [];
-    }
-  };
-}
-
-/**
- * URL Content Fetching via EXA (with fetch fallback)
- */
-function createFetchUrl(ctx: IntelligentToolsContext) {
-  return async (url: string): Promise<{ content: string; error?: string }> => {
-    const startTime = Date.now();
-
-    ctx.emit?.({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: ctx.agentName || 'Crawler',
-        message: `Lade ${new URL(url).hostname}...`,
-        toolCalls: [{ name: 'fetchUrl', args: { url } }],
-      },
-    });
-
-    try {
-      const result = await getContents(url, { text: true });
-      const content = result.text || '';
-
-      ctx.emit?.({
+      return results;
+    },
+    fetchUrl: async (url: string) => {
+      const startTime = Date.now();
+      emit({
         type: AgentEventType.AGENT_PROGRESS,
         data: {
-          agent: ctx.agentName || 'Crawler',
-          message: `${content.length} Zeichen geladen`,
+          agent: agent || 'Crawler',
+          message: `Lade ${new URL(url).hostname}...`,
+          toolCalls: [{ name: 'fetchUrl', args: { url } }],
+        },
+      });
+      const result = await raw.fetchUrl(url);
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: agent || 'Crawler',
+          message: `${result.content.length} Zeichen geladen`,
           toolCalls: [
             {
               name: 'fetchUrl',
               args: { url },
-              result: { size: content.length },
+              result: { size: result.content.length },
               duration: Date.now() - startTime,
             },
           ],
         },
       });
-
-      return { content, error: result.error };
-    } catch (error) {
-      return {
-        content: '',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  };
-}
-
-/**
- * GitHub Repository Info
- */
-function createGitHubRepo(ctx: IntelligentToolsContext) {
-  return async (urlOrName: string): Promise<GitHubInfo> => {
-    const startTime = Date.now();
-
-    // Find GitHub URL if only name given
-    const githubUrl = urlOrName.includes('github.com') ? urlOrName : findGitHubUrl(urlOrName);
-
-    if (!githubUrl) {
-      return { error: `No GitHub URL found for: ${urlOrName}` };
-    }
-
-    ctx.emit?.({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: ctx.agentName || 'Researcher',
-        message: `GitHub: ${githubUrl.replace('https://github.com/', '')}`,
-        toolCalls: [{ name: 'githubRepo', args: { url: githubUrl } }],
-      },
-    });
-
-    try {
-      const info = await fetchGitHubRepoInfo(githubUrl);
-
-      ctx.emit?.({
+      return result;
+    },
+    githubRepo: async (urlOrName: string) => {
+      const startTime = Date.now();
+      const githubUrl = urlOrName.includes('github.com') ? urlOrName : findGitHubUrl(urlOrName);
+      emit({
         type: AgentEventType.AGENT_PROGRESS,
         data: {
-          agent: ctx.agentName || 'Researcher',
+          agent: agent || 'Researcher',
+          message: `GitHub: ${(githubUrl || urlOrName).replace('https://github.com/', '')}`,
+          toolCalls: [{ name: 'githubRepo', args: { url: githubUrl || urlOrName } }],
+        },
+      });
+      const info = await raw.githubRepo(urlOrName);
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: agent || 'Researcher',
           message: info.latestVersion
             ? `v${info.latestVersion}, ${info.githubStars} Stars`
             : 'Repository Info geladen',
           toolCalls: [
             {
               name: 'githubRepo',
-              args: { url: githubUrl },
+              args: { url: githubUrl || urlOrName },
               result: { version: info.latestVersion, stars: info.githubStars },
               duration: Date.now() - startTime,
             },
           ],
         },
       });
-
       return info;
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  };
-}
-
-/**
- * Single Page Crawling
- */
-function createCrawlPage(ctx: IntelligentToolsContext) {
-  return async (url: string): Promise<PageContent> => {
-    const startTime = Date.now();
-
-    ctx.emit?.({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: ctx.agentName || 'Crawler',
-        message: `Crawle ${new URL(url).pathname}...`,
-        toolCalls: [{ name: 'crawlPage', args: { url } }],
-      },
-    });
-
-    try {
-      const fetchResult = await getContents(url, { text: true });
-      const content = fetchResult.text || '';
-
-      if (fetchResult.error) {
-        return { url, html: '', links: [], error: fetchResult.error };
-      }
-
-      // Extract links from HTML
-      const linkRegex = /href=["']([^"']+)["']/gi;
-      const links: string[] = [];
-      let match;
-      while ((match = linkRegex.exec(content)) !== null) {
-        links.push(match[1]);
-      }
-
-      // Extract title
-      const titleMatch = /<title>([^<]+)<\/title>/i.exec(content);
-      const title = titleMatch ? titleMatch[1].trim() : undefined;
-
-      const result: PageContent = {
-        url,
-        html: content,
-        title,
-        text: content
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 10000),
-        links: links.slice(0, 100),
-      };
-
-      ctx.emit?.({
+    },
+    crawlPage: async (url: string) => {
+      const startTime = Date.now();
+      emit({
         type: AgentEventType.AGENT_PROGRESS,
         data: {
-          agent: ctx.agentName || 'Crawler',
-          message: `${links.length} Links gefunden`,
+          agent: agent || 'Crawler',
+          message: `Crawle ${new URL(url).pathname}...`,
+          toolCalls: [{ name: 'crawlPage', args: { url } }],
+        },
+      });
+      const result = await raw.crawlPage(url);
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: agent || 'Crawler',
+          message: `${result.links.length} Links gefunden`,
           toolCalls: [
             {
               name: 'crawlPage',
               args: { url },
-              result: { links: links.length, title },
+              result: { links: result.links.length, title: result.title },
               duration: Date.now() - startTime,
             },
           ],
         },
       });
-
       return result;
-    } catch (error) {
-      return {
-        url,
-        html: '',
-        links: [],
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  };
-}
-
-/**
- * Multi-Page Site Crawling
- */
-function createCrawlSite(ctx: IntelligentToolsContext) {
-  return async (
-    url: string,
-    options?: { maxDepth?: number; maxPages?: number }
-  ): Promise<SiteCrawlResult> => {
-    const startTime = Date.now();
-    const maxDepth = options?.maxDepth ?? 3;
-    const maxPages = options?.maxPages ?? 50;
-
-    ctx.emit?.({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: ctx.agentName || 'Crawler',
-        message: `Starte Site-Crawling (max ${maxPages} Seiten)...`,
-        toolCalls: [{ name: 'crawlSite', args: { url, maxDepth, maxPages } }],
-      },
-    });
-
-    try {
-      const result = await crawlNavigation(url, { maxDepth, maxPages });
-
-      // Fetch content for discovered URLs (sample)
-      const urlsToFetch = result.discoveredUrls.slice(0, Math.min(maxPages, 50));
-      const pages: PageContent[] = [];
-
-      for (let i = 0; i < urlsToFetch.length; i++) {
-        const pageUrl = urlsToFetch[i];
-
-        if ((i + 1) % 10 === 0) {
-          ctx.emit?.({
-            type: AgentEventType.AGENT_PROGRESS,
-            data: {
-              agent: ctx.agentName || 'Crawler',
-              message: `Crawle Seiten (${i + 1}/${urlsToFetch.length})...`,
-            },
-          });
-        }
-
-        try {
-          const fetchResult = await getContents(pageUrl, { text: true });
-          const content = fetchResult.text || '';
-          if (content) {
-            pages.push({
-              url: pageUrl,
-              html: content.slice(0, 50000), // Limit HTML size
-              text: content
-                .replace(/<[^>]+>/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim()
-                .slice(0, 5000),
-              links: [],
-            });
-          }
-        } catch {
-          // Skip failed pages
-        }
-      }
-
-      ctx.emit?.({
+    },
+    crawlSite: async (url: string, options?: { maxDepth?: number; maxPages?: number }) => {
+      const startTime = Date.now();
+      const maxPages = options?.maxPages ?? 50;
+      emit({
         type: AgentEventType.AGENT_PROGRESS,
         data: {
-          agent: ctx.agentName || 'Crawler',
-          message: `${pages.length} Seiten gecrawlt, ${result.discoveredUrls.length} URLs entdeckt`,
+          agent: agent || 'Crawler',
+          message: `Starte Site-Crawling (max ${maxPages} Seiten)...`,
+          toolCalls: [{ name: 'crawlSite', args: { url, ...options } }],
+        },
+      });
+      const result = await raw.crawlSite(url, options);
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: agent || 'Crawler',
+          message: `${result.pages.length} Seiten gecrawlt, ${result.totalUrls} URLs entdeckt`,
           toolCalls: [
             {
               name: 'crawlSite',
-              args: { url, maxDepth, maxPages },
+              args: { url, ...options },
               result: {
-                pagesLoaded: pages.length,
-                urlsDiscovered: result.discoveredUrls.length,
+                pagesLoaded: result.pages.length,
+                urlsDiscovered: result.totalUrls,
               },
               duration: Date.now() - startTime,
             },
           ],
         },
       });
-
-      return {
-        pages,
-        totalUrls: result.discoveredUrls.length,
-        siteTree: result.siteTree,
-        errors: result.errors,
-      };
-    } catch (error) {
-      return {
-        pages: [],
-        totalUrls: 0,
-        siteTree: null,
-        errors: [error instanceof Error ? error.message : 'Unknown error'],
-      };
-    }
-  };
-}
-
-/**
- * Quick Navigation Scan
- */
-function createQuickNavScan(ctx: IntelligentToolsContext) {
-  return async (url: string) => {
-    ctx.emit?.({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: ctx.agentName || 'Crawler',
-        message: `Navigation-Scan...`,
-        toolCalls: [{ name: 'quickNavScan', args: { url } }],
-      },
-    });
-
-    const result = await quickNavigationScan(url);
-
-    ctx.emit?.({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: ctx.agentName || 'Crawler',
-        message: `${result.mainNav.length} Nav-Items, ~${result.estimatedPages} Seiten`,
-      },
-    });
-
-    return result;
-  };
-}
-
-/**
- * Screenshot Tool
- */
-function createScreenshot(ctx: IntelligentToolsContext) {
-  return async (url: string, outputPath: string): Promise<ScreenshotResult> => {
-    ctx.emit?.({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: ctx.agentName || 'Screenshot',
-        message: `Screenshot von ${new URL(url).hostname}...`,
-        toolCalls: [{ name: 'screenshot', args: { url } }],
-      },
-    });
-
-    await takeScreenshot(url, outputPath);
-
-    return { path: outputPath };
-  };
-}
-
-/**
- * Sitemap Fetching
- */
-function createFetchSitemap(ctx: IntelligentToolsContext) {
-  return async (url: string): Promise<SitemapResult> => {
-    const baseUrl = url.startsWith('http') ? url : `https://${url}`;
-    const sitemapPaths = [
-      '/sitemap.xml',
-      '/sitemap_index.xml',
-      '/sitemap/sitemap.xml',
-      '/page-sitemap.xml',
-    ];
-
-    ctx.emit?.({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: ctx.agentName || 'Crawler',
-        message: `Suche Sitemap...`,
-        toolCalls: [{ name: 'fetchSitemap', args: { url } }],
-      },
-    });
-
-    for (const path of sitemapPaths) {
-      try {
-        const sitemapUrl = new URL(path, baseUrl).toString();
-        const response = await fetch(sitemapUrl, {
-          headers: { 'User-Agent': 'DealHunterBot/1.0' },
-          signal: AbortSignal.timeout(10000),
-        });
-
-        if (response.ok) {
-          const xml = await response.text();
-
-          // Extract URLs from sitemap
-          const urlRegex = /<loc>([^<]+)<\/loc>/gi;
-          const urls: string[] = [];
-          let match;
-          while ((match = urlRegex.exec(xml)) !== null && urls.length < 10000) {
-            urls.push(match[1]);
-          }
-
-          if (urls.length > 0) {
-            ctx.emit?.({
-              type: AgentEventType.AGENT_PROGRESS,
-              data: {
-                agent: ctx.agentName || 'Crawler',
-                message: `Sitemap: ${urls.length} URLs gefunden`,
-              },
-            });
-
-            return { urls, found: true, sitemapUrl };
-          }
-        }
-      } catch {
-        // Try next path
-      }
-    }
-
-    ctx.emit?.({
-      type: AgentEventType.AGENT_PROGRESS,
-      data: {
-        agent: ctx.agentName || 'Crawler',
-        message: `Keine Sitemap gefunden`,
-      },
-    });
-
-    return { urls: [], found: false };
-  };
-}
-
-// ========================================
-// Factory Function
-// ========================================
-
-/**
- * Create Intelligent Tools for an Agent
- *
- * Usage:
- * ```ts
- * const tools = createIntelligentTools({ emit, agentName: 'QuickScan' });
- *
- * // Web Search
- * const results = await tools.webSearch('Drupal 10 features');
- *
- * // GitHub
- * const drupalInfo = await tools.githubRepo('drupal');
- *
- * // Crawling
- * const site = await tools.crawlSite('https://example.com', { maxPages: 50 });
- * ```
- */
-export function createIntelligentTools(ctx: IntelligentToolsContext = {}): IntelligentTools {
-  const toolCalls: ToolCall[] = [];
-
-  return {
-    webSearch: createWebSearch(ctx) as unknown as IntelligentTools['webSearch'],
-    fetchUrl: createFetchUrl(ctx) as unknown as IntelligentTools['fetchUrl'],
-    githubRepo: createGitHubRepo(ctx) as unknown as IntelligentTools['githubRepo'],
-    findGitHubUrl: (techName: string) => findGitHubUrl(techName),
-    crawlPage: createCrawlPage(ctx) as unknown as IntelligentTools['crawlPage'],
-    crawlSite: createCrawlSite(ctx) as unknown as IntelligentTools['crawlSite'],
-    quickNavScan: createQuickNavScan(ctx) as unknown as IntelligentTools['quickNavScan'],
-    screenshot: createScreenshot(ctx) as unknown as IntelligentTools['screenshot'],
-    fetchSitemap: createFetchSitemap(ctx) as unknown as IntelligentTools['fetchSitemap'],
-    trackToolCall: (call: ToolCall) => toolCalls.push(call),
-    getToolCalls: () => [...toolCalls],
+      return result;
+    },
+    quickNavScan: async (url: string) => {
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: agent || 'Crawler',
+          message: `Navigation-Scan...`,
+          toolCalls: [{ name: 'quickNavScan', args: { url } }],
+        },
+      });
+      const result = await raw.quickNavScan(url);
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: agent || 'Crawler',
+          message: `${result.mainNav.length} Nav-Items, ~${result.estimatedPages} Seiten`,
+        },
+      });
+      return result;
+    },
+    screenshot: async (url: string, outputPath: string) => {
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: agent || 'Screenshot',
+          message: `Screenshot von ${new URL(url).hostname}...`,
+          toolCalls: [{ name: 'screenshot', args: { url } }],
+        },
+      });
+      return raw.screenshot(url, outputPath);
+    },
+    fetchSitemap: async (url: string) => {
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: agent || 'Crawler',
+          message: `Suche Sitemap...`,
+          toolCalls: [{ name: 'fetchSitemap', args: { url } }],
+        },
+      });
+      const result = await raw.fetchSitemap(url);
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: agent || 'Crawler',
+          message: result.found
+            ? `Sitemap: ${result.urls.length} URLs gefunden`
+            : `Keine Sitemap gefunden`,
+        },
+      });
+      return result;
+    },
   };
 }
 

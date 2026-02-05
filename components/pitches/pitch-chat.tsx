@@ -1,11 +1,9 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
+import { DefaultChatTransport, type UIMessage } from 'ai';
 import { Bot, Sparkles, User } from 'lucide-react';
 import { useRef, useEffect, useMemo, useState } from 'react';
-
-import { Button } from '@/components/ui/button';
 
 import {
   Conversation,
@@ -19,6 +17,18 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from '@/components/ai-elements/prompt-input';
+import { Button } from '@/components/ui/button';
+import type { InterviewResults } from '@/lib/pitch/types';
+
+/** Typed tools for the pitch interview chat — enables typed tool parts in useChat. */
+type PitchChatTools = {
+  startPipeline: {
+    input: InterviewResults;
+    output: { started: true; runId: string } | { started: false; error: string };
+  };
+};
+
+type PitchChatMessage = UIMessage<unknown, never, PitchChatTools>;
 
 /**
  * Suggested prompts for capability discovery.
@@ -48,7 +58,7 @@ export function PitchChat({ pitchId, onPipelineStarted, compact }: PitchChatProp
     [pitchId]
   );
 
-  const { messages, sendMessage, status, error } = useChat({ transport });
+  const { messages, sendMessage, status, error } = useChat<PitchChatMessage>({ transport });
 
   const isLoading = status === 'streaming' || status === 'submitted';
 
@@ -66,15 +76,12 @@ export function PitchChat({ pitchId, onPipelineStarted, compact }: PitchChatProp
     for (const msg of messages) {
       for (const part of msg.parts) {
         if (
-          part.type === 'dynamic-tool' &&
-          part.toolName === 'startPipeline' &&
+          part.type === 'tool-startPipeline' &&
           part.state === 'output-available' &&
-          part.output &&
-          typeof part.output === 'object' &&
           'runId' in part.output
         ) {
           pipelineNotifiedRef.current = true;
-          onPipelineStarted?.((part.output as { runId: string }).runId);
+          onPipelineStarted?.(part.output.runId);
           return;
         }
       }
@@ -143,7 +150,7 @@ export function PitchChat({ pitchId, onPipelineStarted, compact }: PitchChatProp
                     if (part.type === 'text') {
                       return <MessageResponse key={i}>{part.text}</MessageResponse>;
                     }
-                    if (part.type === 'dynamic-tool' && part.toolName === 'startPipeline') {
+                    if (part.type === 'tool-startPipeline') {
                       return (
                         <div
                           key={i}

@@ -10,9 +10,12 @@ import {
   references,
   competencies,
   competitors,
+  employees,
+  businessUnits,
   type NewReference,
   type NewCompetency,
   type NewCompetitor,
+  type NewEmployee,
 } from '@/lib/db/schema';
 
 // ============================================================================
@@ -48,6 +51,15 @@ const createCompetitorSchema = z.object({
   strengths: z.array(z.string()).optional(),
   weaknesses: z.array(z.string()).optional(),
   typicalMarkets: z.array(z.string()).optional(),
+});
+
+const createEmployeeSchema = z.object({
+  name: z.string().min(1).max(200),
+  email: z.string().email().max(200),
+  businessUnitId: z.string(),
+  skills: z.array(z.string()).min(1),
+  roles: z.array(z.string()).min(1),
+  availabilityStatus: z.enum(['available', 'on_project', 'unavailable']),
 });
 
 // ============================================================================
@@ -434,4 +446,178 @@ export async function deleteCompetitor(id: string) {
     console.error('deleteCompetitor error:', error);
     return { success: false, error: 'Failed to delete competitor' };
   }
+}
+
+// ============================================================================
+// Employees Actions
+// ============================================================================
+
+export async function createEmployee(data: z.infer<typeof createEmployeeSchema>) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const parsed = createEmployeeSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid input', details: parsed.error };
+  }
+
+  try {
+    const newEmployee: NewEmployee = {
+      name: parsed.data.name,
+      email: parsed.data.email,
+      businessUnitId: parsed.data.businessUnitId,
+      skills: JSON.stringify(parsed.data.skills),
+      roles: JSON.stringify(parsed.data.roles),
+      availabilityStatus: parsed.data.availabilityStatus,
+    };
+
+    const [created] = await db.insert(employees).values(newEmployee).returning();
+
+    revalidatePath('/master-data/employees');
+
+    return { success: true, data: created };
+  } catch (error) {
+    console.error('createEmployee error:', error);
+    return { success: false, error: 'Failed to create employee' };
+  }
+}
+
+export async function getUserEmployees() {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error('Unauthorized');
+  }
+
+  const items = await db
+    .select({
+      id: employees.id,
+      name: employees.name,
+      email: employees.email,
+      skills: employees.skills,
+      roles: employees.roles,
+      availabilityStatus: employees.availabilityStatus,
+      createdAt: employees.createdAt,
+      businessUnitId: employees.businessUnitId,
+      businessLineName: businessUnits.name,
+    })
+    .from(employees)
+    .leftJoin(businessUnits, eq(employees.businessUnitId, businessUnits.id))
+    .orderBy(employees.name);
+
+  return items;
+}
+
+export async function getEmployee(id: string) {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error('Unauthorized');
+  }
+
+  const [item] = await db.select().from(employees).where(eq(employees.id, id));
+
+  if (!item) {
+    return null;
+  }
+
+  return { success: true, employee: item };
+}
+
+export async function updateEmployee(id: string, data: z.infer<typeof createEmployeeSchema>) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const parsed = createEmployeeSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid input', details: parsed.error };
+  }
+
+  try {
+    const [existing] = await db.select().from(employees).where(eq(employees.id, id));
+
+    if (!existing) {
+      return { success: false, error: 'Not found' };
+    }
+
+    const [updated] = await db
+      .update(employees)
+      .set({
+        name: parsed.data.name,
+        email: parsed.data.email,
+        businessUnitId: parsed.data.businessUnitId,
+        skills: JSON.stringify(parsed.data.skills),
+        roles: JSON.stringify(parsed.data.roles),
+        availabilityStatus: parsed.data.availabilityStatus,
+        updatedAt: new Date(),
+      })
+      .where(eq(employees.id, id))
+      .returning();
+
+    revalidatePath('/master-data/employees');
+
+    return { success: true, data: updated };
+  } catch (error) {
+    console.error('updateEmployee error:', error);
+    return { success: false, error: 'Failed to update employee' };
+  }
+}
+
+export async function deleteEmployee(id: string) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    const [existing] = await db.select().from(employees).where(eq(employees.id, id));
+
+    if (!existing) {
+      return { success: false, error: 'Not found' };
+    }
+
+    await db.delete(employees).where(eq(employees.id, id));
+
+    revalidatePath('/master-data/employees');
+    return { success: true };
+  } catch (error) {
+    console.error('deleteEmployee error:', error);
+    return { success: false, error: 'Failed to delete employee' };
+  }
+}
+
+export async function getBusinessUnitsForSelect() {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error('Unauthorized');
+  }
+
+  const items = await db
+    .select({
+      id: businessUnits.id,
+      name: businessUnits.name,
+    })
+    .from(businessUnits)
+    .orderBy(businessUnits.name);
+
+  return { success: true, businessUnits: items };
+}
+
+export async function getCompetenciesForSelect() {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error('Unauthorized');
+  }
+
+  const items = await db
+    .select({
+      id: competencies.id,
+      name: competencies.name,
+    })
+    .from(competencies)
+    .orderBy(competencies.name);
+
+  return { success: true, competencies: items };
 }

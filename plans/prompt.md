@@ -60,7 +60,36 @@ gh issue edit <number> --add-assignee "@me"
 
 # EXPLORATION
 
-Explore the repo and fill your context window with relevant information to complete the task.
+Read the issue thoroughly before writing any code.
+
+1. **Read the full issue body** — every line, checkbox, code block, acceptance criteria
+2. **Read all comments** — newer comments take priority over older ones
+3. **Identify affected files** — read them completely, not just the relevant function
+4. **Search for existing patterns** — find code that solves similar problems in the codebase
+5. **Understand the expected behavior** — what should happen after the change?
+6. **Plan verification** — how will you prove the task is done?
+
+Only start coding when you can answer:
+
+- What exactly needs to change?
+- Which files are involved?
+- What is the expected behavior after the change?
+- How will I verify it works?
+
+# SUBAGENTS
+
+Use subagents to parallelize work and keep your context window clean.
+
+- **Parallel exploration**: Dispatch subagents to read multiple files or modules simultaneously
+- **Research delegation**: Send codebase-wide searches to a subagent instead of polluting your own context
+- **Test running**: Dispatch a subagent to run tests while you continue reviewing your own changes
+- **Pattern finding**: Let a subagent search for similar patterns across the codebase
+
+When to use subagents:
+
+- You need to read 3+ files to understand the full picture
+- You need to search for a pattern across many files
+- You want to run tests without blocking your current work
 
 # EXECUTION
 
@@ -79,14 +108,62 @@ If task is larger than expected:
 3. Complete only that chunk
 4. Comment on issue with partial progress
 
+# ELEGANT SOLUTION
+
+After your first implementation, pause and ask:
+
+> Is this the simplest possible solution?
+
+Signs of a mediocre solution:
+
+- Too many files changed for a small feature
+- Complex conditional logic where a simpler pattern exists
+- Code duplication instead of reuse
+- Over-engineering for hypothetical future requirements
+
+If the answer is no:
+
+1. `git checkout -- .` (discard changes)
+2. Think about the simplest approach
+3. Implement again from scratch
+
+The second attempt is almost always better. Don't be afraid to throw away your first try.
+
 # FEEDBACK LOOPS
 
-Before committing, run the feedback loops:
+Before committing, run all checks:
 
 ```bash
-npm run test        # Run tests
-npm run typecheck   # Run type checker
+npm run typecheck     # TypeScript
+npm run test:run      # Vitest (single run, not watch)
+npm run lint          # ESLint
+npm run format:check  # Prettier (fix with npm run format)
 ```
+
+All four must pass before committing. If any fail, fix the issue and re-run.
+
+# SELF-REVIEW
+
+After all checks pass, review your own changes:
+
+```bash
+git diff --stat
+git diff
+```
+
+For every changed file, ask:
+
+- Does this change match the issue requirements?
+- Could this break existing functionality?
+- Are there edge cases I haven't considered?
+- Is there any debug code, console.log, or commented-out code left?
+
+The diff should be **minimal** — no unrelated changes, no formatting-only changes in files you didn't modify, no "while I'm here" improvements.
+
+If you find problems:
+
+- Small issues: fix them
+- Fundamental issues: `git checkout -- .` and re-implement
 
 # COMMIT
 
@@ -128,6 +205,8 @@ gh issue close <number> --comment "$(cat <<'EOF'
 ### Verification
 - [ ] Tests pass
 - [ ] Typecheck pass
+- [ ] Lint pass
+- [ ] Format check pass
 EOF
 )"
 

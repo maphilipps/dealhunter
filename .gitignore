@@ -71,8 +71,8 @@ local.db
 # Sentry Config File
 .env.sentry-build-plugin
 
-# RALPH worktrees and locks
-.worktrees/
+# RALPH progress logs (legacy, prevent re-creation)
+progress.txt
 
 # Large presentation files
 *.pptx

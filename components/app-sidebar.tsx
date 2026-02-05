@@ -1,6 +1,6 @@
 'use client';
 
-import { Database, ListChecks, ListTodo } from 'lucide-react';
+import { Database, ListChecks, ListTodo, Settings } from 'lucide-react';
 import * as React from 'react';
 
 import { NavMain } from '@/components/nav-main';
@@ -96,6 +96,12 @@ const allMasterDataItems: Array<{
     url: '/admin/employees',
     icon: Database,
     roles: ['bd', 'bl', 'admin'],
+  },
+  {
+    name: 'Konfiguration',
+    url: '/admin/configs',
+    icon: Settings,
+    roles: ['admin'],
   },
 ];
 

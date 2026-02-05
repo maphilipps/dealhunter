@@ -56,6 +56,18 @@ export { Shimmer, type ShimmerProps } from './shimmer';
 // Confidence Indicator component
 export { ConfidenceIndicator, ConfidenceBreakdown } from './confidence-indicator';
 
+// Agent Message components
+export {
+  AgentMessage,
+  AgentMessageHeader,
+  AgentMessageContent,
+  AgentMessageActions,
+  type AgentMessageProps,
+  type AgentMessageHeaderProps,
+  type AgentMessageContentProps,
+  type AgentMessageActionsProps,
+} from './agent-message';
+
 // Constants and utilities
 export {
   getAgentColorClasses,

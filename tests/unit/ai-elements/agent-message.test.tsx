@@ -1,7 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 
-import { AgentMessage } from '@/components/ai-elements/agent-message';
+import {
+  AgentMessage,
+  AgentMessageHeader,
+  AgentMessageContent,
+  AgentMessageActions,
+} from '@/components/ai-elements/agent-message';
 import type { AgentEvent } from '@/lib/streaming/event-types';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
@@ -119,5 +124,102 @@ describe('AgentMessage', () => {
 
   it('has correct displayName', () => {
     expect(AgentMessage.displayName).toBe('AgentMessage');
+  });
+});
+
+describe('AgentMessageHeader', () => {
+  it('renders agent name in badge', () => {
+    render(<AgentMessageHeader agent="CMS Scanner" timestamp={Date.now()} />);
+    expect(screen.getByText('CMS Scanner')).toBeInTheDocument();
+  });
+
+  it('renders formatted timestamp', () => {
+    const ts = new Date('2026-01-15T14:30:45').getTime();
+    render(<AgentMessageHeader agent="Scanner" timestamp={ts} />);
+    expect(screen.getByText('14:30:45')).toBeInTheDocument();
+  });
+
+  it('accepts className prop', () => {
+    const { container } = render(
+      <AgentMessageHeader agent="Scanner" timestamp={Date.now()} className="custom-class" />
+    );
+    expect(container.firstChild).toHaveClass('custom-class');
+  });
+
+  it('has correct displayName', () => {
+    expect(AgentMessageHeader.displayName).toBe('AgentMessageHeader');
+  });
+});
+
+describe('AgentMessageContent', () => {
+  it('renders message text', () => {
+    render(<AgentMessageContent message="Processing..." />);
+    expect(screen.getByText('Processing...')).toBeInTheDocument();
+  });
+
+  it('renders details text', () => {
+    render(<AgentMessageContent details="Found 3 modules" />);
+    expect(screen.getByText('Found 3 modules')).toBeInTheDocument();
+  });
+
+  it('renders confidence indicator', () => {
+    render(<AgentMessageContent confidence={92} />);
+    expect(screen.getByText('92%')).toBeInTheDocument();
+  });
+
+  it('renders tool calls', () => {
+    render(
+      <AgentMessageContent
+        toolCalls={[{ name: 'fetchPage', args: { url: 'https://example.com' } }]}
+      />
+    );
+    expect(screen.getByText('fetchPage')).toBeInTheDocument();
+    expect(screen.getByText('(url)')).toBeInTheDocument();
+  });
+
+  it('renders reasoning section', () => {
+    render(<AgentMessageContent reasoning="Because of X..." />);
+    expect(screen.getByText('Begründung')).toBeInTheDocument();
+  });
+
+  it('renders nothing when no props provided', () => {
+    const { container } = render(<AgentMessageContent />);
+    expect(container.firstChild).toBeEmptyDOMElement();
+  });
+
+  it('accepts className prop', () => {
+    const { container } = render(<AgentMessageContent className="extra" />);
+    expect(container.firstChild).toHaveClass('extra');
+  });
+
+  it('has correct displayName', () => {
+    expect(AgentMessageContent.displayName).toBe('AgentMessageContent');
+  });
+});
+
+describe('AgentMessageActions', () => {
+  it('renders copy button', () => {
+    render(<AgentMessageActions onCopy={() => {}} copied={false} />);
+    expect(screen.getByRole('button')).toBeInTheDocument();
+  });
+
+  it('shows check icon when copied', () => {
+    const { container } = render(<AgentMessageActions onCopy={() => {}} copied={true} />);
+    // Check icon has text-green-600 class
+    const svg = container.querySelector('svg');
+    expect(svg).toHaveClass('text-green-600');
+  });
+
+  it('calls onCopy when button clicked', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    const handleCopy = vi.fn();
+    render(<AgentMessageActions onCopy={handleCopy} copied={false} />);
+    await user.click(screen.getByRole('button'));
+    expect(handleCopy).toHaveBeenCalledOnce();
+  });
+
+  it('has correct displayName', () => {
+    expect(AgentMessageActions.displayName).toBe('AgentMessageActions');
   });
 });

@@ -11,6 +11,7 @@ import {
   calculateWeightedCmsScore,
   CMS_SIZE_AFFINITY,
   getCmsSizeAffinityScore,
+  CMS_INDUSTRY_AFFINITY,
 } from '../business-rules';
 
 describe('BIT_EVALUATION_WEIGHTS', () => {
@@ -115,6 +116,25 @@ describe('meetsBidThreshold', () => {
   });
 });
 
+describe('CMS_INDUSTRY_AFFINITY', () => {
+  it('has a default entry', () => {
+    expect(CMS_INDUSTRY_AFFINITY).toHaveProperty('default');
+  });
+
+  it('has at least 8 industry entries plus default', () => {
+    expect(Object.keys(CMS_INDUSTRY_AFFINITY).length).toBeGreaterThanOrEqual(9);
+  });
+
+  it('has scores in 0-100 range for all entries', () => {
+    for (const [, cmsScores] of Object.entries(CMS_INDUSTRY_AFFINITY)) {
+      for (const [, score] of Object.entries(cmsScores)) {
+        expect(score).toBeGreaterThanOrEqual(0);
+        expect(score).toBeLessThanOrEqual(100);
+      }
+    }
+  });
+});
+
 describe('getCmsAffinityScore', () => {
   it('returns known score for valid industry and CMS', () => {
     expect(getCmsAffinityScore('Finance', 'FirstSpirit')).toBe(90);
@@ -126,6 +146,40 @@ describe('getCmsAffinityScore', () => {
 
   it('falls back to Drupal score for unknown CMS in known industry', () => {
     expect(getCmsAffinityScore('Finance', 'UnknownCMS')).toBe(70);
+  });
+
+  it('accepts custom industry affinity config', () => {
+    const customAffinity = {
+      Automotive: { CustomCMS: 95, Drupal: 60 },
+      default: { CustomCMS: 50, Drupal: 70 },
+    };
+
+    expect(getCmsAffinityScore('Automotive', 'CustomCMS', customAffinity)).toBe(95);
+    expect(getCmsAffinityScore('Automotive', 'Drupal', customAffinity)).toBe(60);
+  });
+
+  it('falls back to custom default for unknown industry in custom config', () => {
+    const customAffinity = {
+      Automotive: { CustomCMS: 95 },
+      default: { CustomCMS: 50, Drupal: 80 },
+    };
+
+    expect(getCmsAffinityScore('Unknown', 'CustomCMS', customAffinity)).toBe(50);
+    expect(getCmsAffinityScore('Unknown', 'Drupal', customAffinity)).toBe(80);
+  });
+
+  it('returns 70 fallback when custom config has no default and industry is unknown', () => {
+    const customAffinity = {
+      Automotive: { CustomCMS: 95 },
+    };
+
+    expect(getCmsAffinityScore('Unknown', 'CustomCMS', customAffinity)).toBe(70);
+  });
+
+  it('uses default config when none provided', () => {
+    const result1 = getCmsAffinityScore('Finance', 'FirstSpirit');
+    const result2 = getCmsAffinityScore('Finance', 'FirstSpirit', CMS_INDUSTRY_AFFINITY);
+    expect(result1).toBe(result2);
   });
 });
 

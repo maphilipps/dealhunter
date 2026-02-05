@@ -149,7 +149,9 @@ export function getCmsSizeAffinityScore(
  * Branchen-spezifische CMS-Präferenzen (0-100 Scores).
  * Höherer Score = bessere Eignung für diese Branche.
  */
-export const CMS_INDUSTRY_AFFINITY: Record<string, Record<string, number>> = {
+export type IndustryAffinityConfig = Record<string, Record<string, number>>;
+
+export const CMS_INDUSTRY_AFFINITY: IndustryAffinityConfig = {
   'Public Sector': {
     Drupal: 90,
     Ibexa: 70,
@@ -229,9 +231,17 @@ export const TECH_TO_BU_MAPPING: Record<string, string> = {
 
 /**
  * Helper: Get CMS affinity score for industry
+ *
+ * Accepts optional industryAffinity parameter to allow injecting custom config
+ * (e.g. from database or A/B test config). Defaults to CMS_INDUSTRY_AFFINITY.
  */
-export function getCmsAffinityScore(industry: string, cms: string): number {
-  const industryMapping = CMS_INDUSTRY_AFFINITY[industry] || CMS_INDUSTRY_AFFINITY.default;
+export function getCmsAffinityScore(
+  industry: string,
+  cms: string,
+  industryAffinity: IndustryAffinityConfig = CMS_INDUSTRY_AFFINITY
+): number {
+  const industryMapping = industryAffinity[industry] || industryAffinity.default;
+  if (!industryMapping) return 70;
   return industryMapping[cms] || industryMapping.Drupal || 70;
 }
 

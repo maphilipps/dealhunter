@@ -23,10 +23,11 @@ import { db } from '../db';
 import { technologies, cmsMatchResults, type Technology } from '../db/schema';
 
 import {
-  CMS_INDUSTRY_AFFINITY,
   calculateWeightedCmsScore,
+  getCmsAffinityScore,
   getCmsSizeAffinityScore,
   type CmsScoringWeights,
+  type IndustryAffinityConfig,
   type SizeAffinityConfig,
 } from '@/lib/config/business-rules';
 
@@ -69,6 +70,7 @@ export interface CMSMatcherInput {
   requiredBusinessUnitId?: string; // Optional: filter to specific BU
   scoringWeights?: CmsScoringWeights; // Optional: override default scoring weights
   sizeAffinity?: SizeAffinityConfig; // Optional: override default size affinity tiers
+  industryAffinity?: IndustryAffinityConfig; // Optional: override default industry affinity
 }
 
 export interface CMSMatcherResult {
@@ -81,12 +83,6 @@ export interface CMSMatcherResult {
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * Industry-to-CMS affinity mapping (0-100 scores)
- * Now sourced from centralized config
- */
-const INDUSTRY_AFFINITY = CMS_INDUSTRY_AFFINITY;
 
 /**
  * Size-based CMS affinity (based on page count)
@@ -118,6 +114,7 @@ export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult
       requiredBusinessUnitId,
       scoringWeights,
       sizeAffinity,
+      industryAffinity,
     } = input;
 
     // 1. Fetch all available CMS technologies
@@ -147,6 +144,7 @@ export async function matchCMS(input: CMSMatcherInput): Promise<CMSMatcherResult
         migrationComplexity,
         scoringWeights,
         sizeAffinity,
+        industryAffinity,
       });
 
       scoredMatches.push(score);
@@ -199,6 +197,7 @@ interface ScoreCMSInput {
   migrationComplexity: MigrationComplexityResult;
   scoringWeights?: CmsScoringWeights;
   sizeAffinity?: SizeAffinityConfig;
+  industryAffinity?: IndustryAffinityConfig;
 }
 
 /**
@@ -214,13 +213,14 @@ async function scoreCMS(input: ScoreCMSInput): Promise<CMSMatchScore> {
     migrationComplexity,
     scoringWeights,
     sizeAffinity,
+    industryAffinity,
   } = input;
 
   // 1. Feature Score (40%)
   const { featureScore, matchedFeatures } = calculateFeatureScore(technology, featureRequirements);
 
   // 2. Industry Score (20%)
-  const industryScore = calculateIndustryScore(technology.name, industry);
+  const industryScore = calculateIndustryScore(technology.name, industry, industryAffinity);
 
   // 3. Size Score (15%)
   const sizeScore = calculateSizeScore(technology.name, pageCount, sizeAffinity);
@@ -321,14 +321,19 @@ function calculateFeatureScore(
 
 /**
  * Calculate industry fit score (20% weight)
+ *
+ * Uses centralized getCmsAffinityScore with optional custom industry affinity config.
  */
-function calculateIndustryScore(cmsName: string, industry?: string | null): number {
+function calculateIndustryScore(
+  cmsName: string,
+  industry?: string | null,
+  industryAffinity?: IndustryAffinityConfig
+): number {
   if (!industry) {
     return 70; // Neutral score if industry unknown
   }
 
-  const affinityMap = INDUSTRY_AFFINITY[industry] || INDUSTRY_AFFINITY.default;
-  return affinityMap[cmsName] || 70;
+  return getCmsAffinityScore(industry, cmsName, industryAffinity);
 }
 
 /**

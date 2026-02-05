@@ -33,6 +33,43 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at').$defaultFn(() => new Date()),
 });
 
+// ─── Business Rules Configuration ──────────────────────────────────────────────
+
+export const configs = pgTable(
+  'configs',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    key: text('key').notNull().unique(),
+    category: text('category', {
+      enum: ['bit_evaluation', 'cms_scoring', 'routing', 'system'],
+    }).notNull(),
+    value: text('value').notNull(), // JSON stringified
+    description: text('description'),
+    version: integer('version').notNull().default(1),
+    updatedByUserId: text('updated_by_user_id').references(() => users.id),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    keyIdx: index('configs_key_idx').on(table.key),
+    categoryIdx: index('configs_category_idx').on(table.category),
+  })
+);
+
+export type Config = typeof configs.$inferSelect;
+export type NewConfig = typeof configs.$inferInsert;
+
+export const configsRelations = relations(configs, ({ one }) => ({
+  updatedBy: one(users, {
+    fields: [configs.updatedByUserId],
+    references: [users.id],
+  }),
+}));
+
+// ─── Pre-Qualifications ────────────────────────────────────────────────────────
+
 export const preQualifications = pgTable(
   'pre_qualifications',
   {

@@ -297,3 +297,42 @@ export function getBusinessUnitForTech(tech: string): string | null {
   const normalizedTech = tech.toLowerCase().trim();
   return TECH_TO_BU_MAPPING[normalizedTech] || null;
 }
+
+/**
+ * Load all business rule configs from DB, falling back to hardcoded defaults.
+ *
+ * Usage:
+ *   const config = await loadBusinessRulesConfig();
+ *   calculateWeightedBitScore(scores, config.bitWeights);
+ *   meetsBidThreshold(score, blockers, config.bitThreshold);
+ *   calculateWeightedCmsScore(scores, config.cmsScoringWeights);
+ *   getCmsSizeAffinityScore(cms, pages, config.cmsSizeAffinity);
+ *   getCmsAffinityScore(industry, cms, config.cmsIndustryAffinity);
+ */
+export async function loadBusinessRulesConfig(): Promise<{
+  bitWeights: BitWeights;
+  bitThreshold: number;
+  cmsScoringWeights: CmsScoringWeights;
+  cmsSizeAffinity: SizeAffinityConfig;
+  cmsIndustryAffinity: IndustryAffinityConfig;
+}> {
+  // Dynamic import to avoid circular dependency (server action → schema → …)
+  const { getConfig } = await import('@/lib/admin/config-actions');
+
+  const [bitWeights, bitThreshold, cmsScoringWeights, cmsSizeAffinity, cmsIndustryAffinity] =
+    await Promise.all([
+      getConfig<BitWeights>('bit_weights'),
+      getConfig<number>('bit_threshold'),
+      getConfig<CmsScoringWeights>('cms_scoring_weights'),
+      getConfig<SizeAffinityConfig>('cms_size_affinity'),
+      getConfig<IndustryAffinityConfig>('cms_industry_affinity'),
+    ]);
+
+  return {
+    bitWeights: bitWeights ?? BIT_EVALUATION_WEIGHTS,
+    bitThreshold: bitThreshold ?? BIT_THRESHOLD,
+    cmsScoringWeights: cmsScoringWeights ?? CMS_SCORING_WEIGHTS,
+    cmsSizeAffinity: cmsSizeAffinity ?? CMS_SIZE_AFFINITY,
+    cmsIndustryAffinity: cmsIndustryAffinity ?? CMS_INDUSTRY_AFFINITY,
+  };
+}

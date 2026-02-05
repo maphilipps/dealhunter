@@ -1,10 +1,11 @@
 'use client';
 
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -96,31 +97,37 @@ export function LowConfidenceDialog({
               </Badge>
             </div>
 
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
-              <p className="text-sm font-medium text-amber-900 mb-1">Konfidenz-Level:</p>
-              <div className="flex items-center gap-2">
-                <Badge variant="destructive">{confidence}%</Badge>
-                <span className="text-sm text-amber-700">(unter 70% Schwellenwert)</span>
-              </div>
-            </div>
+            <Alert variant="warning">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <p className="text-sm font-medium mb-1">Konfidenz-Level:</p>
+                <div className="flex items-center gap-2">
+                  <Badge variant="destructive">{confidence}%</Badge>
+                  <span className="text-sm">(unter 70% Schwellenwert)</span>
+                </div>
+              </AlertDescription>
+            </Alert>
 
             <div>
               <p className="text-sm font-medium mb-2">Begründung:</p>
               <p className="text-sm text-muted-foreground">{reasoning}</p>
             </div>
 
-            <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
-              <p className="text-sm text-blue-900">
-                <strong>Wichtig:</strong> Eine niedrige Konfidenz bedeutet, dass die AI unsicher
-                ist. Dies kann folgende Gründe haben:
-              </p>
-              <ul className="mt-2 text-sm text-blue-800 list-disc list-inside space-y-1">
-                <li>Unvollständige oder vage Anforderungen</li>
-                <li>Widersprüchliche Informationen</li>
-                <li>Fehlende kritische Details (Budget, Timeline, etc.)</li>
-                <li>Unklare Kundenpriorität oder -typ</li>
-              </ul>
-            </div>
+            <Alert variant="info">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <p className="text-sm">
+                  <strong>Wichtig:</strong> Eine niedrige Konfidenz bedeutet, dass die AI unsicher
+                  ist. Dies kann folgende Gründe haben:
+                </p>
+                <ul className="mt-2 text-sm list-disc list-inside space-y-1">
+                  <li>Unvollständige oder vage Anforderungen</li>
+                  <li>Widersprüchliche Informationen</li>
+                  <li>Fehlende kritische Details (Budget, Timeline, etc.)</li>
+                  <li>Unklare Kundenpriorität oder -typ</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
 
             <div className="text-sm text-muted-foreground">
               Möchten Sie diese Entscheidung trotz niedriger Konfidenz akzeptieren, oder die

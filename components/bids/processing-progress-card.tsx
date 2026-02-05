@@ -5,6 +5,7 @@ import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -249,14 +250,10 @@ export function ProcessingProgressCard({ bidId }: ProcessingProgressCardProps) {
 
         {/* Error Message */}
         {status?.error && (
-          <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-red-900 dark:text-red-100">Fehler aufgetreten</p>
-                <p className="text-sm text-red-700 dark:text-red-300 mt-1">{status.error}</p>
-              </div>
-            </div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Fehler aufgetreten</AlertTitle>
+            <AlertDescription>{status.error}</AlertDescription>
             <Button
               variant="outline"
               size="sm"
@@ -266,19 +263,15 @@ export function ProcessingProgressCard({ bidId }: ProcessingProgressCardProps) {
               <RefreshCw className="h-4 w-4 mr-2" />
               Erneut versuchen
             </Button>
-          </div>
+          </Alert>
         )}
 
         {/* Network Error */}
         {error && !status?.error && (
-          <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-amber-900 dark:text-amber-100">Verbindungsproblem</p>
-                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">{error}</p>
-              </div>
-            </div>
+          <Alert variant="warning">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Verbindungsproblem</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
             <Button
               variant="outline"
               size="sm"
@@ -288,19 +281,17 @@ export function ProcessingProgressCard({ bidId }: ProcessingProgressCardProps) {
               <RefreshCw className="h-4 w-4 mr-2" />
               Erneut verbinden
             </Button>
-          </div>
+          </Alert>
         )}
 
         {/* Completion Message */}
         {status?.isComplete && (
-          <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
-              <p className="text-green-900 dark:text-green-100">
-                Die Verarbeitung wurde erfolgreich abgeschlossen. Die Seite wird aktualisiert...
-              </p>
-            </div>
-          </div>
+          <Alert variant="success">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertDescription>
+              Die Verarbeitung wurde erfolgreich abgeschlossen. Die Seite wird aktualisiert...
+            </AlertDescription>
+          </Alert>
         )}
       </CardContent>
     </Card>

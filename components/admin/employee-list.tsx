@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { deleteEmployee } from '@/lib/admin/employees-actions';
+import { deleteEmployee } from '@/lib/master-data/actions';
 
 interface Employee {
   id: string;
@@ -43,7 +43,7 @@ export function EmployeeList({ employees }: { employees: Employee[] | undefined 
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground mb-4">Noch keine Mitarbeiter erfasst</p>
-        <a href="/admin/employees/new" className="text-primary hover:underline">
+        <a href="/master-data/employees/new" className="text-primary hover:underline">
           Ersten Mitarbeiter erstellen →
         </a>
       </div>
@@ -64,7 +64,7 @@ export function EmployeeList({ employees }: { employees: Employee[] | undefined 
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => router.push(`/admin/employees/${emp.id}`)}
+                  onClick={() => router.push(`/master-data/employees/${emp.id}`)}
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>

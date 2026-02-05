@@ -92,8 +92,8 @@ const allMasterDataItems: Array<{
     roles: ['bd', 'bl', 'admin'],
   },
   {
-    name: 'Employees',
-    url: '/admin/employees',
+    name: 'Mitarbeiter',
+    url: '/master-data/employees',
     icon: Database,
     roles: ['bd', 'bl', 'admin'],
   },

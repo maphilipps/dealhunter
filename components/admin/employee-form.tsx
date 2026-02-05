@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { createEmployee } from '@/lib/admin/employees-actions';
+import { createEmployee } from '@/lib/master-data/actions';
 
 interface Option {
   id: string;
@@ -123,7 +123,7 @@ export function EmployeeForm({
 
       if (result.success) {
         toast.success('Mitarbeiter erfolgreich erstellt');
-        router.push('/admin/employees');
+        router.push('/master-data/employees');
       } else {
         toast.error(result.error || 'Fehler beim Erstellen');
       }

@@ -8,6 +8,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
+import {
+  CONFIDENCE_HIGH_THRESHOLD,
+  CONFIDENCE_MEDIUM_THRESHOLD,
+  CONFIDENCE_LOW_THRESHOLD,
+} from './constants';
+
 interface ConfidenceIndicatorProps {
   confidence: number; // 0-100
   size?: 'sm' | 'md' | 'lg';
@@ -83,8 +89,8 @@ const InlineConfidenceIndicator = memo(function InlineConfidenceIndicator({
   className,
 }: InlineConfidenceIndicatorProps) {
   const getConfidenceColor = () => {
-    if (confidence >= 80) return 'green';
-    if (confidence >= 60) return 'yellow';
+    if (confidence >= CONFIDENCE_HIGH_THRESHOLD) return 'green';
+    if (confidence >= CONFIDENCE_MEDIUM_THRESHOLD) return 'yellow';
     return 'red';
   };
 
@@ -135,7 +141,12 @@ const InlineConfidenceIndicator = memo(function InlineConfidenceIndicator({
     lg: 'h-3',
   };
 
-  const confidenceText = confidence >= 80 ? 'High' : confidence >= 60 ? 'Medium' : 'Low';
+  const confidenceText =
+    confidence >= CONFIDENCE_HIGH_THRESHOLD
+      ? 'High'
+      : confidence >= CONFIDENCE_MEDIUM_THRESHOLD
+        ? 'Medium'
+        : 'Low';
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
@@ -183,9 +194,9 @@ const CardConfidenceIndicator = memo(function CardConfidenceIndicator({
   className,
 }: CardConfidenceIndicatorProps) {
   const getConfidenceLevel = () => {
-    if (confidence >= 80) return 'high';
+    if (confidence >= CONFIDENCE_HIGH_THRESHOLD) return 'high';
     if (confidence >= threshold) return 'medium';
-    if (confidence >= 50) return 'low';
+    if (confidence >= CONFIDENCE_LOW_THRESHOLD) return 'low';
     return 'very-low';
   };
 

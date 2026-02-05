@@ -1,7 +1,7 @@
 'use client';
 
 import { StopCircle } from 'lucide-react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 
 import {
   AlertDialog,
@@ -25,7 +25,10 @@ interface AbortButtonProps {
  * Allows user to cancel running analysis with confirmation dialog
  * Best practice: Use state sparingly, prefer props (rerender-defer-reads)
  */
-export function AbortButton({ onAbort, disabled = false }: AbortButtonProps) {
+export const AbortButton = memo(function AbortButton({
+  onAbort,
+  disabled = false,
+}: AbortButtonProps) {
   const [showDialog, setShowDialog] = useState(false);
 
   const handleConfirm = () => {
@@ -65,4 +68,6 @@ export function AbortButton({ onAbort, disabled = false }: AbortButtonProps) {
       </AlertDialog>
     </>
   );
-}
+});
+
+AbortButton.displayName = 'AbortButton';

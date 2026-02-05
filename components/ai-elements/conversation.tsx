@@ -2,7 +2,7 @@
 
 import { ArrowDownIcon } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { StickToBottom, useStickToBottomContext } from 'use-stick-to-bottom';
 
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 export type ConversationProps = ComponentProps<typeof StickToBottom>;
 
-export const Conversation = ({ className, ...props }: ConversationProps) => (
+export const Conversation = memo(({ className, ...props }: ConversationProps) => (
   <StickToBottom
     className={cn('relative flex-1 overflow-y-hidden', className)}
     initial="smooth"
@@ -18,13 +18,17 @@ export const Conversation = ({ className, ...props }: ConversationProps) => (
     role="log"
     {...props}
   />
-);
+));
+
+Conversation.displayName = 'Conversation';
 
 export type ConversationContentProps = ComponentProps<typeof StickToBottom.Content>;
 
-export const ConversationContent = ({ className, ...props }: ConversationContentProps) => (
+export const ConversationContent = memo(({ className, ...props }: ConversationContentProps) => (
   <StickToBottom.Content className={cn('flex flex-col gap-8 p-4', className)} {...props} />
-);
+));
+
+ConversationContent.displayName = 'ConversationContent';
 
 export type ConversationEmptyStateProps = ComponentProps<'div'> & {
   title?: string;
@@ -32,57 +36,62 @@ export type ConversationEmptyStateProps = ComponentProps<'div'> & {
   icon?: React.ReactNode;
 };
 
-export const ConversationEmptyState = ({
-  className,
-  title = 'Noch keine Nachrichten',
-  description = 'Starten Sie eine Unterhaltung, um Nachrichten zu sehen',
-  icon,
-  children,
-  ...props
-}: ConversationEmptyStateProps) => (
-  <div
-    className={cn(
-      'flex size-full flex-col items-center justify-center gap-3 p-8 text-center',
-      className
-    )}
-    {...props}
-  >
-    {children ?? (
-      <>
-        {icon && <div className="text-muted-foreground">{icon}</div>}
-        <div className="space-y-1">
-          <h3 className="font-medium text-sm">{title}</h3>
-          {description && <p className="text-muted-foreground text-sm">{description}</p>}
-        </div>
-      </>
-    )}
-  </div>
+export const ConversationEmptyState = memo(
+  ({
+    className,
+    title = 'Noch keine Nachrichten',
+    description = 'Starten Sie eine Unterhaltung, um Nachrichten zu sehen',
+    icon,
+    children,
+    ...props
+  }: ConversationEmptyStateProps) => (
+    <div
+      className={cn(
+        'flex size-full flex-col items-center justify-center gap-3 p-8 text-center',
+        className
+      )}
+      {...props}
+    >
+      {children ?? (
+        <>
+          {icon && <div className="text-muted-foreground">{icon}</div>}
+          <div className="space-y-1">
+            <h3 className="font-medium text-sm">{title}</h3>
+            {description && <p className="text-muted-foreground text-sm">{description}</p>}
+          </div>
+        </>
+      )}
+    </div>
+  )
 );
+
+ConversationEmptyState.displayName = 'ConversationEmptyState';
 
 export type ConversationScrollButtonProps = ComponentProps<typeof Button>;
 
-export const ConversationScrollButton = ({
-  className,
-  ...props
-}: ConversationScrollButtonProps) => {
-  const { isAtBottom, scrollToBottom } = useStickToBottomContext();
+export const ConversationScrollButton = memo(
+  ({ className, ...props }: ConversationScrollButtonProps) => {
+    const { isAtBottom, scrollToBottom } = useStickToBottomContext();
 
-  const handleScrollToBottom = useCallback(() => {
-    void scrollToBottom();
-  }, [scrollToBottom]);
+    const handleScrollToBottom = useCallback(() => {
+      void scrollToBottom();
+    }, [scrollToBottom]);
 
-  return (
-    !isAtBottom && (
-      <Button
-        className={cn('absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full', className)}
-        onClick={handleScrollToBottom}
-        size="icon"
-        type="button"
-        variant="outline"
-        {...props}
-      >
-        <ArrowDownIcon className="size-4" />
-      </Button>
-    )
-  );
-};
+    return (
+      !isAtBottom && (
+        <Button
+          className={cn('absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full', className)}
+          onClick={handleScrollToBottom}
+          size="icon"
+          type="button"
+          variant="outline"
+          {...props}
+        >
+          <ArrowDownIcon className="size-4" />
+        </Button>
+      )
+    );
+  }
+);
+
+ConversationScrollButton.displayName = 'ConversationScrollButton';

@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown, FileText, Building2, Code } from 'lucide-react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -21,7 +21,7 @@ interface SourcesProps {
  * Displays cited data and references from agent analysis
  * Best practice: Collapsible pattern for progressive disclosure
  */
-export function Sources({ sources }: SourcesProps) {
+export const Sources = memo(function Sources({ sources }: SourcesProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   if (!sources || sources.length === 0) {
@@ -74,4 +74,6 @@ export function Sources({ sources }: SourcesProps) {
       </CollapsibleContent>
     </Collapsible>
   );
-}
+});
+
+Sources.displayName = 'Sources';

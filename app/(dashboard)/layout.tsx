@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
 import { AppSidebar } from '@/components/app-sidebar';
+import { CommandPalette } from '@/components/command-palette';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -60,6 +61,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <SidebarInset>
         <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
       </SidebarInset>
+      <CommandPalette />
     </SidebarProvider>
   );
 }

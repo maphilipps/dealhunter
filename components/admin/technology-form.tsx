@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { createTechnology } from '@/lib/admin/technologies-actions';
+import { createTechnology } from '@/lib/master-data/actions';
 
 interface BusinessUnitOption {
   id: string;
@@ -135,7 +135,7 @@ export function TechnologyForm({ businessUnits }: TechnologyFormProps) {
         toast.success('Technologie erfolgreich erstellt');
         // Offer to run research
         toast.info('Tipp: Klicken Sie auf den Refresh-Button um AI-Recherche zu starten');
-        router.push('/admin/technologies');
+        router.push('/master-data/technologies');
         router.refresh();
       } else {
         toast.error(result.error || 'Fehler beim Erstellen');

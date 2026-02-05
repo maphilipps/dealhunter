@@ -13,7 +13,7 @@ export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage['role'];
 };
 
-export const Message = ({ className, from, ...props }: MessageProps) => (
+export const Message = memo(({ className, from, ...props }: MessageProps) => (
   <div
     className={cn(
       'group flex w-full max-w-[95%] flex-col gap-2',
@@ -22,11 +22,13 @@ export const Message = ({ className, from, ...props }: MessageProps) => (
     )}
     {...props}
   />
-);
+));
+
+Message.displayName = 'Message';
 
 export type MessageContentProps = HTMLAttributes<HTMLDivElement>;
 
-export const MessageContent = ({ children, className, ...props }: MessageContentProps) => (
+export const MessageContent = memo(({ children, className, ...props }: MessageContentProps) => (
   <div
     className={cn(
       'is-user:dark flex w-fit max-w-full min-w-0 flex-col gap-2 overflow-hidden text-sm',
@@ -38,51 +40,52 @@ export const MessageContent = ({ children, className, ...props }: MessageContent
   >
     {children}
   </div>
-);
+));
+
+MessageContent.displayName = 'MessageContent';
 
 export type MessageActionsProps = ComponentProps<'div'>;
 
-export const MessageActions = ({ className, children, ...props }: MessageActionsProps) => (
+export const MessageActions = memo(({ className, children, ...props }: MessageActionsProps) => (
   <div className={cn('flex items-center gap-1', className)} {...props}>
     {children}
   </div>
-);
+));
+
+MessageActions.displayName = 'MessageActions';
 
 export type MessageActionProps = ComponentProps<typeof Button> & {
   tooltip?: string;
   label?: string;
 };
 
-export const MessageAction = ({
-  tooltip,
-  children,
-  label,
-  variant = 'ghost',
-  size = 'sm',
-  ...props
-}: MessageActionProps) => {
-  const button = (
-    <Button size={size} type="button" variant={variant} {...props}>
-      {children}
-      <span className="sr-only">{label || tooltip}</span>
-    </Button>
-  );
-
-  if (tooltip) {
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>{button}</TooltipTrigger>
-          <TooltipContent>
-            <p>{tooltip}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+export const MessageAction = memo(
+  ({ tooltip, children, label, variant = 'ghost', size = 'sm', ...props }: MessageActionProps) => {
+    const button = (
+      <Button size={size} type="button" variant={variant} {...props}>
+        {children}
+        <span className="sr-only">{label || tooltip}</span>
+      </Button>
     );
-  }
 
-  return button;
-};
+    if (tooltip) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>{button}</TooltipTrigger>
+            <TooltipContent>
+              <p>{tooltip}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    return button;
+  }
+);
+
+MessageAction.displayName = 'MessageAction';
 
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 

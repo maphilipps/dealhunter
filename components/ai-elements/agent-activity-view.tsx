@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 import { Loader } from './loader';
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 
 import {
   getAgentColorClasses,
@@ -59,7 +59,10 @@ interface AgentActivityViewProps {
  * Grouped Agent Activity View
  * Groups events by agent name and shows progress per agent
  */
-export function AgentActivityView({ events, isStreaming }: AgentActivityViewProps) {
+export const AgentActivityView = memo(function AgentActivityView({
+  events,
+  isStreaming,
+}: AgentActivityViewProps) {
   const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
 
   // Extract phase information from events
@@ -413,4 +416,6 @@ export function AgentActivityView({ events, isStreaming }: AgentActivityViewProp
       </CardContent>
     </Card>
   );
-}
+});
+
+AgentActivityView.displayName = 'AgentActivityView';

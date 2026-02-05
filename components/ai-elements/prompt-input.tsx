@@ -5,7 +5,7 @@ import { CornerDownLeftIcon, SquareIcon, XIcon } from 'lucide-react';
 
 import { Loader } from './loader';
 import type { ComponentProps, FormEventHandler, KeyboardEventHandler } from 'react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,94 +15,108 @@ export type PromptInputProps = ComponentProps<'form'> & {
   onSubmit: FormEventHandler<HTMLFormElement>;
 };
 
-export const PromptInput = ({ className, children, ...props }: PromptInputProps) => (
+export const PromptInput = memo(({ className, children, ...props }: PromptInputProps) => (
   <form className={cn('w-full', className)} {...props}>
     <div className="relative flex items-end gap-2">{children}</div>
   </form>
-);
+));
+
+PromptInput.displayName = 'PromptInput';
 
 export type PromptInputTextareaProps = ComponentProps<typeof Textarea>;
 
-export const PromptInputTextarea = ({
-  className,
-  placeholder = 'Type a message...',
-  onKeyDown,
-  ...props
-}: PromptInputTextareaProps) => {
-  const [isComposing, setIsComposing] = useState(false);
+export const PromptInputTextarea = memo(
+  ({
+    className,
+    placeholder = 'Type a message...',
+    onKeyDown,
+    ...props
+  }: PromptInputTextareaProps) => {
+    const [isComposing, setIsComposing] = useState(false);
 
-  const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = e => {
-    if (e.key === 'Enter') {
-      if (isComposing || e.nativeEvent.isComposing) {
-        return;
+    const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = e => {
+      if (e.key === 'Enter') {
+        if (isComposing || e.nativeEvent.isComposing) {
+          return;
+        }
+        if (e.shiftKey) {
+          return;
+        }
+        e.preventDefault();
+
+        const form = e.currentTarget.form;
+        const submitButton = form?.querySelector(
+          'button[type="submit"]'
+        ) as HTMLButtonElement | null;
+        if (submitButton?.disabled) {
+          return;
+        }
+
+        form?.requestSubmit();
       }
-      if (e.shiftKey) {
-        return;
-      }
-      e.preventDefault();
 
-      const form = e.currentTarget.form;
-      const submitButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
-      if (submitButton?.disabled) {
-        return;
-      }
+      onKeyDown?.(e);
+    };
 
-      form?.requestSubmit();
-    }
+    return (
+      <Textarea
+        className={cn('min-h-16 max-h-48 resize-none', className)}
+        onCompositionEnd={() => setIsComposing(false)}
+        onCompositionStart={() => setIsComposing(true)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        {...props}
+      />
+    );
+  }
+);
 
-    onKeyDown?.(e);
-  };
-
-  return (
-    <Textarea
-      className={cn('min-h-16 max-h-48 resize-none', className)}
-      onCompositionEnd={() => setIsComposing(false)}
-      onCompositionStart={() => setIsComposing(true)}
-      onKeyDown={handleKeyDown}
-      placeholder={placeholder}
-      {...props}
-    />
-  );
-};
+PromptInputTextarea.displayName = 'PromptInputTextarea';
 
 export type PromptInputSubmitProps = ComponentProps<typeof Button> & {
   status?: ChatStatus;
 };
 
-export const PromptInputSubmit = ({
-  className,
-  variant = 'default',
-  size = 'icon',
-  status,
-  children,
-  ...props
-}: PromptInputSubmitProps) => {
-  let Icon = <CornerDownLeftIcon className="size-4" />;
+export const PromptInputSubmit = memo(
+  ({
+    className,
+    variant = 'default',
+    size = 'icon',
+    status,
+    children,
+    ...props
+  }: PromptInputSubmitProps) => {
+    let Icon = <CornerDownLeftIcon className="size-4" />;
 
-  if (status === 'submitted') {
-    Icon = <Loader size="sm" />;
-  } else if (status === 'streaming') {
-    Icon = <SquareIcon className="size-4" />;
-  } else if (status === 'error') {
-    Icon = <XIcon className="size-4" />;
+    if (status === 'submitted') {
+      Icon = <Loader size="sm" />;
+    } else if (status === 'streaming') {
+      Icon = <SquareIcon className="size-4" />;
+    } else if (status === 'error') {
+      Icon = <XIcon className="size-4" />;
+    }
+
+    return (
+      <Button
+        aria-label="Submit"
+        className={cn(className)}
+        size={size}
+        type="submit"
+        variant={variant}
+        {...props}
+      >
+        {children ?? Icon}
+      </Button>
+    );
   }
+);
 
-  return (
-    <Button
-      aria-label="Submit"
-      className={cn(className)}
-      size={size}
-      type="submit"
-      variant={variant}
-      {...props}
-    >
-      {children ?? Icon}
-    </Button>
-  );
-};
+PromptInputSubmit.displayName = 'PromptInputSubmit';
 
 export type InputProps = ComponentProps<'form'>;
 
-export const Input = ({ className, ...props }: InputProps) => (
+export const Input = memo(({ className, ...props }: InputProps) => (
   <form className={cn('relative flex flex-col gap-2', className)} {...props} />
-);
+));
+
+Input.displayName = 'Input';

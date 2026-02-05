@@ -3,7 +3,7 @@
 import { AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react';
 
 import { Loader } from './loader';
-import { useRef, useEffect } from 'react';
+import { memo, useRef, useEffect } from 'react';
 
 import { AbortButton } from './abort-button';
 import { AgentActivityView } from './agent-activity-view';
@@ -34,7 +34,7 @@ export interface ActivityStreamProps {
  * Real-time agent activity stream with live updates
  * Best practice: Auto-scroll to bottom using ref (no layout shift)
  */
-export function ActivityStream({
+export const ActivityStream = memo(function ActivityStream({
   streamUrl,
   title = 'Agent Activity',
   onComplete,
@@ -202,4 +202,6 @@ export function ActivityStream({
       </CardContent>
     </Card>
   );
-}
+});
+
+ActivityStream.displayName = 'ActivityStream';

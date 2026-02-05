@@ -1,7 +1,7 @@
 'use client';
 
 import { Copy, Check } from 'lucide-react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 
 import { ConfidenceIndicator } from './confidence-indicator';
 import { getAgentColorClasses, formatAgentTime } from './constants';
@@ -31,7 +31,7 @@ interface AgentMessageProps {
  *
  * Best practice: Extract static JSX outside (rendering-hoist-jsx)
  */
-export function AgentMessage({ event }: AgentMessageProps) {
+export const AgentMessage = memo(function AgentMessage({ event }: AgentMessageProps) {
   const [copied, setCopied] = useState(false);
 
   // Only render progress and complete events with valid data
@@ -143,4 +143,6 @@ export function AgentMessage({ event }: AgentMessageProps) {
       </div>
     </div>
   );
-}
+});
+
+AgentMessage.displayName = 'AgentMessage';

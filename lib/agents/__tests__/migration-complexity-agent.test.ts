@@ -4,7 +4,7 @@
  * Tests complexity score calculation and categorization logic.
  */
 
-import { generateObject } from 'ai';
+import { generateText } from 'ai';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import type { ContentArchitectureResult } from '../content-architecture-agent';
@@ -13,9 +13,10 @@ import {
   type AnalyzeMigrationComplexityInput,
 } from '../migration-complexity-agent';
 
-// Mock AI SDK
+// Mock AI SDK (agent uses generateText + Output.object for structured output)
 vi.mock('ai', () => ({
-  generateObject: vi.fn(),
+  generateText: vi.fn(),
+  Output: { object: vi.fn() },
 }));
 
 vi.mock('@/lib/ai/providers', () => ({
@@ -117,7 +118,7 @@ describe('Migration Complexity Agent', () => {
   describe('Complexity Score Calculation', () => {
     it('should calculate LOW complexity (score 0-25) for simple sites', async () => {
       const mockAIResponse = {
-        object: {
+        output: {
           complexityFactors: [
             {
               factor: 'Standard CMS',
@@ -137,8 +138,8 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(
-        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      vi.mocked(generateText).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateText>>
       );
 
       const input = createMockInput({
@@ -155,7 +156,7 @@ describe('Migration Complexity Agent', () => {
 
     it('should calculate MEDIUM complexity (score 26-50) for average sites', async () => {
       const mockAIResponse = {
-        object: {
+        output: {
           complexityFactors: [
             {
               factor: 'Standard CMS',
@@ -175,8 +176,8 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(
-        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      vi.mocked(generateText).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateText>>
       );
 
       const input = createMockInput({
@@ -193,7 +194,7 @@ describe('Migration Complexity Agent', () => {
 
     it('should calculate HIGH complexity (score 51-75) for complex sites', async () => {
       const mockAIResponse = {
-        object: {
+        output: {
           complexityFactors: [
             {
               factor: 'Custom CMS',
@@ -227,8 +228,8 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(
-        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      vi.mocked(generateText).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateText>>
       );
 
       const input = createMockInput({
@@ -255,7 +256,7 @@ describe('Migration Complexity Agent', () => {
 
     it('should calculate VERY HIGH complexity (score 76-100) for extremely complex sites', async () => {
       const mockAIResponse = {
-        object: {
+        output: {
           complexityFactors: [
             {
               factor: 'Legacy custom CMS',
@@ -306,8 +307,8 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(
-        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      vi.mocked(generateText).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateText>>
       );
 
       const input = createMockInput({
@@ -340,7 +341,7 @@ describe('Migration Complexity Agent', () => {
   describe('Page Count Multiplier', () => {
     it('should add +5 complexity for sites with 5000-10000 pages', async () => {
       const mockAIResponse = {
-        object: {
+        output: {
           complexityFactors: [
             {
               factor: 'Standard CMS',
@@ -354,8 +355,8 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(
-        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      vi.mocked(generateText).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateText>>
       );
 
       const input = createMockInput({
@@ -371,7 +372,7 @@ describe('Migration Complexity Agent', () => {
 
     it('should add +10 complexity for sites with >10000 pages', async () => {
       const mockAIResponse = {
-        object: {
+        output: {
           complexityFactors: [
             {
               factor: 'Standard CMS',
@@ -385,8 +386,8 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(
-        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      vi.mocked(generateText).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateText>>
       );
 
       const input = createMockInput({
@@ -402,7 +403,7 @@ describe('Migration Complexity Agent', () => {
 
     it('should NOT add page multiplier for sites with <5000 pages', async () => {
       const mockAIResponse = {
-        object: {
+        output: {
           complexityFactors: [
             {
               factor: 'Standard CMS',
@@ -416,8 +417,8 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(
-        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      vi.mocked(generateText).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateText>>
       );
 
       const input = createMockInput({
@@ -457,7 +458,7 @@ describe('Migration Complexity Agent', () => {
       const factorScore = targetScore - 50;
 
       const mockAIResponse = {
-        object: {
+        output: {
           complexityFactors: [
             {
               factor: 'Test Factor',
@@ -471,8 +472,8 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(
-        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      vi.mocked(generateText).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateText>>
       );
 
       const input = createMockInput({
@@ -524,7 +525,7 @@ describe('Migration Complexity Agent', () => {
     });
 
     it('should return error result if AI call fails', async () => {
-      vi.mocked(generateObject).mockRejectedValue(new Error('AI API Error'));
+      vi.mocked(generateText).mockRejectedValue(new Error('AI API Error'));
 
       const input = createMockInput();
 
@@ -544,7 +545,7 @@ describe('Migration Complexity Agent', () => {
   describe('Risks and Recommendations', () => {
     it('should return risks identified by AI', async () => {
       const mockAIResponse = {
-        object: {
+        output: {
           complexityFactors: [],
           risks: [
             {
@@ -566,8 +567,8 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(
-        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      vi.mocked(generateText).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateText>>
       );
 
       const input = createMockInput();
@@ -585,7 +586,7 @@ describe('Migration Complexity Agent', () => {
 
     it('should return all risk categories', async () => {
       const mockAIResponse = {
-        object: {
+        output: {
           complexityFactors: [],
           risks: [
             {
@@ -628,8 +629,8 @@ describe('Migration Complexity Agent', () => {
         },
       };
 
-      vi.mocked(generateObject).mockResolvedValue(
-        mockAIResponse as unknown as Awaited<ReturnType<typeof generateObject>>
+      vi.mocked(generateText).mockResolvedValue(
+        mockAIResponse as unknown as Awaited<ReturnType<typeof generateText>>
       );
 
       const input = createMockInput();

@@ -58,7 +58,7 @@ const adminItems: CommandPaletteItem[] = [
   },
   {
     label: 'Technologies',
-    href: '/admin/technologies',
+    href: '/master-data/technologies',
     icon: Database,
   },
   {

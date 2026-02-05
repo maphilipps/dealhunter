@@ -86,8 +86,8 @@ const allMasterDataItems: Array<{
     roles: ['bd', 'bl', 'admin'],
   },
   {
-    name: 'Technologies',
-    url: '/admin/technologies',
+    name: 'Technologien',
+    url: '/master-data/technologies',
     icon: Database,
     roles: ['bd', 'bl', 'admin'],
   },

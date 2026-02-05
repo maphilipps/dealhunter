@@ -481,7 +481,7 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/admin/technologies">
+          <Link href="/master-data/technologies">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>

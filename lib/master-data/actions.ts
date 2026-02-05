@@ -12,6 +12,7 @@ import {
   competitors,
   employees,
   businessUnits,
+  technologies,
   type NewReference,
   type NewCompetency,
   type NewCompetitor,
@@ -60,6 +61,15 @@ const createEmployeeSchema = z.object({
   skills: z.array(z.string()).min(1),
   roles: z.array(z.string()).min(1),
   availabilityStatus: z.enum(['available', 'on_project', 'unavailable']),
+});
+
+const createTechnologySchema = z.object({
+  name: z.string().min(1).max(200),
+  businessUnitId: z.string(),
+  baselineHours: z.number().int().min(0).optional(),
+  baselineName: z.string().max(200).optional(),
+  baselineEntityCounts: z.record(z.string(), z.number()).optional(),
+  isDefault: z.boolean(),
 });
 
 // ============================================================================
@@ -620,4 +630,176 @@ export async function getCompetenciesForSelect() {
     .orderBy(competencies.name);
 
   return { success: true, competencies: items };
+}
+
+// ============================================================================
+// Technologies Actions
+// ============================================================================
+
+export async function getTechnologies() {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error('Unauthorized');
+  }
+
+  try {
+    const tech = await db
+      .select({
+        id: technologies.id,
+        name: technologies.name,
+        baselineHours: technologies.baselineHours,
+        baselineName: technologies.baselineName,
+        baselineEntityCounts: technologies.baselineEntityCounts,
+        isDefault: technologies.isDefault,
+        createdAt: technologies.createdAt,
+        businessUnitId: technologies.businessUnitId,
+        businessLineName: businessUnits.name,
+        // Extended metadata
+        logoUrl: technologies.logoUrl,
+        websiteUrl: technologies.websiteUrl,
+        description: technologies.description,
+        category: technologies.category,
+        license: technologies.license,
+        latestVersion: technologies.latestVersion,
+        githubUrl: technologies.githubUrl,
+        githubStars: technologies.githubStars,
+        communitySize: technologies.communitySize,
+        researchStatus: technologies.researchStatus,
+        lastResearchedAt: technologies.lastResearchedAt,
+      })
+      .from(technologies)
+      .leftJoin(businessUnits, eq(technologies.businessUnitId, businessUnits.id))
+      .orderBy(technologies.createdAt);
+
+    return { success: true, technologies: tech };
+  } catch (error) {
+    console.error('Error fetching technologies:', error);
+    return { success: false, error: 'Fehler beim Laden der Technologien' };
+  }
+}
+
+export async function createTechnology(data: z.infer<typeof createTechnologySchema>) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  if (session.user.role !== 'admin') {
+    return { success: false, error: 'Forbidden' };
+  }
+
+  const parsed = createTechnologySchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid input', details: parsed.error };
+  }
+
+  try {
+    const [technology] = await db
+      .insert(technologies)
+      .values({
+        name: parsed.data.name.trim(),
+        businessUnitId: parsed.data.businessUnitId,
+        baselineHours: parsed.data.baselineHours ?? 0,
+        baselineName: parsed.data.baselineName?.trim() ?? '',
+        baselineEntityCounts:
+          parsed.data.baselineEntityCounts &&
+          Object.keys(parsed.data.baselineEntityCounts).length > 0
+            ? JSON.stringify(parsed.data.baselineEntityCounts)
+            : '{}',
+        isDefault: parsed.data.isDefault,
+      })
+      .returning();
+
+    revalidatePath('/master-data/technologies');
+
+    return { success: true, technology };
+  } catch (error) {
+    console.error('Error creating technology:', error);
+    return { success: false, error: 'Fehler beim Erstellen der Technologie' };
+  }
+}
+
+export async function getTechnology(id: string) {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error('Unauthorized');
+  }
+
+  try {
+    const [tech] = await db.select().from(technologies).where(eq(technologies.id, id));
+
+    if (!tech) {
+      return { success: false, error: 'Technologie nicht gefunden' };
+    }
+
+    return { success: true, technology: tech };
+  } catch (error) {
+    console.error('Error fetching technology:', error);
+    return { success: false, error: 'Fehler beim Laden der Technologie' };
+  }
+}
+
+export async function updateTechnology(id: string, data: z.infer<typeof createTechnologySchema>) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  if (session.user.role !== 'admin') {
+    return { success: false, error: 'Forbidden' };
+  }
+
+  const parsed = createTechnologySchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid input', details: parsed.error };
+  }
+
+  try {
+    const [technology] = await db
+      .update(technologies)
+      .set({
+        name: parsed.data.name.trim(),
+        businessUnitId: parsed.data.businessUnitId,
+        baselineHours: parsed.data.baselineHours ?? 0,
+        baselineName: parsed.data.baselineName?.trim() ?? '',
+        baselineEntityCounts:
+          parsed.data.baselineEntityCounts &&
+          Object.keys(parsed.data.baselineEntityCounts).length > 0
+            ? JSON.stringify(parsed.data.baselineEntityCounts)
+            : '{}',
+        isDefault: parsed.data.isDefault,
+        updatedAt: new Date(),
+      })
+      .where(eq(technologies.id, id))
+      .returning();
+
+    revalidatePath('/master-data/technologies');
+
+    return { success: true, technology };
+  } catch (error) {
+    console.error('Error updating technology:', error);
+    return { success: false, error: 'Fehler beim Aktualisieren der Technologie' };
+  }
+}
+
+export async function deleteTechnology(id: string) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  if (session.user.role !== 'admin') {
+    return { success: false, error: 'Forbidden' };
+  }
+
+  try {
+    await db.delete(technologies).where(eq(technologies.id, id));
+
+    revalidatePath('/master-data/technologies');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting technology:', error);
+    return { success: false, error: 'Fehler beim Löschen der Technologie' };
+  }
 }

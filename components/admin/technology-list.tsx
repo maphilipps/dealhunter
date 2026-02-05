@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { deleteTechnology } from '@/lib/admin/technologies-actions';
+import { deleteTechnology } from '@/lib/master-data/actions';
 
 interface Technology {
   id: string;
@@ -96,7 +96,7 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground mb-4">Noch keine Technologien erfasst</p>
-        <a href="/admin/technologies/new" className="text-primary hover:underline">
+        <a href="/master-data/technologies/new" className="text-primary hover:underline">
           Erste Technologie erstellen →
         </a>
       </div>
@@ -132,7 +132,7 @@ export function TechnologyList({ technologies }: TechnologyListProps) {
                   </div>
                 )}
                 <div>
-                  <Link href={`/admin/technologies/${tech.id}`}>
+                  <Link href={`/master-data/technologies/${tech.id}`}>
                     <CardTitle className="text-lg font-medium hover:underline cursor-pointer">
                       {tech.name}
                     </CardTitle>

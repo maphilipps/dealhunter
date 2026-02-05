@@ -73,6 +73,20 @@ export {
   type EvaluatorContext,
 } from './evaluator';
 
+// Optimizer Primitives (preferred)
+export {
+  matchCMSPatterns,
+  extractEmployeeCount,
+  extractIndustry,
+  detectFeatures,
+  parseConfidenceField,
+  flattenSearchResults,
+  type CMSMatch,
+  type EmployeeExtraction,
+  type FeatureDetection,
+} from './optimizer';
+
+// Optimizer (deprecated wrappers — use primitives above + IntelligentTools directly)
 export {
   optimizeResults,
   optimizeArea,

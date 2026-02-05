@@ -23,84 +23,7 @@ export interface ComplexityScorerParams {
   techStack: Record<string, unknown> | null;
 }
 
-/**
- * Fallback function for quick execution without LLM call.
- * Used when LLM scoring fails or for rapid assessments.
- */
-export function deriveMigrationComplexityFallback(
-  componentCount: number,
-  performanceScore: number,
-  accessibilityScore: number
-): ComplexityResult {
-  // Components drive complexity; poor performance and accessibility add risk
-  let score = Math.min(componentCount * 5, 80);
-
-  // Performance impact
-  if (performanceScore < 30) {
-    score += 20;
-  } else if (performanceScore < 60) {
-    score += 10;
-  }
-
-  // Accessibility impact
-  if (accessibilityScore < 50) {
-    score += 15;
-  } else if (accessibilityScore < 80) {
-    score += 5;
-  }
-
-  score = Math.min(score, 100);
-
-  const complexity =
-    score <= 30 ? 'low' : score <= 50 ? 'medium' : score <= 70 ? 'high' : 'very_high';
-
-  const factors: ComplexityResult['factors'] = [];
-
-  // Component factor
-  if (componentCount < 10) {
-    factors.push({ factor: 'Geringe Komponenten-Anzahl', impact: 'positive', weight: 20 });
-  } else if (componentCount <= 30) {
-    factors.push({ factor: 'Moderate Komponenten-Anzahl', impact: 'neutral', weight: 15 });
-  } else {
-    factors.push({ factor: 'Hohe Komponenten-Anzahl', impact: 'negative', weight: 25 });
-  }
-
-  // Performance factor
-  if (performanceScore >= 60) {
-    factors.push({ factor: 'Guter Performance-Score', impact: 'positive', weight: 10 });
-  } else if (performanceScore >= 30) {
-    factors.push({ factor: 'Optimierungsbedarf bei Performance', impact: 'neutral', weight: 10 });
-  } else {
-    factors.push({ factor: 'Kritischer Performance-Score', impact: 'negative', weight: 20 });
-  }
-
-  // Accessibility factor
-  if (accessibilityScore >= 80) {
-    factors.push({ factor: 'Guter Accessibility-Score', impact: 'positive', weight: 5 });
-  } else if (accessibilityScore >= 50) {
-    factors.push({ factor: 'Moderater Accessibility-Score', impact: 'neutral', weight: 5 });
-  } else {
-    factors.push({ factor: 'Kritischer Accessibility-Score', impact: 'negative', weight: 15 });
-  }
-
-  return {
-    complexity,
-    score,
-    reasoning: `Fallback-Bewertung basierend auf ${componentCount} Komponenten, Performance-Score ${performanceScore}/100, Accessibility-Score ${accessibilityScore}/100.`,
-    factors,
-  };
-}
-
-/**
- * Score migration complexity using LLM analysis.
- * Falls back to heuristic scoring if LLM call fails.
- */
-export async function scoreComplexity(params: ComplexityScorerParams): Promise<ComplexityResult> {
-  try {
-    const result = await generateStructuredOutput({
-      model: 'fast',
-      schema: complexitySchema,
-      system: `Du bist ein Migration-Complexity-Experte. Bewerte die Komplexität einer Website-Migration basierend auf technischen Metriken.
+const SYSTEM_PROMPT = `Du bist ein Migration-Complexity-Experte. Bewerte die Komplexität einer Website-Migration basierend auf technischen Metriken.
 
 Bewertungskriterien:
 - Komponenten-Anzahl: <10 = einfach, 10-30 = mittel, >30 = komplex
@@ -114,8 +37,15 @@ Scoring-Schwellwerte:
 - 51-70 = high (hohe Komplexität)
 - 71-100 = very_high (sehr hohe Komplexität)
 
-Analysiere die Faktoren gründlich und gib eine fundierte Einschätzung mit konkreten Begründungen.`,
-      prompt: `Bewerte die Migration-Komplexität für folgende Website:
+Analysiere die Faktoren gründlich und gib eine fundierte Einschätzung mit konkreten Begründungen.`;
+
+/**
+ * Score migration complexity using LLM analysis.
+ * The LLM prompt is the single source of truth for scoring rules.
+ * Retries once on failure before propagating the error.
+ */
+export async function scoreComplexity(params: ComplexityScorerParams): Promise<ComplexityResult> {
+  const prompt = `Bewerte die Migration-Komplexität für folgende Website:
 
 Komponenten-Anzahl: ${params.componentCount}
 Performance-Score: ${params.performanceScore}/100
@@ -126,18 +56,27 @@ Erstelle eine detaillierte Komplexitätsbewertung mit:
 1. Gesamtscore (0-100)
 2. Komplexitätsstufe (low/medium/high/very_high)
 3. Begründung der Bewertung
-4. Einzelne Faktoren mit ihrem Einfluss (positive/neutral/negative) und Gewichtung`,
+4. Einzelne Faktoren mit ihrem Einfluss (positive/neutral/negative) und Gewichtung`;
+
+  const callLLM = () =>
+    generateStructuredOutput({
+      model: 'fast',
+      schema: complexitySchema,
+      system: SYSTEM_PROMPT,
+      prompt,
       temperature: 0.2,
       maxTokens: 1000,
     });
 
-    return result;
-  } catch (error) {
-    console.error('[Complexity Scorer] LLM scoring failed, using fallback:', error);
-    return deriveMigrationComplexityFallback(
-      params.componentCount,
-      params.performanceScore,
-      params.accessibilityScore
-    );
+  try {
+    return await callLLM();
+  } catch (firstError) {
+    console.warn('[Complexity Scorer] First attempt failed, retrying:', firstError);
+    try {
+      return await callLLM();
+    } catch (retryError) {
+      console.error('[Complexity Scorer] Retry also failed:', retryError);
+      throw retryError;
+    }
   }
 }

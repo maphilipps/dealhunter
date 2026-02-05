@@ -11,18 +11,14 @@ import { auditPerformance } from './performance-auditor';
 import { auditAccessibility } from './a11y-auditor';
 import { analyzeComponents } from './component-analyzer';
 import { fetchHtml } from './fetch-html';
-import {
-  scoreComplexity,
-  deriveMigrationComplexityFallback,
-  type ComplexityResult,
-} from './complexity-scorer';
+import { scoreComplexity, type ComplexityResult } from './complexity-scorer';
 
 export { detectTechStack } from './tech-detector';
 export { auditPerformance } from './performance-auditor';
 export { auditAccessibility } from './a11y-auditor';
 export { analyzeComponents } from './component-analyzer';
 export { fetchHtml } from './fetch-html';
-export { scoreComplexity, deriveMigrationComplexityFallback } from './complexity-scorer';
+export { scoreComplexity } from './complexity-scorer';
 export type { ComplexityResult } from './complexity-scorer';
 
 export interface FullAuditResult {

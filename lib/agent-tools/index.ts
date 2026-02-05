@@ -47,6 +47,17 @@ export {
   type SiteCrawlResult,
 } from './intelligent-tools';
 
+// Evaluator Primitives (preferred)
+export {
+  validateFields,
+  countConfidencesMet,
+  calculateCompleteness,
+  type FieldValidation,
+  type ConfidenceCount,
+  type CompletenessResult,
+} from './evaluator';
+
+// Evaluator (deprecated wrappers — use primitives above)
 export {
   evaluateResults,
   quickEvaluate,

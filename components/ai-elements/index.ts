@@ -68,6 +68,18 @@ export {
   type AgentMessageActionsProps,
 } from './agent-message';
 
+// Activity Stream components
+export {
+  ActivityStream,
+  ActivityStreamError,
+  ActivityStreamEmpty,
+  ActivityStreamComplete,
+  type ActivityStreamProps,
+  type ActivityStreamErrorProps,
+  type ActivityStreamEmptyProps,
+  type ActivityStreamCompleteProps,
+} from './activity-stream';
+
 // Constants and utilities
 export {
   getAgentColorClasses,

@@ -206,6 +206,9 @@ export const CONFIDENCE_HIGH_THRESHOLD = 80;
 /** Confidence >= 60% is considered medium confidence */
 export const CONFIDENCE_MEDIUM_THRESHOLD = 60;
 
+/** Confidence >= 50% is considered low (below is very-low) */
+export const CONFIDENCE_LOW_THRESHOLD = 50;
+
 // ============================================================================
 // Timing Constants
 // ============================================================================
@@ -214,7 +217,7 @@ export const CONFIDENCE_MEDIUM_THRESHOLD = 60;
 export const MS_PER_SECOND = 1000;
 
 /** Delay before auto-closing reasoning panels after streaming completes */
-export const AUTO_CLOSE_DELAY_MS = 1500;
+export const AUTO_CLOSE_DELAY_MS = 1000;
 
 /** Minimum number of expected agents for progress calculation */
 export const MIN_EXPECTED_AGENTS = 5;

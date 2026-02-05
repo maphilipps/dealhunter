@@ -7,6 +7,7 @@ import { createContext, memo, useContext, useEffect, useMemo, useState } from 'r
 import { Streamdown } from 'streamdown';
 
 import { Shimmer } from './shimmer';
+import { AUTO_CLOSE_DELAY_MS, MS_PER_SECOND } from './constants';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
@@ -35,9 +36,6 @@ export type ReasoningProps = ComponentProps<typeof Collapsible> & {
   onOpenChange?: ((this: void, open: boolean) => void) | undefined;
   duration?: number;
 };
-
-const AUTO_CLOSE_DELAY = 1000;
-const MS_IN_S = 1000;
 
 export const Reasoning = memo(
   ({
@@ -70,7 +68,7 @@ export const Reasoning = memo(
           setStartTime(Date.now());
         }
       } else if (startTime !== null) {
-        setDuration(Math.ceil((Date.now() - startTime) / MS_IN_S));
+        setDuration(Math.ceil((Date.now() - startTime) / MS_PER_SECOND));
         setStartTime(null);
       }
     }, [isStreaming, startTime, setDuration]);
@@ -82,7 +80,7 @@ export const Reasoning = memo(
         const timer = setTimeout(() => {
           setIsOpen(false);
           setHasAutoClosed(true);
-        }, AUTO_CLOSE_DELAY);
+        }, AUTO_CLOSE_DELAY_MS);
 
         return () => clearTimeout(timer);
       }

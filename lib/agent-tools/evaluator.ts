@@ -173,8 +173,122 @@ function isValueFilled(value: unknown): boolean {
   return true;
 }
 
+// ========================================
+// Primitive Functions (stateless, no side effects)
+// ========================================
+
+export interface FieldValidation {
+  path: string;
+  description: string;
+  filled: boolean;
+  confidence: number | null;
+  meetsThreshold: boolean;
+  requiredConfidence: number | undefined;
+}
+
 /**
- * Calculate basic quality metrics from results
+ * Validate each field against data — returns per-field filled/confidence status.
+ * Pure data: no event emission, no scoring logic.
+ */
+export function validateFields(
+  data: Record<string, unknown>,
+  requiredFields: EvaluationSchema['requiredFields']
+): FieldValidation[] {
+  return requiredFields.map(field => {
+    const value = getNestedValue(data, field.path);
+    const filled = isValueFilled(value);
+
+    let confidence: number | null = null;
+    let meetsThreshold = true;
+
+    if (field.minConfidence && filled) {
+      const confidencePath =
+        field.path.replace(/\.([^.]+)$/, '.confidence') || field.path + 'Confidence';
+      const rawConfidence =
+        getNestedValue(data, confidencePath) || getNestedValue(data, field.path + 'Confidence');
+
+      if (typeof rawConfidence === 'number') {
+        confidence = rawConfidence;
+        meetsThreshold = rawConfidence >= field.minConfidence;
+      }
+    }
+
+    return {
+      path: field.path,
+      description: field.description,
+      filled,
+      confidence,
+      meetsThreshold,
+      requiredConfidence: field.minConfidence,
+    };
+  });
+}
+
+export interface ConfidenceCount {
+  met: number;
+  total: number;
+  issues: string[];
+}
+
+/**
+ * Count how many fields with confidence requirements meet their threshold.
+ * Pure math: no event emission, no scoring.
+ */
+export function countConfidencesMet(
+  data: Record<string, unknown>,
+  schema: EvaluationSchema
+): ConfidenceCount {
+  const validations = validateFields(data, schema.requiredFields);
+  const fieldsWithConfidence = validations.filter(v => v.requiredConfidence !== undefined);
+
+  const met = fieldsWithConfidence.filter(v => v.meetsThreshold).length;
+  const total = fieldsWithConfidence.length;
+  const issues = fieldsWithConfidence
+    .filter(v => !v.meetsThreshold && v.confidence !== null)
+    .map(v => `${v.description}: ${v.confidence}% < ${v.requiredConfidence}%`);
+
+  return { met, total, issues };
+}
+
+export interface CompletenessResult {
+  completeness: number;
+  filledRequired: number;
+  totalRequired: number;
+  filledOptional: number;
+  totalOptional: number;
+}
+
+/**
+ * Calculate completeness percentage from filled required/optional fields.
+ * Pure math: no event emission, no AI.
+ */
+export function calculateCompleteness(
+  data: Record<string, unknown>,
+  schema: EvaluationSchema
+): CompletenessResult {
+  const validations = validateFields(data, schema.requiredFields);
+  const filledRequired = validations.filter(v => v.filled).length;
+  const totalRequired = validations.length;
+
+  let filledOptional = 0;
+  const totalOptional = schema.optionalFields?.length || 0;
+  for (const field of schema.optionalFields || []) {
+    if (isValueFilled(getNestedValue(data, field.path))) {
+      filledOptional++;
+    }
+  }
+
+  const completeness = totalRequired > 0 ? Math.round((filledRequired / totalRequired) * 100) : 100;
+
+  return { completeness, filledRequired, totalRequired, filledOptional, totalOptional };
+}
+
+// ========================================
+// Legacy helper (composes primitives)
+// ========================================
+
+/**
+ * @deprecated Use validateFields + countConfidencesMet + calculateCompleteness instead
  */
 function calculateBasicMetrics(
   results: Record<string, unknown>,
@@ -186,41 +300,16 @@ function calculateBasicMetrics(
   totalOptional: number;
   confidenceIssues: string[];
 } {
-  let filledRequired = 0;
-  const totalRequired = schema.requiredFields.length;
-  const confidenceIssues: string[] = [];
+  const completenessResult = calculateCompleteness(results, schema);
+  const confidenceResult = countConfidencesMet(results, schema);
 
-  for (const field of schema.requiredFields) {
-    const value = getNestedValue(results, field.path);
-    if (isValueFilled(value)) {
-      filledRequired++;
-
-      // Check confidence if applicable
-      if (field.minConfidence) {
-        const confidencePath =
-          field.path.replace(/\.([^.]+)$/, '.confidence') || field.path + 'Confidence';
-        const confidence =
-          getNestedValue(results, confidencePath) ||
-          getNestedValue(results, field.path + 'Confidence');
-
-        if (typeof confidence === 'number' && confidence < field.minConfidence) {
-          confidenceIssues.push(`${field.description}: ${confidence}% < ${field.minConfidence}%`);
-        }
-      }
-    }
-  }
-
-  let filledOptional = 0;
-  const totalOptional = schema.optionalFields?.length || 0;
-
-  for (const field of schema.optionalFields || []) {
-    const value = getNestedValue(results, field.path);
-    if (isValueFilled(value)) {
-      filledOptional++;
-    }
-  }
-
-  return { filledRequired, totalRequired, filledOptional, totalOptional, confidenceIssues };
+  return {
+    filledRequired: completenessResult.filledRequired,
+    totalRequired: completenessResult.totalRequired,
+    filledOptional: completenessResult.filledOptional,
+    totalOptional: completenessResult.totalOptional,
+    confidenceIssues: confidenceResult.issues,
+  };
 }
 
 // ========================================
@@ -231,6 +320,8 @@ function calculateBasicMetrics(
  * Evaluate Agent Results
  *
  * Uses AI to analyze results quality and suggest improvements.
+ * @deprecated Use validateFields + countConfidencesMet + calculateCompleteness primitives
+ * and let the agent handle quality judgment via LLM.
  */
 export async function evaluateResults(
   results: Record<string, unknown>,
@@ -383,26 +474,27 @@ Erstelle eine strukturierte Bewertung mit konkreten Verbesserungsvorschlägen.`,
 
 /**
  * Quick evaluation without AI (faster, less accurate)
+ * @deprecated Use validateFields + calculateCompleteness primitives instead.
  */
 export function quickEvaluate(
   results: Record<string, unknown>,
   schema: EvaluationSchema
 ): { score: number; issues: string[]; canImprove: boolean } {
-  const metrics = calculateBasicMetrics(results, schema);
-  const completeness = Math.round((metrics.filledRequired / metrics.totalRequired) * 100);
+  const fieldValidations = validateFields(results, schema.requiredFields);
+  const { completeness } = calculateCompleteness(results, schema);
+  const confidenceResult = countConfidencesMet(results, schema);
 
   const issues: string[] = [];
 
-  // Check required fields
-  for (const field of schema.requiredFields) {
-    const value = getNestedValue(results, field.path);
-    if (!isValueFilled(value)) {
-      issues.push(`Missing: ${field.description}`);
+  // Missing required fields
+  for (const v of fieldValidations) {
+    if (!v.filled) {
+      issues.push(`Missing: ${v.description}`);
     }
   }
 
-  // Add confidence issues
-  issues.push(...metrics.confidenceIssues);
+  // Confidence issues
+  issues.push(...confidenceResult.issues);
 
   return {
     score: completeness,
@@ -417,6 +509,7 @@ export function quickEvaluate(
 
 /**
  * Evaluate QuickScan Results
+ * @deprecated Use primitives directly (validateFields, calculateCompleteness, countConfidencesMet)
  */
 export async function evaluateQuickScanResults(
   results: Record<string, unknown>,
@@ -430,6 +523,7 @@ export async function evaluateQuickScanResults(
 
 /**
  * Evaluate CMS Matching Results
+ * @deprecated Use primitives directly (validateFields, calculateCompleteness, countConfidencesMet)
  */
 export async function evaluateCMSMatchingResults(
   results: Record<string, unknown>,
@@ -443,6 +537,7 @@ export async function evaluateCMSMatchingResults(
 
 /**
  * Evaluate BIT Evaluation Results
+ * @deprecated Use primitives directly (validateFields, calculateCompleteness, countConfidencesMet)
  */
 export async function evaluateBITResults(
   results: Record<string, unknown>,

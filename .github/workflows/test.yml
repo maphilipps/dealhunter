@@ -87,6 +87,7 @@ jobs:
         env:
           CI: true
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dealhunter_test
+          AUTH_SECRET: e2e-ci-secret
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
 

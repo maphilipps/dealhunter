@@ -22,7 +22,7 @@ import { dealEmbeddings } from '@/lib/db/schema';
 
 /**
  * Agent names that produce summarizable outputs.
- * Includes both legacy expert agents and current pre-qualification pipeline agents.
+ * Includes both legacy expert agents and current qualification pipeline agents.
  */
 const EXPERT_AGENT_NAMES = [
   // Legacy expert agents (kept for backwards compatibility)
@@ -31,9 +31,9 @@ const EXPERT_AGENT_NAMES = [
   'techstack_expert',
   'legal_rfp_expert',
   'extract',
-  // Pre-qualification pipeline agents
+  // Qualification pipeline agents
   'prequal_section_agent',
-  'quick_scan',
+  'qualification_scan',
 ];
 
 const SUMMARY_RAG_QUERY = 'executive summary introduction scope objectives project overview';

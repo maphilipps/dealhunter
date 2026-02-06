@@ -33,7 +33,7 @@ export function AccountsEmptyStateClient() {
       label: 'Lead hochladen',
       description: 'AI extrahiert Account-Daten automatisch aus Leads',
       onClick: () => {
-        router.push('/pre-qualifications/new');
+        router.push('/qualifications/new');
       },
       variant: 'outline' as const,
     },

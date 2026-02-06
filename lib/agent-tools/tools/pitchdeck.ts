@@ -282,8 +282,9 @@ registry.register({
 // ===== DELIVERABLES =====
 
 registry.register({
+  /** @deprecated Use pitchdeck.add_deliverable instead */
   name: 'pitchdeck.addDeliverable',
-  description: 'Add a new Deliverable to a Pitchdeck',
+  description: '[DEPRECATED: use pitchdeck.add_deliverable] Add a new Deliverable to a Pitchdeck',
   category: 'pitchdeck',
   inputSchema: addDeliverableInputSchema,
   async execute(input, context: ToolContext) {
@@ -336,8 +337,10 @@ registry.register({
 });
 
 registry.register({
+  /** @deprecated Use pitchdeck.update_deliverable instead */
   name: 'pitchdeck.updateDeliverable',
-  description: 'Update a Pitchdeck Deliverable (status, assignment, drafts, etc.)',
+  description:
+    '[DEPRECATED: use pitchdeck.update_deliverable] Update a Pitchdeck Deliverable (status, assignment, drafts, etc.)',
   category: 'pitchdeck',
   inputSchema: updateDeliverableInputSchema,
   async execute(input, context: ToolContext) {
@@ -401,8 +404,9 @@ registry.register({
 // ===== TEAM MEMBERS =====
 
 registry.register({
+  /** @deprecated Use pitchdeck.add_team_member instead */
   name: 'pitchdeck.addTeamMember',
-  description: 'Add a team member to a Pitchdeck',
+  description: '[DEPRECATED: use pitchdeck.add_team_member] Add a team member to a Pitchdeck',
   category: 'pitchdeck',
   inputSchema: addTeamMemberInputSchema,
   async execute(input, context: ToolContext) {
@@ -481,8 +485,10 @@ registry.register({
 });
 
 registry.register({
+  /** @deprecated Use pitchdeck.remove_team_member instead */
   name: 'pitchdeck.removeTeamMember',
-  description: 'Remove a team member from a Pitchdeck',
+  description:
+    '[DEPRECATED: use pitchdeck.remove_team_member] Remove a team member from a Pitchdeck',
   category: 'pitchdeck',
   inputSchema: removeTeamMemberInputSchema,
   async execute(input, context: ToolContext) {
@@ -569,8 +575,10 @@ registry.register({
 });
 
 registry.register({
+  /** @deprecated Use pitchdeck.delete_deliverable instead */
   name: 'pitchdeck.deleteDeliverable',
-  description: 'Delete a Pitchdeck Deliverable (hard delete)',
+  description:
+    '[DEPRECATED: use pitchdeck.delete_deliverable] Delete a Pitchdeck Deliverable (hard delete)',
   category: 'pitchdeck',
   inputSchema: deleteDeliverableInputSchema,
   async execute(input, context: ToolContext) {
@@ -596,5 +604,59 @@ registry.register({
       message: 'Pitchdeck Deliverable deleted successfully',
       deletedId: input.id,
     };
+  },
+});
+
+// ============================================================================
+// Snake_case aliases (canonical names per CLAUDE.md conventions)
+// ============================================================================
+
+registry.register({
+  name: 'pitchdeck.add_deliverable',
+  description: 'Add a new Deliverable to a Pitchdeck',
+  category: 'pitchdeck',
+  inputSchema: addDeliverableInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('pitchdeck.addDeliverable', input, context);
+  },
+});
+
+registry.register({
+  name: 'pitchdeck.update_deliverable',
+  description: 'Update a Pitchdeck Deliverable (status, assignment, drafts, etc.)',
+  category: 'pitchdeck',
+  inputSchema: updateDeliverableInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('pitchdeck.updateDeliverable', input, context);
+  },
+});
+
+registry.register({
+  name: 'pitchdeck.add_team_member',
+  description: 'Add a team member to a Pitchdeck',
+  category: 'pitchdeck',
+  inputSchema: addTeamMemberInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('pitchdeck.addTeamMember', input, context);
+  },
+});
+
+registry.register({
+  name: 'pitchdeck.remove_team_member',
+  description: 'Remove a team member from a Pitchdeck',
+  category: 'pitchdeck',
+  inputSchema: removeTeamMemberInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('pitchdeck.removeTeamMember', input, context);
+  },
+});
+
+registry.register({
+  name: 'pitchdeck.delete_deliverable',
+  description: 'Delete a Pitchdeck Deliverable (hard delete)',
+  category: 'pitchdeck',
+  inputSchema: deleteDeliverableInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('pitchdeck.deleteDeliverable', input, context);
   },
 });

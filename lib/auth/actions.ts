@@ -15,7 +15,7 @@ export async function login(_prevState: { error: string } | null, formData: Form
     await signIn('credentials', {
       email,
       password,
-      redirectTo: '/pre-qualifications',
+      redirectTo: '/qualifications',
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -64,7 +64,7 @@ export async function register(_prevState: { error: string } | null, formData: F
     await signIn('credentials', {
       email,
       password,
-      redirectTo: '/pre-qualifications',
+      redirectTo: '/qualifications',
     });
   } catch (error) {
     if (error instanceof AuthError) {

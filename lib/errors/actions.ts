@@ -3,7 +3,7 @@
  *
  * Implements user-initiated error recovery actions:
  * - retryAgent: Retry a failed agent
- * - skipAgent: Skip an optional agent (QuickScan, Timeline)
+ * - skipAgent: Skip an optional agent (Qualification Scan, Timeline)
  * - switchToManualMode: Activate manual extraction mode
  * - resolveAgentError: Mark an error as resolved
  */
@@ -26,9 +26,9 @@ import { preQualifications, type PreQualification } from '../db/schema';
  *
  * Resets the agent's error state and re-triggers the agent with the same inputs.
  *
- * @param preQualificationId - Pre-Qualification ID
+ * @param preQualificationId - Qualification ID
  * @param agentName - Name of the agent to retry
- * @returns Updated Pre-Qualification with new status
+ * @returns Updated Qualification with new status
  */
 export async function retryAgent(
   preQualificationId: string,
@@ -78,7 +78,7 @@ export async function retryAgent(
       .where(eq(preQualifications.id, preQualificationId))
       .returning();
 
-    revalidatePath(`/pre-qualifications/${preQualificationId}`);
+    revalidatePath(`/qualifications/${preQualificationId}`);
 
     return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
@@ -91,13 +91,13 @@ export async function retryAgent(
 }
 
 /**
- * Skip an optional agent (QuickScan, Timeline)
+ * Skip an optional agent (QualificationScan, Timeline)
  *
  * Marks the error as resolved with userAction='skip' and moves to next workflow step.
  *
- * @param preQualificationId - Pre-Qualification ID
+ * @param preQualificationId - Qualification ID
  * @param agentName - Name of the agent to skip
- * @returns Updated Pre-Qualification with new status
+ * @returns Updated Qualification with new status
  */
 export async function skipAgent(
   preQualificationId: string,
@@ -158,7 +158,7 @@ export async function skipAgent(
       .where(eq(preQualifications.id, preQualificationId))
       .returning();
 
-    revalidatePath(`/pre-qualifications/${preQualificationId}`);
+    revalidatePath(`/qualifications/${preQualificationId}`);
 
     return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
@@ -175,8 +175,8 @@ export async function skipAgent(
  *
  * Activates manual input form for Extract Agent after max retries.
  *
- * @param preQualificationId - Pre-Qualification ID
- * @returns Updated Pre-Qualification with manual_extraction status
+ * @param preQualificationId - Qualification ID
+ * @returns Updated Qualification with manual_extraction status
  */
 export async function switchToManualMode(
   preQualificationId: string
@@ -208,7 +208,7 @@ export async function switchToManualMode(
       .where(eq(preQualifications.id, preQualificationId))
       .returning();
 
-    revalidatePath(`/pre-qualifications/${preQualificationId}`);
+    revalidatePath(`/qualifications/${preQualificationId}`);
 
     return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
@@ -225,9 +225,9 @@ export async function switchToManualMode(
  *
  * Used for dismissing errors after successful resolution.
  *
- * @param preQualificationId - Pre-Qualification ID
+ * @param preQualificationId - Qualification ID
  * @param errorId - Error ID to resolve
- * @returns Updated Pre-Qualification
+ * @returns Updated Qualification
  */
 export async function resolveAgentError(
   preQualificationId: string,
@@ -274,7 +274,7 @@ export async function resolveAgentError(
       .where(eq(preQualifications.id, preQualificationId))
       .returning();
 
-    revalidatePath(`/pre-qualifications/${preQualificationId}`);
+    revalidatePath(`/qualifications/${preQualificationId}`);
 
     return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
@@ -291,9 +291,9 @@ export async function resolveAgentError(
  *
  * Helper function to save an error during agent execution.
  *
- * @param preQualificationId - Pre-Qualification ID
+ * @param preQualificationId - Qualification ID
  * @param agentError - Agent error to save
- * @returns Updated Pre-Qualification
+ * @returns Updated Qualification
  */
 export async function saveAgentError(
   preQualificationId: string,
@@ -329,7 +329,7 @@ export async function saveAgentError(
       .where(eq(preQualifications.id, preQualificationId))
       .returning();
 
-    revalidatePath(`/pre-qualifications/${preQualificationId}`);
+    revalidatePath(`/qualifications/${preQualificationId}`);
 
     return { success: true, preQualification: updatedPreQualification };
   } catch (error) {
@@ -354,7 +354,7 @@ function getRetryStatus(agentName: AgentName, currentStatus: string): string {
   const statusMap: Record<AgentName, string> = {
     DuplicateCheck: 'duplicate_checking',
     Extract: 'extracting',
-    QuickScan: 'quick_scanning',
+    QualificationScan: 'qualification_scanning',
     Timeline: 'timeline_estimating',
   };
 

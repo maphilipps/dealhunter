@@ -71,7 +71,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
-    // 6. Get Pre-Qualification for context
+    // 6. Get Qualification for context
     const [preQualification] = await db
       .select()
       .from(preQualifications)
@@ -79,7 +79,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       .limit(1);
 
     if (!preQualification) {
-      return NextResponse.json({ error: 'Pre-Qualification not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Qualification not found' }, { status: 404 });
     }
 
     // 7. Parse extracted requirements for context
@@ -102,7 +102,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
           requirements = [extractedReqs.requirements];
         }
       } catch {
-        console.error('Error parsing Pre-Qualification extractedRequirements');
+        console.error('Error parsing Qualification extractedRequirements');
       }
     }
 

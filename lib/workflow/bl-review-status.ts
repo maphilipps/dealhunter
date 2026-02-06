@@ -19,35 +19,44 @@ interface TransitionResult {
   reason?: string;
 }
 
+/** Statuses that indicate deep analysis has been completed */
+const DEEP_ANALYSIS_COMPLETE_STATUSES = [
+  'analysis_complete',
+  'team_assigned',
+  'notified',
+  'handed_off',
+];
+
+function isDeepAnalysisComplete(status: string): boolean {
+  return DEEP_ANALYSIS_COMPLETE_STATUSES.includes(status);
+}
+
 /**
  * Check if a transition to the next phase is allowed
  * Simple switch-based validation - no XState needed for linear workflow
  */
 export function canTransitionTo(
-  bid: Pick<
-    PreQualification,
-    'quickScanId' | 'deepMigrationAnalysisId' | 'assignedTeam' | 'teamNotifiedAt'
-  >,
+  bid: Pick<PreQualification, 'qualificationScanId' | 'status' | 'assignedTeam' | 'teamNotifiedAt'>,
   nextPhase: BLReviewPhase
 ): TransitionResult {
   switch (nextPhase) {
     case 'bu_matching':
-      // BU Matching requires Quick Scan to be completed
-      if (!bid.quickScanId) {
-        return { allowed: false, reason: 'Quick Scan muss zuerst abgeschlossen sein' };
+      // BU Matching requires Qualification Scan to be completed
+      if (!bid.qualificationScanId) {
+        return { allowed: false, reason: 'Qualification Scan muss zuerst abgeschlossen sein' };
       }
       return { allowed: true };
 
     case 'deep_analysis':
-      // Deep Analysis requires Quick Scan
-      if (!bid.quickScanId) {
-        return { allowed: false, reason: 'Quick Scan muss zuerst abgeschlossen sein' };
+      // Deep Analysis requires Qualification Scan
+      if (!bid.qualificationScanId) {
+        return { allowed: false, reason: 'Qualification Scan muss zuerst abgeschlossen sein' };
       }
       return { allowed: true };
 
     case 'team_assignment':
-      // Team Assignment requires Deep Analysis (baseline comparison)
-      if (!bid.deepMigrationAnalysisId) {
+      // Team Assignment requires Deep Analysis to be complete
+      if (!isDeepAnalysisComplete(bid.status)) {
         return { allowed: false, reason: 'Deep Analysis muss zuerst abgeschlossen sein' };
       }
       return { allowed: true };
@@ -79,17 +88,17 @@ export function canTransitionTo(
  * Tabs are progressively unlocked as phases complete
  */
 export function getEnabledTabs(
-  bid: Pick<PreQualification, 'quickScanId' | 'deepMigrationAnalysisId' | 'assignedTeam'>
+  bid: Pick<PreQualification, 'qualificationScanId' | 'status' | 'assignedTeam'>
 ): TabId[] {
   const tabs: TabId[] = ['overview'];
 
-  // BU Matching and 10 Questions require Quick Scan
-  if (bid.quickScanId) {
+  // BU Matching and 10 Questions require Qualification Scan
+  if (bid.qualificationScanId) {
     tabs.push('bu-matching', 'questions');
   }
 
-  // Baseline and Planning require Deep Analysis
-  if (bid.deepMigrationAnalysisId) {
+  // Baseline and Planning require Deep Analysis to be complete
+  if (isDeepAnalysisComplete(bid.status)) {
     tabs.push('baseline', 'planning');
   }
 
@@ -110,7 +119,7 @@ export function getCurrentPhase(
   if (status === 'handed_off') return 'handoff';
   if (status === 'notified' || bid.teamNotifiedAt) return 'notification';
   if (status === 'team_assigned' || bid.assignedTeam) return 'team_assignment';
-  if (['bl_reviewing', 'full_scanning', 'analysis_complete'].includes(status))
+  if (['bl_reviewing', 'audit_scanning', 'analysis_complete'].includes(status))
     return 'deep_analysis';
 
   return 'bu_matching';
@@ -121,10 +130,7 @@ export function getCurrentPhase(
  * Returns array of phases with completion status
  */
 export function getWorkflowProgress(
-  bid: Pick<
-    PreQualification,
-    'quickScanId' | 'deepMigrationAnalysisId' | 'assignedTeam' | 'teamNotifiedAt' | 'status'
-  >
+  bid: Pick<PreQualification, 'qualificationScanId' | 'assignedTeam' | 'teamNotifiedAt' | 'status'>
 ): Array<{ phase: BLReviewPhase; label: string; completed: boolean; current: boolean }> {
   const phases: Array<{ phase: BLReviewPhase; label: string }> = [
     { phase: 'bu_matching', label: 'BU Matching' },
@@ -141,10 +147,10 @@ export function getWorkflowProgress(
 
     switch (p.phase) {
       case 'bu_matching':
-        completed = !!bid.quickScanId;
+        completed = !!bid.qualificationScanId;
         break;
       case 'deep_analysis':
-        completed = !!bid.deepMigrationAnalysisId;
+        completed = isDeepAnalysisComplete(bid.status);
         break;
       case 'team_assignment':
         completed = !!bid.assignedTeam;

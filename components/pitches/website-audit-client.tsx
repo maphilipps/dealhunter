@@ -24,7 +24,7 @@ export function WebsiteAuditClient({ leadId, auditStatus }: WebsiteAuditClientPr
     <JobProgressCard
       job={job}
       title="Website Audit Fortschritt"
-      description="Live-Status der Deep-Scan Agents"
+      description="Live-Status der Pitch-Scan Agents"
       showDetails={true}
     />
   );

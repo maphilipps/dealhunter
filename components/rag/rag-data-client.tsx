@@ -83,13 +83,13 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Load Pre-Qualification ID and initial data
+  // Load Qualification ID and initial data
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Get Pre-Qualification ID (may be null)
+      // Get Qualification ID (may be null)
       const rfpResult = await getRfpIdForLead(leadId);
       const foundRfpId = rfpResult.success ? rfpResult.data : null;
       setRfpId(foundRfpId);
@@ -100,7 +100,7 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
         getLeadEmbeddingsStats(leadId),
       ];
 
-      // Only fetch pre-qualification stats if we have a pre-qualification
+      // Only fetch qualification stats if we have a qualification
       if (foundRfpId) {
         promises.push(getRAGStats({ preQualificationId: foundRfpId }));
       }
@@ -202,12 +202,12 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
           <CombinedStatsCard stats={combinedStats} isLoading={isLoading} />
         </TabsContent>
 
-        {/* Agent Outputs Tab - shows Pre-Qualification embeddings if available */}
+        {/* Agent Outputs Tab - shows Qualification embeddings if available */}
         <TabsContent value="agent-outputs" className="mt-6">
           {preQualificationId ? (
             <ChunkBrowser preQualificationId={preQualificationId} mode="agent" />
           ) : (
-            <NoDataPlaceholder message="Keine Pre-Qualification-Daten - Agent Outputs nur mit Pre-Qualification verfügbar" />
+            <NoDataPlaceholder message="Keine Qualification-Daten - Agent Outputs nur mit Qualification verfügbar" />
           )}
         </TabsContent>
 
@@ -275,7 +275,7 @@ function CombinedStatsCard({ stats, isLoading }: { stats: CombinedStats; isLoadi
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pre-Qualification Agent Outputs</CardTitle>
+            <CardTitle className="text-sm font-medium">Qualification Agent Outputs</CardTitle>
             <Bot className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -288,7 +288,7 @@ function CombinedStatsCard({ stats, isLoading }: { stats: CombinedStats; isLoadi
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pre-Qualification Raw Chunks</CardTitle>
+            <CardTitle className="text-sm font-medium">Qualification Raw Chunks</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -306,7 +306,7 @@ function CombinedStatsCard({ stats, isLoading }: { stats: CombinedStats; isLoadi
             <div className="text-2xl font-bold text-green-700 dark:text-green-400">
               {totalLeadEmbeddings.toLocaleString('de-DE')}
             </div>
-            <p className="text-xs text-muted-foreground">Audit / Deep Scan Daten</p>
+            <p className="text-xs text-muted-foreground">Pitch Scan Daten</p>
           </CardContent>
         </Card>
       </div>
@@ -350,13 +350,13 @@ function CombinedStatsCard({ stats, isLoading }: { stats: CombinedStats; isLoadi
         </Card>
       )}
 
-      {/* Pre-Qualification Agent Breakdown */}
+      {/* Qualification Agent Breakdown */}
       {preQualification && preQualification.agentStats.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bot className="h-5 w-5" />
-              Pre-Qualification Agent Outputs
+              Qualification Agent Outputs
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -446,7 +446,7 @@ function LeadEmbeddingsBrowser({ leadId }: { leadId: string }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Layers className="h-5 w-5" />
-          Lead Embeddings (Audit / Deep Scan)
+          Lead Embeddings (Pitch Scan)
         </CardTitle>
         <CardDescription>
           {data ? `${data.total} Einträge gefunden` : 'Lade Daten...'}
@@ -634,7 +634,7 @@ function SectionDataView({
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Section Data wird während des Deep Scan Prozesses generiert.
+            Section Data wird während des Pitch Scan Prozesses generiert.
           </p>
         </CardContent>
       </Card>

@@ -1,7 +1,7 @@
 import { createId } from '@paralleldrive/cuid2';
 
 import { db } from '@/lib/db';
-import { pitchAuditResults } from '@/lib/db/schema';
+import { pitchScanResults } from '@/lib/db/schema';
 import type { TechStackResult } from './tech-detector';
 import type { PerformanceResult } from './performance-auditor';
 import type { AccessibilityResult } from './a11y-auditor';
@@ -93,7 +93,7 @@ export async function runFullAudit(params: {
 
   const auditId = createId();
 
-  await db.insert(pitchAuditResults).values({
+  await db.insert(pitchScanResults).values({
     id: auditId,
     runId: params.runId,
     pitchId: params.pitchId,

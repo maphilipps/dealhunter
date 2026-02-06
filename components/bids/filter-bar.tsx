@@ -50,12 +50,12 @@ export function FilterBar({
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="extracting">Extracting</SelectItem>
             <SelectItem value="reviewing">In Review</SelectItem>
-            <SelectItem value="quick_scanning">Scanning</SelectItem>
+            <SelectItem value="qualification_scanning">Qualification Scan</SelectItem>
             <SelectItem value="bit_pending">Awaiting Decision</SelectItem>
             <SelectItem value="evaluating">Evaluating</SelectItem>
             <SelectItem value="decision_made">Decision Made</SelectItem>
             <SelectItem value="routed">Routed</SelectItem>
-            <SelectItem value="full_scanning">Deep Analysis</SelectItem>
+            <SelectItem value="audit_scanning">Pitch Scan</SelectItem>
             <SelectItem value="bl_reviewing">BL Review</SelectItem>
             <SelectItem value="team_assigned">Team Assigned</SelectItem>
             <SelectItem value="notified">Notified</SelectItem>

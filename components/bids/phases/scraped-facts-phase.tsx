@@ -58,7 +58,7 @@ import { getBusinessUnits } from '@/lib/admin/business-units-actions';
 import { forwardToBusinessLeader } from '@/lib/bids/actions';
 import { startCMSEvaluation } from '@/lib/cms-matching/actions';
 import type { CMSMatchingResult } from '@/lib/cms-matching/schema';
-import type { QuickScan } from '@/lib/db/schema';
+import type { LeadScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 interface BusinessUnit {
@@ -69,7 +69,7 @@ interface BusinessUnit {
 }
 
 interface ScrapedFactsPhaseProps {
-  quickScan: QuickScan | null;
+  qualificationScan: LeadScan | null;
   extractedData?: ExtractedRequirements | null;
   bidId?: string;
 }
@@ -235,7 +235,7 @@ interface IntegrationsData {
 }
 
 // ========================================
-// QuickScan 2.0 Data Types
+// QualificationScan 2.0 Data Types
 // ========================================
 
 interface SiteTreeNodeData {
@@ -359,7 +359,7 @@ interface DecisionMakersResearchData {
 }
 
 // Helper to parse JSON fields safely
-// Handles both string (from raw DB) and already-parsed objects (from getQuickScanResult)
+// Handles both string (from raw DB) and already-parsed objects (from getQualificationScanResult)
 function parseJsonField<T>(value: unknown): T | null {
   if (!value) return null;
   // If already an object, return as-is
@@ -466,7 +466,11 @@ function copyToClipboard(text: string) {
   void navigator.clipboard.writeText(text);
 }
 
-export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFactsPhaseProps) {
+export function ScrapedFactsPhase({
+  qualificationScan,
+  extractedData,
+  bidId,
+}: ScrapedFactsPhaseProps) {
   const router = useRouter();
   const [businessUnits, setBusinessUnits] = useState<BusinessUnit[]>([]);
   const [selectedBU, setSelectedBU] = useState<string>('');
@@ -489,9 +493,9 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
       if (result.success && result.businessUnits) {
         setBusinessUnits(result.businessUnits as BusinessUnit[]);
         // Pre-select the recommended BU if available
-        if (quickScan?.recommendedBusinessUnit) {
+        if (qualificationScan?.recommendedBusinessUnit) {
           const recommended = result.businessUnits.find(
-            bu => bu.name === quickScan.recommendedBusinessUnit
+            bu => bu.name === qualificationScan.recommendedBusinessUnit
           );
           if (recommended) {
             setSelectedBU(recommended.id);
@@ -499,18 +503,18 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
         }
       }
     }
-    if (quickScan?.status === 'completed') {
+    if (qualificationScan?.status === 'completed') {
       void loadBUs();
     }
-  }, [quickScan?.status, quickScan?.recommendedBusinessUnit]);
+  }, [qualificationScan?.status, qualificationScan?.recommendedBusinessUnit]);
 
   // Handle CMS Evaluation
   const handleStartEvaluation = async () => {
-    if (!quickScan?.id) return;
+    if (!qualificationScan?.id) return;
 
     setIsEvaluating(true);
     try {
-      const result = await startCMSEvaluation(quickScan.id, { useWebSearch: true });
+      const result = await startCMSEvaluation(qualificationScan.id, { useWebSearch: true });
       if (result.success && result.result) {
         setCmsEvaluation(result.result);
         // Pre-select the recommended CMS
@@ -556,7 +560,7 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
     }
   };
 
-  if (!quickScan) {
+  if (!qualificationScan) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
@@ -567,40 +571,46 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
     );
   }
 
-  if (quickScan.status === 'running') {
+  if (qualificationScan.status === 'running') {
     return (
       <Card className="border-blue-200 bg-blue-50">
         <CardContent className="py-12 text-center">
           <Loader size="lg" className="mx-auto text-blue-600 mb-4" />
           <p className="text-blue-700 font-medium">Qualification läuft...</p>
-          <p className="text-sm text-blue-600">Analyse von {quickScan.websiteUrl}</p>
+          <p className="text-sm text-blue-600">Analyse von {qualificationScan.websiteUrl}</p>
         </CardContent>
       </Card>
     );
   }
 
   // Parse all JSON fields
-  const techStack = parseJsonField<TechStackData>(quickScan.techStack);
-  const contentVolume = parseJsonField<ContentVolumeData>(quickScan.contentVolume);
-  const features = parseJsonField<FeaturesData>(quickScan.features);
-  const navigationStructure = parseJsonField<NavigationData>(quickScan.navigationStructure);
-  const accessibilityAudit = parseJsonField<AccessibilityAuditData>(quickScan.accessibilityAudit);
-  const seoAudit = parseJsonField<SeoAuditData>(quickScan.seoAudit);
-  const legalCompliance = parseJsonField<LegalComplianceData>(quickScan.legalCompliance);
-  const performanceIndicators = parseJsonField<PerformanceData>(quickScan.performanceIndicators);
-  const screenshots = parseJsonField<ScreenshotsData>(quickScan.screenshots);
+  const techStack = parseJsonField<TechStackData>(qualificationScan.techStack);
+  const contentVolume = parseJsonField<ContentVolumeData>(qualificationScan.contentVolume);
+  const features = parseJsonField<FeaturesData>(qualificationScan.features);
+  const navigationStructure = parseJsonField<NavigationData>(qualificationScan.navigationStructure);
+  const accessibilityAudit = parseJsonField<AccessibilityAuditData>(
+    qualificationScan.accessibilityAudit
+  );
+  const seoAudit = parseJsonField<SeoAuditData>(qualificationScan.seoAudit);
+  const legalCompliance = parseJsonField<LegalComplianceData>(qualificationScan.legalCompliance);
+  const performanceIndicators = parseJsonField<PerformanceData>(
+    qualificationScan.performanceIndicators
+  );
+  const screenshots = parseJsonField<ScreenshotsData>(qualificationScan.screenshots);
   const companyIntelligence = parseJsonField<CompanyIntelligenceData>(
-    quickScan.companyIntelligence
+    qualificationScan.companyIntelligence
   );
-  const integrations = parseJsonField<IntegrationsData>(quickScan.integrations);
+  const integrations = parseJsonField<IntegrationsData>(qualificationScan.integrations);
 
-  // QuickScan 2.0 fields
-  const siteTree = parseJsonField<SiteTreeData>(quickScan.siteTree);
-  const contentTypes = parseJsonField<ContentTypeDistributionData>(quickScan.contentTypes);
+  // QualificationScan 2.0 fields
+  const siteTree = parseJsonField<SiteTreeData>(qualificationScan.siteTree);
+  const contentTypes = parseJsonField<ContentTypeDistributionData>(qualificationScan.contentTypes);
   const migrationComplexity = parseJsonField<MigrationComplexityData>(
-    quickScan.migrationComplexity
+    qualificationScan.migrationComplexity
   );
-  const decisionMakers = parseJsonField<DecisionMakersResearchData>(quickScan.decisionMakers);
+  const decisionMakers = parseJsonField<DecisionMakersResearchData>(
+    qualificationScan.decisionMakers
+  );
 
   // Get active features
   const activeFeatures: string[] = [];
@@ -624,13 +634,13 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
               <CardTitle>Gescrapte Fakten</CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant={quickScan.status === 'completed' ? 'default' : 'destructive'}>
-                {quickScan.status === 'completed' ? 'Abgeschlossen' : 'Fehlgeschlagen'}
+              <Badge variant={qualificationScan.status === 'completed' ? 'default' : 'destructive'}>
+                {qualificationScan.status === 'completed' ? 'Abgeschlossen' : 'Fehlgeschlagen'}
               </Badge>
             </div>
           </div>
           <CardDescription>
-            Alle automatisch erfassten Informationen von {quickScan.websiteUrl}
+            Alle automatisch erfassten Informationen von {qualificationScan.websiteUrl}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -1408,7 +1418,7 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
         </AccordionItem>
 
         {/* ========================================
-            QuickScan 2.0: Enhanced Sections
+            QualificationScan 2.0: Enhanced Sections
             ======================================== */}
 
         {/* 11. Site Tree (Full Sitemap Structure) */}
@@ -1895,33 +1905,33 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
             <div className="flex items-center gap-2">
               <Search className="h-4 w-4 text-violet-600" />
               <span className="font-medium">BL-Empfehlung</span>
-              {quickScan.recommendedBusinessUnit && (
-                <Badge className="ml-2">{quickScan.recommendedBusinessUnit}</Badge>
+              {qualificationScan.recommendedBusinessUnit && (
+                <Badge className="ml-2">{qualificationScan.recommendedBusinessUnit}</Badge>
               )}
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
-            {quickScan.recommendedBusinessUnit ? (
+            {qualificationScan.recommendedBusinessUnit ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-4">
                   <div>
                     <p className="text-xs text-muted-foreground">Empfohlene Business Unit</p>
-                    <p className="text-xl font-bold">{quickScan.recommendedBusinessUnit}</p>
+                    <p className="text-xl font-bold">{qualificationScan.recommendedBusinessUnit}</p>
                   </div>
-                  {quickScan.confidence && (
+                  {qualificationScan.confidence && (
                     <div>
                       <p className="text-xs text-muted-foreground">Confidence</p>
                       <div className="flex items-center gap-2">
-                        <Progress value={quickScan.confidence} className="h-2 w-24" />
-                        <span className="font-medium">{quickScan.confidence}%</span>
+                        <Progress value={qualificationScan.confidence} className="h-2 w-24" />
+                        <span className="font-medium">{qualificationScan.confidence}%</span>
                       </div>
                     </div>
                   )}
                 </div>
-                {quickScan.reasoning && (
+                {qualificationScan.reasoning && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Begründung</p>
-                    <p className="text-sm bg-slate-50 p-3 rounded">{quickScan.reasoning}</p>
+                    <p className="text-sm bg-slate-50 p-3 rounded">{qualificationScan.reasoning}</p>
                   </div>
                 )}
               </div>
@@ -1933,7 +1943,7 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
       </Accordion>
 
       {/* CMS Evaluation Section */}
-      {quickScan.status === 'completed' && bidId && (
+      {qualificationScan.status === 'completed' && bidId && (
         <div className="space-y-4">
           {!cmsEvaluation && !isEvaluating && (
             <Card className="border-blue-200 bg-blue-50">
@@ -1980,7 +1990,7 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
       )}
 
       {/* Forward to Business Leader Section */}
-      {quickScan.status === 'completed' && bidId && (
+      {qualificationScan.status === 'completed' && bidId && (
         <>
           {forwarded ? (
             <Card className="border-green-500 bg-green-50">
@@ -2024,7 +2034,7 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
                           <SelectItem key={bu.id} value={bu.id}>
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{bu.name}</span>
-                              {bu.name === quickScan.recommendedBusinessUnit && (
+                              {bu.name === qualificationScan.recommendedBusinessUnit && (
                                 <Badge variant="secondary" className="text-xs">
                                   Empfohlen
                                 </Badge>
@@ -2056,11 +2066,12 @@ export function ScrapedFactsPhase({ quickScan, extractedData, bidId }: ScrapedFa
                     )}
                   </Button>
                 </div>
-                {quickScan.recommendedBusinessUnit && (
+                {qualificationScan.recommendedBusinessUnit && (
                   <p className="text-xs text-orange-600 mt-3">
                     <AlertTriangle className="h-3 w-3 inline mr-1" />
-                    AI-Empfehlung: <strong>{quickScan.recommendedBusinessUnit}</strong> mit{' '}
-                    {quickScan.confidence}% Confidence
+                    AI-Empfehlung: <strong>
+                      {qualificationScan.recommendedBusinessUnit}
+                    </strong> mit {qualificationScan.confidence}% Confidence
                   </p>
                 )}
               </CardContent>

@@ -953,7 +953,12 @@ export async function startPreQualProcessing(bidId: string) {
     return { success: false, error: 'Bid nicht gefunden' };
   }
 
-  const processingStates = ['processing', 'extracting', 'duplicate_checking', 'quick_scanning'];
+  const processingStates = [
+    'processing',
+    'extracting',
+    'duplicate_checking',
+    'qualification_scanning',
+  ];
 
   if (processingStates.includes(bid.status)) {
     return { success: false, error: 'Verarbeitung läuft bereits' };
@@ -1052,7 +1057,7 @@ export async function suggestWebsiteUrlsAction(data: {
 
 /**
  * Forward a bid to a business leader for review
- * Updates the Pre-Qualification status and assigns the business unit
+ * Updates the Qualification status and assigns the business unit
  */
 export async function forwardToBusinessLeader(bidId: string, businessUnitId: string) {
   const session = await auth();
@@ -1089,7 +1094,7 @@ export async function forwardToBusinessLeader(bidId: string, businessUnitId: str
       return { success: false, error: 'Business Unit nicht gefunden' };
     }
 
-    // Update Pre-Qualification with business unit assignment and status
+    // Update Qualification with business unit assignment and status
     await db
       .update(preQualifications)
       .set({
@@ -1136,7 +1141,7 @@ export async function makeBitDecision(bidId: string, decision: 'bid' | 'no_bid',
       return { success: false, error: 'Keine Berechtigung' };
     }
 
-    // Update Pre-Qualification with decision
+    // Update Qualification with decision
     await db
       .update(preQualifications)
       .set({

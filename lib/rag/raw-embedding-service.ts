@@ -72,12 +72,12 @@ export async function generateRawChunkEmbeddings(
  *
  * Flow:
  * 1. Check if embeddings are enabled
- * 2. Delete existing raw chunks for this pre-qualification (idempotent)
+ * 2. Delete existing raw chunks for this qualification (idempotent)
  * 3. Chunk the raw text
  * 4. Generate embeddings for all chunks
  * 5. Store in raw_chunks table
  *
- * @param preQualificationId - The pre-qualification ID to associate chunks with
+ * @param preQualificationId - The qualification ID to associate chunks with
  * @param rawText - The raw document text to embed
  * @returns Statistics about the embedding process
  */
@@ -94,7 +94,7 @@ export async function embedRawText(
   const zeroEmbedding = new Array(EMBEDDING_DIMENSIONS).fill(0);
 
   try {
-    // Guard against FK violations when the pre-qualification no longer exists.
+    // Guard against FK violations when the qualification no longer exists.
     const [preQual] = await db
       .select({ id: preQualifications.id })
       .from(preQualifications)
@@ -102,18 +102,16 @@ export async function embedRawText(
       .limit(1);
 
     if (!preQual) {
-      console.warn(
-        `[RAG-RAW] Skipping embedding; pre-qualification not found: ${preQualificationId}`
-      );
+      console.warn(`[RAG-RAW] Skipping embedding; qualification not found: ${preQualificationId}`);
       return {
         success: false,
         skipped: true,
         stats: getChunkStats([]),
-        error: 'Pre-qualification not found',
+        error: 'Qualification not found',
       };
     }
 
-    // 1. Delete existing raw chunks for this pre-qualification (idempotent re-run)
+    // 1. Delete existing raw chunks for this qualification (idempotent re-run)
     await db.delete(rawChunks).where(eq(rawChunks.preQualificationId, preQualificationId));
 
     // 2. Chunk the raw text
@@ -121,7 +119,7 @@ export async function embedRawText(
 
     if (chunks.length === 0) {
       console.log(
-        `[RAG-RAW] No chunks generated for pre-qualification ${preQualificationId} - text too short or empty`
+        `[RAG-RAW] No chunks generated for qualification ${preQualificationId} - text too short or empty`
       );
       return {
         success: true,
@@ -148,7 +146,7 @@ export async function embedRawText(
 
     const stats = getChunkStats(chunks);
     console.log(
-      `[RAG-RAW] Embedded ${stats.totalChunks} chunks (${stats.totalTokens} tokens) for pre-qualification ${preQualificationId}`
+      `[RAG-RAW] Embedded ${stats.totalChunks} chunks (${stats.totalTokens} tokens) for qualification ${preQualificationId}`
     );
 
     return {
@@ -158,7 +156,7 @@ export async function embedRawText(
     };
   } catch (error) {
     console.error(
-      `[RAG-RAW] Failed to embed raw text for pre-qualification ${preQualificationId}:`,
+      `[RAG-RAW] Failed to embed raw text for qualification ${preQualificationId}:`,
       error
     );
     return {
@@ -170,7 +168,7 @@ export async function embedRawText(
 }
 
 /**
- * Check if raw chunks exist for a pre-qualification
+ * Check if raw chunks exist for a qualification
  */
 export async function hasRawChunks(preQualificationId: string): Promise<boolean> {
   const result = await db
@@ -183,7 +181,7 @@ export async function hasRawChunks(preQualificationId: string): Promise<boolean>
 }
 
 /**
- * Get raw chunk count for a pre-qualification
+ * Get raw chunk count for a qualification
  */
 export async function getRawChunkCount(preQualificationId: string): Promise<number> {
   const result = await db
@@ -195,7 +193,7 @@ export async function getRawChunkCount(preQualificationId: string): Promise<numb
 }
 
 /**
- * Delete raw chunks for a pre-qualification
+ * Delete raw chunks for a qualification
  */
 export async function deleteRawChunks(preQualificationId: string): Promise<void> {
   await db.delete(rawChunks).where(eq(rawChunks.preQualificationId, preQualificationId));

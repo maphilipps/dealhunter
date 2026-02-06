@@ -59,7 +59,7 @@ export async function generateChunkEmbeddings(
  *
  * Usage:
  * ```typescript
- * await embedAgentOutput('prequal-123', 'quick_scan', quickScanResult);
+ * await embedAgentOutput('prequal-123', 'qualification_scan', qualificationScanResult);
  * ```
  */
 export async function embedAgentOutput(

@@ -5,7 +5,9 @@
  * Uses CSS custom properties defined in globals.css for dark mode support.
  */
 
-import type { QuickScanPhase } from '@/lib/streaming/event-types';
+// Phase color classes use string keys for scan-type independence.
+// Known phase IDs: 'bootstrap', 'multi_page', 'analysis', 'synthesis' (lead scan)
+// Audit scan phases use their own progress UI (scan-pipeline-progress).
 
 // ============================================================================
 // Agent Categories
@@ -63,7 +65,7 @@ export const AGENT_CATEGORIES: Record<string, AgentCategory> = {
 
   // Coordinator
   Coordinator: 'coordinator',
-  'Quick Scan': 'coordinator',
+  'Qualification Scan': 'coordinator',
   Qualification: 'coordinator',
 
   // Intelligent Agent Framework
@@ -155,7 +157,7 @@ export function getAgentColorClasses(agentName: string): string {
  * CSS class strings for workflow phases.
  * Uses CSS custom properties for automatic dark mode support.
  */
-export const PHASE_COLOR_CLASSES: Record<QuickScanPhase | 'complete', string> = {
+export const PHASE_COLOR_CLASSES: Record<string, string> = {
   bootstrap:
     'bg-[var(--phase-bootstrap-bg)] text-[var(--phase-bootstrap-text)] border-[var(--phase-bootstrap-border)]',
   multi_page:
@@ -167,18 +169,6 @@ export const PHASE_COLOR_CLASSES: Record<QuickScanPhase | 'complete', string> = 
   complete:
     'bg-[var(--phase-complete-bg)] text-[var(--phase-complete-text)] border-[var(--phase-complete-border)]',
 };
-
-/**
- * Gets the CSS classes for a workflow phase.
- * @param phase - The phase identifier
- * @param isActive - Whether this is the currently active phase (adds complete styling when not active)
- */
-export function getPhaseColorClasses(phase: QuickScanPhase, isActive: boolean): string {
-  if (!isActive) {
-    return PHASE_COLOR_CLASSES.complete;
-  }
-  return PHASE_COLOR_CLASSES[phase] || PHASE_COLOR_CLASSES.complete;
-}
 
 // ============================================================================
 // Time Formatting

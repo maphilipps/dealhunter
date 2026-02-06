@@ -111,7 +111,7 @@ export type MigrationComplexityScore = z.infer<typeof migrationComplexityScoreSc
 
 export interface FullScanInput {
   websiteUrl: string;
-  quickScanData?: {
+  qualificationScanData?: {
     cms?: string;
     techStack?: string[];
     features?: string[];
@@ -130,7 +130,7 @@ export interface FullScanInput {
  * This is a simulated implementation that prepares the structure for future integration
  * with the website-audit skill and MCP tools.
  *
- * @param input - Website URL and optional quick-scan data
+ * @param input - Website URL and optional qualification-scan data
  * @param emit - Optional event emitter for streaming updates
  * @returns Full scan results with component, integration, and complexity analysis
  */
@@ -175,7 +175,7 @@ export async function runFullScan(
         components,
         integrations,
         contentVolume,
-        sourceCMS: input.quickScanData?.cms || 'Unknown',
+        sourceCMS: input.qualificationScanData?.cms || 'Unknown',
         targetCMS: input.targetCMS || 'Drupal',
       },
       logProgress

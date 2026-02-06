@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches, pitchRuns } from '@/lib/db/schema';
+import { pitches, auditScanRuns } from '@/lib/db/schema';
 
 import { InterviewClient } from './interview-client';
 
@@ -27,10 +27,12 @@ export default async function InterviewPage({ params }: { params: Promise<{ id: 
 
   // Check for an existing active run — prevents re-starting the interview
   const [activeRun] = await db
-    .select({ id: pitchRuns.id })
-    .from(pitchRuns)
-    .where(and(eq(pitchRuns.pitchId, id), notInArray(pitchRuns.status, ['completed', 'failed'])))
-    .orderBy(desc(pitchRuns.createdAt))
+    .select({ id: auditScanRuns.id })
+    .from(auditScanRuns)
+    .where(
+      and(eq(auditScanRuns.pitchId, id), notInArray(auditScanRuns.status, ['completed', 'failed']))
+    )
+    .orderBy(desc(auditScanRuns.createdAt))
     .limit(1);
 
   return (

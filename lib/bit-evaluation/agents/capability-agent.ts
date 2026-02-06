@@ -6,7 +6,7 @@ import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
 
 export interface CapabilityAgentInput {
   extractedRequirements: any;
-  quickScanResults?: any;
+  qualificationScanResults?: any;
   useWebSearch?: boolean;
 }
 
@@ -25,7 +25,7 @@ export async function runCapabilityAgent(input: CapabilityAgentInput): Promise<C
     const intelligentTools = createIntelligentTools({ agentName: 'Capability Researcher' });
 
     try {
-      const techStack = input.quickScanResults?.techStack;
+      const techStack = input.qualificationScanResults?.techStack;
       const cms = techStack?.cms || input.extractedRequirements?.technologies?.cms;
       const frameworks = techStack?.frameworks || [];
 
@@ -128,9 +128,9 @@ Alle Texte auf Deutsch.`;
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${
-  input.quickScanResults
-    ? `## Quick Scan Ergebnisse (Tech Stack des Kunden)
-${JSON.stringify(input.quickScanResults, null, 2)}`
+  input.qualificationScanResults
+    ? `## Qualification Scan Ergebnisse (Tech Stack des Kunden)
+${JSON.stringify(input.qualificationScanResults, null, 2)}`
     : ''
 }
 ${githubInsights}

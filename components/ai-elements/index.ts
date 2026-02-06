@@ -94,10 +94,19 @@ export {
   type AgentActivityCompleteProps,
 } from './agent-activity-view';
 
+// Generic types (scan-type independent)
+export type {
+  AgentPhase,
+  AgentPhaseAnalysis,
+  AgentGroup,
+  AgentGroupEvent,
+  ActivityTab,
+  PhaseStatus,
+} from './types';
+
 // Constants and utilities
 export {
   getAgentColorClasses,
-  getPhaseColorClasses,
   formatAgentTime,
   AGENT_CATEGORIES,
   AGENT_COLOR_CLASSES,

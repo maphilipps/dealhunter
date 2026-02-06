@@ -5,14 +5,15 @@ export type RfpStatus =
   | 'draft'
   | 'extracting'
   | 'reviewing'
-  | 'quick_scanning'
+  | 'qualification_scanning'
+  | 'qualification_scan_failed'
   | 'questions_ready'
   | 'bit_pending'
   | 'evaluating'
   | 'decision_made'
   | 'archived'
   | 'routed'
-  | 'full_scanning'
+  | 'audit_scanning'
   | 'bl_reviewing'
   | 'team_assigned'
   | 'notified'
@@ -42,10 +43,15 @@ const statusConfig: Record<
     variant: 'secondary',
     className: 'bg-yellow-50 text-yellow-800 border-yellow-300',
   },
-  quick_scanning: {
-    label: 'Scanning',
+  qualification_scanning: {
+    label: 'Qualification Scan läuft',
     variant: 'default',
     className: 'bg-blue-50 text-blue-700 border-blue-300',
+  },
+  qualification_scan_failed: {
+    label: 'Scan fehlgeschlagen',
+    variant: 'destructive',
+    className: 'bg-red-50 text-red-700 border-red-300',
   },
   questions_ready: {
     label: 'Questions Ready',
@@ -77,8 +83,8 @@ const statusConfig: Record<
     variant: 'default',
     className: 'bg-indigo-50 text-indigo-700 border-indigo-300',
   },
-  full_scanning: {
-    label: 'Deep Analysis',
+  audit_scanning: {
+    label: 'Pitch Scan läuft',
     variant: 'default',
     className: 'bg-blue-50 text-blue-700 border-blue-300',
   },

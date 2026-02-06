@@ -10,7 +10,7 @@
  * - Background job tracking in backgroundJobs table
  * - Progress updates (0-100%)
  * - Error handling with retry logic
- * - Lead status updates (routed → full_scanning → bl_reviewing)
+ * - Lead status updates (routed → audit_scanning → bl_reviewing)
  * - Graceful degradation on individual agent failures
  */
 
@@ -57,7 +57,7 @@ export interface OrchestrationResult {
  *
  * Workflow:
  * 1. Create background job record
- * 2. Update lead status to 'full_scanning'
+ * 2. Update lead status to 'audit_scanning'
  * 3. Run Full-Scan Agent (tech stack detection)
  * 4. Run Content/Migration/A11y Agents in parallel
  * 5. Update lead status to 'bl_reviewing'
@@ -79,11 +79,13 @@ export async function runAnalysisAgents(input: OrchestrationInput): Promise<Orch
     backgroundJobId = await createBackgroundJob(input.leadId, input.userId);
     console.error(`[Orchestrator] Created background job: ${backgroundJobId}`);
 
-    // Step 2: Update lead status to 'full_scanning'
-    await updateLeadStatus(input.leadId, 'full_scanning');
+    // Step 2: Update lead status to 'audit_scanning'
+    await updateLeadStatus(input.leadId, 'audit_scanning');
     await updateJobProgress(backgroundJobId, 10, 'Starting Full-Scan Agent');
 
     // Step 3: Run Full-Scan Agent (tech stack detection)
+    // Note: runFullScanAgent is synchronous (placeholder returning mock data).
+    // No await needed — the function returns immediately.
     const fullScanResult = runFullScanAgent(input.websiteUrl);
     await updateJobProgress(backgroundJobId, 40, 'Full-Scan complete, starting parallel agents');
 
@@ -268,34 +270,26 @@ async function runParallelAgents(
 }> {
   console.error('[Orchestrator] Running parallel agents...');
 
-  // Run all agents in parallel
-  const results = await Promise.allSettled([
-    // Content Architecture Agent
-    (async () => {
-      await updateJobProgress(backgroundJobId, 50, 'Running Content Architecture Agent');
-      return analyzeContentArchitecture({
-        websiteUrl,
-        crawlData: {
-          homepage: fullScanResult.homepage,
-          samplePages: fullScanResult.samplePages || [],
-          crawledAt: fullScanResult.crawledAt,
-        },
-      });
-    })(),
+  // Step 1: Run Content Architecture first (needed by Migration Complexity)
+  await updateJobProgress(backgroundJobId, 50, 'Running Content Architecture Agent');
+  const contentArchResult = await analyzeContentArchitecture({
+    websiteUrl,
+    crawlData: {
+      homepage: fullScanResult.homepage,
+      samplePages: fullScanResult.samplePages || [],
+      crawledAt: fullScanResult.crawledAt,
+    },
+  }).catch(error => {
+    console.error('[Orchestrator] Content Architecture Agent failed:', error);
+    return null;
+  });
 
+  // Step 2: Run Migration Complexity + Accessibility in parallel
+  // Migration Complexity reuses the Content Architecture result (no double call)
+  const results = await Promise.allSettled([
     // Migration Complexity Agent
     (async () => {
       await updateJobProgress(backgroundJobId, 60, 'Running Migration Complexity Agent');
-      // First get content architecture result
-      const contentArchResult = await analyzeContentArchitecture({
-        websiteUrl,
-        crawlData: {
-          homepage: fullScanResult.homepage,
-          samplePages: fullScanResult.samplePages || [],
-          crawledAt: fullScanResult.crawledAt,
-        },
-      });
-
       return analyzeMigrationComplexity({
         websiteUrl,
         techStack: fullScanResult.techStack || {
@@ -308,7 +302,28 @@ async function runParallelAgents(
           server: null,
           technologies: [],
         },
-        contentArchitecture: contentArchResult,
+        contentArchitecture:
+          contentArchResult ||
+          ({
+            success: false,
+            pageCount: 0,
+            pageCountConfidence: 'low' as const,
+            pageCountMethod: 'Content Architecture Agent failed',
+            contentTypes: [],
+            navigationStructure: { depth: 0, breadth: 0, mainNavItems: [] },
+            siteTree: [],
+            contentVolume: { images: 0, videos: 0, documents: 0, totalAssets: 0 },
+            calculatorSummary: {
+              totalContentTypes: 0,
+              totalEstimatedHours: 0,
+              complexityDistribution: { H: 0, M: 0, L: 0 },
+              recommendedDrupalModules: [],
+              migrationRiskLevel: 'low' as const,
+              migrationRiskFactors: ['Content Architecture Agent failed'],
+            },
+            analyzedAt: new Date().toISOString(),
+            error: 'Content Architecture Agent failed',
+          } satisfies ContentArchitectureResult),
       });
     })(),
 
@@ -323,34 +338,31 @@ async function runParallelAgents(
     })(),
   ]);
 
-  // Extract results (fallback to error results if failed)
-  const contentArchitecture: ContentArchitectureResult =
-    results[0].status === 'fulfilled'
-      ? results[0].value
-      : {
-          success: false,
-          pageCount: 0,
-          pageCountConfidence: 'low' as const,
-          pageCountMethod: 'Agent failed',
-          contentTypes: [],
-          navigationStructure: { depth: 0, breadth: 0, mainNavItems: [] },
-          siteTree: [],
-          contentVolume: { images: 0, videos: 0, documents: 0, totalAssets: 0 },
-          calculatorSummary: {
-            totalContentTypes: 0,
-            totalEstimatedHours: 0,
-            complexityDistribution: { H: 0, M: 0, L: 0 },
-            recommendedDrupalModules: [],
-            migrationRiskLevel: 'low' as const,
-            migrationRiskFactors: ['Agent failed - no data available'],
-          },
-          analyzedAt: new Date().toISOString(),
-          error: results[0].status === 'rejected' ? String(results[0].reason) : 'Unknown error',
-        };
+  // Extract results — Content Architecture ran separately above, results[] has Migration + A11y
+  const contentArchitecture: ContentArchitectureResult = contentArchResult || {
+    success: false,
+    pageCount: 0,
+    pageCountConfidence: 'low' as const,
+    pageCountMethod: 'Agent failed',
+    contentTypes: [],
+    navigationStructure: { depth: 0, breadth: 0, mainNavItems: [] },
+    siteTree: [],
+    contentVolume: { images: 0, videos: 0, documents: 0, totalAssets: 0 },
+    calculatorSummary: {
+      totalContentTypes: 0,
+      totalEstimatedHours: 0,
+      complexityDistribution: { H: 0, M: 0, L: 0 },
+      recommendedDrupalModules: [],
+      migrationRiskLevel: 'low' as const,
+      migrationRiskFactors: ['Agent failed - no data available'],
+    },
+    analyzedAt: new Date().toISOString(),
+    error: 'Content Architecture Agent failed',
+  };
 
   const migrationComplexity: MigrationComplexityResult =
-    results[1].status === 'fulfilled'
-      ? results[1].value
+    results[0].status === 'fulfilled'
+      ? results[0].value
       : {
           success: false,
           complexityScore: 0,
@@ -359,12 +371,12 @@ async function runParallelAgents(
           risks: [],
           recommendations: [],
           analyzedAt: new Date().toISOString(),
-          error: results[1].status === 'rejected' ? String(results[1].reason) : 'Unknown error',
+          error: results[0].status === 'rejected' ? String(results[0].reason) : 'Unknown error',
         };
 
   const accessibility: AccessibilityAuditResult =
-    results[2].status === 'fulfilled'
-      ? results[2].value
+    results[1].status === 'fulfilled'
+      ? results[1].value
       : {
           success: false,
           wcagLevel: 'AA' as const,
@@ -374,7 +386,7 @@ async function runParallelAgents(
           estimatedFixHours: 0,
           pagesAudited: 0,
           analyzedAt: new Date().toISOString(),
-          error: results[2].status === 'rejected' ? String(results[2].reason) : 'Unknown error',
+          error: results[1].status === 'rejected' ? String(results[1].reason) : 'Unknown error',
         };
 
   return {
@@ -461,7 +473,7 @@ async function completeBackgroundJob(
  */
 async function updateLeadStatus(
   leadId: string,
-  status: 'full_scanning' | 'bl_reviewing'
+  status: 'audit_scanning' | 'bl_reviewing'
 ): Promise<void> {
   await db
     .update(pitches)

@@ -157,7 +157,7 @@ function calculateOverallScore(industryScore: number, technologyScore: number): 
  * 6. Store results in RAG
  *
  * @param leadId - Lead ID to analyze
- * @param preQualificationId - Pre-Qualification ID for RAG storage
+ * @param preQualificationId - Qualification ID for RAG storage
  * @returns Reference recommendations
  */
 export async function runReferencesAgent(
@@ -187,7 +187,7 @@ export async function runReferencesAgent(
     const ragResults = await queryRagForLead({
       pitchId: leadId,
       question: 'Technology stack, technical requirements, CMS, frameworks, programming languages',
-      agentNameFilter: ['technology', 'quick_scan'],
+      agentNameFilter: ['technology', 'qualification_scan'],
       maxResults: 5,
     });
 

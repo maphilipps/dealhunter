@@ -43,7 +43,7 @@ const allNavItems: Array<{
 }> = [
   {
     title: 'Leads',
-    url: '/pre-qualifications',
+    url: '/qualifications',
     icon: ListTodo,
     roles: ['bd', 'bl', 'admin'],
   },

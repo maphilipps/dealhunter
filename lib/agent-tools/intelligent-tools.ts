@@ -11,8 +11,11 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 
-import { crawlNavigation, quickNavigationScan } from '@/lib/quick-scan/tools/navigation-crawler';
-import { takeScreenshot } from '@/lib/quick-scan/tools/playwright';
+import {
+  crawlNavigation,
+  quickNavigationScan,
+} from '@/lib/qualification-scan/tools/navigation-crawler';
+import { takeScreenshot } from '@/lib/qualification-scan/tools/playwright';
 import { fetchGitHubRepoInfo, findGitHubUrl, KNOWN_GITHUB_REPOS } from '@/lib/search/github-api';
 import { searchAndContents, getContents, isExaSearchAvailable } from '@/lib/search/web-search';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';

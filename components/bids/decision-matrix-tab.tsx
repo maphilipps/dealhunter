@@ -26,7 +26,7 @@ import {
   researchRequirement,
 } from '@/lib/cms-matching/actions';
 import type { CMSMatchingResult } from '@/lib/cms-matching/schema';
-import type { QuickScan } from '@/lib/db/schema';
+import type { LeadScan } from '@/lib/db/schema';
 
 interface BusinessUnit {
   id: string;
@@ -35,11 +35,11 @@ interface BusinessUnit {
 }
 
 interface DecisionMatrixTabProps {
-  quickScan: QuickScan;
+  qualificationScan: LeadScan;
   bidId: string;
 }
 
-export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) {
+export function DecisionMatrixTab({ qualificationScan, bidId }: DecisionMatrixTabProps) {
   const router = useRouter();
 
   // CMS Evaluation State
@@ -61,11 +61,11 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
   // Load saved CMS Evaluation on mount
   useEffect(() => {
     const loadSavedEvaluation = async () => {
-      if (!quickScan?.id) return;
+      if (!qualificationScan?.id) return;
 
       setIsLoadingEvaluation(true);
       try {
-        const result = await getCMSEvaluation(quickScan.id);
+        const result = await getCMSEvaluation(qualificationScan.id);
         if (result.success && result.result) {
           setCmsEvaluation(result.result);
           // Pre-select the recommended CMS
@@ -80,10 +80,10 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
       }
     };
 
-    if (quickScan?.status === 'completed') {
+    if (qualificationScan?.status === 'completed') {
       void loadSavedEvaluation();
     }
-  }, [quickScan?.id, quickScan?.status]);
+  }, [qualificationScan?.id, qualificationScan?.status]);
 
   // Load business units on mount
   useEffect(() => {
@@ -93,7 +93,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
         setBusinessUnits(result.businessUnits as BusinessUnit[]);
 
         // Check if Ibexa - auto-select PHP Business Unit
-        const isIbexa = quickScan?.cms?.toLowerCase().includes('ibexa');
+        const isIbexa = qualificationScan?.cms?.toLowerCase().includes('ibexa');
         if (isIbexa) {
           const phpBU = result.businessUnits.find((bu: BusinessUnit) =>
             bu.name.toLowerCase().includes('php')
@@ -101,10 +101,10 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
           if (phpBU) {
             setSelectedBU(phpBU.id);
           }
-        } else if (quickScan?.recommendedBusinessUnit) {
+        } else if (qualificationScan?.recommendedBusinessUnit) {
           // Pre-select recommended BU if available (non-Ibexa)
           const recommended = result.businessUnits.find(
-            (bu: BusinessUnit) => bu.name === quickScan.recommendedBusinessUnit
+            (bu: BusinessUnit) => bu.name === qualificationScan.recommendedBusinessUnit
           );
           if (recommended) {
             setSelectedBU(recommended.id);
@@ -113,22 +113,26 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
       }
     };
 
-    if (quickScan?.status === 'completed') {
+    if (qualificationScan?.status === 'completed') {
       void loadBusinessUnits();
     }
-  }, [quickScan?.status, quickScan?.recommendedBusinessUnit, quickScan?.cms]);
+  }, [
+    qualificationScan?.status,
+    qualificationScan?.recommendedBusinessUnit,
+    qualificationScan?.cms,
+  ]);
 
   // Handle single requirement research
   const [researchingCell, setResearchingCell] = useState<string | null>(null);
 
   const handleResearchRequirement = async (cmsId: string, requirement: string) => {
-    if (!quickScan?.id) return;
+    if (!qualificationScan?.id) return;
 
     const cellKey = `${cmsId}-${requirement}`;
     setResearchingCell(cellKey);
 
     try {
-      const result = await researchRequirement(quickScan.id, cmsId, requirement);
+      const result = await researchRequirement(qualificationScan.id, cmsId, requirement);
 
       if (result.success && result.result) {
         setCmsEvaluation(result.result);
@@ -144,14 +148,14 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
 
   // Handle CMS Evaluation (Start or Refresh)
   const handleStartEvaluation = async (forceRefresh = false) => {
-    if (!quickScan?.id) return;
+    if (!qualificationScan?.id) return;
 
     setIsEvaluating(true);
     try {
       // Use refreshCMSEvaluation if forcing, otherwise startCMSEvaluation (which uses cache)
       const result = forceRefresh
-        ? await refreshCMSEvaluation(quickScan.id, { useWebSearch: true })
-        : await startCMSEvaluation(quickScan.id, { useWebSearch: true });
+        ? await refreshCMSEvaluation(qualificationScan.id, { useWebSearch: true })
+        : await startCMSEvaluation(qualificationScan.id, { useWebSearch: true });
 
       if (result.success && result.result) {
         setCmsEvaluation(result.result);
@@ -198,7 +202,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
     }
   };
 
-  if (quickScan.status !== 'completed') {
+  if (qualificationScan.status !== 'completed') {
     return (
       <Card className="border-slate-200">
         <CardContent className="py-12 text-center">
@@ -213,7 +217,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
   }
 
   // Check if CMS is Ibexa - special handling
-  const isIbexa = quickScan.cms?.toLowerCase().includes('ibexa');
+  const isIbexa = qualificationScan.cms?.toLowerCase().includes('ibexa');
 
   return (
     <div className="space-y-6">
@@ -243,12 +247,12 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
                 automatisch an den PHP-Bereich weitergeleitet.
               </p>
             </div>
-            {quickScan.reasoning && (
+            {qualificationScan.reasoning && (
               <div className="rounded-lg bg-white p-4 border border-blue-200">
                 <p className="text-sm font-medium text-muted-foreground mb-2">
                   Qualification Analyse
                 </p>
-                <p className="text-sm text-foreground">{quickScan.reasoning}</p>
+                <p className="text-sm text-foreground">{qualificationScan.reasoning}</p>
               </div>
             )}
             <Button
@@ -274,7 +278,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
       ) : (
         <>
           {/* Header Card with BL Recommendation */}
-          {quickScan.recommendedBusinessUnit && (
+          {qualificationScan.recommendedBusinessUnit && (
             <Card className="border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -282,7 +286,9 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
                     <Sparkles className="h-5 w-5 text-violet-600" />
                     <CardTitle className="text-lg text-violet-900">AI-Empfehlung</CardTitle>
                   </div>
-                  <Badge className="bg-violet-600">{quickScan.recommendedBusinessUnit}</Badge>
+                  <Badge className="bg-violet-600">
+                    {qualificationScan.recommendedBusinessUnit}
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent>
@@ -290,25 +296,25 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
                   <div className="flex-1">
                     <p className="text-sm text-violet-700 mb-1">Empfohlene Business Unit</p>
                     <p className="text-xl font-bold text-violet-900">
-                      {quickScan.recommendedBusinessUnit}
+                      {qualificationScan.recommendedBusinessUnit}
                     </p>
                   </div>
-                  {quickScan.confidence && (
+                  {qualificationScan.confidence && (
                     <div className="w-32">
                       <p className="text-xs text-violet-600 mb-1">Confidence</p>
                       <div className="flex items-center gap-2">
-                        <Progress value={quickScan.confidence} className="h-2" />
+                        <Progress value={qualificationScan.confidence} className="h-2" />
                         <span className="text-sm font-medium text-violet-900">
-                          {quickScan.confidence}%
+                          {qualificationScan.confidence}%
                         </span>
                       </div>
                     </div>
                   )}
                 </div>
-                {quickScan.reasoning && (
+                {qualificationScan.reasoning && (
                   <div className="mt-3 pt-3 border-t border-violet-200">
                     <p className="text-xs text-violet-600 mb-1">Begründung</p>
-                    <p className="text-sm text-violet-800">{quickScan.reasoning}</p>
+                    <p className="text-sm text-violet-800">{qualificationScan.reasoning}</p>
                   </div>
                 )}
               </CardContent>
@@ -473,7 +479,7 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
                             <SelectItem key={bu.id} value={bu.id}>
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">{bu.name}</span>
-                                {bu.name === quickScan.recommendedBusinessUnit && (
+                                {bu.name === qualificationScan.recommendedBusinessUnit && (
                                   <Badge variant="secondary" className="text-xs">
                                     Empfohlen
                                   </Badge>
@@ -506,12 +512,12 @@ export function DecisionMatrixTab({ quickScan, bidId }: DecisionMatrixTabProps) 
                     </Button>
                   </div>
 
-                  {quickScan.recommendedBusinessUnit && selectedBU && (
+                  {qualificationScan.recommendedBusinessUnit && selectedBU && (
                     <p className="text-xs text-orange-600 mt-3 flex items-center gap-1">
                       <Sparkles className="h-3 w-3" />
-                      AI empfiehlt: {quickScan.recommendedBusinessUnit}
+                      AI empfiehlt: {qualificationScan.recommendedBusinessUnit}
                       {businessUnits.find(bu => bu.id === selectedBU)?.name ===
-                      quickScan.recommendedBusinessUnit
+                      qualificationScan.recommendedBusinessUnit
                         ? ' (ausgewählt)'
                         : ''}
                     </p>

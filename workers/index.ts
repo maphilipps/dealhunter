@@ -4,7 +4,7 @@
  * Single worker process that handles all queues:
  * - pitch
  * - prequal-processing
- * - quick-scan
+ * - qualification-scan
  * - visualization
  *
  * Run with: npm run worker
@@ -16,7 +16,7 @@ import { getConnectionOptions, closeConnection } from '../lib/bullmq/connection'
 import { QUEUE_NAMES, getPitchBackoffDelay, closeQueues } from '../lib/bullmq/queues';
 import { processPitchJob } from '../lib/pitch/processor';
 import { processPreQualJob } from '../lib/bullmq/workers/prequal-processing-worker';
-import { processQuickScanJob } from '../lib/bullmq/workers/quick-scan-processor';
+import { processQualificationScanJob } from '../lib/bullmq/workers/qualification-scan-processor';
 import { processVisualizationJob } from '../lib/bullmq/workers/visualization-processor';
 
 /**
@@ -120,13 +120,13 @@ async function main() {
   workers.push(prequalWorker);
 
   // ============================================================================
-  // Quick Scan Worker
+  // Qualification Scan Worker
   // ============================================================================
-  const quickScanWorker = new Worker(
-    QUEUE_NAMES.QUICK_SCAN,
+  const qualificationScanWorker = new Worker(
+    QUEUE_NAMES.QUALIFICATION_SCAN,
     async job => {
-      console.log(`[QuickScan] Processing job ${job.id}`);
-      return processQuickScanJob(job);
+      console.log(`[QualificationScan] Processing job ${job.id}`);
+      return processQualificationScanJob(job);
     },
     {
       connection: connectionOptions,
@@ -134,16 +134,16 @@ async function main() {
     }
   );
 
-  quickScanWorker.on('ready', () => {
-    console.log(`[QuickScan] Ready (concurrency: ${QUICK_SCAN_CONCURRENCY})`);
+  qualificationScanWorker.on('ready', () => {
+    console.log(`[QualificationScan] Ready (concurrency: ${QUICK_SCAN_CONCURRENCY})`);
   });
 
-  quickScanWorker.on('completed', (job, result) => {
-    console.log(`[QuickScan] Job ${job.id} completed. Success: ${result.success}`);
+  qualificationScanWorker.on('completed', (job, result) => {
+    console.log(`[QualificationScan] Job ${job.id} completed. Success: ${result.success}`);
   });
 
-  quickScanWorker.on('failed', (job, error) => {
-    console.error(`[QuickScan] Job ${job?.id} failed:`, {
+  qualificationScanWorker.on('failed', (job, error) => {
+    console.error(`[QualificationScan] Job ${job?.id} failed:`, {
       message: error.message,
       stack: error.stack,
       jobData: job?.data,
@@ -151,7 +151,7 @@ async function main() {
     });
   });
 
-  workers.push(quickScanWorker);
+  workers.push(qualificationScanWorker);
 
   // ============================================================================
   // Visualization Worker

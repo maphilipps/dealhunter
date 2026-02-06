@@ -21,12 +21,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
-import type { QuickScan } from '@/lib/db/schema';
+import type { LeadScan } from '@/lib/db/schema';
 
 interface TenQuestionsTabProps {
   decisionData: BitEvaluationResult | null;
   extractedData: Record<string, unknown> | null;
-  quickScan: QuickScan | null;
+  qualificationScan: LeadScan | null;
 }
 
 interface Question {
@@ -39,9 +39,13 @@ interface Question {
   details?: string;
 }
 
-export function TenQuestionsTab({ decisionData, extractedData, quickScan }: TenQuestionsTabProps) {
+export function TenQuestionsTab({
+  decisionData,
+  extractedData,
+  qualificationScan,
+}: TenQuestionsTabProps) {
   // Extract answers from the various data sources
-  const questions = extractTenQuestions(decisionData, extractedData, quickScan);
+  const questions = extractTenQuestions(decisionData, extractedData, qualificationScan);
 
   if (!decisionData) {
     return (
@@ -162,7 +166,7 @@ function QuestionCard({ question }: { question: Question }) {
 function extractTenQuestions(
   bitData: BitEvaluationResult | null,
   extracted: Record<string, unknown> | null,
-  quickScan: QuickScan | null
+  qualificationScan: LeadScan | null
 ): Question[] {
   // Default questions if no data
   if (!bitData) {

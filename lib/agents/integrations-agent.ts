@@ -15,7 +15,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { pitches, quickScans, dealEmbeddings } from '@/lib/db/schema';
+import { pitches, leadScans, dealEmbeddings } from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -109,7 +109,7 @@ export type IntegrationsAnalysis = z.infer<typeof IntegrationsAnalysisSchema>;
  * Run integrations agent
  *
  * @param leadId - Lead ID
- * @param preQualificationId - Pre-Qualification ID
+ * @param preQualificationId - Qualification ID
  * @returns Integrations analysis
  */
 export async function runIntegrationsAgent(
@@ -122,7 +122,7 @@ export async function runIntegrationsAgent(
       customerName: pitches.customerName,
       industry: pitches.industry,
       websiteUrl: pitches.websiteUrl,
-      quickScanId: pitches.quickScanId,
+      qualificationScanId: pitches.qualificationScanId,
     })
     .from(pitches)
     .where(eq(pitches.id, leadId))
@@ -133,25 +133,25 @@ export async function runIntegrationsAgent(
   }
 
   // 2. Fetch Quick Scan data
-  let quickScanData: {
+  let qualificationScanData: {
     integrations: unknown;
     techStack: unknown;
     features: unknown;
   } | null = null;
 
-  if (leadData.quickScanId) {
+  if (leadData.qualificationScanId) {
     const [qs] = await db
       .select({
-        integrations: quickScans.integrations,
-        techStack: quickScans.techStack,
-        features: quickScans.features,
+        integrations: leadScans.integrations,
+        techStack: leadScans.techStack,
+        features: leadScans.features,
       })
-      .from(quickScans)
-      .where(eq(quickScans.id, leadData.quickScanId))
+      .from(leadScans)
+      .where(eq(leadScans.id, leadData.qualificationScanId))
       .limit(1);
 
     if (qs) {
-      quickScanData = {
+      qualificationScanData = {
         integrations: safeParseJson(qs.integrations),
         techStack: safeParseJson(qs.techStack),
         features: safeParseJson(qs.features),
@@ -185,9 +185,9 @@ LEAD DATEN:
 - Website: ${leadData.websiteUrl || 'Nicht bekannt'}
 
 QUICK SCAN DATEN:
-- Erkannte Integrationen: ${JSON.stringify(quickScanData?.integrations, null, 2)}
-- Tech Stack: ${JSON.stringify(quickScanData?.techStack, null, 2)}
-- Features: ${JSON.stringify(quickScanData?.features, null, 2)}
+- Erkannte Integrationen: ${JSON.stringify(qualificationScanData?.integrations, null, 2)}
+- Tech Stack: ${JSON.stringify(qualificationScanData?.techStack, null, 2)}
+- Features: ${JSON.stringify(qualificationScanData?.features, null, 2)}
 
 Erstelle eine Integrations-Analyse mit:
 1. Liste aller Integrationen mit Aufwand

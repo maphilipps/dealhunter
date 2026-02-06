@@ -12,7 +12,7 @@ import {
   employees,
   preQualifications,
   pitches,
-  quickScans,
+  leadScans,
   websiteAudits,
   pitchSectionData,
   cmsMatchResults,
@@ -276,7 +276,7 @@ async function seed() {
       .returning();
 
     const [qs] = await db
-      .insert(quickScans)
+      .insert(leadScans)
       .values({
         preQualificationId: preQualification.id,
         websiteUrl: account.website || faker.internet.url(),
@@ -290,7 +290,7 @@ async function seed() {
 
     await db
       .update(preQualifications)
-      .set({ quickScanId: qs.id })
+      .set({ qualificationScanId: qs.id })
       .where(eq(preQualifications.id, preQualification.id));
 
     const [lead] = await db
@@ -309,7 +309,7 @@ async function seed() {
           { id: 'req_3', text: 'Multi-language support (DE, EN, FR)', priority: 'medium' },
           { id: 'req_4', text: 'WCAG 2.1 AA Accessibility', priority: 'high' },
         ]),
-        quickScanId: qs.id,
+        qualificationScanId: qs.id,
         decisionMakers: JSON.stringify([
           { name: faker.person.fullName(), role: 'CTO', influence: 'high' },
           { name: faker.person.fullName(), role: 'Procurement Lead', influence: 'medium' },

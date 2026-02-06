@@ -5,6 +5,7 @@ import { checkpointCleanupFunction } from '@/lib/inngest/functions/checkpoint-cl
 import { cleanupFunction } from '@/lib/inngest/functions/cleanup';
 import { deepAnalysisFunction } from '@/lib/inngest/functions/deep-analysis';
 import { teamNotificationFunction } from '@/lib/inngest/functions/team-notification';
+import { technologyMaintenanceFunction } from '@/lib/inngest/functions/technology-maintenance';
 
 /**
  * Inngest webhook endpoint with signature verification
@@ -12,7 +13,7 @@ import { teamNotificationFunction } from '@/lib/inngest/functions/team-notificat
  * Security Architecture (Defense in Depth):
  * - This endpoint is exempt from middleware auth (it's called by Inngest service, not users)
  * - Signature verification (INNGEST_SIGNING_KEY) prevents unauthorized external webhook calls
- * - User access control happens at trigger endpoints (e.g., /api/pre-qualifications/[id]/deep-analysis/trigger)
+ * - User access control happens at trigger endpoints (e.g., /api/qualifications/[id]/deep-analysis/trigger)
  * - Trigger endpoints verify authentication and bid ownership before sending events to Inngest
  * - Therefore, this webhook only processes pre-authorized events
  *
@@ -30,7 +31,7 @@ import { teamNotificationFunction } from '@/lib/inngest/functions/team-notificat
  * Production: Ensure INNGEST_SIGNING_KEY is set in your production environment
  *
  * @see https://www.inngest.com/docs/security/webhook-signatures
- * @see /app/api/pre-qualifications/[id]/deep-analysis/trigger/route.ts for user access control
+ * @see /app/api/qualifications/[id]/deep-analysis/trigger/route.ts for user access control
  */
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -39,6 +40,7 @@ export const { GET, POST, PUT } = serve({
     teamNotificationFunction,
     cleanupFunction,
     checkpointCleanupFunction,
+    technologyMaintenanceFunction,
   ],
   signingKey: process.env.INNGEST_SIGNING_KEY,
 });

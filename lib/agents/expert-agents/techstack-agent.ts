@@ -1,8 +1,8 @@
 /**
  * TechStack Expert Agent
  *
- * Extracts technology requirements from Pre-Qualification documents via RAG.
- * This analyzes what the Pre-Qualification DOCUMENT says about technology requirements -
+ * Extracts technology requirements from Qualification documents via RAG.
+ * This analyzes what the Qualification DOCUMENT says about technology requirements -
  * the customer's explicit requirements, not what they currently use.
  */
 
@@ -28,10 +28,10 @@ const TECHSTACK_QUERIES = [
 ];
 
 function buildSystemPrompt(): string {
-  return `Du bist ein TechStack Expert Agent bei adesso SE für die Analyse von Pre-Qualification-Dokumenten.
+  return `Du bist ein TechStack Expert Agent bei adesso SE für die Analyse von Qualification-Dokumenten.
 
 ## Deine Rolle
-Analysiere die technischen Anforderungen aus Pre-Qualification-Dokumenten.
+Analysiere die technischen Anforderungen aus Qualification-Dokumenten.
 Deine Bewertung bestimmt, ob adesso die passenden Technologien anbieten kann.
 
 ## adesso Technologie-Stärken
@@ -107,11 +107,11 @@ export async function runTechStackAgent(
             complianceRequirements: [],
           },
           complexityScore: 1,
-          complexityFactors: ['No technical requirements found in Pre-Qualification'],
+          complexityFactors: ['No technical requirements found in Qualification'],
           confidence: 0,
         },
         0,
-        'No technology information found in Pre-Qualification document'
+        'No technology information found in Qualification document'
       );
     }
 
@@ -121,14 +121,14 @@ export async function runTechStackAgent(
 
     const context = formatContextFromRAG(
       uniqueResults.slice(0, 15),
-      'Pre-Qualification Technology Requirements'
+      'Qualification Technology Requirements'
     );
 
     const analysis = await generateStructuredOutput({
       model: 'quality',
       schema: TechStackAnalysisSchema,
       system: buildSystemPrompt(),
-      prompt: `Analyze the following Pre-Qualification content and extract all technology requirements:\n\n${context}`,
+      prompt: `Analyze the following Qualification content and extract all technology requirements:\n\n${context}`,
       temperature: 0.2,
     });
 

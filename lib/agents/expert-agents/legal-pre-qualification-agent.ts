@@ -1,7 +1,7 @@
 /**
- * Legal Pre-Qualification Expert Agent
+ * Legal Qualification Expert Agent
  *
- * Analyzes CONTRACTUAL/LEGAL requirements from Pre-Qualification documents.
+ * Analyzes CONTRACTUAL/LEGAL requirements from Qualification documents.
  * NOT website legal compliance (that's legal-check-agent.ts).
  * Focuses on: liability, insurance, penalties, IP, contract terms, etc.
  */
@@ -28,10 +28,10 @@ const LEGAL_PreQualification_QUERIES = [
 ];
 
 function buildSystemPrompt(): string {
-  return `Du bist ein Legal Pre-Qualification Expert Agent bei adesso SE.
+  return `Du bist ein Legal Qualification Expert Agent bei adesso SE.
 
 ## Deine Rolle
-Analysiere vertragliche und rechtliche Anforderungen aus Pre-Qualification-Dokumenten.
+Analysiere vertragliche und rechtliche Anforderungen aus Qualification-Dokumenten.
 Deine Bewertung identifiziert rechtliche Risiken und potenzielle Deal-Breaker.
 
 ## adesso Kontext
@@ -102,14 +102,14 @@ export async function runLegalRfpAgent(
           requiredCertifications: [],
           requiredInsurance: [],
           overallRiskLevel: 'low',
-          riskFactors: ['No legal requirements found in Pre-Qualification document'],
+          riskFactors: ['No legal requirements found in Qualification document'],
           dealBreakers: [],
-          recommendations: ['Review Pre-Qualification manually - no legal content detected'],
+          recommendations: ['Review Qualification manually - no legal content detected'],
           questionsForLegal: [],
           confidence: 0,
         },
         0,
-        'No legal information found in Pre-Qualification document'
+        'No legal information found in Qualification document'
       );
     }
 
@@ -119,14 +119,14 @@ export async function runLegalRfpAgent(
 
     const context = formatContextFromRAG(
       uniqueResults.slice(0, 15),
-      'Pre-Qualification Legal/Contractual Requirements'
+      'Qualification Legal/Contractual Requirements'
     );
 
     const analysis = await generateStructuredOutput({
       model: 'quality',
       schema: LegalRfpAnalysisSchema,
       system: buildSystemPrompt(),
-      prompt: `Analyze the following Pre-Qualification content and extract all legal and contractual requirements:\n\n${context}`,
+      prompt: `Analyze the following Qualification content and extract all legal and contractual requirements:\n\n${context}`,
       temperature: 0.2,
     });
 
@@ -145,13 +145,13 @@ export async function runLegalRfpAgent(
     return createAgentOutput<LegalRfpAnalysis>(
       null,
       0,
-      error instanceof Error ? error.message : 'Unknown error in Legal Pre-Qualification Agent'
+      error instanceof Error ? error.message : 'Unknown error in Legal Qualification Agent'
     );
   }
 }
 
 function buildSummaryForStorage(analysis: LegalRfpAnalysis): string {
-  const parts: string[] = ['Legal Pre-Qualification Analysis Summary:'];
+  const parts: string[] = ['Legal Qualification Analysis Summary:'];
 
   parts.push(`- Overall Risk Level: ${analysis.overallRiskLevel.toUpperCase()}`);
 

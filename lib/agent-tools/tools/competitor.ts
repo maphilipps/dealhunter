@@ -293,8 +293,10 @@ const addEncounterInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use competitor.add_encounter instead */
   name: 'competitor.addEncounter',
-  description: 'Add an encounter note to a competitor (e.g., seen in bid, project history)',
+  description:
+    '[DEPRECATED: use competitor.add_encounter] Add an encounter note to a competitor (e.g., seen in bid, project history)',
   category: 'competitor',
   inputSchema: addEncounterInputSchema,
   async execute(input, context: ToolContext) {
@@ -332,5 +334,19 @@ registry.register({
       .returning();
 
     return { success: true, data: updated };
+  },
+});
+
+// ============================================================================
+// Snake_case aliases (canonical names per CLAUDE.md conventions)
+// ============================================================================
+
+registry.register({
+  name: 'competitor.add_encounter',
+  description: 'Add an encounter note to a competitor (e.g., seen in bid, project history)',
+  category: 'competitor',
+  inputSchema: addEncounterInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('competitor.addEncounter', input, context);
   },
 });

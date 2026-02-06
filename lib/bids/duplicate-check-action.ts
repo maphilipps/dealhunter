@@ -11,7 +11,7 @@ import type { ExtractedRequirements } from '@/lib/extraction/schema';
 import { onAgentComplete } from '@/lib/workflow/orchestrator';
 
 /**
- * Run Duplicate Check Agent for an Pre-Qualification
+ * Run Duplicate Check Agent for a Qualification
  * Called after user confirms extracted requirements
  *
  * DEA-90: Part of automated workflow orchestration
@@ -29,19 +29,24 @@ export async function runDuplicateCheck(preQualificationId: string): Promise<{
   }
 
   try {
-    // 1. Fetch Pre-Qualification and verify ownership
+    // 1. Fetch Qualification and verify ownership
     const [preQualification] = await db
       .select()
       .from(preQualifications)
-      .where(and(eq(preQualifications.id, preQualificationId), eq(preQualifications.userId, session.user.id)));
+      .where(
+        and(
+          eq(preQualifications.id, preQualificationId),
+          eq(preQualifications.userId, session.user.id)
+        )
+      );
 
     if (!preQualification) {
-      return { success: false, error: 'Pre-Qualification nicht gefunden' };
+      return { success: false, error: 'Qualification nicht gefunden' };
     }
 
-    // 2. Check if Pre-Qualification has extracted requirements
+    // 2. Check if Qualification has extracted requirements
     if (!preQualification.extractedRequirements) {
-      return { success: false, error: 'Pre-Qualification muss zuerst extrahiert werden' };
+      return { success: false, error: 'Qualification muss zuerst extrahiert werden' };
     }
 
     const extractedReqs: ExtractedRequirements = JSON.parse(
@@ -55,7 +60,7 @@ export async function runDuplicateCheck(preQualificationId: string): Promise<{
       excludeRfpId: preQualificationId,
     });
 
-    // 4. Save duplicate check result to Pre-Qualification
+    // 4. Save duplicate check result to Qualification
     await db
       .update(preQualifications)
       .set({

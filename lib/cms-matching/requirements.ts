@@ -1,9 +1,11 @@
 import type { RequirementMatch } from './schema';
 
 /**
- * Extracts CMS requirements from Quick Scan data
+ * Extracts CMS requirements from Qualification Scan data
  */
-export function extractRequirementsFromQuickScan(quickScanData: Record<string, unknown>): Array<{
+export function extractRequirementsFromQualificationScan(
+  qualificationScanData: Record<string, unknown>
+): Array<{
   name: string;
   category: RequirementMatch['category'];
   priority: RequirementMatch['priority'];
@@ -16,12 +18,18 @@ export function extractRequirementsFromQuickScan(quickScanData: Record<string, u
     source: RequirementMatch['source'];
   }> = [];
 
-  const features = quickScanData.features as Record<string, unknown> | undefined;
-  const techStack = quickScanData.techStack as Record<string, unknown> | undefined;
-  const contentVolume = quickScanData.contentVolume as Record<string, unknown> | undefined;
-  const accessibility = quickScanData.accessibilityAudit as Record<string, unknown> | undefined;
-  const legalCompliance = quickScanData.legalCompliance as Record<string, unknown> | undefined;
-  const performance = quickScanData.performanceIndicators as Record<string, unknown> | undefined;
+  const features = qualificationScanData.features as Record<string, unknown> | undefined;
+  const techStack = qualificationScanData.techStack as Record<string, unknown> | undefined;
+  const contentVolume = qualificationScanData.contentVolume as Record<string, unknown> | undefined;
+  const accessibility = qualificationScanData.accessibilityAudit as
+    | Record<string, unknown>
+    | undefined;
+  const legalCompliance = qualificationScanData.legalCompliance as
+    | Record<string, unknown>
+    | undefined;
+  const performance = qualificationScanData.performanceIndicators as
+    | Record<string, unknown>
+    | undefined;
 
   // Features -> Functional Requirements
   if (features) {

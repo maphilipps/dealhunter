@@ -11,7 +11,7 @@ type BackgroundJobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'can
 /**
  * GET /api/jobs - List background jobs for current user
  * Query params:
- * - preQualificationId: Filter by Pre-Qualification ID
+ * - qualificationId: Filter by Qualification ID
  * - jobType: Filter by job type (deep-analysis, team-notification, cleanup)
  * - status: Filter by status (pending, running, completed, failed, cancelled)
  * - limit: Max results (default 50)
@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const preQualificationId =
-      searchParams.get('preQualificationId') || searchParams.get('preQualificationId');
+    const qualificationId =
+      searchParams.get('qualificationId') || searchParams.get('preQualificationId');
     const jobType = searchParams.get('jobType') as BackgroundJobType | null;
     const status = searchParams.get('status') as BackgroundJobStatus | null;
     const limit = parseInt(searchParams.get('limit') || '50', 10);
@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
     // Build query conditions
     const conditions = [eq(backgroundJobs.userId, session.user.id)];
 
-    if (preQualificationId) {
-      conditions.push(eq(backgroundJobs.preQualificationId, preQualificationId));
+    if (qualificationId) {
+      conditions.push(eq(backgroundJobs.preQualificationId, qualificationId));
     }
 
     if (jobType) {
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(backgroundJobs.status, status));
     }
 
-    // Fetch jobs with Pre-Qualification details
+    // Fetch jobs with Qualification details
     const jobs = await db
       .select({
         job: backgroundJobs,

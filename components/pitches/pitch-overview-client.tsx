@@ -11,10 +11,10 @@ interface LeadOverviewClientProps {
 export function LeadOverviewClient({ leadId, leadStatus }: LeadOverviewClientProps) {
   const { job } = useBackgroundJobStatus({
     leadId,
-    enabled: leadStatus === 'full_scanning',
+    enabled: leadStatus === 'audit_scanning',
   });
 
-  if (leadStatus !== 'full_scanning' || !job) {
+  if (leadStatus !== 'audit_scanning' || !job) {
     return null;
   }
 

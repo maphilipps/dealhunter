@@ -304,8 +304,8 @@ describe('Retry Logic', () => {
       expect(result.attempts).toBe(2);
     });
 
-    it('uses correct config for quickScan', async () => {
-      const retryWrapper = createRetryWrapper('quickScan');
+    it('uses correct config for qualificationScan', async () => {
+      const retryWrapper = createRetryWrapper('qualificationScan');
       const fn = vi.fn().mockRejectedValue(new Error('Browser timeout'));
 
       const promise = retryWrapper(fn);
@@ -313,7 +313,7 @@ describe('Retry Logic', () => {
       await vi.runAllTimersAsync();
       const result = await promise;
 
-      // quickScan config: maxAttempts=2
+      // qualificationScan config: maxAttempts=2
       expect(result.attempts).toBe(2);
     });
   });
@@ -395,8 +395,8 @@ describe('Retry Logic', () => {
       });
     });
 
-    it('has config for quickScan', () => {
-      expect(DEFAULT_RETRY_CONFIGS.quickScan).toEqual({
+    it('has config for qualificationScan', () => {
+      expect(DEFAULT_RETRY_CONFIGS.qualificationScan).toEqual({
         maxAttempts: 2,
         initialDelay: 5000,
         backoffMultiplier: 2,

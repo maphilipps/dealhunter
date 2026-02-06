@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches, users, pitchRuns } from '@/lib/db/schema';
+import { pitches, users, auditScanRuns } from '@/lib/db/schema';
 import { buildSnapshotEvent } from '@/lib/pitch/checkpoints';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
@@ -54,9 +54,9 @@ export async function GET(
     // Find the latest run for this pitch
     const [run] = await db
       .select()
-      .from(pitchRuns)
-      .where(eq(pitchRuns.pitchId, pitchId))
-      .orderBy(desc(pitchRuns.createdAt))
+      .from(auditScanRuns)
+      .where(eq(auditScanRuns.pitchId, pitchId))
+      .orderBy(desc(auditScanRuns.createdAt))
       .limit(1);
 
     if (!run) {

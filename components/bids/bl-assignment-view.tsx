@@ -22,11 +22,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import type { QuickScan } from '@/lib/db/schema';
+import type { LeadScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 interface BLAssignmentViewProps {
-  quickScan: QuickScan;
+  qualificationScan: LeadScan;
   extractedData?: ExtractedRequirements | null;
   preQualificationId: string;
 }
@@ -100,7 +100,7 @@ function parseJsonField<T>(value: string | null | undefined): T | null {
 }
 
 export function BLAssignmentView({
-  quickScan,
+  qualificationScan,
   extractedData,
   preQualificationId,
 }: BLAssignmentViewProps) {
@@ -109,17 +109,19 @@ export function BLAssignmentView({
   const [assigning, setAssigning] = useState<string | null>(null);
 
   // Parse Quick Scan data
-  const techStack = parseJsonField<TechStackData>(quickScan.techStack);
-  const contentVolume = parseJsonField<ContentVolumeData>(quickScan.contentVolume);
-  const features = parseJsonField<FeaturesData>(quickScan.features);
-  const accessibilityAudit = parseJsonField<AccessibilityAuditData>(quickScan.accessibilityAudit);
-  const seoAudit = parseJsonField<SeoAuditData>(quickScan.seoAudit);
+  const techStack = parseJsonField<TechStackData>(qualificationScan.techStack);
+  const contentVolume = parseJsonField<ContentVolumeData>(qualificationScan.contentVolume);
+  const features = parseJsonField<FeaturesData>(qualificationScan.features);
+  const accessibilityAudit = parseJsonField<AccessibilityAuditData>(
+    qualificationScan.accessibilityAudit
+  );
+  const seoAudit = parseJsonField<SeoAuditData>(qualificationScan.seoAudit);
 
   // Fetch BU matches
   useEffect(() => {
     async function fetchBUMatches() {
       try {
-        const res = await fetch(`/api/pre-qualifications/${preQualificationId}/bu-matching`);
+        const res = await fetch(`/api/qualifications/${preQualificationId}/bu-matching`);
         if (res.ok) {
           const data = (await res.json()) as { matches?: BUMatch[] };
           setBuMatches(data.matches || []);
@@ -173,7 +175,7 @@ export function BLAssignmentView({
             <CardTitle>Gescrapte Fakten</CardTitle>
           </div>
           <CardDescription>
-            Automatisch erkannte Informationen von {quickScan.websiteUrl || 'der Website'}
+            Automatisch erkannte Informationen von {qualificationScan.websiteUrl || 'der Website'}
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -18,16 +18,16 @@ import {
 import { auth } from '@/lib/auth';
 import { getLeads } from '@/lib/pitches/actions';
 
-export default async function QualificationsPage() {
+export default async function PitchesPage() {
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect('/login');
   }
 
-  // Redirect BD users to Pre-Qualifications page - they work with Pre-Qualifications, not pitches
+  // Redirect BD users to Leads page - they work with Leads, not pitches
   if (session.user.role === 'bd') {
-    redirect('/pre-qualifications');
+    redirect('/qualifications');
   }
 
   const result = await getLeads();
@@ -37,9 +37,9 @@ export default async function QualificationsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Qualifications</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Pitches</h1>
         <p className="text-muted-foreground">
-          Qualifications aus dem Pre-Qualification-Qualifizierungsprozess für Ihre Business Unit
+          Weitergeleitete Leads aus dem Qualifizierungsprozess für Ihre Business Unit
         </p>
       </div>
 
@@ -65,7 +65,7 @@ export default async function QualificationsPage() {
             <CardTitle className="text-3xl">
               {
                 pitches.filter(l =>
-                  ['full_scanning', 'bl_reviewing'].includes(l.status || 'routed')
+                  ['audit_scanning', 'bl_reviewing'].includes(l.status || 'routed')
                 ).length
               }
             </CardTitle>
@@ -81,11 +81,11 @@ export default async function QualificationsPage() {
         </Card>
       </div>
 
-      {/* Qualifications Table */}
+      {/* Pitches Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Alle Qualifications</CardTitle>
-          <CardDescription>Klicken Sie auf eine Qualification, um Details zu sehen</CardDescription>
+          <CardTitle>Alle Pitches</CardTitle>
+          <CardDescription>Klicken Sie auf einen Pitch, um Details zu sehen</CardDescription>
         </CardHeader>
         <CardContent>
           {pitches.length === 0 ? (
@@ -166,7 +166,7 @@ function StatusBadge({ status }: { status: string }) {
     { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
   > = {
     routed: { label: 'Neu weitergeleitet', variant: 'default' },
-    full_scanning: { label: 'Deep Scan läuft', variant: 'default' },
+    audit_scanning: { label: 'Pitch Scan läuft', variant: 'default' },
     bl_reviewing: { label: 'Review', variant: 'default' },
     bid_voted: { label: 'Entschieden', variant: 'outline' },
     archived: { label: 'Archiviert', variant: 'secondary' },

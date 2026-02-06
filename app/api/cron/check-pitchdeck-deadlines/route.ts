@@ -9,11 +9,11 @@ import { pitches, pitchdecks, preQualifications } from '@/lib/db/schema';
 
 // ============================================================================
 // GET /api/cron/check-pitchdeck-deadlines
-// DEA-169 (PA-010): Auto-Submit Pitchdecks bei Pre-Qualification-Deadline
+// DEA-169 (PA-010): Auto-Submit Pitchdecks bei Qualification-Deadline
 // ============================================================================
 
 /**
- * Vercel Cron Job that automatically submits pitchdecks when Pre-Qualification deadline is reached.
+ * Vercel Cron Job that automatically submits pitchdecks when Qualification deadline is reached.
  * Runs daily at 9:00 AM on weekdays (configured in vercel.json).
  *
  * Security: Uses timing-safe CRON_SECRET validation to prevent timing attacks.
@@ -73,9 +73,9 @@ export async function GET(request: Request) {
         )
       );
 
-    // 3. Check each pitchdeck's Pre-Qualification deadline
+    // 3. Check each pitchdeck's Qualification deadline
     for (const { pitchdeck, lead, preQualification } of activePitchdecks) {
-      // Extract Pre-Qualification deadline from extractedRequirements
+      // Extract Qualification deadline from extractedRequirements
       let rfpDeadline: Date | null = null;
 
       if (preQualification.extractedRequirements) {
@@ -88,7 +88,7 @@ export async function GET(request: Request) {
           }
         } catch {
           console.error(
-            `[Cron] Failed to parse extractedRequirements for Pre-Qualification ${preQualification.id}`
+            `[Cron] Failed to parse extractedRequirements for Qualification ${preQualification.id}`
           );
           continue;
         }
@@ -138,10 +138,10 @@ export async function GET(request: Request) {
               newValue: JSON.stringify({
                 status: 'submitted',
                 autoSubmittedAt: now.toISOString(),
-                reason: 'Pre-Qualification deadline reached',
+                reason: 'Qualification deadline reached',
                 rfpDeadline: result.rfpDeadline.toISOString(),
               }),
-              reason: 'Auto-Submit: Pre-Qualification-Deadline erreicht',
+              reason: 'Auto-Submit: Qualification-Deadline erreicht',
             });
           } catch (error) {
             console.error(

@@ -1,7 +1,7 @@
 /**
  * RAG Tool for AI SDK (DEA-107)
  *
- * Allows agents to query the knowledge base for this Pre-Qualification
+ * Allows agents to query the knowledge base for this Qualification
  * via semantic search.
  */
 
@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { queryRAG } from '@/lib/rag/retrieval-service';
 
 /**
- * Create a RAG tool scoped to a specific Pre-Qualification
+ * Create a RAG tool scoped to a specific Qualification
  *
  * Usage in agent:
  * ```typescript
@@ -26,7 +26,7 @@ import { queryRAG } from '@/lib/rag/retrieval-service';
  */
 export function createRagTool(preQualificationId: string) {
   return tool({
-    description: `Search the knowledge base for information about this Pre-Qualification.
+    description: `Search the knowledge base for information about this Qualification.
     Use this tool to find:
     - Performance metrics (LCP, FID, CLS) from Quick Scan
     - Tech stack details (CMS, framework, libraries)
@@ -46,7 +46,9 @@ export function createRagTool(preQualificationId: string) {
     inputSchema: z.object({
       question: z
         .string()
-        .describe('Natural language question about the Pre-Qualification (e.g., "What is the current CMS?")'),
+        .describe(
+          'Natural language question about the Qualification (e.g., "What is the current CMS?")'
+        ),
       techStackFilter: z
         .string()
         .optional()

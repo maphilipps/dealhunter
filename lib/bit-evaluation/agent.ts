@@ -29,7 +29,7 @@ import { AgentEventType } from '@/lib/streaming/event-types';
 export interface BitEvaluationInput {
   bidId: string;
   extractedRequirements: any;
-  quickScanResults?: any;
+  qualificationScanResults?: any;
   useWebSearch?: boolean; // NEW: Enable web search for Competition Agent
 }
 
@@ -66,61 +66,61 @@ export async function runBitEvaluation(input: BitEvaluationInput): Promise<BitEv
     // useWebSearch für alle Agents aktivieren
     const useWebSearch = input.useWebSearch ?? true;
 
-    const [
-      capabilityMatch,
-      dealQuality,
-      strategicFit,
-      competitionCheck,
-      legalAssessment,
-      contractAnalysis,
-      referenceMatch,
-    ]: [
-      CapabilityMatch,
-      DealQuality,
-      StrategicFit,
-      CompetitionCheck,
-      LegalAssessment,
-      ContractAnalysis,
-      ReferenceMatch,
-    ] = await Promise.all([
-      runCapabilityAgent({
-        extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
-        useWebSearch, // GitHub + Web Search für Tech-Infos
-      }),
-      runDealQualityAgent({
-        extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
-        useWebSearch, // Markt-Benchmarks + Kunden-News
-      }),
-      runStrategicFitAgent({
-        extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
-        useWebSearch, // Kunden- + Branchen-Recherche
-      }),
-      runCompetitionAgent({
-        extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
-        useWebSearch, // Wettbewerber-Recherche
-      }),
-      runLegalAgent({
-        extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
-        useWebSearch, // Vertrags- + Compliance-Recherche
-      }),
-      runContractAgent({
-        extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
-        useWebSearch, // Vertragsmodell-Recherche (DEA-7)
-      }),
-      runReferenceAgent({
-        extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
-        useWebSearch, // adesso Referenz-Recherche
-      }),
+    const agentInput = {
+      extractedRequirements: input.extractedRequirements,
+      qualificationScanResults: input.qualificationScanResults,
+      useWebSearch,
+    };
+
+    const settled = await Promise.allSettled([
+      runCapabilityAgent(agentInput),
+      runDealQualityAgent(agentInput),
+      runStrategicFitAgent(agentInput),
+      runCompetitionAgent(agentInput),
+      runLegalAgent(agentInput),
+      runContractAgent(agentInput),
+      runReferenceAgent(agentInput),
     ]);
 
-    logActivity('All agents completed', 'Calculating weighted scores');
+    // Log any failed agents but continue with defaults for partial results
+    const agentNames = [
+      'Capability',
+      'DealQuality',
+      'StrategicFit',
+      'Competition',
+      'Legal',
+      'Contract',
+      'Reference',
+    ];
+    settled.forEach((result, i) => {
+      if (result.status === 'rejected') {
+        logActivity(
+          `Agent ${agentNames[i]} failed`,
+          result.reason instanceof Error ? result.reason.message : 'Unknown error'
+        );
+      }
+    });
+
+    const capabilityMatch =
+      settled[0].status === 'fulfilled' ? settled[0].value : createDefaultCapabilityMatch();
+    const dealQuality =
+      settled[1].status === 'fulfilled' ? settled[1].value : createDefaultDealQuality();
+    const strategicFit =
+      settled[2].status === 'fulfilled' ? settled[2].value : createDefaultStrategicFit();
+    const competitionCheck =
+      settled[3].status === 'fulfilled' ? settled[3].value : createDefaultCompetitionCheck();
+    const legalAssessment =
+      settled[4].status === 'fulfilled' ? settled[4].value : createDefaultLegalAssessment();
+    const contractAnalysis =
+      settled[5].status === 'fulfilled' ? settled[5].value : createDefaultContractAnalysis();
+    const referenceMatch =
+      settled[6].status === 'fulfilled' ? settled[6].value : createDefaultReferenceMatch();
+
+    const failedCount = settled.filter(r => r.status === 'rejected').length;
+    logActivity(
+      'All agents completed',
+      `${7 - failedCount}/7 succeeded. Calculating weighted scores`
+    );
 
     // Calculate weighted scores using centralized config
     const individualScores = {
@@ -322,7 +322,7 @@ export async function runBitEvaluationWithStreaming(
     ] = [
       runCapabilityAgent({
         extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
+        qualificationScanResults: input.qualificationScanResults,
         useWebSearch, // GitHub + Web Search für Tech-Infos
       }).then(result => {
         emit({
@@ -337,7 +337,7 @@ export async function runBitEvaluationWithStreaming(
       }),
       runDealQualityAgent({
         extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
+        qualificationScanResults: input.qualificationScanResults,
         useWebSearch, // Markt-Benchmarks + Kunden-News
       }).then(result => {
         emit({
@@ -352,7 +352,7 @@ export async function runBitEvaluationWithStreaming(
       }),
       runStrategicFitAgent({
         extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
+        qualificationScanResults: input.qualificationScanResults,
         useWebSearch, // Kunden- + Branchen-Recherche
       }).then(result => {
         emit({
@@ -367,7 +367,7 @@ export async function runBitEvaluationWithStreaming(
       }),
       runCompetitionAgent({
         extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
+        qualificationScanResults: input.qualificationScanResults,
         useWebSearch, // Wettbewerber-Recherche
       }).then(result => {
         emit({
@@ -382,7 +382,7 @@ export async function runBitEvaluationWithStreaming(
       }),
       runLegalAgent({
         extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
+        qualificationScanResults: input.qualificationScanResults,
         useWebSearch, // Vertrags- + Compliance-Recherche
       }).then(result => {
         emit({
@@ -397,7 +397,7 @@ export async function runBitEvaluationWithStreaming(
       }),
       runContractAgent({
         extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
+        qualificationScanResults: input.qualificationScanResults,
         useWebSearch, // Vertragsmodell-Recherche (DEA-7)
       }).then(result => {
         emit({
@@ -412,7 +412,7 @@ export async function runBitEvaluationWithStreaming(
       }),
       runReferenceAgent({
         extractedRequirements: input.extractedRequirements,
-        quickScanResults: input.quickScanResults,
+        qualificationScanResults: input.qualificationScanResults,
         useWebSearch, // adesso Referenz-Recherche
       }).then(result => {
         emit({
@@ -596,4 +596,149 @@ export async function runBitEvaluationWithStreaming(
     });
     throw error;
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DEFAULT FALLBACKS for Promise.allSettled graceful degradation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const AGENT_FAILED = 'Agent failed — no data available';
+
+function createDefaultCapabilityMatch(): CapabilityMatch {
+  return {
+    hasRequiredTechnologies: false,
+    technologyMatchScore: 0,
+    missingCapabilities: [AGENT_FAILED],
+    hasRequiredScale: false,
+    scaleMatchScore: 0,
+    scaleGaps: [AGENT_FAILED],
+    overallCapabilityScore: 0,
+    confidence: 0,
+    reasoning: AGENT_FAILED,
+    criticalBlockers: [AGENT_FAILED],
+  };
+}
+
+function createDefaultDealQuality(): DealQuality {
+  return {
+    budgetAdequacy: 'inadequate',
+    estimatedMargin: 0,
+    budgetRisks: [AGENT_FAILED],
+    timelineRealism: 'unrealistic',
+    timelineRisks: [AGENT_FAILED],
+    contractRisks: [],
+    requiredServices: [],
+    requiredReferences: [],
+    challenges: [],
+    expectedRevenueRange: 'Unknown',
+    profitabilityRating: 'low',
+    commercialRisks: [AGENT_FAILED],
+    overallDealQualityScore: 0,
+    confidence: 0,
+    reasoning: AGENT_FAILED,
+    criticalBlockers: [AGENT_FAILED],
+  };
+}
+
+function createDefaultStrategicFit(): StrategicFit {
+  return {
+    customerTypeAssessment: {
+      customerType: 'Unknown',
+      isTargetCustomer: false,
+      customerFitScore: 0,
+    },
+    industryAlignment: {
+      industry: 'Unknown',
+      isTargetIndustry: false,
+      industryExperience: 'none',
+      industryFitScore: 0,
+    },
+    strategicValue: {
+      isReferenceProject: false,
+      enablesNewMarket: false,
+      expandsExistingRelationship: false,
+      longTermPotential: 'low',
+    },
+    overallStrategicFitScore: 0,
+    confidence: 0,
+    reasoning: AGENT_FAILED,
+    criticalBlockers: [AGENT_FAILED],
+  };
+}
+
+function createDefaultCompetitionCheck(): CompetitionCheck {
+  return {
+    competitiveAnalysis: {
+      competitionLevel: 'high',
+      knownCompetitors: [],
+      ourDifferentiators: [],
+      competitiveWeaknesses: [AGENT_FAILED],
+    },
+    winProbabilityFactors: {
+      hasIncumbentAdvantage: false,
+      hasExistingRelationship: false,
+      hasUniqueCapability: false,
+      pricingPosition: 'competitive',
+    },
+    estimatedWinProbability: 0,
+    confidence: 0,
+    reasoning: AGENT_FAILED,
+    criticalBlockers: [AGENT_FAILED],
+  };
+}
+
+function createDefaultLegalAssessment(): LegalAssessment {
+  return {
+    overallLegalScore: 0,
+    legalRiskScore: 10,
+    confidence: 0,
+    reasoning: AGENT_FAILED,
+    criticalBlockers: [AGENT_FAILED],
+  };
+}
+
+function createDefaultContractAnalysis(): ContractAnalysis {
+  return {
+    contractType: 'unknown',
+    contractTypeIndicators: [],
+    budgetAnalysis: { hasBudget: false, budgetRisks: [AGENT_FAILED] },
+    riskFlags: [{ category: 'scope', severity: 'critical', description: AGENT_FAILED }],
+    changeRequestProcess: { hasProcess: false, isFlexible: false },
+    penaltyClauses: { hasPenalties: false, penaltyDescription: [], penaltyRiskLevel: 'critical' },
+    timelineAssessment: { isRealistic: false, timelineRisks: [AGENT_FAILED] },
+    scopeClarity: { isClear: false, unclearAreas: [AGENT_FAILED], scopeRisks: [AGENT_FAILED] },
+    overallContractScore: 0,
+    confidence: 0,
+    reasoning: AGENT_FAILED,
+    criticalBlockers: [AGENT_FAILED],
+  };
+}
+
+function createDefaultReferenceMatch(): ReferenceMatch {
+  return {
+    similarProjectsAnalysis: {
+      hasRelevantReferences: false,
+      similarProjects: [],
+      projectTypeMatchScore: 0,
+    },
+    industryMatchAnalysis: {
+      industryMatchScore: 0,
+      industryExperience: 'none',
+      industryInsights: [],
+    },
+    technologyMatchAnalysis: {
+      technologyMatchScore: 0,
+      matchingTechnologies: [],
+      missingExperience: [AGENT_FAILED],
+    },
+    successRateAnalysis: {
+      estimatedSuccessRate: 0,
+      successFactors: [],
+      riskFactors: [AGENT_FAILED],
+    },
+    overallReferenceScore: 0,
+    confidence: 0,
+    reasoning: AGENT_FAILED,
+    criticalBlockers: [AGENT_FAILED],
+  };
 }

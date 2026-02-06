@@ -3,7 +3,7 @@
 /**
  * RAG Stats Card Component (DEA-10)
  *
- * Displays aggregated statistics about RAG data for an Pre-Qualification.
+ * Displays aggregated statistics about RAG data for a Qualification.
  * Shows: total embeddings, raw chunks, section data, and per-agent breakdown.
  */
 

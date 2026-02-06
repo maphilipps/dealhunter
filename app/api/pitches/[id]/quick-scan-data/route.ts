@@ -3,12 +3,12 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches, quickScans, preQualifications } from '@/lib/db/schema';
+import { pitches, leadScans, preQualifications } from '@/lib/db/schema';
 
 /**
- * GET /api/pitches/[id]/quick-scan-data
+ * GET /api/pitches/[id]/qualification-scan-data
  *
- * Fetch Quick Scan data for a lead, including:
+ * Fetch Qualification Scan data for a lead, including:
  * - Tech stack detection results
  * - Company intelligence
  * - Decision makers
@@ -23,11 +23,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
     const { id: leadId } = await context.params;
 
-    // Fetch lead to get quickScanId
+    // Fetch lead to get qualificationScanId
     const [lead] = await db
       .select({
         id: pitches.id,
-        quickScanId: pitches.quickScanId,
+        qualificationScanId: pitches.qualificationScanId,
         preQualificationId: pitches.preQualificationId,
       })
       .from(pitches)
@@ -38,52 +38,52 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
-    // If no quickScanId, try to get from Pre-Qualification
-    let quickScanId = lead.quickScanId;
+    // If no qualificationScanId, try to get from Qualification
+    let qualificationScanId = lead.qualificationScanId;
 
-    if (!quickScanId && lead.preQualificationId) {
+    if (!qualificationScanId && lead.preQualificationId) {
       const [preQualification] = await db
-        .select({ quickScanId: preQualifications.quickScanId })
+        .select({ qualificationScanId: preQualifications.qualificationScanId })
         .from(preQualifications)
         .where(eq(preQualifications.id, lead.preQualificationId))
         .limit(1);
 
-      quickScanId = preQualification?.quickScanId ?? null;
+      qualificationScanId = preQualification?.qualificationScanId ?? null;
     }
 
-    if (!quickScanId) {
+    if (!qualificationScanId) {
       return NextResponse.json({
-        quickScan: null,
+        qualificationScan: null,
         rfpExtraction: null,
         message: 'No Pitch data available',
       });
     }
 
-    // Fetch quick scan data
-    const [quickScan] = await db
+    // Fetch qualification scan data
+    const [qualificationScan] = await db
       .select({
-        id: quickScans.id,
-        status: quickScans.status,
-        websiteUrl: quickScans.websiteUrl,
-        cms: quickScans.cms,
-        framework: quickScans.framework,
-        hosting: quickScans.hosting,
-        pageCount: quickScans.pageCount,
-        techStack: quickScans.techStack,
-        companyIntelligence: quickScans.companyIntelligence,
-        decisionMakers: quickScans.decisionMakers,
-        migrationComplexity: quickScans.migrationComplexity,
-        features: quickScans.features,
-        integrations: quickScans.integrations,
-        completedAt: quickScans.completedAt,
+        id: leadScans.id,
+        status: leadScans.status,
+        websiteUrl: leadScans.websiteUrl,
+        cms: leadScans.cms,
+        framework: leadScans.framework,
+        hosting: leadScans.hosting,
+        pageCount: leadScans.pageCount,
+        techStack: leadScans.techStack,
+        companyIntelligence: leadScans.companyIntelligence,
+        decisionMakers: leadScans.decisionMakers,
+        migrationComplexity: leadScans.migrationComplexity,
+        features: leadScans.features,
+        integrations: leadScans.integrations,
+        completedAt: leadScans.completedAt,
       })
-      .from(quickScans)
-      .where(eq(quickScans.id, quickScanId))
+      .from(leadScans)
+      .where(eq(leadScans.id, qualificationScanId))
       .limit(1);
 
-    if (!quickScan) {
+    if (!qualificationScan) {
       return NextResponse.json({
-        quickScan: null,
+        qualificationScan: null,
         rfpExtraction: null,
         message: 'Pitch not found',
       });
@@ -100,26 +100,26 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     };
 
     return NextResponse.json({
-      quickScan: {
-        id: quickScan.id,
-        status: quickScan.status,
-        websiteUrl: quickScan.websiteUrl,
-        cms: quickScan.cms,
-        framework: quickScan.framework,
-        hosting: quickScan.hosting,
-        pageCount: quickScan.pageCount,
-        techStack: parseJson(quickScan.techStack),
-        companyIntelligence: parseJson(quickScan.companyIntelligence),
-        decisionMakers: parseJson(quickScan.decisionMakers),
-        migrationComplexity: parseJson(quickScan.migrationComplexity),
-        features: parseJson(quickScan.features),
-        integrations: parseJson(quickScan.integrations),
-        completedAt: quickScan.completedAt?.toISOString() ?? null,
+      qualificationScan: {
+        id: qualificationScan.id,
+        status: qualificationScan.status,
+        websiteUrl: qualificationScan.websiteUrl,
+        cms: qualificationScan.cms,
+        framework: qualificationScan.framework,
+        hosting: qualificationScan.hosting,
+        pageCount: qualificationScan.pageCount,
+        techStack: parseJson(qualificationScan.techStack),
+        companyIntelligence: parseJson(qualificationScan.companyIntelligence),
+        decisionMakers: parseJson(qualificationScan.decisionMakers),
+        migrationComplexity: parseJson(qualificationScan.migrationComplexity),
+        features: parseJson(qualificationScan.features),
+        integrations: parseJson(qualificationScan.integrations),
+        completedAt: qualificationScan.completedAt?.toISOString() ?? null,
       },
-      rfpExtraction: null, // Could be extended to include Pre-Qualification extraction data
+      rfpExtraction: null, // Could be extended to include Qualification extraction data
     });
   } catch (error) {
-    console.error('[quick-scan-data] Error:', error);
+    console.error('[qualification-scan-data] Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

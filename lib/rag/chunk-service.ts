@@ -24,22 +24,22 @@ export interface Chunk {
  * Chunk agent output into granular chunks for embedding
  *
  * Strategy:
- * - Quick Scan: Split into tech_stack, performance, content_volume, etc.
+ * - Qualification Scan: Split into tech_stack, performance, content_volume, etc.
  * - Extract: Split into customer, project, technologies, budget_timeline
  * - Deep Analysis Agents: Keep as single chunks (already focused)
  */
 export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
   const chunks: Chunk[] = [];
 
-  // Quick Scan Agent - Granular chunking
-  if (input.agentName === 'quick_scan') {
+  // Qualification Scan Agent - Granular chunking
+  if (input.agentName === 'lead_scan') {
     const qs = input.output as any;
     let index = 0;
 
     if (qs.techStack) {
       chunks.push({
         preQualificationId: input.preQualificationId,
-        agentName: 'quick_scan',
+        agentName: 'lead_scan',
         chunkType: 'tech_stack',
         chunkIndex: index++,
         content: `Tech Stack Analysis:\n${JSON.stringify(qs.techStack, null, 2)}`,
@@ -53,7 +53,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
     if (qs.performanceIndicators) {
       chunks.push({
         preQualificationId: input.preQualificationId,
-        agentName: 'quick_scan',
+        agentName: 'lead_scan',
         chunkType: 'performance',
         chunkIndex: index++,
         content: `Performance Indicators:\n${JSON.stringify(qs.performanceIndicators, null, 2)}`,
@@ -68,7 +68,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
     if (qs.contentVolume) {
       chunks.push({
         preQualificationId: input.preQualificationId,
-        agentName: 'quick_scan',
+        agentName: 'lead_scan',
         chunkType: 'content_volume',
         chunkIndex: index++,
         content: `Content Volume:\n${JSON.stringify(qs.contentVolume, null, 2)}`,
@@ -81,7 +81,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
     if (qs.accessibilityAudit) {
       chunks.push({
         preQualificationId: input.preQualificationId,
-        agentName: 'quick_scan',
+        agentName: 'lead_scan',
         chunkType: 'accessibility',
         chunkIndex: index++,
         content: `Accessibility Audit:\n${JSON.stringify(qs.accessibilityAudit, null, 2)}`,
@@ -94,7 +94,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
     if (qs.seoAudit) {
       chunks.push({
         preQualificationId: input.preQualificationId,
-        agentName: 'quick_scan',
+        agentName: 'lead_scan',
         chunkType: 'seo',
         chunkIndex: index++,
         content: `SEO Audit:\n${JSON.stringify(qs.seoAudit, null, 2)}`,
@@ -105,7 +105,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
     if (qs.navigationStructure) {
       chunks.push({
         preQualificationId: input.preQualificationId,
-        agentName: 'quick_scan',
+        agentName: 'lead_scan',
         chunkType: 'navigation',
         chunkIndex: index++,
         content: `Navigation Structure:\n${JSON.stringify(qs.navigationStructure, null, 2)}`,
@@ -116,7 +116,7 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
     if (qs.screenshots) {
       chunks.push({
         preQualificationId: input.preQualificationId,
-        agentName: 'quick_scan',
+        agentName: 'lead_scan',
         chunkType: 'screenshots',
         chunkIndex: index++,
         content: `Screenshots:\n${JSON.stringify(qs.screenshots, null, 2)}`,
@@ -265,7 +265,6 @@ export async function chunkAgentOutput(input: ChunkInput): Promise<Chunk[]> {
         },
       });
     }
-
   }
 
   // Deep Analysis Agents - Keep as single chunks

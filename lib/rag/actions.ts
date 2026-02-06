@@ -116,7 +116,7 @@ function safeParseJSON<T>(str: string | null, fallback: T): T {
 // ============================================================================
 
 /**
- * Get aggregated RAG statistics for an Pre-Qualification
+ * Get aggregated RAG statistics for a Qualification
  */
 export async function getRAGStats(
   input: z.infer<typeof getRAGStatsSchema>
@@ -423,7 +423,7 @@ export async function getSectionData(
 
 /**
  * Search for similar chunks using cosine similarity
- * Supports both Pre-Qualification-based search (dealEmbeddings, rawChunks) and Lead-based search (dealEmbeddings)
+ * Supports both Qualification-based search (dealEmbeddings, rawChunks) and Lead-based search (dealEmbeddings)
  */
 export async function searchSimilar(
   input: SimilaritySearchParams
@@ -582,7 +582,7 @@ export async function searchSimilar(
 }
 
 /**
- * Get Pre-Qualification ID for a lead (helper for client components)
+ * Get Qualification ID for a lead (helper for client components)
  */
 export async function getRfpIdForLead(pitchId: string): Promise<ActionResult<string | null>> {
   try {
@@ -598,7 +598,7 @@ export async function getRfpIdForLead(pitchId: string): Promise<ActionResult<str
     };
   } catch (error) {
     console.error('[RAG Actions] getRfpIdForLead failed:', error);
-    return { success: false, error: 'Failed to get Pre-Qualification ID' };
+    return { success: false, error: 'Failed to get Qualification ID' };
   }
 }
 
@@ -814,7 +814,7 @@ export async function getLeadEmbeddingTypes(pitchId: string): Promise<ActionResu
 }
 
 /**
- * Get unique agent names for an Pre-Qualification (for filter dropdowns)
+ * Get unique agent names for a Qualification (for filter dropdowns)
  */
 export async function getAgentNames(preQualificationId: string): Promise<ActionResult<string[]>> {
   try {
@@ -835,7 +835,7 @@ export async function getAgentNames(preQualificationId: string): Promise<ActionR
 }
 
 /**
- * Get unique chunk types for an Pre-Qualification (for filter dropdowns)
+ * Get unique chunk types for a Qualification (for filter dropdowns)
  */
 export async function getChunkTypes(preQualificationId: string): Promise<ActionResult<string[]>> {
   try {

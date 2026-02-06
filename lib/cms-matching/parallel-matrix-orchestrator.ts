@@ -18,7 +18,7 @@ import {
 import type { RequirementMatch, CMSMatchingResult } from './schema';
 
 import { db } from '@/lib/db';
-import { preQualifications, quickScans } from '@/lib/db/schema';
+import { preQualifications, leadScans } from '@/lib/db/schema';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
 
 /**
@@ -446,7 +446,7 @@ export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchin
 }
 
 /**
- * Speichert die Matrix am Pre-Qualification
+ * Speichert die Matrix am Qualification
  */
 export async function saveMatrixToRfp(
   preQualificationId: string,
@@ -455,14 +455,14 @@ export async function saveMatrixToRfp(
   try {
     // Load linked quick scan ID
     const preQualification = await db
-      .select({ quickScanId: preQualifications.quickScanId })
+      .select({ qualificationScanId: preQualifications.qualificationScanId })
       .from(preQualifications)
       .where(eq(preQualifications.id, preQualificationId))
       .limit(1);
 
-    const quickScanId = preQualification[0]?.quickScanId;
-    if (!quickScanId) {
-      console.warn(`[Matrix] No quickScanId for pre-qualification ${preQualificationId}`);
+    const qualificationScanId = preQualification[0]?.qualificationScanId;
+    if (!qualificationScanId) {
+      console.warn(`[Matrix] No qualificationScanId for pre-qualification ${preQualificationId}`);
       return;
     }
 
@@ -473,18 +473,18 @@ export async function saveMatrixToRfp(
       source: 'cms-matrix',
     };
 
-    // Persist to quick_scans as source of truth
+    // Persist to leadScans as source of truth
     await db
-      .update(quickScans)
+      .update(leadScans)
       .set({
         cmsEvaluation: JSON.stringify(cmsEvaluation),
         cmsEvaluationCompletedAt: new Date(),
       })
-      .where(eq(quickScans.id, quickScanId));
+      .where(eq(leadScans.id, qualificationScanId));
 
-    console.log(`[Matrix] Saved matrix to Pre-Qualification ${preQualificationId}`);
+    console.log(`[Matrix] Saved matrix to Qualification ${preQualificationId}`);
   } catch (error) {
-    console.error('[Matrix] Error saving to Pre-Qualification:', error);
+    console.error('[Matrix] Error saving to Qualification:', error);
     throw error;
   }
 }

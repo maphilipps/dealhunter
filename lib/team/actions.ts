@@ -89,10 +89,10 @@ export async function suggestTeamForBid(bidId: string): Promise<SuggestTeamResul
     // For now, get all employees as we don't have BL-to-employee mapping yet
     const availableEmployees = await db.select().from(employees).limit(20);
 
-    // Get Quick Scan results if available
-    const quickScanResults = null;
-    if (bid.quickScanId) {
-      // In a real system, we'd fetch from quickScans table
+    // Get Qualification Scan results if available
+    const qualificationScanResults = null;
+    if (bid.qualificationScanId) {
+      // In a real system, we'd fetch from leadScans table
       // For now, we'll pass null
     }
 
@@ -100,7 +100,7 @@ export async function suggestTeamForBid(bidId: string): Promise<SuggestTeamResul
     const suggestion = await suggestTeam({
       bidId: bid.id,
       extractedRequirements: bid.extractedRequirements ? JSON.parse(bid.extractedRequirements) : {},
-      quickScanResults,
+      qualificationScanResults,
       assignedBusinessLine: bid.assignedBusinessUnitId,
       availableEmployees,
     });

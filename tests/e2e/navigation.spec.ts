@@ -23,11 +23,11 @@ test.describe('Navigation: Sidebar Links', () => {
 
   test('TC-1.1: Leads Link navigates correctly', async ({ page }) => {
     // Click Leads link in sidebar
-    await page.click('a[href="/pre-qualifications"]');
+    await page.click('a[href="/qualifications"]');
     await page.waitForLoadState('networkidle');
 
     // Verify we're on leads page
-    await expect(page).toHaveURL('/pre-qualifications');
+    await expect(page).toHaveURL('/qualifications');
   });
 
   test('TC-1.2: RFPs Expandable Menu', async ({ page }) => {
@@ -58,7 +58,7 @@ test.describe('Navigation: Sidebar Links', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify navigation
-    await expect(page).toHaveURL('/pre-qualifications');
+    await expect(page).toHaveURL('/qualifications');
   });
 
   test('TC-1.4: RFPs → Neuer RFP navigates correctly', async ({ page }) => {
@@ -71,7 +71,7 @@ test.describe('Navigation: Sidebar Links', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify navigation
-    await expect(page).toHaveURL('/pre-qualifications/new');
+    await expect(page).toHaveURL('/qualifications/new');
   });
 
   test('TC-1.5: Accounts Link navigates correctly', async ({ page }) => {
@@ -225,8 +225,8 @@ test.describe('Navigation: Sidebar Links', () => {
       await quickActions.click();
       await page.waitForLoadState('networkidle');
 
-      // Should navigate to /pre-qualifications/new
-      await expect(page).toHaveURL('/pre-qualifications/new');
+      // Should navigate to /qualifications/new
+      await expect(page).toHaveURL('/qualifications/new');
     }
   });
 });
@@ -243,7 +243,7 @@ test.describe('Navigation: Breadcrumbs', () => {
 
   test('TC-2.1: Leads → Breadcrumb shows Leads', async ({ page }) => {
     // Navigate to leads page (root redirects there)
-    await page.goto('/pre-qualifications');
+    await page.goto('/qualifications');
     await page.waitForLoadState('networkidle');
 
     // On leads page, breadcrumb should show "Leads"
@@ -257,7 +257,7 @@ test.describe('Navigation: Breadcrumbs', () => {
 
   test('TC-2.2: Leads → Breadcrumb shows correctly', async ({ page }) => {
     // Navigate to Leads
-    await page.click('a[href="/pre-qualifications"]');
+    await page.click('a[href="/qualifications"]');
     await page.waitForLoadState('networkidle');
 
     // Check breadcrumb
@@ -293,7 +293,7 @@ test.describe('Navigation: Breadcrumbs', () => {
 
   test('TC-2.4: Active Page disabled in Breadcrumb', async ({ page }) => {
     // Navigate to RFPs
-    await page.goto('/pre-qualifications');
+    await page.goto('/qualifications');
     await page.waitForLoadState('networkidle');
 
     // Check breadcrumb

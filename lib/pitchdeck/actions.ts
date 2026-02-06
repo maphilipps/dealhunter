@@ -31,7 +31,7 @@ export interface CreatePitchdeckResult {
  *
  * This function:
  * 1. Creates a pitchdeck record for the qualification
- * 2. Copies deliverables from Pre-Qualification extractedRequirements
+ * 2. Copies deliverables from Qualification extractedRequirements
  * 3. Sets status to 'draft'
  * 4. Creates audit trail
  *
@@ -80,7 +80,7 @@ export async function createPitchdeck(pitchId: string): Promise<CreatePitchdeckR
       };
     }
 
-    // Get Pre-Qualification to extract deliverables
+    // Get Qualification to extract deliverables
     const [preQualification] = await db
       .select()
       .from(preQualifications)
@@ -90,7 +90,7 @@ export async function createPitchdeck(pitchId: string): Promise<CreatePitchdeckR
     if (!preQualification) {
       return {
         success: false,
-        error: 'Pre-Qualification nicht gefunden',
+        error: 'Qualification nicht gefunden',
       };
     }
 
@@ -121,7 +121,7 @@ export async function createPitchdeck(pitchId: string): Promise<CreatePitchdeckR
           }[];
         }
 
-        // Extract Pre-Qualification deadline if available
+        // Extract Qualification deadline if available
         if (extractedReqs.deadline) {
           if (typeof extractedReqs.deadline === 'string') {
             rfpDeadline = new Date(extractedReqs.deadline);
@@ -130,12 +130,12 @@ export async function createPitchdeck(pitchId: string): Promise<CreatePitchdeckR
           }
         }
       } catch (error) {
-        console.error('Error parsing Pre-Qualification extractedRequirements:', error);
+        console.error('Error parsing Qualification extractedRequirements:', error);
         // Continue without deliverables if parsing fails
       }
     }
 
-    // Calculate internal deadlines if Pre-Qualification deadline exists
+    // Calculate internal deadlines if Qualification deadline exists
     let internalDeadlines: Date[] = [];
     if (rfpDeadline && requiredDeliverables.length > 0) {
       try {
@@ -199,7 +199,7 @@ export interface SuggestPitchdeckTeamResult {
  * DEA-161 (PA-002): Generate Team Suggestions for Pitchdeck
  *
  * This function:
- * 1. Gets the pitchdeck and associated lead/Pre-Qualification data
+ * 1. Gets the pitchdeck and associated lead/Qualification data
  * 2. Retrieves PT-Estimation to determine required roles
  * 3. Queries available employees from the lead's business unit
  * 4. Uses AI Staffing Agent to generate team suggestions
@@ -246,7 +246,7 @@ export async function suggestPitchdeckTeam(
       };
     }
 
-    // Get Pre-Qualification for extracted requirements
+    // Get Qualification for extracted requirements
     const [preQualification] = await db
       .select()
       .from(preQualifications)
@@ -256,7 +256,7 @@ export async function suggestPitchdeckTeam(
     if (!preQualification) {
       return {
         success: false,
-        error: 'Pre-Qualification nicht gefunden',
+        error: 'Qualification nicht gefunden',
       };
     }
 
@@ -267,23 +267,25 @@ export async function suggestPitchdeckTeam(
       .where(eq(ptEstimations.pitchId, lead.id))
       .limit(1);
 
-    // Get Quick Scan results if available
-    let quickScanResults = null;
-    if (lead.quickScanId) {
-      const { quickScans } = await import('@/lib/db/schema');
-      const [quickScan] = await db
+    // Get Qualification Scan results if available
+    let qualificationScanResults = null;
+    if (lead.qualificationScanId) {
+      const { leadScans } = await import('@/lib/db/schema');
+      const [qualificationScan] = await db
         .select()
-        .from(quickScans)
-        .where(eq(quickScans.id, lead.quickScanId))
+        .from(leadScans)
+        .where(eq(leadScans.id, lead.qualificationScanId))
         .limit(1);
 
-      if (quickScan) {
-        quickScanResults = {
-          cms: quickScan.cms,
-          framework: quickScan.framework,
-          techStack: quickScan.techStack ? JSON.parse(quickScan.techStack) : [],
-          integrations: quickScan.integrations ? JSON.parse(quickScan.integrations) : [],
-          features: quickScan.features ? JSON.parse(quickScan.features) : [],
+      if (qualificationScan) {
+        qualificationScanResults = {
+          cms: qualificationScan.cms,
+          framework: qualificationScan.framework,
+          techStack: qualificationScan.techStack ? JSON.parse(qualificationScan.techStack) : [],
+          integrations: qualificationScan.integrations
+            ? JSON.parse(qualificationScan.integrations)
+            : [],
+          features: qualificationScan.features ? JSON.parse(qualificationScan.features) : [],
         };
       }
     }
@@ -313,9 +315,9 @@ export async function suggestPitchdeckTeam(
 
     // Generate team suggestion using existing AI agent
     const suggestion = await suggestTeam({
-      bidId: lead.preQualificationId, // Use Pre-Qualification ID for consistency
+      bidId: lead.preQualificationId, // Use Qualification ID for consistency
       extractedRequirements,
-      quickScanResults,
+      qualificationScanResults,
       assignedBusinessLine: lead.businessUnitId,
       availableEmployees,
     });
@@ -694,7 +696,7 @@ export async function generateSolutionSketches(
       };
     }
 
-    // Get Pre-Qualification for context
+    // Get Qualification for context
     const [preQualification] = await db
       .select()
       .from(preQualifications)
@@ -704,7 +706,7 @@ export async function generateSolutionSketches(
     if (!preQualification) {
       return {
         success: false,
-        error: 'Pre-Qualification nicht gefunden',
+        error: 'Qualification nicht gefunden',
       };
     }
 
@@ -729,7 +731,7 @@ export async function generateSolutionSketches(
           requirements = [extractedReqs.requirements];
         }
       } catch (error) {
-        console.error('Error parsing Pre-Qualification extractedRequirements:', error);
+        console.error('Error parsing Qualification extractedRequirements:', error);
       }
     }
 

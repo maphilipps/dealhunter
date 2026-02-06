@@ -191,7 +191,7 @@ export function RequirementsMatrix({ preQualificationId, initialMatrix }: Requir
 
   const loadMatrix = useCallback(async () => {
     try {
-      const res = await fetch(`/api/pre-qualifications/${preQualificationId}/cms-matrix/stream`);
+      const res = await fetch(`/api/qualifications/${preQualificationId}/cms-matrix/stream`);
       if (res.ok) {
         const data = (await res.json()) as { matrix?: RequirementMatrix };
         if (data.matrix) {
@@ -217,7 +217,7 @@ export function RequirementsMatrix({ preQualificationId, initialMatrix }: Requir
     setStatusMessage('Starte Matrix-Recherche...');
 
     try {
-      const res = await fetch(`/api/pre-qualifications/${preQualificationId}/cms-matrix/stream`, {
+      const res = await fetch(`/api/qualifications/${preQualificationId}/cms-matrix/stream`, {
         method: 'POST',
       });
 

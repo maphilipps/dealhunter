@@ -14,9 +14,9 @@ import { dealEmbeddings } from '../../db/schema';
 import { queryRawChunks, type RawRAGResult } from '../../rag/raw-retrieval-service';
 
 /**
- * Query Pre-Qualification document for relevant content using RAG
+ * Query Qualification document for relevant content using RAG
  *
- * @param preQualificationId - The Pre-Qualification ID to query
+ * @param preQualificationId - The Qualification ID to query
  * @param query - The semantic query to search for
  * @param maxResults - Maximum number of results (default: 5)
  * @returns Array of relevant chunks sorted by similarity
@@ -36,7 +36,7 @@ export async function queryRfpDocument(
 /**
  * Store agent result in rfpEmbeddings table for cross-agent knowledge sharing
  *
- * @param preQualificationId - The Pre-Qualification ID to associate with
+ * @param preQualificationId - The Qualification ID to associate with
  * @param agentName - Name of the agent storing the result
  * @param content - The text content to store (will be embedded)
  * @param metadata - Optional additional metadata

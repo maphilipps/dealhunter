@@ -45,7 +45,7 @@ const getAssignedRfpsForBusinessUnits = cache(async (businessUnitIds: string[]) 
         inArray(preQualifications.assignedBusinessUnitId, businessUnitIds),
         inArray(preQualifications.status, [
           'routed',
-          'full_scanning',
+          'audit_scanning',
           'bl_reviewing',
           'team_assigned',
           'notified',
@@ -90,7 +90,7 @@ export default async function BLReviewPage() {
   // Group bids by status for overview
   const statusGroups = {
     pending: assignedBids.filter(b =>
-      ['routed', 'full_scanning', 'bl_reviewing'].includes(b.status)
+      ['routed', 'audit_scanning', 'bl_reviewing'].includes(b.status)
     ),
     teamAssigned: assignedBids.filter(b => b.status === 'team_assigned'),
     notified: assignedBids.filter(b => b.status === 'notified'),
@@ -103,12 +103,12 @@ export default async function BLReviewPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">BL Review</h1>
         <p className="mt-2 text-muted-foreground">
-          Prüfen und genehmigen Sie Pre-Qualifications für Ihren Bereich
+          Prüfen und genehmigen Sie Leads für Ihren Bereich
         </p>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Zu prüfen</CardTitle>
@@ -116,7 +116,7 @@ export default async function BLReviewPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statusGroups.pending.length}</div>
-            <p className="text-xs text-muted-foreground">Pre-Qualifications warten auf Review</p>
+            <p className="text-xs text-muted-foreground">Leads warten auf Review</p>
           </CardContent>
         </Card>
         <Card>
@@ -157,9 +157,11 @@ export default async function BLReviewPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-amber-500" />
-              Zu prüfende Pre-Qualifications
+              Zu prüfende Leads
             </CardTitle>
-            <CardDescription>Diese Pre-Qualifications warten auf Ihre Prüfung und Team-Zuweisung</CardDescription>
+            <CardDescription>
+              Diese Leads warten auf Ihre Prüfung und Team-Zuweisung
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -217,9 +219,9 @@ export default async function BLReviewPage() {
         statusGroups.completed.length > 0) && (
         <Card>
           <CardHeader>
-            <CardTitle>Weitere Pre-Qualifications</CardTitle>
+            <CardTitle>Weitere Leads</CardTitle>
             <CardDescription>
-              Pre-Qualifications mit zugewiesenem Team oder abgeschlossene Workflows
+              Leads mit zugewiesenem Team oder abgeschlossene Workflows
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -282,9 +284,9 @@ export default async function BLReviewPage() {
           <CardContent className="pt-6">
             <div className="text-center py-10">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">Keine Pre-Qualifications zugewiesen</h3>
+              <h3 className="mt-4 text-lg font-semibold">Keine Leads zugewiesen</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Es wurden noch keine Pre-Qualifications an Ihren Bereich weitergeleitet.
+                Es wurden noch keine Leads an Ihren Bereich weitergeleitet.
               </p>
             </div>
           </CardContent>
@@ -300,7 +302,7 @@ function StatusBadge({ status }: { status: string }) {
     { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
   > = {
     routed: { label: 'Weitergeleitet', variant: 'default' },
-    full_scanning: { label: 'Deep Analysis', variant: 'default' },
+    audit_scanning: { label: 'Pitch Scan', variant: 'default' },
     bl_reviewing: { label: 'In Prüfung', variant: 'default' },
     team_assigned: { label: 'Team zugewiesen', variant: 'secondary' },
     notified: { label: 'Benachrichtigt', variant: 'outline' },

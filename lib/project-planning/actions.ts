@@ -86,12 +86,16 @@ export async function triggerProjectPlanning(bidId: string): Promise<GeneratePro
     }
   }
 
-  // Get technologies from quick scan
+  // Get technologies from lead scan
   let technologies: string[] = [];
-  if (bid.quickScanResults) {
+  if (bid.qualificationScanResults) {
     try {
-      const quickScan = JSON.parse(bid.quickScanResults);
-      technologies = [quickScan.cms, quickScan.framework, quickScan.backend].filter(Boolean);
+      const qualificationScan = JSON.parse(bid.qualificationScanResults);
+      technologies = [
+        qualificationScan.cms,
+        qualificationScan.framework,
+        qualificationScan.backend,
+      ].filter(Boolean);
     } catch {
       // Continue without technologies
     }

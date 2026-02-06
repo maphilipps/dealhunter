@@ -262,13 +262,16 @@ export async function runExtractionAgentNative(
     if (headerFields.projectName) {
       logActivity('Header-Scan', `Projekt gefunden: ${headerFields.projectName}`);
     }
-    logActivity('Header-Scan', `Sprache: ${headerFields.language === 'en' ? 'Englisch' : 'Deutsch'}`);
+    logActivity(
+      'Header-Scan',
+      `Sprache: ${headerFields.language === 'en' ? 'Englisch' : 'Deutsch'}`
+    );
 
     // Step 1: Embed the raw text into RAG
     logActivity('Embedding', 'Erstelle Dokument-Embeddings für semantische Suche...');
     const embedResult = await embedRawText(input.preQualificationId, input.rawText);
 
-    // If the pre-qualification was deleted mid-run, skip RAG instead of crashing the job.
+    // If the qualification was deleted mid-run, skip RAG instead of crashing the job.
     if (!embedResult.success && !embedResult.skipped) {
       throw new Error(`Embedding failed: ${embedResult.error}`);
     }
@@ -310,10 +313,7 @@ export async function runExtractionAgentNative(
       description: 'Execute a registered tool by name',
       inputSchema: z.object({
         name: z.string().describe('Tool name (e.g., prequal.query, prequal.set)'),
-        input: z
-          .object({})
-          .passthrough()
-          .describe('Tool input parameters'),
+        input: z.object({}).passthrough().describe('Tool input parameters'),
       }),
       execute: async ({ name, input: toolInput }) => {
         if (name === 'prequal.query') {
@@ -341,7 +341,7 @@ export async function runExtractionAgentNative(
     const completeExtraction = tool({
       description: 'Finalize the extraction after all fields are set',
       inputSchema: completionSchema,
-      execute: async (payload) => {
+      execute: async payload => {
         logActivity('Complete', `Extracted ${payload.fieldsExtracted.length} fields`);
         return { success: true, payload };
       },
@@ -349,7 +349,10 @@ export async function runExtractionAgentNative(
 
     // Step 5: Create and run the agent
     const prePopulatedFields = Object.keys(initialData).filter(
-      (k) => k !== 'technologies' && k !== 'keyRequirements' && initialData[k as keyof typeof initialData]
+      k =>
+        k !== 'technologies' &&
+        k !== 'keyRequirements' &&
+        initialData[k as keyof typeof initialData]
     );
 
     const systemPrompt = buildSystemPrompt(input.inputType, input.metadata, {
@@ -369,11 +372,11 @@ export async function runExtractionAgentNative(
     // Build initial prompt with pre-populated fields info
     const prePopulatedInfo =
       prePopulatedFields.length > 0
-        ? `\n\nBereits aus Header extrahiert:\n${prePopulatedFields.map((f) => `- ${f}: ${JSON.stringify(initialData[f as keyof typeof initialData])}`).join('\n')}`
+        ? `\n\nBereits aus Header extrahiert:\n${prePopulatedFields.map(f => `- ${f}: ${JSON.stringify(initialData[f as keyof typeof initialData])}`).join('\n')}`
         : '';
 
     const prompt = `
-Pre-Qualification ID: ${input.preQualificationId}
+Qualification ID: ${input.preQualificationId}
 Dokument-Typ: ${input.inputType}
 Dokument-Sprache: ${headerFields.language === 'en' ? 'Englisch' : 'Deutsch'}
 ${prePopulatedInfo}
@@ -387,8 +390,8 @@ Nutze die Tools um alle relevanten Felder zu extrahieren.
 
     // Step 6: Get final extraction result
     const completionCall = result.steps
-      .flatMap((step) => step.toolCalls)
-      .find((call) => call.toolName === 'completeExtraction');
+      .flatMap(step => step.toolCalls)
+      .find(call => call.toolName === 'completeExtraction');
 
     // Call prequal.complete to get validated requirements
     const completeResult = await registry.execute<{ requirements: ExtractedRequirements }>(
@@ -423,7 +426,7 @@ Nutze die Tools um alle relevanten Felder zu extrahieren.
       input.preQualificationId,
       'extract',
       requirements as unknown as Record<string, unknown>
-    ).catch((err) => {
+    ).catch(err => {
       console.error('Failed to embed extraction results:', err);
     });
 
@@ -433,7 +436,8 @@ Nutze die Tools um alle relevanten Felder zu extrahieren.
     if (requirements.projectGoal) foundItems.push('Projektziel');
     if (requirements.projectName) foundItems.push('Projektname');
     if (requirements.projectDescription) foundItems.push('Beschreibung');
-    if (requirements.technologies?.length) foundItems.push(`${requirements.technologies.length} Technologien`);
+    if (requirements.technologies?.length)
+      foundItems.push(`${requirements.technologies.length} Technologien`);
     if (requirements.budgetRange) foundItems.push('Budget');
     if (requirements.contacts?.length) foundItems.push(`${requirements.contacts.length} Kontakte`);
     if (requirements.submissionDeadline) foundItems.push('Abgabefrist');

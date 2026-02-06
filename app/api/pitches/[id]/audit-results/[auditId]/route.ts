@@ -5,7 +5,7 @@ import { createId } from '@paralleldrive/cuid2';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches, users, pitchAuditResults } from '@/lib/db/schema';
+import { pitches, users, pitchScanResults } from '@/lib/db/schema';
 
 // Next.js Route Segment Config
 export const runtime = 'nodejs';
@@ -92,8 +92,8 @@ export async function GET(
 
     const [auditResult] = await db
       .select()
-      .from(pitchAuditResults)
-      .where(and(eq(pitchAuditResults.id, auditId), eq(pitchAuditResults.pitchId, pitchId)));
+      .from(pitchScanResults)
+      .where(and(eq(pitchScanResults.id, auditId), eq(pitchScanResults.pitchId, pitchId)));
 
     if (!auditResult) {
       return NextResponse.json({ error: 'Audit result not found' }, { status: 404 });
@@ -137,8 +137,8 @@ export async function PATCH(
     // Check audit result exists
     const [existing] = await db
       .select()
-      .from(pitchAuditResults)
-      .where(and(eq(pitchAuditResults.id, auditId), eq(pitchAuditResults.pitchId, pitchId)));
+      .from(pitchScanResults)
+      .where(and(eq(pitchScanResults.id, auditId), eq(pitchScanResults.pitchId, pitchId)));
 
     if (!existing) {
       return NextResponse.json({ error: 'Audit result not found' }, { status: 404 });
@@ -184,9 +184,9 @@ export async function PATCH(
     }
 
     const [updated] = await db
-      .update(pitchAuditResults)
+      .update(pitchScanResults)
       .set(updateData)
-      .where(and(eq(pitchAuditResults.id, auditId), eq(pitchAuditResults.pitchId, pitchId)))
+      .where(and(eq(pitchScanResults.id, auditId), eq(pitchScanResults.pitchId, pitchId)))
       .returning();
 
     return NextResponse.json({ success: true, auditResult: updated });
@@ -227,16 +227,16 @@ export async function DELETE(
     // Check audit result exists
     const [existing] = await db
       .select()
-      .from(pitchAuditResults)
-      .where(and(eq(pitchAuditResults.id, auditId), eq(pitchAuditResults.pitchId, pitchId)));
+      .from(pitchScanResults)
+      .where(and(eq(pitchScanResults.id, auditId), eq(pitchScanResults.pitchId, pitchId)));
 
     if (!existing) {
       return NextResponse.json({ error: 'Audit result not found' }, { status: 404 });
     }
 
     await db
-      .delete(pitchAuditResults)
-      .where(and(eq(pitchAuditResults.id, auditId), eq(pitchAuditResults.pitchId, pitchId)));
+      .delete(pitchScanResults)
+      .where(and(eq(pitchScanResults.id, auditId), eq(pitchScanResults.pitchId, pitchId)));
 
     return NextResponse.json({ success: true });
   } catch (error) {

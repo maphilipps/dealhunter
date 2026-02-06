@@ -11,7 +11,7 @@ import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
 
 export interface LegalAgentInput {
   extractedRequirements: any;
-  quickScanResults?: any;
+  qualificationScanResults?: any;
   useWebSearch?: boolean;
   level?: 'quick' | 'full';
 }
@@ -48,9 +48,9 @@ export async function runLegalQuickCheck(input: LegalAgentInput): Promise<LegalQ
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${
-  input.quickScanResults
-    ? `## Quick Scan Ergebnisse
-${JSON.stringify(input.quickScanResults, null, 2)}`
+  input.qualificationScanResults
+    ? `## Qualification Scan Ergebnisse
+${JSON.stringify(input.qualificationScanResults, null, 2)}`
     : ''
 }
 
@@ -135,7 +135,7 @@ export async function runLegalAgent(input: LegalAgentInput): Promise<LegalAssess
 
     try {
       const contractType = input.extractedRequirements?.contractType;
-      const industry = input.quickScanResults?.companyIntelligence?.basicInfo?.industry;
+      const industry = input.qualificationScanResults?.companyIntelligence?.basicInfo?.industry;
 
       if (contractType && contractType.toLowerCase().includes('evb')) {
         const evbSearch = await intelligentTools.webSearch(
@@ -185,9 +185,9 @@ export async function runLegalAgent(input: LegalAgentInput): Promise<LegalAssess
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${
-  input.quickScanResults
-    ? `## Quick Scan Ergebnisse
-${JSON.stringify(input.quickScanResults, null, 2)}`
+  input.qualificationScanResults
+    ? `## Qualification Scan Ergebnisse
+${JSON.stringify(input.qualificationScanResults, null, 2)}`
     : ''
 }
 ${contractInsights}

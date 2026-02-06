@@ -9,7 +9,7 @@ import {
   accounts,
   preQualifications,
   pitches,
-  quickScans,
+  leadScans,
 } from '../lib/db/schema';
 import { embedAgentOutput } from '../lib/rag/embedding-service';
 
@@ -219,8 +219,8 @@ async function seedMassiveData() {
   }
   console.log(`  ✓ ${createdAccounts.length} Accounts created\n`);
 
-  // 4. RFPs + Quick Scans erstellen (30+)
-  console.log('📝 Creating 30+ RFPs with Quick Scans...');
+  // 4. RFPs + Qualification Scans erstellen (30+)
+  console.log('📝 Creating 30+ RFPs with Qualification Scans...');
   const createdRFPs: any[] = [];
 
   let rfpCount = 0;
@@ -243,7 +243,7 @@ async function seedMassiveData() {
       const confidence = tech.confidence + Math.floor((Math.random() - 0.5) * 20);
       const decision = confidence > 75 ? 'bid' : confidence < 60 ? 'no_bid' : 'pending';
 
-      const quickScanData = {
+      const qualificationScanData = {
         cms: tech.cms,
         framework: tech.framework,
         hosting: tech.hosting,
@@ -298,13 +298,13 @@ async function seedMassiveData() {
           accountId: account.id,
           websiteUrl: account.website,
           assignedBusinessUnitId: tech.bu === 'PHP' ? phpBU.id : wemBU.id,
-          quickScanResults: JSON.stringify(quickScanData),
+          qualificationScanResults: JSON.stringify(qualificationScanData),
         })
         .returning();
 
-      // Create Quick Scan
-      const [quickScan] = await db
-        .insert(quickScans)
+      // Create Qualification Scan
+      const [qualificationScan] = await db
+        .insert(leadScans)
         .values({
           preQualificationId: preQualification.id,
           websiteUrl: account.website || 'https://example.com',
@@ -312,25 +312,25 @@ async function seedMassiveData() {
           cms: tech.cms,
           framework: tech.framework,
           hosting: tech.hosting,
-          techStack: JSON.stringify(quickScanData.techStack),
-          pageCount: quickScanData.pageCount,
+          techStack: JSON.stringify(qualificationScanData.techStack),
+          pageCount: qualificationScanData.pageCount,
           recommendedBusinessUnit: tech.bu,
           confidence,
-          reasoning: quickScanData.reasoning,
-          timeline: JSON.stringify(quickScanData.timeline),
+          reasoning: qualificationScanData.reasoning,
+          timeline: JSON.stringify(qualificationScanData.timeline),
           timelineGeneratedAt: new Date(),
           startedAt: new Date(Date.now() - 1000 * 60 * 60), // 1h ago
           completedAt: new Date(Date.now() - 1000 * 60 * 30), // 30min ago
         })
         .returning();
 
-      // Update RFP with Quick Scan ID
+      // Update RFP with Qualification Scan ID
       await db
         .update(preQualifications)
-        .set({ quickScanId: quickScan.id })
+        .set({ qualificationScanId: qualificationScan.id })
         .where(eq(preQualifications.id, preQualification.id));
 
-      createdRFPs.push({ preQualification, quickScan, decision, bu: tech.bu });
+      createdRFPs.push({ preQualification, qualificationScan, decision, bu: tech.bu });
       rfpCount++;
 
       if (rfpCount % 10 === 0) {
@@ -339,14 +339,14 @@ async function seedMassiveData() {
     }
   }
 
-  console.log(`  ✓ ${createdRFPs.length} RFPs + Quick Scans created\n`);
+  console.log(`  ✓ ${createdRFPs.length} RFPs + Qualification Scans created\n`);
 
   // 5. Leads erstellen (aus RFPs mit decision: 'bid')
   console.log('🎯 Creating Leads from BID RFPs...');
   const bidRFPs = createdRFPs.filter(r => r.decision === 'bid');
   const createdLeads: any[] = [];
 
-  for (const { preQualification, quickScan, bu } of bidRFPs) {
+  for (const { preQualification, qualificationScan, bu } of bidRFPs) {
     const requirements = JSON.parse(preQualification.extractedRequirements || '{}');
 
     const blVote = Math.random() > 0.2 ? 'BID' : 'NO-BID'; // 80% BID rate
@@ -373,7 +373,7 @@ async function seedMassiveData() {
         projectDescription: requirements.description,
         budget: requirements.budget,
         requirements: JSON.stringify(requirements.requirements),
-        quickScanId: quickScan.id,
+        qualificationScanId: qualificationScan.id,
         businessUnitId: bu === 'PHP' ? phpBU.id : wemBU.id,
         blVote: blVote as any,
         blVotedAt: new Date(),
@@ -399,19 +399,19 @@ async function seedMassiveData() {
     console.log('🧠 Generating RAG Embeddings for Agent Outputs...');
     let embeddingCount = 0;
 
-    for (const { preQualification, quickScan } of createdRFPs) {
+    for (const { preQualification, qualificationScan } of createdRFPs) {
       try {
-        // Embed Quick Scan Results
-        await embedAgentOutput(preQualification.id, 'quick_scan', {
-          cms: quickScan.cms,
-          framework: quickScan.framework,
-          hosting: quickScan.hosting,
-          techStack: JSON.parse(quickScan.techStack || '[]'),
-          pageCount: quickScan.pageCount,
-          recommendedBusinessUnit: quickScan.recommendedBusinessUnit,
-          confidence: quickScan.confidence,
-          reasoning: quickScan.reasoning,
-          timeline: JSON.parse(quickScan.timeline || '{}'),
+        // Embed Qualification Scan Results
+        await embedAgentOutput(preQualification.id, 'lead_scan', {
+          cms: qualificationScan.cms,
+          framework: qualificationScan.framework,
+          hosting: qualificationScan.hosting,
+          techStack: JSON.parse(qualificationScan.techStack || '[]'),
+          pageCount: qualificationScan.pageCount,
+          recommendedBusinessUnit: qualificationScan.recommendedBusinessUnit,
+          confidence: qualificationScan.confidence,
+          reasoning: qualificationScan.reasoning,
+          timeline: JSON.parse(qualificationScan.timeline || '{}'),
         });
 
         // Embed RFP Requirements
@@ -441,7 +441,7 @@ async function seedMassiveData() {
   console.log('✨ Massive Data Seed completed!\n');
   console.log('📊 Summary:');
   console.log(`  - ${createdAccounts.length} Accounts`);
-  console.log(`  - ${createdRFPs.length} RFPs with Quick Scans`);
+  console.log(`  - ${createdRFPs.length} RFPs with Qualification Scans`);
   console.log(`  - ${createdLeads.length} Leads (from BID RFPs)`);
   if (hasApiKey) {
     console.log(`  - RAG Embeddings created ✓`);
@@ -453,7 +453,7 @@ async function seedMassiveData() {
   console.log('  BL PHP: bl-php@adesso.de / test123');
   console.log('  BL WEM: bl-wem@adesso.de / test123');
   console.log('\n📍 URLs:');
-  console.log('  Pre-Qualifications: http://localhost:3000/pre-qualifications');
+  console.log('  Pre-Qualifications: http://localhost:3000/qualifications');
   console.log('  Leads: http://localhost:3000/leads');
 }
 

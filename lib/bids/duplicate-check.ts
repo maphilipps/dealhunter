@@ -153,11 +153,11 @@ function extractUrls(requirements: ExtractedRequirements): string[] {
 }
 
 /**
- * Main function to check for duplicate Pre-Qualifications with semantic similarity
+ * Main function to check for duplicate Qualifications with semantic similarity
  *
  * @param extractedRequirements - The extracted requirements to check
  * @param accountId - Optional account ID for exact matching
- * @param excludeRfpId - Pre-Qualification ID to exclude from results (own ID for updates)
+ * @param excludeRfpId - Qualification ID to exclude from results (own ID for updates)
  * @param currentEmbedding - Optional pre-generated embedding (to avoid regenerating)
  * @returns DuplicateCheckResult with exact and similar matches
  */
@@ -195,7 +195,7 @@ export async function checkForDuplicates(
     conditions.push(ne(preQualifications.id, excludeRfpId));
   }
 
-  // Only check Pre-Qualifications that have extracted requirements
+  // Only check Qualifications that have extracted requirements
   conditions.push(isNotNull(preQualifications.extractedRequirements));
 
   // Fetch potential duplicates (including embeddings)
@@ -211,7 +211,7 @@ export async function checkForDuplicates(
     .from(preQualifications)
     .where(conditions.length > 0 ? and(...conditions) : undefined);
 
-  // Check each existing Pre-Qualification for duplicates
+  // Check each existing Qualification for duplicates
   for (const existing of existingRfps) {
     if (!existing.extractedRequirements) continue;
 

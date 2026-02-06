@@ -105,7 +105,7 @@ export function ProjectPlanCard({ leadId }: ProjectPlanCardProps) {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Keine Projektplandaten verfügbar. Führen Sie zuerst den Deep Scan durch.
+            Keine Projektplandaten verfügbar. Führen Sie zuerst den Pitch Scan durch.
           </p>
         </CardContent>
       </Card>

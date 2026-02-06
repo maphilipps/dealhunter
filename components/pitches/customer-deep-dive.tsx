@@ -73,7 +73,7 @@ interface MigrationComplexityPreview {
   factors?: string[];
 }
 
-interface QuickScanData {
+interface QualificationScanData {
   id: string;
   status: string;
   websiteUrl: string;
@@ -91,7 +91,7 @@ interface QuickScanData {
 }
 
 interface ApiResponse {
-  quickScan: QuickScanData | null;
+  qualificationScan: QualificationScanData | null;
   rfpExtraction: Record<string, unknown> | null;
 }
 
@@ -111,14 +111,14 @@ const fetcher = async (url: string): Promise<ApiResponse> => {
 
 export interface CustomerDeepDiveProps {
   leadId: string;
-  quickScanId?: string | null;
+  qualificationScanId?: string | null;
 }
 
-export function CustomerDeepDive({ leadId, quickScanId }: CustomerDeepDiveProps) {
+export function CustomerDeepDive({ leadId, qualificationScanId }: CustomerDeepDiveProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
   const { data, error, isLoading, mutate } = useSWR<ApiResponse>(
-    quickScanId ? `/api/pitches/${leadId}/quick-scan-data` : null,
+    qualificationScanId ? `/api/pitches/${leadId}/qualification-scan-data` : null,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -126,8 +126,8 @@ export function CustomerDeepDive({ leadId, quickScanId }: CustomerDeepDiveProps)
     }
   );
 
-  // No quickScanId - show placeholder
-  if (!quickScanId) {
+  // No qualificationScanId - show placeholder
+  if (!qualificationScanId) {
     return (
       <Card className="border-dashed">
         <CardHeader className="pb-3">
@@ -166,16 +166,16 @@ export function CustomerDeepDive({ leadId, quickScanId }: CustomerDeepDiveProps)
     );
   }
 
-  const quickScan = data?.quickScan;
+  const qualificationScan = data?.qualificationScan;
 
-  if (!quickScan) {
+  if (!qualificationScan) {
     return null;
   }
 
-  const companyIntel = quickScan.companyIntelligence;
-  const techStack = quickScan.techStack;
-  const decisionMakers = quickScan.decisionMakers;
-  const migrationComplexity = quickScan.migrationComplexity;
+  const companyIntel = qualificationScan.companyIntelligence;
+  const techStack = qualificationScan.techStack;
+  const decisionMakers = qualificationScan.decisionMakers;
+  const migrationComplexity = qualificationScan.migrationComplexity;
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
@@ -186,7 +186,7 @@ export function CustomerDeepDive({ leadId, quickScanId }: CustomerDeepDiveProps)
               <div className="flex items-center gap-2">
                 <Building className="h-5 w-5 text-primary" />
                 <CardTitle className="text-lg">Customer Deep Dive</CardTitle>
-                {quickScan.status === 'completed' && (
+                {qualificationScan.status === 'completed' && (
                   <Badge variant="secondary" className="ml-2">
                     Qualification abgeschlossen
                   </Badge>
@@ -215,13 +215,13 @@ export function CustomerDeepDive({ leadId, quickScanId }: CustomerDeepDiveProps)
 
             {/* IT Landscape Section */}
             <ITLandscapeSection
-              cms={quickScan.cms}
-              framework={quickScan.framework}
-              hosting={quickScan.hosting}
-              pageCount={quickScan.pageCount}
+              cms={qualificationScan.cms}
+              framework={qualificationScan.framework}
+              hosting={qualificationScan.hosting}
+              pageCount={qualificationScan.pageCount}
               techStack={techStack}
-              features={quickScan.features}
-              integrations={quickScan.integrations}
+              features={qualificationScan.features}
+              integrations={qualificationScan.integrations}
             />
 
             {/* Decision Makers Section */}
@@ -233,10 +233,10 @@ export function CustomerDeepDive({ leadId, quickScanId }: CustomerDeepDiveProps)
             {migrationComplexity && <MigrationComplexitySection complexity={migrationComplexity} />}
 
             {/* Last Updated */}
-            {quickScan.completedAt && (
+            {qualificationScan.completedAt && (
               <p className="text-xs text-muted-foreground text-right">
                 Letzte Aktualisierung:{' '}
-                {new Date(quickScan.completedAt).toLocaleDateString('de-DE', {
+                {new Date(qualificationScan.completedAt).toLocaleDateString('de-DE', {
                   day: '2-digit',
                   month: '2-digit',
                   year: 'numeric',

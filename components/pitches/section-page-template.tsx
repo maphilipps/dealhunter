@@ -33,7 +33,7 @@ export function SectionPageTemplate({
       description={description}
       enableVisualizationGeneration
       noDataTitle="Keine Daten verfügbar"
-      noDataDescription="Für diese Sektion sind noch keine Analyse-Ergebnisse vorhanden. Starte einen Quick Scan oder Deep Scan, um Daten zu generieren."
+      noDataDescription="Für diese Sektion sind noch keine Analyse-Ergebnisse vorhanden. Starte einen Qualification Scan oder Pitch Scan, um Daten zu generieren."
     >
       {children}
     </GenericSectionPageTemplate>

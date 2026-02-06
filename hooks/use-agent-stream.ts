@@ -76,7 +76,7 @@ function processEvent(
       confidence: data.confidence,
     };
   } else if (event.type === AgentEventType.STEP_START && event.data) {
-    // QuickScan 2.0: Step Start Event
+    // QualificationScan 2.0: Step Start Event
     const data = event.data as StepStartData;
     newStepStates[data.stepId] = {
       status: 'running',
@@ -85,7 +85,7 @@ function processEvent(
       stepName: data.stepName,
     };
   } else if (event.type === AgentEventType.STEP_COMPLETE && event.data) {
-    // QuickScan 2.0: Step Complete Event
+    // QualificationScan 2.0: Step Complete Event
     const data = event.data as StepCompleteData;
     newStepStates[data.stepId] = {
       status: data.success ? 'complete' : 'error',
@@ -95,7 +95,7 @@ function processEvent(
       error: data.error,
     };
   } else if (event.type === AgentEventType.WORKFLOW_PROGRESS && event.data) {
-    // QuickScan 2.0: Workflow Progress Event
+    // QualificationScan 2.0: Workflow Progress Event
     const data = event.data as WorkflowProgressData;
     newWorkflowProgress = {
       phase: data.phase,

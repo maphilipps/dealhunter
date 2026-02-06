@@ -15,7 +15,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { pitches, quickScans, dealEmbeddings } from '@/lib/db/schema';
+import { pitches, leadScans, dealEmbeddings } from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -85,7 +85,7 @@ export type HostingAnalysis = z.infer<typeof HostingAnalysisSchema>;
  * Run hosting agent
  *
  * @param leadId - Lead ID
- * @param preQualificationId - Pre-Qualification ID
+ * @param preQualificationId - Qualification ID
  * @returns Hosting analysis with recommendations
  */
 export async function runHostingAgent(
@@ -97,7 +97,7 @@ export async function runHostingAgent(
     .select({
       customerName: pitches.customerName,
       websiteUrl: pitches.websiteUrl,
-      quickScanId: pitches.quickScanId,
+      qualificationScanId: pitches.qualificationScanId,
     })
     .from(pitches)
     .where(eq(pitches.id, leadId))
@@ -108,27 +108,27 @@ export async function runHostingAgent(
   }
 
   // 2. Fetch Quick Scan data
-  let quickScanData: {
+  let qualificationScanData: {
     hosting: string | null;
     techStack: unknown;
     pageCount: number | null;
     performanceIndicators: unknown;
   } | null = null;
 
-  if (leadData.quickScanId) {
+  if (leadData.qualificationScanId) {
     const [qs] = await db
       .select({
-        hosting: quickScans.hosting,
-        techStack: quickScans.techStack,
-        pageCount: quickScans.pageCount,
-        performanceIndicators: quickScans.performanceIndicators,
+        hosting: leadScans.hosting,
+        techStack: leadScans.techStack,
+        pageCount: leadScans.pageCount,
+        performanceIndicators: leadScans.performanceIndicators,
       })
-      .from(quickScans)
-      .where(eq(quickScans.id, leadData.quickScanId))
+      .from(leadScans)
+      .where(eq(leadScans.id, leadData.qualificationScanId))
       .limit(1);
 
     if (qs) {
-      quickScanData = {
+      qualificationScanData = {
         hosting: qs.hosting,
         techStack: safeParseJson(qs.techStack),
         pageCount: qs.pageCount,
@@ -159,10 +159,10 @@ LEAD DATEN:
 - Website: ${leadData.websiteUrl || 'Nicht bekannt'}
 
 QUICK SCAN DATEN:
-- Erkanntes Hosting: ${quickScanData?.hosting || 'Unbekannt'}
-- Tech Stack: ${JSON.stringify(quickScanData?.techStack, null, 2)}
-- Seitenzahl: ${quickScanData?.pageCount || 'Unbekannt'}
-- Performance: ${JSON.stringify(quickScanData?.performanceIndicators, null, 2)}
+- Erkanntes Hosting: ${qualificationScanData?.hosting || 'Unbekannt'}
+- Tech Stack: ${JSON.stringify(qualificationScanData?.techStack, null, 2)}
+- Seitenzahl: ${qualificationScanData?.pageCount || 'Unbekannt'}
+- Performance: ${JSON.stringify(qualificationScanData?.performanceIndicators, null, 2)}
 
 Erstelle eine Hosting-Analyse mit:
 1. Aktuelle Infrastruktur Bewertung

@@ -158,7 +158,7 @@ export async function performWebResearch(query: WebResearchQuery): Promise<WebRe
 
   // 1. Check rate limit
   if (!checkRateLimit(preQualificationId)) {
-    console.warn(`[WEB-RESEARCH] Rate limit exceeded for Pre-Qualification ${preQualificationId}`);
+    console.warn(`[WEB-RESEARCH] Rate limit exceeded for Qualification ${preQualificationId}`);
     return {
       success: false,
       results: [],
@@ -271,7 +271,7 @@ export async function performWebResearch(query: WebResearchQuery): Promise<WebRe
 }
 
 /**
- * Clear rate limit for an Pre-Qualification (useful for testing)
+ * Clear rate limit for a Qualification (useful for testing)
  */
 export function clearRateLimit(preQualificationId: string): void {
   rateLimitMap.delete(preQualificationId);

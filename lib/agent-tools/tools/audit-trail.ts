@@ -218,9 +218,10 @@ const getByEntityInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use audittrail.get_by_entity instead */
   name: 'audittrail.getByEntity',
   description:
-    'Get the audit trail history for a specific entity (e.g., a pre_qualification). Returns entries in reverse chronological order. Admin only.',
+    '[DEPRECATED: use audittrail.get_by_entity] Get the audit trail history for a specific entity (e.g., a pre_qualification). Returns entries in reverse chronological order. Admin only.',
   category: 'audit-trail',
   inputSchema: getByEntityInputSchema,
   async execute(input, context: ToolContext) {
@@ -279,9 +280,10 @@ const getByUserInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use audittrail.get_by_user instead */
   name: 'audittrail.getByUser',
   description:
-    'Get all audit trail entries for actions performed by a specific user. Useful for user activity tracking. Admin only.',
+    '[DEPRECATED: use audittrail.get_by_user] Get all audit trail entries for actions performed by a specific user. Useful for user activity tracking. Admin only.',
   category: 'audit-trail',
   inputSchema: getByUserInputSchema,
   async execute(input, context: ToolContext) {
@@ -336,5 +338,31 @@ registry.register({
         },
       },
     };
+  },
+});
+
+// ============================================================================
+// Snake_case aliases (canonical names per CLAUDE.md conventions)
+// ============================================================================
+
+registry.register({
+  name: 'audittrail.get_by_entity',
+  description:
+    'Get the audit trail history for a specific entity (e.g., a pre_qualification). Returns entries in reverse chronological order. Admin only.',
+  category: 'audit-trail',
+  inputSchema: getByEntityInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('audittrail.getByEntity', input, context);
+  },
+});
+
+registry.register({
+  name: 'audittrail.get_by_user',
+  description:
+    'Get all audit trail entries for actions performed by a specific user. Useful for user activity tracking. Admin only.',
+  category: 'audit-trail',
+  inputSchema: getByUserInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('audittrail.getByUser', input, context);
   },
 });

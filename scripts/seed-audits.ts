@@ -1,9 +1,9 @@
 /**
- * Seed Pre-Qualifications and Qualifications from Audit Folders
+ * Seed Qualifications from Audit Folders
  *
  * This script:
- * 1. Clears existing pitches and pre-qualifications
- * 2. Creates pre-qualifications from audit folders
+ * 1. Clears existing pitches and qualifications
+ * 2. Creates qualifications from audit folders
  * 3. Routes all to PHP business line
  * 4. Imports all MD and JSON files as RAG embeddings
  *
@@ -26,7 +26,7 @@ import {
   pitchdecks,
   ptEstimations,
   pitchSectionData,
-  quickScans,
+  leadScans,
   rawChunks,
   referenceMatches,
   subjectiveAssessments,
@@ -280,14 +280,14 @@ async function seedAudits() {
   await db.delete(subjectiveAssessments);
   await db.delete(teamAssignments);
 
-  // Clear pitches BEFORE quick_scans
+  // Clear pitches BEFORE lead_scans
   await db.delete(pitches);
-  await db.delete(quickScans);
+  await db.delete(leadScans);
   await db.delete(preQualifications);
 
   console.log('✅ All tables cleared\n');
 
-  // Create pre-qualifications and pitches for each audit
+  // Create qualifications and pitches for each audit
   const auditsDir = join(process.cwd(), 'audits');
   let totalChunks = 0;
 
@@ -314,7 +314,7 @@ async function seedAudits() {
       rawInput = readFileSync(readmePath, 'utf-8');
     }
 
-    // Create pre-qualification
+    // Create qualification
     const [preQual] = await db
       .insert(preQualifications)
       .values({
@@ -335,7 +335,7 @@ async function seedAudits() {
       })
       .returning();
 
-    console.log(`   ✅ Created pre-qualification: ${preQual.id}`);
+    console.log(`   ✅ Created qualification: ${preQual.id}`);
 
     // Create qualification (routed to PHP)
     const [qual] = await db

@@ -13,7 +13,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get all Pre-Qualifications for aggregation
+    // Get all Qualifications for aggregation
     const allRfps = await db
       .select({
         id: preQualifications.id,
@@ -63,7 +63,7 @@ export async function GET(_request: NextRequest) {
     // Status funnel
     const draftCount = allRfps.filter(r => r.status === 'draft').length;
     const evaluatingCount = allRfps.filter(r =>
-      ['quick_scanning', 'evaluating', 'bit_pending'].includes(r.status)
+      ['qualification_scanning', 'evaluating', 'bit_pending'].includes(r.status)
     ).length;
     const decisionMadeCount = allRfps.filter(r => r.status === 'decision_made').length;
     const routedCount = allRfps.filter(r => ['routed', 'bl_reviewing'].includes(r.status)).length;

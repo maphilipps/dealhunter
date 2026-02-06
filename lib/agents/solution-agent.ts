@@ -29,7 +29,7 @@ export interface SolutionInput {
   leadId?: string; // Optional: for RAG queries scoped to Lead
   customerName?: string;
   projectDescription?: string;
-  requirements?: string[]; // Key requirements from Pre-Qualification
+  requirements?: string[]; // Key requirements from Qualification
 }
 
 export interface OutlineSection {

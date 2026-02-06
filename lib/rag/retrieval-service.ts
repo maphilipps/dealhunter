@@ -68,7 +68,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
  *
  * Strategy:
  * 1. Generate embedding for query
- * 2. Fetch all chunks for this pre-qualification
+ * 2. Fetch all chunks for this qualification
  * 3. Calculate cosine similarity for each chunk
  * 4. Filter by threshold (>0.7)
  * 5. Optional tech stack filter
@@ -85,7 +85,7 @@ export async function queryRAG(query: RAGQuery): Promise<RAGResult[]> {
       return [];
     }
 
-    // 2. Fetch all chunks for this pre-qualification
+    // 2. Fetch all chunks for this qualification
     const chunks = await db
       .select()
       .from(dealEmbeddings)
@@ -147,7 +147,7 @@ export async function queryRAG(query: RAGQuery): Promise<RAGResult[]> {
 }
 
 /**
- * Get embedding status for a pre-qualification
+ * Get embedding status for a qualification
  * Useful for debugging which agents have embedded data
  */
 export async function getEmbeddingStatus(
@@ -162,7 +162,7 @@ export async function getEmbeddingStatus(
 
   return {
     extract: agentNames.includes('extract'),
-    quick_scan: agentNames.includes('quick_scan'),
+    lead_scan: agentNames.includes('lead_scan'),
     tech_agent: agentNames.includes('tech_agent'),
     commercial_agent: agentNames.includes('commercial_agent'),
     risk_agent: agentNames.includes('risk_agent'),

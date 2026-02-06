@@ -29,7 +29,7 @@ export function WorkflowStatus({ preQualification }: WorkflowStatusProps) {
       statuses: ['duplicate_checking', 'duplicate_warning'],
       icon: 'search',
     },
-    { name: 'Qualification', statuses: ['quick_scanning'], icon: 'scan' },
+    { name: 'Qualification Scan', statuses: ['qualification_scanning'], icon: 'scan' },
     { name: 'BID/NO-BID', statuses: ['bit_pending'], icon: 'decision' },
     { name: 'Timeline', statuses: ['timeline_estimating'], icon: 'calendar' },
     { name: 'Routing', statuses: ['decision_made'], icon: 'route' },
@@ -45,7 +45,7 @@ export function WorkflowStatus({ preQualification }: WorkflowStatusProps) {
     reviewing: 'Prüfung erforderlich',
     duplicate_checking: 'Duplikat-Prüfung läuft',
     duplicate_warning: 'Duplikat gefunden',
-    quick_scanning: 'Qualification läuft',
+    qualification_scanning: 'Qualification Scan läuft',
     timeline_estimating: 'Timeline-Schätzung läuft',
     bit_pending: 'BID/NO-BID Entscheidung',
     decision_made: 'Entscheidung getroffen',
@@ -57,7 +57,7 @@ export function WorkflowStatus({ preQualification }: WorkflowStatusProps) {
   const isProcessing = [
     'extracting',
     'duplicate_checking',
-    'quick_scanning',
+    'qualification_scanning',
     'timeline_estimating',
   ].includes(status);
 

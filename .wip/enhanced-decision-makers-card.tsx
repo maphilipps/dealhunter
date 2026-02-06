@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
-import type { DecisionMakersResearch } from '@/lib/quick-scan/schema';
+import type { DecisionMakersResearch } from '@/lib/qualification-scan/schema';
 
 interface Contact {
   name: string;
@@ -16,7 +16,7 @@ interface Contact {
   phone?: string;
   category?: 'decision_maker' | 'influencer' | 'coordinator' | 'unknown';
   confidence?: number;
-  source: 'RFP' | 'QuickScan';
+  source: 'RFP' | 'QualificationScan';
   linkedInUrl?: string;
 }
 
@@ -28,7 +28,7 @@ interface EnhancedDecisionMakersCardProps {
 /**
  * Enhanced Decision Makers Card
  *
- * Kombiniert RFP contacts (aus Ausschreibung) mit QuickScan decisionMakers (Website-Research).
+ * Kombiniert RFP contacts (aus Ausschreibung) mit QualificationScan decisionMakers (Website-Research).
  * Dedupliziert nach Email-Adresse.
  */
 export function EnhancedDecisionMakersCard({
@@ -53,7 +53,7 @@ export function EnhancedDecisionMakersCard({
     });
   }
 
-  // Add QuickScan decisionMakers (only if not already in RFP contacts by email)
+  // Add QualificationScan decisionMakers (only if not already in RFP contacts by email)
   if (quickScanDecisionMakers && quickScanDecisionMakers.decisionMakers.length > 0) {
     quickScanDecisionMakers.decisionMakers.forEach(dm => {
       // Check if already exists in RFP contacts by email
@@ -67,7 +67,7 @@ export function EnhancedDecisionMakersCard({
           role: dm.role,
           email: dm.email,
           linkedInUrl: dm.linkedInUrl,
-          source: 'QuickScan',
+          source: 'QualificationScan',
         });
       } else {
         // Merge LinkedIn URL if available
@@ -94,7 +94,7 @@ export function EnhancedDecisionMakersCard({
 
   // Group by source
   const rfpContactsList = allContacts.filter(c => c.source === 'RFP');
-  const quickScanContactsList = allContacts.filter(c => c.source === 'QuickScan');
+  const quickScanContactsList = allContacts.filter(c => c.source === 'QualificationScan');
 
   // Category Badge Helper
   const getCategoryBadge = (category?: string) => {
@@ -213,7 +213,7 @@ export function EnhancedDecisionMakersCard({
         {/* Separator */}
         {rfpContactsList.length > 0 && quickScanContactsList.length > 0 && <Separator />}
 
-        {/* QuickScan Contacts Section */}
+        {/* QualificationScan Contacts Section */}
         {quickScanContactsList.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -227,7 +227,7 @@ export function EnhancedDecisionMakersCard({
           </div>
         )}
 
-        {/* Research Quality (if available from QuickScan) */}
+        {/* Research Quality (if available from QualificationScan) */}
         {quickScanDecisionMakers?.researchQuality && (
           <>
             <Separator />

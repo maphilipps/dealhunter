@@ -66,26 +66,26 @@ describe('RFP Extraction Flow', () => {
   });
 });
 
-describe('Quick Scan Flow', () => {
+describe('Qualification Scan Flow', () => {
   it('should perform quick scan after extraction', () => {
     const preQualification = factories.preQualification({
       status: 'reviewing',
       extractedRequirements: JSON.stringify(factories.extractedRequirements()),
     });
 
-    const quickScanResults = factories.quickScanResults();
+    const qualificationScanResults = factories.qualificationScanResults();
 
-    expect(quickScanResults.recommendation).toBeDefined();
-    expect(quickScanResults.confidence).toBeGreaterThan(0);
-    expect(quickScanResults.confidence).toBeLessThanOrEqual(1);
-    expect(quickScanResults.techStack).toBeDefined();
-    expect(quickScanResults.estimatedEffort).toBeDefined();
+    expect(qualificationScanResults.recommendation).toBeDefined();
+    expect(qualificationScanResults.confidence).toBeGreaterThan(0);
+    expect(qualificationScanResults.confidence).toBeLessThanOrEqual(1);
+    expect(qualificationScanResults.techStack).toBeDefined();
+    expect(qualificationScanResults.estimatedEffort).toBeDefined();
   });
 
   it('should transition to bit_pending after quick scan', () => {
     const preQualification = factories.preQualification({
-      status: 'quick_scanning',
-      quickScanResults: JSON.stringify(factories.quickScanResults()),
+      status: 'qualification_scanning',
+      qualificationScanResults: JSON.stringify(factories.qualificationScanResults()),
     });
 
     const updatedRfp = {

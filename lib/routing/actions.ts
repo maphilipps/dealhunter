@@ -9,7 +9,7 @@ import { type RouteBusinessUnitInput } from './schemas';
 import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { preQualifications, businessUnits, quickScans } from '@/lib/db/schema';
+import { preQualifications, businessUnits, leadScans } from '@/lib/db/schema';
 import { sendBLAssignmentEmail } from '@/lib/notifications/email';
 
 export interface AssignBusinessUnitInput {
@@ -109,15 +109,15 @@ export async function assignBusinessUnit(
       (extractedReqs.projectDescription as string | undefined) || 'Keine Beschreibung verfügbar';
 
     // DEA-25: Create audit log if this is an override
-    const quickScanRow = bid.quickScanId
+    const qualificationScanRow = bid.qualificationScanId
       ? await db
-          .select({ recommendedBusinessUnit: quickScans.recommendedBusinessUnit })
-          .from(quickScans)
-          .where(eq(quickScans.id, bid.quickScanId))
+          .select({ recommendedBusinessUnit: leadScans.recommendedBusinessUnit })
+          .from(leadScans)
+          .where(eq(leadScans.id, bid.qualificationScanId))
           .limit(1)
           .then(r => r[0] || null)
       : null;
-    const aiRecommendation = quickScanRow?.recommendedBusinessUnit ?? null;
+    const aiRecommendation = qualificationScanRow?.recommendedBusinessUnit ?? null;
 
     if (overrideReason) {
       await createAuditLog({
@@ -251,17 +251,17 @@ export async function getBusinessLineRecommendation(bidId: string) {
       ? (JSON.parse(bid.extractedRequirements) as Record<string, unknown>)
       : {};
 
-    // Parse quick scan results if available (source of truth: quick_scans)
-    const quickScanRow = bid.quickScanId
+    // Parse qualifications scan results if available (source of truth: leadScans)
+    const qualificationScanRow = bid.qualificationScanId
       ? await db
           .select({
-            features: quickScans.features,
-            techStack: quickScans.techStack,
-            integrations: quickScans.integrations,
-            recommendedBusinessUnit: quickScans.recommendedBusinessUnit,
+            features: leadScans.features,
+            techStack: leadScans.techStack,
+            integrations: leadScans.integrations,
+            recommendedBusinessUnit: leadScans.recommendedBusinessUnit,
           })
-          .from(quickScans)
-          .where(eq(quickScans.id, bid.quickScanId))
+          .from(leadScans)
+          .where(eq(leadScans.id, bid.qualificationScanId))
           .limit(1)
           .then(r => r[0] || null)
       : null;
@@ -275,12 +275,12 @@ export async function getBusinessLineRecommendation(bidId: string) {
       }
     };
 
-    const quickScan: Record<string, unknown> = quickScanRow
+    const qualificationScanData: Record<string, unknown> = qualificationScanRow
       ? {
-          features: safeParse(quickScanRow.features),
-          techStack: safeParse(quickScanRow.techStack),
-          integrations: safeParse(quickScanRow.integrations),
-          recommendedBusinessUnit: quickScanRow.recommendedBusinessUnit,
+          features: safeParse(qualificationScanRow.features),
+          techStack: safeParse(qualificationScanRow.techStack),
+          integrations: safeParse(qualificationScanRow.integrations),
+          recommendedBusinessUnit: qualificationScanRow.recommendedBusinessUnit,
         }
       : {};
 
@@ -292,7 +292,7 @@ export async function getBusinessLineRecommendation(bidId: string) {
       websiteUrl: bid.websiteUrl || (extractedReqs.websiteUrl as string | undefined) || undefined,
       industry: extractedReqs.industry as string | undefined,
       technologies:
-        ((quickScan.techStack as Record<string, unknown> | undefined)?.detected as
+        ((qualificationScanData.techStack as Record<string, unknown> | undefined)?.detected as
           | string[]
           | undefined) ||
         (extractedReqs.technologies as string[] | undefined) ||
@@ -335,7 +335,7 @@ export interface ArchiveAsNoBidResult {
 }
 
 /**
- * Archive a Pre-Qualification as NO-BID
+ * Archive a Qualification as NO-BID
  * Sets decision to 'no_bid' and status to 'archived'
  */
 export async function archiveAsNoBid(input: ArchiveAsNoBidInput): Promise<ArchiveAsNoBidResult> {
@@ -350,11 +350,11 @@ export async function archiveAsNoBid(input: ArchiveAsNoBidInput): Promise<Archiv
     if (!preQualificationId || !reason.trim()) {
       return {
         success: false,
-        error: 'Pre-Qualification ID und Begründung sind erforderlich',
+        error: 'Qualification ID und Begründung sind erforderlich',
       };
     }
 
-    // Get pre-qualification
+    // Get qualification
     const [preQual] = await db
       .select()
       .from(preQualifications)
@@ -362,7 +362,7 @@ export async function archiveAsNoBid(input: ArchiveAsNoBidInput): Promise<Archiv
       .limit(1);
 
     if (!preQual) {
-      return { success: false, error: 'Pre-Qualification nicht gefunden' };
+      return { success: false, error: 'Qualification nicht gefunden' };
     }
 
     // Check ownership
@@ -400,8 +400,8 @@ export async function archiveAsNoBid(input: ArchiveAsNoBidInput): Promise<Archiv
       },
     });
 
-    revalidatePath('/pre-qualifications');
-    revalidatePath(`/pre-qualifications/${preQualificationId}`);
+    revalidatePath('/qualifications');
+    revalidatePath(`/qualifications/${preQualificationId}`);
 
     return { success: true };
   } catch (error) {

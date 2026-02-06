@@ -10,33 +10,33 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import type { QuickScan } from '@/lib/db/schema';
+import type { LeadScan } from '@/lib/db/schema';
 import { safeJsonParseOrNull } from '@/lib/utils/parse';
 
 interface BUMatchingTabProps {
   bidId: string;
-  quickScan: QuickScan | null;
+  qualificationScan: LeadScan | null;
   currentBusinessUnitId: string | null;
 }
 
 export function BUMatchingTab({
   bidId: _bidId,
-  quickScan,
+  qualificationScan,
   currentBusinessUnitId: _currentBusinessUnitId,
 }: BUMatchingTabProps) {
   const router = useRouter();
   const [isReassigning, setIsReassigning] = useState(false);
 
-  // Parse quick scan data - techStack contains detected technologies
-  const matchData = quickScan
+  // Parse qualification scan data - techStack contains detected technologies
+  const matchData = qualificationScan
     ? {
-        recommendedBU: quickScan.recommendedBusinessUnit,
-        confidence: quickScan.confidence,
-        reasoning: quickScan.reasoning,
+        recommendedBU: qualificationScan.recommendedBusinessUnit,
+        confidence: qualificationScan.confidence,
+        reasoning: qualificationScan.reasoning,
         // techStack is the JSON field for detected technologies
-        detectedTechnologies: safeJsonParseOrNull<string[]>(quickScan.techStack) ?? [],
-        cms: quickScan.cms,
-        framework: quickScan.framework,
+        detectedTechnologies: safeJsonParseOrNull<string[]>(qualificationScan.techStack) ?? [],
+        cms: qualificationScan.cms,
+        framework: qualificationScan.framework,
       }
     : null;
 
@@ -53,7 +53,7 @@ export function BUMatchingTab({
     }
   };
 
-  if (!quickScan) {
+  if (!qualificationScan) {
     return (
       <Card>
         <CardHeader>

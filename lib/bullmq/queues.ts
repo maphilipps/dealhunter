@@ -14,7 +14,7 @@ import { getConnection } from './connection';
 export const QUEUE_NAMES = {
   PITCH: 'pitch',
   PREQUAL_PROCESSING: 'prequal-processing',
-  QUICK_SCAN: 'quick-scan',
+  QUALIFICATION_SCAN: 'qualification-scan',
   VISUALIZATION: 'visualization',
 } as const;
 
@@ -22,11 +22,11 @@ export const QUEUE_NAMES = {
  * PreQual Processing job data structure
  */
 export interface PreQualProcessingJobData {
-  /** PreQualification ID */
+  /** Qualification ID */
   preQualificationId: string;
   /** User who triggered the processing */
   userId: string;
-  /** Background job ID for qualification tracking */
+  /** Background job ID for tracking */
   backgroundJobId: string;
   /** PDF files as base64 encoded strings */
   files: Array<{
@@ -57,13 +57,13 @@ export interface PreQualProcessingJobResult {
 }
 
 /**
- * Quick Scan job data structure
+ * Qualification Scan job data structure
  */
-export interface QuickScanJobData {
-  /** PreQualification ID to scan */
+export interface QualificationScanJobData {
+  /** Qualification ID to scan */
   preQualificationId: string;
-  /** QuickScan record ID */
-  quickScanId: string;
+  /** QualificationScan record ID */
+  qualificationScanId: string;
   /** Website URL to scan */
   websiteUrl: string;
   /** User who triggered the scan */
@@ -71,12 +71,17 @@ export interface QuickScanJobData {
 }
 
 /**
- * Quick Scan job result structure
+ * Qualification Scan job result structure
  */
-export interface QuickScanJobResult {
+export interface QualificationScanJobResult {
   success: boolean;
   error?: string;
 }
+
+/** @deprecated Use QualificationScanJobData */
+export type LeadScanJobData = QualificationScanJobData;
+/** @deprecated Use QualificationScanJobResult */
+export type LeadScanJobResult = QualificationScanJobResult;
 
 // ============================================================================
 // PreQual Processing Queue
@@ -85,10 +90,10 @@ export interface QuickScanJobResult {
 /**
  * PreQual Processing Queue
  *
- * Handles background processing of new Pre-Qualification submissions with:
+ * Handles background processing of new Qualification submissions with:
  * - PDF extraction
  * - Duplicate checking
- * - Quick scan
+ * - Lead scan
  * - Timeline generation (for BID decisions)
  */
 let prequalProcessingQueue: Queue<
@@ -138,88 +143,99 @@ export function getPreQualProcessingQueue(): Queue<
 }
 
 // ============================================================================
-// Quick Scan Queue
+// Qualification Scan Queue
 // ============================================================================
 
 /**
- * Quick Scan Queue
+ * Qualification Scan Queue
  *
- * Handles background processing of manual quick scan jobs.
+ * Handles background processing of manual lead scan jobs.
  */
-let quickScanQueue: Queue<QuickScanJobData, QuickScanJobResult, string> | null = null;
+let qualificationScanQueue: Queue<
+  QualificationScanJobData,
+  QualificationScanJobResult,
+  string
+> | null = null;
 
 /**
- * Get or create the Quick Scan queue
+ * Get or create the Qualification Scan queue
  */
-export function getQuickScanQueue(): Queue<QuickScanJobData, QuickScanJobResult, string> {
-  if (!quickScanQueue) {
-    quickScanQueue = new Queue<QuickScanJobData, QuickScanJobResult, string>(
-      QUEUE_NAMES.QUICK_SCAN,
-      {
-        connection: getConnection(),
-        defaultJobOptions: {
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 30000,
-          },
-          removeOnComplete: {
-            age: 24 * 60 * 60,
-            count: 100,
-          },
-          removeOnFail: {
-            age: 7 * 24 * 60 * 60,
-            count: 500,
-          },
+export function getQualificationScanQueue(): Queue<
+  QualificationScanJobData,
+  QualificationScanJobResult,
+  string
+> {
+  if (!qualificationScanQueue) {
+    qualificationScanQueue = new Queue<
+      QualificationScanJobData,
+      QualificationScanJobResult,
+      string
+    >(QUEUE_NAMES.QUALIFICATION_SCAN, {
+      connection: getConnection(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 30000,
         },
-      }
-    );
+        removeOnComplete: {
+          age: 24 * 60 * 60,
+          count: 100,
+        },
+        removeOnFail: {
+          age: 7 * 24 * 60 * 60,
+          count: 500,
+        },
+      },
+    });
 
-    console.log('[BullMQ] Quick Scan queue initialized');
+    console.log('[BullMQ] Qualification Scan queue initialized');
   }
 
-  return quickScanQueue;
+  return qualificationScanQueue;
 }
 
 /**
- * Queue events for Quick Scan monitoring
+ * Queue events for Qualification Scan monitoring
  */
-let quickScanQueueEvents: QueueEvents | null = null;
+let qualificationScanQueueEvents: QueueEvents | null = null;
 
 /**
- * Get or create queue events for the Quick Scan queue
+ * Get or create queue events for the Qualification Scan queue
  */
-export function getQuickScanQueueEvents(): QueueEvents {
-  if (!quickScanQueueEvents) {
-    quickScanQueueEvents = new QueueEvents(QUEUE_NAMES.QUICK_SCAN, {
+export function getQualificationScanQueueEvents(): QueueEvents {
+  if (!qualificationScanQueueEvents) {
+    qualificationScanQueueEvents = new QueueEvents(QUEUE_NAMES.QUALIFICATION_SCAN, {
       connection: getConnection(),
     });
   }
 
-  return quickScanQueueEvents;
+  return qualificationScanQueueEvents;
 }
 
 /**
- * Add a quick scan job to the queue
+ * Add a qualifications scan job to the queue
  *
  * @param data - Job data
  * @returns The created job
  */
-export async function addQuickScanJob(data: QuickScanJobData) {
-  const queue = getQuickScanQueue();
+export async function addQualificationScanJob(data: QualificationScanJobData) {
+  const queue = getQualificationScanQueue();
 
   const job = await queue.add('process', data);
 
-  console.log(`[BullMQ] Added quick scan job ${job.id} for prequal ${data.preQualificationId}`);
+  console.log(
+    `[BullMQ] Added qualifications scan job ${job.id} for prequal ${data.preQualificationId}`
+  );
 
   return job;
 }
 
 /**
- * Get a quick scan job by ID
+ * Get a qualifications scan job by ID
  */
-export async function getQuickScanJob(jobId: string) {
-  const queue = getQuickScanQueue();
+export async function getQualificationScanJob(jobId: string) {
+  const queue = getQualificationScanQueue();
   return queue.getJob(jobId);
 }
 
@@ -457,14 +473,14 @@ export async function closeQueues(): Promise<void> {
     prequalProcessingQueueEvents = null;
   }
 
-  if (quickScanQueue) {
-    await quickScanQueue.close();
-    quickScanQueue = null;
+  if (qualificationScanQueue) {
+    await qualificationScanQueue.close();
+    qualificationScanQueue = null;
   }
 
-  if (quickScanQueueEvents) {
-    await quickScanQueueEvents.close();
-    quickScanQueueEvents = null;
+  if (qualificationScanQueueEvents) {
+    await qualificationScanQueueEvents.close();
+    qualificationScanQueueEvents = null;
   }
 
   if (pitchQueue) {
@@ -479,3 +495,16 @@ export async function closeQueues(): Promise<void> {
 
   console.log('[BullMQ] All queues closed');
 }
+
+// ============================================================================
+// Backwards-compatible aliases (remove after full migration)
+// ============================================================================
+
+/** @deprecated Use addQualificationScanJob */
+export const addLeadScanJob = addQualificationScanJob;
+/** @deprecated Use getQualificationScanJob */
+export const getLeadScanJob = getQualificationScanJob;
+/** @deprecated Use getQualificationScanQueue */
+export const getLeadScanQueue = getQualificationScanQueue;
+/** @deprecated Use getQualificationScanQueueEvents */
+export const getLeadScanQueueEvents = getQualificationScanQueueEvents;

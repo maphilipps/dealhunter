@@ -77,7 +77,7 @@ async function detectDocumentLanguage(rawText: string): Promise<DocumentLanguage
     const response = completion.choices[0]?.message?.content?.trim().toLowerCase() || 'en';
     return response === 'de' ? 'de' : 'en';
   } catch {
-    // Default to English on error (most common for Pre-Qualifications)
+    // Default to English on error (most common for Qualifications)
     return 'en';
   }
 }
@@ -107,7 +107,7 @@ const EXTRACTION_FIELDS: FieldDefinition[] = [
     displayName: 'Kundenname',
     queries: {
       de: 'Auftraggeber Vergabestelle Kunde Unternehmen Organisation Firma Name des Auftraggebers',
-      en: 'client customer contracting authority organization company issuing party Pre-Qualification issued by',
+      en: 'client customer contracting authority organization company issuing party Qualification issued by',
     },
     extractPrompt:
       'Extrahiere den Namen des Kunden/Auftraggebers. Antworte NUR mit dem Namen, nichts anderes.',
@@ -117,7 +117,7 @@ const EXTRACTION_FIELDS: FieldDefinition[] = [
     displayName: 'Projektname',
     queries: {
       de: 'Projekt Name Titel Bezeichnung Vorhaben Ausschreibung Gegenstand offiziell formell',
-      en: 'Pre-Qualification project title name subject matter official formal tender',
+      en: 'Qualification project title name subject matter official formal tender',
     },
     extractPrompt:
       'Extrahiere den OFFIZIELLEN Projektnamen oder Ausschreibungstitel aus dem Dokument. Suche nach formalen Bezeichnungen wie "Projekt:", "Ausschreibung:", "Gegenstand:" oder ähnlichen Überschriften. Ignoriere beiläufig erwähnte Begriffe oder Website-Namen. Antworte NUR mit dem offiziellen Namen, nichts anderes.',
@@ -202,7 +202,7 @@ Falls kein Budget explizit genannt wird, antworte mit:
     displayName: 'Abgabefrist',
     queries: {
       de: 'Deadline Abgabe Frist Termin Einreichung bis spätestens Abgabetermin Einreichungsfrist',
-      en: 'submission deadline due date response timeline Pre-Qualification deadline closing date proposal due by',
+      en: 'submission deadline due date response timeline Qualification deadline closing date proposal due by',
     },
     extractPrompt:
       'Extrahiere das Abgabedatum. Antworte NUR im Format YYYY-MM-DD oder "nicht genannt".',
@@ -628,7 +628,7 @@ export async function runExtractionWithStreaming(
       emit({
         type: AgentEventType.ERROR,
         data: {
-          message: 'Keine Pre-Qualification-ID für RAG-Extraktion vorhanden',
+          message: 'Keine Qualification-ID für RAG-Extraktion vorhanden',
           code: 'MISSING_PRE_QUALIFICATION_ID',
         },
       });

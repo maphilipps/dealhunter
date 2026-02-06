@@ -6,7 +6,7 @@ import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
 
 export interface ReferenceAgentInput {
   extractedRequirements: any;
-  quickScanResults?: any;
+  qualificationScanResults?: any;
   useWebSearch?: boolean;
 }
 
@@ -19,9 +19,9 @@ export async function runReferenceAgent(input: ReferenceAgentInput): Promise<Ref
 
     try {
       const industry =
-        input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
+        input.qualificationScanResults?.companyIntelligence?.basicInfo?.industry ||
         input.extractedRequirements?.industry;
-      const techStack = input.quickScanResults?.techStack;
+      const techStack = input.qualificationScanResults?.techStack;
       const cms = techStack?.cms;
 
       if (industry) {
@@ -117,9 +117,9 @@ Alle Texte auf Deutsch.`;
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${
-  input.quickScanResults
-    ? `## Quick Scan Ergebnisse
-${JSON.stringify(input.quickScanResults, null, 2)}`
+  input.qualificationScanResults
+    ? `## Qualification Scan Ergebnisse
+${JSON.stringify(input.qualificationScanResults, null, 2)}`
     : ''
 }
 ${adessoReferences}

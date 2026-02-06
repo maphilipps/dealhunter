@@ -593,7 +593,7 @@ export async function optimizeArea<T extends Record<string, any>>(
 /**
  * @deprecated Use primitives + IntelligentTools directly.
  */
-export async function optimizeQuickScanResults(
+export async function optimizeQualificationScanResults(
   results: Record<string, any>,
   evaluation: EvaluationResult,
   tools: IntelligentTools,
@@ -601,7 +601,7 @@ export async function optimizeQuickScanResults(
 ): Promise<OptimizationResult<Record<string, any>>> {
   return optimizeResults(results, evaluation, tools, {
     ...ctx,
-    agentName: ctx.agentName || 'QuickScan Optimizer',
+    agentName: ctx.agentName || 'QualificationScan Optimizer',
     targetScore: ctx.targetScore || 75,
   });
 }

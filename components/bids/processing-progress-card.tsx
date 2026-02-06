@@ -98,7 +98,7 @@ export function ProcessingProgressCard({ bidId }: ProcessingProgressCardProps) {
    */
   const fetchStatus = useCallback(async () => {
     try {
-      const response = await fetch(`/api/pre-qualifications/${bidId}/processing-status`);
+      const response = await fetch(`/api/qualifications/${bidId}/processing-status`);
 
       if (!response.ok) {
         throw new Error('Fehler beim Abrufen des Status');
@@ -115,7 +115,7 @@ export function ProcessingProgressCard({ bidId }: ProcessingProgressCardProps) {
         // Redirect to overview page after completion
         if (data.isComplete) {
           setTimeout(() => {
-            router.push(`/pre-qualifications/${bidId}`);
+            router.push(`/qualifications/${bidId}`);
           }, 500);
         }
       }

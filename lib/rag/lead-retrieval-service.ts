@@ -2,7 +2,7 @@
  * Lead RAG Retrieval Service (DEA-143)
  *
  * Extends the RAG retrieval service with lead-specific functionality:
- * - Lead → Pre-Qualification ID mapping
+ * - Lead → Qualification ID mapping
  * - Multi-agent query support
  * - Batch queries for section loading
  * - Confidence score aggregation
@@ -86,7 +86,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
  * Query RAG knowledge base for a specific lead
  *
  * DIRECTLY queries lead_embeddings table (not rfp_embeddings)
- * because audit data is stored per lead, not per Pre-Qualification.
+ * because audit data is stored per lead, not per Qualification.
  *
  * @param query - Lead RAG query parameters
  * @returns Array of relevant chunks with source tracking

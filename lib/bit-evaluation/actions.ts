@@ -8,11 +8,11 @@ import { createAuditLog } from '@/lib/admin/audit-actions';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { preQualifications } from '@/lib/db/schema';
-import { getQuickScanResult } from '@/lib/quick-scan/actions';
+import { getQualificationScanResult } from '@/lib/qualification-scan/actions';
 
 /**
  * Start BIT/NO BIT evaluation
- * Triggers after Quick Scan is confirmed
+ * Triggers after Qualification Scan is confirmed
  */
 export async function startBitEvaluation(bidId: string) {
   const session = await auth();
@@ -48,19 +48,21 @@ export async function startBitEvaluation(bidId: string) {
       .set({ status: 'evaluating' })
       .where(eq(preQualifications.id, bidId));
 
-    // Get quick scan results if available
+    // Get qualifications scan results if available
 
-    const quickScanResult = await getQuickScanResult(bidId);
-    const quickScanData =
-      quickScanResult.success && quickScanResult.quickScan?.status === 'completed'
+    const qualificationScanResult = await getQualificationScanResult(bidId);
+    const qualificationScanData =
+      qualificationScanResult.success &&
+      qualificationScanResult.qualificationScan?.status === 'completed'
         ? {
-            techStack: quickScanResult.quickScan.techStack,
-            contentVolume: quickScanResult.quickScan.contentVolume,
-            features: quickScanResult.quickScan.features,
+            techStack: qualificationScanResult.qualificationScan.techStack,
+            contentVolume: qualificationScanResult.qualificationScan.contentVolume,
+            features: qualificationScanResult.qualificationScan.features,
             blRecommendation: {
-              primaryBusinessLine: quickScanResult.quickScan.recommendedBusinessUnit,
-              confidence: quickScanResult.quickScan.confidence,
-              reasoning: quickScanResult.quickScan.reasoning,
+              primaryBusinessLine:
+                qualificationScanResult.qualificationScan.recommendedBusinessUnit,
+              confidence: qualificationScanResult.qualificationScan.confidence,
+              reasoning: qualificationScanResult.qualificationScan.reasoning,
             },
           }
         : undefined;
@@ -69,7 +71,7 @@ export async function startBitEvaluation(bidId: string) {
     const evaluationResult = await runBitEvaluation({
       bidId,
       extractedRequirements: JSON.parse(bid.extractedRequirements),
-      quickScanResults: quickScanData,
+      qualificationScanResults: qualificationScanData,
     });
 
     // Save evaluation result and update status
@@ -103,7 +105,7 @@ export async function startBitEvaluation(bidId: string) {
     // Revert status on error
     await db
       .update(preQualifications)
-      .set({ status: 'quick_scanning' })
+      .set({ status: 'qualification_scanning' })
       .where(eq(preQualifications.id, bidId))
       .catch(() => {}); // Ignore errors in error handler
 

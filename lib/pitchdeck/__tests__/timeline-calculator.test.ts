@@ -43,7 +43,7 @@ describe('Timeline Calculator', () => {
     });
 
     it('should calculate deadlines with default config buffers', () => {
-      // Pre-Qualification Deadline: Feb 15 (14 days from now)
+      // Qualification Deadline: Feb 15 (14 days from now)
       // Default buffers: 2 days review + 1 day QA = 3 days total
       // Work deadline: Feb 12
       // With 10% safety margin: ~12.6 days effective
@@ -66,7 +66,7 @@ describe('Timeline Calculator', () => {
     });
 
     it('should distribute deadlines evenly across available time', () => {
-      // Pre-Qualification Deadline: Feb 21 (20 days from now)
+      // Qualification Deadline: Feb 21 (20 days from now)
       // Buffers: 3 days total → work deadline: Feb 18 (17 days)
       // Safety margin: 10% → ~15.3 days effective
       // 3 deliverables: ~5 days each
@@ -113,7 +113,7 @@ describe('Timeline Calculator', () => {
 
       const deadlines = calculateInternalDeadlines(rfpDeadline, 3, config);
 
-      // Work deadline should be 6 days before Pre-Qualification deadline (5 + 1)
+      // Work deadline should be 6 days before Qualification deadline (5 + 1)
       const expectedWorkDeadline = new Date('2026-02-09T23:59:59Z');
       const lastDeadline = deadlines[deadlines.length - 1];
 
@@ -129,7 +129,7 @@ describe('Timeline Calculator', () => {
 
       const deadlines = calculateInternalDeadlines(rfpDeadline, 3, config);
 
-      // Work deadline should be 5 days before Pre-Qualification deadline (2 + 3)
+      // Work deadline should be 5 days before Qualification deadline (2 + 3)
       const expectedWorkDeadline = new Date('2026-02-10T23:59:59Z');
       const lastDeadline = deadlines[deadlines.length - 1];
 
@@ -180,8 +180,8 @@ describe('Timeline Calculator', () => {
   // ═══════════════════════════════════════════════════════════════════════════════
 
   describe('calculateInternalDeadlines - Edge Cases', () => {
-    it('should handle very close Pre-Qualification deadline (all deadlines set to work deadline)', () => {
-      // Pre-Qualification deadline in 2 days - too close after buffers
+    it('should handle very close Qualification deadline (all deadlines set to work deadline)', () => {
+      // Qualification deadline in 2 days - too close after buffers
       const rfpDeadline = new Date('2026-02-03T23:59:59Z');
       const deadlines = calculateInternalDeadlines(rfpDeadline, 3);
 
@@ -196,8 +196,8 @@ describe('Timeline Calculator', () => {
       });
     });
 
-    it('should handle past Pre-Qualification deadline gracefully', () => {
-      // Pre-Qualification deadline was yesterday
+    it('should handle past Qualification deadline gracefully', () => {
+      // Qualification deadline was yesterday
       const rfpDeadline = new Date('2026-01-31T23:59:59Z');
       const deadlines = calculateInternalDeadlines(rfpDeadline, 3);
 
@@ -280,7 +280,7 @@ describe('Timeline Calculator', () => {
 
       expect(deadlines).toHaveLength(3);
 
-      // Last deadline should be close to Pre-Qualification deadline (no buffers)
+      // Last deadline should be close to Qualification deadline (no buffers)
       const lastDeadline = deadlines[deadlines.length - 1];
       expect(lastDeadline.getTime()).toBeLessThanOrEqual(rfpDeadline.getTime());
     });
@@ -368,7 +368,7 @@ describe('Timeline Calculator', () => {
 
   describe('End-to-End Integration', () => {
     it('should calculate realistic timeline with status checks', () => {
-      // Realistic scenario: 5 deliverables, 30 days until Pre-Qualification
+      // Realistic scenario: 5 deliverables, 30 days until Qualification
       const rfpDeadline = new Date('2026-03-03T23:59:59Z');
       const deliverableCount = 5;
 

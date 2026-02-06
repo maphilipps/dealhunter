@@ -19,12 +19,12 @@ import { ScrapedFactsPhase } from './phases/scraped-facts-phase';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type { QuickScan, PreQualification } from '@/lib/db/schema';
+import type { LeadScan, PreQualification } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 interface WorkflowStepperProps {
   preQualification: PreQualification;
-  quickScan: QuickScan | null;
+  qualificationScan: LeadScan | null;
   extractedData?: ExtractedRequirements | null;
 }
 
@@ -64,17 +64,17 @@ const phases: PhaseConfig[] = [
 
 function getPhaseStatus(
   phase: WorkflowPhase,
-  quickScan: QuickScan | null
+  qualificationScan: LeadScan | null
 ): 'completed' | 'current' | 'pending' {
-  if (!quickScan || quickScan.status !== 'completed') {
+  if (!qualificationScan || qualificationScan.status !== 'completed') {
     return phase === 'facts' ? 'current' : 'pending';
   }
 
-  // Quick Scan completed
+  // Qualification Scan completed
   if (phase === 'facts') return 'completed';
 
   // Check if BU comparison was done (has recommended BU)
-  if (quickScan.recommendedBusinessUnit) {
+  if (qualificationScan.recommendedBusinessUnit) {
     if (phase === 'comparison') return 'completed';
     return 'current'; // Decision phase is current
   }
@@ -86,12 +86,12 @@ function getPhaseStatus(
 
 export function WorkflowStepper({
   preQualification,
-  quickScan,
+  qualificationScan,
   extractedData,
 }: WorkflowStepperProps) {
   const [activePhase, setActivePhase] = useState<WorkflowPhase>(() => {
-    if (!quickScan || quickScan.status !== 'completed') return 'facts';
-    if (!quickScan.recommendedBusinessUnit) return 'comparison';
+    if (!qualificationScan || qualificationScan.status !== 'completed') return 'facts';
+    if (!qualificationScan.recommendedBusinessUnit) return 'comparison';
     return 'decision';
   });
 
@@ -118,7 +118,7 @@ export function WorkflowStepper({
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             {phases.map((phase, index) => {
-              const status = getPhaseStatus(phase.id, quickScan);
+              const status = getPhaseStatus(phase.id, qualificationScan);
               const Icon = phase.icon;
               const isActive = activePhase === phase.id;
 
@@ -188,13 +188,13 @@ export function WorkflowStepper({
         {activePhase === 'facts' && (
           <div className="space-y-4">
             <ScrapedFactsPhase
-              quickScan={quickScan}
+              qualificationScan={qualificationScan}
               extractedData={extractedData}
               bidId={preQualification.id}
             />
 
             {/* Trigger Workflow 2 Button */}
-            {quickScan?.status === 'completed' && (
+            {qualificationScan?.status === 'completed' && (
               <Card className="border-orange-200 bg-orange-50">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
@@ -231,12 +231,18 @@ export function WorkflowStepper({
           </div>
         )}
 
-        {activePhase === 'comparison' && quickScan && (
-          <BUComparisonPhase quickScan={quickScan} preQualificationId={preQualification.id} />
+        {activePhase === 'comparison' && qualificationScan && (
+          <BUComparisonPhase
+            qualificationScan={qualificationScan}
+            preQualificationId={preQualification.id}
+          />
         )}
 
-        {activePhase === 'decision' && quickScan && (
-          <BLDecisionPhase quickScan={quickScan} preQualificationId={preQualification.id} />
+        {activePhase === 'decision' && qualificationScan && (
+          <BLDecisionPhase
+            qualificationScan={qualificationScan}
+            preQualificationId={preQualification.id}
+          />
         )}
       </div>
     </div>

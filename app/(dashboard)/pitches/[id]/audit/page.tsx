@@ -24,7 +24,7 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
     notFound();
   }
 
-  // Get suggested URLs from Pre-Qualification
+  // Get suggested URLs from Qualification
   let suggestedUrls: { url: string; description?: string }[] = [];
   if (lead.preQualificationId) {
     const [preQualification] = await db

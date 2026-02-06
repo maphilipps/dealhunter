@@ -47,10 +47,14 @@ export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
     | 'decision'
     | 'scan'
     | 'quickscan'
+    | 'lead-scan'
+    | 'qualification-scan'
     | 'extraction'
     | 'pitch-run'
+    | 'pitch-scan'
     | 'team-assignment'
-    | 'audit-trail';
+    | 'audit-trail'
+    | 'progress';
   inputSchema: z.ZodSchema<TInput>;
   execute: (input: TInput, context: ToolContext) => Promise<ToolResult<TOutput>>;
 }
@@ -72,6 +76,7 @@ export interface ToolContext {
 export interface ToolRegistry {
   tools: Map<string, ToolDefinition>;
   register: <TInput, TOutput>(tool: ToolDefinition<TInput, TOutput>) => void;
+  alias: (newName: string, existingName: string) => void;
   get: (name: string) => ToolDefinition | undefined;
   list: (category?: string) => ToolDefinition[];
   execute: <T>(name: string, input: unknown, context: ToolContext) => Promise<ToolResult<T>>;
@@ -81,7 +86,7 @@ export interface ToolRegistry {
  * Tool categories for capability discovery
  */
 export const TOOL_CATEGORIES = {
-  'pre-qualification': 'Pre-Qualification/Bid Management',
+  'pre-qualification': 'Qualification/Bid Management',
   account: 'Account Management',
   reference: 'Reference Management',
   competency: 'Competency Management',
@@ -99,13 +104,17 @@ export const TOOL_CATEGORIES = {
   staffing: 'Team Staffing & Skill Matching',
   analysis: 'Analysis & Estimation',
   pitchdeck: 'Pitchdeck Management',
-  audit: 'Website Audits',
+  audit: '@deprecated Website Audits (use pitch-scan)',
   workflow: 'Workflow & Job Management',
   decision: 'Decision Aggregation',
-  scan: 'Scan Primitives',
-  quickscan: 'Quick Scan Tools',
+  scan: '@deprecated Scan Primitives (use qualification-scan)',
+  quickscan: '@deprecated Quick Scan Tools (use qualification-scan)',
+  'lead-scan': '@deprecated Qualification Scan Tools (use qualification-scan)',
+  'qualification-scan': 'Qualification Scan Tools',
   extraction: 'Document Extraction',
-  'pitch-run': 'Pitch Run & Audit Management',
+  'pitch-run': '@deprecated Pitch Run & Audit Management (use pitch-scan)',
+  'pitch-scan': 'Pitch Scan & Audit Management',
   'team-assignment': 'Team Assignment Management',
   'audit-trail': 'Audit Trail & History',
+  progress: 'Scan & Workflow Progress',
 } as const;

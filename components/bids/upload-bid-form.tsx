@@ -122,7 +122,7 @@ export function UploadBidForm({ userId: _userId, accounts: _accounts }: UploadBi
         toast.success('Verarbeitung gestartet...');
         // Navigate immediately - processing continues in background
         // Do NOT reset isUploading - let navigation handle it
-        router.push(`/pre-qualifications/${result.bidId}`);
+        router.push(`/qualifications/${result.bidId}`);
       } else {
         toast.error(result.error || 'Upload fehlgeschlagen');
         setIsUploading(false);

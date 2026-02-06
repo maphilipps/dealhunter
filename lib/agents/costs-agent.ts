@@ -21,7 +21,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { pitches, quickScans, pitchSectionData, dealEmbeddings } from '@/lib/db/schema';
+import { pitches, leadScans, pitchSectionData, dealEmbeddings } from '@/lib/db/schema';
 import { calculatePTEstimation, type PTEstimationResult } from '@/lib/estimations/pt-calculator';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
@@ -124,7 +124,7 @@ const HOURS_PER_PT = 8;
  * Run costs agent
  *
  * @param leadId - Lead ID
- * @param preQualificationId - Pre-Qualification ID
+ * @param preQualificationId - Qualification ID
  * @returns Costs analysis with budget fit
  */
 export async function runCostsAgent(
@@ -136,7 +136,7 @@ export async function runCostsAgent(
     .select({
       customerName: pitches.customerName,
       selectedCmsId: pitches.selectedCmsId,
-      quickScanId: pitches.quickScanId,
+      qualificationScanId: pitches.qualificationScanId,
     })
     .from(pitches)
     .where(eq(pitches.id, leadId))
@@ -147,25 +147,25 @@ export async function runCostsAgent(
   }
 
   // 2. Fetch Quick Scan for page count and features
-  let quickScanData: {
+  let qualificationScanData: {
     pageCount: number | null;
     features: unknown;
     migrationComplexity: unknown;
   } | null = null;
 
-  if (leadData.quickScanId) {
+  if (leadData.qualificationScanId) {
     const [qs] = await db
       .select({
-        pageCount: quickScans.pageCount,
-        features: quickScans.features,
-        migrationComplexity: quickScans.migrationComplexity,
+        pageCount: leadScans.pageCount,
+        features: leadScans.features,
+        migrationComplexity: leadScans.migrationComplexity,
       })
-      .from(quickScans)
-      .where(eq(quickScans.id, leadData.quickScanId))
+      .from(leadScans)
+      .where(eq(leadScans.id, leadData.qualificationScanId))
       .limit(1);
 
     if (qs) {
-      quickScanData = {
+      qualificationScanData = {
         pageCount: qs.pageCount,
         features: safeParseJson(qs.features),
         migrationComplexity: safeParseJson(qs.migrationComplexity),
@@ -193,7 +193,7 @@ export async function runCostsAgent(
   if (
     leadData.selectedCmsId &&
     sectionDataMap['cms-architecture'] &&
-    (sectionDataMap['migration'] || quickScanData?.migrationComplexity)
+    (sectionDataMap['migration'] || qualificationScanData?.migrationComplexity)
   ) {
     try {
       ptEstimation = await calculatePTEstimation({
@@ -203,7 +203,7 @@ export async function runCostsAgent(
           typeof calculatePTEstimation
         >[0]['contentArchitecture'],
         migrationComplexity: (sectionDataMap['migration'] ||
-          quickScanData?.migrationComplexity) as Parameters<
+          qualificationScanData?.migrationComplexity) as Parameters<
           typeof calculatePTEstimation
         >[0]['migrationComplexity'],
       });
@@ -213,7 +213,8 @@ export async function runCostsAgent(
   }
 
   // 5. Calculate costs (using PT estimation or fallback)
-  const totalHours = ptEstimation?.totalPT || estimateFallbackHours(quickScanData?.pageCount);
+  const totalHours =
+    ptEstimation?.totalPT || estimateFallbackHours(qualificationScanData?.pageCount);
   const baselineHours = ptEstimation?.baselineHours || 0;
   const additionalHours = ptEstimation?.additionalPT || 0;
   const riskBuffer = ptEstimation?.riskBuffer || 20;
@@ -264,8 +265,8 @@ PROJEKTDATEN:
 - Gesamtkosten: ${totalCost.toLocaleString('de-DE')}€
 
 QUICK SCAN DATEN:
-- Seitenzahl: ${quickScanData?.pageCount || 'Unbekannt'}
-- Features: ${JSON.stringify(quickScanData?.features, null, 2)}
+- Seitenzahl: ${qualificationScanData?.pageCount || 'Unbekannt'}
+- Features: ${JSON.stringify(qualificationScanData?.features, null, 2)}
 
 KOSTENAUFSCHLÜSSELUNG (Phase):
 ${costBreakdown.map(c => `- ${c.phase}: ${c.hours}h = ${c.cost.toLocaleString('de-DE')}€`).join('\n')}

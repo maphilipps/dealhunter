@@ -10,7 +10,7 @@ import {
   employees,
   accounts,
   preQualifications,
-  quickScans,
+  leadScans,
   pitches,
   pitchSectionData,
   websiteAudits,
@@ -502,7 +502,7 @@ async function seedCompleteLead() {
     ],
   };
 
-  const quickScanData = {
+  const qualificationScanData = {
     cms: 'WordPress',
     framework: 'PHP',
     hosting: 'Shared Hosting',
@@ -547,16 +547,16 @@ async function seedCompleteLead() {
       accountId: account.id,
       websiteUrl: 'https://www.stv-fst.ch',
       assignedBusinessUnitId: phpBU.id,
-      quickScanResults: JSON.stringify(quickScanData),
+      qualificationScanResults: JSON.stringify(qualificationScanData),
     })
     .returning();
 
   console.log(`  ✓ RFP created: ${preQualification.id}\n`);
 
   // ===========================================
-  // 9. Quick Scan
+  // 9. Qualification Scan
   // ===========================================
-  console.log('🔍 Creating Quick Scan...');
+  console.log('🔍 Creating Qualification Scan...');
 
   const tenQuestions = [
     {
@@ -621,8 +621,8 @@ async function seedCompleteLead() {
     },
   ];
 
-  const [quickScan] = await db
-    .insert(quickScans)
+  const [qualificationScan] = await db
+    .insert(leadScans)
     .values({
       preQualificationId: preQualification.id,
       websiteUrl: 'https://www.stv-fst.ch',
@@ -736,7 +736,7 @@ async function seedCompleteLead() {
       tenQuestions: JSON.stringify(tenQuestions),
       recommendedBusinessUnit: 'PHP',
       confidence: 88,
-      reasoning: quickScanData.reasoning,
+      reasoning: qualificationScanData.reasoning,
       activityLog: JSON.stringify([
         {
           timestamp: new Date().toISOString(),
@@ -769,20 +769,20 @@ async function seedCompleteLead() {
           duration: 5,
         },
       ]),
-      timeline: JSON.stringify(quickScanData.timeline),
+      timeline: JSON.stringify(qualificationScanData.timeline),
       timelineGeneratedAt: new Date(),
       startedAt: new Date(Date.now() - 1000 * 60 * 60),
       completedAt: new Date(Date.now() - 1000 * 60 * 30),
     })
     .returning();
 
-  // Update RFP with Quick Scan ID
+  // Update RFP with Qualification Scan ID
   await db
     .update(preQualifications)
-    .set({ quickScanId: quickScan.id })
+    .set({ qualificationScanId: qualificationScan.id })
     .where(eq(preQualifications.id, preQualification.id));
 
-  console.log(`  ✓ Quick Scan completed\n`);
+  console.log(`  ✓ Qualification Scan completed\n`);
 
   // ===========================================
   // 10. Lead
@@ -800,7 +800,7 @@ async function seedCompleteLead() {
       projectDescription: extractedRequirements.description,
       budget: extractedRequirements.budget,
       requirements: JSON.stringify(extractedRequirements.requirements),
-      quickScanId: quickScan.id,
+      qualificationScanId: qualificationScan.id,
       decisionMakers: JSON.stringify(extractedRequirements.decisionMakers),
       businessUnitId: phpBU.id,
       selectedCmsId: drupalTech.id,
@@ -1394,7 +1394,7 @@ async function seedCompleteLead() {
   console.log('  - 1 Account');
   console.log('  - 2 References');
   console.log('  - 2 Competitors');
-  console.log('  - 1 RFP with Quick Scan');
+  console.log('  - 1 RFP with Qualification Scan');
   console.log('  - 1 Lead with complete Deep Scan data:');
   console.log(`    • ${sectionDataEntries.length} Section Data entries`);
   console.log('    • Website Audit');

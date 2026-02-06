@@ -37,17 +37,20 @@ export async function GET() {
       canManageUsers: role === 'admin',
       canAccessAdminPanel: role === 'admin',
       canReviewBids: role === 'bl' || role === 'admin',
+      canViewProgress: true,
+      canCheckTechnologyEol: true,
     };
 
     const agents = [
       {
         id: 'extraction',
         name: 'Extraction Agent',
-        description: 'Extrahiert strukturierte Daten aus Pre-Qualification-Dokumenten (PDF, E-Mail, Text)',
+        description:
+          'Extrahiert strukturierte Daten aus Pre-Qualification-Dokumenten (PDF, E-Mail, Text)',
         status: 'active',
       },
       {
-        id: 'quick-scan',
+        id: 'qualification-scan',
         name: 'Qualification Agent',
         description:
           'Führt eine schnelle Erstbewertung durch und empfiehlt passende Business Lines',

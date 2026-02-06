@@ -45,9 +45,9 @@ export interface HelpPanelProps {
 
 const defaultFAQs: HelpItem[] = [
   {
-    question: 'Wie lade ich ein Pre-Qualification hoch?',
+    question: 'Wie lade ich einen Lead hoch?',
     answer:
-      'Gehe zu "Pre-Qualifications" → "New Pre-Qualification" und lade eine PDF-Datei hoch oder füge den Text direkt ein. Der AI Agent extrahiert automatisch alle relevanten Informationen.',
+      'Gehe zu "Alle Leads" → "Neuer Lead" und lade eine PDF-Datei hoch oder füge den Text direkt ein. Der AI Agent extrahiert automatisch alle relevanten Informationen.',
   },
   {
     question: 'Was ist eine Qualification?',
@@ -60,35 +60,35 @@ const defaultFAQs: HelpItem[] = [
       'Die Entscheidung basiert auf 6 Faktoren: Capability Match (25%), Deal Quality (20%), Strategic Fit (15%), Win Probability (15%), Legal Constraints (15%), und References (10%). Ein Score ≥ 55 bedeutet BID.',
   },
   {
-    question: 'Wann wird ein Deep Scan ausgeführt?',
+    question: 'Wann wird ein Pitch Scan ausgeführt?',
     answer:
-      'Ein Deep Scan wird manuell gestartet und führt eine umfassende Analyse durch: Migration Complexity, CMS Comparison, Hosting Requirements, Integration Landscape, Timeline & Cost Estimation.',
+      'Ein Pitch Scan wird automatisch nach Lead-Routing gestartet und führt eine umfassende Analyse durch: Discovery, Content-Architektur, Features, Performance, Barrierefreiheit, Legal, Integrationen, Migration, CMS-Vergleich, Aufwandsschätzung und Dokumentation.',
   },
 ];
 
 const defaultShortcuts: Shortcut[] = [
   { keys: ['Cmd', 'K'], description: 'Command Palette öffnen' },
   { keys: ['Cmd', 'B'], description: 'Sidebar ein-/ausblenden' },
-  { keys: ['G', 'L'], description: 'Zu Qualifications navigieren' },
-  { keys: ['G', 'R'], description: 'Zu Pre-Qualifications navigieren' },
-  { keys: ['N'], description: 'Neue Pre-Qualification erstellen' },
+  { keys: ['G', 'L'], description: 'Zu Leads navigieren' },
+  { keys: ['G', 'P'], description: 'Zu Pitches navigieren' },
+  { keys: ['N'], description: 'Neuen Lead erstellen' },
 ];
 
 const defaultQuickLinks: QuickLink[] = [
   {
-    label: 'Pre-Qualifications verwalten',
-    href: '/pre-qualifications',
-    description: 'Alle Pre-Qualifications anzeigen und verwalten',
+    label: 'Leads verwalten',
+    href: '/qualifications',
+    description: 'Alle Leads anzeigen und verwalten',
   },
   {
-    label: 'Qualifications Dashboard',
+    label: 'Pitches',
     href: '/pitches',
-    description: 'Aktuelle Qualifications und Status',
+    description: 'Aktuelle Pitches und Status',
   },
   {
-    label: 'Analytics',
-    href: '/analytics',
-    description: 'Conversion Rates und Performance Metriken',
+    label: 'Accounts',
+    href: '/accounts',
+    description: 'Kunden-Accounts und Opportunities',
   },
   {
     label: 'Admin Settings',

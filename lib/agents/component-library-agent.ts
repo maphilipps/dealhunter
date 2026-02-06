@@ -77,7 +77,7 @@ export interface AnalyzeComponentsInput {
  * 4. Extract component metadata (name, props, usage)
  * 5. Store results in RAG with agentName: 'component_library'
  *
- * @param input - Lead ID, Pre-Qualification ID, and website URL
+ * @param input - Lead ID, Qualification ID, and website URL
  * @returns Component library analysis results
  */
 export async function analyzeComponents(
@@ -418,7 +418,10 @@ Only include components that appear to be reusable patterns. Be specific about c
  * 1. Component metadata as structured JSON
  * 2. Embeddings for semantic retrieval
  */
-async function storeInRAG(preQualificationId: string, result: ComponentLibraryResult): Promise<void> {
+async function storeInRAG(
+  preQualificationId: string,
+  result: ComponentLibraryResult
+): Promise<void> {
   try {
     // Build searchable content with adesso Calculator fields
     const componentSummaries = result.components

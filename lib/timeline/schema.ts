@@ -13,7 +13,7 @@ const sanitizedString = z.string().transform(val => {
  * Project Phase (Simplified for Phase 1 Timeline)
  *
  * Lightweight phase structure for early timeline estimates
- * during Quick Scan. More detailed than just duration,
+ * during Qualification Scan. More detailed than just duration,
  * but simpler than full project planning.
  */
 export const projectPhaseSchema = z.object({
@@ -35,7 +35,7 @@ export type ProjectPhase = z.infer<typeof projectPhaseSchema>;
 /**
  * Project Timeline (Phase 1 - Quick Estimate)
  *
- * Early timeline estimate generated during Quick Scan.
+ * Early timeline estimate generated during Qualification Scan.
  * Provides BD Manager and BL with realistic timeline expectations
  * BEFORE deep analysis.
  */
@@ -93,15 +93,15 @@ export const projectTimelineSchema = z.object({
         .enum(['low', 'medium', 'high', 'very_high'])
         .describe('Overall complexity assessment'),
       integrations: z.number().int().nonnegative().describe('Number of integrations detected'),
-      hasCriticalDeadline: z.boolean().describe('Whether there is a hard deadline from Pre-Qualification'),
+      hasCriticalDeadline: z
+        .boolean()
+        .describe('Whether there is a hard deadline from Qualification'),
     })
     .describe('Basis for timeline calculation'),
 
   // Metadata
   generatedAt: z.string().datetime().describe('Generation timestamp'),
-  phase: z
-    .literal('quick_scan')
-    .describe('Timeline phase (always "quick_scan" for early estimates)'),
+  phase: z.literal('lead_scan').describe('Timeline phase (always "lead_scan" for early estimates)'),
 });
 
 export type ProjectTimeline = z.infer<typeof projectTimelineSchema>;
@@ -157,22 +157,22 @@ export const TEAM_SIZE_FACTORS = {
 /**
  * Risk Analysis Schema
  *
- * Compares Pre-Qualification deadline with AI-generated timeline estimate
+ * Compares Qualification deadline with AI-generated timeline estimate
  * to identify unrealistic timelines and provide risk warnings.
  */
 export const riskAnalysisSchema = z.object({
   risk: z.enum(['HIGH', 'MEDIUM', 'LOW']).describe('Risk level based on timeline delta'),
-  deltaDays: z.number().describe('Difference in working days (Pre-Qualification - AI estimate)'),
+  deltaDays: z.number().describe('Difference in working days (Qualification - AI estimate)'),
   warning: sanitizedString.describe('Human-readable warning message'),
   rfpDeadline: z
     .string()
     .nullable()
-    .describe('Pre-Qualification deadline in ISO format, or null if not specified'),
+    .describe('Qualification deadline in ISO format, or null if not specified'),
   aiEstimatedCompletion: z
     .string()
     .nullable()
     .describe('AI estimated completion date in ISO format'),
-  isRealistic: z.boolean().describe('Whether the Pre-Qualification deadline is realistic'),
+  isRealistic: z.boolean().describe('Whether the Qualification deadline is realistic'),
 });
 
 export type RiskAnalysis = z.infer<typeof riskAnalysisSchema>;

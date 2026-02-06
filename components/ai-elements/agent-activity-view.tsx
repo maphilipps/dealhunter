@@ -10,24 +10,25 @@ import {
   FileStack,
   Search,
   Sparkles,
+  ListChecks,
+  Brain,
+  Layers,
+  Wrench,
 } from 'lucide-react';
 
 import { Loader } from './loader';
 import { memo, useMemo, useState } from 'react';
+import type { AgentPhase, ActivityTab } from './types';
 
-import {
-  getAgentColorClasses,
-  getPhaseColorClasses,
-  formatAgentTime,
-  MIN_EXPECTED_AGENTS,
-} from './constants';
+import { getAgentColorClasses, formatAgentTime, MIN_EXPECTED_AGENTS } from './constants';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import type { AgentEvent, QuickScanPhase } from '@/lib/streaming/event-types';
+import type { AgentEvent } from '@/lib/streaming/event-types';
 import {
   AgentEventType,
   isPhaseStartData,
@@ -48,22 +49,21 @@ interface AgentGroup {
   endTime?: number;
 }
 
-interface PhaseInfo {
-  phase: QuickScanPhase;
-  message: string;
-  timestamp: number;
-  analyses: Array<{ name: string; success: boolean; duration: number; details?: string }>;
-}
-
 export type AgentActivityViewProps = ComponentProps<typeof Card> & {
   events: AgentEvent[];
   isStreaming: boolean;
+  /** Pre-computed phases from any scan type (overrides event-based phase extraction) */
+  phases?: AgentPhase[];
+  /** Expected agent names for progress calculation (overrides built-in list) */
+  expectedAgents?: string[];
+  /** Active tab (default: 'agents') */
+  defaultTab?: ActivityTab;
 };
 
 export type AgentActivityHeaderProps = ComponentProps<'div'> & {
   isStreaming: boolean;
   progress: number;
-  phaseInfo: PhaseInfo[];
+  phases: AgentPhase[];
 };
 
 export type AgentActivityEmptyProps = ComponentProps<'div'> & {
@@ -83,6 +83,54 @@ export type AgentActivityCompleteProps = ComponentProps<'div'> & {
 };
 
 // ============================================================================
+// Phase icon/label helpers (generic, string-based)
+// ============================================================================
+
+const PHASE_ICON_MAP: Record<string, typeof Rocket> = {
+  bootstrap: Rocket,
+  multi_page: FileStack,
+  analysis: Search,
+  synthesis: Sparkles,
+};
+
+const PHASE_LABEL_MAP: Record<string, string> = {
+  bootstrap: 'Bootstrap',
+  multi_page: 'Multi-Page Fetch',
+  analysis: 'Analyse',
+  synthesis: 'Synthese',
+};
+
+function getPhaseIcon(phaseId: string) {
+  const Icon = PHASE_ICON_MAP[phaseId];
+  if (Icon) return <Icon className="h-4 w-4" />;
+  return <Loader size="sm" />;
+}
+
+function getPhaseLabel(phase: AgentPhase): string {
+  return phase.label || PHASE_LABEL_MAP[phase.id] || phase.id;
+}
+
+function getPhaseColorClass(phase: AgentPhase, isActive: boolean): string {
+  if (!isActive) {
+    return 'bg-[var(--phase-complete-bg)] text-[var(--phase-complete-text)] border-[var(--phase-complete-border)]';
+  }
+  const phaseColorMap: Record<string, string> = {
+    bootstrap:
+      'bg-[var(--phase-bootstrap-bg)] text-[var(--phase-bootstrap-text)] border-[var(--phase-bootstrap-border)]',
+    multi_page:
+      'bg-[var(--phase-multipage-bg)] text-[var(--phase-multipage-text)] border-[var(--phase-multipage-border)]',
+    analysis:
+      'bg-[var(--phase-analysis-bg)] text-[var(--phase-analysis-text)] border-[var(--phase-analysis-border)]',
+    synthesis:
+      'bg-[var(--phase-synthesis-bg)] text-[var(--phase-synthesis-text)] border-[var(--phase-synthesis-border)]',
+  };
+  return (
+    phaseColorMap[phase.id] ||
+    'bg-[var(--phase-complete-bg)] text-[var(--phase-complete-text)] border-[var(--phase-complete-border)]'
+  );
+}
+
+// ============================================================================
 // Helpers
 // ============================================================================
 
@@ -99,36 +147,6 @@ function getStatusIcon(status: AgentGroup['status']) {
   }
 }
 
-function getPhaseIcon(phase: QuickScanPhase) {
-  switch (phase) {
-    case 'bootstrap':
-      return <Rocket className="h-4 w-4" />;
-    case 'multi_page':
-      return <FileStack className="h-4 w-4" />;
-    case 'analysis':
-      return <Search className="h-4 w-4" />;
-    case 'synthesis':
-      return <Sparkles className="h-4 w-4" />;
-    default:
-      return <Loader size="sm" />;
-  }
-}
-
-function getPhaseLabel(phase: QuickScanPhase) {
-  switch (phase) {
-    case 'bootstrap':
-      return 'Bootstrap';
-    case 'multi_page':
-      return 'Multi-Page Fetch';
-    case 'analysis':
-      return 'Analyse';
-    case 'synthesis':
-      return 'Synthese';
-    default:
-      return phase;
-  }
-}
-
 function formatDuration(streamStartTime: number, _startTime?: number, endTime?: number) {
   if (!endTime && !_startTime) return null;
   const relativeEnd = (endTime || Date.now()) - streamStartTime;
@@ -136,27 +154,33 @@ function formatDuration(streamStartTime: number, _startTime?: number, endTime?: 
   return `${durationSec}s`;
 }
 
-function extractPhaseInfo(events: AgentEvent[]): PhaseInfo[] {
-  const phases: PhaseInfo[] = [];
-  let currentPhase: PhaseInfo | null = null;
+/**
+ * Extract phases from raw SSE events.
+ * Used as fallback when no pre-computed `phases` prop is provided.
+ */
+function extractPhasesFromEvents(events: AgentEvent[]): AgentPhase[] {
+  const phases: AgentPhase[] = [];
+  let current: AgentPhase | null = null;
 
   events.forEach(event => {
     if (event.type === AgentEventType.PHASE_START && isPhaseStartData(event.data)) {
-      if (currentPhase) {
-        phases.push(currentPhase);
+      if (current) {
+        current.status = 'complete';
+        phases.push(current);
       }
-      currentPhase = {
-        phase: event.data.phase,
-        message: event.data.message,
-        timestamp: event.data.timestamp,
+      current = {
+        id: event.data.phase,
+        label: PHASE_LABEL_MAP[event.data.phase] || event.data.phase,
+        status: 'running',
         analyses: [],
+        startedAt: event.data.timestamp,
       };
     } else if (
       event.type === AgentEventType.ANALYSIS_COMPLETE &&
       isAnalysisCompleteData(event.data) &&
-      currentPhase
+      current
     ) {
-      currentPhase.analyses.push({
+      current.analyses!.push({
         name: event.data.analysis,
         success: event.data.success,
         duration: event.data.duration,
@@ -165,14 +189,14 @@ function extractPhaseInfo(events: AgentEvent[]): PhaseInfo[] {
     }
   });
 
-  if (currentPhase) {
-    phases.push(currentPhase);
+  if (current) {
+    phases.push(current);
   }
 
   return phases;
 }
 
-const EXPECTED_AGENTS = [
+const DEFAULT_EXPECTED_AGENTS = [
   // Phase 1: Bootstrap
   'Website Crawler',
   'Wappalyzer',
@@ -202,7 +226,7 @@ const EXPECTED_AGENTS = [
   'Company Intelligence',
   'Enhanced Tech Stack',
   'httpx Tech Detection',
-  // QuickScan 2.0
+  // QualificationScan 2.0
   'Content Classifier',
   'Migration Analyzer',
   'Decision Maker Research',
@@ -211,10 +235,10 @@ const EXPECTED_AGENTS = [
   'AI Reasoning',
 ];
 
-function groupEventsByAgent(events: AgentEvent[]): AgentGroup[] {
+function groupEventsByAgent(events: AgentEvent[], expectedAgents: string[]): AgentGroup[] {
   const groups: Record<string, AgentGroup> = {};
 
-  EXPECTED_AGENTS.forEach(agent => {
+  expectedAgents.forEach(agent => {
     groups[agent] = {
       name: agent,
       status: 'pending',
@@ -262,15 +286,27 @@ function groupEventsByAgent(events: AgentEvent[]): AgentGroup[] {
 }
 
 // ============================================================================
+// Tab icon map
+// ============================================================================
+
+const TAB_CONFIG: { id: ActivityTab; label: string; icon: typeof Layers }[] = [
+  { id: 'agents', label: 'Agents', icon: Layers },
+  { id: 'queue', label: 'Queue', icon: ListChecks },
+  { id: 'reasoning', label: 'Reasoning', icon: Brain },
+  { id: 'tools', label: 'Tools', icon: Wrench },
+];
+
+// ============================================================================
 // Sub-components
 // ============================================================================
 
 /**
  * AgentActivityHeader — Progress bar + phase badges + current phase message.
+ * Now accepts generic AgentPhase[] instead of scan-specific types.
  */
 export const AgentActivityHeader = memo(
-  ({ isStreaming, progress, phaseInfo, className, ...props }: AgentActivityHeaderProps) => {
-    const currentPhase = phaseInfo.length > 0 ? phaseInfo[phaseInfo.length - 1] : null;
+  ({ isStreaming, progress, phases, className, ...props }: AgentActivityHeaderProps) => {
+    const currentPhase = phases.length > 0 ? phases[phases.length - 1] : null;
 
     return (
       <CardHeader className={cn('pb-3', className)} {...props}>
@@ -285,19 +321,19 @@ export const AgentActivityHeader = memo(
         </div>
         <Progress value={progress} className="h-2 mt-2" />
 
-        {phaseInfo.length > 0 && (
+        {phases.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3">
-            {phaseInfo.map((phase, idx) => {
-              const isActive = idx === phaseInfo.length - 1 && isStreaming;
+            {phases.map((phase, idx) => {
+              const isActive = idx === phases.length - 1 && isStreaming;
               return (
                 <Badge
-                  key={phase.phase + '-' + idx}
+                  key={phase.id + '-' + idx}
                   variant="outline"
-                  className={`flex items-center gap-1.5 ${getPhaseColorClasses(phase.phase, isActive)}`}
+                  className={`flex items-center gap-1.5 ${getPhaseColorClass(phase, isActive)}`}
                 >
-                  {isActive ? <Loader size="xs" /> : getPhaseIcon(phase.phase)}
-                  {getPhaseLabel(phase.phase)}
-                  {phase.analyses.length > 0 && (
+                  {isActive ? <Loader size="xs" /> : getPhaseIcon(phase.id)}
+                  {getPhaseLabel(phase)}
+                  {phase.analyses && phase.analyses.length > 0 && (
                     <span className="ml-1 text-xs opacity-70">
                       ({phase.analyses.filter(a => a.success).length}/{phase.analyses.length})
                     </span>
@@ -308,8 +344,8 @@ export const AgentActivityHeader = memo(
           </div>
         )}
 
-        {currentPhase && (
-          <p className="text-sm text-muted-foreground mt-2">{currentPhase.message}</p>
+        {currentPhase && currentPhase.status === 'running' && (
+          <p className="text-sm text-muted-foreground mt-2">{currentPhase.label}</p>
         )}
       </CardHeader>
     );
@@ -436,30 +472,82 @@ export const AgentActivityComplete = memo(
 );
 AgentActivityComplete.displayName = 'AgentActivityComplete';
 
+/**
+ * AgentActivityQueueTab — Placeholder for queue view.
+ */
+const AgentActivityQueueTab = memo(() => (
+  <div className="flex items-center justify-center h-32 text-muted-foreground">
+    <p className="text-sm">Queue-Ansicht wird in einem zukünftigen Update verfügbar sein.</p>
+  </div>
+));
+AgentActivityQueueTab.displayName = 'AgentActivityQueueTab';
+
+/**
+ * AgentActivityReasoningTab — Placeholder for reasoning view.
+ */
+const AgentActivityReasoningTab = memo(() => (
+  <div className="flex items-center justify-center h-32 text-muted-foreground">
+    <p className="text-sm">Reasoning-Ansicht wird in einem zukünftigen Update verfügbar sein.</p>
+  </div>
+));
+AgentActivityReasoningTab.displayName = 'AgentActivityReasoningTab';
+
+/**
+ * AgentActivityToolsTab — Placeholder for tools view.
+ */
+const AgentActivityToolsTab = memo(() => (
+  <div className="flex items-center justify-center h-32 text-muted-foreground">
+    <p className="text-sm">Tools-Ansicht wird in einem zukünftigen Update verfügbar sein.</p>
+  </div>
+));
+AgentActivityToolsTab.displayName = 'AgentActivityToolsTab';
+
 // ============================================================================
 // Root component
 // ============================================================================
 
 /**
  * AgentActivityView — Root component.
- * Groups events by agent name and shows progress per agent.
+ *
+ * Unified view that works with any scan type:
+ * - Pass `events` for event-based progress (lead scan / qualifications scan)
+ * - Pass `phases` for pre-computed phase data (audit scan)
+ * - Pass `expectedAgents` to customize which agents are shown
+ *
+ * Includes tabs: Agents (default), Queue, Reasoning, Tools
  */
 export const AgentActivityView = memo(function AgentActivityView({
   events,
   isStreaming,
+  phases: externalPhases,
+  expectedAgents,
+  defaultTab = 'agents',
   className,
   ...props
 }: AgentActivityViewProps) {
   const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
 
-  const phaseInfo = useMemo(() => extractPhaseInfo(events), [events]);
-  const agentGroups = useMemo(() => groupEventsByAgent(events), [events]);
+  // Use external phases if provided, otherwise extract from events
+  const phases = useMemo(
+    () => externalPhases ?? extractPhasesFromEvents(events),
+    [externalPhases, events]
+  );
+
+  const agents = expectedAgents ?? DEFAULT_EXPECTED_AGENTS;
+  const agentGroups = useMemo(() => groupEventsByAgent(events, agents), [events, agents]);
 
   const progress = useMemo(() => {
+    // If external phases provided, calculate from phase completion
+    if (externalPhases) {
+      const completed = externalPhases.filter(p => p.status === 'complete').length;
+      const total = Math.max(externalPhases.length, 1);
+      return Math.round((completed / total) * 100);
+    }
+    // Otherwise calculate from agent completion
     const completed = agentGroups.filter(g => g.status === 'complete').length;
     const total = Math.max(agentGroups.length, MIN_EXPECTED_AGENTS);
     return Math.round((completed / total) * 100);
-  }, [agentGroups]);
+  }, [externalPhases, agentGroups]);
 
   const streamStartTime = useMemo(() => {
     if (events.length === 0) return Date.now();
@@ -480,26 +568,51 @@ export const AgentActivityView = memo(function AgentActivityView({
 
   return (
     <Card className={cn(className)} {...props}>
-      <AgentActivityHeader isStreaming={isStreaming} progress={progress} phaseInfo={phaseInfo} />
+      <AgentActivityHeader isStreaming={isStreaming} progress={progress} phases={phases} />
       <CardContent className="space-y-2">
-        {agentGroups.length === 0 && <AgentActivityEmpty isStreaming={isStreaming} />}
+        <Tabs defaultValue={defaultTab}>
+          <TabsList className="mb-3">
+            {TAB_CONFIG.map(tab => (
+              <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-1.5">
+                <tab.icon className="h-3.5 w-3.5" />
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {agentGroups.map(group => (
-          <AgentActivityGroup
-            key={group.name}
-            group={group}
-            isExpanded={expandedAgents.has(group.name)}
-            onToggle={() => toggleAgent(group.name)}
-            streamStartTime={streamStartTime}
-          />
-        ))}
+          <TabsContent value="agents">
+            {agentGroups.length === 0 && <AgentActivityEmpty isStreaming={isStreaming} />}
 
-        {!isStreaming && agentGroups.length > 0 && (
-          <AgentActivityComplete
-            completedCount={agentGroups.filter(g => g.status === 'complete').length}
-            totalCount={agentGroups.length}
-          />
-        )}
+            {agentGroups.map(group => (
+              <AgentActivityGroup
+                key={group.name}
+                group={group}
+                isExpanded={expandedAgents.has(group.name)}
+                onToggle={() => toggleAgent(group.name)}
+                streamStartTime={streamStartTime}
+              />
+            ))}
+
+            {!isStreaming && agentGroups.length > 0 && (
+              <AgentActivityComplete
+                completedCount={agentGroups.filter(g => g.status === 'complete').length}
+                totalCount={agentGroups.length}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="queue">
+            <AgentActivityQueueTab />
+          </TabsContent>
+
+          <TabsContent value="reasoning">
+            <AgentActivityReasoningTab />
+          </TabsContent>
+
+          <TabsContent value="tools">
+            <AgentActivityToolsTab />
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

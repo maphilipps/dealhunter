@@ -1,6 +1,15 @@
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
-import { pgTable, text, integer, timestamp, boolean, index, customType } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  text,
+  integer,
+  timestamp,
+  boolean,
+  index,
+  uniqueIndex,
+  customType,
+} from 'drizzle-orm/pg-core';
 
 // pgvector Typ für 3072-dimensionale Embeddings (text-embedding-3-large)
 const vector3072 = customType<{ data: number[]; dpiData: string }>({
@@ -483,6 +492,38 @@ export const features = pgTable(
 
 export type Feature = typeof features.$inferSelect;
 export type NewFeature = typeof features.$inferInsert;
+
+// ─── CMS Feature Evaluation Cache (TTL) ───────────────────────────────────────
+
+export const cmsFeatureEvaluations = pgTable(
+  'cms_feature_evaluations',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    featureId: text('feature_id')
+      .notNull()
+      .references(() => features.id),
+    technologyId: text('technology_id')
+      .notNull()
+      .references(() => technologies.id),
+    score: integer('score').notNull(), // 0..100
+    reasoning: text('reasoning'),
+    expiresAt: timestamp('expires_at').notNull(),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    featureTechUniqueIdx: uniqueIndex('cms_feature_eval_feature_tech_unique_idx').on(
+      table.featureId,
+      table.technologyId
+    ),
+    expiresIdx: index('cms_feature_eval_expires_idx').on(table.expiresAt),
+    techIdx: index('cms_feature_eval_tech_idx').on(table.technologyId),
+  })
+);
+
+export type CMSFeatureEvaluation = typeof cmsFeatureEvaluations.$inferSelect;
+export type NewCMSFeatureEvaluation = typeof cmsFeatureEvaluations.$inferInsert;
 
 export const employees = pgTable(
   'employees',

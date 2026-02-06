@@ -31,81 +31,129 @@ export function extractRequirementsFromQualificationScan(
     | Record<string, unknown>
     | undefined;
 
+  function mapCategory(raw: unknown): RequirementMatch['category'] {
+    const c = String(raw || '').toLowerCase();
+    if (c.includes('compliance') || c.includes('legal') || c.includes('privacy'))
+      return 'compliance';
+    if (c.includes('performance')) return 'performance';
+    if (c.includes('scal') || c.includes('enterprise')) return 'scalability';
+    if (c.includes('tech')) return 'technical';
+    if (c.includes('integration')) return 'technical';
+    if (c.includes('security')) return 'technical';
+    if (c.includes('content')) return 'functional';
+    if (c.includes('marketing')) return 'functional';
+    return 'functional';
+  }
+
+  function mapPriority(raw: unknown): RequirementMatch['priority'] {
+    const p = typeof raw === 'number' ? raw : Number(raw);
+    if (Number.isFinite(p)) {
+      if (p >= 75) return 'must-have';
+      if (p >= 55) return 'should-have';
+      return 'nice-to-have';
+    }
+    return 'should-have';
+  }
+
   // Features -> Functional Requirements
   if (features) {
-    if (features.ecommerce) {
-      requirements.push({
-        name: 'E-Commerce Funktionalität',
-        category: 'functional',
-        priority: 'must-have',
-        source: 'detected',
-      });
-    }
-    if (features.multiLanguage) {
-      requirements.push({
-        name: 'Mehrsprachigkeit',
-        category: 'functional',
-        priority: 'must-have',
-        source: 'detected',
-      });
-    }
-    if (features.search) {
-      requirements.push({
-        name: 'Suchfunktion',
-        category: 'functional',
-        priority: 'should-have',
-        source: 'detected',
-      });
-    }
-    if (features.blog) {
-      requirements.push({
-        name: 'Blog/News Bereich',
-        category: 'functional',
-        priority: 'should-have',
-        source: 'detected',
-      });
-    }
-    if (features.forms) {
-      requirements.push({
-        name: 'Formulare',
-        category: 'functional',
-        priority: 'should-have',
-        source: 'detected',
-      });
-    }
-    if (features.userAccounts) {
-      requirements.push({
-        name: 'Benutzerkonten/Login',
-        category: 'functional',
-        priority: 'must-have',
-        source: 'detected',
-      });
-    }
-    if (features.api) {
-      requirements.push({
-        name: 'API-Schnittstelle',
-        category: 'technical',
-        priority: 'should-have',
-        source: 'detected',
-      });
-    }
-    if (features.mobileApp) {
-      requirements.push({
-        name: 'Mobile App Integration',
-        category: 'functional',
-        priority: 'nice-to-have',
-        source: 'detected',
-      });
-    }
-    const custom = features.customFeatures as string[] | undefined;
-    if (custom && custom.length > 0) {
-      for (const feature of custom.slice(0, 6)) {
+    const detected = features.detectedFeatures as
+      | Array<{
+          id?: string;
+          slug?: string;
+          name?: string;
+          category?: string;
+          priority?: number;
+          confidence?: number;
+        }>
+      | undefined;
+
+    // Preferred: DB-driven feature library matches
+    if (detected && detected.length > 0) {
+      for (const f of detected) {
+        if (!f?.name) continue;
         requirements.push({
-          name: feature,
+          name: f.name,
+          category: mapCategory(f.category),
+          priority: mapPriority(f.priority),
+          source: 'detected',
+        });
+      }
+    } else {
+      if (features.ecommerce) {
+        requirements.push({
+          name: 'E-Commerce Funktionalität',
+          category: 'functional',
+          priority: 'must-have',
+          source: 'detected',
+        });
+      }
+      if (features.multiLanguage) {
+        requirements.push({
+          name: 'Mehrsprachigkeit',
+          category: 'functional',
+          priority: 'must-have',
+          source: 'detected',
+        });
+      }
+      if (features.search) {
+        requirements.push({
+          name: 'Suchfunktion',
+          category: 'functional',
+          priority: 'should-have',
+          source: 'detected',
+        });
+      }
+      if (features.blog) {
+        requirements.push({
+          name: 'Blog/News Bereich',
+          category: 'functional',
+          priority: 'should-have',
+          source: 'detected',
+        });
+      }
+      if (features.forms) {
+        requirements.push({
+          name: 'Formulare',
+          category: 'functional',
+          priority: 'should-have',
+          source: 'detected',
+        });
+      }
+      if (features.userAccounts) {
+        requirements.push({
+          name: 'Benutzerkonten/Login',
+          category: 'functional',
+          priority: 'must-have',
+          source: 'detected',
+        });
+      }
+      if (features.api) {
+        requirements.push({
+          name: 'API-Schnittstelle',
+          category: 'technical',
+          priority: 'should-have',
+          source: 'detected',
+        });
+      }
+      if (features.mobileApp) {
+        requirements.push({
+          name: 'Mobile App Integration',
           category: 'functional',
           priority: 'nice-to-have',
           source: 'detected',
         });
+      }
+      const custom = features.customFeatures as string[] | undefined;
+      if (custom && custom.length > 0) {
+        for (const feature of custom.slice(0, 6)) {
+          requirements.push({
+            name: feature,
+            category: 'functional',
+            priority: 'nice-to-have',
+            source: 'detected',
+          });
+        }
       }
     }
   }

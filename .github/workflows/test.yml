@@ -43,7 +43,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -70,6 +70,12 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+
+      - name: Enable pgvector extension
+        run: |
+          node -e "const { Client } = require('pg'); const url = process.env.DATABASE_URL; const sleep = ms => new Promise(r => setTimeout(r, ms)); (async () => { let lastErr; for (let i = 0; i < 30; i++) { try { const c = new Client({ connectionString: url }); await c.connect(); await c.query('CREATE EXTENSION IF NOT EXISTS vector'); await c.end(); console.log('pgvector extension enabled'); return; } catch (e) { lastErr = e; await sleep(2000); } } console.error(lastErr); process.exit(1); })();"
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dealhunter_test
 
       - name: Run database migrations
         run: npm run db:migrate

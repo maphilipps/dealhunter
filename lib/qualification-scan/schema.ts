@@ -329,6 +329,20 @@ export const featuresSchema = z.object({
   api: z.boolean().describe('Has API endpoints detected'),
   mobileApp: z.boolean().describe('Has mobile app integration'),
   customFeatures: z.array(z.string()).describe('Other notable features detected'),
+  detectedFeatures: z
+    .array(
+      z.object({
+        id: z.string().describe('Feature ID from the feature library'),
+        slug: z.string().describe('Stable feature identifier (slug)'),
+        name: z.string().describe('Human-readable feature name'),
+        category: z.string().optional().describe('Feature category'),
+        priority: z.number().min(0).max(100).optional().describe('Importance (0-100)'),
+        confidence: z.number().min(0).max(100).describe('Confidence (0-100)'),
+        evidence: z.array(z.string()).optional().default([]).describe('Short evidence strings'),
+      })
+    )
+    .optional()
+    .describe('Detected features matched against the Feature Library'),
 });
 
 export type Features = z.infer<typeof featuresSchema>;

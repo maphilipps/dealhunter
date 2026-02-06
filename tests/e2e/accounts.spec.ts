@@ -15,13 +15,13 @@ import { test, expect } from '@playwright/test';
 test.describe('Accounts: List View', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-1.1: Page Load and Display', async ({ page }) => {
     // Navigate to Accounts
     await page.goto('/accounts');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify page loaded
     await expect(page).toHaveURL('/accounts');
@@ -33,7 +33,7 @@ test.describe('Accounts: List View', () => {
 
   test('TC-1.2: Empty State Display', async ({ page }) => {
     await page.goto('/accounts');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check if empty state or list is displayed
     const accountCards = await page.locator('.grid > a').count();
@@ -53,10 +53,10 @@ test.describe('Accounts: List View', () => {
     await page.fill('input[name="website"]', 'https://example.com');
     await page.fill('textarea[name="notes"]', 'Test notes for display');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/accounts');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find the account card we just created
     const accountCard = page.locator('text=Display Test Account').locator('..').locator('..');
@@ -83,12 +83,12 @@ test.describe('Accounts: List View', () => {
 test.describe('Accounts: Account Creation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-2.1: Account Creation - Full Flow with Required Fields', async ({ page }) => {
     await page.goto('/accounts');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click "Neuer Account" button
     await page.click('button:has-text("Neuer Account")');
@@ -119,7 +119,7 @@ test.describe('Accounts: Account Creation', () => {
 
   test('TC-2.2: Account Creation - Full Flow with All Fields', async ({ page }) => {
     await page.goto('/accounts/new');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Fill in all fields
     await page.fill('input[name="name"]', 'Complete Test Account');
@@ -146,7 +146,7 @@ test.describe('Accounts: Account Creation', () => {
 
   test('TC-2.3: Account Creation - Validation for Required Fields', async ({ page }) => {
     await page.goto('/accounts/new');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Try to submit without filling fields
     await page.click('button[type="submit"]');
@@ -158,7 +158,7 @@ test.describe('Accounts: Account Creation', () => {
 
   test('TC-2.4: Account Creation - Cancel Button', async ({ page }) => {
     await page.goto('/accounts/new');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Fill some data
     await page.fill('input[name="name"]', 'Cancelled Account');
@@ -174,7 +174,7 @@ test.describe('Accounts: Account Creation', () => {
 test.describe('Accounts: Account Detail View', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-3.1: Account Detail - Navigation and Header', async ({ page }) => {
@@ -185,7 +185,7 @@ test.describe('Accounts: Account Detail View', () => {
     await page.fill('input[name="website"]', 'https://www.healthcare-test.com');
     await page.fill('textarea[name="notes"]', 'Healthcare industry test notes');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to accounts list and click on the account
     await page.goto('/accounts');
@@ -215,11 +215,11 @@ test.describe('Accounts: Account Detail View', () => {
     await page.fill('input[name="website"]', 'https://www.retail-test.com');
     await page.fill('textarea[name="notes"]', 'Retail test notes');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/accounts');
     await page.click('text=Info Card Test');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find Account Information card
     const infoCard = page
@@ -249,11 +249,11 @@ test.describe('Accounts: Account Detail View', () => {
     await page.fill('input[name="name"]', 'Stats Test Account');
     await page.fill('input[name="industry"]', 'Manufacturing');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/accounts');
     await page.click('text=Stats Test Account');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find Statistics card
     const statsCard = page.locator('h3:has-text("Statistiken")').locator('..').locator('..');
@@ -269,11 +269,11 @@ test.describe('Accounts: Account Detail View', () => {
     await page.fill('input[name="name"]', 'Empty Opps Account');
     await page.fill('input[name="industry"]', 'Education');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/accounts');
     await page.click('text=Empty Opps Account');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find Opportunities card
     const oppsCard = page.locator('h3:has-text("Opportunities")').locator('..').locator('..');
@@ -288,7 +288,7 @@ test.describe('Accounts: Account Detail View', () => {
 test.describe('Accounts: Account Edit', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-4.1: Account Edit - Navigation and Pre-filled Data', async ({ page }) => {
@@ -299,12 +299,12 @@ test.describe('Accounts: Account Edit', () => {
     await page.fill('input[name="website"]', 'https://www.original.com');
     await page.fill('textarea[name="notes"]', 'Original notes');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to detail page
     await page.goto('/accounts');
     await page.click('text=Edit Test Original');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click edit button
     await page.click('a:has-text("Bearbeiten")');
@@ -328,13 +328,13 @@ test.describe('Accounts: Account Edit', () => {
     await page.fill('input[name="name"]', 'Update Test Account');
     await page.fill('input[name="industry"]', 'Logistics');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to edit
     await page.goto('/accounts');
     await page.click('text=Update Test Account');
     await page.click('a:has-text("Bearbeiten")');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Update all fields
     await page.fill('input[name="name"]', 'Updated Account Name');
@@ -364,14 +364,14 @@ test.describe('Accounts: Account Edit', () => {
     await page.fill('input[name="name"]', 'Cancel Edit Test');
     await page.fill('input[name="industry"]', 'Construction');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to edit
     await page.goto('/accounts');
     await page.click('text=Cancel Edit Test');
     const detailUrl = page.url();
     await page.click('a:has-text("Bearbeiten")');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Make changes but cancel
     await page.fill('input[name="name"]', 'Should Not Save');
@@ -390,7 +390,7 @@ test.describe('Accounts: Account Edit', () => {
 test.describe('Accounts: Account Deletion', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-5.1: Account Deletion - Confirmation Dialog', async ({ page }) => {
@@ -399,12 +399,12 @@ test.describe('Accounts: Account Deletion', () => {
     await page.fill('input[name="name"]', 'Delete Dialog Test');
     await page.fill('input[name="industry"]', 'Media');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to detail page
     await page.goto('/accounts');
     await page.click('text=Delete Dialog Test');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click delete button
     await page.click('button:has-text("Löschen")');
@@ -429,7 +429,7 @@ test.describe('Accounts: Account Deletion', () => {
     await page.fill('input[name="name"]', 'Cancel Delete Test');
     await page.fill('input[name="industry"]', 'Telecom');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to detail and open delete dialog
     await page.goto('/accounts');
@@ -450,7 +450,7 @@ test.describe('Accounts: Account Deletion', () => {
     await page.fill('input[name="name"]', 'Successful Delete Test');
     await page.fill('input[name="industry"]', 'Agriculture');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to detail and delete
     await page.goto('/accounts');
@@ -474,7 +474,7 @@ test.describe('Accounts: Account Deletion', () => {
 test.describe('Accounts: Account-RFP Linking', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-6.1: RFP Creation with Account Selection', async ({ page }) => {
@@ -483,11 +483,11 @@ test.describe('Accounts: Account-RFP Linking', () => {
     await page.fill('input[name="name"]', 'RFP Link Test Account');
     await page.fill('input[name="industry"]', 'Technology');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Now create an RFP and link to this account
     await page.goto('/qualifications/new');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check if account dropdown/select exists
     const accountSelect = page.locator('select[name="accountId"]');
@@ -521,11 +521,11 @@ test.describe('Accounts: Account-RFP Linking', () => {
     await page.fill('input[name="name"]', 'View Linked RFPs Account');
     await page.fill('input[name="industry"]', 'Finance');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Create RFP linked to this account
     await page.goto('/qualifications/new');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const accountSelect = page.locator('select[name="accountId"]');
     if ((await accountSelect.count()) > 0) {
@@ -539,12 +539,12 @@ test.describe('Accounts: Account-RFP Linking', () => {
     await page.click('button[type="submit"]');
 
     // Wait for extraction
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Now go back to account detail
     await page.goto('/accounts');
     await page.click('text=View Linked RFPs Account');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find Opportunities table
     const oppsTable = page.locator('h3:has-text("Opportunities")').locator('..').locator('..');
@@ -564,11 +564,11 @@ test.describe('Accounts: Account-RFP Linking', () => {
     await page.fill('input[name="name"]', 'Cannot Delete Account');
     await page.fill('input[name="industry"]', 'Insurance');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Create linked RFP
     await page.goto('/qualifications/new');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const accountSelect = page.locator('select[name="accountId"]');
     if ((await accountSelect.count()) > 0) {
@@ -580,7 +580,7 @@ test.describe('Accounts: Account-RFP Linking', () => {
     await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Try to delete account
     await page.goto('/accounts');

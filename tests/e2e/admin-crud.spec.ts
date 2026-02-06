@@ -12,13 +12,13 @@ import { test, expect } from '@playwright/test';
 test.describe('Admin: Business Units Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-1: Business Units List - Page Load and Display', async ({ page }) => {
     // Navigate to Business Units
     await page.goto('/admin/business-units');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify page loaded
     await expect(page).toHaveURL('/admin/business-units');
@@ -42,7 +42,7 @@ test.describe('Admin: Business Units Management', () => {
 
   test('TC-2: Business Unit Creation - Full Flow', async ({ page }) => {
     await page.goto('/admin/business-units');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click "New Business Unit" button
     await page.click('button:has-text("Neue Business Unit")');
@@ -76,7 +76,7 @@ test.describe('Admin: Business Units Management', () => {
 
   test('TC-3: Business Unit Display - Card Information', async ({ page }) => {
     await page.goto('/admin/business-units');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find first business unit card
     const firstCard = page.locator('.grid > div').first();
@@ -107,10 +107,10 @@ test.describe('Admin: Business Units Management', () => {
     await page.fill('input[name="leaderName"]', 'Delete Leader');
     await page.fill('input[name="leaderEmail"]', 'delete@adesso.de');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/admin/business-units');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find the business unit we just created
     const deleteCard = page.locator('text=Delete Test BU').locator('..').locator('..');
@@ -136,12 +136,12 @@ test.describe('Admin: Business Units Management', () => {
 test.describe('Admin: Technologies Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-5: Technologies List - Page Load and Display', async ({ page }) => {
     await page.goto('/admin/technologies');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify page loaded
     await expect(page).toHaveURL('/admin/technologies');
@@ -169,11 +169,11 @@ test.describe('Admin: Technologies Management', () => {
     await page.fill('input[name="leaderName"]', 'Tech Leader');
     await page.fill('input[name="leaderEmail"]', 'tech@adesso.de');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Now create technology
     await page.goto('/admin/technologies');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click "New Technology" button
     await page.click('button:has-text("Neue Technologie")');
@@ -222,7 +222,7 @@ test.describe('Admin: Technologies Management', () => {
 
   test('TC-7: Technology Display - Card Information', async ({ page }) => {
     await page.goto('/admin/technologies');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find first technology card
     const firstCard = page.locator('.grid > div').first();
@@ -253,7 +253,7 @@ test.describe('Admin: Technologies Management', () => {
     await page.fill('input[name="leaderName"]', 'Delete Leader');
     await page.fill('input[name="leaderEmail"]', 'deletetech@adesso.de');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/admin/technologies/new');
     await page.fill('input[name="name"]', 'Delete Test Tech');
@@ -262,10 +262,10 @@ test.describe('Admin: Technologies Management', () => {
       await businessUnitSelect.selectOption({ index: 1 });
     }
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/admin/technologies');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find the technology card
     const deleteCard = page.locator('text=Delete Test Tech').locator('..').locator('..');
@@ -289,7 +289,7 @@ test.describe('Admin: Technologies Management', () => {
 
   test('TC-9: Baseline Entity Counts - JSON Structure', async ({ page }) => {
     await page.goto('/admin/technologies');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find a technology with entity counts
     const cardWithEntities = page.locator('text=Entities:').locator('..').locator('..');
@@ -309,7 +309,7 @@ test.describe('Admin: Technologies Management', () => {
 test.describe('Admin: Access Control', () => {
   test('TC-10: Admin Section Visibility', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check if Admin link exists in sidebar/navigation
     const adminLink = page.locator('a:has-text("Admin")');

@@ -3,6 +3,8 @@
 // Steps that analyze the website data in parallel
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { eq } from 'drizzle-orm';
+
 import type {
   TechStack,
   ContentVolume,
@@ -18,8 +20,14 @@ import type {
   MigrationComplexity,
   DecisionMakersResearch,
 } from '../../schema';
+import { generateText, Output } from 'ai';
+import { z } from 'zod';
 import { wrapTool } from '../tool-wrapper';
 import type { WebsiteData } from '../types';
+
+import { getModelForSlot } from '@/lib/ai/providers';
+import { db } from '@/lib/db';
+import { features as featureLibrary } from '@/lib/db/schema';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPER: Format results for RAG storage (with type guards)
@@ -360,7 +368,134 @@ export function detectFeatures(websiteData: WebsiteData): Features {
     blog: /blog|news|artikel|beitr|post/i.test(html),
     mobileApp: /app.store|play.store|mobile.app|download.app/i.test(html),
     customFeatures,
+    detectedFeatures: [],
   };
+}
+
+async function detectFeaturesWithAgent(websiteData: WebsiteData): Promise<Features> {
+  const activeFeatures = await db
+    .select({
+      id: featureLibrary.id,
+      name: featureLibrary.name,
+      slug: featureLibrary.slug,
+      category: featureLibrary.category,
+      description: featureLibrary.description,
+      priority: featureLibrary.priority,
+    })
+    .from(featureLibrary)
+    .where(eq(featureLibrary.isActive, true));
+
+  if (activeFeatures.length === 0) {
+    return detectFeatures(websiteData);
+  }
+
+  const model = getModelForSlot('fast');
+
+  const schema = z.object({
+    matches: z
+      .array(
+        z.object({
+          slug: z.string(),
+          confidence: z.number().min(0).max(100),
+          evidence: z.array(z.string()).optional().default([]),
+        })
+      )
+      .max(30)
+      .default([]),
+    customFeatures: z.array(z.string()).max(20).optional().default([]),
+  });
+
+  // Keep the HTML small but representative.
+  const html = websiteData.html.slice(0, 20000);
+
+  const featureList = activeFeatures
+    .map(f => ({
+      slug: f.slug,
+      name: f.name,
+      category: f.category,
+      description: f.description ?? '',
+      priority: f.priority,
+    }))
+    .slice(0, 60); // safety guard
+
+  try {
+    const { output } = await generateText({
+      model,
+      output: Output.object({ schema }),
+      prompt: `Du analysierst Website-HTML und matchst Features gegen eine Feature-Library.
+
+REGELN:
+- Gib NUR Features zurück, für die du konkrete Hinweise im HTML siehst (Keywords, Links, UI-Texte, Strukturen).
+- Wähle maximal 20 Matches (höhere Priorität zuerst).
+- evidence: 1-3 kurze Belege (z.B. "checkout", "login", "/shop", "hreflang", "wp-json", "saml").
+- confidence: 0-100. 80+ nur bei klaren Indizien.
+- customFeatures: optionale freie Tags (z.B. "events", "jobs", "media") falls eindeutig erkennbar.
+
+FEATURES (JSON):
+${JSON.stringify(featureList)}
+
+HTML (Auszug):
+${html}`,
+      temperature: 0,
+      maxOutputTokens: 1200,
+    });
+
+    const matched = (output?.matches ?? [])
+      .filter(m => activeFeatures.some(f => f.slug === m.slug))
+      .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))
+      .slice(0, 20);
+
+    const matchedBySlug = new Map(matched.map(m => [m.slug, m]));
+
+    const detectedFeatures = activeFeatures
+      .filter(f => matchedBySlug.has(f.slug))
+      .map(f => {
+        const m = matchedBySlug.get(f.slug)!;
+        return {
+          id: f.id,
+          slug: f.slug,
+          name: f.name,
+          category: f.category,
+          priority: f.priority,
+          confidence: Math.round(m.confidence),
+          evidence: (m.evidence ?? []).slice(0, 3),
+        };
+      });
+
+    const slugToLegacyKey: Record<string, keyof Features> = {
+      ecommerce: 'ecommerce',
+      'user-accounts': 'userAccounts',
+      search: 'search',
+      multilanguage: 'multiLanguage',
+      'blog-news': 'blog',
+      forms: 'forms',
+      api: 'api',
+      'mobile-app': 'mobileApp',
+    };
+
+    const legacy = detectFeatures(websiteData);
+
+    // Prefer agent matches for legacy booleans when we have a direct mapping.
+    for (const [slug, key] of Object.entries(slugToLegacyKey)) {
+      if (matchedBySlug.has(slug)) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        (legacy as unknown as Record<string, boolean>)[key as string] = true;
+      }
+    }
+
+    const custom = Array.from(
+      new Set([...(output?.customFeatures ?? []), ...(legacy.customFeatures ?? [])])
+    ).slice(0, 20);
+
+    return {
+      ...legacy,
+      customFeatures: custom,
+      detectedFeatures,
+    };
+  } catch (error) {
+    console.warn('[QualificationScan] Feature detection agent failed, falling back:', error);
+    return detectFeatures(websiteData);
+  }
 }
 
 export function runSeoAudit(html: string): SEOAudit {
@@ -524,8 +659,8 @@ export const featuresStep = wrapTool<WebsiteData, Features>(
       getConfidence: () => 70, // Feature detection is pattern-based
     },
   },
-  (websiteData, _ctx) => {
-    return detectFeatures(websiteData);
+  async (websiteData, _ctx) => {
+    return detectFeaturesWithAgent(websiteData);
   }
 );
 

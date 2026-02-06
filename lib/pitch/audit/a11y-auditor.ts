@@ -109,5 +109,5 @@ export async function auditAccessibility(
     maxOutputTokens: 8000,
   });
 
-  return result.output!;
+  return result.output;
 }

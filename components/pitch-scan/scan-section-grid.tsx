@@ -130,7 +130,7 @@ export function ScanSectionGrid({
   // Override with live SSE data when available
   if (livePhases && livePhases.length > 0) {
     for (const phase of livePhases) {
-      const id = phase.id as PitchScanSectionId;
+      const id = phase.id;
       const agentConfidence = phase.agents[0]?.confidence;
       sectionMap.set(id, { status: phase.status, confidence: agentConfidence });
     }

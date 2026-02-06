@@ -117,5 +117,5 @@ export async function detectTechStack(
     maxOutputTokens: 8000,
   });
 
-  return result.output!;
+  return result.output;
 }

@@ -17,7 +17,7 @@ export async function qualify(lead: FormSchema, research: string): Promise<Quali
     )} and RESEARCH: ${research}`,
   });
 
-  return output!;
+  return output;
 }
 
 /**

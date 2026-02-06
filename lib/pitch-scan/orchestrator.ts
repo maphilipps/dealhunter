@@ -120,7 +120,7 @@ export async function runPitchScanOrchestrator(
               }
             }
           }
-          throw lastError;
+          throw lastError ?? new Error('Unknown error');
         })
       );
 

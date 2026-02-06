@@ -24,13 +24,17 @@ export function AutoScanStarter({ pitchId, customerName, activeRunId }: AutoScan
     if (activeRunId || startedRef.current) return;
     startedRef.current = true;
 
-    startPitchScan(pitchId).then(result => {
-      if (result.success) {
-        setStarted(true);
-      } else {
-        setError(result.error ?? 'Unbekannter Fehler');
-      }
-    });
+    void startPitchScan(pitchId)
+      .then(result => {
+        if (result.success) {
+          setStarted(true);
+        } else {
+          setError(result.error ?? 'Unbekannter Fehler');
+        }
+      })
+      .catch(err => {
+        setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
+      });
   }, [pitchId, activeRunId]);
 
   return (

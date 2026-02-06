@@ -18,13 +18,13 @@ import { test, expect } from '@playwright/test';
 test.describe('Navigation: Sidebar Links', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-1.1: Leads Link navigates correctly', async ({ page }) => {
     // Click Leads link in sidebar
     await page.click('a[href="/qualifications"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify we're on leads page
     await expect(page).toHaveURL('/qualifications');
@@ -55,7 +55,7 @@ test.describe('Navigation: Sidebar Links', () => {
 
     // Click "Alle RFPs"
     await page.click('a:has-text("Alle RFPs")');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify navigation
     await expect(page).toHaveURL('/qualifications');
@@ -68,7 +68,7 @@ test.describe('Navigation: Sidebar Links', () => {
 
     // Click "Neuer RFP"
     await page.click('a:has-text("Neuer RFP")');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify navigation
     await expect(page).toHaveURL('/qualifications/new');
@@ -81,7 +81,7 @@ test.describe('Navigation: Sidebar Links', () => {
 
     // Click "All Accounts"
     await page.click('a:has-text("All Accounts")');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify navigation
     await expect(page).toHaveURL('/accounts');
@@ -90,7 +90,7 @@ test.describe('Navigation: Sidebar Links', () => {
   test('TC-1.6: Analytics Link navigates correctly', async ({ page }) => {
     // Click Analytics link
     await page.click('button:has-text("Analytics")');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify navigation
     await expect(page).toHaveURL('/analytics');
@@ -122,7 +122,7 @@ test.describe('Navigation: Sidebar Links', () => {
 
     // Click "Referenzen"
     await page.click('a:has-text("Referenzen")');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify navigation
     await expect(page).toHaveURL('/master-data/references');
@@ -135,7 +135,7 @@ test.describe('Navigation: Sidebar Links', () => {
 
     // Click "Kompetenzen"
     await page.click('a:has-text("Kompetenzen")');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify navigation
     await expect(page).toHaveURL('/master-data/competencies');
@@ -148,7 +148,7 @@ test.describe('Navigation: Sidebar Links', () => {
 
     // Click "Wettbewerber"
     await page.click('a:has-text("Wettbewerber")');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify navigation
     await expect(page).toHaveURL('/master-data/competitors');
@@ -189,7 +189,7 @@ test.describe('Navigation: Sidebar Links', () => {
 
       // Click "Business Units"
       await page.click('a:has-text("Business Units")');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Verify navigation
       await expect(page).toHaveURL('/admin/business-units');
@@ -207,7 +207,7 @@ test.describe('Navigation: Sidebar Links', () => {
 
       // Click "Technologies"
       await page.click('a:has-text("Technologies")');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Verify navigation
       await expect(page).toHaveURL('/admin/technologies');
@@ -223,7 +223,7 @@ test.describe('Navigation: Sidebar Links', () => {
 
     if (quickActionsCount > 0) {
       await quickActions.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Should navigate to /qualifications/new
       await expect(page).toHaveURL('/qualifications/new');
@@ -238,13 +238,13 @@ test.describe('Navigation: Sidebar Links', () => {
 test.describe('Navigation: Breadcrumbs', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-2.1: Leads → Breadcrumb shows Leads', async ({ page }) => {
     // Navigate to leads page (root redirects there)
     await page.goto('/qualifications');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // On leads page, breadcrumb should show "Leads"
     const breadcrumb = page.locator('nav[aria-label="breadcrumb"]');
@@ -258,7 +258,7 @@ test.describe('Navigation: Breadcrumbs', () => {
   test('TC-2.2: Leads → Breadcrumb shows correctly', async ({ page }) => {
     // Navigate to Leads
     await page.click('a[href="/qualifications"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check breadcrumb
     const breadcrumb = page.locator('nav[aria-label="breadcrumb"]');
@@ -272,7 +272,7 @@ test.describe('Navigation: Breadcrumbs', () => {
   test('TC-2.3: Breadcrumb Links are clickable', async ({ page }) => {
     // Navigate to a sub-page
     await page.goto('/master-data/references');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find breadcrumb
     const breadcrumb = page.locator('nav[aria-label="breadcrumb"]');
@@ -283,7 +283,7 @@ test.describe('Navigation: Breadcrumbs', () => {
 
       if ((await masterDataLink.count()) > 0) {
         await masterDataLink.click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         // Verify we navigated
         await expect(page).toHaveURL('/master-data');
@@ -294,7 +294,7 @@ test.describe('Navigation: Breadcrumbs', () => {
   test('TC-2.4: Active Page disabled in Breadcrumb', async ({ page }) => {
     // Navigate to RFPs
     await page.goto('/qualifications');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check breadcrumb
     const breadcrumb = page.locator('nav[aria-label="breadcrumb"]');
@@ -321,7 +321,7 @@ test.describe('Navigation: Responsive Sidebar', () => {
     // Set desktop viewport
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Sidebar should be visible
     const sidebar = page.locator('[data-sidebar="sidebar"]');
@@ -335,7 +335,7 @@ test.describe('Navigation: Responsive Sidebar', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Sidebar might be hidden or in drawer mode
     const sidebar = page.locator('[data-sidebar="sidebar"]');
@@ -355,7 +355,7 @@ test.describe('Navigation: Responsive Sidebar', () => {
 
   test('TC-3.3: Toggle Sidebar Button works', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find sidebar toggle button
     const sidebarToggle = page.locator('[data-sidebar="trigger"]');
@@ -377,7 +377,7 @@ test.describe('Navigation: Responsive Sidebar', () => {
 
   test('TC-3.4: Sidebar State persistent (localStorage)', async ({ page, context }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find sidebar toggle
     const sidebarToggle = page.locator('[data-sidebar="trigger"]');
@@ -392,7 +392,7 @@ test.describe('Navigation: Responsive Sidebar', () => {
 
       // Reload page
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // State should persist
       const newState = await sidebar.getAttribute('data-state');
@@ -408,7 +408,7 @@ test.describe('Navigation: Responsive Sidebar', () => {
 test.describe('Navigation: User Menu', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-4.1: User Avatar is clickable', async ({ page }) => {
@@ -490,7 +490,7 @@ test.describe('Navigation: Layout Integrity', () => {
     test(`TC-5.1: No horizontal scroll at ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Check document width vs viewport width
       const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -503,7 +503,7 @@ test.describe('Navigation: Layout Integrity', () => {
     test(`TC-5.2: Content stays within viewport at ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // No horizontal scrollbar should exist
       const hasHorizontalScroll = await page.evaluate(() => {
@@ -516,7 +516,7 @@ test.describe('Navigation: Layout Integrity', () => {
     test(`TC-5.3: No overlapping elements at ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Check that main content and sidebar don't overlap
       const sidebar = page.locator('[data-sidebar="sidebar"]');
@@ -547,7 +547,7 @@ test.describe('Navigation: Layout Integrity', () => {
 
   test('TC-5.4: All navigation links are accessible', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Get all links in sidebar
     const sidebarLinks = page.locator('[data-sidebar="sidebar"] a');
@@ -568,7 +568,7 @@ test.describe('Navigation: Layout Integrity', () => {
     // Test transition from desktop to mobile
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Resize to mobile
     await page.setViewportSize({ width: 375, height: 667 });

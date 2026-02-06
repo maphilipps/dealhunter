@@ -31,7 +31,7 @@ async function createRFP(page: Page, text: string, url?: string) {
 test.describe('Extraction: Loading State (TC-1)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-1.1: ActivityStream shows AI extraction in progress', async ({ page }) => {
@@ -98,7 +98,7 @@ test.describe('Extraction: Loading State (TC-1)', () => {
 test.describe('Extraction: Complete State (TC-2)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-2.1: Status changes to "reviewing"', async ({ page }) => {
@@ -171,7 +171,7 @@ test.describe('Extraction: Complete State (TC-2)', () => {
 test.describe('Extraction: Field Editing (TC-3)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-3.1: Fields are editable in extraction preview', async ({ page }) => {
@@ -216,7 +216,7 @@ test.describe('Extraction: Field Editing (TC-3)', () => {
 test.describe('Extraction: Navigation (TC-4)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-4.1: Breadcrumbs show Leads → [Customer Name]', async ({ page }) => {
@@ -272,7 +272,7 @@ test.describe('Extraction: Navigation (TC-4)', () => {
 test.describe('Extraction: Error States (TC-5)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-5.1: Empty input shows validation error', async ({ page }) => {

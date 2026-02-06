@@ -112,9 +112,9 @@ export function extractRequirementsFromQualificationScan(
 
   // Tech Stack -> Technical Requirements
   if (techStack) {
-    if (techStack.cms) {
+    if (typeof techStack.cms === 'string' && techStack.cms) {
       requirements.push({
-        name: `CMS bevorzugt: ${String(techStack.cms)}`,
+        name: `CMS bevorzugt: ${techStack.cms}`,
         category: 'technical',
         priority: 'should-have',
         source: 'detected',
@@ -136,9 +136,9 @@ export function extractRequirementsFromQualificationScan(
         source: 'detected',
       });
     }
-    if (techStack.hosting) {
+    if (typeof techStack.hosting === 'string' && techStack.hosting) {
       requirements.push({
-        name: `Hosting-Vorgabe: ${String(techStack.hosting)}`,
+        name: `Hosting-Vorgabe: ${techStack.hosting}`,
         category: 'technical',
         priority: 'should-have',
         source: 'detected',

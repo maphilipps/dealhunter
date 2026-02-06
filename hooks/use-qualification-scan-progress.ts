@@ -115,121 +115,112 @@ export function useQualificationScanProgress(
           return;
         }
 
-        const type = raw.type as string;
+        const type = raw.type;
         const data = raw.data as Record<string, unknown> | undefined;
 
-        switch (type) {
-          case AgentEventType.STEP_START: {
-            const stepData = data as unknown as StepStartData;
-            setState(prev => {
-              const steps = new Map(prev.steps);
-              steps.set(stepData.stepId, {
-                stepId: stepData.stepId,
-                stepName: stepData.stepName,
-                phase: stepData.phase,
-                status: 'running',
-              });
-              return {
-                ...prev,
-                steps,
-                currentSteps: [...prev.currentSteps, stepData.stepId],
-                currentMessage: `${stepData.stepName} wird ausgeführt...`,
-              };
+        if (type === AgentEventType.STEP_START) {
+          const stepData = data as unknown as StepStartData;
+          setState(prev => {
+            const steps = new Map(prev.steps);
+            steps.set(stepData.stepId, {
+              stepId: stepData.stepId,
+              stepName: stepData.stepName,
+              phase: stepData.phase,
+              status: 'running',
             });
-            break;
-          }
+            return {
+              ...prev,
+              steps,
+              currentSteps: [...prev.currentSteps, stepData.stepId],
+              currentMessage: `${stepData.stepName} wird ausgefuehrt...`,
+            };
+          });
+          return;
+        }
 
-          case AgentEventType.STEP_COMPLETE: {
-            const stepData = data as unknown as StepCompleteData;
-            setState(prev => {
-              const steps = new Map(prev.steps);
-              steps.set(stepData.stepId, {
-                stepId: stepData.stepId,
-                stepName: stepData.stepName,
-                phase: stepData.phase,
-                status: stepData.success ? 'completed' : 'failed',
-                duration: stepData.duration,
-                error: stepData.error,
-                result: stepData.result,
-              });
-              const completedSteps = stepData.success
-                ? [...prev.completedSteps, stepData.stepId]
-                : prev.completedSteps;
-              return {
-                ...prev,
-                steps,
-                completedSteps,
-                currentSteps: prev.currentSteps.filter(s => s !== stepData.stepId),
-                currentMessage: stepData.success
-                  ? `${stepData.stepName} abgeschlossen`
-                  : `${stepData.stepName} fehlgeschlagen`,
-              };
+        if (type === AgentEventType.STEP_COMPLETE) {
+          const stepData = data as unknown as StepCompleteData;
+          setState(prev => {
+            const steps = new Map(prev.steps);
+            steps.set(stepData.stepId, {
+              stepId: stepData.stepId,
+              stepName: stepData.stepName,
+              phase: stepData.phase,
+              status: stepData.success ? 'completed' : 'failed',
+              duration: stepData.duration,
+              error: stepData.error,
+              result: stepData.result,
             });
-
-            if (stepData.success) {
-              onStepCompleteRef.current?.(stepData.stepId, stepData.result);
-            }
-            break;
-          }
-
-          case AgentEventType.WORKFLOW_PROGRESS: {
-            const progressData = data as unknown as WorkflowProgressData;
-            setState(prev => ({
+            const completedSteps = stepData.success
+              ? [...prev.completedSteps, stepData.stepId]
+              : prev.completedSteps;
+            return {
               ...prev,
-              progress: progressData.percentage,
-              totalSteps: progressData.totalSteps,
-              currentSteps: progressData.currentSteps,
-            }));
-            break;
-          }
+              steps,
+              completedSteps,
+              currentSteps: prev.currentSteps.filter(s => s !== stepData.stepId),
+              currentMessage: stepData.success
+                ? `${stepData.stepName} abgeschlossen`
+                : `${stepData.stepName} fehlgeschlagen`,
+            };
+          });
 
-          case AgentEventType.COMPLETE:
-          case 'complete': {
-            setState(prev => ({
-              ...prev,
-              status: 'completed',
-              progress: 100,
-              currentMessage: null,
-              isConnected: false,
-            }));
-            disconnect();
-            onCompleteRef.current?.();
-            break;
+          if (stepData.success) {
+            onStepCompleteRef.current?.(stepData.stepId, stepData.result);
           }
+          return;
+        }
 
-          case AgentEventType.ERROR:
-          case 'error': {
-            const message =
-              (data as { message?: string })?.message ?? 'Qualification Scan fehlgeschlagen';
-            setState(prev => ({
-              ...prev,
-              status: 'error',
-              error: message,
-              currentMessage: null,
-              isConnected: false,
-            }));
-            disconnect();
-            onErrorRef.current?.(message);
-            break;
-          }
+        if (type === AgentEventType.WORKFLOW_PROGRESS) {
+          const progressData = data as unknown as WorkflowProgressData;
+          setState(prev => ({
+            ...prev,
+            progress: progressData.percentage,
+            totalSteps: progressData.totalSteps,
+            currentSteps: progressData.currentSteps,
+          }));
+          return;
+        }
 
-          // Also handle agent-complete for backwards compatibility with polling SSE
-          case AgentEventType.AGENT_COMPLETE:
-          case 'agent-complete': {
-            setState(prev => ({
-              ...prev,
-              status: 'completed',
-              progress: 100,
-              currentMessage: null,
-              isConnected: false,
-            }));
-            disconnect();
-            onCompleteRef.current?.();
-            break;
-          }
+        if (type === AgentEventType.COMPLETE || type === 'complete') {
+          setState(prev => ({
+            ...prev,
+            status: 'completed',
+            progress: 100,
+            currentMessage: null,
+            isConnected: false,
+          }));
+          disconnect();
+          onCompleteRef.current?.();
+          return;
+        }
 
-          default:
-            break;
+        if (type === AgentEventType.ERROR || type === 'error') {
+          const message =
+            (data as { message?: string })?.message ?? 'Qualification Scan fehlgeschlagen';
+          setState(prev => ({
+            ...prev,
+            status: 'error',
+            error: message,
+            currentMessage: null,
+            isConnected: false,
+          }));
+          disconnect();
+          onErrorRef.current?.(message);
+          return;
+        }
+
+        // Also handle agent-complete for backwards compatibility with polling SSE
+        if (type === AgentEventType.AGENT_COMPLETE || type === 'agent-complete') {
+          setState(prev => ({
+            ...prev,
+            status: 'completed',
+            progress: 100,
+            currentMessage: null,
+            isConnected: false,
+          }));
+          disconnect();
+          onCompleteRef.current?.();
         }
       };
 

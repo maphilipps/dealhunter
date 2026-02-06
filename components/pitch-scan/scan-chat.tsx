@@ -138,7 +138,7 @@ export function ScanChat({ pitchId, suggestedQuestions = [] }: ScanChatProps) {
         <form
           onSubmit={e => {
             e.preventDefault();
-            handleSubmit(input);
+            void handleSubmit(input);
           }}
           className="flex gap-2"
         >

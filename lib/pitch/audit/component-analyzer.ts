@@ -112,5 +112,5 @@ export async function analyzeComponents(
     maxOutputTokens: 8000,
   });
 
-  return result.output!;
+  return result.output;
 }

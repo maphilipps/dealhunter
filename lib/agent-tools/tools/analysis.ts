@@ -716,7 +716,7 @@ registry.register({
       success: true,
       data: filtered.map(r => ({
         ...r,
-        matchedFeatures: parseJsonField(r.matchedFeatures as string | null),
+        matchedFeatures: parseJsonField(r.matchedFeatures),
       })),
       metadata: {
         count: filtered.length,
@@ -773,7 +773,7 @@ registry.register({
       success: true,
       data: {
         ...result,
-        matchedFeatures: parseJsonField(result.matchedFeatures as string | null),
+        matchedFeatures: parseJsonField(result.matchedFeatures),
       },
     };
   },
@@ -823,7 +823,7 @@ registry.register({
       success: true,
       data: results.map(r => ({
         ...r,
-        matchedFeatures: parseJsonField(r.matchedFeatures as string | null),
+        matchedFeatures: parseJsonField(r.matchedFeatures),
       })),
       metadata: {
         pitchId: input.pitchId,
@@ -885,7 +885,7 @@ registry.register({
       success: true,
       data: {
         ...result,
-        matchedFeatures: parseJsonField(result.matchedFeatures as string | null),
+        matchedFeatures: parseJsonField(result.matchedFeatures),
       },
     };
   },

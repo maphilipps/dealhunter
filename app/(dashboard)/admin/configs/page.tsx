@@ -4,6 +4,7 @@ import { RotateCcw, Save } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
+import { AIModelsTab } from '@/components/admin/ai-models-tab';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -202,6 +203,7 @@ export default function ConfigsPage() {
                 {CATEGORY_LABELS[cat] || cat}
               </TabsTrigger>
             ))}
+            <TabsTrigger value="ai_models">AI Modelle</TabsTrigger>
           </TabsList>
 
           {categories.map(cat => (
@@ -299,6 +301,9 @@ export default function ConfigsPage() {
               })}
             </TabsContent>
           ))}
+          <TabsContent value="ai_models">
+            <AIModelsTab />
+          </TabsContent>
         </Tabs>
       </div>
     </div>

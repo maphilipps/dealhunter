@@ -457,6 +457,33 @@ export const technologies = pgTable('technologies', {
 export type Technology = typeof technologies.$inferSelect;
 export type NewTechnology = typeof technologies.$inferInsert;
 
+// ─── Feature Library (Qualification Scan + CMS Matrix) ────────────────────────
+
+export const features = pgTable(
+  'features',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    name: text('name').notNull(),
+    slug: text('slug').notNull().unique(),
+    category: text('category').notNull().default('functional'),
+    description: text('description'),
+    priority: integer('priority').notNull().default(50), // 0..100 (higher = more important)
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    slugIdx: index('features_slug_idx').on(table.slug),
+    activeIdx: index('features_active_idx').on(table.isActive),
+    categoryIdx: index('features_category_idx').on(table.category),
+  })
+);
+
+export type Feature = typeof features.$inferSelect;
+export type NewFeature = typeof features.$inferInsert;
+
 export const employees = pgTable(
   'employees',
   {

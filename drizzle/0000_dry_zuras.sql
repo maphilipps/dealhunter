@@ -1,3 +1,7 @@
+-- Enable pgvector extension early so vector(...) columns can be created in this migration.
+CREATE EXTENSION IF NOT EXISTS vector;
+--> statement-breakpoint
+
 CREATE TABLE "accounts" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,

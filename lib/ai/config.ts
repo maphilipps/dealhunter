@@ -15,7 +15,6 @@ import { getProviderForSlot } from './providers';
 // Only the OpenAI SDK is imported (not multiple providers)
 // This implements Vercel React Best Practice: bundle-conditional
 let openaiInstance: any = null;
-let openaiDirectInstance: any = null;
 
 export const AI_HUB_API_KEY = process.env.AI_HUB_API_KEY || process.env.OPENAI_API_KEY;
 export const AI_HUB_BASE_URL =
@@ -27,15 +26,6 @@ export const AI_HUB_BASE_URL =
 export const aiHubOpenAI = createOpenAI({
   apiKey: AI_HUB_API_KEY,
   baseURL: AI_HUB_BASE_URL,
-});
-
-// Direct OpenAI provider for specific models if needed (embeddings only)
-export const directOpenAI = createOpenAI({
-  apiKey:
-    process.env.OPENAI_DIRECT_API_KEY ||
-    process.env.OPENAI_EMBEDDING_API_KEY ||
-    process.env.OPENAI_API_KEY,
-  baseURL: 'https://api.openai.com/v1',
 });
 
 /**
@@ -54,36 +44,10 @@ export function getOpenAIClient() {
   return openaiInstance;
 }
 
-/**
- * Get or create the direct OpenAI client (for GPT models directly from OpenAI)
- * Uses lazy initialization to avoid eager loading of the OpenAI SDK
- */
-export function getOpenAIDirectClient() {
-  if (!openaiDirectInstance) {
-    // Dynamic import only when needed
-    const OpenAI = require('openai').default;
-    openaiDirectInstance = new OpenAI({
-      apiKey:
-        process.env.OPENAI_DIRECT_API_KEY ||
-        process.env.OPENAI_EMBEDDING_API_KEY ||
-        process.env.OPENAI_API_KEY,
-      baseURL: 'https://api.openai.com/v1', // Explicitly OpenAI, not AI Hub
-    });
-  }
-  return openaiDirectInstance;
-}
-
-// Backward-compatible exports (deprecated - use getOpenAIClient/getOpenAIDirectClient instead)
+// Backward-compatible exports (deprecated - use getOpenAIClient instead)
 export const openai = new Proxy({} as any, {
   get(_target, prop) {
     const client = getOpenAIClient();
-    return Reflect.get(client, prop);
-  },
-});
-
-export const openaiDirect = new Proxy({} as any, {
-  get(_target, prop) {
-    const client = getOpenAIDirectClient();
     return Reflect.get(client, prop);
   },
 });

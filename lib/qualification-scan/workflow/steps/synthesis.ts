@@ -3,7 +3,6 @@
 // Final step that creates the Business Line recommendation
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { generateStructuredOutput } from '../../../ai/config';
 import {
   blRecommendationSchema,
   type BLRecommendation,
@@ -37,95 +36,148 @@ export async function generateBLRecommendation(
   input: SynthesisInput,
   contextSection?: string
 ): Promise<BLRecommendation> {
-  // Extract valid business unit names for strict validation
+  // Agent-native + non-hallucinating: derive BU deterministically from *explicit* CMS constraints.
+  // We MUST NOT invent a CMS ("Sulu") or claim "explicitly recommends" unless the document evidence says so.
   const validBUNames = input.businessUnits.map(bu => bu.name);
-
-  const systemPrompt = `Du bist ein Business Development Experte bei adesso SE und empfiehlst die passende Business Line basierend auf Website-Analyse.
-
-VERFÜGBARE BUSINESS LINES (NUR DIESE VERWENDEN!):
-${input.businessUnits.map(bu => `- ${bu.name}: Keywords: ${bu.keywords.join(', ')}`).join('\n')}
-
-KRITISCH WICHTIG:
-- Du MUSST einen der folgenden Namen EXAKT verwenden: ${validBUNames.join(', ')}
-- ES GIBT NUR DIESE ${validBUNames.length} BUSINESS LINES!
-- Verwende NIEMALS Namen wie "dxs", "DXS", "Digital Experience", oder ähnliches
-- Wenn keiner perfekt passt, wähle den BESTEN aus den VERFÜGBAREN
-
-Analysiere die Website-Daten und empfehle die beste Business Line.`;
-
-  const userPrompt = `Website: ${input.url}
-${input.companyName ? `Unternehmen: ${input.companyName}` : ''}
-
-Tech Stack:
-- CMS: ${input.techStack.cms || 'Nicht erkannt'}
-- Framework: ${input.techStack.framework || 'Nicht erkannt'}
-- Backend: ${input.techStack.backend?.join(', ') || 'Nicht erkannt'}
-
-Content:
-- Geschätzte Seiten: ${input.contentVolume.estimatedPageCount}
-- Komplexität: ${input.contentVolume.complexity || 'Unbekannt'}
-
-Features:
-- E-Commerce: ${input.features.ecommerce ? 'Ja' : 'Nein'}
-- User Accounts: ${input.features.userAccounts ? 'Ja' : 'Nein'}
-- Multi-Language: ${input.features.multiLanguage ? 'Ja' : 'Nein'}
-- API Integration: ${input.features.api ? 'Ja' : 'Nein'}
-
-${input.extractedRequirements ? `Anforderungen aus Dokument: ${JSON.stringify(input.extractedRequirements)}` : ''}
-
-${input.cmsRecommendation ? `Das empfohlene CMS ist: ${input.cmsRecommendation}. Berücksichtige diese CMS-Empfehlung bei der Business-Line-Zuordnung.` : ''}
-
-Empfehle die passende Business Line mit Begründung.`;
-
-  const fullSystemPrompt = contextSection ? `${systemPrompt}\n\n${contextSection}` : systemPrompt;
-
-  const result = await generateStructuredOutput({
-    schema: blRecommendationSchema,
-    system: fullSystemPrompt,
-    prompt: userPrompt,
-  });
-
-  // POST-VALIDATION: Ensure the LLM used a valid BU name
-  if (!validBUNames.includes(result.primaryBusinessLine)) {
-    const invalidBUName = result.primaryBusinessLine; // Speichere den ungültigen Namen
-
-    console.warn(
-      `[BL-Recommendation] LLM returned invalid BU name: "${invalidBUName}". Valid: ${validBUNames.join(', ')}`
-    );
-
-    // Fallback: Choose best matching BU based on keywords
-    const techKeywords: string[] = [
-      input.techStack.cms?.toLowerCase(),
-      input.techStack.framework?.toLowerCase(),
-      ...(input.techStack.backend?.map(b => b.toLowerCase()) || []),
-    ].filter((tk): tk is string => Boolean(tk));
-
-    let bestBU = validBUNames[0]; // Default to first BU
-    let bestScore = 0;
-
-    for (const buName of validBUNames) {
-      const bu = input.businessUnits.find(b => b.name === buName);
-      if (!bu) continue;
-
-      const buKeywords = bu.keywords.map(k => k.toLowerCase());
-      const matches = techKeywords.filter(tk =>
-        buKeywords.some(bk => bk.includes(tk) || tk.includes(bk))
-      );
-      const score = matches.length;
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestBU = buName;
-      }
-    }
-
-    result.primaryBusinessLine = bestBU;
-    result.reasoning =
-      `⚠️ Korrigiert von "${invalidBUName}" zu "${bestBU}" (LLM halluzinierte). ` +
-      result.reasoning;
+  if (validBUNames.length === 0) {
+    throw new Error('No business units available');
   }
 
-  return result;
+  const cmsEvidence = extractExplicitCmsEvidence(input.extractedRequirements);
+
+  // Pick BU based on explicit CMS if present; otherwise pick a conservative default with low confidence.
+  const primary = pickBusinessUnit({
+    cms: cmsEvidence?.cms,
+    businessUnits: input.businessUnits,
+    techStack: input.techStack,
+  });
+
+  const primaryConfidence = cmsEvidence ? Math.min(90, Math.max(55, cmsEvidence.confidence)) : 35;
+  const reasoning = cmsEvidence
+    ? [
+        `CMS-Vorgabe im Dokument: "${cmsEvidence.cms}".`,
+        cmsEvidence.rawTextSnippet ? `Beleg (Auszug): "${cmsEvidence.rawTextSnippet}".` : null,
+        `Daher Zuordnung zur Business Line "${primary}" (CMS/Stack-Keywords match).`,
+      ]
+        .filter(Boolean)
+        .join(' ')
+    : [
+        'Keine belastbare CMS-Vorgabe im Dokument erkannt (cmsConstraints fehlt/zu geringe Confidence).',
+        `Vorlaeufige Zuordnung: "${primary}" (niedrige Confidence).`,
+        'Empfehlung: CMS-Vorgabe in Rueckfragen/Bieterfragen explizit klaeren, bevor Annahmen getroffen werden.',
+      ].join(' ');
+
+  const alternatives = validBUNames
+    .filter(n => n !== primary)
+    .map((name, idx) => ({
+      name,
+      confidence: Math.max(15, primaryConfidence - 20 - idx * 10),
+      reason: cmsEvidence
+        ? `Alternative falls die CMS-Vorgabe nicht bindend ist oder sich aendert.`
+        : `Alternative bei anderem Technologie-Fokus.`,
+    }));
+
+  const requiredSkills = deriveRequiredSkills({
+    cms: cmsEvidence?.cms,
+    techStack: input.techStack,
+    features: input.features,
+  });
+
+  const out: BLRecommendation = {
+    primaryBusinessLine: primary,
+    confidence: primaryConfidence,
+    reasoning,
+    alternativeBusinessLines: alternatives,
+    requiredSkills,
+  };
+
+  // Runtime validation (safety net)
+  blRecommendationSchema.parse(out);
+  return out;
+}
+
+function normalizeCmsName(raw: string): string {
+  return raw.trim().toLowerCase();
+}
+
+function extractExplicitCmsEvidence(extractedRequirements: unknown): {
+  cms: string;
+  confidence: number;
+  rawTextSnippet?: string;
+} | null {
+  const cms = (extractedRequirements as any)?.cmsConstraints;
+  if (!cms || typeof cms !== 'object') return null;
+
+  const confidence = typeof cms.confidence === 'number' ? cms.confidence : 0;
+  const rawText = typeof cms.rawText === 'string' ? cms.rawText : '';
+  const required = Array.isArray(cms.required) ? cms.required : [];
+  const preferred = Array.isArray(cms.preferred) ? cms.preferred : [];
+
+  // We treat only explicit required/preferred CMS as "evidence".
+  const candidates: string[] = [...required, ...preferred].filter(
+    (s): s is string => typeof s === 'string'
+  );
+  if (candidates.length === 0) return null;
+
+  // Guardrail: we only accept as explicit if confidence is reasonable OR raw text mentions the CMS.
+  // This prevents hallucinations like "explicitly recommends Sulu".
+  const best = candidates[0];
+  const normBest = normalizeCmsName(best);
+  const rawMentions = rawText.toLowerCase().includes(normBest);
+  if (confidence < 55 && !rawMentions) return null;
+
+  const snippet = rawText ? rawText.replace(/\s+/g, ' ').trim().slice(0, 220) : undefined;
+
+  return { cms: best, confidence, rawTextSnippet: snippet };
+}
+
+function pickBusinessUnit(input: {
+  cms?: string;
+  businessUnits: BusinessUnit[];
+  techStack: TechStack;
+}): string {
+  const valid = input.businessUnits.map(b => b.name);
+  const fallback = valid.includes('PHP') ? 'PHP' : valid[0];
+
+  if (!input.cms) return fallback;
+
+  const cmsNorm = normalizeCmsName(input.cms);
+  let bestName = fallback;
+  let bestScore = -1;
+
+  for (const bu of input.businessUnits) {
+    const keywords = bu.keywords.map(k => k.toLowerCase());
+    const score = keywords.some(k => k.includes(cmsNorm) || cmsNorm.includes(k)) ? 10 : 0;
+    if (score > bestScore) {
+      bestScore = score;
+      bestName = bu.name;
+    }
+  }
+
+  return bestScore >= 0 ? bestName : fallback;
+}
+
+function deriveRequiredSkills(input: {
+  cms?: string;
+  techStack: TechStack;
+  features: Features;
+}): string[] {
+  const skills: string[] = [];
+  if (input.cms) skills.push(input.cms);
+  if (input.techStack.framework) skills.push(input.techStack.framework);
+  for (const b of input.techStack.backend ?? []) skills.push(b);
+
+  if (input.features.multiLanguage) skills.push('Mehrsprachigkeit');
+  if (input.features.api) skills.push('API-Integration');
+  if (input.features.userAccounts) skills.push('Identity / Accounts');
+  if (input.features.ecommerce) skills.push('E-Commerce');
+
+  // Always relevant in public tenders / portals
+  skills.push('Barrierefreiheit (BITV/WCAG)');
+  skills.push('DSGVO');
+
+  // De-dup
+  return Array.from(new Set(skills.filter(Boolean)));
 }
 
 function formatBLRecommendationForRAG(result: unknown): string {

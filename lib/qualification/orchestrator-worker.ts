@@ -453,23 +453,118 @@ async function generateBidDecision(
 ): Promise<Decision> {
   console.log('[Decision] Generiere Bid/No Bid Empfehlung...');
 
-  // Hole alle Section-Daten aus der Datenbank
-  // TODO: Hier müsste die Section-Daten aus der DB geladen werden
-  // Für jetzt: Vereinfachte Implementierung basierend auf Success-Rate
-
   const successRate = results.filter(r => r.success).length / results.length;
   const failedSections = results.filter(r => !r.success);
 
   const model = getModelForSlot('quality');
+
+  const sectionTopics: Record<SectionId, string> = {
+    budget:
+      'Budget, Kostenrahmen, Preisobergrenzen, Verguetung, Laufzeit, Rahmenbedingungen, Wirtschaftlichkeit',
+    timing:
+      'Fristen, Termine, Abgabefrist, Angebotsfrist, Projektlaufzeit, Meilensteine, Zeitplan, Liefertermine',
+    contracts:
+      'Vertrag, EVB-IT, Werkvertrag, Dienstvertrag, SLA, Haftung, Datenschutz, Vertragsbedingungen, AGB',
+    deliverables:
+      'Leistungen, Liefergegenstaende, Deliverables, Anforderungen, Scope, Pflichtenheft, technische Anforderungen',
+    references:
+      'Referenzen, Eignung, Nachweise, Zertifikate, Erfahrung, vergleichbare Projekte, Mindestanforderungen',
+    'award-criteria':
+      'Zuschlagskriterien, Bewertungskriterien, Gewichtung, Punkte, Kriterienkatalog, Bewertungssystem',
+    'offer-structure':
+      'Angebotsstruktur, Angebotsunterlagen, Formulare, Inhalte, Gliederung, einzureichende Dokumente',
+  };
+
+  const sectionSummarySchema = z.object({
+    summary: z.string().describe('Kurze, faktenorientierte Zusammenfassung (max. ca. 6-10 Saetze)'),
+    keyFacts: z.array(z.string()).describe('Wichtigste Fakten/Angaben als Bullet-Liste'),
+    missingInfo: z
+      .array(z.string())
+      .describe(
+        'Welche zentralen Angaben fehlen oder sind unklar? Leeres Array [] wenn nichts fehlt.'
+      ),
+    confidence: z.number().min(0).max(100).describe('Konfidenz in Prozent (0-100)'),
+  });
+
+  const fastModel = getModelForSlot('fast');
+
+  const sectionSummaries = await Promise.all(
+    SECTION_IDS.map(async sectionId => {
+      const chunks = await queryRawChunks({
+        preQualificationId,
+        question: sectionTopics[sectionId],
+        maxResults: 6,
+      });
+
+      if (chunks.length === 0) {
+        return {
+          sectionId,
+          summary: 'Keine relevanten Informationen im Dokument-Kontext gefunden.',
+          keyFacts: [],
+          missingInfo: ['Keine dokumentierten Informationen im RAG gefunden'],
+          confidence: 20,
+        };
+      }
+
+      const context = formatRAGContext(chunks).slice(0, 12000);
+
+      try {
+        const { output } = await generateText({
+          model: fastModel,
+          output: Output.object({ schema: sectionSummarySchema }),
+          prompt: `Du bist ein Experte fuer Ausschreibungsanalyse. Fasse den Dokument-Kontext fuer die Section "${sectionId}" zusammen.
+
+REGELN:
+- Nur Fakten aus dem Kontext, keine Halluzinationen.
+- Wenn Angaben fehlen, nenne sie unter missingInfo.
+- Halte keyFacts praezise (Zahlen, Termine, Bedingungen).
+
+KONTEXT (RAG):
+${context}`,
+          temperature: 0,
+        });
+
+        return { sectionId, ...output };
+      } catch (error) {
+        console.error('[Decision] Section summarization failed; using fallback:', {
+          sectionId,
+          message: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          sectionId,
+          summary: context.slice(0, 1500),
+          keyFacts: [],
+          missingInfo: ['LLM-Zusammenfassung fehlgeschlagen (Fallback auf Kontext-Auszug)'],
+          confidence: 30,
+        };
+      }
+    })
+  );
+
+  const sectionStatusLines = SECTION_IDS.map(sectionId => {
+    const r = results.find(x => x.sectionId === sectionId);
+    const status = r?.success ? 'ok' : 'failed';
+    const score = typeof r?.qualityScore === 'number' ? `${r.qualityScore}/100` : 'n/a';
+    return `- ${sectionId}: ${status} (qualityScore: ${score})`;
+  }).join('\n');
+
+  const summariesText = sectionSummaries
+    .map(s => {
+      const keyFacts = s.keyFacts.length > 0 ? `Key Facts:\n- ${s.keyFacts.join('\n- ')}` : '';
+      const missing =
+        s.missingInfo.length > 0 ? `Missing/Unclear:\n- ${s.missingInfo.join('\n- ')}` : '';
+      return `## ${s.sectionId}\nSummary (conf ${s.confidence}%):\n${s.summary}\n\n${keyFacts}\n\n${missing}`.trim();
+    })
+    .join('\n\n---\n\n');
 
   const { output: decision } = await generateText({
     model,
     output: Output.object({ schema: DecisionSchema }),
     prompt: `Du bist ein Experte für öffentliche Ausschreibungen und hilfst bei der Bid/No-Bid Entscheidung.
 
-SECTION RESULTS:
-- Erfolgreiche Sections: ${results.filter(r => r.success).length}/${results.length}
-- Fehlgeschlagene Sections: ${failedSections.map(r => r.sectionId).join(', ') || 'keine'}
+SECTION STATUS:
+${sectionStatusLines}
 
 AUFGABE:
 Basierend auf den Section-Analysen, gib eine Bid/No-Bid Empfehlung ab.
@@ -489,6 +584,9 @@ EMPFEHLUNG:
 - conditional-bid: Unter bestimmten Bedingungen mitbieten
 
 SUCCESS RATE: ${(successRate * 100).toFixed(0)}%
+
+SECTION SUMMARIES (aus RAG/Dokumenten):
+${summariesText}
 
 Generiere jetzt die Empfehlung:`,
   });

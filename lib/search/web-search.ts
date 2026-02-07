@@ -8,8 +8,9 @@
 import { searchDuckDuckGo, fetchUrlContents as fetchDuckDuckGo } from './duckduckgo-search';
 
 import { exa, isExaAvailable } from '@/lib/exa';
-import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+
+import { directOpenAI } from '@/lib/ai/config';
 
 // Simple circuit breaker: if EXA starts returning 402 (credits exceeded),
 // stop calling it for a while to reduce noise and latency.
@@ -28,10 +29,12 @@ async function searchWithOpenAIWebSearch(
     const modelName = process.env.OPENAI_WEBSEARCH_MODEL || 'gpt-5-mini';
 
     const result = await generateText({
-      model: openai(modelName),
+      // Important: use DIRECT OpenAI (not the AI Hub proxy), because OpenAI's web_search
+      // tool is a provider-executed tool available on OpenAI's Responses API.
+      model: directOpenAI(modelName),
       prompt: query,
       tools: {
-        web_search: openai.tools.webSearch({
+        web_search: directOpenAI.tools.webSearch({
           externalWebAccess: true,
           searchContextSize: 'high',
         }),

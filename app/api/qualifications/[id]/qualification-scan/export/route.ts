@@ -28,8 +28,29 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const safeId = id.replace(/[^a-zA-Z0-9-]/g, '');
   const format = request.nextUrl.searchParams.get('format') ?? 'html';
 
+  const csp = [
+    "default-src 'self'",
+    "img-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+    "font-src 'self' data:",
+    "connect-src 'self'",
+    "base-uri 'none'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+  ].join('; ');
+
   try {
     const markdown = await buildQualificationScanMarkdown(id);
+
+    if (format === 'md') {
+      return new NextResponse(markdown, {
+        headers: {
+          'Content-Type': 'text/markdown; charset=utf-8',
+          'Content-Disposition': `attachment; filename="qualification-scan-${safeId}.md"`,
+        },
+      });
+    }
 
     if (format === 'docx') {
       const buffer = await generateWordDocument(markdown);
@@ -47,7 +68,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return new NextResponse(html, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
-          'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
+          'Content-Security-Policy': csp,
         },
       });
     }
@@ -57,7 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return new NextResponse(html, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
+        'Content-Security-Policy': csp,
       },
     });
   } catch (error) {

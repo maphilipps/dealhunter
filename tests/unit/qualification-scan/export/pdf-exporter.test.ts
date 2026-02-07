@@ -13,8 +13,18 @@ describe('generatePrintableHTML', () => {
   it('should include proper head with meta and styles', () => {
     const html = generatePrintableHTML('test');
     expect(html).toContain('<meta charset="utf-8"');
-    expect(html).toContain('<title>Qualification Scan Export</title>');
+    // Title is derived from markdown/meta
+    expect(html).toContain('<title>Qualification Scan</title>');
     expect(html).toContain('@media print');
+  });
+
+  it('should render mermaid fenced blocks as mermaid elements and include mermaid script', () => {
+    const md = ['# Qualification Scan — ACME', '', '```mermaid', 'graph TD;', 'A-->B;', '```'].join(
+      '\n'
+    );
+    const html = generatePrintableHTML(md);
+    expect(html).toContain('class="mermaid"');
+    expect(html).toContain('mermaid.min.js');
   });
 
   it('should convert H1 headings', () => {
@@ -24,12 +34,12 @@ describe('generatePrintableHTML', () => {
 
   it('should convert H2 headings', () => {
     const html = generatePrintableHTML('## Section');
-    expect(html).toContain('<h2>Section</h2>');
+    expect(html).toContain('>Section</h2>');
   });
 
   it('should convert H3 headings', () => {
     const html = generatePrintableHTML('### Subsection');
-    expect(html).toContain('<h3>Subsection</h3>');
+    expect(html).toContain('>Subsection</h3>');
   });
 
   it('should convert bold text', () => {
@@ -99,7 +109,7 @@ describe('generatePrintableHTML', () => {
 
     const html = generatePrintableHTML(md);
     expect(html).toContain('<h1>Qualification Scan');
-    expect(html).toContain('<h2>Technologie-Stack</h2>');
+    expect(html).toContain('>Technologie-Stack</h2>');
     expect(html).toContain('<strong>CMS:</strong>');
     expect(html).toContain('<hr />');
     expect(html).toContain('<blockquote>');

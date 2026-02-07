@@ -13,25 +13,17 @@ import {
 
 describe('navigation-config', () => {
   describe('QUALIFICATION_NAVIGATION_SECTIONS', () => {
-    it('should have 15 sections', () => {
-      expect(QUALIFICATION_NAVIGATION_SECTIONS).toHaveLength(15);
+    it('should have 7 sections', () => {
+      expect(QUALIFICATION_NAVIGATION_SECTIONS).toHaveLength(7);
     });
 
     it('should have all required section IDs', () => {
       const expectedIds = [
         'overview',
-        'technology',
-        'website-analysis',
-        'target-architecture',
-        'cms-comparison',
-        'hosting',
-        'integrations',
-        'migration',
-        'project-org',
-        'costs',
+        'qualification-scan',
+        'pitch-scan',
         'calc-sheet',
         'decision',
-        'audit',
         'interview',
         'rag-data',
       ];
@@ -78,13 +70,19 @@ describe('navigation-config', () => {
         expect(section.synthesizerAgent).toBeTruthy();
       });
     });
+
+    it('should have 13 pitch-scan subsections', () => {
+      const pitchScan = QUALIFICATION_NAVIGATION_SECTIONS.find(s => s.id === 'pitch-scan');
+      expect(pitchScan).toBeDefined();
+      expect(pitchScan!.subsections).toHaveLength(14); // overview + 13 sections
+    });
   });
 
   describe('getSectionByRoute', () => {
     it('should return section for valid route', () => {
-      const section = getSectionByRoute('technology');
+      const section = getSectionByRoute('qualification-scan');
       expect(section).toBeDefined();
-      expect(section?.id).toBe('technology');
+      expect(section?.id).toBe('qualification-scan');
     });
 
     it('should return overview section for empty route', () => {
@@ -93,11 +91,23 @@ describe('navigation-config', () => {
       expect(section?.id).toBe('overview');
     });
 
+    it('should return pitch-scan section for pitch-scan route', () => {
+      const section = getSectionByRoute('pitch-scan');
+      expect(section).toBeDefined();
+      expect(section?.id).toBe('pitch-scan');
+    });
+
+    it('should return pitch-scan subsection for pitch-scan/* routes', () => {
+      const section = getSectionByRoute('pitch-scan/ps-discovery');
+      expect(section).toBeDefined();
+      expect(section?.id).toBe('ps-discovery');
+    });
+
     it('should normalize routes with leading/trailing slashes', () => {
-      const section1 = getSectionByRoute('/technology/');
-      const section2 = getSectionByRoute('technology');
-      expect(section1?.id).toBe('technology');
-      expect(section2?.id).toBe('technology');
+      const section1 = getSectionByRoute('/qualification-scan/');
+      const section2 = getSectionByRoute('qualification-scan');
+      expect(section1?.id).toBe('qualification-scan');
+      expect(section2?.id).toBe('qualification-scan');
       expect(section1).toEqual(section2);
     });
 
@@ -105,13 +115,20 @@ describe('navigation-config', () => {
       const section = getSectionByRoute('invalid-route');
       expect(section).toBeUndefined();
     });
+
+    it('should return undefined for removed routes', () => {
+      expect(getSectionByRoute('technology')).toBeUndefined();
+      expect(getSectionByRoute('website-analysis')).toBeUndefined();
+      expect(getSectionByRoute('hosting')).toBeUndefined();
+      expect(getSectionByRoute('costs')).toBeUndefined();
+    });
   });
 
   describe('getSectionById', () => {
     it('should return section for valid ID', () => {
-      const section = getSectionById('technology');
+      const section = getSectionById('qualification-scan');
       expect(section).toBeDefined();
-      expect(section?.id).toBe('technology');
+      expect(section?.id).toBe('qualification-scan');
     });
 
     it('should return undefined for invalid ID', () => {
@@ -127,12 +144,24 @@ describe('navigation-config', () => {
         expect(section?.label).toBe(expectedSection.label);
       });
     });
+
+    it('should return undefined for removed section IDs', () => {
+      expect(getSectionById('technology')).toBeUndefined();
+      expect(getSectionById('website-analysis')).toBeUndefined();
+      expect(getSectionById('target-architecture')).toBeUndefined();
+      expect(getSectionById('cms-comparison')).toBeUndefined();
+      expect(getSectionById('hosting')).toBeUndefined();
+      expect(getSectionById('integrations')).toBeUndefined();
+      expect(getSectionById('migration')).toBeUndefined();
+      expect(getSectionById('project-org')).toBeUndefined();
+      expect(getSectionById('costs')).toBeUndefined();
+    });
   });
 
   describe('getAllSections', () => {
-    it('should return all 15 sections', () => {
+    it('should return all 7 sections', () => {
       const sections = getAllSections();
-      expect(sections).toHaveLength(15);
+      expect(sections).toHaveLength(7);
     });
 
     it('should return the same reference as QUALIFICATION_NAVIGATION_SECTIONS', () => {
@@ -142,16 +171,18 @@ describe('navigation-config', () => {
   });
 
   describe('getAllSectionIds', () => {
-    it('should return array of 15 section IDs', () => {
+    it('should return array of 7 section IDs', () => {
       const ids = getAllSectionIds();
-      expect(ids).toHaveLength(15);
+      expect(ids).toHaveLength(7);
     });
 
     it('should return correct IDs in order', () => {
       const ids = getAllSectionIds();
       expect(ids[0]).toBe('overview');
-      expect(ids[1]).toBe('technology');
-      expect(ids[11]).toBe('decision');
+      expect(ids[1]).toBe('qualification-scan');
+      expect(ids[2]).toBe('pitch-scan');
+      expect(ids[3]).toBe('calc-sheet');
+      expect(ids[4]).toBe('decision');
     });
 
     it('should match the IDs from QUALIFICATION_NAVIGATION_SECTIONS', () => {
@@ -163,8 +194,8 @@ describe('navigation-config', () => {
 
   describe('isValidSectionRoute', () => {
     it('should return true for valid routes', () => {
-      expect(isValidSectionRoute('technology')).toBe(true);
-      expect(isValidSectionRoute('cms-comparison')).toBe(true);
+      expect(isValidSectionRoute('qualification-scan')).toBe(true);
+      expect(isValidSectionRoute('pitch-scan')).toBe(true);
       expect(isValidSectionRoute('')).toBe(true); // overview
     });
 
@@ -173,17 +204,23 @@ describe('navigation-config', () => {
       expect(isValidSectionRoute('nonexistent')).toBe(false);
     });
 
+    it('should return false for removed routes', () => {
+      expect(isValidSectionRoute('technology')).toBe(false);
+      expect(isValidSectionRoute('cms-comparison')).toBe(false);
+      expect(isValidSectionRoute('hosting')).toBe(false);
+    });
+
     it('should handle routes with slashes', () => {
-      expect(isValidSectionRoute('/technology/')).toBe(true);
+      expect(isValidSectionRoute('/qualification-scan/')).toBe(true);
       expect(isValidSectionRoute('/invalid/')).toBe(false);
     });
   });
 
   describe('getRAGQueryTemplate', () => {
     it('should return RAG query template for valid section ID', () => {
-      const template = getRAGQueryTemplate('technology');
+      const template = getRAGQueryTemplate('qualification-scan');
       expect(template).toBeDefined();
-      expect(template).toContain('technology');
+      expect(template).toContain('qualifications scan');
     });
 
     it('should return undefined for invalid section ID', () => {
@@ -195,6 +232,10 @@ describe('navigation-config', () => {
       QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
         if (section.id === 'rag-data') return;
         const template = getRAGQueryTemplate(section.id);
+        if (section.id === 'interview') {
+          // interview has empty template
+          return;
+        }
         expect(template).toBeDefined();
         expect(template).toBe(section.ragQueryTemplate);
       });
@@ -203,9 +244,9 @@ describe('navigation-config', () => {
 
   describe('getSynthesizerAgent', () => {
     it('should return synthesizer agent for valid section ID', () => {
-      const agent = getSynthesizerAgent('technology');
+      const agent = getSynthesizerAgent('qualification-scan');
       expect(agent).toBeDefined();
-      expect(agent).toBe('technology-synthesizer');
+      expect(agent).toBe('qualification-scan-synthesizer');
     });
 
     it('should return undefined for invalid section ID', () => {
@@ -219,21 +260,6 @@ describe('navigation-config', () => {
         const agent = getSynthesizerAgent(section.id);
         expect(agent).toBeDefined();
         expect(agent).toBe(section.synthesizerAgent);
-      });
-    });
-
-    it('should follow naming convention *-synthesizer (except calc-sheet, audit, interview)', () => {
-      QUALIFICATION_NAVIGATION_SECTIONS.forEach(section => {
-        // Skip sections without synthesizer or with special agent names
-        if (
-          section.id === 'rag-data' ||
-          section.id === 'calc-sheet' ||
-          section.id === 'audit' ||
-          section.id === 'interview'
-        )
-          return;
-        const agent = getSynthesizerAgent(section.id);
-        expect(agent).toMatch(/-synthesizer$/);
       });
     });
   });

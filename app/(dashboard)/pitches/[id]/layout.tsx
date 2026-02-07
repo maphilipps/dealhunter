@@ -6,7 +6,7 @@ import { LeadLayoutClient } from './layout-client';
 import { LeadSidebarRight } from '@/components/pitches/pitch-sidebar-right';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches, pitchRuns } from '@/lib/db/schema';
+import { pitches, auditScanRuns } from '@/lib/db/schema';
 
 export default async function LeadDashboardLayout({
   children,
@@ -35,10 +35,12 @@ export default async function LeadDashboardLayout({
 
   // Check for an active (non-terminal) pipeline run
   const [activeRun] = await db
-    .select({ id: pitchRuns.id })
-    .from(pitchRuns)
-    .where(and(eq(pitchRuns.pitchId, id), notInArray(pitchRuns.status, ['completed', 'failed'])))
-    .orderBy(desc(pitchRuns.createdAt))
+    .select({ id: auditScanRuns.id })
+    .from(auditScanRuns)
+    .where(
+      and(eq(auditScanRuns.pitchId, id), notInArray(auditScanRuns.status, ['completed', 'failed']))
+    )
+    .orderBy(desc(auditScanRuns.createdAt))
     .limit(1);
 
   // Sidebar nur rendern wenn Pipeline-Daten vorhanden (nicht bei frischen Pitches)

@@ -11,7 +11,7 @@ import { db } from '../lib/db';
 import {
   preQualifications,
   pitches,
-  quickScans,
+  leadScans,
   dealEmbeddings,
   websiteAudits,
 } from '../lib/db/schema';
@@ -85,7 +85,7 @@ async function seedLocarnoLead() {
   // Generate IDs
   const preQualificationId = createId();
   const pitchId = createId();
-  const quickScanId = createId();
+  const qualificationScanId = createId();
   const websiteAuditId = createId();
 
   // 1. Create RFP
@@ -144,14 +144,14 @@ Zeitplan: Go-Live Mitte April 2025`,
     }),
     websiteUrl: 'https://www.locarnofestival.ch',
     assignedBusinessUnitId: PHP_BU_ID,
-    quickScanId: quickScanId,
+    qualificationScanId: qualificationScanId,
   });
   console.log('✅ RFP created:', preQualificationId);
 
-  // 2. Create QuickScan with audit data
-  console.log('\n🔍 Creating QuickScan...');
-  await db.insert(quickScans).values({
-    id: quickScanId,
+  // 2. Create QualificationScan with audit data
+  console.log('\n🔍 Creating QualificationScan...');
+  await db.insert(leadScans).values({
+    id: qualificationScanId,
     preQualificationId: preQualificationId,
     websiteUrl: 'https://www.locarnofestival.ch',
     status: 'completed',
@@ -211,7 +211,7 @@ Zeitplan: Go-Live Mitte April 2025`,
     timelineGeneratedAt: new Date(),
     completedAt: new Date(),
   });
-  console.log('✅ QuickScan created:', quickScanId);
+  console.log('✅ LeadScan created:', qualificationScanId);
 
   // 3. Create Lead
   console.log('\n👤 Creating Lead...');
@@ -237,7 +237,7 @@ Zeitplan: Go-Live Mitte April 2025`,
       'WCAG 2.1 AA Konformität',
     ]),
     businessUnitId: PHP_BU_ID,
-    quickScanId: quickScanId,
+    qualificationScanId: qualificationScanId,
     decisionMakers: JSON.stringify([
       { name: 'Festival Director', role: 'Entscheider' },
       { name: 'IT Manager', role: 'Technischer Ansprechpartner' },
@@ -569,11 +569,11 @@ Performance-Erwartungen:
   console.log('IDs:');
   console.log(`  - RFP ID:          ${preQualificationId}`);
   console.log(`  - Lead ID:         ${pitchId}`);
-  console.log(`  - QuickScan ID:    ${quickScanId}`);
+  console.log(`  - LeadScan ID:     ${qualificationScanId}`);
   console.log(`  - WebsiteAudit ID: ${websiteAuditId}`);
   console.log('\nZugriff:');
   console.log(`  - Lead Details:  http://localhost:3000/pitches/${pitchId}`);
-  console.log(`  - Lead Audit:    http://localhost:3000/pitches/${pitchId}/audit`);
+  console.log(`  - Pitch Scan:    http://localhost:3000/pitches/${pitchId}/pitch-scan`);
   console.log('='.repeat(60));
 }
 

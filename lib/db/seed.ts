@@ -7,12 +7,13 @@ import {
   users,
   businessUnits,
   technologies,
+  features,
   accounts,
   competitors,
   employees,
   preQualifications,
   pitches,
-  quickScans,
+  leadScans,
   websiteAudits,
   pitchSectionData,
   cmsMatchResults,
@@ -134,6 +135,253 @@ async function seed() {
     }
   }
   const allTechs = await db.query.technologies.findMany();
+
+  // Seed feature library (used by qualification scan + CMS matrix)
+  const featureSeeds: Array<{
+    name: string;
+    slug: string;
+    category: string;
+    description: string;
+    priority: number;
+    isActive: boolean;
+  }> = [
+    {
+      name: 'E-Commerce',
+      slug: 'ecommerce',
+      category: 'functional',
+      description: 'Shop, Warenkorb, Checkout, Produktkatalog, Zahlungen.',
+      priority: 85,
+      isActive: true,
+    },
+    {
+      name: 'Benutzerkonten / Login',
+      slug: 'user-accounts',
+      category: 'functional',
+      description: 'Login/Register, Profil, Rollen/Rechte, Self-Service.',
+      priority: 85,
+      isActive: true,
+    },
+    {
+      name: 'Suche',
+      slug: 'search',
+      category: 'functional',
+      description: 'Site Search, ggf. Autocomplete, Facetten, Indexing (Solr/Elastic).',
+      priority: 75,
+      isActive: true,
+    },
+    {
+      name: 'Mehrsprachigkeit (i18n)',
+      slug: 'multilanguage',
+      category: 'functional',
+      description: 'Mehrere Sprachen, Übersetzungsworkflow, hreflang.',
+      priority: 80,
+      isActive: true,
+    },
+    {
+      name: 'Formulare',
+      slug: 'forms',
+      category: 'functional',
+      description: 'Kontaktformulare, Webforms, Validierung, Spam-Schutz.',
+      priority: 70,
+      isActive: true,
+    },
+    {
+      name: 'Blog / News',
+      slug: 'blog-news',
+      category: 'content',
+      description: 'News/Blog, Kategorien/Tags, Archiv, Autoren.',
+      priority: 60,
+      isActive: true,
+    },
+    {
+      name: 'Mobile App Integration',
+      slug: 'mobile-app',
+      category: 'integration',
+      description: 'App Store/Play Store Links, Deep Links, App-Content Integration.',
+      priority: 40,
+      isActive: true,
+    },
+    {
+      name: 'API (REST/GraphQL)',
+      slug: 'api',
+      category: 'technical',
+      description: 'REST/GraphQL Schnittstellen, Integrationen, Webhooks.',
+      priority: 75,
+      isActive: true,
+    },
+    {
+      name: 'Headless / Content API',
+      slug: 'headless',
+      category: 'technical',
+      description: 'Entkoppelte Ausspielung, Content API, Multi-Channel.',
+      priority: 65,
+      isActive: true,
+    },
+    {
+      name: 'Editorial Workflow / Freigaben',
+      slug: 'workflow-approval',
+      category: 'functional',
+      description: 'Redaktionelle Workflows, Freigaben, Publikationsplanung.',
+      priority: 70,
+      isActive: true,
+    },
+    {
+      name: 'Rollen & Rechte (RBAC)',
+      slug: 'rbac',
+      category: 'security',
+      description: 'Feingranulare Berechtigungen, Rollenmodelle, Mandanten.',
+      priority: 70,
+      isActive: true,
+    },
+    {
+      name: 'Single Sign-On (SSO)',
+      slug: 'sso',
+      category: 'security',
+      description: 'SAML/OIDC, Azure AD, Keycloak.',
+      priority: 60,
+      isActive: true,
+    },
+    {
+      name: 'Barrierefreiheit (WCAG)',
+      slug: 'accessibility-wcag',
+      category: 'compliance',
+      description: 'WCAG-Konformität, semantisches HTML, ARIA, Kontraste.',
+      priority: 80,
+      isActive: true,
+    },
+    {
+      name: 'DSGVO / Privacy',
+      slug: 'gdpr-privacy',
+      category: 'compliance',
+      description: 'Cookie Consent, Datenverarbeitung, Privacy Policy.',
+      priority: 80,
+      isActive: true,
+    },
+    {
+      name: 'Analytics / Tracking',
+      slug: 'analytics',
+      category: 'marketing',
+      description: 'Google Analytics, Matomo, Tag Manager, Consent Mode.',
+      priority: 50,
+      isActive: true,
+    },
+    {
+      name: 'SEO (Technisch)',
+      slug: 'seo',
+      category: 'marketing',
+      description: 'Meta, Canonicals, Sitemaps, Structured Data.',
+      priority: 60,
+      isActive: true,
+    },
+    {
+      name: 'Performance / Caching',
+      slug: 'performance-caching',
+      category: 'performance',
+      description: 'Caching, CDN, Bildoptimierung, CWV.',
+      priority: 65,
+      isActive: true,
+    },
+    {
+      name: 'Medienverwaltung (DAM light)',
+      slug: 'media-management',
+      category: 'content',
+      description: 'Asset Management, Bildvarianten, Metadaten, Video-Embeds.',
+      priority: 55,
+      isActive: true,
+    },
+    {
+      name: 'Events / Kalender',
+      slug: 'events-calendar',
+      category: 'content',
+      description: 'Eventlisten, Kalender, Registrierung, iCal.',
+      priority: 45,
+      isActive: true,
+    },
+    {
+      name: 'Stellen / Karriere',
+      slug: 'jobs-careers',
+      category: 'content',
+      description: 'Joblisten, Bewerbungsprozess, ATS-Integration.',
+      priority: 45,
+      isActive: true,
+    },
+    {
+      name: 'Newsletter / Marketing Automation',
+      slug: 'newsletter',
+      category: 'marketing',
+      description: 'Newsletter Signup, Double Opt-In, CRM/MA Integration.',
+      priority: 45,
+      isActive: true,
+    },
+    {
+      name: 'Personalisierung',
+      slug: 'personalization',
+      category: 'marketing',
+      description: 'Personalisierte Inhalte, Segmente, A/B Testing.',
+      priority: 35,
+      isActive: true,
+    },
+    {
+      name: 'Multi-Site / Mandanten',
+      slug: 'multisite',
+      category: 'technical',
+      description: 'Mehrere Sites/Brands aus einer Plattform betreiben.',
+      priority: 60,
+      isActive: true,
+    },
+    {
+      name: 'Suche (Enterprise: Solr/Elastic)',
+      slug: 'enterprise-search',
+      category: 'technical',
+      description: 'Integration von Solr/Elasticsearch, Facetten, Synonyme.',
+      priority: 55,
+      isActive: true,
+    },
+    {
+      name: 'Content Migration',
+      slug: 'content-migration',
+      category: 'technical',
+      description: 'Content-Import/Export, Migrationspfade, Tools/ETL.',
+      priority: 70,
+      isActive: true,
+    },
+    {
+      name: 'Schnittstellen zu Drittsystemen',
+      slug: 'integrations',
+      category: 'integration',
+      description: 'CRM/ERP, PIM, DAM, IAM, Payment, Search, etc.',
+      priority: 70,
+      isActive: true,
+    },
+    {
+      name: 'Dokumente / Downloads',
+      slug: 'documents-downloads',
+      category: 'content',
+      description: 'Download Center, PDFs, Versionierung, Metadaten.',
+      priority: 50,
+      isActive: true,
+    },
+    {
+      name: 'Berechtigungen für Inhalte',
+      slug: 'content-permissions',
+      category: 'security',
+      description: 'Content visibility, geschützte Bereiche, Mitgliedschaft.',
+      priority: 55,
+      isActive: true,
+    },
+    {
+      name: 'Hosting (Cloud/On-Prem Vorgaben)',
+      slug: 'hosting-requirements',
+      category: 'technical',
+      description: 'Hosting Constraints, Region/Compliance, Container/Kubernetes.',
+      priority: 55,
+      isActive: true,
+    },
+  ];
+
+  for (const f of featureSeeds) {
+    await db.insert(features).values(f).onConflictDoNothing({ target: features.slug });
+  }
 
   const blUsers = [];
   for (const bu of allBUs) {
@@ -276,7 +524,7 @@ async function seed() {
       .returning();
 
     const [qs] = await db
-      .insert(quickScans)
+      .insert(leadScans)
       .values({
         preQualificationId: preQualification.id,
         websiteUrl: account.website || faker.internet.url(),
@@ -290,7 +538,7 @@ async function seed() {
 
     await db
       .update(preQualifications)
-      .set({ quickScanId: qs.id })
+      .set({ qualificationScanId: qs.id })
       .where(eq(preQualifications.id, preQualification.id));
 
     const [lead] = await db
@@ -309,7 +557,7 @@ async function seed() {
           { id: 'req_3', text: 'Multi-language support (DE, EN, FR)', priority: 'medium' },
           { id: 'req_4', text: 'WCAG 2.1 AA Accessibility', priority: 'high' },
         ]),
-        quickScanId: qs.id,
+        qualificationScanId: qs.id,
         decisionMakers: JSON.stringify([
           { name: faker.person.fullName(), role: 'CTO', influence: 'high' },
           { name: faker.person.fullName(), role: 'Procurement Lead', influence: 'medium' },

@@ -1,9 +1,7 @@
-import type { LucideIcon } from 'lucide-react';
-
 /**
  * DEA-140: Lead Navigation Configuration
  *
- * Central configuration for all 13 Lead navigation sections.
+ * Central configuration for Lead navigation sections.
  * Each section defines:
  * - UI metadata (label, icon, route)
  * - RAG query template for content retrieval
@@ -31,22 +29,16 @@ export interface LeadNavigationSubSection {
 }
 
 /**
- * All 13 Lead navigation sections (DEA-138 PRD)
+ * Lead navigation sections
  *
- * Navigation structure follows the Deep Scan architecture:
+ * Navigation structure:
  * 1. Overview - Executive summary
- * 2. Current Technology - Tech stack analysis
- * 3. Website Analysis - Performance, SEO, accessibility
- * 4. Target Architecture - CMS-agnostic target architecture and content model
- * 5. CMS Comparison - CMS selection and comparison
- * 6. Hosting & Infrastructure - Infrastructure analysis
- * 7. Integrations - Third-party integrations
- * 8. Migration & Project - Migration complexity and project scope
- * 9. Staffing & Timeline - Resource planning
- * 10. References - Relevant reference projects
- * 11. Legal Check - Compliance and legal risks
- * 12. Costs & Budget - Cost estimation
- * 13. BID/NO-BID Decision - Final decision page
+ * 2. Qualification Scan - Quick scan results and routing
+ * 3. Pitch Scan - Comprehensive website analysis (13 subsections)
+ * 4. adCalc - Project estimation calculator
+ * 5. BID/NO-BID Decision - Final decision page
+ * 6. Pitch-Interview - Interview chat
+ * 7. RAG Data (Debug) - Debug view for RAG embeddings
  */
 export const QUALIFICATION_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
   {
@@ -72,222 +64,101 @@ export const QUALIFICATION_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
     ],
   },
   {
-    id: 'technology',
-    label: 'Aktuelle Technologie',
-    icon: 'Code2',
-    route: 'technology',
+    id: 'qualification-scan',
+    label: 'Qualification Scan',
+    icon: 'ScanSearch',
+    route: 'qualification-scan',
     ragQueryTemplate:
-      'What is the current technology stack of the customer website? Include CMS, framework, hosting, and all detected technologies.',
-    synthesizerAgent: 'technology-synthesizer',
+      'Provide the qualifications scan results including customer information, technology stack, requirements, decision makers, and routing recommendation.',
+    synthesizerAgent: 'qualification-scan-synthesizer',
     collapsed: false,
     subsections: [
       {
-        id: 'tech-stack',
-        label: 'Tech-Stack Überblick',
-        route: 'technology',
+        id: 'qualification-scan-results',
+        label: 'Qualification Scan Ergebnis',
+        route: 'qualification-scan',
       },
     ],
   },
   {
-    id: 'website-analysis',
-    label: 'Website-Analyse',
-    icon: 'BarChart3',
-    route: 'website-analysis',
+    id: 'pitch-scan',
+    label: 'Pitch Scan',
+    icon: 'Radar',
+    route: 'pitch-scan',
     ragQueryTemplate:
-      'Provide a comprehensive website analysis including performance metrics (Core Web Vitals), SEO analysis, accessibility audit, and security assessment.',
-    synthesizerAgent: 'website-analysis-synthesizer',
+      'Run a comprehensive audit scan of the customer website including technology detection, performance analysis, content architecture, and migration assessment.',
+    synthesizerAgent: 'pitch-scan-orchestrator',
     collapsed: false,
     subsections: [
       {
-        id: 'page-types',
-        label: 'Seitentypen',
-        route: 'website-analysis/page-types',
+        id: 'ps-overview',
+        label: 'Pitch Scan Übersicht',
+        route: 'pitch-scan',
       },
       {
-        id: 'components',
-        label: 'Components',
-        route: 'website-analysis/components',
+        id: 'ps-discovery',
+        label: 'Discovery & Tech-Stack',
+        route: 'pitch-scan/ps-discovery',
       },
       {
-        id: 'performance',
-        label: 'Performance-Audit',
-        route: 'website-analysis/performance',
+        id: 'ps-content-architecture',
+        label: 'Content-Architektur',
+        route: 'pitch-scan/ps-content-architecture',
       },
       {
-        id: 'accessibility',
-        label: 'Accessibility-Audit',
-        route: 'website-analysis/accessibility',
-      },
-    ],
-  },
-  {
-    id: 'target-architecture',
-    label: 'Ziel-Architektur',
-    icon: 'Layers',
-    route: 'target-architecture',
-    ragQueryTemplate:
-      'Define the target architecture based on requirements. What architectural approach is recommended (headless, hybrid, traditional)? What is the content model? What components and dynamic content features are needed? Keep this CMS-agnostic.',
-    synthesizerAgent: 'target-architecture-synthesizer',
-    collapsed: false,
-    subsections: [
-      {
-        id: 'architecture-overview',
-        label: 'Architektur-Übersicht',
-        route: 'target-architecture/overview',
-        ragQueryTemplate:
-          'Recommend an architectural approach based on project requirements: Headless vs. Hybrid vs. Traditional CMS, API strategy, multi-site/multi-language setup, editorial workflow needs. Keep CMS-agnostic.',
+        id: 'ps-features',
+        label: 'Features & Funktionalität',
+        route: 'pitch-scan/ps-features',
       },
       {
-        id: 'content-model',
-        label: 'Content-Modell',
-        route: 'target-architecture/content-model',
-        ragQueryTemplate:
-          'Define the content model: What content entities are needed (articles, events, persons, locations, products)? What are the relationships between entities? What taxonomies and classifications are required? Present as a conceptual model, not CMS-specific.',
+        id: 'ps-performance',
+        label: 'Performance',
+        route: 'pitch-scan/ps-performance',
       },
       {
-        id: 'component-catalog',
-        label: 'Komponenten-Katalog',
-        route: 'target-architecture/components',
-        ragQueryTemplate:
-          'Define the required editor components/building blocks: Hero sections, teaser grids, accordions, tabs, forms, etc. Describe variants, nesting rules, and editor experience. Keep conceptual and CMS-agnostic.',
+        id: 'ps-accessibility',
+        label: 'Barrierefreiheit',
+        route: 'pitch-scan/ps-accessibility',
       },
       {
-        id: 'dynamic-content',
-        label: 'Dynamische Inhalte',
-        route: 'target-architecture/dynamic-content',
-        ragQueryTemplate:
-          'Define required dynamic content features: News listings with filters, search functionality, event calendars, person directories. Describe sorting, pagination, and faceted filtering needs. Keep functional and CMS-agnostic.',
-      },
-    ],
-  },
-  {
-    id: 'cms-comparison',
-    label: 'CMS-Vergleich',
-    icon: 'Scale',
-    route: 'cms-comparison',
-    ragQueryTemplate:
-      'Compare available CMS options for this project. Which CMS systems are suitable? What are the pros and cons? Provide a recommendation.',
-    synthesizerAgent: 'cms-comparison-synthesizer',
-    collapsed: false,
-    subsections: [
-      {
-        id: 'comparison-overview',
-        label: 'Vergleichsübersicht',
-        route: 'cms-comparison',
-      },
-    ],
-  },
-  {
-    id: 'hosting',
-    label: 'Hosting & Infrastruktur',
-    icon: 'Server',
-    route: 'hosting',
-    ragQueryTemplate:
-      'Analyze the current and recommended hosting infrastructure. What are the requirements? What are the costs? What are the technical constraints?',
-    synthesizerAgent: 'hosting-synthesizer',
-    collapsed: false,
-    subsections: [
-      {
-        id: 'azure',
-        label: 'Azure-Architektur',
-        route: 'hosting/azure',
+        id: 'ps-legal',
+        label: 'Legal & Compliance',
+        route: 'pitch-scan/ps-legal',
       },
       {
-        id: 'high-scale',
-        label: 'High-Scale',
-        route: 'hosting/high-scale',
-      },
-    ],
-  },
-  {
-    id: 'integrations',
-    label: 'Integrationen',
-    icon: 'Puzzle',
-    route: 'integrations',
-    ragQueryTemplate:
-      'What third-party integrations are currently in use or required? Include CRM, marketing automation, analytics, payment systems, etc.',
-    synthesizerAgent: 'integrations-synthesizer',
-    collapsed: false,
-    subsections: [
-      {
-        id: 'integrations-overview',
-        label: 'Übersicht & Systemlandschaft',
-        route: 'integrations',
-      },
-    ],
-  },
-  {
-    id: 'migration',
-    label: 'Migration & Projekt',
-    icon: 'GitBranch',
-    route: 'migration',
-    ragQueryTemplate:
-      'Analyze the migration complexity. What content needs to be migrated? What are the technical challenges? What is the estimated effort?',
-    synthesizerAgent: 'migration-synthesizer',
-    collapsed: false,
-    subsections: [
-      {
-        id: 'strategy',
-        label: 'Migrations-Strategie',
-        route: 'migration/strategy',
+        id: 'ps-integrations',
+        label: 'Integrationen',
+        route: 'pitch-scan/ps-integrations',
       },
       {
-        id: 'timeline',
-        label: 'Timeline & Meilensteine',
-        route: 'migration/timeline',
+        id: 'ps-migration',
+        label: 'Migration',
+        route: 'pitch-scan/ps-migration',
       },
       {
-        id: 'risks',
-        label: 'Risiken & Mitigation',
-        route: 'migration/risks',
-      },
-    ],
-  },
-  {
-    id: 'project-org',
-    label: 'Projekt-Organisation',
-    icon: 'Users',
-    route: 'project-org',
-    ragQueryTemplate: 'Define the project organization, team structure, and KPIs.',
-    synthesizerAgent: 'project-org-synthesizer',
-    collapsed: false,
-    subsections: [
-      {
-        id: 'team',
-        label: 'Team & Ressourcen',
-        route: 'project-org/team',
+        id: 'ps-cms-comparison',
+        label: 'CMS-Vergleich',
+        route: 'pitch-scan/ps-cms-comparison',
       },
       {
-        id: 'kpis',
-        label: 'KPIs & Erfolgskriterien',
-        route: 'project-org/kpis',
-      },
-    ],
-  },
-  {
-    id: 'costs',
-    label: 'Kosten & Budget',
-    icon: 'DollarSign',
-    route: 'costs',
-    ragQueryTemplate:
-      'Provide a detailed cost breakdown. What are the implementation costs? What are the ongoing costs? What is the budget fit?',
-    synthesizerAgent: 'costs-synthesizer',
-    collapsed: false,
-    subsections: [
-      {
-        id: 'features',
-        label: 'Feature-Liste',
-        route: 'costs/features',
+        id: 'ps-cms-recommendation',
+        label: 'CMS-Empfehlung',
+        route: 'pitch-scan/ps-cms-recommendation',
       },
       {
-        id: 'budget',
-        label: 'Budget-Analyse',
-        route: 'costs/budget',
+        id: 'ps-drupal-architecture',
+        label: 'Drupal-Architektur',
+        route: 'pitch-scan/ps-drupal-architecture',
       },
       {
-        id: 'roi',
-        label: 'ROI & TCO',
-        route: 'costs/roi',
+        id: 'ps-estimation',
+        label: 'Aufwandsschätzung',
+        route: 'pitch-scan/ps-estimation',
+      },
+      {
+        id: 'ps-documentation',
+        label: 'Dokumentation',
+        route: 'pitch-scan/ps-documentation',
       },
     ],
   },
@@ -352,38 +223,6 @@ export const QUALIFICATION_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
         id: 'final-recommendation',
         label: 'Finale Empfehlung',
         route: 'decision',
-      },
-    ],
-  },
-  {
-    id: 'audit',
-    label: 'Deep Scan Audit',
-    icon: 'Radar',
-    route: 'audit',
-    ragQueryTemplate:
-      'Run a comprehensive deep scan audit of the customer website including technology detection, performance analysis, and content structure mapping.',
-    synthesizerAgent: 'audit-orchestrator',
-    collapsed: false,
-    subsections: [
-      {
-        id: 'audit-overview',
-        label: 'Audit Übersicht',
-        route: 'audit',
-      },
-      {
-        id: 'audit-technology',
-        label: 'Technologie-Erkennung',
-        route: 'audit/technology',
-      },
-      {
-        id: 'audit-content',
-        label: 'Content-Struktur',
-        route: 'audit/content',
-      },
-      {
-        id: 'audit-performance',
-        label: 'Performance',
-        route: 'audit/performance',
       },
     ],
   },

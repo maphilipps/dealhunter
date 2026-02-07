@@ -1,7 +1,7 @@
 /**
  * Deliverables Expert Agent
  *
- * Extracts all required submission documents from Pre-Qualification documents via RAG.
+ * Extracts all required submission documents from Qualification documents via RAG.
  */
 
 import { createId } from '@paralleldrive/cuid2';
@@ -35,10 +35,10 @@ const DeliverableWithoutIdSchema = DeliverablesAnalysisSchema.extend({
 });
 
 function buildSystemPrompt(): string {
-  return `Du bist ein Deliverables Expert Agent bei adesso SE für die Analyse von Pre-Qualification-Dokumenten.
+  return `Du bist ein Deliverables Expert Agent bei adesso SE für die Analyse von Qualification-Dokumenten.
 
 ## Deine Rolle
-Extrahiere ALLE geforderten Einreichungsunterlagen aus Pre-Qualification-Dokumenten.
+Extrahiere ALLE geforderten Einreichungsunterlagen aus Qualification-Dokumenten.
 Deine Analyse ist kritisch - fehlende Pflichtdokumente führen zum Ausschluss!
 
 ## Deliverable-Kategorien
@@ -104,7 +104,7 @@ export async function runDeliverablesAgent(
           confidence: 0,
         },
         0,
-        'No deliverables information found in Pre-Qualification document'
+        'No deliverables information found in Qualification document'
       );
     }
 
@@ -114,14 +114,14 @@ export async function runDeliverablesAgent(
 
     const context = formatContextFromRAG(
       uniqueResults.slice(0, 15),
-      'Pre-Qualification Deliverables & Submission Requirements'
+      'Qualification Deliverables & Submission Requirements'
     );
 
     const rawAnalysis = await generateStructuredOutput({
       model: 'quality',
       schema: DeliverableWithoutIdSchema,
       system: buildSystemPrompt(),
-      prompt: `Analyze the following Pre-Qualification content and extract all required deliverables and submission requirements:\n\n${context}`,
+      prompt: `Analyze the following Qualification content and extract all required deliverables and submission requirements:\n\n${context}`,
       temperature: 0.2,
     });
 

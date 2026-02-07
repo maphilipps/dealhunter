@@ -14,7 +14,7 @@ import { getModel } from '@/lib/ai/model-config';
 import { auth } from '@/lib/auth';
 import { addPitchJob } from '@/lib/bullmq/queues';
 import { db } from '@/lib/db';
-import { backgroundJobs, pitchRuns, pitches, technologies, users } from '@/lib/db/schema';
+import { backgroundJobs, auditScanRuns, pitches, technologies, users } from '@/lib/db/schema';
 import { INTERVIEW_SYSTEM_PROMPT } from '@/lib/pitch/constants';
 import { interviewResultsSchema } from '@/lib/pitch/types';
 
@@ -109,7 +109,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
               const targetCmsIds = availableCms.map(c => c.id);
 
               // Create pitch run record
-              await db.insert(pitchRuns).values({
+              await db.insert(auditScanRuns).values({
                 id: runId,
                 pitchId,
                 userId,

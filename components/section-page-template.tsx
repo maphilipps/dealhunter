@@ -4,7 +4,10 @@ import { AlertCircle, RefreshCw, Sparkles, TrendingUp } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Loader } from '@/components/ai-elements/loader';
-import { QuickScanRenderer, type RenderTree } from '@/components/json-render/quick-scan-registry';
+import {
+  QualificationScanRenderer,
+  type RenderTree,
+} from '@/components/json-render/qualification-scan-registry';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,7 +30,7 @@ interface SynthesizedSectionResult {
 }
 
 export interface SectionPageTemplateProps {
-  /** The API base path, e.g. `/api/pitches/{id}` or `/api/pre-qualifications/{id}` */
+  /** The API base path, e.g. `/api/pitches/{id}` or `/api/qualifications/{id}` */
   apiBasePath: string;
   sectionId: string;
   title: string;
@@ -155,7 +158,7 @@ export function SectionPageTemplate({
 
   return (
     <div className="space-y-6">
-      {/* Optional Banner (e.g. QuickScanStatusBanner) */}
+      {/* Optional Banner (e.g. LeadScanStatusBanner) */}
       {banner}
 
       {/* Header */}
@@ -242,7 +245,9 @@ export function SectionPageTemplate({
       )}
 
       {/* Visualization Tree (JSON Render) */}
-      {!loading && !error && visualizationTree && <QuickScanRenderer tree={visualizationTree} />}
+      {!loading && !error && visualizationTree && (
+        <QualificationScanRenderer tree={visualizationTree} />
+      )}
 
       {/* Data exists but no visualization tree - show generation UI (if enabled) */}
       {enableVisualizationGeneration && !loading && !error && hasData && !visualizationTree && (

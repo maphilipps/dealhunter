@@ -14,12 +14,12 @@ import { test, expect } from '@playwright/test';
 test.describe('BID/NO-BID Decision Display', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-1.1: BID/NO-BID Buttons Appear After Quick Scan', async ({ page }) => {
     // Create a new RFP
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'Test RFP from Tech Corp for CMS relaunch');
     await page.selectOption('select[name="source"]', 'reactive');
     await page.selectOption('select[name="stage"]', 'preQualification');
@@ -27,7 +27,7 @@ test.describe('BID/NO-BID Decision Display', () => {
     await page.click('button[type="submit"]');
 
     // Wait for extraction to complete
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('text=Client Name', { timeout: 15000 });
 
     // Confirm requirements
@@ -48,7 +48,7 @@ test.describe('BID/NO-BID Decision Display', () => {
 
   test('TC-1.2: Decision Card Shows Confidence Score', async ({ page }) => {
     // Create RFP and navigate to questions_ready state
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'Enterprise CMS project with Drupal stack');
     await page.selectOption('select[name="source"]', 'reactive');
     await page.selectOption('select[name="stage"]', 'preQualification');
@@ -56,7 +56,7 @@ test.describe('BID/NO-BID Decision Display', () => {
     await page.click('button[type="submit"]');
 
     // Wait for Quick Scan to complete
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
 
     // Verify confidence score is displayed
@@ -69,14 +69,14 @@ test.describe('BID/NO-BID Decision Display', () => {
 
   test('TC-1.3: Low Completion Warning Displayed When < 70%', async ({ page }) => {
     // Create minimal RFP with less information (likely to have low completion)
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'Small project');
     await page.selectOption('select[name="source"]', 'reactive');
     await page.selectOption('select[name="stage"]', 'cold');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
 
     // Note: This test may pass or fail depending on AI's ability to answer questions
@@ -93,12 +93,12 @@ test.describe('BID/NO-BID Decision Display', () => {
 test.describe('Multi-Agent Evaluation: BID Flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-2.1: BID Button Starts Multi-Agent Evaluation', async ({ page }) => {
     // Create RFP and get to decision point
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill(
       'textarea[name="rawInput"]',
       'Enterprise Drupal CMS project for automotive client with 50+ editors'
@@ -108,7 +108,7 @@ test.describe('Multi-Agent Evaluation: BID Flow', () => {
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
 
     // Click BID button
@@ -122,7 +122,7 @@ test.describe('Multi-Agent Evaluation: BID Flow', () => {
 
   test('TC-2.2: Activity Stream Shows Agent Progress', async ({ page }) => {
     // Create RFP and start BID evaluation
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill(
       'textarea[name="rawInput"]',
       'Healthcare portal with React frontend and Node.js backend'
@@ -132,7 +132,7 @@ test.describe('Multi-Agent Evaluation: BID Flow', () => {
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
 
     // Start BID evaluation
@@ -148,12 +148,12 @@ test.describe('Multi-Agent Evaluation: BID Flow', () => {
 test.describe('Agent Results Display', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-3.1: Decision Card Displays After Evaluation', async ({ page }) => {
     // Create RFP and complete evaluation
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill(
       'textarea[name="rawInput"]',
       'E-commerce platform relaunch with microservices architecture'
@@ -163,7 +163,7 @@ test.describe('Agent Results Display', () => {
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
 
     // Start evaluation
@@ -179,14 +179,14 @@ test.describe('Agent Results Display', () => {
 
   test('TC-3.2: Agent Scores Displayed', async ({ page }) => {
     // Create RFP and complete evaluation
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'SaaS platform with AI features and analytics');
     await page.selectOption('select[name="source"]', 'reactive');
     await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
     await page.click('button:has-text("BIT")');
     await page.waitForSelector('text=Empfohlene Entscheidung', { timeout: 90000 });
@@ -203,7 +203,7 @@ test.describe('Agent Results Display', () => {
 
   test('TC-3.3: Strengths and Risks Displayed', async ({ page }) => {
     // Create RFP and complete evaluation
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill(
       'textarea[name="rawInput"]',
       'Digital transformation project for public sector'
@@ -213,7 +213,7 @@ test.describe('Agent Results Display', () => {
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
     await page.click('button:has-text("BIT")');
     await page.waitForSelector('text=Empfohlene Entscheidung', { timeout: 90000 });
@@ -238,19 +238,19 @@ test.describe('Agent Results Display', () => {
 test.describe('Decision Tree Display', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-4.1: Decision Tree Tab Accessible', async ({ page }) => {
     // Create RFP and complete evaluation
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'Cloud migration with AWS infrastructure');
     await page.selectOption('select[name="source"]', 'reactive');
     await page.selectOption('select[name="stage"]', 'preQualification');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
     await page.click('button:has-text("BIT")');
     await page.waitForSelector('text=Empfohlene Entscheidung', { timeout: 90000 });
@@ -269,7 +269,7 @@ test.describe('Decision Tree Display', () => {
 
   test('TC-4.2: Route to BL Action Available for BID', async ({ page }) => {
     // Create RFP with good BID potential
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill(
       'textarea[name="rawInput"]',
       'Enterprise Drupal CMS with extensive content modeling and workflow requirements'
@@ -279,7 +279,7 @@ test.describe('Decision Tree Display', () => {
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
     await page.click('button:has-text("BIT")');
     await page.waitForSelector('text=Empfohlene Entscheidung', { timeout: 90000 });
@@ -299,19 +299,19 @@ test.describe('Decision Tree Display', () => {
 test.describe('NO-BID Flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-5.1: NO-BID Button Opens Reason Dialog', async ({ page }) => {
     // Create RFP
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'Small WordPress site with limited budget');
     await page.selectOption('select[name="source"]', 'reactive');
     await page.selectOption('select[name="stage"]', 'cold');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
 
     // Click NO-BID button
@@ -335,14 +335,14 @@ test.describe('NO-BID Flow', () => {
 
   test('TC-5.2: NO-BID Requires Reason Input', async ({ page }) => {
     // Create RFP
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'Out of scope project');
     await page.selectOption('select[name="source"]', 'reactive');
     await page.selectOption('select[name="stage"]', 'cold');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
 
     // Click NO-BID
@@ -355,14 +355,14 @@ test.describe('NO-BID Flow', () => {
 
   test('TC-5.3: NO-BID Archives RFP Successfully', async ({ page }) => {
     // Create RFP
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'Not aligned with strategy');
     await page.selectOption('select[name="source"]', 'reactive');
     await page.selectOption('select[name="stage"]', 'cold');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
 
     // Click NO-BID and enter reason
@@ -383,14 +383,14 @@ test.describe('NO-BID Flow', () => {
 
   test('TC-5.4: NO-BID Cancel Returns to Decision View', async ({ page }) => {
     // Create RFP
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill('textarea[name="rawInput"]', 'Test cancellation flow');
     await page.selectOption('select[name="source"]', 'reactive');
     await page.selectOption('select[name="stage"]', 'cold');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
 
     // Click NO-BID
@@ -411,14 +411,14 @@ test.describe('NO-BID Flow', () => {
     // Create RFP with unique identifier
     const uniqueIdentifier = `No-Bid Test ${Date.now()}`;
 
-    await page.goto('/pre-qualifications/new');
+    await page.goto('/qualifications/new');
     await page.fill('textarea[name="rawInput"]', uniqueIdentifier);
     await page.selectOption('select[name="source"]', 'reactive');
     await page.selectOption('select[name="stage"]', 'cold');
     await page.selectOption('select[name="inputType"]', 'freetext');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/\/pre-qualifications\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/qualifications\/[a-z0-9-]+$/);
     const rfpUrl = page.url();
     await page.waitForSelector('[data-decision-actions]', { timeout: 45000 });
 
@@ -431,8 +431,8 @@ test.describe('NO-BID Flow', () => {
     await page.waitForTimeout(2000);
 
     // Navigate to RFPs list
-    await page.goto('/pre-qualifications');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/qualifications');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify archived RFP doesn't appear in active list (by default)
     // Note: This depends on how the list filters work

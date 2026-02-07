@@ -240,7 +240,7 @@ export function ExecutiveSummaryCard({
             <div>
               <CardTitle>Executive Summary</CardTitle>
               <CardDescription>
-                Noch keine AI-Analyse verfügbar. Starte einen Deep Scan für detaillierte Insights.
+                Noch keine AI-Analyse verfügbar. Starte einen Pitch Scan für detaillierte Insights.
               </CardDescription>
             </div>
           </div>

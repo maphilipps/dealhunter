@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches, users, pitchRuns, backgroundJobs } from '@/lib/db/schema';
+import { pitches, users, auditScanRuns, backgroundJobs } from '@/lib/db/schema';
 import { loadCheckpoint } from '@/lib/pitch/checkpoints';
 import { addPitchJob } from '@/lib/bullmq/queues';
 
@@ -63,9 +63,9 @@ export async function POST(
     // Find the latest run waiting for user input
     const [run] = await db
       .select()
-      .from(pitchRuns)
-      .where(and(eq(pitchRuns.pitchId, pitchId), eq(pitchRuns.status, 'waiting_for_user')))
-      .orderBy(desc(pitchRuns.createdAt))
+      .from(auditScanRuns)
+      .where(and(eq(auditScanRuns.pitchId, pitchId), eq(auditScanRuns.status, 'waiting_for_user')))
+      .orderBy(desc(auditScanRuns.createdAt))
       .limit(1);
 
     if (!run) {
@@ -104,10 +104,10 @@ export async function POST(
 
     // Atomically claim the run to prevent double-submit
     const [updated] = await db
-      .update(pitchRuns)
+      .update(auditScanRuns)
       .set({ status: 'running' as const, updatedAt: new Date() })
-      .where(and(eq(pitchRuns.id, run.id), eq(pitchRuns.status, 'waiting_for_user')))
-      .returning({ id: pitchRuns.id });
+      .where(and(eq(auditScanRuns.id, run.id), eq(auditScanRuns.status, 'waiting_for_user')))
+      .returning({ id: auditScanRuns.id });
 
     if (!updated) {
       return NextResponse.json(

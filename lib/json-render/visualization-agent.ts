@@ -1,13 +1,13 @@
 import OpenAI from 'openai';
 
-import { QUICK_SCAN_VISUALIZATION_SYSTEM_PROMPT } from './quick-scan-catalog';
+import { QUALIFICATION_SCAN_VISUALIZATION_SYSTEM_PROMPT } from './qualification-scan-catalog';
 
 import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
 import { buildQuestionsWithStatus } from '@/lib/bids/ten-questions';
-import type { QuickScan } from '@/lib/db/schema';
+import type { LeadScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
-import type { QuickScanResult } from '@/lib/quick-scan/agent';
-import { parseJsonField } from '@/lib/quick-scan/utils';
+import type { QualificationScanResult } from '@/lib/qualification-scan/agent';
+import { parseJsonField } from '@/lib/qualification-scan/utils';
 
 // Initialize OpenAI client with adesso AI Hub
 const openai = new OpenAI({
@@ -59,13 +59,13 @@ function parseJsonlPatches(jsonl: string): JsonRenderTree {
 }
 
 /**
- * Quick Scan Visualization Expert Agent
- * Converts Quick Scan results into a json-render tree for dynamic display
+ * Qualification Scan Visualization Expert Agent
+ * Converts Qualification Scan results into a json-render tree for dynamic display
  */
-export async function generateQuickScanVisualization(
-  results: QuickScanResult
+export async function generateQualificationScanVisualization(
+  results: QualificationScanResult
 ): Promise<JsonRenderTree> {
-  const userPrompt = `Generate a visualization for these Quick Scan results:
+  const userPrompt = `Generate a visualization for these Qualification Scan results:
 
 BUSINESS LINE RECOMMENDATION:
 - Primary: ${results.blRecommendation.primaryBusinessLine}
@@ -101,7 +101,7 @@ Create a well-organized visualization with the business line recommendation prom
     const completion = await openai.chat.completions.create({
       model: 'gemini-3-flash-preview',
       messages: [
-        { role: 'system', content: QUICK_SCAN_VISUALIZATION_SYSTEM_PROMPT },
+        { role: 'system', content: QUALIFICATION_SCAN_VISUALIZATION_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.3,
@@ -130,7 +130,7 @@ Create a well-organized visualization with the business line recommendation prom
 /**
  * Fallback visualization when AI generation fails
  */
-function generateFallbackVisualization(results: QuickScanResult): JsonRenderTree {
+function generateFallbackVisualization(results: QualificationScanResult): JsonRenderTree {
   return {
     root: 'main-container',
     elements: {
@@ -231,10 +231,10 @@ function generateFallbackVisualization(results: QuickScanResult): JsonRenderTree
 /**
  * Stream visualization generation (for real-time updates)
  */
-export async function* streamQuickScanVisualization(
-  results: QuickScanResult
+export async function* streamQualificationScanVisualization(
+  results: QualificationScanResult
 ): AsyncGenerator<{ type: 'patch'; data: unknown } | { type: 'complete'; tree: JsonRenderTree }> {
-  const userPrompt = `Generate a visualization for these Quick Scan results:
+  const userPrompt = `Generate a visualization for these Qualification Scan results:
 
 BUSINESS LINE RECOMMENDATION:
 - Primary: ${results.blRecommendation.primaryBusinessLine}
@@ -254,7 +254,7 @@ Create a well-organized visualization.`;
   const stream = await openai.chat.completions.create({
     model: 'gemini-3-flash-preview',
     messages: [
-      { role: 'system', content: QUICK_SCAN_VISUALIZATION_SYSTEM_PROMPT },
+      { role: 'system', content: QUALIFICATION_SCAN_VISUALIZATION_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
     ],
     temperature: 0.3,
@@ -472,28 +472,32 @@ interface MigrationComplexityData {
  * AI has full creative freedom to design the layout and display ALL available data
  */
 export async function generateFactsVisualizationWithAI(
-  quickScan: QuickScan,
+  qualificationScan: LeadScan,
   extractedData?: ExtractedRequirements | null
 ): Promise<JsonRenderTree> {
-  const techStack = parseJsonField<TechStackData>(quickScan.techStack);
-  const contentVolume = parseJsonField<ContentVolumeData>(quickScan.contentVolume);
-  const features = parseJsonField<FeaturesData>(quickScan.features);
-  const accessibilityAudit = parseJsonField<AccessibilityAuditData>(quickScan.accessibilityAudit);
-  const seoAudit = parseJsonField<SEOAuditData>(quickScan.seoAudit);
-  const legalCompliance = parseJsonField<LegalComplianceData>(quickScan.legalCompliance);
-  const performanceIndicators = parseJsonField<PerformanceData>(quickScan.performanceIndicators);
-  const navigationStructure = parseJsonField<NavigationData>(quickScan.navigationStructure);
-  const screenshots = parseJsonField<ScreenshotsData>(quickScan.screenshots);
+  const techStack = parseJsonField<TechStackData>(qualificationScan.techStack);
+  const contentVolume = parseJsonField<ContentVolumeData>(qualificationScan.contentVolume);
+  const features = parseJsonField<FeaturesData>(qualificationScan.features);
+  const accessibilityAudit = parseJsonField<AccessibilityAuditData>(
+    qualificationScan.accessibilityAudit
+  );
+  const seoAudit = parseJsonField<SEOAuditData>(qualificationScan.seoAudit);
+  const legalCompliance = parseJsonField<LegalComplianceData>(qualificationScan.legalCompliance);
+  const performanceIndicators = parseJsonField<PerformanceData>(
+    qualificationScan.performanceIndicators
+  );
+  const navigationStructure = parseJsonField<NavigationData>(qualificationScan.navigationStructure);
+  const screenshots = parseJsonField<ScreenshotsData>(qualificationScan.screenshots);
   const companyIntelligence = parseJsonField<CompanyIntelligenceData>(
-    quickScan.companyIntelligence
+    qualificationScan.companyIntelligence
   );
-  const siteTree = parseJsonField<SiteTreeData>(quickScan.siteTree);
-  const contentTypes = parseJsonField<ContentTypesData>(quickScan.contentTypes);
-  const decisionMakers = parseJsonField<DecisionMakersData>(quickScan.decisionMakers);
+  const siteTree = parseJsonField<SiteTreeData>(qualificationScan.siteTree);
+  const contentTypes = parseJsonField<ContentTypesData>(qualificationScan.contentTypes);
+  const decisionMakers = parseJsonField<DecisionMakersData>(qualificationScan.decisionMakers);
   const migrationComplexity = parseJsonField<MigrationComplexityData>(
-    quickScan.migrationComplexity
+    qualificationScan.migrationComplexity
   );
-  const questionsData = buildQuestionsWithStatus(quickScan, extractedData);
+  const questionsData = buildQuestionsWithStatus(qualificationScan, extractedData);
 
   // Build complete data prompt - give AI EVERYTHING
   const dataPrompt = `
@@ -502,10 +506,10 @@ Du hast VOLLE KREATIVE FREIHEIT für das Layout! Nutze Grid mit 2-3 Spalten, gru
 ALLE VERFÜGBAREN DATEN (zeige ALLES an was Daten hat):
 
 === ÜBERSICHT ===
-Website: ${quickScan.websiteUrl}
-Empfohlene Business Unit: ${quickScan.recommendedBusinessUnit || 'Nicht bestimmt'}
-Confidence: ${quickScan.confidence || 0}%
-Status: ${quickScan.status}
+Website: ${qualificationScan.websiteUrl}
+Empfohlene Business Unit: ${qualificationScan.recommendedBusinessUnit || 'Nicht bestimmt'}
+Confidence: ${qualificationScan.confidence || 0}%
+Status: ${qualificationScan.status}
 
 === 10 FRAGEN ===
 Projekt-Typ: ${questionsData.projectType || 'unbekannt'}
@@ -739,7 +743,7 @@ ANWEISUNGEN:
     const completion = await openai.chat.completions.create({
       model: 'gemini-3-flash-preview',
       messages: [
-        { role: 'system', content: QUICK_SCAN_VISUALIZATION_SYSTEM_PROMPT },
+        { role: 'system', content: QUALIFICATION_SCAN_VISUALIZATION_SYSTEM_PROMPT },
         { role: 'user', content: dataPrompt },
       ],
       temperature: 0.7, // Higher creativity
@@ -751,19 +755,19 @@ ANWEISUNGEN:
 
     if (!tree.root || Object.keys(tree.elements).length === 0) {
       console.warn('AI visualization failed, using fallback');
-      return generateFactsTabVisualization(quickScan, extractedData);
+      return generateFactsTabVisualization(qualificationScan, extractedData);
     }
 
     return tree;
   } catch (error) {
     console.error('AI Facts visualization error:', error);
-    return generateFactsTabVisualization(quickScan, extractedData);
+    return generateFactsTabVisualization(qualificationScan, extractedData);
   }
 }
 
 /**
  * Generate Facts Tab Visualization Tree (Fallback - deterministic)
- * Creates a complete json-render tree for the Facts Tab using QuickScan data
+ * Creates a complete json-render tree for the Facts Tab using LeadScan data
  *
  * DASHBOARD LAYOUT:
  * ┌──────────────────────────────────────────────────────────────┐
@@ -789,30 +793,34 @@ ANWEISUNGEN:
  * └──────────────────────────────────────────────────────────────┘
  */
 export function generateFactsTabVisualization(
-  quickScan: QuickScan,
+  qualificationScan: LeadScan,
   extractedData?: ExtractedRequirements | null
 ): JsonRenderTree {
-  const techStack = parseJsonField<TechStackData>(quickScan.techStack);
-  const contentVolume = parseJsonField<ContentVolumeData>(quickScan.contentVolume);
-  const features = parseJsonField<FeaturesData>(quickScan.features);
-  const accessibilityAudit = parseJsonField<AccessibilityAuditData>(quickScan.accessibilityAudit);
-  const seoAudit = parseJsonField<SEOAuditData>(quickScan.seoAudit);
-  const legalCompliance = parseJsonField<LegalComplianceData>(quickScan.legalCompliance);
-  const performanceIndicators = parseJsonField<PerformanceData>(quickScan.performanceIndicators);
-  const navigationStructure = parseJsonField<NavigationData>(quickScan.navigationStructure);
-  const screenshots = parseJsonField<ScreenshotsData>(quickScan.screenshots);
-  const companyIntelligence = parseJsonField<CompanyIntelligenceData>(
-    quickScan.companyIntelligence
+  const techStack = parseJsonField<TechStackData>(qualificationScan.techStack);
+  const contentVolume = parseJsonField<ContentVolumeData>(qualificationScan.contentVolume);
+  const features = parseJsonField<FeaturesData>(qualificationScan.features);
+  const accessibilityAudit = parseJsonField<AccessibilityAuditData>(
+    qualificationScan.accessibilityAudit
   );
-  const siteTree = parseJsonField<SiteTreeData>(quickScan.siteTree);
-  const contentTypes = parseJsonField<ContentTypesData>(quickScan.contentTypes);
-  const decisionMakers = parseJsonField<DecisionMakersData>(quickScan.decisionMakers);
+  const seoAudit = parseJsonField<SEOAuditData>(qualificationScan.seoAudit);
+  const legalCompliance = parseJsonField<LegalComplianceData>(qualificationScan.legalCompliance);
+  const performanceIndicators = parseJsonField<PerformanceData>(
+    qualificationScan.performanceIndicators
+  );
+  const navigationStructure = parseJsonField<NavigationData>(qualificationScan.navigationStructure);
+  const screenshots = parseJsonField<ScreenshotsData>(qualificationScan.screenshots);
+  const companyIntelligence = parseJsonField<CompanyIntelligenceData>(
+    qualificationScan.companyIntelligence
+  );
+  const siteTree = parseJsonField<SiteTreeData>(qualificationScan.siteTree);
+  const contentTypes = parseJsonField<ContentTypesData>(qualificationScan.contentTypes);
+  const decisionMakers = parseJsonField<DecisionMakersData>(qualificationScan.decisionMakers);
   const migrationComplexity = parseJsonField<MigrationComplexityData>(
-    quickScan.migrationComplexity
+    qualificationScan.migrationComplexity
   );
 
   // Get 10 questions data
-  const questionsData = buildQuestionsWithStatus(quickScan, extractedData);
+  const questionsData = buildQuestionsWithStatus(qualificationScan, extractedData);
 
   // Build active features list
   const activeFeatures: Array<{ name: string; detected: boolean; details?: string }> = [];
@@ -870,8 +878,10 @@ export function generateFactsTabVisualization(
     type: 'Metric',
     props: {
       label: 'Empfohlene BL',
-      value: quickScan.recommendedBusinessUnit || '-',
-      subValue: quickScan.confidence ? `${quickScan.confidence}% Confidence` : undefined,
+      value: qualificationScan.recommendedBusinessUnit || '-',
+      subValue: qualificationScan.confidence
+        ? `${qualificationScan.confidence}% Confidence`
+        : undefined,
     },
   };
   elements['metric-pages'] = {
@@ -1639,3 +1649,9 @@ export function generateFactsTabVisualization(
     elements,
   };
 }
+
+// Deprecated aliases for backwards compatibility
+/** @deprecated Use streamQualificationScanVisualization instead */
+export { streamQualificationScanVisualization as streamLeadScanVisualization };
+/** @deprecated Use generateQualificationScanVisualization instead */
+export { generateQualificationScanVisualization as generateLeadScanVisualization };

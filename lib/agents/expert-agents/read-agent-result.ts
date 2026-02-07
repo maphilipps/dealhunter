@@ -31,7 +31,10 @@ export async function getAgentResult(
     })
     .from(dealEmbeddings)
     .where(
-      and(eq(dealEmbeddings.preQualificationId, preQualificationId), eq(dealEmbeddings.agentName, agentName))
+      and(
+        eq(dealEmbeddings.preQualificationId, preQualificationId),
+        eq(dealEmbeddings.agentName, agentName)
+      )
     )
     .orderBy(desc(dealEmbeddings.createdAt))
     .limit(1);
@@ -60,7 +63,7 @@ export async function getAgentResult(
 }
 
 /**
- * Check if expert agents have been run for an Pre-Qualification
+ * Check if expert agents have been run for a Qualification
  */
 export async function hasExpertAgentResults(preQualificationId: string): Promise<boolean> {
   const result = await getAgentResult(preQualificationId, 'summary_expert');
@@ -68,7 +71,7 @@ export async function hasExpertAgentResults(preQualificationId: string): Promise
 }
 
 /**
- * Get all expert agent results for an Pre-Qualification
+ * Get all expert agent results for a Qualification
  */
 export async function getAllAgentResults(
   preQualificationId: string

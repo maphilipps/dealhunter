@@ -4,7 +4,7 @@ import { createId } from '@paralleldrive/cuid2';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches, users, pitchRuns, backgroundJobs } from '@/lib/db/schema';
+import { pitches, users, auditScanRuns, backgroundJobs } from '@/lib/db/schema';
 import { updateRunStatus } from '@/lib/pitch/checkpoints';
 import { addPitchJob } from '@/lib/bullmq/queues';
 
@@ -64,9 +64,9 @@ export async function POST(
     // Find the latest failed run
     const [run] = await db
       .select()
-      .from(pitchRuns)
-      .where(and(eq(pitchRuns.pitchId, pitchId), eq(pitchRuns.status, 'failed')))
-      .orderBy(desc(pitchRuns.createdAt))
+      .from(auditScanRuns)
+      .where(and(eq(auditScanRuns.pitchId, pitchId), eq(auditScanRuns.status, 'failed')))
+      .orderBy(desc(auditScanRuns.createdAt))
       .limit(1);
 
     if (!run) {

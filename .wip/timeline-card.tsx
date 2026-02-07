@@ -17,7 +17,7 @@ interface TimelineCardProps {
 /**
  * Timeline Card - RAG-basierte Projekt-Timeline
  *
- * Nutzt RAG Query um Projekt-Phasen und Timeline aus QuickScan-Daten zu generieren.
+ * Nutzt RAG Query um Projekt-Phasen und Timeline aus QualificationScan-Daten zu generieren.
  * Zeigt horizontale Timeline mit Milestones, Total Duration, Confidence.
  */
 export function TimelineCard({ preQualificationId }: TimelineCardProps) {

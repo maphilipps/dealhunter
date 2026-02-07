@@ -14,7 +14,7 @@ import {
 
 const routeLabels: Record<string, string> = {
   bids: 'Leads',
-  'pre-qualifications': 'Leads',
+  qualifications: 'Leads',
   pitches: 'Pitches',
   new: 'Neu',
   accounts: 'Accounts',
@@ -24,6 +24,21 @@ const routeLabels: Record<string, string> = {
   teams: 'Teams',
   settings: 'Einstellungen',
   'bl-review': 'BL-Review',
+  references: 'Referenzen',
+  competencies: 'Kompetenzen',
+  competitors: 'Wettbewerber',
+  'master-data': 'Stammdaten',
+  technologies: 'Technologien',
+  employees: 'Mitarbeiter',
+  'business-units': 'Business Units',
+  interview: 'Interview',
+  estimation: 'Schätzung',
+  staffing: 'Staffing',
+  'website-audit': 'Website Audit',
+  'pitch-scan': 'Pitch Scan',
+  'qualification-scan': 'Qualification Scan',
+  audit: 'Audit',
+  dashboard: 'Dashboard',
 };
 
 export function DynamicBreadcrumb() {
@@ -50,17 +65,17 @@ export function DynamicBreadcrumb() {
           const isLast = index === segments.length - 1;
           const isFirst = index === 0;
           const label = routeLabels[segment] || segment;
+          // Show first and last breadcrumb on mobile, hide middle ones
+          const hiddenOnMobile = !isFirst && !isLast ? 'hidden md:block' : '';
 
           return (
             <Fragment key={path}>
-              {!isFirst && <BreadcrumbSeparator className="hidden md:block" />}
-              <BreadcrumbItem>
+              {!isFirst && <BreadcrumbSeparator className={hiddenOnMobile} />}
+              <BreadcrumbItem className={hiddenOnMobile}>
                 {isLast ? (
                   <BreadcrumbPage>{label}</BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink href={path} className="hidden md:block">
-                    {label}
-                  </BreadcrumbLink>
+                  <BreadcrumbLink href={path}>{label}</BreadcrumbLink>
                 )}
               </BreadcrumbItem>
             </Fragment>

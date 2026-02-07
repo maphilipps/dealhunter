@@ -10,20 +10,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '15mb', // Allow multiple PDFs up to 10 MB each
     },
   },
-  async redirects() {
-    return [
-      {
-        source: '/qualifications/:path*',
-        destination: '/pitches/:path*',
-        permanent: true,
-      },
-      {
-        source: '/api/qualifications/:path*',
-        destination: '/api/pitches/:path*',
-        permanent: true,
-      },
-    ];
-  },
 };
 
 export default withSentryConfig(withWorkflow(withBotId(nextConfig)), {

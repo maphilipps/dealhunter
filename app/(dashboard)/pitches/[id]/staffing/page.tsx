@@ -31,7 +31,7 @@ export default async function StaffingPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  // TODO: Replace with actual data from Deep Scan Agent
+  // TODO: Replace with actual data from Pitch Scan Agent
   // This is sample data based on the DEA-148 requirements
   const sampleStaffingData: StaffingEntry[] = [
     // PM Role
@@ -92,9 +92,9 @@ export default async function StaffingPage({ params }: { params: Promise<{ id: s
       {/* Notice about data source */}
       <Alert>
         <Info className="h-4 w-4" />
-        <AlertTitle>Deep Scan Status</AlertTitle>
+        <AlertTitle>Pitch Scan Status</AlertTitle>
         <AlertDescription>
-          Die Staffing-Daten werden automatisch vom Deep Scan Agent generiert. Die aktuell
+          Die Staffing-Daten werden automatisch vom Pitch Scan Agent generiert. Die aktuell
           angezeigten Daten sind Beispiel-Daten basierend auf typischen Projekt-Phasen.
         </AlertDescription>
       </Alert>
@@ -110,12 +110,12 @@ export default async function StaffingPage({ params }: { params: Promise<{ id: s
               Noch keine Staffing-Daten verfügbar
             </CardTitle>
             <CardDescription>
-              Die Staffing-Analyse wird automatisch nach dem Deep Scan durchgeführt.
+              Die Staffing-Analyse wird automatisch nach dem Pitch Scan durchgeführt.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Bitte warten Sie, bis die Deep-Scan Agents abgeschlossen sind.
+              Bitte warten Sie, bis die Pitch-Scan Agents abgeschlossen sind.
             </p>
           </CardContent>
         </Card>
@@ -132,7 +132,7 @@ export default async function StaffingPage({ params }: { params: Promise<{ id: s
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <p>
-            <strong>Automatische Generierung:</strong> Die Staffing-Timeline wird vom Deep Scan
+            <strong>Automatische Generierung:</strong> Die Staffing-Timeline wird vom Pitch Scan
             Orchestrator automatisch basierend auf PT-Schätzung und Projekt-Komplexität generiert.
           </p>
           <p>

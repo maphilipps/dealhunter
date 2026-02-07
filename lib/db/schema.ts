@@ -173,7 +173,7 @@ export const preQualifications = pgTable(
         'bid_voted', // BL hat BID entschieden, ready for routing
         'archived', // NO BID - Archiviert
         'routed', // Routed to BL
-        'audit_scanning', // Audit Scan läuft
+        'audit_scanning', // Pitch Scan läuft
         'bl_reviewing', // BL prüft Ergebnisse
         'team_assigned', // Team assigned
         'notified', // Team wurde benachrichtigt
@@ -456,6 +456,33 @@ export const technologies = pgTable('technologies', {
 
 export type Technology = typeof technologies.$inferSelect;
 export type NewTechnology = typeof technologies.$inferInsert;
+
+// ─── Feature Library (Qualification Scan + CMS Matrix) ────────────────────────
+
+export const features = pgTable(
+  'features',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    name: text('name').notNull(),
+    slug: text('slug').notNull().unique(),
+    category: text('category').notNull().default('functional'),
+    description: text('description'),
+    priority: integer('priority').notNull().default(50), // 0..100 (higher = more important)
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+  },
+  table => ({
+    slugIdx: index('features_slug_idx').on(table.slug),
+    activeIdx: index('features_active_idx').on(table.isActive),
+    categoryIdx: index('features_category_idx').on(table.category),
+  })
+);
+
+export type Feature = typeof features.$inferSelect;
+export type NewFeature = typeof features.$inferInsert;
 
 export const employees = pgTable(
   'employees',
@@ -1021,8 +1048,6 @@ export const qualificationScansRelations = relations(qualificationScans, ({ one 
     references: [preQualifications.id],
   }),
 }));
-/** @deprecated Use qualificationScansRelations instead */
-export const leadScansRelations = qualificationScansRelations;
 
 export const deepMigrationAnalysesRelations = relations(deepMigrationAnalyses, ({ one }) => ({
   preQualification: one(preQualifications, {
@@ -1982,12 +2007,10 @@ export const auditScanRuns = pgTable(
   })
 );
 
-export type AuditScanRun = typeof auditScanRuns.$inferSelect;
-export type NewAuditScanRun = typeof auditScanRuns.$inferInsert;
+export type PitchScanRun = typeof auditScanRuns.$inferSelect;
+export type NewPitchScanRun = typeof auditScanRuns.$inferInsert;
 /** @deprecated Use auditScanRuns instead */
 export const pitchScanRuns = auditScanRuns;
-export type PitchScanRun = AuditScanRun;
-export type NewPitchScanRun = NewAuditScanRun;
 
 export const pitchDocuments = pgTable(
   'pitch_documents',
@@ -2038,7 +2061,7 @@ export const pitchDocuments = pgTable(
 export type PitchDocument = typeof pitchDocuments.$inferSelect;
 export type NewPitchDocument = typeof pitchDocuments.$inferInsert;
 
-export const auditScanResults = pgTable(
+export const pitchScanResults = pgTable(
   'audit_scan_results',
   {
     id: text('id')
@@ -2088,12 +2111,8 @@ export const auditScanResults = pgTable(
   })
 );
 
-export type AuditScanResult = typeof auditScanResults.$inferSelect;
-export type NewAuditScanResult = typeof auditScanResults.$inferInsert;
-/** @deprecated Use auditScanResults instead */
-export const pitchScanResults = auditScanResults;
-export type PitchScanResult = AuditScanResult;
-export type NewPitchScanResult = NewAuditScanResult;
+export type PitchScanResult = typeof pitchScanResults.$inferSelect;
+export type NewPitchScanResult = typeof pitchScanResults.$inferInsert;
 
 export const knowledgeChunks = pgTable(
   'knowledge_chunks',
@@ -2209,11 +2228,9 @@ export const auditScanRunsRelations = relations(auditScanRuns, ({ one, many }) =
     references: [technologies.id],
   }),
   documents: many(pitchDocuments),
-  auditResults: many(auditScanResults),
+  auditResults: many(pitchScanResults),
   conversations: many(pitchConversations),
 }));
-/** @deprecated Use auditScanRunsRelations instead */
-export const pitchScanRunsRelations = auditScanRunsRelations;
 
 export const pitchDocumentsRelations = relations(pitchDocuments, ({ one }) => ({
   run: one(auditScanRuns, {
@@ -2230,18 +2247,16 @@ export const pitchDocumentsRelations = relations(pitchDocuments, ({ one }) => ({
   }),
 }));
 
-export const auditScanResultsRelations = relations(auditScanResults, ({ one }) => ({
+export const pitchScanResultsRelations = relations(pitchScanResults, ({ one }) => ({
   run: one(auditScanRuns, {
-    fields: [auditScanResults.runId],
+    fields: [pitchScanResults.runId],
     references: [auditScanRuns.id],
   }),
   pitch: one(pitches, {
-    fields: [auditScanResults.pitchId],
+    fields: [pitchScanResults.pitchId],
     references: [pitches.id],
   }),
 }));
-/** @deprecated Use auditScanResultsRelations instead */
-export const pitchScanResultsRelations = auditScanResultsRelations;
 
 export const pitchConversationsRelations = relations(pitchConversations, ({ one }) => ({
   run: one(auditScanRuns, {
@@ -2254,7 +2269,7 @@ export const pitchConversationsRelations = relations(pitchConversations, ({ one 
   }),
 }));
 
-// ===== Section Notes (Qualifications Scan 2.0) =====
+// ===== Section Notes (Qualification Scan 2.0) =====
 
 export const sectionNotes = pgTable(
   'section_notes',
@@ -2295,15 +2310,9 @@ export const sectionNotesRelations = relations(sectionNotes, ({ one }) => ({
 }));
 
 // ===== Backwards-compatible aliases (remove after full migration) =====
-export type QuickScan = QualificationScan;
-export type NewQuickScan = NewQualificationScan;
-export type PitchRun = AuditScanRun;
-export type NewPitchRun = NewAuditScanRun;
-export type PitchAuditResult = AuditScanResult;
-export type NewPitchAuditResult = NewAuditScanResult;
 /** @deprecated Use qualificationScans instead */
 export const quickScans = qualificationScans;
 /** @deprecated Use auditScanRuns instead */
 export const pitchRuns = auditScanRuns;
-/** @deprecated Use auditScanResults instead */
-export const pitchAuditResults = auditScanResults;
+/** @deprecated Use pitchScanResults instead */
+export const pitchAuditResults = pitchScanResults;

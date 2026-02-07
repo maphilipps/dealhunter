@@ -44,7 +44,7 @@ export const factories = {
     websiteUrl: 'https://example.com',
     duplicateCheckResult: null,
     descriptionEmbedding: null,
-    quickScanResults: null,
+    qualificationScanResults: null,
     createdAt: new Date(),
     ...overrides,
   }),
@@ -80,7 +80,7 @@ export const factories = {
     websiteUrl: 'https://example.com',
   }),
 
-  quickScanResults: () => ({
+  qualificationScanResults: () => ({
     recommendation: 'bid' as const,
     confidence: 0.85,
     reasoning: 'Strong technical fit and reasonable timeline',

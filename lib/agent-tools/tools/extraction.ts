@@ -12,7 +12,6 @@ import { queryRawChunks, formatRAGContext } from '../../rag/raw-retrieval-servic
 import { registry } from '../registry';
 import type { ToolContext } from '../types';
 
-
 /**
  * In-memory state for extraction sessions
  * Key: preQualificationId, Value: partial ExtractedRequirements
@@ -36,12 +35,14 @@ export function generateSchemaDescription(): string {
   const fieldDescriptions: Record<string, string> = {
     customerName: 'string - Name of the customer company',
     industry: 'string - Industry sector',
-    projectGoal: 'object { objective, successCriteria[], businessDrivers[], strategicContext, mustNotFail[], confidence } - The North Star for all analysis',
+    projectGoal:
+      'object { objective, successCriteria[], businessDrivers[], strategicContext, mustNotFail[], confidence } - The North Star for all analysis',
     projectName: 'string - Project title',
     projectDescription: 'string - Detailed project description',
     technologies: 'string[] - List of technologies mentioned',
     scope: 'string - Project scope (development, migration, consulting)',
-    cmsConstraints: 'object { required[], preferred[], excluded[], flexibility, confidence, rawText } - CMS requirements',
+    cmsConstraints:
+      'object { required[], preferred[], excluded[], flexibility, confidence, rawText } - CMS requirements',
     budgetRange: 'object { min, max, currency, confidence, rawText } - Budget information',
     timeline: 'string - Project timeline',
     submissionDeadline: 'string (YYYY-MM-DD) - Deadline for bid submission',
@@ -72,7 +73,7 @@ function getFieldSchema(field: string): z.ZodTypeAny | undefined {
 // ===== Tool: prequal.query =====
 
 const queryInputSchema = z.object({
-  preQualificationId: z.string().describe('The pre-qualification ID to query'),
+  preQualificationId: z.string().describe('The qualification ID to query'),
   query: z.string().describe('Natural language query to search in the document'),
   language: z.enum(['de', 'en']).default('de').describe('Query language'),
   topK: z.number().min(1).max(20).default(5).describe('Number of chunks to retrieve'),
@@ -110,7 +111,7 @@ registry.register({
         data: {
           found: true,
           context,
-          chunks: chunks.map((c) => ({
+          chunks: chunks.map(c => ({
             text: c.content,
             score: c.similarity,
           })),
@@ -128,7 +129,7 @@ registry.register({
 // ===== Tool: prequal.set =====
 
 const setInputSchema = z.object({
-  preQualificationId: z.string().describe('The pre-qualification ID'),
+  preQualificationId: z.string().describe('The qualification ID'),
   field: z.string().describe('The field name to set'),
   value: z.unknown().describe('The value to set for the field'),
 });
@@ -191,7 +192,7 @@ For complex objects (budgetRange, projectGoal, contacts), provide the full objec
 // ===== Tool: prequal.get =====
 
 const getInputSchema = z.object({
-  preQualificationId: z.string().describe('The pre-qualification ID'),
+  preQualificationId: z.string().describe('The qualification ID'),
   field: z.string().optional().describe('Specific field to get, or omit for all fields'),
 });
 
@@ -233,7 +234,7 @@ registry.register({
       .map(([k]) => k);
 
     const missingFields = VALID_FIELDS.filter(
-      (f) => !setFields.includes(f) && f !== 'extractedAt' && f !== 'confidenceScore'
+      f => !setFields.includes(f) && f !== 'extractedAt' && f !== 'confidenceScore'
     );
 
     return {
@@ -251,7 +252,7 @@ registry.register({
 // ===== Tool: prequal.complete =====
 
 const completeInputSchema = z.object({
-  preQualificationId: z.string().describe('The pre-qualification ID'),
+  preQualificationId: z.string().describe('The qualification ID'),
   confidenceScore: z
     .number()
     .min(0)
@@ -314,7 +315,7 @@ registry.register({
 // ===== Tool: prequal.reset =====
 
 const resetInputSchema = z.object({
-  preQualificationId: z.string().describe('The pre-qualification ID'),
+  preQualificationId: z.string().describe('The qualification ID'),
 });
 
 registry.register({
@@ -350,5 +351,8 @@ export function initExtractionSession(
   preQualificationId: string,
   initialData?: Partial<ExtractedRequirements>
 ): void {
-  extractionSessions.set(preQualificationId, initialData ?? { technologies: [], keyRequirements: [] });
+  extractionSessions.set(
+    preQualificationId,
+    initialData ?? { technologies: [], keyRequirements: [] }
+  );
 }

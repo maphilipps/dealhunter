@@ -140,5 +140,5 @@ export async function auditPerformance(
     maxOutputTokens: 8000,
   });
 
-  return result.output!;
+  return result.output;
 }

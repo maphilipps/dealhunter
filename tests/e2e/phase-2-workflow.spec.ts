@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
  * 4. Website Audit Page
  * 5. PT Estimation Page
  * 6. BID/NO-BID Decision
- * 7. Status transitions (routed → full_scanning → bl_reviewing → bid_voted/archived)
+ * 7. Status transitions (routed → audit_scanning → bl_reviewing → bid_voted/archived)
  *
  * DEA-106: E2E Tests für Phase 2 Workflow
  */
@@ -22,7 +22,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to homepage and wait for it to load
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Create a test RFP first (prerequisite for Lead creation)
     await page.click('text=New Bid');
@@ -50,7 +50,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
     await page.waitForSelector('text=Client Name', { timeout: 10000 });
 
     // Route to BL (this triggers Lead creation)
-    // Note: In real scenario, we'd need Quick Scan first
+    // Note: In real scenario, we'd need Qualification Scan first
     // For E2E test, we'll directly assign to BU
     await page.click('text=Assign to BU');
     await page.selectOption('select[name="businessUnit"]', { index: 1 });
@@ -64,7 +64,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
   test('should automatically convert RFP to Lead when routed', async ({ page }) => {
     // Navigate to Leads page
     await page.goto('/leads');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Should see the newly created lead
     await expect(page.locator('text=Acme Corporation')).toBeVisible();
@@ -188,10 +188,10 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
       // Try direct URL navigation
       const leadUrl = page.url();
       const leadId = leadUrl.split('/').pop();
-      await page.goto(`/pitches/${leadId}/website-audit`);
+      await page.goto(`/pitches/${leadId}/scan`);
 
       // Should either show page or redirect
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/pitches/');
     }
   });
@@ -226,7 +226,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
       await page.goto(`/pitches/${leadId}/estimation`);
 
       // Should either show page or redirect
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/pitches/');
     }
   });
@@ -287,7 +287,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
       await page.goto(`/pitches/${leadId}/decision`);
 
       // Should either show page or redirect
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/pitches/');
     }
   });
@@ -302,7 +302,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
     // Test 1: Initial status should be 'routed'
     await expect(page.locator('text=Routed')).toBeVisible();
 
-    // Test 2: After deep scan starts, status should be 'full_scanning' or 'scanning'
+    // Test 2: After deep scan starts, status should be 'audit_scanning' or 'scanning'
     const startScanButton = page.locator('button:has-text("Start Deep Scan")');
     if (await startScanButton.isVisible()) {
       await startScanButton.click();

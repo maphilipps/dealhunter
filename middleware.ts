@@ -20,7 +20,7 @@ export default auth(req => {
    * - /api/auth/*: NextAuth.js handles its own authentication
    *
    * Security Model:
-   * - User access control happens at trigger endpoints (e.g., /api/pre-qualifications/[id]/deep-analysis/trigger)
+   * - User access control happens at trigger endpoints (e.g., /api/qualifications/[id]/deep-analysis/trigger)
    * - Webhook endpoints validate signatures to ensure requests come from trusted services
    * - This implements "defense in depth" where multiple layers validate security
    */
@@ -34,7 +34,7 @@ export default auth(req => {
   if (isPublicRoute) {
     // Redirect to leads if already authenticated
     if (isAuth && (pathname === '/login' || pathname === '/register')) {
-      return NextResponse.redirect(new URL('/pre-qualifications', req.url));
+      return NextResponse.redirect(new URL('/qualifications', req.url));
     }
     return NextResponse.next();
   }
@@ -48,14 +48,14 @@ export default auth(req => {
   const adminRoutes = ['/admin'];
   const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
   if (isAdminRoute && userRole !== 'admin') {
-    return NextResponse.redirect(new URL('/pre-qualifications', req.url));
+    return NextResponse.redirect(new URL('/qualifications', req.url));
   }
 
   // BL-only routes (BL and Admin can access)
   const blRoutes = ['/bl-review'];
   const isBLRoute = blRoutes.some(route => pathname.startsWith(route));
   if (isBLRoute && userRole !== 'bl' && userRole !== 'admin') {
-    return NextResponse.redirect(new URL('/pre-qualifications', req.url));
+    return NextResponse.redirect(new URL('/qualifications', req.url));
   }
 
   return NextResponse.next();

@@ -14,7 +14,7 @@ const openai = new OpenAI({
 export interface TeamSuggestionInput {
   bidId: string;
   extractedRequirements: any; // JSON from bid.extractedRequirements
-  quickScanResults?: any; // Optional Quick Scan data
+  qualificationScanResults?: any; // Optional Qualification Scan data
   assignedBusinessLine: string; // BL name
   availableEmployees: Employee[]; // Employees from the assigned BL
 }
@@ -24,8 +24,12 @@ export interface TeamSuggestionInput {
  * Analyzes requirements and suggests optimal team composition
  */
 export async function suggestTeam(input: TeamSuggestionInput): Promise<TeamSuggestion> {
-  const { extractedRequirements, quickScanResults, assignedBusinessLine, availableEmployees } =
-    input;
+  const {
+    extractedRequirements,
+    qualificationScanResults,
+    assignedBusinessLine,
+    availableEmployees,
+  } = input;
 
   // Format employee data for AI
   const employeesList = availableEmployees.map(emp => ({
@@ -37,23 +41,24 @@ export async function suggestTeam(input: TeamSuggestionInput): Promise<TeamSugge
     availability: emp.availabilityStatus,
   }));
 
-  // Extract technical requirements from Quick Scan for enhanced matching
+  // Extract technical requirements from Qualification Scan for enhanced matching
   const technicalRequirements = {
-    cms: quickScanResults?.cms || extractedRequirements.cms || null,
-    framework: quickScanResults?.framework || extractedRequirements.framework || null,
-    techStack: quickScanResults?.techStack || extractedRequirements.technologies || [],
-    integrations: quickScanResults?.integrations || [],
-    features: quickScanResults?.features || [],
+    cms: qualificationScanResults?.cms || extractedRequirements.cms || null,
+    framework: qualificationScanResults?.framework || extractedRequirements.framework || null,
+    techStack: qualificationScanResults?.techStack || extractedRequirements.technologies || [],
+    integrations: qualificationScanResults?.integrations || [],
+    features: qualificationScanResults?.features || [],
     complexity: {
       hasAnimations:
-        quickScanResults?.features?.some((f: string) => f.toLowerCase().includes('animation')) ||
-        false,
+        qualificationScanResults?.features?.some((f: string) =>
+          f.toLowerCase().includes('animation')
+        ) || false,
       hasI18n:
-        quickScanResults?.features?.some(
+        qualificationScanResults?.features?.some(
           (f: string) =>
             f.toLowerCase().includes('multilingual') || f.toLowerCase().includes('i18n')
         ) || false,
-      hasComplexComponents: quickScanResults?.features?.length > 10 || false,
+      hasComplexComponents: qualificationScanResults?.features?.length > 10 || false,
     },
   };
 

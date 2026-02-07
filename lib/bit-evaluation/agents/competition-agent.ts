@@ -6,7 +6,7 @@ import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
 
 export interface CompetitionAgentInput {
   extractedRequirements: any;
-  quickScanResults?: any;
+  qualificationScanResults?: any;
   useWebSearch?: boolean;
 }
 
@@ -19,7 +19,7 @@ export async function runCompetitionAgent(input: CompetitionAgentInput): Promise
 
     try {
       const industry =
-        input.quickScanResults?.companyIntelligence?.basicInfo?.industry ||
+        input.qualificationScanResults?.companyIntelligence?.basicInfo?.industry ||
         input.extractedRequirements?.industry ||
         '';
       const customerName = input.extractedRequirements?.customerName || '';
@@ -111,9 +111,9 @@ Alle Texte auf Deutsch.`;
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${
-  input.quickScanResults
-    ? `## Quick Scan Ergebnisse
-${JSON.stringify(input.quickScanResults, null, 2)}`
+  input.qualificationScanResults
+    ? `## Qualification Scan Ergebnisse
+${JSON.stringify(input.qualificationScanResults, null, 2)}`
     : ''
 }
 ${marketInsights}

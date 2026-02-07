@@ -1,23 +1,23 @@
 /**
  * Timeline Agent Integration Helpers
  *
- * Functions to integrate Timeline Agent with Quick Scan workflow
+ * Functions to integrate Timeline Agent with Qualification Scan workflow
  */
 
 import { generateTimeline, type TimelineAgentInput } from './agent';
 import type { ProjectTimeline } from './schema';
 
 /**
- * Generate Timeline from Quick Scan Results
+ * Generate Timeline from Qualification Scan Results
  *
- * Converts Quick Scan data into Timeline Agent input and generates timeline estimate
+ * Converts Qualification Scan data into Timeline Agent input and generates timeline estimate
  */
-export async function generateTimelineFromQuickScan(params: {
+export async function generateTimelineFromQualificationScan(params: {
   projectName: string;
   projectDescription?: string;
   websiteUrl: string;
   extractedRequirements?: any;
-  quickScanResult: {
+  qualificationScanResult: {
     techStack?: {
       cms?: string;
       technologies?: Array<{ name: string; category: string }>;
@@ -32,8 +32,13 @@ export async function generateTimelineFromQuickScan(params: {
     };
   };
 }): Promise<ProjectTimeline> {
-  const { projectName, projectDescription, websiteUrl, extractedRequirements, quickScanResult } =
-    params;
+  const {
+    projectName,
+    projectDescription,
+    websiteUrl,
+    extractedRequirements,
+    qualificationScanResult,
+  } = params;
 
   // Build Timeline Agent input
   const timelineInput: TimelineAgentInput = {
@@ -43,15 +48,15 @@ export async function generateTimelineFromQuickScan(params: {
     targetDeadline: extractedRequirements?.targetDeadline,
     budget: extractedRequirements?.budget?.max || extractedRequirements?.budget,
 
-    // From Quick Scan
-    estimatedPageCount: quickScanResult.contentVolume?.estimatedPages,
-    contentTypes: quickScanResult.contentVolume?.estimatedContentTypes,
-    detectedFeatures: quickScanResult.features?.detectedFeatures,
-    detectedIntegrations: quickScanResult.features?.integrations,
-    techStack: quickScanResult.techStack?.technologies?.map(t => t.name),
-    cms: quickScanResult.techStack?.cms,
+    // From Qualification Scan
+    estimatedPageCount: qualificationScanResult.contentVolume?.estimatedPages,
+    contentTypes: qualificationScanResult.contentVolume?.estimatedContentTypes,
+    detectedFeatures: qualificationScanResult.features?.detectedFeatures,
+    detectedIntegrations: qualificationScanResult.features?.integrations,
+    techStack: qualificationScanResult.techStack?.technologies?.map(t => t.name),
+    cms: qualificationScanResult.techStack?.cms,
 
-    // From Pre-Qualification
+    // From Qualification
     rfpTimeline: extractedRequirements?.timeline,
     specialRequirements: extractedRequirements?.keyRequirements,
   };
@@ -61,6 +66,9 @@ export async function generateTimelineFromQuickScan(params: {
 
   return timeline;
 }
+
+/** @deprecated Use generateTimelineFromQualificationScan */
+export const generateTimelineFromLeadScan = generateTimelineFromQualificationScan;
 
 /**
  * Helper to parse timeline from database

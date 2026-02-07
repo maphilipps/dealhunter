@@ -22,7 +22,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { pitches, pitchSectionData, quickScans, dealEmbeddings } from '@/lib/db/schema';
+import { pitches, pitchSectionData, leadScans, dealEmbeddings } from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -106,7 +106,7 @@ const CATEGORIES = [
  * Run decision agent
  *
  * @param leadId - Lead ID
- * @param preQualificationId - Pre-Qualification ID
+ * @param preQualificationId - Qualification ID
  * @returns Decision analysis with BID/NO-BID recommendation
  */
 export async function runDecisionAgent(
@@ -119,7 +119,7 @@ export async function runDecisionAgent(
       customerName: pitches.customerName,
       industry: pitches.industry,
       projectDescription: pitches.projectDescription,
-      quickScanId: pitches.quickScanId,
+      qualificationScanId: pitches.qualificationScanId,
     })
     .from(pitches)
     .where(eq(pitches.id, leadId))
@@ -130,16 +130,16 @@ export async function runDecisionAgent(
   }
 
   // 2. Fetch Quick Scan data
-  let quickScanData: Record<string, unknown> | null = null;
-  if (leadData.quickScanId) {
+  let qualificationScanData: Record<string, unknown> | null = null;
+  if (leadData.qualificationScanId) {
     const [qs] = await db
       .select()
-      .from(quickScans)
-      .where(eq(quickScans.id, leadData.quickScanId))
+      .from(leadScans)
+      .where(eq(leadScans.id, leadData.qualificationScanId))
       .limit(1);
 
     if (qs) {
-      quickScanData = {
+      qualificationScanData = {
         recommendedBusinessUnit: qs.recommendedBusinessUnit,
         confidence: qs.confidence,
         reasoning: qs.reasoning,
@@ -230,7 +230,7 @@ LEAD INFORMATIONEN:
 - Projektbeschreibung: ${leadData.projectDescription || 'Keine Beschreibung'}
 
 QUICK SCAN ERGEBNISSE:
-${JSON.stringify(quickScanData, null, 2)}
+${JSON.stringify(qualificationScanData, null, 2)}
 
 DEEP SCAN SECTION DATEN (nach Kategorien):
 ${JSON.stringify(categoryContext, null, 2)}

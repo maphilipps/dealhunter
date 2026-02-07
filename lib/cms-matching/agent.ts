@@ -1,10 +1,10 @@
 /**
  * CMS Evaluation Agent
  *
- * Läuft nach dem Quick Scan und evaluiert die erkannten Anforderungen
+ * Läuft nach dem Qualification Scan und evaluiert die erkannten Anforderungen
  * gegen die verfügbaren CMS/Technologien aus der Baseline.
  *
- * Workflow 1: Quick Scan -> CMS Evaluation -> BL Entscheidung
+ * Workflow 1: Qualification Scan -> CMS Evaluation -> BL Entscheidung
  */
 
 import { eq } from 'drizzle-orm';
@@ -20,7 +20,7 @@ import { db } from '@/lib/db';
 import { technologies } from '@/lib/db/schema';
 import { searchAndContents } from '@/lib/search/web-search';
 
-interface QuickScanData {
+interface QualificationScanData {
   techStack?: {
     cms?: string;
     framework?: string;
@@ -70,16 +70,16 @@ interface ExtractedRequirements {
 }
 
 export interface CMSEvaluationInput {
-  quickScanData: QuickScanData;
+  qualificationScanData: QualificationScanData;
   extractedRequirements?: ExtractedRequirements;
   businessUnitId?: string; // Optional: Filter Technologien nach BU
   useWebSearch?: boolean; // Web Search für aktuelle Infos nutzen
 }
 
 /**
- * Extrahiert Anforderungen aus Quick Scan Daten
+ * Extrahiert Anforderungen aus Qualification Scan Daten
  */
-function extractRequirementsFromQuickScan(data: QuickScanData): Array<{
+function extractRequirementsFromQualificationScan(data: QualificationScanData): Array<{
   requirement: string;
   category: RequirementMatch['category'];
   priority: RequirementMatch['priority'];
@@ -1087,8 +1087,10 @@ async function getCachedFeature(
  * Hauptfunktion: CMS Evaluation
  */
 export async function runCMSEvaluation(input: CMSEvaluationInput): Promise<CMSMatchingResult> {
-  // 1. Anforderungen aus Quick Scan extrahieren
-  const detectedRequirements = extractRequirementsFromQuickScan(input.quickScanData);
+  // 1. Anforderungen aus Qualification Scan extrahieren
+  const detectedRequirements = extractRequirementsFromQualificationScan(
+    input.qualificationScanData
+  );
 
   // 2. Anforderungen aus Extracted Requirements hinzufügen
   if (input.extractedRequirements?.requirements) {

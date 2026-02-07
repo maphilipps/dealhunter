@@ -1,5 +1,5 @@
 export {
-  PreQualificationDashboard,
-  type PreQualificationDashboardProps,
-} from './pre-qualification-dashboard';
+  QualificationDashboard,
+  type QualificationDashboardProps,
+} from './qualification-dashboard';
 export { DashboardPDFExport } from './dashboard-pdf-export';

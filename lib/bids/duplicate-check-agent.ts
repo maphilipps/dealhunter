@@ -91,10 +91,10 @@ export async function runDuplicateCheckAgent(params: {
 **Entscheidungsregeln:**
 - > 90% Similarity: "merge" (automatisch zusammenführen)
 - 70-90% Similarity: "manual_review" (manuelle Prüfung)
-- < 70% Similarity: "create_new" (neuer Pre-Qualification)
+- < 70% Similarity: "create_new" (neuer Qualification)
 
 Analysiere die Matches und gib eine Empfehlung mit Begründung.`,
-    prompt: `**Neuer Pre-Qualification:**
+    prompt: `**Neuer Qualification:**
 - Kunde: ${extractedRequirements.customerName || 'Unbekannt'}
 - Projekt: ${extractedRequirements.projectName || 'Unbekannt'}
 - Beschreibung: ${extractedRequirements.projectDescription || 'Keine Beschreibung'}

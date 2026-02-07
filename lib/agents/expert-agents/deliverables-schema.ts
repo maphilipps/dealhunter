@@ -1,7 +1,7 @@
 /**
  * Deliverables Expert Agent Schema
  *
- * Defines the structure for Pre-Qualification deliverables/submission requirements analysis.
+ * Defines the structure for Qualification deliverables/submission requirements analysis.
  */
 
 import { z } from 'zod';

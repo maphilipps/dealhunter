@@ -12,7 +12,7 @@ export const mockAIResponses = {
     websiteUrl: 'https://acme.example.com',
   },
 
-  quickScan: {
+  qualificationScan: {
     recommendation: 'bid',
     confidence: 0.88,
     reasoning: 'Strong technical fit with existing expertise. Reasonable timeline and budget.',

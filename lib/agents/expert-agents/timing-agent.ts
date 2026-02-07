@@ -1,7 +1,7 @@
 /**
  * Timing Expert Agent
  *
- * Extracts all timing and deadline information from Pre-Qualification documents via RAG.
+ * Extracts all timing and deadline information from Qualification documents via RAG.
  */
 
 import {
@@ -16,7 +16,7 @@ import type { ExpertAgentInput, ExpertAgentOutput } from './types';
 import { generateStructuredOutput } from '@/lib/ai/config';
 
 const TIMING_QUERIES = [
-  'submission deadline response due date Pre-Qualification closing proposal due',
+  'submission deadline response due date Qualification closing proposal due',
   'project timeline milestones phases schedule go-live launch',
   'Q&A clarification questions vendor briefing',
   'contract award signing kick-off start date',
@@ -25,10 +25,10 @@ const TIMING_QUERIES = [
 function buildSystemPrompt(): string {
   const today = new Date().toISOString().split('T')[0];
 
-  return `Du bist ein Timing Expert Agent bei adesso SE für die Analyse von Pre-Qualification-Dokumenten.
+  return `Du bist ein Timing Expert Agent bei adesso SE für die Analyse von Qualification-Dokumenten.
 
 ## Deine Rolle
-Extrahiere ALLE zeitlichen Informationen aus Pre-Qualification-Unterlagen.
+Extrahiere ALLE zeitlichen Informationen aus Qualification-Unterlagen.
 Deine Analyse ist kritisch für die Ressourcenplanung und Bid-Priorisierung.
 
 ## Heutiges Datum
@@ -94,7 +94,7 @@ export async function runTimingAgent(
           confidence: 0,
         },
         0,
-        'No timing information found in Pre-Qualification document'
+        'No timing information found in Qualification document'
       );
     }
 
@@ -104,14 +104,14 @@ export async function runTimingAgent(
 
     const context = formatContextFromRAG(
       uniqueResults.slice(0, 15),
-      'Pre-Qualification Timing Information'
+      'Qualification Timing Information'
     );
 
     const analysis = await generateStructuredOutput({
       model: 'quality',
       schema: TimingAnalysisSchema,
       system: buildSystemPrompt(),
-      prompt: `Analyze the following Pre-Qualification content and extract all timing/deadline information:\n\n${context}`,
+      prompt: `Analyze the following Qualification content and extract all timing/deadline information:\n\n${context}`,
       temperature: 0.2,
     });
 

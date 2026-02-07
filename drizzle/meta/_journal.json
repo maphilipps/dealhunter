@@ -36,6 +36,41 @@
       "when": 1770249600000,
       "tag": "0004_add_configs_table",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1770336000000,
+      "tag": "0005_rename_to_lead_and_pitch_scan",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1770336001000,
+      "tag": "0006_rename_to_qualifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1770336002000,
+      "tag": "0007_add_section_notes",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1770336003000,
+      "tag": "0008_add_ai_config_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1770336004000,
+      "tag": "0009_add_feature_library",
+      "breakpoints": true
     }
   ]
 }

@@ -37,9 +37,9 @@ const deleteAuditInputSchema = z.object({
 // ===== Tool Implementations =====
 
 registry.register({
-  name: 'audit.update',
+  name: 'pitchScan.update_result',
   description: 'Update a Website Audit with new status, performance, or accessibility data',
-  category: 'audit',
+  category: 'pitch-scan',
   inputSchema: updateAuditInputSchema,
   async execute(input, context: ToolContext) {
     // Only BD and Admin can update audits
@@ -95,9 +95,9 @@ registry.register({
 });
 
 registry.register({
-  name: 'audit.delete',
+  name: 'pitchScan.delete_result',
   description: 'Delete a Website Audit (hard delete)',
-  category: 'audit',
+  category: 'pitch-scan',
   inputSchema: deleteAuditInputSchema,
   async execute(input, context: ToolContext) {
     // Only BD and Admin can delete audits

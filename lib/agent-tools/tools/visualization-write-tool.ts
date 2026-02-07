@@ -54,7 +54,7 @@ type JsonRenderTree = z.infer<typeof jsonRenderTreeSchema>;
  *   tools: {
  *     store_visualization: createVisualizationWriteTool({
  *       preQualificationId: 'xyz',
- *       agentName: 'quick_scan'
+ *       agentName: 'qualification_scan'
  *     }),
  *   },
  *   prompt: 'Analyze and visualize the tech stack...'

@@ -47,7 +47,7 @@ export const DEFAULT_RETRY_CONFIGS = {
     backoffMultiplier: 2,
     timeoutMs: 30000, // 30s initial, increases with retries
   },
-  quickScan: {
+  qualificationScan: {
     maxAttempts: 2,
     initialDelay: 5000,
     backoffMultiplier: 2,

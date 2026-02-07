@@ -7,7 +7,7 @@ export default function NewCompetitorPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Neuer Wettbewerber</h1>
           <p className="text-muted-foreground">
-            Erfassen Sie einen neuen Wettbewerber mit St‰rken, Schw‰chen und Marktinformationen
+            Erfassen Sie einen neuen Wettbewerber mit St√§rken, Schw√§chen und Marktinformationen
           </p>
         </div>
 

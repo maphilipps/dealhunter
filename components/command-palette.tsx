@@ -24,7 +24,7 @@ interface CommandPaletteItem {
 const navigationItems: CommandPaletteItem[] = [
   {
     label: 'Leads',
-    href: '/pre-qualifications',
+    href: '/qualifications',
     icon: ListTodo,
     shortcut: 'G L',
   },
@@ -76,7 +76,7 @@ const adminItems: CommandPaletteItem[] = [
 const actionItems: CommandPaletteItem[] = [
   {
     label: 'Neue Pre-Qualification erstellen',
-    href: '/pre-qualifications/new',
+    href: '/qualifications/new',
     icon: Plus,
     shortcut: 'N',
   },

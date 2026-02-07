@@ -135,7 +135,7 @@ registry.register({
 });
 
 // ============================================================================
-// notification.sendTeamAlert — DEPRECATED, use notification.send_team_emails
+// notification.send_team_alert — DEPRECATED, use notification.send_team_emails
 // ============================================================================
 
 const sendTeamAlertInputSchema = z.object({
@@ -145,9 +145,9 @@ const sendTeamAlertInputSchema = z.object({
 });
 
 registry.register({
-  name: 'notification.sendTeamAlert',
+  name: 'notification.send_team_alert',
   description:
-    '[DEPRECATED: use teamAssignment.listByPreQualification + user.get + notification.send_team_emails] Send notification emails to all team members assigned to a lead.',
+    '[DEPRECATED: use notification.send_team_emails instead] Send notification emails to all team members assigned to a lead.',
   category: 'notification',
   inputSchema: sendTeamAlertInputSchema,
   async execute(input, context: ToolContext) {
@@ -166,7 +166,7 @@ registry.register({
     const lead = leadData.lead;
     const preQualification = leadData.preQualification;
 
-    // Get team assignments for this Pre-Qualification
+    // Get team assignments for this Qualification
     const assignments = await db
       .select({
         assignment: teamAssignments,
@@ -254,9 +254,10 @@ interface ScheduledReminder {
 }
 
 registry.register({
+  /** @deprecated Use notification.schedule_reminder instead */
   name: 'notification.scheduleReminder',
   description:
-    'Schedule a reminder notification for a lead. Reminders are sent at the specified time via email.',
+    '[DEPRECATED: use notification.schedule_reminder] Schedule a reminder notification for a lead.',
   category: 'notification',
   inputSchema: scheduleReminderInputSchema,
   async execute(input, context: ToolContext) {
@@ -364,8 +365,10 @@ const listRemindersInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use notification.list_reminders instead */
   name: 'notification.listReminders',
-  description: 'List all scheduled reminders for a lead. Filter by status.',
+  description:
+    '[DEPRECATED: use notification.list_reminders] List all scheduled reminders for a lead. Filter by status.',
   category: 'notification',
   inputSchema: listRemindersInputSchema,
   async execute(input, context: ToolContext) {
@@ -423,8 +426,9 @@ const cancelReminderInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use notification.cancel_reminder instead */
   name: 'notification.cancelReminder',
-  description: 'Cancel a scheduled reminder. Only pending reminders can be cancelled.',
+  description: '[DEPRECATED: use notification.cancel_reminder] Cancel a scheduled reminder.',
   category: 'notification',
   inputSchema: cancelReminderInputSchema,
   async execute(input, context: ToolContext) {
@@ -497,5 +501,40 @@ registry.register({
         message: 'Reminder cancelled successfully',
       },
     };
+  },
+});
+
+// ============================================================================
+// Snake_case aliases (canonical names per CLAUDE.md conventions)
+// ============================================================================
+
+registry.register({
+  name: 'notification.schedule_reminder',
+  description:
+    'Schedule a reminder notification for a lead. Reminders are sent at the specified time via email.',
+  category: 'notification',
+  inputSchema: scheduleReminderInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('notification.scheduleReminder', input, context);
+  },
+});
+
+registry.register({
+  name: 'notification.list_reminders',
+  description: 'List all scheduled reminders for a lead. Filter by status.',
+  category: 'notification',
+  inputSchema: listRemindersInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('notification.listReminders', input, context);
+  },
+});
+
+registry.register({
+  name: 'notification.cancel_reminder',
+  description: 'Cancel a scheduled reminder. Only pending reminders can be cancelled.',
+  category: 'notification',
+  inputSchema: cancelReminderInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('notification.cancelReminder', input, context);
   },
 });

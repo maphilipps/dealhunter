@@ -7,7 +7,7 @@ import { db } from '@/lib/db';
 import {
   deepMigrationAnalyses,
   preQualifications,
-  quickScans,
+  leadScans,
   backgroundJobs,
 } from '@/lib/db/schema';
 import { auditAccessibility } from '@/lib/deep-analysis/agents/accessibility-audit-agent';
@@ -53,7 +53,7 @@ export const deepAnalysisFunction = inngest.createFunction(
     const existingCheckpoint = await resumeFromCheckpoint(workflowId);
 
     // Step 2: Fetch bid data and create analysis record + job tracking
-    const { bid, analysis, quickScan, jobRecord, workflowState } = await step.run(
+    const { bid, analysis, qualificationScan, jobRecord, workflowState } = await step.run(
       'init-analysis',
       async () => {
         console.log('[Inngest] Starting deep analysis for bid:', bidId);
@@ -72,12 +72,12 @@ export const deepAnalysisFunction = inngest.createFunction(
           throw new Error('No website URL - cannot run Deep Analysis');
         }
 
-        // Fetch quick scan results to get detected CMS
-        const [quickScanData] = await db
+        // Fetch lead scan results to get detected CMS
+        const [qualificationScanData] = await db
           .select()
-          .from(quickScans)
-          .where(eq(quickScans.preQualificationId, bidId))
-          .orderBy(desc(quickScans.createdAt))
+          .from(leadScans)
+          .where(eq(leadScans.preQualificationId, bidId))
+          .orderBy(desc(leadScans.createdAt))
           .limit(1);
 
         // Create analysis record
@@ -90,7 +90,7 @@ export const deepAnalysisFunction = inngest.createFunction(
             status: 'running' as const,
             startedAt: new Date(),
             websiteUrl: bidData.websiteUrl,
-            sourceCMS: quickScanData?.cms || 'Unknown',
+            sourceCMS: qualificationScanData?.cms || 'Unknown',
             targetCMS: 'Drupal',
             version: 1,
           })
@@ -128,7 +128,7 @@ export const deepAnalysisFunction = inngest.createFunction(
           data: {
             analysisId: analysisRecord.id,
             websiteUrl: bidData.websiteUrl,
-            sourceCMS: quickScanData?.cms || 'Unknown',
+            sourceCMS: qualificationScanData?.cms || 'Unknown',
             targetCMS: 'Drupal',
           },
         });
@@ -138,7 +138,7 @@ export const deepAnalysisFunction = inngest.createFunction(
 
         return {
           bid: bidData,
-          quickScan: quickScanData,
+          qualificationScan: qualificationScanData,
           analysis: analysisRecord,
           jobRecord: job,
           workflowState: state,
@@ -161,28 +161,28 @@ export const deepAnalysisFunction = inngest.createFunction(
           })
           .where(eq(backgroundJobs.id, jobRecord.id));
 
-        // Update Pre-Qualification status to 'full_scanning'
+        // Update Qualification status to 'audit_scanning'
         await db
           .update(preQualifications)
           .set({
-            status: 'full_scanning',
+            status: 'audit_scanning',
             updatedAt: new Date(),
           })
           .where(eq(preQualifications.id, bidId));
 
         const result = await runFullScan({
           websiteUrl: bid.websiteUrl!,
-          quickScanData: {
-            cms: quickScan?.cms ?? undefined,
-            techStack: quickScan?.techStack
-              ? typeof quickScan.techStack === 'string'
-                ? JSON.parse(quickScan.techStack)
-                : quickScan.techStack
+          qualificationScanData: {
+            cms: qualificationScan?.cms ?? undefined,
+            techStack: qualificationScan?.techStack
+              ? typeof qualificationScan.techStack === 'string'
+                ? JSON.parse(qualificationScan.techStack)
+                : qualificationScan.techStack
               : undefined,
-            features: quickScan?.features
-              ? typeof quickScan.features === 'string'
-                ? JSON.parse(quickScan.features)
-                : quickScan.features
+            features: qualificationScan?.features
+              ? typeof qualificationScan.features === 'string'
+                ? JSON.parse(qualificationScan.features)
+                : qualificationScan.features
               : undefined,
           },
           targetCMS: 'Drupal',
@@ -289,7 +289,7 @@ export const deepAnalysisFunction = inngest.createFunction(
 
         const result = await scoreMigrationComplexity(
           bid.websiteUrl!,
-          quickScan?.cms || 'Unknown',
+          qualificationScan?.cms || 'Unknown',
           contentArchitecture.pageTypes.flatMap(pt => pt.sampleUrls),
           contentArchitecture.contentTypeMapping.length,
           message => console.log(`[Migration Complexity] ${message}`)
@@ -409,7 +409,6 @@ export const deepAnalysisFunction = inngest.createFunction(
         await db
           .update(preQualifications)
           .set({
-            deepMigrationAnalysisId: analysis.id,
             status: 'analysis_complete',
             updatedAt: new Date(),
           })

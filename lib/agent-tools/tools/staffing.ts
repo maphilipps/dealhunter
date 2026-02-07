@@ -29,9 +29,10 @@ const calculateSkillMatchInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use staffing.calculate_skill_match instead */
   name: 'staffing.calculateSkillMatch',
   description:
-    'Calculate skill match score (0-100) for an employee against required skills using enhanced matching algorithm',
+    '[DEPRECATED: use staffing.calculate_skill_match] Calculate skill match score (0-100) for an employee against required skills using enhanced matching algorithm',
   category: 'staffing',
   inputSchema: calculateSkillMatchInputSchema,
   async execute(input, _context: ToolContext) {
@@ -215,8 +216,10 @@ const findEmployeesBySkillsInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use staffing.find_employees_by_skills instead */
   name: 'staffing.findEmployeesBySkills',
-  description: 'Find employees by required skills and return them sorted by match score',
+  description:
+    '[DEPRECATED: use staffing.find_employees_by_skills] Find employees by required skills and return them sorted by match score',
   category: 'staffing',
   inputSchema: findEmployeesBySkillsInputSchema,
   async execute(input, context: ToolContext) {
@@ -283,8 +286,10 @@ const checkEmployeeAvailabilityInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use staffing.check_availability instead */
   name: 'staffing.checkAvailability',
-  description: 'Check availability status of multiple employees',
+  description:
+    '[DEPRECATED: use staffing.check_availability] Check availability status of multiple employees',
   category: 'staffing',
   inputSchema: checkEmployeeAvailabilityInputSchema,
   async execute(input, context: ToolContext) {
@@ -319,5 +324,40 @@ registry.register({
           .length,
       },
     };
+  },
+});
+
+// ============================================================================
+// Snake_case aliases (canonical names per CLAUDE.md conventions)
+// ============================================================================
+
+registry.register({
+  name: 'staffing.calculate_skill_match',
+  description:
+    'Calculate skill match score (0-100) for an employee against required skills using enhanced matching algorithm',
+  category: 'staffing',
+  inputSchema: calculateSkillMatchInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('staffing.calculateSkillMatch', input, context);
+  },
+});
+
+registry.register({
+  name: 'staffing.find_employees_by_skills',
+  description: 'Find employees by required skills and return them sorted by match score',
+  category: 'staffing',
+  inputSchema: findEmployeesBySkillsInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('staffing.findEmployeesBySkills', input, context);
+  },
+});
+
+registry.register({
+  name: 'staffing.check_availability',
+  description: 'Check availability status of multiple employees',
+  category: 'staffing',
+  inputSchema: checkEmployeeAvailabilityInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('staffing.checkAvailability', input, context);
   },
 });

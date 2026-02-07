@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches, users, pitchAuditResults, type NewPitchAuditResult } from '@/lib/db/schema';
+import { pitches, users, pitchScanResults, type NewPitchScanResult } from '@/lib/db/schema';
 
 // Next.js Route Segment Config
 export const runtime = 'nodejs';
@@ -91,27 +91,27 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const { runId } = parsed.data;
 
     // Build WHERE conditions
-    const conditions = [eq(pitchAuditResults.pitchId, pitchId)];
-    if (runId) conditions.push(eq(pitchAuditResults.runId, runId));
+    const conditions = [eq(pitchScanResults.pitchId, pitchId)];
+    if (runId) conditions.push(eq(pitchScanResults.runId, runId));
 
     const auditResults = await db
       .select({
-        id: pitchAuditResults.id,
-        runId: pitchAuditResults.runId,
-        websiteUrl: pitchAuditResults.websiteUrl,
-        performanceScore: pitchAuditResults.performanceScore,
-        accessibilityScore: pitchAuditResults.accessibilityScore,
-        migrationComplexity: pitchAuditResults.migrationComplexity,
-        complexityScore: pitchAuditResults.complexityScore,
-        shareToken: pitchAuditResults.shareToken,
-        shareExpiresAt: pitchAuditResults.shareExpiresAt,
-        startedAt: pitchAuditResults.startedAt,
-        completedAt: pitchAuditResults.completedAt,
-        createdAt: pitchAuditResults.createdAt,
+        id: pitchScanResults.id,
+        runId: pitchScanResults.runId,
+        websiteUrl: pitchScanResults.websiteUrl,
+        performanceScore: pitchScanResults.performanceScore,
+        accessibilityScore: pitchScanResults.accessibilityScore,
+        migrationComplexity: pitchScanResults.migrationComplexity,
+        complexityScore: pitchScanResults.complexityScore,
+        shareToken: pitchScanResults.shareToken,
+        shareExpiresAt: pitchScanResults.shareExpiresAt,
+        startedAt: pitchScanResults.startedAt,
+        completedAt: pitchScanResults.completedAt,
+        createdAt: pitchScanResults.createdAt,
       })
-      .from(pitchAuditResults)
+      .from(pitchScanResults)
       .where(and(...conditions))
-      .orderBy(desc(pitchAuditResults.createdAt));
+      .orderBy(desc(pitchScanResults.createdAt));
 
     return NextResponse.json({ success: true, auditResults });
   } catch (error) {
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Invalid input', details: parsed.error }, { status: 400 });
     }
 
-    const newAuditResult: NewPitchAuditResult = {
+    const newAuditResult: NewPitchScanResult = {
       pitchId,
       runId: parsed.data.runId,
       websiteUrl: parsed.data.websiteUrl,
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       startedAt: new Date(),
     };
 
-    const [created] = await db.insert(pitchAuditResults).values(newAuditResult).returning();
+    const [created] = await db.insert(pitchScanResults).values(newAuditResult).returning();
 
     return NextResponse.json({ success: true, auditResult: created }, { status: 201 });
   } catch (error) {

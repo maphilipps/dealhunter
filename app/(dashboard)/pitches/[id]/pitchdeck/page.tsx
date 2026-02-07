@@ -97,14 +97,14 @@ export default async function PitchdeckPage({ params }: { params: Promise<{ id: 
     employee: NonNullable<(typeof teamMembers)[number]['employee']>;
   }>;
 
-  // Get Pre-Qualification to extract deadline
+  // Get Qualification to extract deadline
   const [preQualification] = await db
     .select()
     .from(preQualifications)
     .where(eq(preQualifications.id, lead.preQualificationId))
     .limit(1);
 
-  // Extract Pre-Qualification deadline from Pre-Qualification
+  // Extract Qualification deadline from Qualification
   let rfpDeadline: Date | null = null;
   if (preQualification?.extractedRequirements) {
     try {

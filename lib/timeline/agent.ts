@@ -8,7 +8,7 @@ import { getProviderForSlot } from '@/lib/ai/providers';
 
 /**
  * Input for Timeline Agent
- * Gathered during Quick Scan phase
+ * Gathered during Qualification Scan phase
  */
 export interface TimelineAgentInput {
   // RAG Context (DEA-107)
@@ -17,10 +17,10 @@ export interface TimelineAgentInput {
   // From extracted requirements
   projectName: string;
   projectDescription: string;
-  targetDeadline?: string; // From Pre-Qualification if specified
+  targetDeadline?: string; // From Qualification if specified
   budget?: number;
 
-  // From Quick Scan
+  // From Qualification Scan
   websiteUrl: string;
   estimatedPageCount?: number;
   contentTypes?: number;
@@ -30,7 +30,7 @@ export interface TimelineAgentInput {
   cms?: string;
 
   // Additional context
-  rfpTimeline?: string; // Free text from Pre-Qualification
+  rfpTimeline?: string; // Free text from Qualification
   specialRequirements?: string[];
 }
 
@@ -180,14 +180,14 @@ function buildFallbackTimeline(
       hasCriticalDeadline: Boolean(input.targetDeadline),
     },
     generatedAt: new Date().toISOString(),
-    phase: 'quick_scan',
+    phase: 'lead_scan',
   };
 }
 
 /**
  * Timeline Agent
  *
- * Generates early timeline estimate during Quick Scan (Phase 1).
+ * Generates early timeline estimate during Qualification Scan (Phase 1).
  * Provides realistic project timeline based on content volume,
  * complexity, and standard adesso project phases.
  *
@@ -218,8 +218,8 @@ Website: ${input.websiteUrl}
 - Komplexität: ${complexity} (Multiplikator: ${complexityMultiplier}x)
 - Geschätzte Gesamt-Tage: ${totalDays}
 
-${input.targetDeadline ? `## Pre-Qualification Deadline\n${input.targetDeadline}` : ''}
-${input.rfpTimeline ? `## Pre-Qualification Timeline Info\n${input.rfpTimeline}` : ''}
+${input.targetDeadline ? `## Qualification Deadline\n${input.targetDeadline}` : ''}
+${input.rfpTimeline ? `## Qualification Timeline Info\n${input.rfpTimeline}` : ''}
 ${input.specialRequirements?.length ? `## Special Requirements\n${input.specialRequirements.join('\n')}` : ''}
 `.trim();
 
@@ -268,9 +268,9 @@ ${input.specialRequirements?.length ? `## Special Requirements\n${input.specialR
 
   const prompt = `Du bist ein erfahrener Projektplaner bei adesso SE.
 
-Erstelle einen **realistischen Projekt-Timeline** für die initiale Bewertung (Phase 1 - Quick Scan).
+Erstelle einen **realistischen Projekt-Timeline** für die initiale Bewertung (Phase 1 - Qualification Scan).
 
-**WICHTIG:** Dies ist eine FRÜHE SCHÄTZUNG basierend auf Quick-Scan-Daten. Sei realistisch, nicht optimistisch.
+**WICHTIG:** Dies ist eine FRÜHE SCHÄTZUNG basierend auf Lead-Scan-Daten. Sei realistisch, nicht optimistisch.
 
 ${contextDescription}${ragContext}
 

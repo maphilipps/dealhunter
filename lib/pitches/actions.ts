@@ -18,7 +18,7 @@ import {
   pitchdeckDeliverables,
   pitchdeckTeamMembers,
   pitchdecks,
-  pitchRuns,
+  auditScanRuns,
   preQualifications,
   ptEstimations,
   pitchSectionData,
@@ -31,8 +31,8 @@ import {
 } from '@/lib/db/schema';
 
 /**
- * Start the pitch scan pipeline directly (without interview).
- * Uses existing RAG data from the pre-qualification phase.
+ * Start the audit scan pipeline directly (without interview).
+ * Uses existing RAG data from the qualification phase.
  */
 export async function startPitchScan(
   pitchId: string
@@ -60,7 +60,7 @@ export async function startPitchScan(
     const jobId = createId();
 
     // Create pitch run record
-    await db.insert(pitchRuns).values({
+    await db.insert(auditScanRuns).values({
       id: runId,
       pitchId,
       userId: session.user.id,
@@ -91,7 +91,7 @@ export async function startPitchScan(
     revalidatePath(`/pitches/${pitchId}`);
     return { success: true, runId };
   } catch (error) {
-    console.error('Error starting pitch scan:', error);
+    console.error('Error starting audit scan:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
@@ -110,16 +110,16 @@ export interface ConvertRfpToLeadResult {
 }
 
 /**
- * DEA-38: Converts an Pre-Qualification to a Lead when status is set to 'routed'
+ * DEA-38: Converts a Qualification to a Lead when status is set to 'routed'
  *
  * This function:
- * 1. Validates that the Pre-Qualification exists and has status 'routed'
- * 2. Creates a Lead record with data from the Pre-Qualification
+ * 1. Validates that the Qualification exists and has status 'routed'
+ * 2. Creates a Lead record with data from the Qualification
  * 3. Creates an audit trail entry
  *
  * Note: BL (Bereichsleiter) will decide BID/NO-BID in Lead Dashboard (Phase 2)
  *
- * @param input - Pre-Qualification ID to convert
+ * @param input - Qualification ID to convert
  * @returns Lead ID if successful
  */
 /**
@@ -148,7 +148,7 @@ export async function getLeads() {
       return { success: false, error: 'Benutzer nicht gefunden', leads: [] };
     }
 
-    // Admin can see all leads, BL sees only their BU leads, BD sees none (they work with Pre-Qualifications)
+    // Admin can see all leads, BL sees only their BU leads, BD sees none (they work with Qualifications)
     const { desc } = await import('drizzle-orm');
     let userLeads;
 
@@ -163,7 +163,7 @@ export async function getLeads() {
         .where(eq(pitches.businessUnitId, user.businessUnitId))
         .orderBy(desc(pitches.createdAt));
     } else {
-      // BD role should work with Pre-Qualifications, not leads
+      // BD role should work with Qualifications, not leads
       return { success: true, leads: [] };
     }
 
@@ -190,11 +190,11 @@ export async function convertRfpToLead(
     if (!preQualificationId) {
       return {
         success: false,
-        error: 'Pre-Qualification ID ist erforderlich',
+        error: 'Qualification ID ist erforderlich',
       };
     }
 
-    // Get Pre-Qualification
+    // Get Qualification
     const [preQualification] = await db
       .select()
       .from(preQualifications)
@@ -204,7 +204,7 @@ export async function convertRfpToLead(
     if (!preQualification) {
       return {
         success: false,
-        error: 'Pre-Qualification nicht gefunden',
+        error: 'Qualification nicht gefunden',
       };
     }
 
@@ -212,7 +212,7 @@ export async function convertRfpToLead(
     if (preQualification.status !== 'routed') {
       return {
         success: false,
-        error: 'Pre-Qualification muss Status "routed" haben',
+        error: 'Qualification muss Status "routed" haben',
       };
     }
 
@@ -220,7 +220,7 @@ export async function convertRfpToLead(
     if (!preQualification.assignedBusinessUnitId) {
       return {
         success: false,
-        error: 'Pre-Qualification muss einer Business Unit zugewiesen sein',
+        error: 'Qualification muss einer Business Unit zugewiesen sein',
       };
     }
 
@@ -246,21 +246,21 @@ export async function convertRfpToLead(
     // Parse Quick Scan data for decision makers (DEA-92)
     let decisionMakers: unknown[] | null = null;
 
-    if (preQualification.quickScanId) {
-      // Load Quick Scan data if quickScanId is set
-      const { quickScans } = await import('@/lib/db/schema');
-      const [quickScan] = await db
+    if (preQualification.qualificationScanId) {
+      // Load Qualification Scan data if qualificationScanId is set
+      const { leadScans } = await import('@/lib/db/schema');
+      const [qualificationScan] = await db
         .select()
-        .from(quickScans)
-        .where(eq(quickScans.id, preQualification.quickScanId))
+        .from(leadScans)
+        .where(eq(leadScans.id, preQualification.qualificationScanId))
         .limit(1);
 
-      if (quickScan?.decisionMakers) {
-        decisionMakers = JSON.parse(quickScan.decisionMakers) as unknown[];
+      if (qualificationScan?.decisionMakers) {
+        decisionMakers = JSON.parse(qualificationScan.decisionMakers) as unknown[];
       }
     }
 
-    // Check if lead already exists for this Pre-Qualification
+    // Check if lead already exists for this Qualification
     const existingLead = await db
       .select()
       .from(pitches)
@@ -270,7 +270,7 @@ export async function convertRfpToLead(
     if (existingLead.length > 0) {
       return {
         success: false,
-        error: 'Für dieses Pre-Qualification wurde bereits ein Lead erstellt',
+        error: 'Für diese Qualification wurde bereits ein Lead erstellt',
       };
     }
 
@@ -301,7 +301,7 @@ export async function convertRfpToLead(
           ? JSON.stringify(extractedReqs.requirements)
           : null,
         businessUnitId: preQualification.assignedBusinessUnitId,
-        quickScanId: preQualification.quickScanId || null,
+        qualificationScanId: preQualification.qualificationScanId || null,
         decisionMakers: decisionMakers ? JSON.stringify(decisionMakers) : null,
         routedAt: new Date(),
       })
@@ -318,12 +318,12 @@ export async function convertRfpToLead(
         status: 'routed',
         businessUnitId: preQualification.assignedBusinessUnitId,
       }),
-      reason: 'Automatische Lead-Erstellung bei Pre-Qualification-Status "routed"',
+      reason: 'Automatische Lead-Erstellung bei Qualification-Status "routed"',
     });
 
     // Revalidate cache
-    revalidatePath(`/pre-qualifications/${preQualificationId}`);
-    revalidatePath('/pre-qualifications');
+    revalidatePath(`/qualifications/${preQualificationId}`);
+    revalidatePath('/qualifications');
     revalidatePath('/leads');
 
     return {
@@ -331,7 +331,7 @@ export async function convertRfpToLead(
       leadId: newLead.id,
     };
   } catch (error) {
-    console.error('Error converting Pre-Qualification to Lead:', error);
+    console.error('Error converting Qualification to Lead:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
@@ -533,7 +533,7 @@ export async function updateLeadWebsiteUrl(
     });
 
     revalidatePath(`/pitches/${leadId}`);
-    revalidatePath(`/pitches/${leadId}/audit`);
+    revalidatePath(`/pitches/${leadId}/scan`);
 
     return { success: true };
   } catch (error) {
@@ -731,7 +731,7 @@ export async function checkAndIngestAuditData(leadId: string): Promise<IngestAud
 
     // Revalidate the lead page to show updated audit status
     revalidatePath(`/pitches/${leadId}`);
-    revalidatePath(`/pitches/${leadId}/audit`);
+    revalidatePath(`/pitches/${leadId}/scan`);
     revalidatePath(`/pitches/${leadId}/rag-data`);
 
     return {

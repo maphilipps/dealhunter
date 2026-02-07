@@ -12,10 +12,10 @@ import type { ExtractedRequirements } from '@/lib/extraction/schema';
  */
 
 /**
- * Generate an embedding vector for Pre-Qualification duplicate detection
+ * Generate an embedding vector for Qualification duplicate detection
  *
  * Combines customerName, projectTitle, and projectDescription into a single text
- * that represents the semantic essence of the Pre-Qualification.
+ * that represents the semantic essence of the Qualification.
  */
 export async function generateRfpEmbedding(requirements: ExtractedRequirements): Promise<number[]> {
   // Construct text for embedding

@@ -20,16 +20,16 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import type { QuickScan } from '@/lib/db/schema';
+import type { LeadScan } from '@/lib/db/schema';
 
 interface BLDecisionPhaseProps {
-  quickScan: QuickScan;
+  qualificationScan: LeadScan;
   preQualificationId: string;
 }
 
 type Decision = 'bid' | 'no-bid' | null;
 
-export function BLDecisionPhase({ quickScan, preQualificationId }: BLDecisionPhaseProps) {
+export function BLDecisionPhase({ qualificationScan, preQualificationId }: BLDecisionPhaseProps) {
   const [decision, setDecision] = useState<Decision>(null);
   const [reasoning, setReasoning] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +41,7 @@ export function BLDecisionPhase({ quickScan, preQualificationId }: BLDecisionPha
     setSubmitting(true);
     try {
       // TODO: Implement actual decision submission API
-      const res = await fetch(`/api/pre-qualifications/${preQualificationId}/decision`, {
+      const res = await fetch(`/api/qualifications/${preQualificationId}/decision`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision, reasoning }),
@@ -107,42 +107,44 @@ export function BLDecisionPhase({ quickScan, preQualificationId }: BLDecisionPha
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-xs text-muted-foreground">Empfohlene BU</p>
-              <p className="font-medium">{quickScan.recommendedBusinessUnit || '-'}</p>
+              <p className="font-medium">{qualificationScan.recommendedBusinessUnit || '-'}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Confidence</p>
               <Badge
                 variant={
-                  (quickScan.confidence || 0) >= 70
+                  (qualificationScan.confidence || 0) >= 70
                     ? 'default'
-                    : (quickScan.confidence || 0) >= 50
+                    : (qualificationScan.confidence || 0) >= 50
                       ? 'secondary'
                       : 'destructive'
                 }
               >
-                {quickScan.confidence || 0}%
+                {qualificationScan.confidence || 0}%
               </Badge>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Website</p>
               <a
-                href={quickScan.websiteUrl}
+                href={qualificationScan.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline text-sm"
               >
-                {new URL(quickScan.websiteUrl).hostname}
+                {new URL(qualificationScan.websiteUrl).hostname}
               </a>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">CMS/Tech</p>
-              <p className="font-medium">{quickScan.cms || quickScan.framework || '-'}</p>
+              <p className="font-medium">
+                {qualificationScan.cms || qualificationScan.framework || '-'}
+              </p>
             </div>
           </div>
-          {quickScan.reasoning && (
+          {qualificationScan.reasoning && (
             <div className="mt-4 p-3 bg-slate-50 rounded-lg">
               <p className="text-xs text-muted-foreground mb-1">AI-Begründung</p>
-              <p className="text-sm">{quickScan.reasoning}</p>
+              <p className="text-sm">{qualificationScan.reasoning}</p>
             </div>
           )}
         </CardContent>

@@ -11,7 +11,7 @@ import { pitches, pitchSectionData, preQualifications } from '@/lib/db/schema';
 
 const listLeadsInputSchema = z.object({
   businessUnitId: z.string().optional(),
-  status: z.enum(['routed', 'full_scanning', 'bl_reviewing', 'bid_voted', 'archived']).optional(),
+  status: z.enum(['routed', 'audit_scanning', 'bl_reviewing', 'bid_voted', 'archived']).optional(),
   limit: z.number().min(1).max(100).default(50),
 });
 
@@ -29,12 +29,12 @@ const createLeadInputSchema = z.object({
   budget: z.string().optional(),
   requirements: z.object({}).passthrough().optional(),
   businessUnitId: z.string(),
-  quickScanId: z.string().optional(),
+  qualificationScanId: z.string().optional(),
 });
 
 const updateLeadInputSchema = z.object({
   id: z.string(),
-  status: z.enum(['routed', 'full_scanning', 'bl_reviewing', 'bid_voted', 'archived']).optional(),
+  status: z.enum(['routed', 'audit_scanning', 'bl_reviewing', 'bid_voted', 'archived']).optional(),
   customerName: z.string().optional(),
   websiteUrl: z.string().url().optional(),
   industry: z.string().optional(),
@@ -50,7 +50,7 @@ const deleteLeadInputSchema = z.object({
 
 const transitionStatusInputSchema = z.object({
   id: z.string(),
-  targetStatus: z.enum(['routed', 'full_scanning', 'bl_reviewing', 'bid_voted', 'archived']),
+  targetStatus: z.enum(['routed', 'audit_scanning', 'bl_reviewing', 'bid_voted', 'archived']),
   reason: z.string().optional(),
 });
 
@@ -157,11 +157,11 @@ registry.register({
 
 registry.register({
   name: 'lead.create',
-  description: 'Create a new Lead from an existing Pre-Qualification',
+  description: 'Create a new Lead from an existing Qualification',
   category: 'lead',
   inputSchema: createLeadInputSchema,
   async execute(input, context: ToolContext) {
-    // Verify Pre-Qualification exists and is accessible
+    // Verify Qualification exists and is accessible
     const [preQualification] = await db
       .select()
       .from(preQualifications)
@@ -174,19 +174,19 @@ registry.register({
       .limit(1);
 
     if (!preQualification) {
-      return { success: false, error: 'Pre-Qualification not found or no access' };
+      return { success: false, error: 'Qualification not found or no access' };
     }
 
-    // Verify Pre-Qualification is in a state that allows Lead creation
+    // Verify Qualification is in a state that allows Lead creation
     if (!['decision_made', 'bid_voted', 'routed'].includes(preQualification.status)) {
       return {
         success: false,
         error:
-          'Pre-Qualification must be in decision_made, bid_voted, or routed status to create a Lead',
+          'Qualification must be in decision_made, bid_voted, or routed status to create a Lead',
       };
     }
 
-    // Check if Lead already exists for this Pre-Qualification
+    // Check if Lead already exists for this Qualification
     const [existing] = await db
       .select()
       .from(pitches)
@@ -196,7 +196,7 @@ registry.register({
     if (existing) {
       return {
         success: false,
-        error: 'Lead already exists for this Pre-Qualification',
+        error: 'Lead already exists for this Qualification',
         data: { id: existing.id },
       };
     }
@@ -213,7 +213,7 @@ registry.register({
         budget: input.budget,
         requirements: input.requirements ? JSON.stringify(input.requirements) : undefined,
         businessUnitId: input.businessUnitId,
-        quickScanId: input.quickScanId,
+        qualificationScanId: input.qualificationScanId,
         status: 'routed',
       })
       .returning();
@@ -322,8 +322,8 @@ registry.register({
 
     // Define valid state transitions
     const validTransitions: Record<string, string[]> = {
-      routed: ['full_scanning', 'archived'],
-      full_scanning: ['bl_reviewing', 'archived'],
+      routed: ['audit_scanning', 'archived'],
+      audit_scanning: ['bl_reviewing', 'archived'],
       bl_reviewing: ['bid_voted', 'archived'],
       bid_voted: ['archived'],
       archived: [], // Cannot transition from archived
@@ -378,7 +378,7 @@ registry.register({
       .where(eq(pitches.id, input.id))
       .returning();
 
-    // TODO: Send notification to BD user (original Pre-Qualification creator)
+    // TODO: Send notification to BD user (original Qualification creator)
     // This would typically trigger a notification system
 
     return { success: true, data: updated };

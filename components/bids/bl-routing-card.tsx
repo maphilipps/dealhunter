@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { BLRecommendation } from '@/lib/quick-scan/schema';
+import type { BLRecommendation } from '@/lib/qualification-scan/schema';
 import { assignBusinessUnit } from '@/lib/routing/actions';
 
 interface BLRoutingCardProps {

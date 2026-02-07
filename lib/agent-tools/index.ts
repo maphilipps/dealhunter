@@ -15,7 +15,8 @@ import './tools/business-unit';
 import './tools/user';
 import './tools/document';
 import './tools/staffing';
-import './tools/quickscan';
+import './tools/qualification-scan-crud';
+import './tools/qualification-scan'; // @deprecated aliases for qualification-scan tools
 import './tools/analysis';
 import './tools/pitchdeck';
 import './tools/audit';
@@ -23,13 +24,22 @@ import './tools/audit-trail';
 import './tools/workflow';
 import './tools/notification';
 import './tools/extraction';
-import './tools/pitch-run';
+import './tools/progress';
+import './tools/pitch-scan-run';
+import './tools/pitch-run'; // @deprecated aliases for pitch-scan-run tools
 import './tools/team-assignment';
 import './scan-tools';
 
-// QuickScan 2.0 Agent Tools
-import './quick-scan-tools';
-export { QUICKSCAN_TOOLS, type QuickScanToolName } from './quick-scan-tools';
+// Qualification Scan Agent Tools (formerly QualificationScan 2.0 / Qualification Scan)
+import './qualification-scan-tools';
+export {
+  QUALIFICATION_SCAN_TOOLS,
+  QUICKSCAN_TOOLS,
+  LEAD_SCAN_TOOLS,
+  type QualificationScanToolName,
+  type QuickScanToolName,
+  type LeadScanToolName,
+} from './qualification-scan-tools';
 
 // Intelligent Agent Framework — Raw Primitives (preferred)
 export {
@@ -75,7 +85,7 @@ export {
 export {
   evaluateResults,
   quickEvaluate,
-  evaluateQuickScanResults,
+  evaluateQualificationScanResults,
   evaluateCMSMatchingResults,
   evaluateBITResults,
   QUICKSCAN_EVALUATION_SCHEMA,
@@ -104,7 +114,7 @@ export {
 export {
   optimizeResults,
   optimizeArea,
-  optimizeQuickScanResults,
+  optimizeQualificationScanResults,
   optimizeCMSMatchingResults,
   evaluateAndOptimize,
   type OptimizerContext,

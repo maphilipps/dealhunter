@@ -350,11 +350,10 @@ async function executeSectionWorkers(
  *
  * Aktuell: Markiert alle erfolgreichen Sections als qualitativ ausreichend.
  */
-async function evaluateSectionResult(result: SectionResult): Promise<EvaluatorResult> {
-  // Vereinfachte Implementierung ohne LLM-Call
-  // In Phase 2: generateObject mit EvaluatorResultSchema
-  // Dann würden preQualificationId, sectionId, qualityThreshold wieder genutzt
-
+async function evaluateSectionResult(
+  preQualificationId: string,
+  result: SectionResult
+): Promise<EvaluatorResult> {
   if (!result.success) {
     return {
       qualityScore: 0,
@@ -365,14 +364,80 @@ async function evaluateSectionResult(result: SectionResult): Promise<EvaluatorRe
     };
   }
 
-  // Erfolgreiche Sections werden als ausreichend qualitativ markiert
-  return {
-    qualityScore: 75, // Annahme: Erfolgreiche Sections haben gute Qualität
+  // Fallback/dummy (used on LLM errors)
+  const dummy: EvaluatorResult = {
+    qualityScore: 75,
     confidence: 80,
     completeness: 80,
     needsRetry: false,
     reasoning: 'Section erfolgreich abgeschlossen',
   };
+
+  const sectionQuestion: Record<SectionId, string> = {
+    budget:
+      'Welche Budgetangaben, Kostenrahmen, Laufzeiten und finanziellen Rahmenbedingungen nennt die Ausschreibung?',
+    timing:
+      'Welche Fristen, Meilensteine, Abgabedaten, Projektlaufzeiten und Zeitplaene nennt die Ausschreibung?',
+    contracts:
+      'Welche Vertragsbedingungen, Vertragstypen (z.B. EVB-IT, Werk/Dienst), SLAs und rechtlichen Rahmenbedingungen nennt die Ausschreibung?',
+    deliverables:
+      'Welche konkreten Leistungen, Liefergegenstaende und Ergebnisse werden gefordert (Scope, Anforderungen, technische Lieferobjekte)?',
+    references:
+      'Welche Referenzen, Erfahrung, Eignungsnachweise oder vergleichbare Projekte werden verlangt?',
+    'award-criteria':
+      'Welche Zuschlagskriterien und Bewertungskriterien nennt die Ausschreibung (Gewichtung, Punkte, qualitative Kriterien)?',
+    'offer-structure':
+      'Welche Angebotsstruktur und welche Inhalte/Unterlagen muessen im Angebot geliefert werden (Gliederung, Formulare, Nachweise, Konzepte)?',
+  };
+
+  try {
+    const chunks = await queryRawChunks({
+      preQualificationId,
+      question: sectionQuestion[result.sectionId],
+      maxResults: 8,
+    });
+
+    if (chunks.length === 0) {
+      // No grounding available: recommend retry with web enrichment.
+      return {
+        qualityScore: 20,
+        confidence: 30,
+        completeness: 10,
+        needsRetry: true,
+        reasoning:
+          'Keine relevanten Dokument-Chunks im RAG gefunden; Retry mit Web-Enrichment empfohlen.',
+      };
+    }
+
+    const context = formatRAGContext(chunks);
+    const model = getModelForSlot('fast');
+
+    const { output } = await generateText({
+      model,
+      output: Output.object({ schema: EvaluatorResultSchema }),
+      prompt: `Du bist ein Evaluator fuer Ausschreibungsanalyse-Sections. Bewerte die Datenlage im Dokument-Kontext fuer die Section "${result.sectionId}".
+
+ZIEL:
+- qualityScore: Gesamtqualitaet der Informationen fuer diese Section (0-100)
+- completeness: Wie vollstaendig sind die Angaben im Kontext (0-100)
+- confidence: Wie sicher ist die Bewertung (0-100)
+- needsRetry: true wenn die Information im Kontext klar unvollstaendig/unklar ist und ein Retry mit Web-Enrichment sinnvoll ist
+
+REGELN:
+- Wenn zentrale Angaben fehlen (z.B. Budget fehlt komplett in budget), setze needsRetry=true und niedrige completeness.
+- Wenn Kontext nur Kapitelueberschriften/Navigation ohne Inhalt enthaelt, needsRetry=true.
+- Wenn ausreichend konkrete Daten vorhanden sind, needsRetry=false.
+
+KONTEXT (RAG):
+${context}`,
+      temperature: 0,
+    });
+
+    return output;
+  } catch (error) {
+    console.error('[Evaluator] LLM evaluation failed; using dummy evaluator:', error);
+    return dummy;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -501,7 +566,7 @@ export async function runPreQualSectionOrchestrator(
       for (const result of results) {
         if (!result.success) continue;
 
-        const evaluation = await evaluateSectionResult(result);
+        const evaluation = await evaluateSectionResult(preQualificationId, result);
 
         result.qualityScore = evaluation.qualityScore;
 

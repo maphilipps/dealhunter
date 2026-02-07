@@ -1,7 +1,4 @@
-import { generateText } from 'ai';
-
-import { modelNames, AI_TIMEOUTS } from '../../ai/config';
-import { getProviderForSlot } from '../../ai/providers';
+import { AI_TIMEOUTS, generateStructuredOutput } from '../../ai/config';
 import { getStockData, searchStockSymbol } from '../../integrations/yahoo-finance';
 import { searchAndContents } from '../../search/web-search';
 
@@ -253,23 +250,15 @@ Erstelle ein JSON-Objekt mit folgender Struktur:
 Fülle nur Felder aus, die du aus den Daten belegen kannst. Setze andere auf null.`;
 
   try {
-    const { text } = await generateText({
-      model: (await getProviderForSlot('research'))(modelNames.research),
+    const rawResult = await generateStructuredOutput({
+      model: 'research',
+      schema: companyIntelligenceSchema,
       system: systemPrompt,
       prompt: userPrompt,
       temperature: 0.2,
-      maxOutputTokens: 2000,
-      maxRetries: 2,
-      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_STANDARD),
+      maxTokens: 2000,
+      timeout: AI_TIMEOUTS.AGENT_STANDARD,
     });
-
-    const responseText = text || '{}';
-    const cleanedResponse = responseText
-      .replace(/```json\n?/g, '')
-      .replace(/```\n?/g, '')
-      .trim();
-
-    const rawResult = JSON.parse(cleanedResponse);
 
     // Ensure required fields exist
     if (!rawResult.basicInfo) {

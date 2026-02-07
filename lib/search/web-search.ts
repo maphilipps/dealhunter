@@ -57,10 +57,13 @@ export async function searchAndContents(
   options: SearchOptions = {}
 ): Promise<{ results: SearchResult[] }> {
   const numResults = options.numResults || 5;
+  let exaAttempted = false;
+  let exaFailed = false;
 
   // Use EXA if available
   if (isExaAvailable() && exa) {
     try {
+      exaAttempted = true;
       const exaOptions: Record<string, unknown> = {
         numResults,
         type: options.type || 'auto',
@@ -113,12 +116,19 @@ export async function searchAndContents(
       };
     } catch (error) {
       console.error('EXA search error:', error);
+      exaFailed = true;
       // Fall through to DuckDuckGo
     }
   }
 
   // Fallback: DuckDuckGo
-  console.log('Using DuckDuckGo fallback (no EXA_API_KEY)');
+  if (!isExaAvailable()) {
+    console.log('Using DuckDuckGo fallback (EXA_API_KEY not set)');
+  } else if (exaAttempted && exaFailed) {
+    console.log('Using DuckDuckGo fallback (EXA failed)');
+  } else {
+    console.log('Using DuckDuckGo fallback');
+  }
   const { results, error } = await searchDuckDuckGo(query, numResults);
 
   if (error) {

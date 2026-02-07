@@ -71,6 +71,20 @@
       "when": 1770336004000,
       "tag": "0009_add_feature_library",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1770500000000,
+      "tag": "0010_add_cms_feature_evaluations",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1770500001000,
+      "tag": "0011_add_technology_license_fields",
+      "breakpoints": true
     }
   ]
 }

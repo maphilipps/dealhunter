@@ -147,7 +147,7 @@ async function processPdf(
   }
 
   try {
-    text = await extractTextFromPdf(buffer);
+    text = await extractTextFromPdf(buffer, { extractionMode: 'thorough' });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (message.toLowerCase().includes('document has no pages')) {

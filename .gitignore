@@ -80,3 +80,6 @@ progress.txt
 
 # Claude settings with potential secrets
 .claude/settings*.json
+
+# Local working data (attachments, raw RFP exports, etc.)
+/work_data/

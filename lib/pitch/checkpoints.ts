@@ -132,7 +132,7 @@ export function buildSnapshotEvent(run: typeof auditScanRuns.$inferSelect): Snap
   return {
     type: 'snapshot',
     runId: run.id,
-    status: run.status as PitchStatus,
+    status: run.status,
     progress: run.progress,
     currentPhase: run.currentPhase,
     currentStep: run.currentStep,

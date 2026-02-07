@@ -18,12 +18,12 @@ import { test, expect } from '@playwright/test';
 test.describe('Master Data: References Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-1.1: References List - Page Load and Display', async ({ page }) => {
     await page.goto('/master-data/references');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify page loaded
     await expect(page).toHaveURL('/master-data/references');
@@ -45,7 +45,7 @@ test.describe('Master Data: References Management', () => {
     page,
   }) => {
     await page.goto('/master-data/references');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check if any references exist
     const hasReferences = (await page.locator('tbody tr').count()) > 0;
@@ -71,7 +71,7 @@ test.describe('Master Data: References Management', () => {
 
   test('TC-1.3: References List - Search by Project Name and Customer Name', async ({ page }) => {
     await page.goto('/master-data/references');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check if there are references to search
     const hasReferences = (await page.locator('tbody tr').count()) > 0;
@@ -99,7 +99,7 @@ test.describe('Master Data: References Management', () => {
 
   test('TC-1.4: Reference Creation - Full Flow', async ({ page }) => {
     await page.goto('/master-data/references');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click "Neue Referenz" button
     await page.click('a:has-text("Neue Referenz")');
@@ -162,10 +162,10 @@ test.describe('Master Data: References Management', () => {
     await page.fill('input[name="budgetRange"]', '100k-250k');
     await page.fill('textarea[name="outcome"]', 'Test outcome');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/master-data/references');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Note: Delete button might not be implemented in list view
     // This test documents expected behavior
@@ -208,10 +208,10 @@ test.describe('Master Data: References Management', () => {
     await page.fill('input[name="budgetRange"]', '1M-2M');
     await page.fill('textarea[name="outcome"]', 'Platform launched successfully');
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/master-data/references');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify it shows as "Ausstehend" (pending)
     const referenceRow = page.locator('tr').filter({ hasText: 'Validation Test Reference' });
@@ -228,7 +228,7 @@ test.describe('Master Data: References Management', () => {
     // Requires edit functionality to be implemented
 
     await page.goto('/master-data/references');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Note: Optimistic locking is implemented in schema (version field)
     // Actual conflict detection would require edit form with version field
@@ -243,12 +243,12 @@ test.describe('Master Data: References Management', () => {
 test.describe('Master Data: Competencies Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-2.1: Competencies List - Category Grouping', async ({ page }) => {
     await page.goto('/master-data/competencies');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await expect(page).toHaveURL('/master-data/competencies');
     await expect(page.locator('h1')).toContainText('Kompetenzen');
@@ -271,7 +271,7 @@ test.describe('Master Data: Competencies Management', () => {
     page,
   }) => {
     await page.goto('/master-data/competencies');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const hasCompetencies = (await page.locator('tbody tr').count()) > 0;
 
@@ -295,7 +295,7 @@ test.describe('Master Data: Competencies Management', () => {
 
   test('TC-2.3: Competencies Filter - Level (basic, advanced, expert)', async ({ page }) => {
     await page.goto('/master-data/competencies');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const hasCompetencies = (await page.locator('tbody tr').count()) > 0;
 
@@ -314,7 +314,7 @@ test.describe('Master Data: Competencies Management', () => {
 
   test('TC-2.4: Competency Creation - With Certifications', async ({ page }) => {
     await page.goto('/master-data/competencies');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.click('a:has-text("Neue Kompetenz")');
     await expect(page).toHaveURL(/\/competencies\/new/);
@@ -367,10 +367,10 @@ test.describe('Master Data: Competencies Management', () => {
       await levelSelect.selectOption('basic');
     }
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/master-data/competencies');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify it shows as "Basis"
     const competencyRow = page.locator('tr').filter({ hasText: 'Upgrade Test Competency' });
@@ -391,10 +391,10 @@ test.describe('Master Data: Competencies Management', () => {
       await levelSelect.selectOption('expert');
     }
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/master-data/competencies');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify pending status
     const competencyRow = page.locator('tr').filter({ hasText: 'Validation Competency' });
@@ -403,7 +403,7 @@ test.describe('Master Data: Competencies Management', () => {
 
   test('TC-2.7: CSV Import for Bulk Upload', async ({ page }) => {
     await page.goto('/master-data/competencies');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Note: CSV import functionality may not be implemented yet
     // This test documents expected behavior
@@ -428,12 +428,12 @@ test.describe('Master Data: Competencies Management', () => {
 test.describe('Master Data: Competitors Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-3.1: Competitors List - Alphabetical Order', async ({ page }) => {
     await page.goto('/master-data/competitors');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await expect(page).toHaveURL('/master-data/competitors');
     await expect(page.locator('h1')).toContainText('Wettbewerber');
@@ -447,7 +447,7 @@ test.describe('Master Data: Competitors Management', () => {
 
   test('TC-3.2: Competitors Filter - Industry', async ({ page }) => {
     await page.goto('/master-data/competitors');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const hasCompetitors = (await page.locator('tbody tr').count()) > 0;
 
@@ -462,7 +462,7 @@ test.describe('Master Data: Competitors Management', () => {
 
   test('TC-3.3: Competitors Search - Company Name', async ({ page }) => {
     await page.goto('/master-data/competitors');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const hasCompetitors = (await page.locator('tbody tr').count()) > 0;
 
@@ -485,7 +485,7 @@ test.describe('Master Data: Competitors Management', () => {
 
   test('TC-3.4: Competitor Creation - With Strengths/Weaknesses', async ({ page }) => {
     await page.goto('/master-data/competitors');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Note: Competitors creation form may not exist yet - documenting expected behavior
     const newButton = page.locator('a:has-text("Neuer Wettbewerber")');
@@ -527,7 +527,7 @@ test.describe('Master Data: Competitors Management', () => {
   test('TC-3.5: Competitor Edit - Add Encounter Notes', async ({ page }) => {
     // Note: This documents expected edit functionality
     await page.goto('/master-data/competitors');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Edit functionality would allow adding encounter notes
     // Encounter notes: observations from actual bid competitions
@@ -536,7 +536,7 @@ test.describe('Master Data: Competitors Management', () => {
   test('TC-3.6: Competitor Validation Workflow', async ({ page }) => {
     // Note: Same validation workflow as references/competencies
     await page.goto('/master-data/competitors');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const hasCompetitors = (await page.locator('tbody tr').count()) > 0;
 
@@ -560,12 +560,12 @@ test.describe('Master Data: Competitors Management', () => {
 test.describe('Master Data: Employees Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-4.1: Employees List - Business Unit Grouping', async ({ page }) => {
     await page.goto('/admin/employees');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await expect(page).toHaveURL('/admin/employees');
     await expect(page.locator('h1')).toContainText('Mitarbeiter');
@@ -577,7 +577,7 @@ test.describe('Master Data: Employees Management', () => {
 
   test('TC-4.2: Employees Filter - Availability Status', async ({ page }) => {
     await page.goto('/admin/employees');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Note: Filter controls may not be implemented yet
     // Expected statuses: available, on_project, unavailable
@@ -585,7 +585,7 @@ test.describe('Master Data: Employees Management', () => {
 
   test('TC-4.3: Employees Filter - Skills (Multi-Select)', async ({ page }) => {
     await page.goto('/admin/employees');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Note: Multi-select skill filter not yet implemented
     // Would allow filtering employees by one or more skills
@@ -593,7 +593,7 @@ test.describe('Master Data: Employees Management', () => {
 
   test('TC-4.4: Employee Creation - With Skills Array', async ({ page }) => {
     await page.goto('/admin/employees');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.click('button:has-text("Neuer Mitarbeiter")');
     await expect(page).toHaveURL('/admin/employees/new');
@@ -659,10 +659,10 @@ test.describe('Master Data: Employees Management', () => {
     }
 
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/admin/employees');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find and click edit button (if exists)
     const editButton = page
@@ -695,7 +695,7 @@ test.describe('Master Data: Employees Management', () => {
 
   test('TC-4.6: CSV Import - Bulk Upload Employees', async ({ page }) => {
     await page.goto('/admin/employees');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click CSV Import button
     await page.click('button:has-text("CSV Import")');
@@ -741,10 +741,10 @@ test.describe('Master Data: Employees Management', () => {
     }
 
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.goto('/admin/employees');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find delete button
     const deleteButton = page
@@ -775,7 +775,7 @@ test.describe('Master Data: Employees Management', () => {
 test.describe('Master Data: Error Handling', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-5.1: Network Error - Retry Button', async ({ page }) => {
@@ -860,7 +860,7 @@ test.describe('Master Data: Error Handling', () => {
     }
 
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Try to create second employee with same email
     await page.goto('/admin/employees/new');

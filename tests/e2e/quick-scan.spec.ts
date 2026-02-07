@@ -41,7 +41,7 @@ async function createRFPWithoutUrl(page: Page, text: string) {
 test.describe('Qualification Scan: Start and Initial State', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-1.1: Qualification Scan starts automatically after extraction with URL', async ({
@@ -95,7 +95,7 @@ test.describe('Qualification Scan: Start and Initial State', () => {
 test.describe('Qualification Scan: Running State', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-2.1: Website is crawled and analyzed', async ({ page }) => {
@@ -159,7 +159,7 @@ test.describe('Qualification Scan: Running State', () => {
 test.describe('Qualification Scan: Questions Ready State', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-3.1: Status changes to questions_ready after completion', async ({ page }) => {
@@ -236,7 +236,7 @@ test.describe('Qualification Scan: Questions Ready State', () => {
 test.describe('Qualification Scan: URL Suggestions (DEA-32 Fix)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-4.1: URL Suggestion prompt appears when no URL provided', async ({ page }) => {
@@ -305,7 +305,7 @@ test.describe('Qualification Scan: URL Suggestions (DEA-32 Fix)', () => {
 test.describe('Qualification Scan: Error Cases', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-5.1: Invalid URL shows validation error', async ({ page }) => {

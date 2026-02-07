@@ -47,9 +47,13 @@ export function SectionNotes({ qualificationId, sectionId }: SectionNotesProps) 
 
   useEffect(() => {
     if (isOpen) {
-      getNotesForSection(qualificationId, sectionId).then(result => {
-        if (result.success && result.notes) setNotes(result.notes);
-      });
+      void getNotesForSection(qualificationId, sectionId)
+        .then(result => {
+          if (result.success && result.notes) setNotes(result.notes);
+        })
+        .catch(() => {
+          // Ignore load failures here; UI remains empty.
+        });
     }
   }, [isOpen, qualificationId, sectionId]);
 

@@ -22,7 +22,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to homepage and wait for it to load
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Create a test RFP first (prerequisite for Lead creation)
     await page.click('text=New Bid');
@@ -64,7 +64,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
   test('should automatically convert RFP to Lead when routed', async ({ page }) => {
     // Navigate to Leads page
     await page.goto('/leads');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Should see the newly created lead
     await expect(page.locator('text=Acme Corporation')).toBeVisible();
@@ -191,7 +191,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
       await page.goto(`/pitches/${leadId}/scan`);
 
       // Should either show page or redirect
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/pitches/');
     }
   });
@@ -226,7 +226,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
       await page.goto(`/pitches/${leadId}/estimation`);
 
       // Should either show page or redirect
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/pitches/');
     }
   });
@@ -287,7 +287,7 @@ test.describe('Phase 2 Workflow: Lead Management & Deep-Scan', () => {
       await page.goto(`/pitches/${leadId}/decision`);
 
       // Should either show page or redirect
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/pitches/');
     }
   });

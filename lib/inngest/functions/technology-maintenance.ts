@@ -52,7 +52,7 @@ export const technologyMaintenanceFunction = inngest.createFunction(
       const batchWarnings = await step.run(`check-eol-batch-${i}`, async () => {
         const results = await Promise.allSettled(
           batch.map(async tech => {
-            const productSlug = tech.name!.toLowerCase().replace(/\s+/g, '-');
+            const productSlug = tech.name.toLowerCase().replace(/\s+/g, '-');
 
             const response = await fetch(`https://endoflife.date/api/${productSlug}.json`, {
               headers: { Accept: 'application/json' },
@@ -95,7 +95,7 @@ export const technologyMaintenanceFunction = inngest.createFunction(
 
             return {
               technologyId: tech.id,
-              name: tech.name!,
+              name: tech.name,
               eolStatus: `Latest cycle ${latest.cycle} is EOL (eol: ${String(latest.eol)})`,
             };
           })

@@ -45,7 +45,7 @@ const PHASE_DEFS: ReadonlyArray<{
   label: string;
   agents: ReadonlyArray<{ name: string; label: string }>;
 }> = PHASE_DEFINITIONS.map(def => ({
-  id: def.id as PitchScanPhaseId,
+  id: def.id,
   label: def.label,
   agents: [{ name: def.id, label: def.label }],
 }));

@@ -127,7 +127,7 @@ export function AccountGroupedList({ opportunities }: AccountGroupedListProps) {
                 return (
                   <Link
                     key={opp.id}
-                    href={`/pre-qualifications/${opp.id}`}
+                    href={`/qualifications/${opp.id}`}
                     className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-accent"
                   >
                     <div className="flex-1 space-y-1">

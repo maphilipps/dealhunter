@@ -6,28 +6,32 @@ import { runCMSEvaluation, researchSingleRequirement, type CMSEvaluationInput } 
 import type { CMSMatchingResult } from './schema';
 
 import { db } from '@/lib/db';
-import { quickScans } from '@/lib/db/schema';
+import { leadScans } from '@/lib/db/schema';
 
 /**
- * Startet die CMS-Evaluation für einen Quick Scan
+ * Startet die CMS-Evaluation für einen Qualification Scan
  * Speichert das Ergebnis automatisch in der Datenbank
  */
 export async function startCMSEvaluation(
-  quickScanId: string,
+  qualificationScanId: string,
   options?: { useWebSearch?: boolean; businessUnitId?: string; forceRefresh?: boolean }
 ): Promise<{ success: boolean; result?: CMSMatchingResult; error?: string }> {
   try {
     // Quick Scan laden
-    const scans = await db.select().from(quickScans).where(eq(quickScans.id, quickScanId)).limit(1);
+    const scans = await db
+      .select()
+      .from(leadScans)
+      .where(eq(leadScans.id, qualificationScanId))
+      .limit(1);
 
     if (!scans.length) {
-      return { success: false, error: 'Quick Scan nicht gefunden' };
+      return { success: false, error: 'Qualification Scan nicht gefunden' };
     }
 
     const scan = scans[0];
 
     if (scan.status !== 'completed') {
-      return { success: false, error: 'Quick Scan ist noch nicht abgeschlossen' };
+      return { success: false, error: 'Qualification Scan ist noch nicht abgeschlossen' };
     }
 
     // Prüfe, ob bereits eine Evaluation existiert (außer bei forceRefresh)
@@ -40,8 +44,8 @@ export async function startCMSEvaluation(
       }
     }
 
-    // Quick Scan Daten parsen
-    const quickScanData: CMSEvaluationInput['quickScanData'] = {
+    // Qualification Scan Daten parsen
+    const qualificationScanData: CMSEvaluationInput['qualificationScanData'] = {
       techStack: scan.techStack ? JSON.parse(scan.techStack) : undefined,
       features: scan.features ? JSON.parse(scan.features) : undefined,
       contentVolume: scan.contentVolume ? JSON.parse(scan.contentVolume) : undefined,
@@ -54,19 +58,19 @@ export async function startCMSEvaluation(
 
     // CMS-Evaluation ausführen
     const result = await runCMSEvaluation({
-      quickScanData,
+      qualificationScanData: qualificationScanData,
       useWebSearch: options?.useWebSearch ?? true, // Default: Web Search aktiviert
       businessUnitId: options?.businessUnitId,
     });
 
     // Ergebnis in DB speichern
     await db
-      .update(quickScans)
+      .update(leadScans)
       .set({
         cmsEvaluation: JSON.stringify(result),
         cmsEvaluationCompletedAt: new Date(),
       })
-      .where(eq(quickScans.id, quickScanId));
+      .where(eq(leadScans.id, qualificationScanId));
 
     return { success: true, result };
   } catch (error) {
@@ -83,17 +87,17 @@ export async function startCMSEvaluation(
  * Gibt null zurück, wenn noch keine Evaluation existiert
  */
 export async function getCMSEvaluation(
-  quickScanId: string
+  qualificationScanId: string
 ): Promise<{ success: boolean; result?: CMSMatchingResult | null; error?: string }> {
   try {
     const scans = await db
-      .select({ cmsEvaluation: quickScans.cmsEvaluation })
-      .from(quickScans)
-      .where(eq(quickScans.id, quickScanId))
+      .select({ cmsEvaluation: leadScans.cmsEvaluation })
+      .from(leadScans)
+      .where(eq(leadScans.id, qualificationScanId))
       .limit(1);
 
     if (!scans.length) {
-      return { success: false, error: 'Quick Scan nicht gefunden' };
+      return { success: false, error: 'Qualification Scan nicht gefunden' };
     }
 
     if (!scans[0].cmsEvaluation) {
@@ -115,26 +119,26 @@ export async function getCMSEvaluation(
  * Erzwingt eine neue CMS-Evaluation (auch wenn bereits eine existiert)
  */
 export async function refreshCMSEvaluation(
-  quickScanId: string,
+  qualificationScanId: string,
   options?: { useWebSearch?: boolean; businessUnitId?: string }
 ): Promise<{ success: boolean; result?: CMSMatchingResult; error?: string }> {
-  return startCMSEvaluation(quickScanId, { ...options, forceRefresh: true });
+  return startCMSEvaluation(qualificationScanId, { ...options, forceRefresh: true });
 }
 
 /**
  * Recherchiert ein einzelnes Requirement für ein CMS und aktualisiert die Evaluation
  */
 export async function researchRequirement(
-  quickScanId: string,
+  qualificationScanId: string,
   cmsId: string,
   requirement: string
 ): Promise<{ success: boolean; result?: CMSMatchingResult; error?: string }> {
   try {
     // Aktuelle Evaluation laden
     const scans = await db
-      .select({ cmsEvaluation: quickScans.cmsEvaluation })
-      .from(quickScans)
-      .where(eq(quickScans.id, quickScanId))
+      .select({ cmsEvaluation: leadScans.cmsEvaluation })
+      .from(leadScans)
+      .where(eq(leadScans.id, qualificationScanId))
       .limit(1);
 
     if (!scans.length || !scans[0].cmsEvaluation) {
@@ -220,12 +224,12 @@ export async function researchRequirement(
 
     // In DB speichern
     await db
-      .update(quickScans)
+      .update(leadScans)
       .set({
         cmsEvaluation: JSON.stringify(updatedEvaluation),
         cmsEvaluationCompletedAt: new Date(),
       })
-      .where(eq(quickScans.id, quickScanId));
+      .where(eq(leadScans.id, qualificationScanId));
 
     console.log(
       `[CMS Research] Updated "${requirement}" for ${cms.name}: ${researchResult.score}%`

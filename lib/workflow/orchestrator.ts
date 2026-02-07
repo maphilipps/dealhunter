@@ -1,7 +1,7 @@
 /**
  * Phase 1 Workflow Orchestrator (DEA-90)
  *
- * Auto-triggers agents in sequence during Pre-Qualification qualification workflow:
+ * Auto-triggers agents in sequence during Qualification workflow:
  * 1. Upload → Duplicate Check
  * 2. Duplicate Check (no dups) → Extract
  * 3. Extract Review + Confirm → Quick Scan (if website URL)
@@ -27,14 +27,14 @@ import type { ExtractedRequirements } from '../extraction/schema';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Pre-Qualification Status types from schema
+ * Qualification Status types from schema
  */
 export type PreQualificationStatus = PreQualification['status'];
 
 /**
  * Agent names in Phase 1 workflow
  */
-export type Phase1Agent = 'DuplicateCheck' | 'Extract' | 'QuickScan' | 'Timeline';
+export type Phase1Agent = 'DuplicateCheck' | 'Extract' | 'QualificationScan' | 'Timeline';
 
 /**
  * Trigger conditions for status transitions
@@ -87,8 +87,8 @@ const TRIGGER_RULES: Partial<Record<PreQualificationStatus, TriggerRule>> = {
 
   // 4. Duplicate Check → Quick Scan (if no duplicates AND website URL exists)
   duplicate_checking: {
-    nextAgent: 'QuickScan',
-    nextStatus: 'quick_scanning',
+    nextAgent: 'QualificationScan',
+    nextStatus: 'qualification_scanning',
     trigger: 'auto_if_no_duplicates',
     condition: preQualification => {
       // First check for duplicates
@@ -107,7 +107,9 @@ const TRIGGER_RULES: Partial<Record<PreQualificationStatus, TriggerRule>> = {
       if (preQualification.websiteUrl) return true;
 
       if (preQualification.extractedRequirements) {
-        const extracted = JSON.parse(preQualification.extractedRequirements) as ExtractedRequirements;
+        const extracted = JSON.parse(
+          preQualification.extractedRequirements
+        ) as ExtractedRequirements;
         return !!(
           extracted.websiteUrl ||
           (extracted.websiteUrls && extracted.websiteUrls.length > 0)
@@ -121,14 +123,14 @@ const TRIGGER_RULES: Partial<Record<PreQualificationStatus, TriggerRule>> = {
 
   // 5. Quick Scan → BL Routing Pending (NO AGENT, just status update)
   // BD Manager routes to BL, then BL makes BID/NO-BID decision
-  quick_scanning: {
+  qualification_scanning: {
     nextAgent: null,
     nextStatus: 'bit_pending', // Waiting for BL routing (not BID decision by BD!)
     trigger: 'status_update_only',
     condition: () => true,
   },
 
-  // 6. BID/NO-BID Decision by BL is handled in Leads workflow, not Pre-Qualification workflow
+  // 6. BID/NO-BID Decision by BL is handled in Leads workflow, not Qualification workflow
   // Timeline Agent runs AFTER BL approves (in Phase 2)
   // NOTE: bit_pending now means "waiting for BL routing", not "waiting for BID decision"
 
@@ -155,7 +157,7 @@ export function getNextStatusAfterAgent(agentName: Phase1Agent): PreQualificatio
       return 'reviewing'; // User must review + confirm
     case 'DuplicateCheck':
       return 'duplicate_checking'; // Will check duplicates, then proceed or wait
-    case 'QuickScan':
+    case 'QualificationScan':
       return 'bit_pending'; // Waiting for BID/NO-BID decision
     case 'Timeline':
       return 'decision_made'; // Ready for BL routing
@@ -167,13 +169,13 @@ export function getNextStatusAfterAgent(agentName: Phase1Agent): PreQualificatio
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Trigger next agent based on current Pre-Qualification status
+ * Trigger next agent based on current Qualification status
  *
  * This is the main orchestration function - called after agent completion
  * or user actions (e.g., BID decision, duplicate override)
  *
- * @param preQualificationId - Pre-Qualification ID
- * @param currentStatus - Current Pre-Qualification status
+ * @param preQualificationId - Qualification ID
+ * @param currentStatus - Current Qualification status
  * @param context - Additional context (e.g., user override flag)
  */
 export async function triggerNextAgent(
@@ -204,7 +206,7 @@ export async function triggerNextAgent(
     return { triggered: false, reason: 'Status update only, no agent to trigger' };
   }
 
-  // Load Pre-Qualification data
+  // Load Qualification data
   const [preQualification] = await db
     .select()
     .from(preQualifications)
@@ -212,8 +214,8 @@ export async function triggerNextAgent(
     .limit(1);
 
   if (!preQualification) {
-    console.error(`[Orchestrator] Pre-Qualification not found: ${preQualificationId}`);
-    return { triggered: false, reason: 'Pre-Qualification not found' };
+    console.error(`[Orchestrator] Qualification not found: ${preQualificationId}`);
+    return { triggered: false, reason: 'Qualification not found' };
   }
 
   // Apply context updates (e.g., user override, decision)
@@ -256,19 +258,21 @@ export async function triggerNextAgent(
  * Called by agents after successful completion
  * Updates status and triggers next agent
  *
- * @param preQualificationId - Pre-Qualification ID
+ * @param preQualificationId - Qualification ID
  * @param agentName - Agent that just completed
  */
 export async function onAgentComplete(
   preQualificationId: string,
   agentName: Phase1Agent
 ): Promise<{ nextAgent?: Phase1Agent }> {
-  console.error(`[Orchestrator] Agent ${agentName} completed for Pre-Qualification ${preQualificationId}`);
+  console.error(
+    `[Orchestrator] Agent ${agentName} completed for Qualification ${preQualificationId}`
+  );
 
   // Get next status
   const nextStatus = getNextStatusAfterAgent(agentName);
 
-  // Update Pre-Qualification status
+  // Update Qualification status
   await updateRfpStatus(preQualificationId, nextStatus);
 
   // Try to trigger next agent
@@ -281,11 +285,15 @@ export async function onAgentComplete(
  * Handle user override on duplicate warning
  * Continues workflow even with duplicates
  */
-export async function handleDuplicateOverride(preQualificationId: string): Promise<{ success: boolean }> {
+export async function handleDuplicateOverride(
+  preQualificationId: string
+): Promise<{ success: boolean }> {
   console.error(`[Orchestrator] User override duplicate warning for ${preQualificationId}`);
 
   // Trigger Extract Agent with override context
-  const result = await triggerNextAgent(preQualificationId, 'duplicate_checking', { userOverride: true });
+  const result = await triggerNextAgent(preQualificationId, 'duplicate_checking', {
+    userOverride: true,
+  });
 
   return { success: result.triggered };
 }
@@ -300,7 +308,7 @@ export async function handleBidDecision(
 ): Promise<{ success: boolean; nextAgent?: Phase1Agent }> {
   console.error(`[Orchestrator] BID decision "${decision}" for ${preQualificationId}`);
 
-  // Update decision in Pre-Qualification
+  // Update decision in Qualification
   await db
     .update(preQualifications)
     .set({
@@ -326,9 +334,12 @@ export async function handleBidDecision(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Update Pre-Qualification status
+ * Update Qualification status
  */
-async function updateRfpStatus(preQualificationId: string, status: PreQualificationStatus): Promise<void> {
+async function updateRfpStatus(
+  preQualificationId: string,
+  status: PreQualificationStatus
+): Promise<void> {
   await db
     .update(preQualifications)
     .set({
@@ -337,7 +348,7 @@ async function updateRfpStatus(preQualificationId: string, status: PreQualificat
     })
     .where(eq(preQualifications.id, preQualificationId));
 
-  console.error(`[Orchestrator] Updated Pre-Qualification ${preQualificationId} status to: ${status}`);
+  console.error(`[Orchestrator] Updated Qualification ${preQualificationId} status to: ${status}`);
 }
 
 /**
@@ -360,7 +371,7 @@ export async function getWorkflowStatus(preQualificationId: string): Promise<{
     .limit(1);
 
   if (!preQualification) {
-    throw new Error(`Pre-Qualification not found: ${preQualificationId}`);
+    throw new Error(`Qualification not found: ${preQualificationId}`);
   }
 
   const rule = TRIGGER_RULES[preQualification.status];
@@ -368,7 +379,7 @@ export async function getWorkflowStatus(preQualificationId: string): Promise<{
     'processing',
     'duplicate_checking',
     'extracting',
-    'quick_scanning',
+    'qualification_scanning',
     'timeline_estimating',
   ].includes(preQualification.status);
 
@@ -410,8 +421,8 @@ function getStatusLabel(status: PreQualificationStatus): string {
     extraction_failed: 'Extraktion fehlgeschlagen',
     manual_extraction: 'Manuelle Eingabe erforderlich',
     reviewing: 'Prüfung erforderlich',
-    quick_scanning: 'Quick Scan läuft',
-    quick_scan_failed: 'Quick Scan fehlgeschlagen',
+    qualification_scanning: 'Qualification Scan läuft',
+    qualification_scan_failed: 'Qualification Scan fehlgeschlagen',
     timeline_estimating: 'Timeline-Schätzung läuft',
     timeline_failed: 'Timeline-Schätzung fehlgeschlagen',
     bit_pending: 'BL-Routing erforderlich', // BID/NO-BID by BL after routing
@@ -421,7 +432,7 @@ function getStatusLabel(status: PreQualificationStatus): string {
     evaluating: 'Evaluierung läuft',
     archived: 'Archiviert (NO-BID)',
     routed: 'An BL weitergeleitet',
-    full_scanning: 'Deep Analysis läuft',
+    audit_scanning: 'Pitch Scan läuft',
     bl_reviewing: 'BL prüft',
     team_assigned: 'Team zugewiesen',
     notified: 'Team benachrichtigt',
@@ -436,7 +447,7 @@ function getAgentLabel(agent: Phase1Agent): string {
   const labels: Record<Phase1Agent, string> = {
     DuplicateCheck: 'Duplikat-Prüfung',
     Extract: 'Extraktion',
-    QuickScan: 'Quick Scan',
+    QualificationScan: 'Qualification Scan',
     Timeline: 'Timeline-Schätzung',
   };
 

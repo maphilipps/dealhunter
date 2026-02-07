@@ -1,5 +1,5 @@
 /**
- * Qualifications Empty State Client Component
+ * Pitches Empty State Client Component
  *
  * Client-side empty state with suggested actions for capability discovery.
  * Used when no pitches are available for the current user/BU.
@@ -27,9 +27,8 @@ export function QualificationsEmptyStateClient({ userRole }: QualificationsEmpty
           {
             id: 'wait-for-pitches',
             icon: <Zap className="h-5 w-5" />,
-            label: 'Qualifications erwarten',
-            description:
-              'BD Team qualifiziert Pre-Qualifications und leitet passende Qualifications weiter',
+            label: 'Pitches erwarten',
+            description: 'BD Team qualifiziert Leads und leitet passende Pitches weiter',
             onClick: () => {
               // Just informational - no action needed
             },
@@ -40,7 +39,7 @@ export function QualificationsEmptyStateClient({ userRole }: QualificationsEmpty
             id: 'view-docs',
             icon: <BookOpen className="h-5 w-5" />,
             label: 'Dokumentation',
-            description: 'Erfahren Sie mehr über den Qualification-Review-Prozess',
+            description: 'Erfahren Sie mehr über den Pitch-Review-Prozess',
             onClick: () => {
               router.push('/docs/qualification-process');
             },
@@ -49,23 +48,22 @@ export function QualificationsEmptyStateClient({ userRole }: QualificationsEmpty
         ]
       : [
           {
-            id: 'create-preQualification',
+            id: 'create-lead',
             icon: <Upload className="h-5 w-5" />,
-            label: 'Pre-Qualification hochladen',
-            description:
-              'Laden Sie ein Pre-Qualification hoch, um den Qualifizierungsprozess zu starten',
+            label: 'Lead hochladen',
+            description: 'Laden Sie einen Lead hoch, um den Qualifizierungsprozess zu starten',
             onClick: () => {
-              router.push('/pre-qualifications/new');
+              router.push('/qualifications/new');
             },
             variant: 'default' as const,
           },
           {
-            id: 'view-rfps',
+            id: 'view-leads',
             icon: <FileText className="h-5 w-5" />,
-            label: 'Pre-Qualifications anzeigen',
-            description: 'Alle Pre-Qualifications und deren Status anzeigen',
+            label: 'Leads anzeigen',
+            description: 'Alle Leads und deren Status anzeigen',
             onClick: () => {
-              router.push('/pre-qualifications');
+              router.push('/qualifications');
             },
             variant: 'outline' as const,
           },
@@ -73,7 +71,7 @@ export function QualificationsEmptyStateClient({ userRole }: QualificationsEmpty
             id: 'view-docs',
             icon: <BookOpen className="h-5 w-5" />,
             label: 'Dokumentation',
-            description: 'Erfahren Sie mehr über den Pre-Qualification-zu-Lead-Workflow',
+            description: 'Erfahren Sie mehr über den Lead-zu-Pitch-Workflow',
             onClick: () => {
               router.push('/docs/workflow');
             },
@@ -85,11 +83,11 @@ export function QualificationsEmptyStateClient({ userRole }: QualificationsEmpty
     <div className="space-y-6">
       <EmptyState
         icon={<FileText className="h-12 w-12" />}
-        title="Keine Qualifications vorhanden"
+        title="Keine Pitches vorhanden"
         description={
           userRole === 'bl'
-            ? 'Für Ihre Business Unit wurden noch keine Qualifications weitergeleitet. Sobald das BD Team ein passendes Pre-Qualification qualifiziert, erscheint es hier.'
-            : 'Es gibt aktuell keine Qualifications im System. Laden Sie Pre-Qualifications hoch, um den Qualifizierungsprozess zu starten.'
+            ? 'Für Ihre Business Unit wurden noch keine Pitches weitergeleitet. Sobald das BD Team einen passenden Lead qualifiziert, erscheint er hier.'
+            : 'Es gibt aktuell keine Pitches im System. Laden Sie Leads hoch, um den Qualifizierungsprozess zu starten.'
         }
         variant="info"
       />

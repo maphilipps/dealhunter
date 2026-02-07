@@ -1,12 +1,12 @@
 /**
  * BullMQ PreQual Processing Worker
  *
- * Processes new Pre-Qualification submissions in the background:
+ * Processes new Qualification submissions in the background:
  * 1. PDF text extraction (parallel for multiple files)
  * 2. DSGVO/PII cleaning if enabled
  * 3. AI requirements extraction
  * 4. Duplicate check
- * 5. Quick Scan (website analysis)
+ * 5. Qualification Scan (website analysis)
  * 6. Status update to ready
  *
  * Progress is tracked via preQualifications.status field.
@@ -21,9 +21,9 @@ import {
   runParallelMatrixResearch,
   saveMatrixToRfp,
 } from '../../cms-matching/parallel-matrix-orchestrator';
-import { extractRequirementsFromQuickScan } from '../../cms-matching/requirements';
-import { generateBLRecommendation } from '../../quick-scan/workflow/steps/synthesis';
-import type { TechStack } from '../../quick-scan/schema';
+import { extractRequirementsFromQualificationScan } from '../../cms-matching/requirements';
+import { generateBLRecommendation } from '../../qualification-scan/workflow/steps/synthesis';
+import type { TechStack } from '../../qualification-scan/schema';
 import { startCMSEvaluation } from '../../cms-matching/actions';
 import { modelNames } from '../../ai/config';
 import { getProviderForSlot } from '../../ai/providers';
@@ -35,7 +35,7 @@ import {
   backgroundJobs,
   businessUnits,
   preQualifications,
-  quickScans,
+  leadScans,
   technologies,
 } from '../../db/schema';
 import { runExtractionAgentNative } from '../../extraction/agent-native';
@@ -45,10 +45,10 @@ import {
   runPreQualSectionOrchestrator,
   type Decision,
 } from '../../qualification/orchestrator-worker';
-import { runQuickScanAgentNative } from '../../quick-scan/agent-native';
+import { runQualificationScanAgentNative } from '../../qualification-scan/agent-native';
 import { embedAgentOutput } from '../../rag/embedding-service';
 import { queryRawChunks, formatRAGContext } from '../../rag/raw-retrieval-service';
-import { generateTimelineFromQuickScan } from '../../timeline/integration';
+import { generateTimelineFromQualificationScan } from '../../timeline/integration';
 import { onAgentComplete } from '../../workflow/orchestrator';
 import type { PreQualProcessingJobData, PreQualProcessingJobResult } from '../queues';
 
@@ -60,7 +60,7 @@ const PROGRESS = {
   PDF_EXTRACTION: 20,
   REQUIREMENTS: 35,
   DUPLICATE_CHECK: 45,
-  QUICK_SCAN: 70,
+  LEAD_SCAN: 70,
   TEN_QUESTIONS: 80,
   SECTION_PAGES: 90,
   COMPLETE: 100,
@@ -440,7 +440,7 @@ Gib für alle 10 Fragen eine Antwort.`;
     });
 
     // Map agent responses to TenQuestionsPayload format
-    const answersMap = new Map(result.output!.answers.map(a => [a.questionId, a]));
+    const answersMap = new Map(result.output.answers.map(a => [a.questionId, a]));
 
     const questions = QUALIFICATION_QUESTIONS.map((question, index) => {
       const id = index + 1;
@@ -716,13 +716,13 @@ export async function processPreQualJob(
     });
 
     // ═══════════════════════════════════════════════════════════════
-    // STEP 4: QUICK SCAN (50-90%)
+    // STEP 4: LEAD SCAN (50-90%)
     // ═══════════════════════════════════════════════════════════════
     const websiteUrl: string | null = null;
 
     if (websiteUrl) {
-      const [quickScan] = await db
-        .insert(quickScans)
+      const [qualificationScan] = await db
+        .insert(leadScans)
         .values({
           preQualificationId,
           websiteUrl,
@@ -734,13 +734,13 @@ export async function processPreQualJob(
       await db
         .update(preQualifications)
         .set({
-          quickScanId: quickScan.id,
+          qualificationScanId: qualificationScan.id,
           websiteUrl,
           updatedAt: new Date(),
         })
         .where(eq(preQualifications.id, preQualificationId));
 
-      const result = await runQuickScanAgentNative(
+      const result = await runQualificationScanAgentNative(
         {
           bidId: preQualificationId,
           websiteUrl,
@@ -762,7 +762,7 @@ export async function processPreQualJob(
       let timelineGeneratedAt: Date | null = null;
 
       try {
-        timeline = await generateTimelineFromQuickScan({
+        timeline = await generateTimelineFromQualificationScan({
           projectName:
             extractedRequirements.projectName ||
             extractedRequirements.projectDescription ||
@@ -770,7 +770,7 @@ export async function processPreQualJob(
           projectDescription: extractedRequirements.projectDescription,
           websiteUrl,
           extractedRequirements,
-          quickScanResult: {
+          qualificationScanResult: {
             techStack: result.techStack,
             contentVolume: result.contentVolume
               ? {
@@ -832,8 +832,8 @@ export async function processPreQualJob(
         }
       }
 
-      const quickScanPayload = {
-        ...quickScan,
+      const qualificationScanPayload = {
+        ...qualificationScan,
         status: 'completed' as const,
         techStack: JSON.stringify(result.techStack),
         cms: result.techStack.cms || null,
@@ -871,17 +871,20 @@ export async function processPreQualJob(
         completedAt: new Date(),
       };
 
-      await db.update(quickScans).set(quickScanPayload).where(eq(quickScans.id, quickScan.id));
+      await db
+        .update(leadScans)
+        .set(qualificationScanPayload)
+        .where(eq(leadScans.id, qualificationScan.id));
 
       await updateQualificationJob(backgroundJobId, {
-        progress: PROGRESS.QUICK_SCAN,
+        progress: PROGRESS.LEAD_SCAN,
         currentStep: 'Quick Scan abgeschlossen',
       });
 
       try {
         await embedAgentOutput(
           preQualificationId,
-          'quick_scan',
+          'qualification_scan',
           result as unknown as Record<string, unknown>
         );
       } catch (error) {
@@ -924,7 +927,7 @@ export async function processPreQualJob(
           };
         });
 
-        const requirements = extractRequirementsFromQuickScan({
+        const requirements = extractRequirementsFromQualificationScan({
           features: result.features,
           techStack: result.techStack,
           contentVolume: result.contentVolume,
@@ -951,7 +954,7 @@ export async function processPreQualJob(
       });
 
       await db
-        .update(quickScans)
+        .update(leadScans)
         .set({
           tenQuestions: JSON.stringify({
             questions: questions.questions,
@@ -960,7 +963,7 @@ export async function processPreQualJob(
             projectType: questions.projectType,
           }),
         })
-        .where(eq(quickScans.id, quickScan.id));
+        .where(eq(leadScans.id, qualificationScan.id));
 
       await updateQualificationJob(backgroundJobId, {
         progress: PROGRESS.TEN_QUESTIONS,
@@ -972,7 +975,7 @@ export async function processPreQualJob(
         await updateQualificationJob(backgroundJobId, {
           currentStep: 'CMS-Matrix erstellen...',
         });
-        const cmsResult = await startCMSEvaluation(quickScan.id, { useWebSearch: true });
+        const cmsResult = await startCMSEvaluation(qualificationScan.id, { useWebSearch: true });
         if (cmsResult.success) {
           console.log(
             `[PreQual Worker] CMS Evaluation completed: ${cmsResult.result?.recommendation.primaryCms}`
@@ -984,12 +987,12 @@ export async function processPreQualJob(
         console.error('[PreQual Worker] CMS Evaluation error:', error);
       }
 
-      await onAgentComplete(preQualificationId, 'QuickScan');
+      await onAgentComplete(preQualificationId, 'QualificationScan');
     } else {
       console.log(`[PreQual Worker] No website URL - document-only qualification`);
 
-      const [quickScan] = await db
-        .insert(quickScans)
+      const [qualificationScan] = await db
+        .insert(leadScans)
         .values({
           preQualificationId,
           websiteUrl: 'document-only',
@@ -1002,7 +1005,7 @@ export async function processPreQualJob(
       await db
         .update(preQualifications)
         .set({
-          quickScanId: quickScan.id,
+          qualificationScanId: qualificationScan.id,
           updatedAt: new Date(),
         })
         .where(eq(preQualifications.id, preQualificationId));
@@ -1014,7 +1017,7 @@ export async function processPreQualJob(
       });
 
       await db
-        .update(quickScans)
+        .update(leadScans)
         .set({
           tenQuestions: JSON.stringify({
             questions: questions.questions,
@@ -1023,7 +1026,7 @@ export async function processPreQualJob(
             projectType: questions.projectType,
           }),
         })
-        .where(eq(quickScans.id, quickScan.id));
+        .where(eq(leadScans.id, qualificationScan.id));
 
       try {
         const buRows = await db.select().from(businessUnits);
@@ -1053,13 +1056,13 @@ export async function processPreQualJob(
           });
 
           await db
-            .update(quickScans)
+            .update(leadScans)
             .set({
               recommendedBusinessUnit: blRecommendation.primaryBusinessLine,
               confidence: blRecommendation.confidence,
               reasoning: blRecommendation.reasoning,
             })
-            .where(eq(quickScans.id, quickScan.id));
+            .where(eq(leadScans.id, qualificationScan.id));
         }
       } catch (error) {
         console.error('[PreQual Worker] BL recommendation (doc-only) failed:', error);
@@ -1101,7 +1104,7 @@ export async function processPreQualJob(
           };
         });
 
-        const requirements = extractRequirementsFromQuickScan({
+        const requirements = extractRequirementsFromQualificationScan({
           features: getFallbackFeatures(),
           techStack: {},
           contentVolume: { estimatedPageCount: 0 },
@@ -1120,7 +1123,7 @@ export async function processPreQualJob(
 
       await updateStatus(preQualificationId, 'questions_ready');
       await updateQualificationJob(backgroundJobId, {
-        progress: PROGRESS.QUICK_SCAN,
+        progress: PROGRESS.LEAD_SCAN,
         currentStep: 'Dokumentenbasierte Qualification abgeschlossen',
       });
       await updateQualificationJob(backgroundJobId, {
@@ -1166,26 +1169,26 @@ export async function processPreQualJob(
         // Synthetisiere 10 Fragen aus Decision (Agent-basiert)
         const tenQuestions = await synthesizeTenQuestionsFromDecision(orchestratorResult.decision);
 
-        // Speichere in quickScan
-        const existingQuickScan = await db
-          .select({ id: quickScans.id })
-          .from(quickScans)
-          .where(eq(quickScans.preQualificationId, preQualificationId))
+        // Speichere in qualificationScan
+        const existingQualificationScan = await db
+          .select({ id: leadScans.id })
+          .from(leadScans)
+          .where(eq(leadScans.preQualificationId, preQualificationId))
           .limit(1);
 
-        if (existingQuickScan.length > 0) {
+        if (existingQualificationScan.length > 0) {
           await db
-            .update(quickScans)
+            .update(leadScans)
             .set({
               tenQuestions: JSON.stringify(tenQuestions),
             })
-            .where(eq(quickScans.id, existingQuickScan[0].id));
+            .where(eq(leadScans.id, existingQualificationScan[0].id));
           console.log('[PreQual Worker] 10 Fragen aus Decision synthetisiert');
         }
       }
     }
 
-    await job.updateProgress(PROGRESS.QUICK_SCAN);
+    await job.updateProgress(PROGRESS.LEAD_SCAN);
 
     await job.updateProgress(PROGRESS.COMPLETE);
     await updateQualificationJob(backgroundJobId, {

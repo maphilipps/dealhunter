@@ -8,13 +8,13 @@ import { db } from '@/lib/db';
 import {
   preQualifications,
   documents,
-  quickScans,
+  qualificationScans,
   businessUnits,
   auditTrails,
 } from '@/lib/db/schema';
 
 // Valid PreQualification status transitions
-// Based on workflow: draft → processing → extracting → reviewing → quick_scanning → decision_made → routed → ...
+// Based on workflow: draft → processing → extracting → reviewing → lead_scanning → decision_made → routed → ...
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   draft: ['processing', 'extracting', 'archived'],
   processing: ['duplicate_checking', 'extracting', 'archived'],
@@ -24,9 +24,14 @@ const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   extracting: ['extraction_failed', 'manual_extraction', 'reviewing', 'archived'],
   extraction_failed: ['manual_extraction', 'archived'],
   manual_extraction: ['reviewing', 'archived'],
-  reviewing: ['quick_scanning', 'archived'],
-  quick_scanning: ['quick_scan_failed', 'bit_pending', 'questions_ready', 'archived'],
-  quick_scan_failed: ['bit_pending', 'questions_ready', 'archived'],
+  reviewing: ['qualification_scanning', 'archived'],
+  qualification_scanning: [
+    'qualification_scan_failed',
+    'bit_pending',
+    'questions_ready',
+    'archived',
+  ],
+  qualification_scan_failed: ['bit_pending', 'questions_ready', 'archived'],
   bit_pending: ['timeline_estimating', 'decision_made', 'archived'],
   questions_ready: ['evaluating', 'decision_made', 'archived'],
   timeline_estimating: ['timeline_failed', 'decision_made', 'archived'],
@@ -34,8 +39,8 @@ const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   evaluating: ['decision_made', 'archived'],
   decision_made: ['routed', 'bid_voted', 'archived'],
   bid_voted: ['routed', 'archived'],
-  routed: ['full_scanning', 'bl_reviewing', 'archived'],
-  full_scanning: ['bl_reviewing', 'archived'],
+  routed: ['audit_scanning', 'bl_reviewing', 'archived'],
+  audit_scanning: ['bl_reviewing', 'archived'],
   bl_reviewing: ['team_assigned', 'archived'],
   team_assigned: ['notified', 'archived'],
   notified: ['handed_off', 'analysis_complete', 'archived'],
@@ -50,12 +55,12 @@ const listPreQualificationsInputSchema = z.object({
       'draft',
       'extracting',
       'reviewing',
-      'quick_scanning',
+      'qualification_scanning',
       'evaluating',
       'decision_made',
       'archived',
       'routed',
-      'full_scanning',
+      'audit_scanning',
       'bl_reviewing',
       'team_assigned',
       'notified',
@@ -68,8 +73,7 @@ const listPreQualificationsInputSchema = z.object({
 
 registry.register({
   name: 'preQualification.list',
-  description:
-    'List all Pre-Qualifications/Bids for the current user, optionally filtered by status',
+  description: 'List all Qualifications/Bids for the current user, optionally filtered by status',
   category: 'pre-qualification',
   inputSchema: listPreQualificationsInputSchema,
   async execute(input, context: ToolContext) {
@@ -105,7 +109,7 @@ const getPreQualificationInputSchema = z.object({
 
 registry.register({
   name: 'preQualification.get',
-  description: 'Get a single Pre-Qualification/Bid by ID',
+  description: 'Get a single Qualification/Bid by ID',
   category: 'pre-qualification',
   inputSchema: getPreQualificationInputSchema,
   async execute(input, context: ToolContext) {
@@ -116,7 +120,7 @@ registry.register({
       .limit(1);
 
     if (!preQualification) {
-      return { success: false, error: 'Pre-Qualification not found or no access' };
+      return { success: false, error: 'Qualification not found or no access' };
     }
 
     return { success: true, data: preQualification };
@@ -134,7 +138,7 @@ const createPreQualificationInputSchema = z.object({
 
 registry.register({
   name: 'preQualification.create',
-  description: 'Create a new Pre-Qualification/Bid from text input',
+  description: 'Create a new Qualification/Bid from text input',
   category: 'pre-qualification',
   inputSchema: createPreQualificationInputSchema,
   async execute(input, context: ToolContext) {
@@ -164,12 +168,12 @@ const updatePreQualificationInputSchema = z.object({
       'draft',
       'extracting',
       'reviewing',
-      'quick_scanning',
+      'qualification_scanning',
       'evaluating',
       'decision_made',
       'archived',
       'routed',
-      'full_scanning',
+      'audit_scanning',
       'bl_reviewing',
       'team_assigned',
       'notified',
@@ -185,7 +189,7 @@ const updatePreQualificationInputSchema = z.object({
 
 registry.register({
   name: 'preQualification.update',
-  description: 'Update an existing Pre-Qualification/Bid',
+  description: 'Update an existing Qualification/Bid',
   category: 'pre-qualification',
   inputSchema: updatePreQualificationInputSchema,
   async execute(input, context: ToolContext) {
@@ -196,7 +200,7 @@ registry.register({
       .limit(1);
 
     if (!existing) {
-      return { success: false, error: 'Pre-Qualification not found or no access' };
+      return { success: false, error: 'Qualification not found or no access' };
     }
 
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
@@ -221,7 +225,7 @@ registry.register({
 // ===== Status Update Tool (with validation + audit trail) =====
 
 const updateStatusInputSchema = z.object({
-  id: z.string().describe('Pre-Qualification ID'),
+  id: z.string().describe('Qualification ID'),
   targetStatus: z
     .enum([
       'draft',
@@ -233,8 +237,8 @@ const updateStatusInputSchema = z.object({
       'extraction_failed',
       'manual_extraction',
       'reviewing',
-      'quick_scanning',
-      'quick_scan_failed',
+      'qualification_scanning',
+      'qualification_scan_failed',
       'bit_pending',
       'questions_ready',
       'timeline_estimating',
@@ -244,7 +248,7 @@ const updateStatusInputSchema = z.object({
       'bid_voted',
       'archived',
       'routed',
-      'full_scanning',
+      'audit_scanning',
       'bl_reviewing',
       'team_assigned',
       'notified',
@@ -261,7 +265,7 @@ const updateStatusInputSchema = z.object({
 registry.register({
   name: 'preQualification.updateStatus',
   description:
-    'Update the status of a Pre-Qualification with validation. Enforces valid status transitions and creates an audit trail. Admin users can bypass ownership checks.',
+    'Update the status of a Qualification with validation. Enforces valid status transitions and creates an audit trail. Admin users can bypass ownership checks.',
   category: 'pre-qualification',
   inputSchema: updateStatusInputSchema,
   async execute(input, context: ToolContext) {
@@ -286,7 +290,7 @@ registry.register({
     }
 
     if (!existing) {
-      return { success: false, error: 'Pre-Qualification not found or no access' };
+      return { success: false, error: 'Qualification not found or no access' };
     }
 
     const currentStatus = existing.status;
@@ -332,14 +336,14 @@ registry.register({
 });
 
 const deletePreQualificationInputSchema = z.object({
-  id: z.string().describe('Pre-Qualification ID to delete'),
+  id: z.string().describe('Qualification ID to delete'),
   reason: z.string().optional().describe('Optional reason for deletion (recorded in audit trail)'),
 });
 
 registry.register({
   name: 'preQualification.delete',
   description:
-    'Soft-delete a Pre-Qualification/Bid (archives it). Admin users can delete any Pre-Qualification. Creates an audit trail entry.',
+    'Soft-delete a Qualification/Bid (archives it). Admin users can delete any Qualification. Creates an audit trail entry.',
   category: 'pre-qualification',
   inputSchema: deletePreQualificationInputSchema,
   async execute(input, context: ToolContext) {
@@ -364,7 +368,7 @@ registry.register({
     }
 
     if (!existing) {
-      return { success: false, error: 'Pre-Qualification not found or no access' };
+      return { success: false, error: 'Qualification not found or no access' };
     }
 
     const previousStatus = existing.status as string;
@@ -401,15 +405,15 @@ registry.register({
   },
 });
 
-const getQuickScanInputSchema = z.object({
+const getQualificationScanInputSchema = z.object({
   preQualificationId: z.string(),
 });
 
 registry.register({
-  name: 'preQualification.getQuickScan',
-  description: 'Get Quick Scan results for an Pre-Qualification',
+  name: 'preQualification.getQualificationScan',
+  description: 'Get Quick Scan results for a Qualification',
   category: 'pre-qualification',
-  inputSchema: getQuickScanInputSchema,
+  inputSchema: getQualificationScanInputSchema,
   async execute(input, context: ToolContext) {
     const [preQualification] = await db
       .select()
@@ -423,22 +427,25 @@ registry.register({
       .limit(1);
 
     if (!preQualification) {
-      return { success: false, error: 'Pre-Qualification not found or no access' };
+      return { success: false, error: 'Qualification not found or no access' };
     }
 
-    if (!preQualification.quickScanId) {
-      return { success: false, error: 'No Quick Scan for this Pre-Qualification' };
+    if (!preQualification.qualificationScanId) {
+      return { success: false, error: 'No Quick Scan for this Qualification' };
     }
 
     const [scan] = await db
       .select()
-      .from(quickScans)
-      .where(eq(quickScans.id, preQualification.quickScanId))
+      .from(qualificationScans)
+      .where(eq(qualificationScans.id, preQualification.qualificationScanId))
       .limit(1);
 
     return { success: true, data: scan };
   },
 });
+
+// Snake_case alias for naming convention compliance
+registry.alias('preQualification.get_qualification_scan', 'preQualification.getQualificationScan');
 
 const listDocumentsInputSchema = z.object({
   preQualificationId: z.string(),
@@ -446,7 +453,7 @@ const listDocumentsInputSchema = z.object({
 
 registry.register({
   name: 'preQualification.listDocuments',
-  description: 'List all documents attached to an Pre-Qualification',
+  description: 'List all documents attached to a Qualification',
   category: 'pre-qualification',
   inputSchema: listDocumentsInputSchema,
   async execute(input, context: ToolContext) {
@@ -462,7 +469,7 @@ registry.register({
       .limit(1);
 
     if (!preQualification) {
-      return { success: false, error: 'Pre-Qualification not found or no access' };
+      return { success: false, error: 'Qualification not found or no access' };
     }
 
     const docs = await db
@@ -485,18 +492,18 @@ registry.register({
 // ===== Routing Tools =====
 
 const routeToBusinessUnitInputSchema = z.object({
-  id: z.string().describe('Pre-Qualification ID to route'),
+  id: z.string().describe('Qualification ID to route'),
   businessUnitId: z.string().describe('Target Business Unit ID'),
 });
 
 registry.register({
   name: 'preQualification.route',
   description:
-    'Route a Pre-Qualification to a Business Unit for BL review. Validates business unit exists and updates status to bl_reviewing.',
+    'Route a Qualification to a Business Unit for BL review. Validates business unit exists and updates status to bl_reviewing.',
   category: 'pre-qualification',
   inputSchema: routeToBusinessUnitInputSchema,
   async execute(input, context: ToolContext) {
-    // Verify Pre-Qualification exists and user has access
+    // Verify Qualification exists and user has access
     const [preQualification] = await db
       .select()
       .from(preQualifications)
@@ -504,7 +511,7 @@ registry.register({
       .limit(1);
 
     if (!preQualification) {
-      return { success: false, error: 'Pre-Qualification not found or no access' };
+      return { success: false, error: 'Qualification not found or no access' };
     }
 
     // Verify Business Unit exists
@@ -518,7 +525,7 @@ registry.register({
       return { success: false, error: 'Business Unit not found' };
     }
 
-    // Update Pre-Qualification with business unit assignment and status
+    // Update Qualification with business unit assignment and status
     const [updated] = await db
       .update(preQualifications)
       .set({
@@ -545,7 +552,7 @@ registry.register({
 });
 
 const makeDecisionInputSchema = z.object({
-  id: z.string().describe('Pre-Qualification ID'),
+  id: z.string().describe('Qualification ID'),
   decision: z.enum(['bid', 'no_bid']).describe('BID or NO-BID decision'),
   reason: z.string().optional().describe('Optional reason for the decision'),
 });
@@ -553,7 +560,7 @@ const makeDecisionInputSchema = z.object({
 // ===== Business Unit Assignment Tools =====
 
 const assignBusinessUnitInputSchema = z.object({
-  bidId: z.string().describe('Pre-Qualification/Bid ID to assign'),
+  bidId: z.string().describe('Qualification/Bid ID to assign'),
   businessLineName: z.string().describe('Name of the Business Unit to assign'),
   overrideReason: z
     .string()
@@ -564,7 +571,7 @@ const assignBusinessUnitInputSchema = z.object({
 registry.register({
   name: 'routing.assignBusinessUnit',
   description:
-    'Assign a Pre-Qualification/Bid to a Business Unit. Validates routing-ready status, creates audit log for overrides, auto-converts to Lead, and sends email notification to BL leader.',
+    'Assign a Qualification/Bid to a Business Unit. Validates routing-ready status, creates audit log for overrides, auto-converts to Lead, and sends email notification to BL leader.',
   category: 'routing',
   inputSchema: assignBusinessUnitInputSchema,
   async execute(input, context: ToolContext) {
@@ -593,7 +600,7 @@ registry.register({
 });
 
 const getBusinessLineRecommendationInputSchema = z.object({
-  bidId: z.string().describe('Pre-Qualification/Bid ID to get recommendation for'),
+  bidId: z.string().describe('Qualification/Bid ID to get recommendation for'),
 });
 
 registry.register({
@@ -621,14 +628,14 @@ registry.register({
 });
 
 const archiveAsNoBidInputSchema = z.object({
-  preQualificationId: z.string().describe('Pre-Qualification ID to archive'),
+  preQualificationId: z.string().describe('Qualification ID to archive'),
   reason: z.string().describe('Reason for the NO-BID decision'),
 });
 
 registry.register({
   name: 'routing.archiveAsNoBid',
   description:
-    'Archive a Pre-Qualification as NO-BID with a reason. Sets decision to no_bid and status to archived.',
+    'Archive a Qualification as NO-BID with a reason. Sets decision to no_bid and status to archived.',
   category: 'routing',
   inputSchema: archiveAsNoBidInputSchema,
   async execute(input, _context: ToolContext) {
@@ -652,11 +659,11 @@ registry.register({
 registry.register({
   name: 'preQualification.makeDecision',
   description:
-    'Make a BID or NO-BID decision for a Pre-Qualification. BID moves to routed status, NO-BID archives.',
+    'Make a BID or NO-BID decision for a Qualification. BID moves to routed status, NO-BID archives.',
   category: 'pre-qualification',
   inputSchema: makeDecisionInputSchema,
   async execute(input, context: ToolContext) {
-    // Verify Pre-Qualification exists and user has access
+    // Verify Qualification exists and user has access
     const [preQualification] = await db
       .select()
       .from(preQualifications)
@@ -664,10 +671,10 @@ registry.register({
       .limit(1);
 
     if (!preQualification) {
-      return { success: false, error: 'Pre-Qualification not found or no access' };
+      return { success: false, error: 'Qualification not found or no access' };
     }
 
-    // Update Pre-Qualification with decision
+    // Update Qualification with decision
     const [updated] = await db
       .update(preQualifications)
       .set({
@@ -703,7 +710,7 @@ const createFromFreetextInputSchema = z.object({
 registry.register({
   name: 'preQualification.createFromFreetext',
   description:
-    'Create a new Pre-Qualification from freetext input (customer name + project description). Automatically triggers the extraction workflow. This is the agent equivalent of the user "Upload Freetext" action.',
+    'Create a new Qualification from freetext input (customer name + project description). Automatically triggers the extraction workflow. This is the agent equivalent of the user "Upload Freetext" action.',
   category: 'pre-qualification',
   inputSchema: createFromFreetextInputSchema,
   async execute(input, _context: ToolContext) {
@@ -727,7 +734,7 @@ registry.register({
       success: true,
       data: {
         bidId: result.bidId,
-        message: 'Pre-Qualification created and extraction workflow triggered',
+        message: 'Qualification created and extraction workflow triggered',
       },
     };
   },
@@ -736,13 +743,13 @@ registry.register({
 // ===== Extraction Tools =====
 
 const startExtractionInputSchema = z.object({
-  bidId: z.string().describe('Pre-Qualification/Bid ID to extract requirements from'),
+  bidId: z.string().describe('Qualification/Bid ID to extract requirements from'),
 });
 
 registry.register({
   name: 'extraction.start',
   description:
-    'Start the extraction process for a Pre-Qualification. Extracts structured requirements from the raw document text using AI. Status transitions: draft → extracting → reviewing.',
+    'Start the extraction process for a Qualification. Extracts structured requirements from the raw document text using AI. Status transitions: draft → extracting → reviewing.',
   category: 'extraction',
   inputSchema: startExtractionInputSchema,
   async execute(input, _context: ToolContext) {
@@ -774,7 +781,7 @@ const startPitchScanInputSchema = z.object({
 registry.register({
   name: 'pitchScan.start',
   description:
-    'Start the pitch scan pipeline for a Lead. Creates a pitch run, enqueues background processing job, and begins website analysis. Requires Lead to have a websiteUrl. Returns the runId for progress tracking.',
+    'Start the audit scan pipeline for a Lead. Creates an audit scan run, enqueues background processing job, and begins website analysis. Requires Lead to have a websiteUrl. Returns the runId for progress tracking.',
   category: 'scan',
   inputSchema: startPitchScanInputSchema,
   async execute(input, _context: ToolContext) {

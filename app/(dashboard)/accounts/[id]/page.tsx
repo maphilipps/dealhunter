@@ -27,13 +27,13 @@ const statusMap: Record<
   draft: { label: 'Entwurf', variant: 'secondary' },
   extracting: { label: 'Extrahiere', variant: 'default' },
   reviewing: { label: 'Wird geprüft', variant: 'default' },
-  quick_scanning: { label: 'Qualification', variant: 'default' },
+  qualification_scanning: { label: 'Qualification Scan läuft', variant: 'default' },
   bit_pending: { label: 'Entscheidung ausstehend', variant: 'outline' },
   evaluating: { label: 'Wird evaluiert', variant: 'default' },
   decision_made: { label: 'Entscheidung getroffen', variant: 'default' },
   archived: { label: 'Archiviert', variant: 'destructive' },
   routed: { label: 'Weitergeleitet', variant: 'default' },
-  full_scanning: { label: 'Deep Scan', variant: 'default' },
+  audit_scanning: { label: 'Pitch Scan', variant: 'default' },
   bl_reviewing: { label: 'BL Review', variant: 'default' },
   team_assigned: { label: 'Team zugewiesen', variant: 'default' },
   notified: { label: 'Team benachrichtigt', variant: 'default' },
@@ -201,7 +201,7 @@ export default async function AccountDetailPage({ params }: Props) {
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/pre-qualifications/${opp.id}`}>Details</Link>
+                        <Link href={`/qualifications/${opp.id}`}>Details</Link>
                       </Button>
                     </TableCell>
                   </TableRow>

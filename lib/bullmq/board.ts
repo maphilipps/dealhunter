@@ -6,7 +6,7 @@ import express from 'express';
 import {
   getPitchQueue,
   getPreQualProcessingQueue,
-  getQuickScanQueue,
+  getQualificationScanQueue,
   getVisualizationQueue,
 } from './queues';
 
@@ -34,7 +34,7 @@ function startBullBoard() {
     queues: [
       new BullMQAdapter(getPitchQueue()),
       new BullMQAdapter(getPreQualProcessingQueue()),
-      new BullMQAdapter(getQuickScanQueue()),
+      new BullMQAdapter(getQualificationScanQueue()),
       new BullMQAdapter(getVisualizationQueue()),
     ],
     serverAdapter,
@@ -44,7 +44,9 @@ function startBullBoard() {
 
   app.listen(PORT, () => {
     console.log(`[Bull Board] Dashboard running at http://localhost:${PORT}`);
-    console.log('[Bull Board] Queues: pitch, prequal-processing, quick-scan, visualization');
+    console.log(
+      '[Bull Board] Queues: pitch, prequal-processing, qualification-scan, visualization'
+    );
   });
 }
 

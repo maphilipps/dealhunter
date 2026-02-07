@@ -1,4 +1,4 @@
-import type { QuickScan } from '@/lib/db/schema';
+import type { LeadScan } from '@/lib/db/schema';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
 
 export interface QuestionWithStatus {
@@ -32,11 +32,11 @@ export interface TenQuestionsPayload {
   projectType: ProjectType;
 }
 
-function parseTenQuestions(quickScan: QuickScan): TenQuestionsPayload | null {
-  if (!quickScan.tenQuestions) return null;
+function parseTenQuestions(qualificationScan: LeadScan): TenQuestionsPayload | null {
+  if (!qualificationScan.tenQuestions) return null;
 
   try {
-    const parsed = JSON.parse(quickScan.tenQuestions) as TenQuestionsPayload;
+    const parsed = JSON.parse(qualificationScan.tenQuestions) as TenQuestionsPayload;
     if (!parsed?.questions?.length) return null;
 
     return parsed;
@@ -61,10 +61,10 @@ export function createEmptyTenQuestionsPayload(): TenQuestionsPayload {
 }
 
 export function calculateAnsweredQuestionsCount(
-  quickScan: QuickScan,
+  qualificationScan: LeadScan,
   _extractedData?: ExtractedRequirements | null
 ): { answered: number; total: number; projectType: ProjectType } {
-  const stored = parseTenQuestions(quickScan);
+  const stored = parseTenQuestions(qualificationScan);
   if (stored) {
     return {
       answered: stored.answeredCount ?? stored.questions.filter(q => q.answered).length,
@@ -74,18 +74,22 @@ export function calculateAnsweredQuestionsCount(
   }
 
   const fallback = createEmptyTenQuestionsPayload();
-  return { answered: fallback.answeredCount, total: fallback.totalCount, projectType: fallback.projectType };
+  return {
+    answered: fallback.answeredCount,
+    total: fallback.totalCount,
+    projectType: fallback.projectType,
+  };
 }
 
 export function buildQuestionsWithStatus(
-  quickScan: QuickScan,
+  qualificationScan: LeadScan,
   _extractedData?: ExtractedRequirements | null
 ): {
   questions: QuestionWithStatus[];
   projectType: ProjectType;
   summary: { answered: number; total: number };
 } {
-  const stored = parseTenQuestions(quickScan);
+  const stored = parseTenQuestions(qualificationScan);
   if (stored) {
     return {
       questions: stored.questions,

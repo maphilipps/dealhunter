@@ -212,7 +212,7 @@ export function formatContextForPrompt(context: AgentContext): string {
     context.user.businessUnitName ? `- Business Unit: ${context.user.businessUnitName}` : '',
     '',
     '## Available Resources',
-    `- Pre-Qualifications: ${context.resources.rfpCount} total`,
+    `- Qualifications: ${context.resources.rfpCount} total`,
     context.resources.recentRfps.length > 0
       ? `- Recent: ${context.resources.recentRfps.map(r => `${r.customerName || r.id} (${r.status})`).join(', ')}`
       : '',

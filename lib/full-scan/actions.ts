@@ -113,7 +113,7 @@ export async function startFullScan(input: StartFullScanInput): Promise<StartFul
     await db
       .update(pitches)
       .set({
-        status: 'full_scanning',
+        status: 'audit_scanning',
         updatedAt: new Date(),
       })
       .where(eq(pitches.id, pitchId));

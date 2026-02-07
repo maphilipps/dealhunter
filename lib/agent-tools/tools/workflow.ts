@@ -23,8 +23,10 @@ const cancelJobInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use workflow.cancel_job instead */
   name: 'workflow.cancelJob',
-  description: 'Cancel a running background job. Updates job and lead status.',
+  description:
+    '[DEPRECATED: use workflow.cancel_job] Cancel a running background job. Updates job and lead status.',
   category: 'workflow',
   inputSchema: cancelJobInputSchema,
   async execute(input, context: ToolContext) {
@@ -77,9 +79,10 @@ const getJobStatusInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use workflow.get_job_status instead */
   name: 'workflow.getJobStatus',
   description:
-    'Get detailed status of a background job. Returns progress, current step, and result.',
+    '[DEPRECATED: use workflow.get_job_status] Get detailed status of a background job. Returns progress, current step, and result.',
   category: 'workflow',
   inputSchema: getJobStatusInputSchema,
   async execute(input, context: ToolContext) {
@@ -125,9 +128,10 @@ const listJobsInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use workflow.list_jobs instead */
   name: 'workflow.listJobs',
   description:
-    'List all background jobs for a lead or user. Filter by status, job type. Sorted by creation date.',
+    '[DEPRECATED: use workflow.list_jobs] List all background jobs for a lead or user. Filter by status, job type. Sorted by creation date.',
   category: 'workflow',
   inputSchema: listJobsInputSchema,
   async execute(input, context: ToolContext) {
@@ -197,9 +201,10 @@ const retryJobInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use workflow.retry_job instead */
   name: 'workflow.retryJob',
   description:
-    'Retry a failed background job. Increments attempt counter and resets status to pending.',
+    '[DEPRECATED: use workflow.retry_job] Retry a failed background job. Increments attempt counter and resets status to pending.',
   category: 'workflow',
   inputSchema: retryJobInputSchema,
   async execute(input, context: ToolContext) {
@@ -249,5 +254,52 @@ registry.register({
         message: 'Job queued for retry',
       },
     };
+  },
+});
+
+// ============================================================================
+// Snake_case aliases (canonical names per CLAUDE.md conventions)
+// ============================================================================
+
+registry.register({
+  name: 'workflow.cancel_job',
+  description: 'Cancel a running background job. Updates job and lead status.',
+  category: 'workflow',
+  inputSchema: cancelJobInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('workflow.cancelJob', input, context);
+  },
+});
+
+registry.register({
+  name: 'workflow.get_job_status',
+  description:
+    'Get detailed status of a background job. Returns progress, current step, and result.',
+  category: 'workflow',
+  inputSchema: getJobStatusInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('workflow.getJobStatus', input, context);
+  },
+});
+
+registry.register({
+  name: 'workflow.list_jobs',
+  description:
+    'List all background jobs for a lead or user. Filter by status, job type. Sorted by creation date.',
+  category: 'workflow',
+  inputSchema: listJobsInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('workflow.listJobs', input, context);
+  },
+});
+
+registry.register({
+  name: 'workflow.retry_job',
+  description:
+    'Retry a failed background job. Increments attempt counter and resets status to pending.',
+  category: 'workflow',
+  inputSchema: retryJobInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('workflow.retryJob', input, context);
   },
 });

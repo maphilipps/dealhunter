@@ -6,7 +6,7 @@
  *
  * Verwendung:
  * ```ts
- * const evaluation = await evaluateResults(quickScanResults, quickScanEvaluationSchema);
+ * const evaluation = await evaluateResults(qualificationScanResults, quickScanEvaluationSchema);
  * if (evaluation.qualityScore < 80 && evaluation.canImprove) {
  *   results = await optimizeResults(results, evaluation, tools);
  * }
@@ -88,7 +88,7 @@ type EvaluationResultFromZod = z.infer<typeof evaluationResultZodSchema>;
 // ========================================
 
 /**
- * Evaluation Schema für QuickScan Results
+ * Evaluation Schema für QualificationScan Results
  */
 export const QUICKSCAN_EVALUATION_SCHEMA: EvaluationSchema = {
   requiredFields: [
@@ -110,7 +110,7 @@ export const QUICKSCAN_EVALUATION_SCHEMA: EvaluationSchema = {
     { path: 'decisionMakers', bonusPoints: 10, description: 'Decision Makers' },
   ],
   minQualityScore: 70,
-  context: 'QuickScan Website Analysis',
+  context: 'Qualification Scan Website Analysis',
 };
 
 /**
@@ -508,16 +508,16 @@ export function quickEvaluate(
 // ========================================
 
 /**
- * Evaluate QuickScan Results
+ * Evaluate QualificationScan Results
  * @deprecated Use primitives directly (validateFields, calculateCompleteness, countConfidencesMet)
  */
-export async function evaluateQuickScanResults(
+export async function evaluateQualificationScanResults(
   results: Record<string, unknown>,
   ctx: EvaluatorContext = {}
 ): Promise<EvaluationResult> {
   return evaluateResults(results, QUICKSCAN_EVALUATION_SCHEMA, {
     ...ctx,
-    agentName: ctx.agentName || 'QuickScan Evaluator',
+    agentName: ctx.agentName || 'Qualification Scan Evaluator',
   });
 }
 

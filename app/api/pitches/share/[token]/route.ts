@@ -2,7 +2,7 @@ import { eq, and, gte } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
-import { pitchAuditResults } from '@/lib/db/schema';
+import { pitchScanResults } from '@/lib/db/schema';
 
 /**
  * GET /api/pitches/share/[token]
@@ -20,26 +20,26 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
 
     const [audit] = await db
       .select({
-        id: pitchAuditResults.id,
-        websiteUrl: pitchAuditResults.websiteUrl,
-        techStack: pitchAuditResults.techStack,
-        performance: pitchAuditResults.performance,
-        accessibility: pitchAuditResults.accessibility,
-        architecture: pitchAuditResults.architecture,
-        hosting: pitchAuditResults.hosting,
-        integrations: pitchAuditResults.integrations,
-        componentLibrary: pitchAuditResults.componentLibrary,
-        performanceScore: pitchAuditResults.performanceScore,
-        accessibilityScore: pitchAuditResults.accessibilityScore,
-        migrationComplexity: pitchAuditResults.migrationComplexity,
-        complexityScore: pitchAuditResults.complexityScore,
-        completedAt: pitchAuditResults.completedAt,
+        id: pitchScanResults.id,
+        websiteUrl: pitchScanResults.websiteUrl,
+        techStack: pitchScanResults.techStack,
+        performance: pitchScanResults.performance,
+        accessibility: pitchScanResults.accessibility,
+        architecture: pitchScanResults.architecture,
+        hosting: pitchScanResults.hosting,
+        integrations: pitchScanResults.integrations,
+        componentLibrary: pitchScanResults.componentLibrary,
+        performanceScore: pitchScanResults.performanceScore,
+        accessibilityScore: pitchScanResults.accessibilityScore,
+        migrationComplexity: pitchScanResults.migrationComplexity,
+        complexityScore: pitchScanResults.complexityScore,
+        completedAt: pitchScanResults.completedAt,
       })
-      .from(pitchAuditResults)
+      .from(pitchScanResults)
       .where(
         and(
-          eq(pitchAuditResults.shareToken, token),
-          gte(pitchAuditResults.shareExpiresAt, new Date())
+          eq(pitchScanResults.shareToken, token),
+          gte(pitchScanResults.shareExpiresAt, new Date())
         )
       )
       .limit(1);

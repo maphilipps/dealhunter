@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { pitchRuns } from '@/lib/db/schema';
+import { auditScanRuns } from '@/lib/db/schema';
 import type { OrchestratorCheckpoint, PitchStatus, SnapshotEvent } from './types';
 import { publishToChannel } from './tools/progress-tool';
 
@@ -10,7 +10,7 @@ export async function saveCheckpoint(
   checkpoint: OrchestratorCheckpoint
 ): Promise<void> {
   await db
-    .update(pitchRuns)
+    .update(auditScanRuns)
     .set({
       snapshotData: JSON.stringify(checkpoint),
       currentPhase: checkpoint.phase,
@@ -18,16 +18,16 @@ export async function saveCheckpoint(
       status: checkpoint.pendingQuestion ? 'waiting_for_user' : 'running',
       updatedAt: new Date(),
     })
-    .where(eq(pitchRuns.id, runId));
+    .where(eq(auditScanRuns.id, runId));
 }
 
 export async function loadCheckpoint(runId: string): Promise<OrchestratorCheckpoint | null> {
   const [run] = await db
     .select({
-      snapshotData: pitchRuns.snapshotData,
+      snapshotData: auditScanRuns.snapshotData,
     })
-    .from(pitchRuns)
-    .where(eq(pitchRuns.id, runId))
+    .from(auditScanRuns)
+    .where(eq(auditScanRuns.id, runId))
     .limit(1);
 
   if (!run?.snapshotData) return null;
@@ -50,7 +50,7 @@ export async function updateRunStatus(
   }
 ): Promise<void> {
   await db
-    .update(pitchRuns)
+    .update(auditScanRuns)
     .set({
       status,
       ...(extra?.progress !== undefined && { progress: extra.progress }),
@@ -58,7 +58,7 @@ export async function updateRunStatus(
       ...(extra?.completedAt && { completedAt: extra.completedAt }),
       updatedAt: new Date(),
     })
-    .where(eq(pitchRuns.id, runId));
+    .where(eq(auditScanRuns.id, runId));
 }
 
 // Note: markAgentComplete and markAgentFailed use atomic SQL JSON operations
@@ -70,8 +70,8 @@ export async function markAgentComplete(
   confidence: number
 ): Promise<void> {
   // Atomic append + RETURNING to avoid read-after-write race
-  const rows = await db.execute<typeof pitchRuns.$inferSelect>(sql`
-    UPDATE pitch_runs
+  const rows = await db.execute<typeof auditScanRuns.$inferSelect>(sql`
+    UPDATE pitch_scan_runs
     SET
       completed_agents = CASE
         WHEN completed_agents IS NULL THEN ${JSON.stringify([agentName])}
@@ -96,8 +96,8 @@ export async function markAgentComplete(
 
 export async function markAgentFailed(runId: string, agentName: string): Promise<void> {
   // Atomic append + RETURNING to avoid read-after-write race
-  const rows = await db.execute<typeof pitchRuns.$inferSelect>(sql`
-    UPDATE pitch_runs
+  const rows = await db.execute<typeof auditScanRuns.$inferSelect>(sql`
+    UPDATE pitch_scan_runs
     SET
       failed_agents = CASE
         WHEN failed_agents IS NULL THEN ${JSON.stringify([agentName])}
@@ -116,7 +116,7 @@ export async function markAgentFailed(runId: string, agentName: string): Promise
   }
 }
 
-export function buildSnapshotEvent(run: typeof pitchRuns.$inferSelect): SnapshotEvent {
+export function buildSnapshotEvent(run: typeof auditScanRuns.$inferSelect): SnapshotEvent {
   let completedAgents: string[] = [];
   let failedAgents: string[] = [];
   let agentConfidences: Record<string, number> = {};
@@ -132,7 +132,7 @@ export function buildSnapshotEvent(run: typeof pitchRuns.$inferSelect): Snapshot
   return {
     type: 'snapshot',
     runId: run.id,
-    status: run.status as PitchStatus,
+    status: run.status,
     progress: run.progress,
     currentPhase: run.currentPhase,
     currentStep: run.currentStep,
@@ -147,7 +147,7 @@ export function buildSnapshotEvent(run: typeof pitchRuns.$inferSelect): Snapshot
 
 async function publishSnapshotSafe(
   runId: string,
-  run: typeof pitchRuns.$inferSelect
+  run: typeof auditScanRuns.$inferSelect
 ): Promise<void> {
   try {
     await publishToChannel(runId, buildSnapshotEvent(run));

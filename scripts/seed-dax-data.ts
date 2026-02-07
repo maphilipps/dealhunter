@@ -12,7 +12,7 @@ import {
   competencies,
   competitors,
   employees,
-  quickScans,
+  leadScans,
 } from '../lib/db/schema';
 
 // DAX-Konzerne für Mock-Daten
@@ -439,8 +439,8 @@ async function seedDAXData() {
     console.log(`  ✓ ${comp.companyName}`);
   }
 
-  // 8. RFPs und Quick Scans
-  console.log('\n📝 Creating RFPs with Quick Scans...');
+  // 8. RFPs und Qualification Scans
+  console.log('\n📝 Creating RFPs with Qualification Scans...');
 
   const rfpTemplates = [
     {
@@ -464,7 +464,7 @@ async function seedDAXData() {
           'Applicant tracking',
         ],
       },
-      quickScanData: {
+      qualificationScanData: {
         cms: 'WordPress',
         framework: 'PHP',
         hosting: 'AWS',
@@ -508,7 +508,7 @@ async function seedDAXData() {
           'Document management',
         ],
       },
-      quickScanData: {
+      qualificationScanData: {
         cms: 'Custom Legacy',
         framework: 'Java',
         hosting: 'On-Premise',
@@ -555,7 +555,7 @@ async function seedDAXData() {
           'B2B pricing and quotes',
         ],
       },
-      quickScanData: {
+      qualificationScanData: {
         cms: 'Sitecore',
         framework: 'ASP.NET',
         hosting: 'Azure',
@@ -603,7 +603,7 @@ async function seedDAXData() {
           'Gamification features',
         ],
       },
-      quickScanData: {
+      qualificationScanData: {
         cms: 'Contentful',
         framework: 'Next.js',
         hosting: 'Vercel',
@@ -645,7 +645,7 @@ async function seedDAXData() {
           'Version management',
         ],
       },
-      quickScanData: {
+      qualificationScanData: {
         cms: 'Confluence',
         framework: 'Java',
         hosting: 'AWS',
@@ -673,7 +673,7 @@ async function seedDAXData() {
   for (const rfpTemplate of rfpTemplates) {
     if (!rfpTemplate.account) continue;
 
-    // Create RFP first (without quickScanId)
+    // Create RFP first (without qualificationScanId)
     const status = rfpTemplate.decision === 'bid' ? 'timeline_estimating' : 'bit_pending';
 
     const [preQualification] = await db
@@ -690,37 +690,37 @@ async function seedDAXData() {
         accountId: rfpTemplate.account.id,
         websiteUrl: rfpTemplate.websiteUrl,
         assignedBusinessUnitId:
-          rfpTemplate.quickScanData.recommendedBusinessUnit === 'PHP' ? phpBU.id : wemBU.id,
-        quickScanResults: JSON.stringify(rfpTemplate.quickScanData),
+          rfpTemplate.qualificationScanData.recommendedBusinessUnit === 'PHP' ? phpBU.id : wemBU.id,
+        qualificationScanResults: JSON.stringify(rfpTemplate.qualificationScanData),
       })
       .returning();
 
-    // Create Quick Scan with RFP ID
-    const [quickScan] = await db
-      .insert(quickScans)
+    // Create Qualification Scan with RFP ID
+    const [qualificationScan] = await db
+      .insert(leadScans)
       .values({
         preQualificationId: preQualification.id,
         websiteUrl: rfpTemplate.websiteUrl,
         status: 'completed',
-        cms: rfpTemplate.quickScanData.cms,
-        framework: rfpTemplate.quickScanData.framework,
-        hosting: rfpTemplate.quickScanData.hosting,
-        techStack: JSON.stringify(rfpTemplate.quickScanData.techStack),
-        pageCount: rfpTemplate.quickScanData.pageCount,
-        recommendedBusinessUnit: rfpTemplate.quickScanData.recommendedBusinessUnit,
-        confidence: rfpTemplate.quickScanData.confidence,
-        reasoning: rfpTemplate.quickScanData.reasoning,
-        timeline: JSON.stringify(rfpTemplate.quickScanData.timeline),
+        cms: rfpTemplate.qualificationScanData.cms,
+        framework: rfpTemplate.qualificationScanData.framework,
+        hosting: rfpTemplate.qualificationScanData.hosting,
+        techStack: JSON.stringify(rfpTemplate.qualificationScanData.techStack),
+        pageCount: rfpTemplate.qualificationScanData.pageCount,
+        recommendedBusinessUnit: rfpTemplate.qualificationScanData.recommendedBusinessUnit,
+        confidence: rfpTemplate.qualificationScanData.confidence,
+        reasoning: rfpTemplate.qualificationScanData.reasoning,
+        timeline: JSON.stringify(rfpTemplate.qualificationScanData.timeline),
         timelineGeneratedAt: new Date(),
         startedAt: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
         completedAt: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
       })
       .returning();
 
-    // Update RFP with Quick Scan ID
+    // Update RFP with Qualification Scan ID
     await db
       .update(preQualifications)
-      .set({ quickScanId: quickScan.id })
+      .set({ qualificationScanId: qualificationScan.id })
       .where(eq(preQualifications.id, preQualification.id));
 
     console.log(
@@ -731,7 +731,7 @@ async function seedDAXData() {
   console.log('\n✨ DAX Mock Data Seed completed!');
   console.log('\n📊 Summary:');
   console.log(`  - ${createdAccounts.length} DAX Accounts`);
-  console.log(`  - ${rfpTemplates.length} RFPs with Quick Scans`);
+  console.log(`  - ${rfpTemplates.length} RFPs with Qualification Scans`);
   console.log(`  - ${referenceProjects.length} Reference Projects`);
   console.log(`  - ${competenciesData.length} Competencies`);
   console.log(`  - ${competitorData.length} Competitors`);

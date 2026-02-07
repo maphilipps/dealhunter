@@ -18,7 +18,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import { db } from '@/lib/db';
-import { pitches, quickScans, dealEmbeddings } from '@/lib/db/schema';
+import { pitches, leadScans, dealEmbeddings } from '@/lib/db/schema';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -184,7 +184,7 @@ async function searchCompanyInfo(
  * Run customer research agent
  *
  * @param leadId - Lead ID
- * @param preQualificationId - Pre-Qualification ID
+ * @param preQualificationId - Qualification ID
  * @returns Customer research results
  */
 export async function runCustomerResearchAgent(
@@ -198,7 +198,7 @@ export async function runCustomerResearchAgent(
       industry: pitches.industry,
       websiteUrl: pitches.websiteUrl,
       projectDescription: pitches.projectDescription,
-      quickScanId: pitches.quickScanId,
+      qualificationScanId: pitches.qualificationScanId,
     })
     .from(pitches)
     .where(eq(pitches.id, leadId))
@@ -209,7 +209,7 @@ export async function runCustomerResearchAgent(
   }
 
   // 2. Get Quick Scan data if available
-  let quickScanData: {
+  let qualificationScanData: {
     companyIntelligence: string | null;
     decisionMakers: string | null;
     techStack: string | null;
@@ -217,20 +217,20 @@ export async function runCustomerResearchAgent(
     migrationComplexity: string | null;
   } | null = null;
 
-  if (leadData.quickScanId) {
+  if (leadData.qualificationScanId) {
     const [qs] = await db
       .select({
-        companyIntelligence: quickScans.companyIntelligence,
-        decisionMakers: quickScans.decisionMakers,
-        techStack: quickScans.techStack,
-        cms: quickScans.cms,
-        migrationComplexity: quickScans.migrationComplexity,
+        companyIntelligence: leadScans.companyIntelligence,
+        decisionMakers: leadScans.decisionMakers,
+        techStack: leadScans.techStack,
+        cms: leadScans.cms,
+        migrationComplexity: leadScans.migrationComplexity,
       })
-      .from(quickScans)
-      .where(eq(quickScans.id, leadData.quickScanId))
+      .from(leadScans)
+      .where(eq(leadScans.id, leadData.qualificationScanId))
       .limit(1);
 
-    quickScanData = qs || null;
+    qualificationScanData = qs || null;
   }
 
   // 3. Perform web research in parallel
@@ -248,13 +248,13 @@ export async function runCustomerResearchAgent(
       websiteUrl: leadData.websiteUrl,
       projectDescription: leadData.projectDescription,
     },
-    quickScan: quickScanData
+    qualificationScan: qualificationScanData
       ? {
-          companyIntelligence: safeParseJson(quickScanData.companyIntelligence),
-          decisionMakers: safeParseJson(quickScanData.decisionMakers),
-          techStack: safeParseJson(quickScanData.techStack),
-          currentCMS: quickScanData.cms,
-          migrationComplexity: safeParseJson(quickScanData.migrationComplexity),
+          companyIntelligence: safeParseJson(qualificationScanData.companyIntelligence),
+          decisionMakers: safeParseJson(qualificationScanData.decisionMakers),
+          techStack: safeParseJson(qualificationScanData.techStack),
+          currentCMS: qualificationScanData.cms,
+          migrationComplexity: safeParseJson(qualificationScanData.migrationComplexity),
         }
       : null,
     webResearch: {

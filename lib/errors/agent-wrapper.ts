@@ -15,7 +15,7 @@ import { withRetry, type RetryConfig, type AgentResult, DEFAULT_RETRY_CONFIGS } 
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export type AgentName = 'DuplicateCheck' | 'Extract' | 'QuickScan' | 'Timeline';
+export type AgentName = 'DuplicateCheck' | 'Extract' | 'QualificationScan' | 'Timeline';
 
 export interface AgentError {
   id: string;
@@ -165,7 +165,7 @@ function agentNameToConfigKey(agentName: AgentName): keyof typeof DEFAULT_RETRY_
   const mapping: Record<AgentName, keyof typeof DEFAULT_RETRY_CONFIGS> = {
     DuplicateCheck: 'duplicateCheck',
     Extract: 'extract',
-    QuickScan: 'quickScan',
+    QualificationScan: 'qualificationScan',
     Timeline: 'timeline',
   };
 
@@ -192,11 +192,11 @@ export function isCriticalAgent(agentName: AgentName): boolean {
 /**
  * Check if an agent can be skipped
  *
- * QuickScan and Timeline can be skipped
+ * QualificationScan and Timeline can be skipped
  * Extract and DuplicateCheck cannot
  */
 export function canSkipAgent(agentName: AgentName): boolean {
-  return agentName === 'QuickScan' || agentName === 'Timeline';
+  return agentName === 'QualificationScan' || agentName === 'Timeline';
 }
 
 /**
@@ -206,7 +206,7 @@ export function getAgentDisplayName(agentName: AgentName): string {
   const names: Record<AgentName, string> = {
     DuplicateCheck: 'Duplicate Check',
     Extract: 'Extract',
-    QuickScan: 'Quick Scan',
+    QualificationScan: 'Qualification Scan',
     Timeline: 'Timeline & PT Estimation',
   };
 
@@ -224,14 +224,14 @@ export function formatErrorForUser(error: ClassifiedError): string {
  * Get next recommended status after agent failure
  *
  * @param agentName - Failed agent
- * @param currentStatus - Current Pre-Qualification status
+ * @param currentStatus - Current Qualification status
  * @returns Next status for failed state
  */
 export function getFailedStatus(agentName: AgentName, currentStatus: string): string {
   const statusMap: Record<AgentName, string> = {
     DuplicateCheck: 'duplicate_check_failed',
     Extract: 'extraction_failed',
-    QuickScan: 'quick_scan_failed',
+    QualificationScan: 'qualification_scan_failed',
     Timeline: 'timeline_failed',
   };
 
@@ -248,7 +248,7 @@ export function getSkipStatus(agentName: AgentName): string | null {
   const statusMap: Record<AgentName, string | null> = {
     DuplicateCheck: 'extracting', // Can skip duplicate check
     Extract: null, // Cannot skip extract
-    QuickScan: 'questions_ready', // Skip to 10 questions
+    QualificationScan: 'questions_ready', // Skip to 10 questions
     Timeline: 'decision_made', // Skip to BL routing
   };
 

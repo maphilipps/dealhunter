@@ -22,8 +22,8 @@ import { TeamBuilder } from '@/components/bids/team-builder';
 import { TimelineChart } from '@/components/bids/timeline-chart';
 import { BUMatchingTab } from '@/components/bl-review/bu-matching-tab';
 import { TenQuestionsTab } from '@/components/bl-review/ten-questions-tab';
-import { OverviewSection } from '@/components/pre-qualification-overview';
-import type { OverviewData } from '@/components/pre-qualification-overview';
+import { OverviewSection } from '@/components/qualification-overview';
+import type { OverviewData } from '@/components/qualification-overview';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +32,7 @@ import { auth } from '@/lib/auth';
 import type { BaselineComparisonResult } from '@/lib/baseline-comparison/schema';
 import type { BitEvaluationResult } from '@/lib/bit-evaluation/schema';
 import { db } from '@/lib/db';
-import { preQualifications, businessUnits, users, quickScans } from '@/lib/db/schema';
+import { preQualifications, businessUnits, users, leadScans } from '@/lib/db/schema';
 import type { TeamNotificationResult } from '@/lib/notifications/email';
 import type { ProjectPlan } from '@/lib/project-planning/schema';
 import type {
@@ -43,7 +43,7 @@ import type {
   ContentVolume,
   NavigationStructure,
   CompanyIntelligence,
-} from '@/lib/quick-scan/schema';
+} from '@/lib/qualification-scan/schema';
 import type { ProjectTimeline } from '@/lib/timeline/schema';
 import { safeJsonParseOrNull } from '@/lib/utils/parse';
 import { getEnabledTabs, getWorkflowProgress } from '@/lib/workflow/bl-review-status';
@@ -109,9 +109,9 @@ export default async function BLReviewDetailPage({
         .then(rows => rows[0])
     : null;
 
-  // Get quick scan if available
-  const [quickScan] = bid.quickScanId
-    ? await db.select().from(quickScans).where(eq(quickScans.id, bid.quickScanId)).limit(1)
+  // Get qualifications scan if available
+  const [qualificationScan] = bid.qualificationScanId
+    ? await db.select().from(leadScans).where(eq(leadScans.id, bid.qualificationScanId)).limit(1)
     : [null];
 
   // Parse JSON data safely - using Record<string, unknown> for components that expect generic objects
@@ -131,23 +131,25 @@ export default async function BLReviewDetailPage({
   );
   const projectPlan = safeJsonParseOrNull<ProjectPlan>(bid.projectPlanningResult);
   const teamNotifications = safeJsonParseOrNull<TeamNotificationResult[]>(bid.teamNotifications);
-  const timelineData = safeJsonParseOrNull<ProjectTimeline>(quickScan?.timeline);
+  const timelineData = safeJsonParseOrNull<ProjectTimeline>(qualificationScan?.timeline);
 
-  // Parse QuickScan JSON data server-side for Overview section
-  const overviewData: OverviewData | null = quickScan
+  // Parse QualificationScan JSON data server-side for Overview section
+  const overviewData: OverviewData | null = qualificationScan
     ? {
         companyIntelligence: safeJsonParseOrNull<CompanyIntelligence>(
-          quickScan.companyIntelligence
+          qualificationScan.companyIntelligence
         ),
-        techStack: safeJsonParseOrNull<TechStack>(quickScan.techStack),
-        accessibilityAudit: safeJsonParseOrNull<AccessibilityAudit>(quickScan.accessibilityAudit),
-        seoAudit: safeJsonParseOrNull<SEOAudit>(quickScan.seoAudit),
+        techStack: safeJsonParseOrNull<TechStack>(qualificationScan.techStack),
+        accessibilityAudit: safeJsonParseOrNull<AccessibilityAudit>(
+          qualificationScan.accessibilityAudit
+        ),
+        seoAudit: safeJsonParseOrNull<SEOAudit>(qualificationScan.seoAudit),
         performanceIndicators: safeJsonParseOrNull<PerformanceIndicators>(
-          quickScan.performanceIndicators
+          qualificationScan.performanceIndicators
         ),
-        contentVolume: safeJsonParseOrNull<ContentVolume>(quickScan.contentVolume),
+        contentVolume: safeJsonParseOrNull<ContentVolume>(qualificationScan.contentVolume),
         navigationStructure: safeJsonParseOrNull<NavigationStructure>(
-          quickScan.navigationStructure
+          qualificationScan.navigationStructure
         ),
       }
     : null;
@@ -155,7 +157,9 @@ export default async function BLReviewDetailPage({
   const defaultTab = tab || 'overview';
 
   // Determine which tabs are available based on status/data
-  const hasDeepAnalysis = bid.deepMigrationAnalysisId !== null;
+  const hasDeepAnalysis = ['analysis_complete', 'team_assigned', 'notified', 'handed_off'].includes(
+    bid.status
+  );
   const hasTeam = bid.assignedTeam !== null;
 
   // Get workflow progress and enabled tabs
@@ -386,7 +390,7 @@ export default async function BLReviewDetailPage({
             </Card>
           </div>
 
-          {/* Enhanced Overview Section with QuickScan Data */}
+          {/* Enhanced Overview Section with QualificationScan Data */}
           <OverviewSection data={overviewData} />
 
           {/* Timeline Preview */}
@@ -424,7 +428,7 @@ export default async function BLReviewDetailPage({
         <TabsContent value="bu-matching" className="space-y-6">
           <BUMatchingTab
             bidId={bid.id}
-            quickScan={quickScan}
+            qualificationScan={qualificationScan}
             currentBusinessUnitId={bid.assignedBusinessUnitId}
           />
         </TabsContent>
@@ -434,7 +438,7 @@ export default async function BLReviewDetailPage({
           <TenQuestionsTab
             decisionData={decisionData}
             extractedData={extractedData}
-            quickScan={quickScan}
+            qualificationScan={qualificationScan}
           />
         </TabsContent>
 
@@ -499,7 +503,7 @@ function StatusBadge({ status }: { status: string }) {
     { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
   > = {
     routed: { label: 'Weitergeleitet', variant: 'default' },
-    full_scanning: { label: 'Deep Analysis', variant: 'default' },
+    audit_scanning: { label: 'Deep Analysis', variant: 'default' },
     bl_reviewing: { label: 'In Prüfung', variant: 'default' },
     team_assigned: { label: 'Team zugewiesen', variant: 'secondary' },
     notified: { label: 'Benachrichtigt', variant: 'outline' },

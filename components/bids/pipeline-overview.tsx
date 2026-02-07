@@ -79,11 +79,15 @@ export function PipelineOverview({ opportunities }: PipelineOverviewProps) {
                   : opp.extractedRequirements || undefined;
               const customerName =
                 opp.accountName ||
-                (typeof extractedReqs?.customerName === 'string' ? extractedReqs.customerName : null) ||
+                (typeof extractedReqs?.customerName === 'string'
+                  ? extractedReqs.customerName
+                  : null) ||
                 'Unknown Customer';
               const projectName =
                 opp.projectName ||
-                (typeof extractedReqs?.projectDescription === 'string' ? extractedReqs.projectDescription : null) ||
+                (typeof extractedReqs?.projectDescription === 'string'
+                  ? extractedReqs.projectDescription
+                  : null) ||
                 'Untitled Project';
 
               return (
@@ -91,7 +95,7 @@ export function PipelineOverview({ opportunities }: PipelineOverviewProps) {
                   <TableCell>
                     <div className="flex flex-col">
                       <Link
-                        href={`/pre-qualifications/${opp.id}`}
+                        href={`/qualifications/${opp.id}`}
                         className="font-medium hover:underline"
                       >
                         {customerName}
@@ -121,7 +125,7 @@ export function PipelineOverview({ opportunities }: PipelineOverviewProps) {
                   </TableCell>
                   <TableCell className="text-right">
                     <Link
-                      href={`/pre-qualifications/${opp.id}`}
+                      href={`/qualifications/${opp.id}`}
                       className="text-sm font-medium hover:underline"
                     >
                       View

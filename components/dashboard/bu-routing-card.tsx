@@ -44,7 +44,7 @@ export function BURoutingCard({
         : 'outline';
 
   return (
-    <Link href={`/pre-qualifications/${preQualificationId}/routing`} className="block">
+    <Link href={`/qualifications/${preQualificationId}/routing`} className="block">
       <Card
         className={cn(
           'group transition-colors',

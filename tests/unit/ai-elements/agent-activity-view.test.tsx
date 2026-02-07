@@ -9,6 +9,7 @@ import {
   AgentActivityGroup,
   AgentActivityComplete,
 } from '@/components/ai-elements/agent-activity-view';
+import type { AgentPhase } from '@/components/ai-elements/types';
 import type { AgentEvent } from '@/lib/streaming/event-types';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
@@ -37,18 +38,6 @@ const makePhaseStartEvent = (
   type: AgentEventType.PHASE_START,
   timestamp: baseTimestamp + offset * 1000,
   data: { phase, message, timestamp: baseTimestamp + offset * 1000 },
-});
-
-const makeAnalysisCompleteEvent = (
-  analysis: string,
-  success: boolean,
-  duration: number,
-  offset = 0
-): AgentEvent => ({
-  id: `analysis-${analysis}-${offset}`,
-  type: AgentEventType.ANALYSIS_COMPLETE,
-  timestamp: baseTimestamp + offset * 1000,
-  data: { analysis, success, duration },
 });
 
 // ============================================================================
@@ -100,7 +89,8 @@ describe('AgentActivityView', () => {
       makeProgressEvent('Website Crawler', 'Working...', 1),
     ];
     render(<AgentActivityView events={events} isStreaming={true} />);
-    expect(screen.getByText('Bootstrap')).toBeInTheDocument();
+    // Phase label appears in badge — use getAllByText since it may appear in badge + current phase message
+    expect(screen.getAllByText('Bootstrap').length).toBeGreaterThanOrEqual(1);
   });
 
   it('expands agent group on click to show messages', async () => {
@@ -144,8 +134,9 @@ describe('AgentActivityView', () => {
       makeProgressEvent('Tech Stack Analyzer', 'Analyzing...', 4),
     ];
     render(<AgentActivityView events={events} isStreaming={true} />);
-    expect(screen.getByText('Bootstrap')).toBeInTheDocument();
-    expect(screen.getByText('Analyse')).toBeInTheDocument();
+    // Both phase labels should appear at least once
+    expect(screen.getAllByText('Bootstrap').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Analyse').length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -159,74 +150,80 @@ describe('AgentActivityHeader', () => {
   });
 
   it('renders progress percentage', () => {
-    render(<AgentActivityHeader isStreaming={false} progress={42} phaseInfo={[]} />);
+    render(<AgentActivityHeader isStreaming={false} progress={42} phases={[]} />);
     expect(screen.getByText('42%')).toBeInTheDocument();
   });
 
   it('renders title', () => {
-    render(<AgentActivityHeader isStreaming={false} progress={0} phaseInfo={[]} />);
+    render(<AgentActivityHeader isStreaming={false} progress={0} phases={[]} />);
     expect(screen.getByText('Agent Aktivität')).toBeInTheDocument();
   });
 
   it('renders phase badges', () => {
-    const phaseInfo = [
+    const phases: AgentPhase[] = [
       {
-        phase: 'bootstrap' as const,
-        message: 'Starting bootstrap',
-        timestamp: baseTimestamp,
+        id: 'bootstrap',
+        label: 'Bootstrap',
+        status: 'complete',
         analyses: [],
+        startedAt: baseTimestamp,
       },
       {
-        phase: 'analysis' as const,
-        message: 'Running analysis',
-        timestamp: baseTimestamp + 5000,
+        id: 'analysis',
+        label: 'Analyse',
+        status: 'running',
         analyses: [],
+        startedAt: baseTimestamp + 5000,
       },
     ];
-    render(<AgentActivityHeader isStreaming={true} progress={50} phaseInfo={phaseInfo} />);
-    expect(screen.getByText('Bootstrap')).toBeInTheDocument();
-    expect(screen.getByText('Analyse')).toBeInTheDocument();
+    render(<AgentActivityHeader isStreaming={true} progress={50} phases={phases} />);
+    // Phase labels appear in badges — may appear multiple times due to current phase message
+    expect(screen.getAllByText('Bootstrap').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Analyse').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders current phase message', () => {
-    const phaseInfo = [
+    const phases: AgentPhase[] = [
       {
-        phase: 'bootstrap' as const,
-        message: 'Crawling website...',
-        timestamp: baseTimestamp,
+        id: 'bootstrap',
+        label: 'Crawling website...',
+        status: 'running',
         analyses: [],
+        startedAt: baseTimestamp,
       },
     ];
-    render(<AgentActivityHeader isStreaming={true} progress={10} phaseInfo={phaseInfo} />);
-    expect(screen.getByText('Crawling website...')).toBeInTheDocument();
+    render(<AgentActivityHeader isStreaming={true} progress={10} phases={phases} />);
+    // Label appears in both badge and current phase message
+    expect(screen.getAllByText('Crawling website...').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders analysis counts in phase badges', () => {
-    const phaseInfo = [
+    const phases: AgentPhase[] = [
       {
-        phase: 'analysis' as const,
-        message: 'Analyzing',
-        timestamp: baseTimestamp,
+        id: 'analysis',
+        label: 'Analyse',
+        status: 'running',
         analyses: [
           { name: 'Tech', success: true, duration: 100 },
           { name: 'Content', success: false, duration: 200 },
           { name: 'SEO', success: true, duration: 150 },
         ],
+        startedAt: baseTimestamp,
       },
     ];
-    render(<AgentActivityHeader isStreaming={true} progress={30} phaseInfo={phaseInfo} />);
+    render(<AgentActivityHeader isStreaming={true} progress={30} phases={phases} />);
     expect(screen.getByText('(2/3)')).toBeInTheDocument();
   });
 
-  it('does not render phase section when phaseInfo is empty', () => {
-    render(<AgentActivityHeader isStreaming={false} progress={0} phaseInfo={[]} />);
+  it('does not render phase section when phases is empty', () => {
+    render(<AgentActivityHeader isStreaming={false} progress={0} phases={[]} />);
     expect(screen.queryByText('Bootstrap')).not.toBeInTheDocument();
     expect(screen.queryByText('Analyse')).not.toBeInTheDocument();
   });
 
   it('accepts className', () => {
     const { container } = render(
-      <AgentActivityHeader isStreaming={false} progress={0} phaseInfo={[]} className="test-hdr" />
+      <AgentActivityHeader isStreaming={false} progress={0} phases={[]} className="test-hdr" />
     );
     expect(container.firstElementChild).toHaveClass('test-hdr');
   });

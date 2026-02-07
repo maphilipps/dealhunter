@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches, users, pitchRuns } from '@/lib/db/schema';
+import { pitches, users, auditScanRuns } from '@/lib/db/schema';
 
 // Next.js Route Segment Config
 export const runtime = 'nodejs';
@@ -86,32 +86,32 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const { status, limit = 50 } = parsed.data;
 
     // Build WHERE conditions
-    const conditions = [eq(pitchRuns.pitchId, pitchId)];
-    if (status) conditions.push(eq(pitchRuns.status, status));
+    const conditions = [eq(auditScanRuns.pitchId, pitchId)];
+    if (status) conditions.push(eq(auditScanRuns.status, status));
 
     const runs = await db
       .select({
-        id: pitchRuns.id,
-        pitchId: pitchRuns.pitchId,
-        userId: pitchRuns.userId,
-        status: pitchRuns.status,
-        runNumber: pitchRuns.runNumber,
-        targetCmsIds: pitchRuns.targetCmsIds,
-        selectedCmsId: pitchRuns.selectedCmsId,
-        currentPhase: pitchRuns.currentPhase,
-        progress: pitchRuns.progress,
-        currentStep: pitchRuns.currentStep,
-        completedAgents: pitchRuns.completedAgents,
-        failedAgents: pitchRuns.failedAgents,
-        agentConfidences: pitchRuns.agentConfidences,
-        startedAt: pitchRuns.startedAt,
-        completedAt: pitchRuns.completedAt,
-        createdAt: pitchRuns.createdAt,
-        updatedAt: pitchRuns.updatedAt,
+        id: auditScanRuns.id,
+        pitchId: auditScanRuns.pitchId,
+        userId: auditScanRuns.userId,
+        status: auditScanRuns.status,
+        runNumber: auditScanRuns.runNumber,
+        targetCmsIds: auditScanRuns.targetCmsIds,
+        selectedCmsId: auditScanRuns.selectedCmsId,
+        currentPhase: auditScanRuns.currentPhase,
+        progress: auditScanRuns.progress,
+        currentStep: auditScanRuns.currentStep,
+        completedAgents: auditScanRuns.completedAgents,
+        failedAgents: auditScanRuns.failedAgents,
+        agentConfidences: auditScanRuns.agentConfidences,
+        startedAt: auditScanRuns.startedAt,
+        completedAt: auditScanRuns.completedAt,
+        createdAt: auditScanRuns.createdAt,
+        updatedAt: auditScanRuns.updatedAt,
       })
-      .from(pitchRuns)
+      .from(auditScanRuns)
       .where(and(...conditions))
-      .orderBy(desc(pitchRuns.createdAt))
+      .orderBy(desc(auditScanRuns.createdAt))
       .limit(limit);
 
     return NextResponse.json({ success: true, runs });

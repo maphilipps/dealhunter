@@ -1,13 +1,13 @@
 /**
  * DEA-164 (PA-005): Timeline Calculator
  *
- * Calculates internal delivery deadlines by working backwards from the Pre-Qualification deadline.
+ * Calculates internal delivery deadlines by working backwards from the Qualification deadline.
  * Includes configurable buffers for review and QA.
  */
 
 export interface TimelineConfig {
   /**
-   * Buffer days for final review before Pre-Qualification submission
+   * Buffer days for final review before Qualification submission
    * @default 2
    */
   reviewBufferDays: number;
@@ -32,14 +32,14 @@ const DEFAULT_CONFIG: TimelineConfig = {
 };
 
 /**
- * Calculate internal deadlines for deliverables working backwards from Pre-Qualification deadline.
+ * Calculate internal deadlines for deliverables working backwards from Qualification deadline.
  *
  * Strategy:
  * 1. Reserve review + QA buffer at the end
  * 2. Divide remaining time equally among deliverables
  * 3. Apply safety margin to prevent tight deadlines
  *
- * @param rfpDeadline - The external Pre-Qualification submission deadline
+ * @param rfpDeadline - The external Qualification submission deadline
  * @param deliverableCount - Number of deliverables to schedule
  * @param config - Optional timeline configuration
  * @returns Array of internal deadlines, one per deliverable (in chronological order)
@@ -76,9 +76,9 @@ export function calculateInternalDeadlines(
   const availableDays = Math.floor(availableMs / (1000 * 60 * 60 * 24));
 
   if (availableDays <= 0) {
-    // Pre-Qualification deadline is too close - set all deadlines to work deadline
+    // Qualification deadline is too close - set all deadlines to work deadline
     console.warn(
-      `Pre-Qualification deadline (${rfpDeadline.toISOString()}) is too close. All deliverables set to work deadline.`
+      `Qualification deadline (${rfpDeadline.toISOString()}) is too close. All deliverables set to work deadline.`
     );
     return Array.from({ length: deliverableCount }, () => new Date(workDeadline));
   }

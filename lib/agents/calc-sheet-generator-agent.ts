@@ -298,7 +298,7 @@ async function gatherContext(leadId: string): Promise<ContextData> {
     const lead = await db.query.pitches.findFirst({
       where: eq(pitches.id, leadId),
       with: {
-        quickScan: true,
+        qualificationScan: true,
       },
     });
 
@@ -311,8 +311,8 @@ async function gatherContext(leadId: string): Promise<ContextData> {
     context.hasData = true;
 
     // Get Quick Scan data
-    if (lead.quickScan) {
-      const qs = lead.quickScan;
+    if (lead.qualificationScan) {
+      const qs = lead.qualificationScan as Record<string, any>;
       context.cms = qs.cms || '';
       context.pageCount = qs.pageCount || 0;
 

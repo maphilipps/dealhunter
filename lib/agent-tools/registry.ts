@@ -9,6 +9,14 @@ export const registry: ToolRegistry = {
     toolsMap.set(tool.name, tool as ToolDefinition);
   },
 
+  alias(newName: string, existingName: string) {
+    const tool = toolsMap.get(existingName);
+    if (!tool) {
+      throw new Error(`Cannot create alias "${newName}": tool "${existingName}" not found`);
+    }
+    toolsMap.set(newName, { ...tool, name: newName });
+  },
+
   get(name: string) {
     return toolsMap.get(name);
   },

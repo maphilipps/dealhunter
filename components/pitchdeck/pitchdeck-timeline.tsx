@@ -23,7 +23,7 @@ interface PitchdeckTimelineProps {
  * Pitchdeck Timeline Gantt Chart
  *
  * Displays deliverables as horizontal bars with color-coded deadlines.
- * Shows Pre-Qualification deadline as a vertical line marker.
+ * Shows Qualification deadline as a vertical line marker.
  */
 export function PitchdeckTimeline({
   deliverables,
@@ -68,13 +68,13 @@ export function PitchdeckTimeline({
   // Calculate position for "today" marker
   const todayPercent = ((now.getTime() - minDate.getTime()) / totalDurationMs) * 100;
 
-  // Calculate Pre-Qualification deadline position
+  // Calculate Qualification deadline position
   let rfpDeadlinePercent: number | null = null;
   if (rfpDeadline) {
     rfpDeadlinePercent = ((rfpDeadline.getTime() - minDate.getTime()) / totalDurationMs) * 100;
   }
 
-  // Warning if no Pre-Qualification deadline
+  // Warning if no Qualification deadline
   const showRfpWarning = !rfpDeadline;
 
   return (
@@ -92,13 +92,13 @@ export function PitchdeckTimeline({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Warning if no Pre-Qualification deadline */}
+        {/* Warning if no Qualification deadline */}
         {showRfpWarning && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Warnung:</strong> Keine Pre-Qualification-Deadline vorhanden. Interne Deadlines können
-              möglicherweise nicht korrekt berechnet werden.
+              <strong>Warnung:</strong> Keine Qualification-Deadline vorhanden. Interne Deadlines
+              können möglicherweise nicht korrekt berechnet werden.
             </AlertDescription>
           </Alert>
         )}
@@ -176,14 +176,14 @@ export function PitchdeckTimeline({
                     />
                   )}
 
-                  {/* Pre-Qualification Deadline Marker */}
+                  {/* Qualification Deadline Marker */}
                   {rfpDeadlinePercent !== null &&
                     rfpDeadlinePercent >= 0 &&
                     rfpDeadlinePercent <= 100 && (
                       <div
                         className="absolute top-0 bottom-0 w-0.5 bg-purple-600 z-10"
                         style={{ left: `${rfpDeadlinePercent}%` }}
-                        title="Pre-Qualification Deadline"
+                        title="Qualification Deadline"
                       />
                     )}
                 </div>
@@ -204,7 +204,7 @@ export function PitchdeckTimeline({
             {rfpDeadline && (
               <span className="absolute" style={{ left: `${rfpDeadlinePercent}%` }}>
                 <span className="relative -left-1/2 text-purple-600 font-medium">
-                  Pre-Qualification: {format(rfpDeadline, 'dd. MMM', { locale: de })}
+                  Qualification: {format(rfpDeadline, 'dd. MMM', { locale: de })}
                 </span>
               </span>
             )}

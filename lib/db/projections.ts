@@ -45,7 +45,7 @@ export const LEAD_PUBLIC_FIELDS = {
   createdAt: pitches.createdAt,
   businessUnitId: pitches.businessUnitId,
   preQualificationId: pitches.preQualificationId,
-  quickScanId: pitches.quickScanId,
+  qualificationScanId: pitches.qualificationScanId,
   selectedCmsId: pitches.selectedCmsId,
 } as const;
 
@@ -59,7 +59,7 @@ export const LEAD_INTERNAL_FIELDS = {
 } as const;
 
 /**
- * Pre-Qualification fields safe for public/client access
+ * Qualification fields safe for public/client access
  */
 export const PreQualification_PUBLIC_FIELDS = {
   id: preQualifications.id,

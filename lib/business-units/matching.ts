@@ -8,7 +8,7 @@
 import { eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import type { BusinessUnit, QuickScan, Reference } from '@/lib/db/schema';
+import type { BusinessUnit, LeadScan, Reference } from '@/lib/db/schema';
 import { businessUnits, references, technologies } from '@/lib/db/schema';
 
 /**
@@ -36,14 +36,14 @@ export interface BUMatchResult {
  * Vergleicht erkanntes CMS/Framework mit den Technologies der BU
  */
 async function calculateTechStackScore(
-  quickScan: QuickScan,
+  qualificationScan: LeadScan,
   businessUnit: BusinessUnit
 ): Promise<{ score: number; matched: string[] }> {
   const matched: string[] = [];
 
   // Parse tech stack from quick scan
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const techStack = quickScan.techStack ? JSON.parse(quickScan.techStack) : {};
+  const techStack = qualificationScan.techStack ? JSON.parse(qualificationScan.techStack) : {};
   const detectedTechs: string[] = [];
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -87,8 +87,8 @@ async function calculateTechStackScore(
  * Berechnet Features Match Score (0-100)
  * Vergleicht erkannte Features mit typischen Features der BU
  */
-function calculateFeaturesScore(quickScan: QuickScan, _businessUnit: BusinessUnit): number {
-  const features = quickScan.features ? JSON.parse(quickScan.features) : {};
+function calculateFeaturesScore(qualificationScan: LeadScan, _businessUnit: BusinessUnit): number {
+  const features = qualificationScan.features ? JSON.parse(qualificationScan.features) : {};
 
   // Count detected features
   let detectedCount = 0;
@@ -113,11 +113,11 @@ function calculateFeaturesScore(quickScan: QuickScan, _businessUnit: BusinessUni
  * Zählt Referenzen der BU, die passende Technologies haben
  */
 async function calculateReferencesScore(
-  quickScan: QuickScan,
+  qualificationScan: LeadScan,
 
   _businessUnit: BusinessUnit
 ): Promise<{ score: number; matched: Reference[] }> {
-  const techStack = quickScan.techStack ? JSON.parse(quickScan.techStack) : {};
+  const techStack = qualificationScan.techStack ? JSON.parse(qualificationScan.techStack) : {};
   const detectedTechs: string[] = [];
 
   if (techStack.cms) detectedTechs.push(techStack.cms.toLowerCase());
@@ -161,9 +161,9 @@ async function calculateReferencesScore(
  * Berechnet Industry Match Score (0-100)
  * Vergleicht erkannte Branche mit typischen Branchen der BU
  */
-function calculateIndustryScore(quickScan: QuickScan, _businessUnit: BusinessUnit): number {
-  const companyIntelligence = quickScan.companyIntelligence
-    ? JSON.parse(quickScan.companyIntelligence)
+function calculateIndustryScore(qualificationScan: LeadScan, _businessUnit: BusinessUnit): number {
+  const companyIntelligence = qualificationScan.companyIntelligence
+    ? JSON.parse(qualificationScan.companyIntelligence)
     : null;
 
   if (!companyIntelligence?.basicInfo?.industry) {
@@ -194,7 +194,7 @@ function calculateIndustryScore(quickScan: QuickScan, _businessUnit: BusinessUni
  * Berechnet Keywords Match Score (0-100)
  * NLP Match gegen Anforderungen
  */
-function calculateKeywordsScore(quickScan: QuickScan, businessUnit: BusinessUnit): number {
+function calculateKeywordsScore(qualificationScan: LeadScan, businessUnit: BusinessUnit): number {
   const buKeywords = JSON.parse(businessUnit.keywords) as string[];
   const buKeywordsLower = buKeywords.map(k => k.toLowerCase());
 
@@ -202,17 +202,17 @@ function calculateKeywordsScore(quickScan: QuickScan, businessUnit: BusinessUnit
   const searchText: string[] = [];
 
   // Add tech stack
-  if (quickScan.cms) searchText.push(quickScan.cms.toLowerCase());
-  if (quickScan.framework) searchText.push(quickScan.framework.toLowerCase());
+  if (qualificationScan.cms) searchText.push(qualificationScan.cms.toLowerCase());
+  if (qualificationScan.framework) searchText.push(qualificationScan.framework.toLowerCase());
 
   // Add recommended BL
-  if (quickScan.recommendedBusinessUnit) {
-    searchText.push(quickScan.recommendedBusinessUnit.toLowerCase());
+  if (qualificationScan.recommendedBusinessUnit) {
+    searchText.push(qualificationScan.recommendedBusinessUnit.toLowerCase());
   }
 
   // Add reasoning
-  if (quickScan.reasoning) {
-    searchText.push(quickScan.reasoning.toLowerCase());
+  if (qualificationScan.reasoning) {
+    searchText.push(qualificationScan.reasoning.toLowerCase());
   }
 
   const combinedText = searchText.join(' ');
@@ -236,15 +236,15 @@ function calculateKeywordsScore(quickScan: QuickScan, businessUnit: BusinessUnit
  * Berechnet vollständigen BU Match
  */
 export async function calculateBUMatch(
-  quickScan: QuickScan,
+  qualificationScan: LeadScan,
   businessUnit: BusinessUnit
 ): Promise<BUMatchResult> {
   // Calculate all criteria (each worth 20%)
-  const techStack = await calculateTechStackScore(quickScan, businessUnit);
-  const features = calculateFeaturesScore(quickScan, businessUnit);
-  const refs = await calculateReferencesScore(quickScan, businessUnit);
-  const industry = calculateIndustryScore(quickScan, businessUnit);
-  const keywords = calculateKeywordsScore(quickScan, businessUnit);
+  const techStack = await calculateTechStackScore(qualificationScan, businessUnit);
+  const features = calculateFeaturesScore(qualificationScan, businessUnit);
+  const refs = await calculateReferencesScore(qualificationScan, businessUnit);
+  const industry = calculateIndustryScore(qualificationScan, businessUnit);
+  const keywords = calculateKeywordsScore(qualificationScan, businessUnit);
 
   const criteria: BUMatchCriteria = {
     techStackScore: techStack.score,
@@ -286,12 +286,12 @@ export async function calculateBUMatch(
 /**
  * Berechnet Matches für alle Business Units und sortiert nach Score
  */
-export async function getAllBUMatches(quickScan: QuickScan): Promise<BUMatchResult[]> {
+export async function getAllBUMatches(qualificationScan: LeadScan): Promise<BUMatchResult[]> {
   // Get all business units
   const allBUs = await db.select().from(businessUnits);
 
   // Calculate match for each BU
-  const matches = await Promise.all(allBUs.map(bu => calculateBUMatch(quickScan, bu)));
+  const matches = await Promise.all(allBUs.map(bu => calculateBUMatch(qualificationScan, bu)));
 
   // Sort by total score descending
   matches.sort((a, b) => b.totalScore - a.totalScore);

@@ -6,7 +6,7 @@ import { wrapUserContent } from '@/lib/security/prompt-sanitizer';
 
 export interface DealQualityAgentInput {
   extractedRequirements: any;
-  quickScanResults?: any;
+  qualificationScanResults?: any;
   useWebSearch?: boolean;
 }
 
@@ -107,9 +107,9 @@ Alle Texte auf Deutsch.`;
 ${JSON.stringify(input.extractedRequirements, null, 2)}
 
 ${
-  input.quickScanResults
-    ? `## Quick Scan Ergebnisse
-${JSON.stringify(input.quickScanResults, null, 2)}`
+  input.qualificationScanResults
+    ? `## Qualification Scan Ergebnisse
+${JSON.stringify(input.qualificationScanResults, null, 2)}`
     : ''
 }
 ${customerNews}

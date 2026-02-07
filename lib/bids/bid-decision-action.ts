@@ -30,21 +30,26 @@ export async function makeBidDecision(
   }
 
   try {
-    // 1. Fetch Pre-Qualification and verify ownership
+    // 1. Fetch Qualification and verify ownership
     const [preQualification] = await db
       .select()
       .from(preQualifications)
-      .where(and(eq(preQualifications.id, preQualificationId), eq(preQualifications.userId, session.user.id)));
+      .where(
+        and(
+          eq(preQualifications.id, preQualificationId),
+          eq(preQualifications.userId, session.user.id)
+        )
+      );
 
     if (!preQualification) {
-      return { success: false, error: 'Pre-Qualification nicht gefunden' };
+      return { success: false, error: 'Qualification nicht gefunden' };
     }
 
-    // 2. Verify Pre-Qualification is in correct status (bit_pending)
+    // 2. Verify Qualification is in correct status (bit_pending)
     if (preQualification.status !== 'bit_pending') {
       return {
         success: false,
-        error: `Pre-Qualification muss im Status "BID/NO-BID Entscheidung erforderlich" sein (aktuell: ${preQualification.status})`,
+        error: `Qualification muss im Status "BID/NO-BID Entscheidung erforderlich" sein (aktuell: ${preQualification.status})`,
       };
     }
 

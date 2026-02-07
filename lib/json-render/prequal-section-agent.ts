@@ -8,7 +8,7 @@ import { modelNames } from '@/lib/ai/config';
 import { getProviderForSlot } from '@/lib/ai/providers';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
-import { getPreQualSectionQueryTemplate } from '@/lib/pre-qualifications/section-queries';
+import { getPreQualSectionQueryTemplate } from '@/lib/qualifications/section-queries';
 import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
 
 const SECTION_UI_SYSTEM_PROMPT = `Du generierst JsonRenderTree UI für eine Ausschreibungs-Analyse-Section.

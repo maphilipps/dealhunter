@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches, users, pitchRuns } from '@/lib/db/schema';
+import { pitches, users, auditScanRuns } from '@/lib/db/schema';
 
 // Next.js Route Segment Config
 export const runtime = 'nodejs';
@@ -73,8 +73,8 @@ export async function GET(
 
     const [run] = await db
       .select()
-      .from(pitchRuns)
-      .where(and(eq(pitchRuns.id, runId), eq(pitchRuns.pitchId, pitchId)));
+      .from(auditScanRuns)
+      .where(and(eq(auditScanRuns.id, runId), eq(auditScanRuns.pitchId, pitchId)));
 
     if (!run) {
       return NextResponse.json({ error: 'Run not found' }, { status: 404 });

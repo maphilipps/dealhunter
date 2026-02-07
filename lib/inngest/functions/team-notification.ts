@@ -196,7 +196,7 @@ export const teamNotificationFunction = inngest.createFunction(
           })
           .where(eq(backgroundJobs.id, jobRecord.id));
 
-        // Update teamNotifications field in Pre-Qualification
+        // Update teamNotifications field in Qualification
         await db
           .update(preQualifications)
           .set({

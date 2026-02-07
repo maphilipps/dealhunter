@@ -12,7 +12,7 @@ import { teamAssignments, preQualifications, employees } from '@/lib/db/schema';
  *
  * TeamAssignments link Employees to PreQualifications with a specific role.
  * These tools provide full CRUD access for agents to:
- * - List team members for a Pre-Qualification
+ * - List team members for a Qualification
  * - Get individual assignment details
  * - Create new assignments
  * - Update assignment roles
@@ -42,7 +42,7 @@ const listTeamAssignmentsInputSchema = z.object({
 
 registry.register({
   name: 'teamAssignment.list',
-  description: 'List team assignments, optionally filtered by Pre-Qualification, employee, or role',
+  description: 'List team assignments, optionally filtered by Qualification, employee, or role',
   category: 'team-assignment',
   inputSchema: listTeamAssignmentsInputSchema,
   async execute(input, context: ToolContext) {
@@ -62,11 +62,11 @@ registry.register({
         .limit(1);
 
       if (!preQual) {
-        return { success: false, error: 'Pre-Qualification not found or no access' };
+        return { success: false, error: 'Qualification not found or no access' };
       }
       conditions.push(eq(teamAssignments.preQualificationId, input.preQualificationId));
     } else {
-      // Without preQualificationId filter, only return assignments for user's pre-qualifications
+      // Without preQualificationId filter, only return assignments for user's qualifications
       const userPreQuals = await db
         .select({ id: preQualifications.id })
         .from(preQualifications)
@@ -184,7 +184,7 @@ const createTeamAssignmentInputSchema = z.object({
 
 registry.register({
   name: 'teamAssignment.create',
-  description: 'Create a new team assignment linking an employee to a Pre-Qualification',
+  description: 'Create a new team assignment linking an employee to a Qualification',
   category: 'team-assignment',
   inputSchema: createTeamAssignmentInputSchema,
   async execute(input, context: ToolContext) {
@@ -201,7 +201,7 @@ registry.register({
       .limit(1);
 
     if (!preQual) {
-      return { success: false, error: 'Pre-Qualification not found or no access' };
+      return { success: false, error: 'Qualification not found or no access' };
     }
 
     // Verify employee exists
@@ -231,7 +231,7 @@ registry.register({
     if (existing) {
       return {
         success: false,
-        error: `Employee ${employee.name} is already assigned as ${input.role} to this Pre-Qualification`,
+        error: `Employee ${employee.name} is already assigned as ${input.role} to this Qualification`,
       };
     }
 
@@ -323,7 +323,7 @@ const deleteTeamAssignmentInputSchema = z.object({
 
 registry.register({
   name: 'teamAssignment.delete',
-  description: 'Remove a team member from a Pre-Qualification',
+  description: 'Remove a team member from a Qualification',
   category: 'team-assignment',
   inputSchema: deleteTeamAssignmentInputSchema,
   async execute(input, context: ToolContext) {
@@ -416,7 +416,7 @@ registry.register({
 });
 
 // ============================================================================
-// teamAssignment.listByPreQualification - Get full team for a Pre-Qualification
+// teamAssignment.listByPreQualification - Get full team for a Qualification
 // ============================================================================
 
 const listByPreQualificationInputSchema = z.object({
@@ -425,8 +425,7 @@ const listByPreQualificationInputSchema = z.object({
 
 registry.register({
   name: 'teamAssignment.listByPreQualification',
-  description:
-    'Get the full team for a Pre-Qualification with employee details (name, email, skills)',
+  description: 'Get the full team for a Qualification with employee details (name, email, skills)',
   category: 'team-assignment',
   inputSchema: listByPreQualificationInputSchema,
   async execute(input, context: ToolContext) {
@@ -443,7 +442,7 @@ registry.register({
       .limit(1);
 
     if (!preQual) {
-      return { success: false, error: 'Pre-Qualification not found or no access' };
+      return { success: false, error: 'Qualification not found or no access' };
     }
 
     // Get all assignments with employee data via join

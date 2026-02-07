@@ -8,10 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import type { QuickScan } from '@/lib/db/schema';
+import type { LeadScan } from '@/lib/db/schema';
 
 interface BUComparisonPhaseProps {
-  quickScan: QuickScan;
+  qualificationScan: LeadScan;
   preQualificationId: string;
 }
 
@@ -56,7 +56,10 @@ function ScoreTrend({ score, baseline }: { score: number; baseline: number }) {
   return <TrendingDown className="h-4 w-4 text-red-500" />;
 }
 
-export function BUComparisonPhase({ quickScan, preQualificationId }: BUComparisonPhaseProps) {
+export function BUComparisonPhase({
+  qualificationScan,
+  preQualificationId,
+}: BUComparisonPhaseProps) {
   const [buMatches, setBuMatches] = useState<BUMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBU, setSelectedBU] = useState<string | null>(null);
@@ -64,7 +67,7 @@ export function BUComparisonPhase({ quickScan, preQualificationId }: BUCompariso
   useEffect(() => {
     async function fetchBUMatches() {
       try {
-        const res = await fetch(`/api/pre-qualifications/${preQualificationId}/bu-matching`);
+        const res = await fetch(`/api/qualifications/${preQualificationId}/bu-matching`);
         if (res.ok) {
           const data = (await res.json()) as { matches?: BUMatch[] };
           setBuMatches(data.matches || []);

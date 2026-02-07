@@ -60,6 +60,7 @@ gh issue edit <number> --add-assignee "@me"
 
 # EXPLORATION
 
+<<<<<<< Updated upstream
 Explore the repo and fill your context window with relevant information to complete the task.
 
 # EXECUTION
@@ -168,4 +169,11 @@ gh issue comment <number> --body "## 🚫 Blocked\n\n<reason>"
 1. **ONLY WORK ON A SINGLE TASK**
 2. Always update issue status (labels, comments)
 3. Never close an issue without verification passing
-4. Reference issue number in every commit
+4. # Reference issue number in every commit
+
+- **Ein Issue pro Durchlauf** - Nicht mehrere gleichzeitig
+- **Klein halten** - Lieber mehrere kleine Commits als ein großer
+- **Feedback-Loops nutzen** - Vor jedem Commit:
+  - `npm run test` für Tests
+  - `npm run typecheck` für Type-Checking
+    > > > > > > > Stashed changes

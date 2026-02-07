@@ -54,7 +54,7 @@ type FindingInput = z.infer<typeof findingSchema>;
  *   tools: {
  *     store_finding: createRagWriteTool({
  *       preQualificationId: 'xyz',
- *       agentName: 'quick_scan'
+ *       agentName: 'qualification_scan'
  *     }),
  *   },
  *   prompt: 'Analyze the tech stack...'

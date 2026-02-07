@@ -190,13 +190,13 @@ Be realistic and thorough in your analysis.`,
     });
 
     console.error('[Migration Complexity Agent] AI analysis completed', {
-      factorsCount: analysis!.complexityFactors.length,
-      risksCount: analysis!.risks.length,
+      factorsCount: analysis.complexityFactors.length,
+      risksCount: analysis.risks.length,
     });
 
     // Calculate complexity score
     const { complexityScore, complexityCategory } = calculateComplexityScore(
-      analysis!.complexityFactors,
+      analysis.complexityFactors,
       contentArchitecture.pageCount
     );
 
@@ -204,9 +204,9 @@ Be realistic and thorough in your analysis.`,
       success: true,
       complexityScore,
       complexityCategory,
-      factors: analysis!.complexityFactors,
-      risks: analysis!.risks,
-      recommendations: analysis!.recommendations,
+      factors: analysis.complexityFactors,
+      risks: analysis.risks,
+      recommendations: analysis.recommendations,
       analyzedAt: new Date().toISOString(),
     };
   } catch (error) {

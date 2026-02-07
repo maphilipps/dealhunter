@@ -143,7 +143,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
 
-    // 9. Get Pre-Qualification and Employee data for email notifications
+    // 9. Get Qualification and Employee data for email notifications
     const [preQualification] = await db
       .select()
       .from(preQualifications)
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .limit(1);
 
     if (!preQualification) {
-      return NextResponse.json({ error: 'Pre-Qualification not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Qualification not found' }, { status: 404 });
     }
 
     // Get employee details for all team members
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // 12. Send Team Notification Emails in Background (Non-Blocking)
     after(async () => {
       try {
-        // Extract customer info from Pre-Qualification
+        // Extract customer info from Qualification
         let customerName = 'Customer';
         let projectDescription = lead.projectDescription || 'Projekt-Details werden noch ergänzt';
 
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             customerName = (requirements.customerName as string) || customerName;
             projectDescription = (requirements.projectDescription as string) || projectDescription;
           } catch {
-            console.error('Could not parse Pre-Qualification extractedRequirements');
+            console.error('Could not parse Qualification extractedRequirements');
           }
         }
 

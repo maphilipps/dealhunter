@@ -3,7 +3,10 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
-import { QuickScanRenderer, RenderTree } from '@/components/json-render/quick-scan-registry';
+import {
+  QualificationScanRenderer,
+  RenderTree,
+} from '@/components/json-render/qualification-scan-registry';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -187,7 +190,7 @@ export default async function AuditSectionPage({
         <CardContent>
           {/* Prefer json-render visualization if available */}
           {visualization && isValidRenderTree(visualization) ? (
-            <QuickScanRenderer tree={visualization} />
+            <QualificationScanRenderer tree={visualization} />
           ) : (
             <SectionContent content={content} />
           )}

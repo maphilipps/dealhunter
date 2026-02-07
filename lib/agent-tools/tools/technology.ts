@@ -1,8 +1,8 @@
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, ilike } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { registry } from '../registry';
-import type { ToolContext } from '../types';
+import type { ToolContext, ToolResult } from '../types';
 
 import { db } from '@/lib/db';
 import { technologies, businessUnits } from '@/lib/db/schema';
@@ -200,5 +200,155 @@ registry.register({
     await db.delete(technologies).where(eq(technologies.id, input.id));
 
     return { success: true, data: { id: input.id, deleted: true } };
+  },
+});
+
+// ─── technology.discover_features ──────────────────────────────────
+
+const discoverFeaturesInputSchema = z.object({
+  name: z.string().min(1),
+  category: z.string().optional(),
+});
+
+registry.register({
+  name: 'technology.discover_features',
+  description: 'Discover known features/capabilities for a technology by name lookup in DB',
+  category: 'technology',
+  inputSchema: discoverFeaturesInputSchema,
+  async execute(input, _context: ToolContext): Promise<ToolResult> {
+    const matches = await db
+      .select()
+      .from(technologies)
+      .where(ilike(technologies.name, `%${input.name}%`))
+      .orderBy(desc(technologies.createdAt))
+      .limit(5);
+
+    if (matches.length === 0) {
+      return {
+        success: true,
+        data: {
+          found: false,
+          message: `No technology matching "${input.name}" found in database`,
+          suggestion: 'Use technology.create to add it, or check spelling',
+        },
+      };
+    }
+
+    const parseSafe = (val: string | null): string[] => {
+      if (!val) return [];
+      try {
+        return JSON.parse(val) as string[];
+      } catch {
+        return [];
+      }
+    };
+
+    const features = matches.map(t => ({
+      id: t.id,
+      name: t.name,
+      category: t.category,
+      description: t.description,
+      license: t.license,
+      websiteUrl: t.websiteUrl,
+      githubUrl: t.githubUrl,
+      pros: parseSafe(t.pros),
+      cons: parseSafe(t.cons),
+      usps: parseSafe(t.usps),
+      useCases: parseSafe(t.useCases),
+      isDefault: t.isDefault,
+    }));
+
+    return { success: true, data: { found: true, technologies: features } };
+  },
+});
+
+// ─── technology.check_eol ──────────────────────────────────────────
+
+const checkEolInputSchema = z.object({
+  product: z.string().min(1),
+  version: z.string().optional(),
+});
+
+registry.register({
+  name: 'technology.check_eol',
+  description: 'Check end-of-life status for a technology via endoflife.date API',
+  category: 'technology',
+  inputSchema: checkEolInputSchema,
+  async execute(input, _context: ToolContext): Promise<ToolResult> {
+    const SAFE_SLUG = /^[a-z0-9][a-z0-9.-]{0,50}$/;
+    const productSlug = input.product.toLowerCase().replace(/\s+/g, '-');
+
+    if (!SAFE_SLUG.test(productSlug)) {
+      return { success: false, error: 'Invalid product name' };
+    }
+    if (input.version && !SAFE_SLUG.test(input.version)) {
+      return { success: false, error: 'Invalid version format' };
+    }
+
+    try {
+      const url = input.version
+        ? `https://endoflife.date/api/${productSlug}/${input.version}.json`
+        : `https://endoflife.date/api/${productSlug}.json`;
+
+      const response = await fetch(url, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            success: true,
+            data: {
+              found: false,
+              product: input.product,
+              message: `Product "${input.product}" not found on endoflife.date`,
+            },
+          };
+        }
+        return { success: false, error: `endoflife.date API error: ${response.status}` };
+      }
+
+      const data = (await response.json()) as Record<string, unknown> | Record<string, unknown>[];
+
+      if (input.version) {
+        const versionData = data as Record<string, unknown>;
+        return {
+          success: true,
+          data: {
+            found: true,
+            product: input.product,
+            version: input.version,
+            eol: versionData.eol,
+            support: versionData.support,
+            lts: versionData.lts,
+            latest: versionData.latest,
+            releaseDate: versionData.releaseDate,
+          },
+        };
+      }
+
+      const versions = (data as Record<string, unknown>[]).slice(0, 5);
+      return {
+        success: true,
+        data: {
+          found: true,
+          product: input.product,
+          versions: versions.map(v => ({
+            cycle: v.cycle,
+            eol: v.eol,
+            support: v.support,
+            lts: v.lts,
+            latest: v.latest,
+            releaseDate: v.releaseDate,
+          })),
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to check EOL: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
   },
 });

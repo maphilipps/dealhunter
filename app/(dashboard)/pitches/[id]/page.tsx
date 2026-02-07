@@ -29,7 +29,7 @@ import {
 } from '@/lib/db/projections';
 import {
   pitches,
-  pitchRuns,
+  auditScanRuns,
   preQualifications,
   businessUnits,
   websiteAudits,
@@ -56,7 +56,7 @@ const getLeadWithDetails = cache(async (id: string) => {
   // Phase 2: Parallel fetch for all independent queries - select only needed fields
   const [preQualification, businessUnit, websiteAudit, cmsMatches, ptEstimation, refMatches] =
     await Promise.all([
-      // Get related Pre-Qualification (depends on lead.preQualificationId) - only public fields
+      // Get related Qualification (depends on lead.preQualificationId) - only public fields
       lead.preQualificationId
         ? db
             .select(PreQualification_PUBLIC_FIELDS)
@@ -159,10 +159,10 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
   // Routed-Pitch → Scan starten oder Fortschritt anzeigen (nicht die leere Overview)
   if (lead.status === 'routed') {
     const [latestRun] = await db
-      .select({ id: pitchRuns.id, status: pitchRuns.status })
-      .from(pitchRuns)
-      .where(eq(pitchRuns.pitchId, id))
-      .orderBy(desc(pitchRuns.createdAt))
+      .select({ id: auditScanRuns.id, status: auditScanRuns.status })
+      .from(auditScanRuns)
+      .where(eq(auditScanRuns.pitchId, id))
+      .orderBy(desc(auditScanRuns.createdAt))
       .limit(1);
 
     // Nur laufende Runs für Progress-Anzeige durchreichen.
@@ -218,7 +218,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
             <div>
               <p className="text-sm text-muted-foreground">Business Unit</p>
               <p className="font-medium">{businessUnit?.name || 'Nicht zugewiesen'}</p>
@@ -235,8 +235,8 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
         </CardContent>
       </Card>
 
-      {/* Customer Deep Dive (Phase 1.2) - Quick Scan data */}
-      <CustomerDeepDive leadId={id} quickScanId={lead.quickScanId} />
+      {/* Customer Deep Dive (Phase 1.2) - Qualification Scan data */}
+      <CustomerDeepDive leadId={id} qualificationScanId={lead.qualificationScanId} />
 
       {/* Audit Status Card (Phase 4.1) - Shows if audit data is available */}
       <AuditStatusBadge leadId={id} variant="card" />
@@ -307,7 +307,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
                 </div>
 
                 <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link href={`/pitches/${id}/website-audit`}>Details ansehen</Link>
+                  <Link href={`/pitches/${id}/scan`}>Details ansehen</Link>
                 </Button>
               </>
             ) : websiteAudit?.status === 'running' ? (
@@ -315,7 +315,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-3/4" />
-                <p className="text-sm text-muted-foreground">Audit läuft...</p>
+                <p className="text-sm text-muted-foreground">Pitch Scan läuft...</p>
               </div>
             ) : (
               <div className="text-center py-4">
@@ -537,11 +537,11 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
         <CardContent>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" asChild>
-              <Link href={`/pitches/${id}/quick-scan`}>Qualification ansehen</Link>
+              <Link href={`/pitches/${id}/qualification-scan`}>Qualification Scan ansehen</Link>
             </Button>
             {preQualification && (
               <Button variant="outline" asChild>
-                <Link href={`/pre-qualifications/${preQualification.id}`}>
+                <Link href={`/qualifications/${preQualification.id}`}>
                   Ursprüngliches Pre-Qualification
                 </Link>
               </Button>
@@ -556,7 +556,7 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
 function StatusBadge({ status }: { status: string }) {
   const statusConfig = {
     routed: { label: 'Weitergeleitet', variant: 'default' as const },
-    full_scanning: { label: 'Full Scan läuft', variant: 'default' as const },
+    audit_scanning: { label: 'Pitch Scan läuft', variant: 'default' as const },
     bl_reviewing: { label: 'BL prüft', variant: 'default' as const },
     bid_voted: { label: 'Entschieden', variant: 'default' as const },
     archived: { label: 'Archiviert', variant: 'outline' as const },

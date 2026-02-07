@@ -27,7 +27,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import type { QuickScan } from '@/lib/db/schema';
+import type { LeadScan } from '@/lib/db/schema';
+
 import type {
   TechStack,
   PerformanceIndicators,
@@ -36,20 +37,20 @@ import type {
   Screenshots,
   AccessibilityAudit,
   CompanyIntelligence,
-} from '@/lib/quick-scan/schema';
+} from '@/lib/qualification-scan/schema';
 
 interface FactsTabProps {
-  quickScan: QuickScan;
+  qualificationScan: LeadScan;
   bidId: string;
 }
 
 /**
  * Facts Tab Component - Structured Card-based UI
  *
- * Displays Quick Scan results in consistent, scannable cards.
+ * Displays Qualification Scan results in consistent, scannable cards.
  * All cards use ShadCN components only.
  */
-export function FactsTab({ quickScan, bidId }: FactsTabProps) {
+export function FactsTab({ qualificationScan, bidId }: FactsTabProps) {
   // Helper to safely parse JSON fields (may already be objects from Drizzle)
   const safeJsonParse = <T,>(value: string | T | null | undefined): T | null => {
     if (!value) return null;
@@ -64,15 +65,19 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
   };
 
   // Parse JSON fields from Quick Scan
-  const techStack = safeJsonParse<TechStack>(quickScan.techStack);
+  const techStack = safeJsonParse<TechStack>(qualificationScan.techStack);
   const performanceIndicators = safeJsonParse<PerformanceIndicators>(
-    quickScan.performanceIndicators
+    qualificationScan.performanceIndicators
   );
-  const contentVolume = safeJsonParse<ContentVolume>(quickScan.contentVolume);
-  const decisionMakers = safeJsonParse<DecisionMakersResearch>(quickScan.decisionMakers);
-  const screenshots = safeJsonParse<Screenshots>(quickScan.screenshots);
-  const accessibilityAudit = safeJsonParse<AccessibilityAudit>(quickScan.accessibilityAudit);
-  const companyIntelligence = safeJsonParse<CompanyIntelligence>(quickScan.companyIntelligence);
+  const contentVolume = safeJsonParse<ContentVolume>(qualificationScan.contentVolume);
+  const decisionMakers = safeJsonParse<DecisionMakersResearch>(qualificationScan.decisionMakers);
+  const screenshots = safeJsonParse<Screenshots>(qualificationScan.screenshots);
+  const accessibilityAudit = safeJsonParse<AccessibilityAudit>(
+    qualificationScan.accessibilityAudit
+  );
+  const companyIntelligence = safeJsonParse<CompanyIntelligence>(
+    qualificationScan.companyIntelligence
+  );
 
   return (
     <div className="space-y-4">
@@ -85,12 +90,12 @@ export function FactsTab({ quickScan, bidId }: FactsTabProps) {
               <CardTitle>Website-Analyse</CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant={quickScan.status === 'completed' ? 'default' : 'destructive'}>
-                {quickScan.status === 'completed' ? 'Abgeschlossen' : 'Fehlgeschlagen'}
+              <Badge variant={qualificationScan.status === 'completed' ? 'default' : 'destructive'}>
+                {qualificationScan.status === 'completed' ? 'Abgeschlossen' : 'Fehlgeschlagen'}
               </Badge>
             </div>
           </div>
-          <CardDescription>Analyse von {quickScan.websiteUrl}</CardDescription>
+          <CardDescription>Analyse von {qualificationScan.websiteUrl}</CardDescription>
         </CardHeader>
       </Card>
 

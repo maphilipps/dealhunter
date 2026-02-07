@@ -72,7 +72,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
  * Strategy:
  * 1. Check if embeddings are enabled
  * 2. Generate embedding for query
- * 3. Fetch all raw chunks for this pre-qualification
+ * 3. Fetch all raw chunks for this qualification
  * 4. Calculate cosine similarity for each chunk
  * 5. Filter by threshold (>0.7)
  * 6. Sort by similarity DESC
@@ -83,7 +83,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
  */
 export async function queryRawChunks(query: RawRAGQuery): Promise<RawRAGResult[]> {
   try {
-    // 2. Fetch all raw chunks for this pre-qualification
+    // 2. Fetch all raw chunks for this qualification
     const chunks = await db
       .select()
       .from(rawChunks)
@@ -265,7 +265,7 @@ export async function queryRawChunks(query: RawRAGQuery): Promise<RawRAGResult[]
  * Query multiple topics in parallel and combine results
  * Useful for collecting diverse context for extraction
  *
- * @param preQualificationId - The pre-qualification ID to query
+ * @param preQualificationId - The qualification ID to query
  * @param topics - Array of topic queries
  * @returns Combined and deduplicated results
  */

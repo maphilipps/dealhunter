@@ -176,9 +176,10 @@ const getByPreQualInputSchema = z.object({
 });
 
 registry.register({
+  /** @deprecated Use document.get_by_pre_qualification instead */
   name: 'document.getByPreQualification',
   description:
-    'Get all documents for a specific PreQualification. Returns metadata only (no file content).',
+    '[DEPRECATED: use document.get_by_pre_qualification] Get all documents for a specific PreQualification. Returns metadata only (no file content).',
   category: 'document',
   inputSchema: getByPreQualInputSchema,
   async execute(input, context: ToolContext) {
@@ -263,5 +264,20 @@ registry.register({
         deleted: true,
       },
     };
+  },
+});
+
+// ============================================================================
+// Snake_case aliases (canonical names per CLAUDE.md conventions)
+// ============================================================================
+
+registry.register({
+  name: 'document.get_by_pre_qualification',
+  description:
+    'Get all documents for a specific PreQualification. Returns metadata only (no file content).',
+  category: 'document',
+  inputSchema: getByPreQualInputSchema,
+  async execute(input, context: ToolContext) {
+    return registry.execute('document.getByPreQualification', input, context);
   },
 });

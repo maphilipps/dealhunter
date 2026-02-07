@@ -12,7 +12,7 @@
  * Verwenden hex-ähnliche Suffixe zur Vermeidung von Erraten/Collision.
  */
 export const SAFE_DELIMITERS = {
-  // Document/Pre-Qualification Content (user-uploaded)
+  // Document/Qualification Content (user-uploaded)
   DOCUMENT_START: '<<<DOCUMENT_CONTEXT_START_7f3a2b>>>',
   DOCUMENT_END: '<<<DOCUMENT_CONTEXT_END_7f3a2b>>>',
 

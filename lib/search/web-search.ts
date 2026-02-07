@@ -8,6 +8,81 @@
 import { searchDuckDuckGo, fetchUrlContents as fetchDuckDuckGo } from './duckduckgo-search';
 
 import { exa, isExaAvailable } from '@/lib/exa';
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+// Simple circuit breaker: if EXA starts returning 402 (credits exceeded),
+// stop calling it for a while to reduce noise and latency.
+let exaDisabledUntilMs = 0;
+function canUseExa(): boolean {
+  return Date.now() >= exaDisabledUntilMs;
+}
+
+async function searchWithOpenAIWebSearch(
+  query: string,
+  options: { numResults: number }
+): Promise<{ results: SearchResult[] }> {
+  try {
+    // Use a small, cheap model by default. This is only used to drive the provider-executed
+    // web_search tool; the actual browsing is done on OpenAI's side.
+    const modelName = process.env.OPENAI_WEBSEARCH_MODEL || 'gpt-5-mini';
+
+    const result = await generateText({
+      model: openai(modelName),
+      prompt: query,
+      tools: {
+        web_search: openai.tools.webSearch({
+          externalWebAccess: true,
+          searchContextSize: 'high',
+        }),
+      },
+      toolChoice: { type: 'tool', toolName: 'web_search' },
+      // Keep the assistant answer short; we mainly want sources.
+      providerOptions: { openai: { textVerbosity: 'low' } },
+      maxOutputTokens: 800,
+      maxRetries: 2,
+      abortSignal: AbortSignal.timeout(20_000),
+    });
+
+    const urls = (result.toolResults ?? [])
+      .filter(tr => tr.toolName === 'web_search')
+      .flatMap(tr => {
+        // Tool output is provider-defined; keep it defensive.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const sources = (tr.output as any)?.sources as unknown;
+        if (!Array.isArray(sources)) return [];
+        return sources
+          .map(s => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            const url = (s as any)?.url as unknown;
+            return typeof url === 'string' ? url : null;
+          })
+          .filter((u): u is string => typeof u === 'string' && u.length > 0);
+      });
+
+    const unique = Array.from(new Set(urls)).slice(0, options.numResults);
+    const answerSummary = (result.text || '').trim().slice(0, 3000) || undefined;
+
+    return {
+      results: unique.map(url => {
+        let title = '';
+        try {
+          title = new URL(url).hostname;
+        } catch {
+          title = '';
+        }
+        return {
+          title,
+          url,
+          summary: answerSummary,
+        };
+      }),
+    };
+  } catch (error) {
+    console.error('OpenAI web search error:', error);
+    return { results: [] };
+  }
+}
 
 /**
  * Search results interface
@@ -61,7 +136,7 @@ export async function searchAndContents(
   let exaFailed = false;
 
   // Use EXA if available
-  if (isExaAvailable() && exa) {
+  if (canUseExa() && isExaAvailable() && exa) {
     try {
       exaAttempted = true;
       const exaOptions: Record<string, unknown> = {
@@ -117,7 +192,20 @@ export async function searchAndContents(
     } catch (error) {
       console.error('EXA search error:', error);
       exaFailed = true;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const statusCode = (error as any)?.statusCode as number | undefined;
+      if (statusCode === 402) {
+        exaDisabledUntilMs = Date.now() + 10 * 60_000;
+      }
       // Fall through to DuckDuckGo
+    }
+  }
+
+  // Fallback 1: OpenAI provider-executed web search tool (if available)
+  if (process.env.OPENAI_API_KEY && (exaAttempted ? exaFailed : true)) {
+    const openaiResults = await searchWithOpenAIWebSearch(query, { numResults });
+    if (openaiResults.results.length > 0) {
+      return openaiResults;
     }
   }
 

@@ -1319,8 +1319,18 @@ export async function processPreQualJob(
           currentStep: 'CMS-Matrix erstellen...',
         });
 
+        // Select only the columns this step actually needs. This makes the query resilient
+        // against schema drift (e.g. dev DBs not pushed/migrated yet) and avoids selecting
+        // newer columns that may not exist.
         const cmsTechs = await db
-          .select()
+          .select({
+            id: technologies.id,
+            name: technologies.name,
+            isDefault: technologies.isDefault,
+            pros: technologies.pros,
+            cons: technologies.cons,
+            category: technologies.category,
+          })
           .from(technologies)
           .where(ilike(technologies.category, 'cms'));
 
@@ -1383,11 +1393,25 @@ export async function processPreQualJob(
           pageCount: result.contentVolume?.estimatedPageCount,
           requirements: requirements.map(r => ({ name: r.name, priority: r.priority })),
         };
-        const techLicenseInfos = cmsTechs.map(t => ({
-          id: t.id,
-          annualLicenseCost: t.annualLicenseCost,
-          requiresEnterprise: t.requiresEnterprise,
-        }));
+        // License info is optional context. When the DB schema is not yet pushed/migrated,
+        // these columns might not exist; keep the pipeline resilient by providing defaults.
+        const DEFAULT_LICENSE_BY_CMS: Record<
+          string,
+          { annualLicenseCost: number; requiresEnterprise: boolean }
+        > = {
+          Drupal: { annualLicenseCost: 0, requiresEnterprise: false },
+          Sulu: { annualLicenseCost: 0, requiresEnterprise: false },
+          Ibexa: { annualLicenseCost: 15_000, requiresEnterprise: false },
+          Magnolia: { annualLicenseCost: 30_000, requiresEnterprise: true },
+          FirstSpirit: { annualLicenseCost: 50_000, requiresEnterprise: true },
+        };
+        const techLicenseInfos = cmsTechs.map(t => {
+          const defaults = DEFAULT_LICENSE_BY_CMS[t.name] ?? {
+            annualLicenseCost: 0,
+            requiresEnterprise: false,
+          };
+          return { id: t.id, ...defaults };
+        });
 
         await saveMatrixToRfp(preQualificationId, matrix, licenseCostCtx, techLicenseInfos);
 

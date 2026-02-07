@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { createBatchRagWriteTool } from '@/lib/agent-tools';
 import { webSearchTool, fetchUrlTool } from '@/lib/agent-tools/tools/web-search';
-import { modelNames } from '@/lib/ai/config';
+import { generateStructuredOutput, modelNames } from '@/lib/ai/config';
 import { getProviderForSlot } from '@/lib/ai/providers';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
@@ -361,7 +361,78 @@ WICHTIG:
 
     if (!storedVisualization) {
       console.warn(`[Section:${sectionId}] Agent completed without storing visualization`);
-      return { success: false, error: 'Agent did not create a visualization' };
+
+      // Fallback: Generate a minimal visualization in a single structured call.
+      // This prevents the whole qualification run from failing a section because the
+      // ToolLoopAgent hit the step limit before calling storeVisualization.
+      try {
+        const chunks = await queryRawChunks({
+          preQualificationId,
+          question: sectionQuery,
+          maxResults: 10,
+        });
+
+        const fallback = await generateStructuredOutput({
+          model: 'default',
+          schema: z.object({
+            root: z.string(),
+            elements: z.record(z.string(), jsonRenderElementSchema),
+            confidence: z.number().min(0).max(100),
+          }),
+          system: SECTION_UI_SYSTEM_PROMPT,
+          prompt: [
+            `SectionId: ${sectionId}`,
+            '',
+            'BRIEFING:',
+            sectionQuery,
+            '',
+            'DOKUMENT-KONTEXT (RAG):',
+            chunks.length ? formatRAGContext(chunks) : 'Keine relevanten Informationen gefunden.',
+            '',
+            'AUFGABE:',
+            'Erstelle eine JsonRenderTree Visualisierung (Section -> Paragraph Summary -> 1-2 SubSections).',
+            'Wenn Infos fehlen: explizit benennen, was fehlt, statt zu raten.',
+          ].join('\n'),
+          temperature: 0.2,
+          maxTokens: 1200,
+          timeout: 30_000,
+        });
+
+        if (!fallback.elements[fallback.root]) {
+          throw new Error('Fallback visualization invalid: root element missing');
+        }
+
+        await db.insert(dealEmbeddings).values({
+          pitchId: null,
+          preQualificationId,
+          agentName: 'prequal_section_agent_fallback',
+          chunkType: 'visualization',
+          chunkIndex: 0,
+          chunkCategory: 'elaboration',
+          content: JSON.stringify({ root: fallback.root, elements: fallback.elements }),
+          confidence: fallback.confidence,
+          embedding: null,
+          metadata: JSON.stringify({
+            sectionId,
+            isVisualization: true,
+            elementCount: Object.keys(fallback.elements).length,
+            fallback: true,
+          }),
+        });
+
+        console.warn(
+          `[Section:${sectionId}] Fallback visualization stored (${Object.keys(fallback.elements).length} elements)`
+        );
+        return { success: true };
+      } catch (fallbackError) {
+        return {
+          success: false,
+          error:
+            fallbackError instanceof Error
+              ? `Agent did not create a visualization (fallback failed): ${fallbackError.message}`
+              : 'Agent did not create a visualization (fallback failed)',
+        };
+      }
     }
 
     if (!hasStoredDashboardHighlights) {

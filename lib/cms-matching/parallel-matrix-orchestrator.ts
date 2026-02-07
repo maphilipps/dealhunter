@@ -7,7 +7,7 @@
  * Beispiel: 10 Requirements × 4 CMS = 40 parallele Agents
  */
 
-import { eq } from 'drizzle-orm';
+import { and, eq, gt, inArray } from 'drizzle-orm';
 
 import {
   runRequirementResearchAgent,
@@ -18,8 +18,14 @@ import {
 import type { RequirementMatch, CMSMatchingResult } from './schema';
 
 import { db } from '@/lib/db';
-import { preQualifications, leadScans } from '@/lib/db/schema';
+import { cmsFeatureEvaluations, features, preQualifications, leadScans } from '@/lib/db/schema';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
+
+const CMS_FEATURE_CACHE_TTL_DAYS = 30;
+
+function normalizeFeatureKey(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
 
 /**
  * Matrix Cell: Ein Requirement × CMS Kombination
@@ -192,6 +198,8 @@ export async function runParallelMatrixResearch(
     }
   }
 
+  const featureIdByRequirementKey = new Map<string, string>();
+
   // Check cache first
   if (opts.useCache) {
     emit?.({
@@ -204,14 +212,93 @@ export async function runParallelMatrixResearch(
       },
     });
 
-    for (const cell of allCells) {
-      const cached = await getCachedRequirementResearch(cell.cmsId, cell.requirement);
-      if (cached) {
-        cell.result = cached;
+    const now = new Date();
+
+    // Prefer the dedicated cms_feature_evaluations cache (TTL-based).
+    // Falls back to the legacy technology.features JSON cache if needed.
+    try {
+      const activeFeatureRows = await db
+        .select({ id: features.id, name: features.name, slug: features.slug })
+        .from(features)
+        .where(eq(features.isActive, true));
+
+      const featureIdByName = new Map<string, string>();
+      const featureIdBySlug = new Map<string, string>();
+      for (const f of activeFeatureRows) {
+        featureIdByName.set(normalizeFeatureKey(f.name), f.id);
+        featureIdBySlug.set(normalizeFeatureKey(f.slug), f.id);
+      }
+
+      for (const req of requirements) {
+        const key = normalizeFeatureKey(req.name);
+        const featureId = featureIdByName.get(key) ?? featureIdBySlug.get(key);
+        if (featureId) featureIdByRequirementKey.set(key, featureId);
+      }
+
+      const featureIds = Array.from(new Set(featureIdByRequirementKey.values()));
+      const techIds = cmsOptions.map(c => c.id);
+
+      const cachedRows =
+        featureIds.length > 0 && techIds.length > 0
+          ? await db
+              .select({
+                featureId: cmsFeatureEvaluations.featureId,
+                technologyId: cmsFeatureEvaluations.technologyId,
+                score: cmsFeatureEvaluations.score,
+                reasoning: cmsFeatureEvaluations.reasoning,
+                expiresAt: cmsFeatureEvaluations.expiresAt,
+              })
+              .from(cmsFeatureEvaluations)
+              .where(
+                and(
+                  inArray(cmsFeatureEvaluations.featureId, featureIds),
+                  inArray(cmsFeatureEvaluations.technologyId, techIds),
+                  gt(cmsFeatureEvaluations.expiresAt, now)
+                )
+              )
+          : [];
+
+      const cachedByKey = new Map(
+        cachedRows.map(r => [`${r.featureId}:${r.technologyId}`, r] as const)
+      );
+
+      for (const cell of allCells) {
+        const featureId = featureIdByRequirementKey.get(normalizeFeatureKey(cell.requirement));
+        if (!featureId) {
+          // Legacy fallback
+          const legacy = await getCachedRequirementResearch(cell.cmsId, cell.requirement);
+          if (legacy) {
+            cell.result = legacy;
+            cell.status = 'cached';
+            matrix.metadata.cachedCells++;
+            matrix.metadata.completedCells++;
+          }
+          continue;
+        }
+
+        const cached = cachedByKey.get(`${featureId}:${cell.cmsId}`);
+        if (!cached) continue;
+
+        cell.result = {
+          requirement: cell.requirement,
+          cmsId: cell.cmsId,
+          cmsName: cell.cmsName,
+          score: cached.score,
+          confidence: 60,
+          notes: cached.reasoning || 'Cache-Hit',
+          supported: cached.score >= 60,
+          evidence: [],
+          sources: [],
+          webSearchUsed: false,
+          researchedAt: now.toISOString(),
+          researchDurationMs: 0,
+        };
         cell.status = 'cached';
         matrix.metadata.cachedCells++;
         matrix.metadata.completedCells++;
       }
+    } catch (error) {
+      console.warn('[Matrix] Cache lookup failed, continuing without cache:', error);
     }
 
     if (matrix.metadata.cachedCells > 0) {
@@ -278,6 +365,41 @@ export async function runParallelMatrixResearch(
           cell.result = result;
           cell.status = 'complete';
           matrix.metadata.completedCells++;
+
+          // Persist TTL cache entry keyed by (featureId, technologyId) if the requirement maps to a Feature Library row.
+          if (opts.useCache) {
+            try {
+              const featureId = featureIdByRequirementKey.get(
+                normalizeFeatureKey(cell.requirement)
+              );
+              if (!featureId) return;
+
+              const expiresAt = new Date(
+                Date.now() + CMS_FEATURE_CACHE_TTL_DAYS * 24 * 60 * 60 * 1000
+              );
+              const reasoning = result.notes || result.evidence?.join('; ') || null;
+
+              await db
+                .insert(cmsFeatureEvaluations)
+                .values({
+                  featureId,
+                  technologyId: cell.cmsId,
+                  score: result.score,
+                  reasoning,
+                  expiresAt,
+                })
+                .onConflictDoUpdate({
+                  target: [cmsFeatureEvaluations.featureId, cmsFeatureEvaluations.technologyId],
+                  set: {
+                    score: result.score,
+                    reasoning,
+                    expiresAt,
+                  },
+                });
+            } catch (cacheSaveError) {
+              console.warn('[Matrix] Cache save failed:', cacheSaveError);
+            }
+          }
 
           // Progress update
           const progress = Math.round(

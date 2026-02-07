@@ -28,15 +28,16 @@ jobs:
             set -e
             cd /var/www
 
-            # Check for permission issues
+            # Check for permission issues (writability matters for git, not ownership).
+            # If .git files are group-writable but not owned by deploy, deployment can still succeed.
             echo "🔍 Checking for permission issues..."
-            BAD_FILES=$(find dealhunter/.git -not -user deploy 2>/dev/null | head -5)
-            if [ -n "$BAD_FILES" ]; then
+            if [ ! -w "dealhunter/.git/index" ] || [ ! -w "dealhunter/.git/config" ]; then
               echo ""
-              echo "❌ PERMISSION ERROR: Files in .git are not owned by deploy user"
+              echo "❌ PERMISSION ERROR: Repo is not writable by deploy user"
               echo ""
-              echo "Files with wrong ownership:"
-              echo "$BAD_FILES"
+              echo "Not writable:"
+              [ ! -w "dealhunter/.git/index" ] && echo "  - dealhunter/.git/index"
+              [ ! -w "dealhunter/.git/config" ] && echo "  - dealhunter/.git/config"
               echo ""
               echo "🔧 MANUAL FIX REQUIRED - Run on server as root:"
               echo "   sudo chown -R deploy:deploy /var/www/dealhunter"

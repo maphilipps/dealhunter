@@ -212,85 +212,6 @@ function buildRawInput(
   return rawInputParts.join('\n\n---\n\n');
 }
 
-function extractCustomerNameFromRawInput(rawInput: string): string | null {
-  const match = rawInput.match(/^(Kunde|Customer):\s*(.+)$/im);
-  if (match && match[2]) {
-    return match[2].trim();
-  }
-  return null;
-}
-
-function extractCustomerNameFromText(rawInput: string, fileNames: string[]): string | null {
-  const patterns = [
-    /(?:Auftraggeber|Vergabestelle|Kunde|Customer|Client|Issuer)\s*[:-]\s*(.+)/i,
-    /(?:Organisation|Institution)\s*[:-]\s*(.+)/i,
-    /(?:Issued\s+by|Issue(?:d)?\s+by|Contracting\s+Authority|Procuring\s+Entity|Purchaser|Buyer)\s*[:-]\s*(.+)/i,
-    /(?:Authority\s+Name|Organization\s+Name|Company\s+Name)\s*[:-]\s*(.+)/i,
-    /(?:Request\s+for\s+Proposal|RFP|Tender|Bid)\s+(?:by|from)\s+(.+)/i,
-  ];
-
-  const lines = rawInput
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(Boolean);
-
-  for (const line of lines) {
-    for (const pattern of patterns) {
-      const match = line.match(pattern);
-      if (match && match[1]) {
-        return match[1].trim().replace(/\s{2,}/g, ' ');
-      }
-    }
-  }
-
-  const legalSuffixes = [
-    'GmbH',
-    'AG',
-    'SE',
-    'KG',
-    'KGaA',
-    'GmbH & Co. KG',
-    'gGmbH',
-    'e.V.',
-    'Inc.',
-    'LLC',
-    'Ltd.',
-    'PLC',
-    'Corp.',
-    'Co.',
-    'BV',
-    'NV',
-    'SAS',
-    'SA',
-    'S.A.',
-    'S.p.A.',
-    'SRL',
-    'SARL',
-  ];
-
-  for (const line of lines) {
-    if (legalSuffixes.some(suffix => line.includes(suffix))) {
-      return line.replace(/\s{2,}/g, ' ');
-    }
-  }
-
-  for (const name of fileNames) {
-    const candidate = name
-      .replace(/\.[^.]+$/, '')
-      .split(/[_-]/)[0]
-      ?.trim();
-    if (candidate && candidate.length >= 3) {
-      return candidate;
-    }
-    const acronymMatch = name.match(/\b[A-Z]{2,6}\b/);
-    if (acronymMatch?.[0]) {
-      return acronymMatch[0];
-    }
-  }
-
-  return null;
-}
-
 /**
  * RAG-basierte Kundenname-Extraktion
  * Nutzt semantische Suche um den Auftraggeber zu finden
@@ -335,6 +256,18 @@ ${context}`,
     console.error('[PreQual Worker] RAG customer name inference failed:', error);
     return null;
   }
+}
+
+async function inferCustomerName(
+  preQualificationId: string,
+  rawInput: string,
+  fileNames: string[]
+): Promise<string | null> {
+  // Preferred: RAG (grounded in extracted raw chunks). If empty/unclear, fallback to direct LLM.
+  const fromRag = await inferCustomerNameFromRAG(preQualificationId);
+  if (fromRag) return fromRag;
+
+  return inferCustomerNameWithAI(rawInput, fileNames);
 }
 
 async function inferCustomerNameWithAI(
@@ -663,11 +596,11 @@ export async function processPreQualJob(
 
     if (!extractedRequirements.customerName) {
       const fileNameCandidates = files.map(f => f.name);
-      const inferredCustomer =
-        extractCustomerNameFromRawInput(rawInput) ||
-        extractCustomerNameFromText(rawInput, fileNameCandidates) ||
-        (await inferCustomerNameFromRAG(preQualificationId)) ||
-        (await inferCustomerNameWithAI(rawInput, fileNameCandidates));
+      const inferredCustomer = await inferCustomerName(
+        preQualificationId,
+        rawInput,
+        fileNameCandidates
+      );
 
       if (inferredCustomer) {
         extractedRequirements.customerName = inferredCustomer;

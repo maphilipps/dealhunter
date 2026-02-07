@@ -132,7 +132,7 @@ export async function auditPerformance(
     : `(PageSpeed API nicht verfügbar — Analyse nur auf HTML-Basis)\n\nHTML-Analyse:\n${htmlIndicators}`;
 
   const result = await generateText({
-    model: getModel('fast'),
+    model: await getModel('fast'),
     output: Output.object({ schema: performanceSchema }),
     system: `Du bist ein Web-Performance-Experte. Analysiere die Performance einer Website anhand der bereitgestellten Daten. Gib Core Web Vitals Schätzungen ab und identifiziere Performance-Probleme.`,
     prompt: `Website: ${url}\n\n${context}`,

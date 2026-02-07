@@ -338,7 +338,7 @@ Liste mögliche Timeline-Risiken:
 Antworte AUSSCHLIESSLICH als gültiges JSON, das exakt dem Schema entspricht.`;
 
   const { text } = await generateText({
-    model: getProviderForSlot('quality')(modelNames.quality),
+    model: (await getProviderForSlot('quality'))(modelNames.quality),
     prompt: `${prompt}\n\n${contextDescription}${ragContext}`,
     maxRetries: 2,
     abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),

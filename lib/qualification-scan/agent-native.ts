@@ -21,11 +21,13 @@ import {
 } from './schema';
 import {
   registry,
+  wrapRegistryTools,
   createRagWriteTool,
   createBatchRagWriteTool,
   createVisualizationWriteTool,
 } from '../agent-tools';
 import type { ToolContext } from '../agent-tools';
+import type { WrapOptions } from '../agent-tools/ai-sdk-bridge';
 import { buildAgentContext, formatContextForPrompt } from '../agent-tools/context-builder';
 import { modelNames, defaultSettings, AI_TIMEOUTS } from '../ai/config';
 import { getProviderForSlot } from '../ai/providers';
@@ -91,27 +93,40 @@ export async function runQualificationScanAgentNative(
     },
   });
 
-  const runTool = tool({
-    description:
-      'Run a tool by name with the provided input. Use this for all atomic QualificationScan actions.',
-    inputSchema: z.object({
-      name: z.string(),
-      input: z.object({}).passthrough(),
-    }),
-    execute: async ({ name, input: toolInput }) => {
-      if (mode === 'qualification' && name.startsWith('research.')) {
-        const error = `Tool ${name} is disabled in qualification mode.`;
-        logActivity(`Tool skipped: ${name}`, error);
-        return { success: false, error };
-      }
-      const start = Date.now();
-      logActivity(`Tool start: ${name}`);
-      const result = await registry.execute(name, toolInput, toolContext);
-      const duration = Date.now() - start;
-      logActivity(`Tool complete: ${name}`, `Duration: ${duration}ms`);
-      return result;
+  // Direct tools with proper Zod schemas (replaces meta-tool "runTool")
+  const wrapOptions: WrapOptions = {
+    onExecute: toolName => {
+      logActivity(`Tool start: ${toolName}`);
     },
-  });
+    onResult: (toolName, _result, durationMs) => {
+      logActivity(`Tool complete: ${toolName}`, `Duration: ${durationMs}ms`);
+    },
+  };
+
+  // Core qualification scan tools
+  const coreToolNames = [
+    'qualificationScan.tech_stack_analyze',
+    'qualificationScan.content_volume',
+    'qualificationScan.features_detect',
+    'qualificationScan.playwright_audit',
+    'qualificationScan.seo_audit',
+    'qualificationScan.legal_compliance',
+    'qualificationScan.company_intelligence',
+    'qualificationScan.content_classify',
+    'qualificationScan.migration_analyze_ai',
+    'qualificationScan.recommend_business_line',
+    // Scan primitives
+    'scan.webSearch',
+    'scan.fetchUrl',
+    'scan.rag.query',
+  ];
+
+  // Research tools only in full mode
+  if (mode !== 'qualification') {
+    coreToolNames.push('research.decisionMakers', 'research.contacts.quick');
+  }
+
+  const registryTools = wrapRegistryTools(coreToolNames, toolContext, wrapOptions);
 
   const completeQualificationScan = tool({
     description:
@@ -124,7 +139,7 @@ export async function runQualificationScanAgentNative(
 
   const tools = {
     listTools,
-    runTool,
+    ...registryTools,
     completeQualificationScan,
     ...(input.preQualificationId
       ? {
@@ -145,7 +160,7 @@ export async function runQualificationScanAgentNative(
   };
 
   const agent = new ToolLoopAgent({
-    model: getProviderForSlot('default')(modelNames.default),
+    model: (await getProviderForSlot('default'))(modelNames.default),
     instructions: [
       'You are the QualificationScan agent. Use tools to gather facts and then call completeQualificationScan.',
       'Follow agent-native rules: use tools for actions, do not invent data.',
@@ -158,20 +173,7 @@ export async function runQualificationScanAgentNative(
         : 'Always attempt contacts via research.decisionMakers and research.contacts.quick.',
       'Use scan.webSearch and scan.fetchUrl for external research when needed.',
       'Use scan.rag.query to reuse existing findings for this prequalification.',
-      'Use runTool with these core tools when relevant:',
-      '- qualificationScan.tech_stack_analyze',
-      '- qualificationScan.content_volume',
-      '- qualificationScan.features_detect',
-      '- qualificationScan.playwright_audit',
-      '- qualificationScan.seo_audit',
-      '- qualificationScan.legal_compliance',
-      '- qualificationScan.company_intelligence',
-      '- qualificationScan.content_classify',
-      '- qualificationScan.migration_analyze_ai',
-      '- qualificationScan.recommend_business_line',
-      ...(mode === 'qualification'
-        ? []
-        : ['- research.decisionMakers', '- research.contacts.quick']),
+      'Call tools directly by name (e.g. qualificationScan.tech_stack_analyze, qualificationScan.content_volume).',
       'Use Bid ID for qualificationScan.playwright_audit when available.',
       'Tool results follow { success, data, error }.',
       'Record references by calling storeFinding or storeFindingsBatch when available.',
@@ -189,7 +191,7 @@ export async function runQualificationScanAgentNative(
       ? `Extracted requirements: ${JSON.stringify(input.extractedRequirements)}`
       : 'Extracted requirements: none',
     '',
-    'Use listTools to discover tools. Run tools to gather data. Then call completeQualificationScan.',
+    'Call tools to gather data. Use listTools if you need to discover additional tools. Then call completeQualificationScan.',
     '',
     contextSection ? `Context:\n${contextSection}` : '',
   ]

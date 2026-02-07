@@ -5,8 +5,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from './config';
-const DIRECT_OPENAI_KEY =
-  process.env.OPENAI_DIRECT_API_KEY || process.env.OPENAI_EMBEDDING_API_KEY;
+const DIRECT_OPENAI_KEY = process.env.OPENAI_DIRECT_API_KEY || process.env.OPENAI_EMBEDDING_API_KEY;
 import { getModel, getModelProvider, getModelConfig, type ModelSlot } from './model-config';
 
 /**
@@ -51,14 +50,14 @@ export function getOpenAIProvider() {
  * Get a model instance for a specific slot with dynamic provider selection
  * This is the preferred way to get models - respects per-slot configuration
  */
-export function getModelForSlot(slot: ModelSlot) {
+export async function getModelForSlot(slot: ModelSlot) {
   return getModel(slot);
 }
 
 /**
  * Get the provider function for a slot (for ToolLoopAgent etc.)
  */
-export function getProviderForSlot(slot: ModelSlot) {
+export async function getProviderForSlot(slot: ModelSlot) {
   return getModelProvider(slot);
 }
 

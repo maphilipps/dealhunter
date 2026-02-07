@@ -1,6 +1,6 @@
 import {
-  EMBEDDING_MODEL,
   EMBEDDING_DIMENSIONS,
+  getEmbeddingApiOptions,
   getEmbeddingClient,
 } from '@/lib/ai/embedding-config';
 import type { ExtractedRequirements } from '@/lib/extraction/schema';
@@ -44,17 +44,25 @@ export async function generateRfpEmbedding(requirements: ExtractedRequirements):
     throw new Error('No text available for embedding generation');
   }
 
-  const client = getEmbeddingClient();
+  const client = await getEmbeddingClient();
   if (!client) {
-    throw new Error('OPENAI_EMBEDDING_API_KEY not configured');
+    throw new Error('Embedding provider not configured');
   }
 
-  // Generate embedding via direct OpenAI API
+  const options = await getEmbeddingApiOptions();
   const response = await client.embeddings.create({
-    model: EMBEDDING_MODEL,
+    ...options,
     input: combinedText,
-    dimensions: EMBEDDING_DIMENSIONS,
   });
+
+  // Validate returned dimensions match DB schema
+  const firstDim = response.data[0]?.embedding?.length;
+  if (firstDim && firstDim !== EMBEDDING_DIMENSIONS) {
+    throw new Error(
+      `Dimension mismatch: got ${firstDim}, expected ${EMBEDDING_DIMENSIONS}. ` +
+        `Model "${options.model}" produces incompatible vectors.`
+    );
+  }
 
   return response.data[0].embedding;
 }

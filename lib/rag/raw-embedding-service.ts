@@ -13,7 +13,7 @@ import { eq } from 'drizzle-orm';
 import { chunkRawText, getChunkStats, type RawChunk } from './raw-chunk-service';
 import {
   EMBEDDING_DIMENSIONS,
-  EMBEDDING_MODEL,
+  getEmbeddingApiOptions,
   getEmbeddingClient,
   isEmbeddingEnabled,
 } from '../ai/embedding-config';
@@ -38,7 +38,7 @@ export async function generateRawChunkEmbeddings(
     return [];
   }
 
-  const client = getEmbeddingClient();
+  const client = await getEmbeddingClient();
   if (!client) {
     return null;
   }
@@ -50,11 +50,20 @@ export async function generateRawChunkEmbeddings(
     const batch = chunks.slice(i, i + EMBEDDING_BATCH_SIZE);
     const texts = batch.map(c => c.content);
 
+    const options = await getEmbeddingApiOptions();
     const response = await client.embeddings.create({
-      model: EMBEDDING_MODEL,
+      ...options,
       input: texts,
-      dimensions: EMBEDDING_DIMENSIONS,
     });
+
+    // Validate returned dimensions match DB schema
+    const firstDim = response.data[0]?.embedding?.length;
+    if (firstDim && firstDim !== EMBEDDING_DIMENSIONS) {
+      console.warn(
+        `[RAG-RAW] Dimension mismatch: got ${firstDim}, expected ${EMBEDDING_DIMENSIONS}. Skipping.`
+      );
+      return null;
+    }
 
     for (let j = 0; j < batch.length; j++) {
       results.push({
@@ -90,7 +99,7 @@ export async function embedRawText(
   error?: string;
   skipped?: boolean;
 }> {
-  const embeddingsEnabled = isEmbeddingEnabled();
+  const embeddingsEnabled = await isEmbeddingEnabled();
   const zeroEmbedding = new Array(EMBEDDING_DIMENSIONS).fill(0);
 
   try {

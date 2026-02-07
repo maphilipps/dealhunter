@@ -1,7 +1,11 @@
 import type { RequirementMatch } from './schema';
 
 /**
- * Extracts CMS requirements from Qualification Scan data
+ * Extracts CMS requirements from Qualification Scan data (website-scan fields).
+ *
+ * For document-based qualifications use `runCMSRequirementsAgent()` from
+ * `requirements-agent.ts` instead — it uses AI to extract CMS-relevant
+ * requirements from the extracted document data.
  */
 export function extractRequirementsFromQualificationScan(
   qualificationScanData: Record<string, unknown>

@@ -7,10 +7,14 @@
  * Wird parallel für alle Requirements x CMS Kombinationen ausgeführt.
  */
 
+import { generateText, Output } from 'ai';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 
 import type { RequirementMatch } from './schema';
 
+import { modelNames } from '@/lib/ai/config';
+import { getProviderForSlot } from '@/lib/ai/providers';
 import { db } from '@/lib/db';
 import { technologies } from '@/lib/db/schema';
 // Intelligent tools available for future enhancements
@@ -128,10 +132,105 @@ function generateResearchQueries(cmsName: string, requirement: string): string[]
   return queries.slice(0, 3); // Max 3 Queries
 }
 
+/** Schema for LLM-based feature analysis */
+const featureAnalysisSchema = z.object({
+  score: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe(
+      'Feature support score (0-100). 90-100: excellent native support. 70-89: good support via modules/plugins. 50-69: partial support, workarounds needed. 30-49: limited support. 0-29: not supported or deprecated.'
+    ),
+  confidence: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe('How confident is this assessment based on the available sources (0-100)'),
+  supported: z.boolean().describe('Whether the CMS meaningfully supports this requirement'),
+  notes: z
+    .string()
+    .describe(
+      'Detailed description (at least 3-5 sentences) of HOW the CMS supports this feature: specific modules, configuration steps, limitations, community solutions'
+    ),
+  evidence: z
+    .array(z.string())
+    .max(5)
+    .describe('Up to 5 key evidence bullet points from the research results'),
+});
+
 /**
- * Analysiert Suchergebnisse auf Feature-Unterstützung
+ * Analysiert Suchergebnisse auf Feature-Unterstützung via LLM
  */
-function analyzeResearchResults(
+async function analyzeResearchResults(
+  contents: Array<{ title: string; text: string; url: string }>,
+  cmsName: string,
+  requirement: string
+): Promise<{
+  score: number;
+  confidence: number;
+  supported: boolean;
+  evidence: string[];
+  notes: string;
+}> {
+  try {
+    const provider = await getProviderForSlot('fast');
+    const model = modelNames.fast;
+
+    const sourceSummaries = contents
+      .map((c, i) => `[Source ${i + 1}] ${c.title}\n${c.text.slice(0, 1500)}`)
+      .join('\n\n---\n\n');
+
+    const { output } = await generateText({
+      model: provider(model),
+      output: Output.object({ schema: featureAnalysisSchema }),
+      system: `You are an expert CMS analyst evaluating how well a specific CMS supports a given requirement.
+
+Scoring guidelines (be strict and realistic — not everything deserves a high score):
+- 90-100: Excellent native support, well-documented, large ecosystem, production-proven
+- 70-89: Good support via modules/plugins, works in production, reasonably documented
+- 50-69: Partial support, workarounds needed, or only via external services
+- 30-49: Limited support, significant limitations or complexity
+- 0-29: Not supported, deprecated, or barely functional
+
+When evidence is ambiguous or mixed, assign a score of 40-60 and explain why in the notes.
+
+The notes field MUST contain at least 3-5 sentences with concrete details: specific module/plugin names, configuration requirements, known limitations, and community solutions. Do NOT write generic statements like "supports it well" without specifics.
+
+Write notes in German.`,
+      prompt: `Evaluate how well **${cmsName}** supports the requirement: **${requirement}**
+
+Research results:
+${sourceSummaries}
+
+Provide a realistic assessment based on the evidence above.`,
+      temperature: 0.3,
+      maxOutputTokens: 2000,
+      maxRetries: 2,
+    });
+
+    if (output) {
+      return {
+        score: Math.round(Math.max(0, Math.min(100, output.score))),
+        confidence: Math.round(Math.max(0, Math.min(100, output.confidence))),
+        supported: output.supported,
+        evidence: output.evidence.slice(0, 5),
+        notes: output.notes,
+      };
+    }
+
+    // Output was null — fall through to fallback
+    console.warn('[Requirement Agent] LLM returned null output, using fallback');
+    return analyzeResearchResultsFallback(contents, cmsName, requirement);
+  } catch (error) {
+    console.warn('[Requirement Agent] LLM analysis failed, using fallback:', error);
+    return analyzeResearchResultsFallback(contents, cmsName, requirement);
+  }
+}
+
+/**
+ * Fallback: Regex-basierte Analyse wenn LLM-Call fehlschlaegt
+ */
+function analyzeResearchResultsFallback(
   contents: Array<{ title: string; text: string; url: string }>,
   cmsName: string,
   requirement: string
@@ -147,7 +246,6 @@ function analyzeResearchResults(
     .join(' ')
     .toLowerCase();
 
-  // Positive Signale
   const positivePatterns = [
     { pattern: /built-in|native|out[- ]of[- ]the[- ]box/gi, weight: 3, label: 'Native Support' },
     { pattern: /fully support|comprehensive/gi, weight: 3, label: 'Full Support' },
@@ -157,7 +255,6 @@ function analyzeResearchResults(
     { pattern: /easy|simple|straightforward/gi, weight: 1, label: 'Easy Setup' },
   ];
 
-  // Negative Signale
   const negativePatterns = [
     { pattern: /not support|doesn'?t support|no support/gi, weight: 3, label: 'Not Supported' },
     { pattern: /deprecated|outdated|legacy|obsolete/gi, weight: 3, label: 'Deprecated' },
@@ -171,7 +268,6 @@ function analyzeResearchResults(
   let negativeScore = 0;
   const evidence: string[] = [];
 
-  // Positive Matches
   for (const { pattern, weight, label } of positivePatterns) {
     const matches = allContent.match(pattern);
     if (matches && matches.length > 0) {
@@ -180,7 +276,6 @@ function analyzeResearchResults(
     }
   }
 
-  // Negative Matches
   for (const { pattern, weight, label } of negativePatterns) {
     const matches = allContent.match(pattern);
     if (matches && matches.length > 0) {
@@ -189,7 +284,6 @@ function analyzeResearchResults(
     }
   }
 
-  // Score berechnen
   const totalSignals = positiveScore + negativeScore;
   let score: number;
   let confidence: number;
@@ -200,22 +294,22 @@ function analyzeResearchResults(
     score = 50;
     confidence = 20;
     supported = false;
-    notes = `Keine klaren Informationen zu "${requirement}" in ${cmsName} gefunden`;
+    notes = `Keine klaren Informationen zu "${requirement}" in ${cmsName} gefunden (Fallback-Analyse)`;
   } else if (positiveScore > negativeScore * 1.5) {
     score = Math.min(95, 60 + positiveScore * 3);
     confidence = Math.min(90, 40 + totalSignals * 4);
     supported = true;
-    notes = `${cmsName} unterstützt "${requirement}" gut`;
+    notes = `${cmsName} unterstützt "${requirement}" gut (Fallback-Analyse)`;
   } else if (negativeScore > positiveScore * 1.5) {
     score = Math.max(10, 40 - negativeScore * 3);
     confidence = Math.min(90, 40 + totalSignals * 4);
     supported = false;
-    notes = `${cmsName} hat eingeschränkte Unterstützung für "${requirement}"`;
+    notes = `${cmsName} hat eingeschränkte Unterstützung für "${requirement}" (Fallback-Analyse)`;
   } else {
     score = 50 + (positiveScore - negativeScore) * 3;
     confidence = Math.min(75, 35 + totalSignals * 3);
     supported = positiveScore >= negativeScore;
-    notes = `${cmsName} bietet teilweise Unterstützung für "${requirement}"`;
+    notes = `${cmsName} bietet teilweise Unterstützung für "${requirement}" (Fallback-Analyse)`;
   }
 
   return {
@@ -298,7 +392,7 @@ export async function runRequirementResearchAgent(
     });
 
     // 3. Analyze Results
-    let analysis: ReturnType<typeof analyzeResearchResults>;
+    let analysis: Awaited<ReturnType<typeof analyzeResearchResults>>;
 
     if (allResults.length === 0) {
       analysis = {
@@ -309,7 +403,7 @@ export async function runRequirementResearchAgent(
         notes: `Keine Web-Ergebnisse für "${input.requirement}" in ${input.cmsName}`,
       };
     } else {
-      analysis = analyzeResearchResults(allResults, input.cmsName, input.requirement);
+      analysis = await analyzeResearchResults(allResults, input.cmsName, input.requirement);
     }
 
     // 4. Build Result

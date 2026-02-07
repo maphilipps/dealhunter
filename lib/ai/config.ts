@@ -185,7 +185,7 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
 
   try {
     const { output, usage } = await generateText({
-      model: getProviderForSlot(modelKey)(modelName),
+      model: (await getProviderForSlot(modelKey))(modelName),
       output: Output.object({ schema: options.schema }),
       system: options.system,
       prompt: options.prompt,

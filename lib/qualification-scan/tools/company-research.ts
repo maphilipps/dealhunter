@@ -110,15 +110,16 @@ async function searchCompanyInfo(companyName: string, _websiteUrl: string): Prom
  */
 export async function gatherCompanyIntelligence(
   companyName: string,
-  websiteUrl: string,
+  websiteUrl: string | null,
   html?: string
 ): Promise<CompanyIntelligence> {
-  const sources: string[] = ['Website'];
+  const effectiveWebsiteUrl = websiteUrl && websiteUrl.trim().length > 0 ? websiteUrl : 'unknown';
+  const sources: string[] = [websiteUrl ? 'Website' : 'Web Research'];
 
   // Step 1: Extract from imprint if HTML provided
   let imprintData: ImprintData | null = null;
   if (html) {
-    imprintData = await extractFromImprint(html, websiteUrl);
+    imprintData = await extractFromImprint(html, effectiveWebsiteUrl);
     if (imprintData) {
       sources.push('Impressum');
     }
@@ -134,12 +135,12 @@ export async function gatherCompanyIntelligence(
 
   [searchResults, newsResults, stockData, marketPosition, digitalPresence, techFootprint] =
     await Promise.all([
-      searchCompanyInfo(companyName, websiteUrl),
+      searchCompanyInfo(companyName, effectiveWebsiteUrl),
       searchCompanyNews(companyName),
       searchStockData(companyName, imprintData?.legalForm?.includes('AG') ? undefined : undefined), // Stock symbol from financials if available
       searchMarketPosition(companyName),
-      searchDigitalPresence(companyName, websiteUrl),
-      searchTechFootprint(websiteUrl),
+      searchDigitalPresence(companyName, effectiveWebsiteUrl),
+      websiteUrl ? searchTechFootprint(websiteUrl) : Promise.resolve(undefined),
     ]);
 
   if (searchResults) {
@@ -166,7 +167,7 @@ Antworte immer mit validem JSON ohne Markdown-Code-Blöcke.`;
   const userPrompt = `Analysiere diese Unternehmensinformationen und erstelle ein strukturiertes Profil.
 
 **Unternehmen:** ${companyName}
-**Website:** ${websiteUrl}
+**Website:** ${effectiveWebsiteUrl}
 
 **Impressum-Daten:**
 ${imprintData ? JSON.stringify(imprintData, null, 2) : 'Keine Impressum-Daten verfügbar'}
@@ -199,10 +200,11 @@ Erstelle ein JSON-Objekt mit folgender Struktur:
     "headquarters": "Hauptsitz",
     "employeeCount": "50-100 oder konkrete Zahl",
     "industry": "Branche",
-    "website": "${websiteUrl}"
+    "website": "${effectiveWebsiteUrl}"
   },
   "financials": {
     "revenueClass": "small|medium|large|enterprise|unknown",
+    "revenueEstimate": "z.B. ~50-100M EUR (nur wenn belegt, sonst null)",
     "growthIndicators": ["Wachstumssignale"],
     "publiclyTraded": false,
     "fundingStatus": "Nur für Startups"
@@ -231,6 +233,7 @@ Erstelle ein JSON-Objekt mit folgender Struktur:
     "growthRate": "Wachstumsrate falls bekannt"
   },
   "digitalPresence": {
+    "linkedInCompanyUrl": null,
     "linkedInFollowers": null,
     "glassdoorRating": null,
     "kunuRating": null
@@ -251,7 +254,7 @@ Fülle nur Felder aus, die du aus den Daten belegen kannst. Setze andere auf nul
 
   try {
     const { text } = await generateText({
-      model: getProviderForSlot('research')(modelNames.research),
+      model: (await getProviderForSlot('research'))(modelNames.research),
       system: systemPrompt,
       prompt: userPrompt,
       temperature: 0.2,
@@ -272,7 +275,7 @@ Fülle nur Felder aus, die du aus den Daten belegen kannst. Setze andere auf nul
     if (!rawResult.basicInfo) {
       rawResult.basicInfo = {
         name: companyName,
-        website: websiteUrl,
+        website: effectiveWebsiteUrl,
       };
     }
     if (!rawResult.dataQuality) {
@@ -324,7 +327,7 @@ Fülle nur Felder aus, die du aus den Daten belegen kannst. Setze andere auf nul
         name: imprintData?.companyName || companyName,
         legalForm: imprintData?.legalForm,
         registrationNumber: imprintData?.registrationNumber,
-        website: websiteUrl,
+        website: effectiveWebsiteUrl,
       },
       leadership: imprintData?.ceo ? { ceo: imprintData.ceo } : undefined,
       newsAndReputation:
@@ -413,7 +416,7 @@ async function searchMarketPosition(
  */
 async function searchDigitalPresence(
   companyName: string,
-  websiteUrl: string
+  _websiteUrl: string
 ): Promise<CompanyIntelligence['digitalPresence']> {
   try {
     // Search for employer ratings and social media
@@ -430,6 +433,7 @@ async function searchDigitalPresence(
 
     // Extract ratings from text (AI will handle this in main analysis)
     return {
+      linkedInCompanyUrl: undefined,
       linkedInFollowers: undefined,
       twitterFollowers: undefined,
       glassdoorRating: undefined,
@@ -449,9 +453,16 @@ async function searchTechFootprint(
   websiteUrl: string
 ): Promise<CompanyIntelligence['techFootprint']> {
   try {
+    let hostname: string;
+    try {
+      hostname = new URL(websiteUrl).hostname;
+    } catch {
+      return undefined;
+    }
+
     // Search for technology stack information
     const results = await searchAndContents(
-      `site:${new URL(websiteUrl).hostname} technology stack CRM marketing cloud provider`,
+      `site:${hostname} technology stack CRM marketing cloud provider`,
       { numResults: 2, summary: true }
     );
 

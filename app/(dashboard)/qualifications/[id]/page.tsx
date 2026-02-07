@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 
-import { ProcessingProgressCard } from '@/components/bids/processing-progress-card';
+import { ProcessingChat } from '@/components/qualifications/processing-chat';
 import { DashboardPDFExport, QualificationDashboard } from '@/components/dashboard';
 import { ExportButton } from '@/components/qualification-scan/export-button';
 import { DeleteQualificationButton } from '@/components/qualifications/delete-qualification-button';
@@ -69,7 +69,7 @@ export default async function QualificationOverviewPage({
       </div>
 
       {/* Processing Progress (shown during processing) */}
-      {isProcessing && <ProcessingProgressCard bidId={preQualification.id} />}
+      {isProcessing && <ProcessingChat qualificationId={preQualification.id} />}
 
       {/* Dashboard Content */}
       {!isProcessing && <QualificationDashboard preQualificationId={id} initialSummary={summary} />}

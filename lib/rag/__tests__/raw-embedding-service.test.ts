@@ -11,10 +11,13 @@ import {
 
 // Mock embedding config
 vi.mock('@/lib/ai/embedding-config', () => ({
-  EMBEDDING_MODEL: 'text-embedding-3-large',
   EMBEDDING_DIMENSIONS: 3072,
-  isEmbeddingEnabled: vi.fn(() => true),
-  getEmbeddingClient: vi.fn(() => ({
+  isEmbeddingEnabled: vi.fn(async () => true),
+  getEmbeddingApiOptions: vi.fn(async () => ({
+    model: 'text-embedding-3-large',
+    dimensions: 3072,
+  })),
+  getEmbeddingClient: vi.fn(async () => ({
     embeddings: {
       create: vi.fn(),
     },
@@ -40,14 +43,18 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
-import { getEmbeddingClient, isEmbeddingEnabled } from '@/lib/ai/embedding-config';
+import {
+  getEmbeddingApiOptions,
+  getEmbeddingClient,
+  isEmbeddingEnabled,
+} from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
 
 describe('raw-embedding-service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset to enabled by default
-    vi.mocked(isEmbeddingEnabled).mockReturnValue(true);
+    vi.mocked(isEmbeddingEnabled).mockResolvedValue(true);
   });
 
   describe('generateRawChunkEmbeddings', () => {
@@ -57,8 +64,8 @@ describe('raw-embedding-service', () => {
     });
 
     it('should return null when embeddings are disabled', async () => {
-      vi.mocked(isEmbeddingEnabled).mockReturnValue(true);
-      vi.mocked(getEmbeddingClient).mockReturnValue(null);
+      vi.mocked(isEmbeddingEnabled).mockResolvedValue(true);
+      vi.mocked(getEmbeddingClient).mockResolvedValue(null);
 
       const mockChunks: RawChunk[] = [
         {
@@ -103,8 +110,8 @@ describe('raw-embedding-service', () => {
           }),
         },
       };
-      vi.mocked(getEmbeddingClient).mockReturnValue(
-        mockClient as unknown as ReturnType<typeof getEmbeddingClient>
+      vi.mocked(getEmbeddingClient).mockResolvedValue(
+        mockClient as unknown as Awaited<ReturnType<typeof getEmbeddingClient>>
       );
 
       const result = await generateRawChunkEmbeddings(mockChunks);
@@ -118,6 +125,83 @@ describe('raw-embedding-service', () => {
         input: ['Test content 1', 'Test content 2'],
         dimensions: 3072,
       });
+    });
+
+    it('should omit dimensions for non-OpenAI models', async () => {
+      vi.mocked(getEmbeddingApiOptions).mockResolvedValue({
+        model: 'intfloat/e5-mistral-7b-instruct',
+      });
+
+      const mockChunks: RawChunk[] = [
+        {
+          chunkIndex: 0,
+          content: 'Test content',
+          tokenCount: 100,
+          metadata: { startPosition: 0, endPosition: 100, type: 'paragraph' },
+        },
+      ];
+
+      const mockEmbedding = Array(3072).fill(0.1);
+      const mockClient = {
+        embeddings: {
+          create: vi.fn().mockResolvedValue({
+            data: [{ embedding: mockEmbedding, index: 0 }],
+            model: 'intfloat/e5-mistral-7b-instruct',
+            usage: { prompt_tokens: 10, total_tokens: 10 },
+            object: 'list',
+          }),
+        },
+      };
+      vi.mocked(getEmbeddingClient).mockResolvedValue(
+        mockClient as unknown as Awaited<ReturnType<typeof getEmbeddingClient>>
+      );
+
+      const result = await generateRawChunkEmbeddings(mockChunks);
+
+      expect(result).not.toBeNull();
+      expect(mockClient.embeddings.create).toHaveBeenCalledWith({
+        model: 'intfloat/e5-mistral-7b-instruct',
+        input: ['Test content'],
+      });
+    });
+
+    it('should return null on dimension mismatch', async () => {
+      vi.mocked(getEmbeddingApiOptions).mockResolvedValue({
+        model: 'intfloat/e5-mistral-7b-instruct',
+      });
+
+      const mockChunks: RawChunk[] = [
+        {
+          chunkIndex: 0,
+          content: 'Test content',
+          tokenCount: 100,
+          metadata: { startPosition: 0, endPosition: 100, type: 'paragraph' },
+        },
+      ];
+
+      const wrongDimEmbedding = Array(1024).fill(0.1);
+      const mockClient = {
+        embeddings: {
+          create: vi.fn().mockResolvedValue({
+            data: [{ embedding: wrongDimEmbedding, index: 0 }],
+            model: 'intfloat/e5-mistral-7b-instruct',
+            usage: { prompt_tokens: 10, total_tokens: 10 },
+            object: 'list',
+          }),
+        },
+      };
+      vi.mocked(getEmbeddingClient).mockResolvedValue(
+        mockClient as unknown as Awaited<ReturnType<typeof getEmbeddingClient>>
+      );
+
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const result = await generateRawChunkEmbeddings(mockChunks);
+
+      expect(result).toBeNull();
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Dimension mismatch: got 1024, expected 3072')
+      );
+      consoleSpy.mockRestore();
     });
 
     it('should batch large chunk arrays', async () => {
@@ -146,8 +230,8 @@ describe('raw-embedding-service', () => {
           })),
         },
       };
-      vi.mocked(getEmbeddingClient).mockReturnValue(
-        mockClient as unknown as ReturnType<typeof getEmbeddingClient>
+      vi.mocked(getEmbeddingClient).mockResolvedValue(
+        mockClient as unknown as Awaited<ReturnType<typeof getEmbeddingClient>>
       );
 
       const result = await generateRawChunkEmbeddings(mockChunks);
@@ -174,7 +258,7 @@ describe('raw-embedding-service', () => {
     };
 
     it('should return skipped when embeddings are disabled', async () => {
-      vi.mocked(isEmbeddingEnabled).mockReturnValue(false);
+      vi.mocked(isEmbeddingEnabled).mockResolvedValue(false);
       mockPreQualExists();
       // Use longer text to ensure chunking happens
       const longText = 'Dies ist ein ausführlicher Text für das Embedding. '.repeat(10);
@@ -217,8 +301,8 @@ describe('raw-embedding-service', () => {
           }),
         },
       };
-      vi.mocked(getEmbeddingClient).mockReturnValue(
-        mockClient as unknown as ReturnType<typeof getEmbeddingClient>
+      vi.mocked(getEmbeddingClient).mockResolvedValue(
+        mockClient as unknown as Awaited<ReturnType<typeof getEmbeddingClient>>
       );
 
       const mockInsert = vi.fn(() => ({ values: vi.fn() }));

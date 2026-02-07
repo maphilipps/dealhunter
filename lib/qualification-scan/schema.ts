@@ -445,6 +445,10 @@ export const companyIntelligenceSchema = z.object({
         .enum(['startup', 'small', 'medium', 'large', 'enterprise', 'unknown'])
         .nullish()
         .describe('Revenue class estimation'),
+      revenueEstimate: z
+        .string()
+        .nullish()
+        .describe('Estimated revenue range if available (e.g. "~50-100M EUR")'),
       growthIndicators: z
         .array(z.string())
         .nullish()
@@ -543,6 +547,11 @@ export const companyIntelligenceSchema = z.object({
   // Digital presence & reputation
   digitalPresence: z
     .object({
+      linkedInCompanyUrl: z
+        .string()
+        .url()
+        .nullish()
+        .describe('LinkedIn company page URL if available'),
       linkedInFollowers: z.coerce.number().nullish().describe('LinkedIn company page followers'),
       twitterFollowers: z.coerce.number().nullish().describe('Twitter/X followers'),
       glassdoorRating: z.coerce.number().nullish().describe('Glassdoor rating (0-5)'),

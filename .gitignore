@@ -77,3 +77,6 @@ progress.txt
 # Large presentation files
 *.pptx
 *.PPTX
+
+# Claude settings with potential secrets
+.claude/settings*.json

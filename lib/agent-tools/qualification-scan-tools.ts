@@ -772,6 +772,9 @@ registry.register({
 // Snake_case aliases for naming convention compliance
 registry.alias('research.decision_makers', 'research.decisionMakers');
 registry.alias('research.contacts_quick', 'research.contacts.quick');
+// Convenience aliases for compatibility with older/alternate agent prompts
+registry.alias('techStackAnalysis', 'qualificationScan.tech_stack_analyze');
+registry.alias('research.techStackAnalysis', 'qualificationScan.tech_stack_analyze');
 
 /** Canonical list of all Qualification Scan tool names */
 export const QUALIFICATION_SCAN_TOOLS = [

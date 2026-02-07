@@ -104,7 +104,7 @@ export async function analyzeComponents(
   const pageStructure = extractPageStructure(html);
 
   const result = await generateText({
-    model: getModel('quality'),
+    model: await getModel('quality'),
     output: Output.object({ schema: componentAnalysisSchema }),
     system: `Du bist ein Frontend-Architektur-Experte. Analysiere die Seitenstruktur einer Website und identifiziere alle UI-Komponenten, Content-Typen, Formulare und interaktive Elemente. Bewerte die Komplexität jeder Komponente im Hinblick auf eine CMS-Migration.`,
     prompt: `Website: ${url}\n\nSeitenstruktur:\n${pageStructure}\n\nHTML-Auszug (erste 5000 Zeichen):\n${html.slice(0, 5000)}`,

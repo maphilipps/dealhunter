@@ -209,7 +209,7 @@ export async function ingestAuditToRAG(
   onProgress?: (progress: IngestionProgress) => void
 ): Promise<IngestionResult> {
   // Check if embeddings are enabled
-  if (!isEmbeddingEnabled()) {
+  if (!(await isEmbeddingEnabled())) {
     return {
       success: false,
       pitchId: '',

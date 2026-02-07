@@ -11,7 +11,7 @@ import type { Chunk } from './chunk-service';
 import { chunkAgentOutput } from './chunk-service';
 import {
   EMBEDDING_DIMENSIONS,
-  EMBEDDING_MODEL,
+  getEmbeddingApiOptions,
   getEmbeddingClient,
   isEmbeddingEnabled,
 } from '../ai/embedding-config';
@@ -34,19 +34,27 @@ export async function generateChunkEmbeddings(
     return [];
   }
 
-  const client = getEmbeddingClient();
+  const client = await getEmbeddingClient();
   if (!client) {
     return null;
   }
 
   const texts = chunks.map(c => c.content);
 
-  // Batch-Embedding via OpenAI API
+  const options = await getEmbeddingApiOptions();
   const response = await client.embeddings.create({
-    model: EMBEDDING_MODEL,
+    ...options,
     input: texts,
-    dimensions: EMBEDDING_DIMENSIONS,
   });
+
+  // Validate returned dimensions match DB schema
+  const firstDim = response.data[0]?.embedding?.length;
+  if (firstDim && firstDim !== EMBEDDING_DIMENSIONS) {
+    console.warn(
+      `[RAG] Dimension mismatch: got ${firstDim}, expected ${EMBEDDING_DIMENSIONS}. Skipping.`
+    );
+    return null;
+  }
 
   return chunks.map((chunk, i) => ({
     ...chunk,
@@ -68,7 +76,7 @@ export async function embedAgentOutput(
   output: Record<string, unknown>
 ): Promise<void> {
   // Check if embeddings are enabled
-  if (!isEmbeddingEnabled()) {
+  if (!(await isEmbeddingEnabled())) {
     // Silent skip - expected behavior when not configured
     return;
   }

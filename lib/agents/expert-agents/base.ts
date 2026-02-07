@@ -48,7 +48,7 @@ export async function storeAgentResult(
   content: string,
   metadata?: Record<string, unknown>
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isEmbeddingEnabled()) {
+  if (!(await isEmbeddingEnabled())) {
     return { success: true };
   }
 

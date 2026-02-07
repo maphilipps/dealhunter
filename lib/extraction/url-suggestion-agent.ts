@@ -123,7 +123,7 @@ export async function suggestWebsiteUrls(input: UrlSuggestionInput): Promise<Url
     }
 
     const { text } = await generateText({
-      model: getProviderForSlot('research')(modelNames.research),
+      model: (await getProviderForSlot('research'))(modelNames.research),
       system: `You are an expert business researcher specializing in company identification and web presence analysis.
 
 Your task is to suggest the most likely website URLs for a company or organization based on the provided information.

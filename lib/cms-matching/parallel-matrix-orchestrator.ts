@@ -20,6 +20,7 @@ import type { RequirementMatch, CMSMatchingResult } from './schema';
 import { db } from '@/lib/db';
 import { cmsFeatureEvaluations, features, preQualifications, leadScans } from '@/lib/db/schema';
 import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
+import { runWithConcurrency } from '@/lib/utils/concurrency';
 
 const CMS_FEATURE_CACHE_TTL_DAYS = 30;
 
@@ -78,51 +79,6 @@ export type MatrixEventEmitter = (event: AgentEvent) => void;
  * Concurrency Control für parallele Requests
  */
 const CONCURRENT_AGENTS = 10; // Limit to prevent pool exhaustion
-
-/**
- * Führt Funktionen mit begrenzter Parallelität aus
- */
-async function runWithConcurrency<T, R>(
-  items: T[],
-  fn: (item: T, index: number) => Promise<R>,
-  concurrency: number
-): Promise<R[]> {
-  const results: R[] = [];
-  const executing: Promise<void>[] = [];
-
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-
-    // Create a promise that removes itself from the executing array upon completion
-    let promiseToRemove: Promise<void> | null = null;
-    const promise = (async () => {
-      try {
-        results[i] = await fn(item, i);
-      } finally {
-        // This will be executed when the promise settles (resolves or rejects)
-        // We use a functional approach to remove the specific promise instance
-        if (promiseToRemove) {
-          const index = executing.indexOf(promiseToRemove);
-          if (index !== -1) {
-            void executing.splice(index, 1);
-          }
-        }
-      }
-    })();
-    promiseToRemove = promise;
-    void promise;
-
-    executing.push(promise);
-
-    if (executing.length >= concurrency) {
-      const racePromise = Promise.race(executing);
-      await racePromise;
-    }
-  }
-
-  await Promise.all(executing);
-  return results;
-}
 
 /**
  * Parallel Matrix Orchestrator
@@ -298,7 +254,18 @@ export async function runParallelMatrixResearch(
         matrix.metadata.completedCells++;
       }
     } catch (error) {
-      console.warn('[Matrix] Cache lookup failed, continuing without cache:', error);
+      const msg = error instanceof Error ? error.message : String(error);
+      const isTableMissing =
+        (msg.includes('relation') && msg.includes('does not exist')) ||
+        (msg.includes('features') &&
+          (msg.includes('does not exist') || msg.includes('Failed query')));
+      if (isTableMissing) {
+        console.warn(
+          '[Matrix] Feature-Cache nicht verfügbar (features-Tabelle nicht vorhanden). Fahre ohne Cache fort.'
+        );
+      } else {
+        console.warn('[Matrix] Cache lookup failed, continuing without cache:', msg);
+      }
     }
 
     if (matrix.metadata.cachedCells > 0) {
@@ -454,9 +421,90 @@ export async function runParallelMatrixResearch(
 }
 
 /**
+ * License cost context for score adjustment
+ */
+export interface LicenseCostContext {
+  companySize?: string;
+  pageCount?: number;
+  requirements?: Array<{ name: string; priority: string }>;
+}
+
+/**
+ * Technology license info loaded from DB
+ */
+interface TechnologyLicenseInfo {
+  id: string;
+  annualLicenseCost: number;
+  requiresEnterprise: boolean;
+}
+
+/**
+ * Determines if the project context requires enterprise-grade CMS capabilities.
+ */
+function detectEnterpriseNeed(ctx?: LicenseCostContext): boolean {
+  if (!ctx) return false;
+
+  if (ctx.companySize && ['large', 'enterprise'].includes(ctx.companySize)) return true;
+  if (ctx.pageCount && ctx.pageCount > 500) return true;
+
+  const enterpriseKeywords = ['enterprise', 'multi-site', 'multisite', 'multi-mandant', 'konzern'];
+  if (ctx.requirements) {
+    for (const req of ctx.requirements) {
+      if (req.priority !== 'must-have') continue;
+      const lower = req.name.toLowerCase();
+      if (enterpriseKeywords.some(kw => lower.includes(kw))) return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Calculates license cost score adjustment for a technology.
+ *
+ * - Open-Source (cost=0): +5 bonus
+ * - Freemium (cost<=15k): 0
+ * - Commercial + enterprise needed: 0 (negated)
+ * - Commercial + enterprise NOT needed: -10 to -15 malus
+ */
+function calculateLicenseCostAdjustment(
+  license: TechnologyLicenseInfo,
+  needsEnterprise: boolean
+): { adjustment: number; note: string } {
+  const cost = license.annualLicenseCost;
+
+  if (cost === 0) {
+    return { adjustment: 5, note: 'Open-Source: kein Lizenzkostenrisiko (+5)' };
+  }
+
+  if (cost <= 15000) {
+    return { adjustment: 0, note: `Geringe Lizenzkosten (${cost.toLocaleString('de-DE')} €/Jahr)` };
+  }
+
+  // Commercial CMS with significant cost
+  if (needsEnterprise && license.requiresEnterprise) {
+    return {
+      adjustment: 0,
+      note: `Enterprise-CMS gerechtfertigt: ${cost.toLocaleString('de-DE')} €/Jahr (Enterprise-Anforderungen erkannt)`,
+    };
+  }
+
+  // Penalty scales with cost
+  const malus = cost >= 40000 ? -15 : -10;
+  return {
+    adjustment: malus,
+    note: `Hohe Lizenzkosten: ${cost.toLocaleString('de-DE')} €/Jahr ohne Enterprise-Bedarf (${malus})`,
+  };
+}
+
+/**
  * Konvertiert Matrix zu CMSMatchingResult für Kompatibilität
  */
-export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchingResult {
+export function matrixToCMSMatchingResult(
+  matrix: RequirementMatrix,
+  licenseCostContext?: LicenseCostContext,
+  technologyLicenseInfos?: TechnologyLicenseInfo[]
+): CMSMatchingResult {
   // Group results by requirement
   const requirementsWithScores: RequirementMatch[] = matrix.requirements.map(req => {
     const cmsScores: RequirementMatch['cmsScores'] = {};
@@ -491,6 +539,9 @@ export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchin
   });
 
   // Calculate overall scores per technology
+  const needsEnterprise = detectEnterpriseNeed(licenseCostContext);
+  const licenseMap = new Map((technologyLicenseInfos ?? []).map(t => [t.id, t]));
+
   const comparedTechnologies = matrix.technologies.map(tech => {
     const techCells = matrix.cells.filter(c => c.cmsId === tech.id && c.result);
 
@@ -503,8 +554,22 @@ export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchin
       return sum + (cell.priority === 'must-have' ? 2 : cell.priority === 'should-have' ? 1.5 : 1);
     }, 0);
 
-    const overallScore =
+    let overallScore =
       totalWeight > 0 ? Math.round(weightedScores.reduce((a, b) => a + b, 0) / totalWeight) : 50;
+
+    // Apply license cost adjustment
+    let licenseCostAdjustment: number | undefined;
+    let licenseCostNote: string | undefined;
+
+    const licenseInfo = licenseMap.get(tech.id);
+    if (licenseInfo) {
+      const { adjustment, note } = calculateLicenseCostAdjustment(licenseInfo, needsEnterprise);
+      if (adjustment !== 0) {
+        licenseCostAdjustment = adjustment;
+        overallScore = Math.max(0, Math.min(100, overallScore + adjustment));
+      }
+      licenseCostNote = note;
+    }
 
     // Extract strengths (high scores) and weaknesses (low scores)
     const strengths = techCells
@@ -532,6 +597,8 @@ export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchin
       overallScore,
       strengths: combinedStrengths,
       weaknesses: combinedWeaknesses,
+      licenseCostAdjustment,
+      licenseCostNote,
     };
   });
 
@@ -549,7 +616,7 @@ export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchin
     recommendation: {
       primaryCms: primary?.name || 'Unbekannt',
       reasoning: primary
-        ? `${primary.name} erreicht den höchsten Score (${primary.overallScore}%) basierend auf ${matrix.requirements.length} recherchierten Anforderungen.`
+        ? `${primary.name} erreicht den höchsten Score (${primary.overallScore}%) basierend auf ${matrix.requirements.length} recherchierten Anforderungen.${primary.licenseCostNote ? ` Lizenzkosten: ${primary.licenseCostNote}` : ''}`
         : 'Keine Empfehlung möglich',
       alternativeCms: alternative?.name,
       alternativeReasoning: alternative
@@ -572,7 +639,9 @@ export function matrixToCMSMatchingResult(matrix: RequirementMatrix): CMSMatchin
  */
 export async function saveMatrixToRfp(
   preQualificationId: string,
-  matrix: RequirementMatrix
+  matrix: RequirementMatrix,
+  licenseCostContext?: LicenseCostContext,
+  technologyLicenseInfos?: TechnologyLicenseInfo[]
 ): Promise<void> {
   try {
     // Load linked quick scan ID
@@ -590,7 +659,11 @@ export async function saveMatrixToRfp(
 
     const cmsEvaluation = {
       cmsMatchingMatrix: matrix,
-      cmsMatchingResult: matrixToCMSMatchingResult(matrix),
+      cmsMatchingResult: matrixToCMSMatchingResult(
+        matrix,
+        licenseCostContext,
+        technologyLicenseInfos
+      ),
       generatedAt: new Date().toISOString(),
       source: 'cms-matrix',
     };

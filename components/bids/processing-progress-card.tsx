@@ -141,13 +141,31 @@ export function ProcessingProgressCard({ bidId }: ProcessingProgressCardProps) {
     }
   }, [fetchStatus, isPolling]);
 
+  const [isRetrying, setIsRetrying] = useState(false);
+
   /**
-   * Handle retry button click
+   * Handle retry button click — calls the retry API then restarts polling
    */
-  const handleRetry = () => {
-    setIsPolling(true);
-    setError(null);
-    void fetchStatus();
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    try {
+      const response = await fetch(`/api/qualifications/${bidId}/retry`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        setError(data.error || 'Retry fehlgeschlagen');
+        return;
+      }
+      // Restart polling for the new job
+      setStatus(null);
+      setError(null);
+      setIsPolling(true);
+    } catch {
+      setError('Retry konnte nicht gestartet werden');
+    } finally {
+      setIsRetrying(false);
+    }
   };
 
   // Get current step index
@@ -258,10 +276,11 @@ export function ProcessingProgressCard({ bidId }: ProcessingProgressCardProps) {
               variant="outline"
               size="sm"
               onClick={handleRetry}
+              disabled={isRetrying}
               className="mt-3 border-red-300 text-red-700 hover:bg-red-100"
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Erneut versuchen
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
+              {isRetrying ? 'Wird neu gestartet...' : 'Erneut versuchen'}
             </Button>
           </Alert>
         )}

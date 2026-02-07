@@ -82,6 +82,8 @@ async function seed() {
         baselineName: 'adessoCMS Drupal',
         isDefault: true,
         baselineEntityCounts: JSON.stringify({ contentTypes: 15 }),
+        annualLicenseCost: 0,
+        requiresEnterprise: false,
       },
       {
         name: 'Ibexa',
@@ -89,6 +91,8 @@ async function seed() {
         baselineName: 'Ibexa Standard',
         isDefault: false,
         baselineEntityCounts: JSON.stringify({ contentTypes: 12 }),
+        annualLicenseCost: 15000,
+        requiresEnterprise: false,
       },
       {
         name: 'Sulu',
@@ -96,6 +100,8 @@ async function seed() {
         baselineName: 'Sulu Standard',
         isDefault: false,
         baselineEntityCounts: JSON.stringify({ contentTypes: 10 }),
+        annualLicenseCost: 0,
+        requiresEnterprise: false,
       },
     ];
     for (const tech of phpTechs) {
@@ -116,6 +122,8 @@ async function seed() {
         baselineName: 'Magnolia Enterprise',
         isDefault: true,
         baselineEntityCounts: JSON.stringify({ contentTypes: 14 }),
+        annualLicenseCost: 30000,
+        requiresEnterprise: true,
       },
       {
         name: 'FirstSpirit',
@@ -123,6 +131,8 @@ async function seed() {
         baselineName: 'FirstSpirit Standard',
         isDefault: false,
         baselineEntityCounts: JSON.stringify({ contentTypes: 16 }),
+        annualLicenseCost: 50000,
+        requiresEnterprise: true,
       },
     ];
     for (const tech of wemTechs) {

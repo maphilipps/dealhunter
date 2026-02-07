@@ -37,6 +37,30 @@ export interface RawRAGResult {
 // Using 0.2 - bilingual queries help but still need flexibility
 const SIMILARITY_THRESHOLD = 0.2;
 
+const STOP_WORDS = new Set([
+  'der',
+  'die',
+  'das',
+  'und',
+  'oder',
+  'mit',
+  'für',
+  'von',
+  'auf',
+  'in',
+  'zu',
+  'the',
+  'and',
+  'or',
+  'with',
+  'for',
+  'from',
+  'to',
+  'of',
+  'a',
+  'an',
+]);
+
 /**
  * Calculate cosine similarity between two vectors
  * Returns value between -1 and 1 (1 = identical, 0 = orthogonal, -1 = opposite)
@@ -66,24 +90,77 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
   return dotProduct / (magnitudeA * magnitudeB);
 }
 
+/** Raw chunk shape from the database */
+type DBChunk = {
+  id: string;
+  chunkIndex: number;
+  content: string;
+  tokenCount: number;
+  metadata: string | null;
+  embedding: number[];
+};
+
+/**
+ * Convert a DB chunk + computed similarity into a RawRAGResult.
+ */
+function toRAGResult(chunk: DBChunk, similarity: number): RawRAGResult {
+  const metadata = chunk.metadata
+    ? (JSON.parse(chunk.metadata) as RawRAGResult['metadata'])
+    : { startPosition: 0, endPosition: 0, type: 'unknown' };
+
+  return {
+    chunkId: chunk.id,
+    chunkIndex: chunk.chunkIndex,
+    content: chunk.content,
+    similarity,
+    tokenCount: chunk.tokenCount,
+    metadata,
+  };
+}
+
+/**
+ * Keyword-based matching as fallback when embedding-based search is unavailable.
+ * Scores chunks by the fraction of query terms found in each chunk.
+ */
+function keywordMatchChunks(
+  chunks: DBChunk[],
+  question: string,
+  maxResults: number
+): RawRAGResult[] {
+  const terms = question
+    .toLowerCase()
+    .split(/[^a-z0-9äöüß]+/i)
+    .filter(term => term.length > 2 && !STOP_WORDS.has(term));
+
+  const scored = chunks.map(chunk => {
+    const content = chunk.content.toLowerCase();
+    let score = 0;
+    for (const term of terms) {
+      if (content.includes(term)) score++;
+    }
+    const similarity = terms.length > 0 ? score / terms.length : 0;
+    return toRAGResult(chunk, similarity);
+  });
+
+  return scored
+    .filter(r => r.similarity > 0)
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, maxResults);
+}
+
 /**
  * Query raw document chunks for relevant content
  *
  * Strategy:
- * 1. Check if embeddings are enabled
- * 2. Generate embedding for query
- * 3. Fetch all raw chunks for this qualification
- * 4. Calculate cosine similarity for each chunk
- * 5. Filter by threshold (>0.7)
- * 6. Sort by similarity DESC
- * 7. Return top N results
+ * 1. Fetch all raw chunks for this qualification
+ * 2. If embeddings disabled or query embedding fails → keyword fallback
+ * 3. Otherwise: cosine similarity with threshold + keyword fallback if no results
  *
  * @param query - The RAG query parameters
  * @returns Array of relevant chunks sorted by similarity
  */
 export async function queryRawChunks(query: RawRAGQuery): Promise<RawRAGResult[]> {
   try {
-    // 2. Fetch all raw chunks for this qualification
     const chunks = await db
       .select()
       .from(rawChunks)
@@ -93,168 +170,46 @@ export async function queryRawChunks(query: RawRAGQuery): Promise<RawRAGResult[]
       return [];
     }
 
-    const embeddingsEnabled = isEmbeddingEnabled();
+    const maxResults = query.maxResults || 5;
+    const embeddingsEnabled = await isEmbeddingEnabled();
 
     if (!embeddingsEnabled) {
-      const stopWords = new Set([
-        'der',
-        'die',
-        'das',
-        'und',
-        'oder',
-        'mit',
-        'für',
-        'von',
-        'auf',
-        'in',
-        'zu',
-        'the',
-        'and',
-        'or',
-        'with',
-        'for',
-        'from',
-        'to',
-        'of',
-        'in',
-        'a',
-        'an',
-      ]);
-      const terms = query.question
-        .toLowerCase()
-        .split(/[^a-z0-9äöüß]+/i)
-        .filter(term => term.length > 2 && !stopWords.has(term));
-
-      const scored = chunks.map(chunk => {
-        const content = chunk.content.toLowerCase();
-        let score = 0;
-        for (const term of terms) {
-          if (content.includes(term)) score++;
-        }
-        const similarity = terms.length > 0 ? score / terms.length : 0;
-        const metadata = chunk.metadata
-          ? (JSON.parse(chunk.metadata) as RawRAGResult['metadata'])
-          : { startPosition: 0, endPosition: 0, type: 'unknown' };
-
-        return {
-          chunkId: chunk.id,
-          chunkIndex: chunk.chunkIndex,
-          content: chunk.content,
-          similarity,
-          tokenCount: chunk.tokenCount,
-          metadata,
-        };
-      });
-
-      const filtered = scored.filter(result => result.similarity > 0);
-      filtered.sort((a, b) => b.similarity - a.similarity);
-      return filtered.slice(0, query.maxResults || 5);
+      return keywordMatchChunks(chunks, query.question, maxResults);
     }
 
-    // 1. Generate query embedding
+    // Generate query embedding — falls back to keywords if this fails
     const queryEmbedding = await generateQueryEmbedding(query.question);
 
     if (!queryEmbedding) {
-      return [];
+      console.warn('[RAG-RAW] Query embedding failed, falling back to keyword matching');
+      return keywordMatchChunks(chunks, query.question, maxResults);
     }
 
-    // 3. Calculate similarity for each chunk
+    // Calculate similarity for each chunk
     const allResults = chunks.map(chunk => {
-      const chunkEmbedding = chunk.embedding;
-      const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
-
-      const metadata = chunk.metadata
-        ? (JSON.parse(chunk.metadata) as RawRAGResult['metadata'])
-        : { startPosition: 0, endPosition: 0, type: 'unknown' };
-
-      return {
-        chunkId: chunk.id,
-        chunkIndex: chunk.chunkIndex,
-        content: chunk.content,
-        similarity,
-        tokenCount: chunk.tokenCount,
-        metadata,
-      };
+      const similarity = cosineSimilarity(queryEmbedding, chunk.embedding);
+      return toRAGResult(chunk, similarity);
     });
 
     // Sort all results for logging
     allResults.sort((a, b) => b.similarity - a.similarity);
 
-    // Debug: Log top similarities
     const topSimilarities = allResults.slice(0, 3).map(r => r.similarity.toFixed(3));
     console.log(
       `[RAG-RAW] Query "${query.question.substring(0, 30)}..." - Top similarities: [${topSimilarities.join(', ')}], Threshold: ${SIMILARITY_THRESHOLD}`
     );
 
-    // 4. Filter by threshold
+    // Filter by threshold (order preserved from sort above)
     const resultsWithSimilarity = allResults.filter(
       result => result.similarity > SIMILARITY_THRESHOLD
     );
 
-    // 5. Sort by similarity DESC
-    resultsWithSimilarity.sort((a, b) => b.similarity - a.similarity);
-
-    // 6. Return top N results
-    const maxResults = query.maxResults || 5;
     if (resultsWithSimilarity.length > 0) {
       return resultsWithSimilarity.slice(0, maxResults);
     }
 
     // Fallback: keyword match when semantic search yields nothing
-    const stopWords = new Set([
-      'der',
-      'die',
-      'das',
-      'und',
-      'oder',
-      'mit',
-      'für',
-      'von',
-      'auf',
-      'in',
-      'zu',
-      'the',
-      'and',
-      'or',
-      'with',
-      'for',
-      'from',
-      'to',
-      'of',
-      'in',
-      'a',
-      'an',
-    ]);
-    const terms = query.question
-      .toLowerCase()
-      .split(/[^a-z0-9äöüß]+/i)
-      .filter(term => term.length > 2 && !stopWords.has(term));
-
-    const fallback = chunks
-      .map(chunk => {
-        const content = chunk.content.toLowerCase();
-        let score = 0;
-        for (const term of terms) {
-          if (content.includes(term)) score++;
-        }
-        const similarity = terms.length > 0 ? score / terms.length : 0;
-        const metadata = chunk.metadata
-          ? (JSON.parse(chunk.metadata) as RawRAGResult['metadata'])
-          : { startPosition: 0, endPosition: 0, type: 'unknown' };
-
-        return {
-          chunkId: chunk.id,
-          chunkIndex: chunk.chunkIndex,
-          content: chunk.content,
-          similarity,
-          tokenCount: chunk.tokenCount,
-          metadata,
-        };
-      })
-      .filter(result => result.similarity > 0)
-      .sort((a, b) => b.similarity - a.similarity);
-
-    return fallback.slice(0, maxResults);
+    return keywordMatchChunks(chunks, query.question, maxResults);
   } catch (error) {
     console.error('[RAG-RAW] Query failed:', error);
     return [];
@@ -275,16 +230,7 @@ export async function queryMultipleTopics(
 ): Promise<Map<string, RawRAGResult[]>> {
   const results = new Map<string, RawRAGResult[]>();
 
-  // Check if embeddings are enabled first
-  if (!isEmbeddingEnabled()) {
-    // Return empty map for all topics
-    for (const { topic } of topics) {
-      results.set(topic, []);
-    }
-    return results;
-  }
-
-  // Run queries in parallel
+  // Run queries in parallel (queryRawChunks handles embedding fallback internally)
   const queries = topics.map(async ({ topic, maxResults }) => {
     const topicResults = await queryRawChunks({
       preQualificationId,

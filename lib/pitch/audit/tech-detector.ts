@@ -109,7 +109,7 @@ export async function detectTechStack(
   const indicators = extractTechIndicators(page.html, page.headers);
 
   const result = await generateText({
-    model: getModel('fast'),
+    model: await getModel('fast'),
     output: Output.object({ schema: techStackSchema }),
     system: `Du bist ein Website-Technologie-Experte. Analysiere die technischen Indikatoren einer Website und identifiziere den Tech-Stack.`,
     prompt: `Website: ${url}\n\nTechnische Indikatoren:\n${indicators}`,

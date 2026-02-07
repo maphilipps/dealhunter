@@ -63,6 +63,8 @@ export const cmsMatchingResultSchema = z.object({
       overallScore: z.number().min(0).max(100),
       strengths: z.array(z.string()),
       weaknesses: z.array(z.string()),
+      licenseCostAdjustment: z.number().optional().describe('Score-Anpassung durch Lizenzkosten'),
+      licenseCostNote: z.string().optional().describe('Erklärung zur Lizenzkosten-Bewertung'),
     })
   ),
 

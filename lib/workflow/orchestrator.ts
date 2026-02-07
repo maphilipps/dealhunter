@@ -438,6 +438,7 @@ function getStatusLabel(status: PreQualificationStatus): string {
     notified: 'Team benachrichtigt',
     handed_off: 'Übergeben',
     analysis_complete: 'Analyse abgeschlossen',
+    completed: 'Abgeschlossen',
   };
 
   return labels[status] || status;

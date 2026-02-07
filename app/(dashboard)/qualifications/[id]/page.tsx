@@ -23,7 +23,7 @@ export default async function QualificationOverviewPage({
   }
 
   // Get qualification data (cached - shares query with layout)
-  const { preQualification } = await getCachedPreQualificationWithRelations(id);
+  const { preQualification, qualificationScan } = await getCachedPreQualificationWithRelations(id);
 
   if (!preQualification) {
     notFound();
@@ -45,6 +45,8 @@ export default async function QualificationOverviewPage({
   }
 
   const isProcessing = isProcessingState(preQualification.status);
+  const isScanCompleted =
+    preQualification.status === 'completed' && qualificationScan?.status === 'completed';
   const deleteLabel = summary?.headline || preQualification.id;
 
   return (
@@ -60,8 +62,8 @@ export default async function QualificationOverviewPage({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {!isProcessing && <ExportButton qualificationId={id} />}
-          {!isProcessing && <DashboardPDFExport />}
+          {isScanCompleted && <ExportButton qualificationId={id} />}
+          {isScanCompleted && <DashboardPDFExport />}
           <DeleteQualificationButton preQualificationId={id} label={deleteLabel} />
         </div>
       </div>

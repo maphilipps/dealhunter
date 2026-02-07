@@ -389,7 +389,7 @@ async function detectFeaturesWithAgent(websiteData: WebsiteData): Promise<Featur
     return detectFeatures(websiteData);
   }
 
-  const model = getModelForSlot('fast');
+  const model = await getModelForSlot('fast');
 
   const schema = z.object({
     matches: z

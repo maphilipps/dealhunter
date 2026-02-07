@@ -17,15 +17,76 @@ import { z } from 'zod';
 import { getModelForSlot } from '@/lib/ai/providers';
 import { runPreQualSectionAgent } from '@/lib/json-render/prequal-section-agent';
 import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
+import { runWithConcurrency } from '@/lib/utils/concurrency';
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES & SCHEMAS
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * 7 BD-Fragen als Section-IDs
+ * 7 BD-Fragen als Section-Definitionen (Single Source of Truth)
  */
-export const SECTION_IDS = [
+export const SECTION_DEFINITIONS = [
+  {
+    id: 'budget' as const,
+    label: 'Budget & Laufzeit',
+    question:
+      'Welche Budgetangaben, Kostenrahmen, Laufzeiten und finanziellen Rahmenbedingungen nennt die Ausschreibung?',
+    topics:
+      'Budget, Kostenrahmen, Preisobergrenzen, Verguetung, Laufzeit, Rahmenbedingungen, Wirtschaftlichkeit',
+  },
+  {
+    id: 'timing' as const,
+    label: 'Zeitplan & Fristen',
+    question:
+      'Welche Fristen, Meilensteine, Abgabedaten, Projektlaufzeiten und Zeitplaene nennt die Ausschreibung?',
+    topics:
+      'Fristen, Termine, Abgabefrist, Angebotsfrist, Projektlaufzeit, Meilensteine, Zeitplan, Liefertermine',
+  },
+  {
+    id: 'contracts' as const,
+    label: 'Vertragsbedingungen',
+    question:
+      'Welche Vertragsbedingungen, Vertragstypen (z.B. EVB-IT, Werk/Dienst), SLAs und rechtlichen Rahmenbedingungen nennt die Ausschreibung?',
+    topics:
+      'Vertrag, EVB-IT, Werkvertrag, Dienstvertrag, SLA, Haftung, Datenschutz, Vertragsbedingungen, AGB',
+  },
+  {
+    id: 'deliverables' as const,
+    label: 'Leistungen & Deliverables',
+    question:
+      'Welche konkreten Leistungen, Liefergegenstaende und Ergebnisse werden gefordert (Scope, Anforderungen, technische Lieferobjekte)?',
+    topics:
+      'Leistungen, Liefergegenstaende, Deliverables, Anforderungen, Scope, Pflichtenheft, technische Anforderungen',
+  },
+  {
+    id: 'references' as const,
+    label: 'Referenzen & Eignung',
+    question:
+      'Welche Referenzen, Erfahrung, Eignungsnachweise oder vergleichbare Projekte werden verlangt?',
+    topics:
+      'Referenzen, Eignung, Nachweise, Zertifikate, Erfahrung, vergleichbare Projekte, Mindestanforderungen',
+  },
+  {
+    id: 'award-criteria' as const,
+    label: 'Zuschlagskriterien',
+    question:
+      'Welche Zuschlagskriterien und Bewertungskriterien nennt die Ausschreibung (Gewichtung, Punkte, qualitative Kriterien)?',
+    topics:
+      'Zuschlagskriterien, Bewertungskriterien, Gewichtung, Punkte, Kriterienkatalog, Bewertungssystem',
+  },
+  {
+    id: 'offer-structure' as const,
+    label: 'Angebotsstruktur',
+    question:
+      'Welche Angebotsstruktur und welche Inhalte/Unterlagen muessen im Angebot geliefert werden (Gliederung, Formulare, Nachweise, Konzepte)?',
+    topics:
+      'Angebotsstruktur, Angebotsunterlagen, Formulare, Inhalte, Gliederung, einzureichende Dokumente',
+  },
+] as const;
+
+// Derived from SECTION_DEFINITIONS for backward compatibility
+export const SECTION_IDS = SECTION_DEFINITIONS.map(s => s.id) as unknown as readonly [
   'budget',
   'timing',
   'contracts',
@@ -33,8 +94,7 @@ export const SECTION_IDS = [
   'references',
   'award-criteria',
   'offer-structure',
-] as const;
-
+];
 export type SectionId = (typeof SECTION_IDS)[number];
 
 /**
@@ -134,56 +194,6 @@ export interface OrchestratorResult {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CONCURRENCY HELPER
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Führt Funktionen mit begrenzter Parallelität aus
- * (kopiert von lib/cms-matching/parallel-matrix-orchestrator.ts)
- */
-async function runWithConcurrency<T, R>(
-  items: T[],
-  fn: (item: T, index: number) => Promise<R>,
-  concurrency: number
-): Promise<R[]> {
-  const results: R[] = [];
-  const executing: Promise<void>[] = [];
-
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-
-    // Create a promise that removes itself from the executing array upon completion
-    let promiseToRemove: Promise<void> | null = null;
-    const promise = (async () => {
-      try {
-        results[i] = await fn(item, i);
-      } finally {
-        // This will be executed when the promise settles (resolves or rejects)
-        // We use a functional approach to remove the specific promise instance
-        if (promiseToRemove) {
-          const index = executing.indexOf(promiseToRemove);
-          if (index !== -1) {
-            void executing.splice(index, 1);
-          }
-        }
-      }
-    })();
-    promiseToRemove = promise;
-    void promise;
-
-    executing.push(promise);
-
-    if (executing.length >= concurrency) {
-      const racePromise = Promise.race(executing);
-      await racePromise;
-    }
-  }
-
-  await Promise.all(executing);
-  return results;
-}
-
-// ═══════════════════════════════════════════════════════════════
 // ORCHESTRATOR
 // ═══════════════════════════════════════════════════════════════
 
@@ -202,7 +212,7 @@ async function planSectionExecution(preQualificationId: string): Promise<Orchest
 
   const previewContext = formatRAGContext(previewChunks);
 
-  const model = getModelForSlot('default');
+  const model = await getModelForSlot('default');
 
   const { output: plan } = await generateText({
     model,
@@ -270,6 +280,9 @@ async function executeSectionWorker(
     });
 
     if (!result.success) {
+      console.error(
+        `[Worker:${sectionId}] Fehlgeschlagen: ${result.error || 'Unbekannter Fehler'}`
+      );
       return {
         sectionId,
         success: false,
@@ -373,27 +386,12 @@ async function evaluateSectionResult(
     reasoning: 'Section erfolgreich abgeschlossen',
   };
 
-  const sectionQuestion: Record<SectionId, string> = {
-    budget:
-      'Welche Budgetangaben, Kostenrahmen, Laufzeiten und finanziellen Rahmenbedingungen nennt die Ausschreibung?',
-    timing:
-      'Welche Fristen, Meilensteine, Abgabedaten, Projektlaufzeiten und Zeitplaene nennt die Ausschreibung?',
-    contracts:
-      'Welche Vertragsbedingungen, Vertragstypen (z.B. EVB-IT, Werk/Dienst), SLAs und rechtlichen Rahmenbedingungen nennt die Ausschreibung?',
-    deliverables:
-      'Welche konkreten Leistungen, Liefergegenstaende und Ergebnisse werden gefordert (Scope, Anforderungen, technische Lieferobjekte)?',
-    references:
-      'Welche Referenzen, Erfahrung, Eignungsnachweise oder vergleichbare Projekte werden verlangt?',
-    'award-criteria':
-      'Welche Zuschlagskriterien und Bewertungskriterien nennt die Ausschreibung (Gewichtung, Punkte, qualitative Kriterien)?',
-    'offer-structure':
-      'Welche Angebotsstruktur und welche Inhalte/Unterlagen muessen im Angebot geliefert werden (Gliederung, Formulare, Nachweise, Konzepte)?',
-  };
+  const def = SECTION_DEFINITIONS.find(d => d.id === result.sectionId)!;
 
   try {
     const chunks = await queryRawChunks({
       preQualificationId,
-      question: sectionQuestion[result.sectionId],
+      question: def.question,
       maxResults: 8,
     });
 
@@ -410,7 +408,7 @@ async function evaluateSectionResult(
     }
 
     const context = formatRAGContext(chunks);
-    const model = getModelForSlot('fast');
+    const model = await getModelForSlot('fast');
 
     const { output } = await generateText({
       model,
@@ -456,24 +454,20 @@ async function generateBidDecision(
   const successRate = results.filter(r => r.success).length / results.length;
   const failedSections = results.filter(r => !r.success);
 
-  const model = getModelForSlot('quality');
+  // If all sections failed, don't generate a false no-bid decision
+  if (successRate === 0) {
+    return {
+      recommendation: 'conditional-bid' as const,
+      confidence: 10,
+      reasoning:
+        'Alle Section-Analysen fehlgeschlagen — Verarbeitungsfehler, keine inhaltliche Bewertung möglich.',
+      strengths: [],
+      weaknesses: ['Verarbeitungsfehler: Keine Section-Analyse konnte durchgeführt werden'],
+      conditions: ['Dokument erneut verarbeiten nach Fehlerbehebung'],
+    };
+  }
 
-  const sectionTopics: Record<SectionId, string> = {
-    budget:
-      'Budget, Kostenrahmen, Preisobergrenzen, Verguetung, Laufzeit, Rahmenbedingungen, Wirtschaftlichkeit',
-    timing:
-      'Fristen, Termine, Abgabefrist, Angebotsfrist, Projektlaufzeit, Meilensteine, Zeitplan, Liefertermine',
-    contracts:
-      'Vertrag, EVB-IT, Werkvertrag, Dienstvertrag, SLA, Haftung, Datenschutz, Vertragsbedingungen, AGB',
-    deliverables:
-      'Leistungen, Liefergegenstaende, Deliverables, Anforderungen, Scope, Pflichtenheft, technische Anforderungen',
-    references:
-      'Referenzen, Eignung, Nachweise, Zertifikate, Erfahrung, vergleichbare Projekte, Mindestanforderungen',
-    'award-criteria':
-      'Zuschlagskriterien, Bewertungskriterien, Gewichtung, Punkte, Kriterienkatalog, Bewertungssystem',
-    'offer-structure':
-      'Angebotsstruktur, Angebotsunterlagen, Formulare, Inhalte, Gliederung, einzureichende Dokumente',
-  };
+  const model = await getModelForSlot('quality');
 
   const sectionSummarySchema = z.object({
     summary: z.string().describe('Kurze, faktenorientierte Zusammenfassung (max. ca. 6-10 Saetze)'),
@@ -486,13 +480,14 @@ async function generateBidDecision(
     confidence: z.number().min(0).max(100).describe('Konfidenz in Prozent (0-100)'),
   });
 
-  const fastModel = getModelForSlot('fast');
+  const fastModel = await getModelForSlot('fast');
 
   const sectionSummaries = await Promise.all(
     SECTION_IDS.map(async sectionId => {
+      const def = SECTION_DEFINITIONS.find(d => d.id === sectionId)!;
       const chunks = await queryRawChunks({
         preQualificationId,
-        question: sectionTopics[sectionId],
+        question: def.topics,
         maxResults: 6,
       });
 
@@ -710,7 +705,10 @@ export async function runPreQualSectionOrchestrator(
       success: false,
       completedSections: 0,
       failedSections: [],
-      error: error instanceof Error ? error.message : 'Unbekannter Fehler',
+      error:
+        error instanceof Error
+          ? error.message || error.constructor.name
+          : String(error) || 'Unbekannter Fehler',
     };
   }
 }

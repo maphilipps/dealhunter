@@ -64,6 +64,16 @@ export const QUALIFICATION_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
     ],
   },
   {
+    id: 'customer',
+    label: 'Kundenprofil',
+    icon: 'Building',
+    route: 'customer',
+    ragQueryTemplate:
+      'Provide a concise customer profile including key decision makers (with LinkedIn), business signals (size/revenue where available), and the current tech stack.',
+    synthesizerAgent: 'customer-synthesizer',
+    collapsed: false,
+  },
+  {
     id: 'qualification-scan',
     label: 'Qualification Scan',
     icon: 'ScanSearch',

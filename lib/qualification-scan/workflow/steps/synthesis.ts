@@ -26,6 +26,7 @@ export interface SynthesisInput {
   features: Features;
   businessUnits: BusinessUnit[];
   extractedRequirements?: unknown;
+  cmsRecommendation?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -71,6 +72,8 @@ Features:
 - API Integration: ${input.features.api ? 'Ja' : 'Nein'}
 
 ${input.extractedRequirements ? `Anforderungen aus Dokument: ${JSON.stringify(input.extractedRequirements)}` : ''}
+
+${input.cmsRecommendation ? `Das empfohlene CMS ist: ${input.cmsRecommendation}. Berücksichtige diese CMS-Empfehlung bei der Business-Line-Zuordnung.` : ''}
 
 Empfehle die passende Business Line mit Begründung.`;
 

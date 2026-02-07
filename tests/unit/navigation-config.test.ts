@@ -13,13 +13,14 @@ import {
 
 describe('navigation-config', () => {
   describe('QUALIFICATION_NAVIGATION_SECTIONS', () => {
-    it('should have 7 sections', () => {
-      expect(QUALIFICATION_NAVIGATION_SECTIONS).toHaveLength(7);
+    it('should have 8 sections', () => {
+      expect(QUALIFICATION_NAVIGATION_SECTIONS).toHaveLength(8);
     });
 
     it('should have all required section IDs', () => {
       const expectedIds = [
         'overview',
+        'customer',
         'qualification-scan',
         'pitch-scan',
         'calc-sheet',
@@ -159,9 +160,9 @@ describe('navigation-config', () => {
   });
 
   describe('getAllSections', () => {
-    it('should return all 7 sections', () => {
+    it('should return all 8 sections', () => {
       const sections = getAllSections();
-      expect(sections).toHaveLength(7);
+      expect(sections).toHaveLength(8);
     });
 
     it('should return the same reference as QUALIFICATION_NAVIGATION_SECTIONS', () => {
@@ -171,18 +172,18 @@ describe('navigation-config', () => {
   });
 
   describe('getAllSectionIds', () => {
-    it('should return array of 7 section IDs', () => {
+    it('should return array of 8 section IDs', () => {
       const ids = getAllSectionIds();
-      expect(ids).toHaveLength(7);
+      expect(ids).toHaveLength(8);
     });
 
     it('should return correct IDs in order', () => {
       const ids = getAllSectionIds();
       expect(ids[0]).toBe('overview');
-      expect(ids[1]).toBe('qualification-scan');
-      expect(ids[2]).toBe('pitch-scan');
-      expect(ids[3]).toBe('calc-sheet');
-      expect(ids[4]).toBe('decision');
+      expect(ids[1]).toBe('customer');
+      expect(ids[2]).toBe('qualification-scan');
+      expect(ids[3]).toBe('pitch-scan');
+      expect(ids[4]).toBe('calc-sheet');
     });
 
     it('should match the IDs from QUALIFICATION_NAVIGATION_SECTIONS', () => {

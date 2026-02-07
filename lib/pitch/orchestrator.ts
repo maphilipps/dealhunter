@@ -139,7 +139,7 @@ ${Object.entries(checkpoint.agentResults)
 
   // Create the ToolLoopAgent
   const agent = new ToolLoopAgent({
-    model: getModel('quality'),
+    model: await getModel('quality'),
     instructions: ORCHESTRATOR_SYSTEM_PROMPT,
     tools,
     stopWhen: stepCountIs(50),

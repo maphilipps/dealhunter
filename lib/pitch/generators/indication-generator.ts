@@ -24,7 +24,7 @@ export async function generateIndication(params: {
 
   try {
     const result = await generateText({
-      model: getModel('quality'),
+      model: await getModel('quality'),
       output: Output.object({ schema: indicationDocumentSchema }),
       system: `Du bist ein Senior-Berater bei adesso und erstellst eine professionelle Indikation (erste Einschätzung) für ein Website-Relaunch-Projekt.
 

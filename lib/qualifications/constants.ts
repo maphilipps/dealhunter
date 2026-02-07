@@ -7,6 +7,11 @@ export const PROCESSING_STATES = [
   'extracting',
   'qualification_scanning',
   'duplicate_warning',
+  // Failed states — show ProcessingProgressCard with error + retry
+  'extraction_failed',
+  'duplicate_check_failed',
+  'qualification_scan_failed',
+  'timeline_failed',
 ] as const;
 
 export type ProcessingState = (typeof PROCESSING_STATES)[number];

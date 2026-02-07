@@ -8,6 +8,7 @@ import {
   Award,
   Trophy,
   Grid3X3,
+  Building2,
   CheckCircle2,
   type LucideIcon,
 } from 'lucide-react';
@@ -37,6 +38,7 @@ export interface QualificationScanDataAvailability {
   hasTechStack: boolean;
   hasContentVolume: boolean;
   hasDecisionMakers: boolean;
+  hasCustomerIntelligence: boolean;
   hasDeliverables: boolean;
   hasTenQuestions: boolean;
   hasRecommendation: boolean;
@@ -70,6 +72,7 @@ export function getQualificationScanDataAvailability(
       hasTechStack: false,
       hasContentVolume: false,
       hasDecisionMakers: false,
+      hasCustomerIntelligence: false,
       hasDeliverables: false,
       hasTenQuestions: false,
       hasRecommendation: false,
@@ -82,6 +85,10 @@ export function getQualificationScanDataAvailability(
     hasTechStack: !!qualificationScan.techStack,
     hasContentVolume: !!qualificationScan.contentVolume,
     hasDecisionMakers: !!qualificationScan.decisionMakers,
+    hasCustomerIntelligence:
+      Boolean(qualificationScan.companyIntelligence) ||
+      Boolean(qualificationScan.decisionMakers) ||
+      Boolean(qualificationScan.techStack),
     hasDeliverables: !!qualificationScan.deliverables,
     hasTenQuestions: !!qualificationScan.tenQuestions,
     hasRecommendation: !!qualificationScan.recommendedBusinessUnit,
@@ -172,6 +179,12 @@ export function getPreQualificationNavigationSections(
     {
       label: 'Analyse',
       items: [
+        {
+          title: 'Kundenprofil',
+          icon: Building2,
+          url: `/qualifications/${preQualificationId}/customer`,
+          requiredField: 'hasCustomerIntelligence',
+        },
         {
           title: 'CMS Matrix',
           icon: Grid3X3,

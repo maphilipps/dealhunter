@@ -1,75 +1,137 @@
 /**
  * Embedding Configuration (DEA-108)
  *
- * Separate configuration for embedding models.
- * The adesso AI Hub doesn't provide embedding models, so we need
- * a direct connection to OpenAI for embeddings.
+ * Uses the dynamic model config system for the embedding model name
+ * AND provider credentials (DB → Env → Default resolution chain).
  *
- * Set OPENAI_EMBEDDING_API_KEY in your .env.local to enable embeddings.
- * If not set, RAG features will be gracefully disabled.
+ * Credentials are resolved via getProviderCredentials() from model-config.ts,
+ * so admin-UI overrides for the embedding provider are respected automatically.
+ *
+ * If no API key is available, RAG features are gracefully disabled.
  */
 
+import * as Sentry from '@sentry/nextjs';
 import OpenAI from 'openai';
 
-export const EMBEDDING_MODEL = 'text-embedding-3-large';
+import { getModelConfigAsync, getProviderCredentials } from './model-config';
+
+/**
+ * DB vectors are 3072 dimensions — this is a schema-level constraint.
+ * Changing this requires a database migration of all vector columns.
+ */
 export const EMBEDDING_DIMENSIONS = 3072;
 
 /**
- * Check if embedding API is configured
+ * Check if a model supports the `dimensions` parameter.
+ * Only OpenAI text-embedding-3-* models support it.
+ * Other models (e.g. via AI Hub/LiteLLM) reject the parameter.
  */
-export function isEmbeddingEnabled(): boolean {
-  return !!process.env.OPENAI_EMBEDDING_API_KEY;
+function supportsEmbeddingDimensions(modelName: string): boolean {
+  return modelName.startsWith('text-embedding-3-');
 }
 
 /**
- * OpenAI client configured specifically for embeddings
- * Uses direct OpenAI API (not adesso AI Hub)
+ * Build the API options for an embedding call.
+ * Only includes `dimensions` when the model supports it.
  */
-let embeddingClient: OpenAI | null = null;
+export async function getEmbeddingApiOptions(): Promise<{
+  model: string;
+  dimensions?: number;
+}> {
+  const modelName = await getEmbeddingModelName();
+  if (supportsEmbeddingDimensions(modelName)) {
+    return { model: modelName, dimensions: EMBEDDING_DIMENSIONS };
+  }
+  return { model: modelName };
+}
 
-export function getEmbeddingClient(): OpenAI | null {
-  if (!isEmbeddingEnabled()) {
+const embeddingClientCache = new Map<string, OpenAI>();
+
+/**
+ * Check if embedding API is configured (async — resolves credentials via DB/env).
+ */
+export async function isEmbeddingEnabled(): Promise<boolean> {
+  const config = await getModelConfigAsync('embedding');
+  const credentials = await getProviderCredentials(config.provider);
+  return !!credentials.apiKey;
+}
+
+/**
+ * Get the configured embedding model name from the config system.
+ * Resolution: DB (admin UI override) → Env → Default (text-embedding-3-large)
+ */
+export async function getEmbeddingModelName(): Promise<string> {
+  const config = await getModelConfigAsync('embedding');
+  return config.modelName;
+}
+
+/**
+ * OpenAI client configured specifically for embeddings.
+ * Uses provider credentials from the config system (DB → Env fallback).
+ */
+export async function getEmbeddingClient(): Promise<OpenAI | null> {
+  const config = await getModelConfigAsync('embedding');
+  const credentials = await getProviderCredentials(config.provider);
+
+  if (!credentials.apiKey) {
     return null;
   }
 
-  if (!embeddingClient) {
-    embeddingClient = new OpenAI({
-      apiKey: process.env.OPENAI_EMBEDDING_API_KEY,
-      baseURL: 'https://api.openai.com/v1', // Explizit OpenAI, nicht AI Hub
-    });
+  const cacheKey = `${config.provider}:${credentials.baseURL}`;
+  if (!embeddingClientCache.has(cacheKey)) {
+    embeddingClientCache.set(
+      cacheKey,
+      new OpenAI({
+        apiKey: credentials.apiKey,
+        baseURL: credentials.baseURL,
+      })
+    );
   }
-
-  return embeddingClient;
+  return embeddingClientCache.get(cacheKey)!;
 }
 
 /**
- * Generate embeddings for texts
- * Returns null if embeddings are not enabled
+ * Generate embeddings for texts using the configured model.
+ * Returns null if embeddings are not enabled.
  */
 export async function generateEmbeddings(texts: string[]): Promise<number[][] | null> {
-  const client = getEmbeddingClient();
+  const client = await getEmbeddingClient();
 
   if (!client || texts.length === 0) {
     return null;
   }
 
   try {
+    const options = await getEmbeddingApiOptions();
     const response = await client.embeddings.create({
-      model: EMBEDDING_MODEL,
+      ...options,
       input: texts,
-      dimensions: EMBEDDING_DIMENSIONS,
     });
+
+    // Validate returned dimensions match DB schema
+    const firstDim = response.data[0]?.embedding?.length;
+    if (firstDim && firstDim !== EMBEDDING_DIMENSIONS) {
+      Sentry.captureMessage(
+        `Embedding dimension mismatch: got ${firstDim}, expected ${EMBEDDING_DIMENSIONS}. ` +
+          `Model "${options.model}" produces incompatible vectors.`,
+        { level: 'error', tags: { component: 'embedding', model: options.model } }
+      );
+      return null;
+    }
 
     return response.data.map(d => d.embedding);
   } catch (error) {
-    console.error('[Embedding] Failed to generate embeddings:', error);
+    Sentry.captureException(error, {
+      tags: { component: 'embedding' },
+      level: 'warning',
+    });
     return null;
   }
 }
 
 /**
- * Generate embedding for a single query
- * Returns null if embeddings are not enabled
+ * Generate embedding for a single query.
+ * Returns null if embeddings are not enabled.
  */
 export async function generateQueryEmbedding(query: string): Promise<number[] | null> {
   const embeddings = await generateEmbeddings([query]);

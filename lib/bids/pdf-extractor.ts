@@ -15,24 +15,37 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { PDFDocument } from 'pdf-lib';
 
-import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from '@/lib/ai/config';
+import { getProviderCredentials, warmModelConfigCache } from '@/lib/ai/model-config';
 
-function getPdfExtractionModel() {
+const pdfProviderCache = new Map<string, ReturnType<typeof createOpenAI>>();
+
+async function getPdfExtractionModel() {
+  // Ensure DB config is loaded
+  await warmModelConfigCache();
+
   // Force Gemini Flash on AI Hub for PDF extraction.
-  // Some environments set a disallowed OpenAI vision model; ignore that here.
   const envModel = process.env.AI_PDF_MODEL_AI_HUB;
   const modelName =
     envModel && envModel.startsWith('gemini-') ? envModel : 'gemini-3-flash-preview';
 
-  const apiKey = AI_HUB_API_KEY || process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('AI_HUB_API_KEY or OPENAI_API_KEY required for PDF extraction via AI Hub');
+  // Use config system: DB → Env → Default for AI Hub credentials
+  const credentials = await getProviderCredentials('ai-hub');
+  if (!credentials.apiKey) {
+    throw new Error(
+      'AI Hub API key not configured (check DB provider config or AI_HUB_API_KEY env var)'
+    );
   }
 
-  const hub = createOpenAI({
-    apiKey,
-    baseURL: AI_HUB_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
-  });
+  const cacheKey = `ai-hub:${credentials.baseURL}`;
+  if (!pdfProviderCache.has(cacheKey)) {
+    pdfProviderCache.set(
+      cacheKey,
+      createOpenAI({
+        apiKey: credentials.apiKey,
+        baseURL: credentials.baseURL,
+      })
+    );
+  }
 
   if (envModel && !envModel.startsWith('gemini-')) {
     console.warn(
@@ -40,7 +53,7 @@ function getPdfExtractionModel() {
     );
   }
 
-  return hub(modelName);
+  return pdfProviderCache.get(cacheKey)!(modelName);
 }
 
 // Approximate max pages before chunking (based on typical PDF page = ~500-1000 tokens output)
@@ -152,7 +165,7 @@ async function runExtractionPass(
   pass: ExtractionPass,
   extra?: { startPage?: number; endPage?: number; partLabel?: string }
 ): Promise<string> {
-  const model = getPdfExtractionModel();
+  const model = await getPdfExtractionModel();
 
   const system = getSystemPrompt(pass, extra);
   const label = extra?.partLabel ? ` ${extra.partLabel}` : '';
@@ -317,7 +330,7 @@ export async function extractTextFromPdfPages(
   startPage: number,
   endPage: number
 ): Promise<string> {
-  const model = getPdfExtractionModel();
+  const model = await getPdfExtractionModel();
 
   const result = await generateText({
     model,

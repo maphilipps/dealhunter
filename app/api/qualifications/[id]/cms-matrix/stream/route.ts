@@ -13,6 +13,7 @@ import {
   runParallelMatrixResearch,
   saveMatrixToRfp,
   matrixToCMSMatchingResult,
+  type LicenseCostContext,
 } from '@/lib/cms-matching/parallel-matrix-orchestrator';
 import { extractRequirementsFromQualificationScan } from '@/lib/cms-matching/requirements';
 import { db } from '@/lib/db';
@@ -201,8 +202,29 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         }
       );
 
-      // 6. Save to Qualification
-      await saveMatrixToRfp(qualificationId, matrix);
+      // 6. Build license cost context & save to Qualification
+      let extractedReq: Record<string, unknown> = {};
+      try {
+        const reqStr = preQualification[0].extractedRequirements;
+        if (reqStr) extractedReq = JSON.parse(reqStr) as Record<string, unknown>;
+      } catch {
+        /* ignore */
+      }
+
+      const licenseCostCtx: LicenseCostContext = {
+        companySize:
+          typeof extractedReq.companySize === 'string' ? extractedReq.companySize : undefined,
+        pageCount: (qualificationScanData.contentVolume as Record<string, unknown> | undefined)
+          ?.estimatedPageCount as number | undefined,
+        requirements: requirements.map(r => ({ name: r.name, priority: r.priority })),
+      };
+      const techLicenseInfos = techs.map(t => ({
+        id: t.id,
+        annualLicenseCost: t.annualLicenseCost,
+        requiresEnterprise: t.requiresEnterprise,
+      }));
+
+      await saveMatrixToRfp(qualificationId, matrix, licenseCostCtx, techLicenseInfos);
 
       // 7. Send final result
       await sendEvent({
@@ -214,7 +236,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
           message: 'Matrix-Recherche abgeschlossen',
           result: {
             matrix,
-            cmsMatchingResult: matrixToCMSMatchingResult(matrix),
+            cmsMatchingResult: matrixToCMSMatchingResult(matrix, licenseCostCtx, techLicenseInfos),
           },
         },
       });

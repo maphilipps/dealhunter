@@ -10,7 +10,7 @@ import {
 
 // Mock embedding config
 vi.mock('@/lib/ai/embedding-config', () => ({
-  isEmbeddingEnabled: vi.fn(() => true),
+  isEmbeddingEnabled: vi.fn(async () => true),
   generateQueryEmbedding: vi.fn(),
 }));
 
@@ -27,19 +27,51 @@ import { db } from '@/lib/db';
 describe('raw-retrieval-service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(isEmbeddingEnabled).mockReturnValue(true);
+    vi.mocked(isEmbeddingEnabled).mockResolvedValue(true);
   });
 
   describe('queryRawChunks', () => {
-    it('should return empty array when embeddings are disabled', async () => {
-      vi.mocked(isEmbeddingEnabled).mockReturnValue(false);
+    it('should use keyword fallback when embeddings are disabled', async () => {
+      vi.mocked(isEmbeddingEnabled).mockResolvedValue(false);
+
+      const mockChunks = [
+        {
+          id: 'chunk-1',
+          preQualificationId: 'preQualification-123',
+          chunkIndex: 0,
+          content: 'Budget: 100.000 EUR für das Projekt',
+          tokenCount: 50,
+          embedding: Array(3072).fill(0),
+          metadata: JSON.stringify({ startPosition: 0, endPosition: 100, type: 'paragraph' }),
+          createdAt: new Date(),
+        },
+        {
+          id: 'chunk-2',
+          preQualificationId: 'preQualification-123',
+          chunkIndex: 1,
+          content: 'Unrelated content about nothing',
+          tokenCount: 50,
+          embedding: Array(3072).fill(0),
+          metadata: JSON.stringify({ startPosition: 100, endPosition: 200, type: 'paragraph' }),
+          createdAt: new Date(),
+        },
+      ];
+
+      const mockSelect = vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => mockChunks),
+        })),
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       const result = await queryRawChunks({
         preQualificationId: 'preQualification-123',
-        question: 'Budget',
+        question: 'Budget Projekt',
       });
 
-      expect(result).toEqual([]);
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      expect(result[0].content).toContain('Budget');
       expect(generateQueryEmbedding).not.toHaveBeenCalled();
     });
 
@@ -61,15 +93,42 @@ describe('raw-retrieval-service', () => {
       expect(result).toEqual([]);
     });
 
-    it('should return empty array when query embedding fails', async () => {
+    it('should use keyword fallback when query embedding fails', async () => {
       vi.mocked(generateQueryEmbedding).mockResolvedValue(null);
 
+      const mockChunks = [
+        {
+          id: 'chunk-1',
+          preQualificationId: 'preQualification-123',
+          chunkIndex: 0,
+          content: 'Budget: 100.000 EUR für das Projekt',
+          tokenCount: 50,
+          embedding: Array(3072).fill(0),
+          metadata: JSON.stringify({ startPosition: 0, endPosition: 100, type: 'paragraph' }),
+          createdAt: new Date(),
+        },
+      ];
+
+      const mockSelect = vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => mockChunks),
+        })),
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
+
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const result = await queryRawChunks({
         preQualificationId: 'preQualification-123',
-        question: 'Budget',
+        question: 'Budget Projekt',
       });
 
-      expect(result).toEqual([]);
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      expect(result[0].content).toContain('Budget');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Query embedding failed, falling back to keyword matching')
+      );
+      consoleSpy.mockRestore();
     });
 
     it('should filter results by similarity threshold (>0.7)', async () => {
@@ -226,18 +285,40 @@ describe('raw-retrieval-service', () => {
   });
 
   describe('queryMultipleTopics', () => {
-    it('should return empty maps when embeddings are disabled', async () => {
-      vi.mocked(isEmbeddingEnabled).mockReturnValue(false);
+    it('should use keyword fallback when embeddings are disabled', async () => {
+      vi.mocked(isEmbeddingEnabled).mockResolvedValue(false);
+
+      const mockChunks = [
+        {
+          id: 'chunk-1',
+          preQualificationId: 'preQualification-123',
+          chunkIndex: 0,
+          content: 'Budget: 100.000 EUR für das Projekt',
+          tokenCount: 50,
+          embedding: Array(3072).fill(0),
+          metadata: JSON.stringify({ startPosition: 0, endPosition: 100, type: 'paragraph' }),
+          createdAt: new Date(),
+        },
+      ];
+
+      const mockSelect = vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => mockChunks),
+        })),
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
 
       const result = await queryMultipleTopics('preQualification-123', [
-        { topic: 'Budget', maxResults: 3 },
-        { topic: 'Kontakt', maxResults: 2 },
+        { topic: 'Budget Projekt', maxResults: 3 },
+        { topic: 'Kontakt Email', maxResults: 2 },
       ]);
 
-      expect(result.has('Budget')).toBe(true);
-      expect(result.has('Kontakt')).toBe(true);
-      expect(result.get('Budget')).toEqual([]);
-      expect(result.get('Kontakt')).toEqual([]);
+      expect(result.has('Budget Projekt')).toBe(true);
+      expect(result.has('Kontakt Email')).toBe(true);
+      // Budget keyword matches, so should return results
+      const budgetResults = result.get('Budget Projekt')!;
+      expect(budgetResults.length).toBeGreaterThanOrEqual(1);
     });
 
     it('should query multiple topics in parallel', async () => {

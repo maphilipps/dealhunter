@@ -1,6 +1,6 @@
 'use client';
 
-import { Bot, Check, Eye, EyeOff, KeyRound, RotateCcw } from 'lucide-react';
+import { AlertCircle, Bot, Check, Eye, EyeOff, KeyRound, Loader2, RotateCcw } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import {
+  fetchProviderModels,
   getAIProviders,
   getModelSlots,
   updateAIProvider,
@@ -29,6 +30,7 @@ import {
   resetModelSlot,
   type AIProviderForUI,
   type ModelSlotWithProvider,
+  type ProviderModel,
 } from '@/lib/admin/ai-config-actions';
 
 // ─── Known models per provider (for the picker) ─────────────────────────────────
@@ -91,6 +93,61 @@ const PROVIDER_LOGO_MAP: Record<string, string> = {
   vercel: 'vercel',
 };
 
+// ─── Dynamic Model Fetching ──────────────────────────────────────────────────────
+
+const MODEL_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const modelCache = new Map<string, { models: ProviderModel[]; fetchedAt: number }>();
+
+export function invalidateModelCache(providerId?: string) {
+  if (providerId) {
+    modelCache.delete(providerId);
+  } else {
+    modelCache.clear();
+  }
+}
+
+function useProviderModels(providerId: string, providerKey: string, open: boolean) {
+  const [models, setModels] = useState<ProviderModel[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const cached = modelCache.get(providerId);
+    if (cached && Date.now() - cached.fetchedAt < MODEL_CACHE_TTL) {
+      setModels(cached.models);
+      setError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+
+    void fetchProviderModels(providerId).then(result => {
+      if (cancelled) return;
+      setIsLoading(false);
+      if (result.success) {
+        modelCache.set(providerId, { models: result.models, fetchedAt: Date.now() });
+        setModels(result.models);
+        setError(null);
+      } else {
+        setError(result.error);
+        // Fallback: use KNOWN_MODELS
+        const fallback = KNOWN_MODELS[providerKey] || [];
+        setModels(fallback.map(m => ({ id: m.name, ownedBy: '' })));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [providerId, providerKey, open]);
+
+  return { models, error, isLoading };
+}
+
 // ─── Provider Card ───────────────────────────────────────────────────────────────
 
 function ProviderCard({
@@ -119,6 +176,18 @@ function ProviderCard({
       );
       setEditingField(null);
       setShowKey(false);
+
+      // Validate connection after key/URL change
+      invalidateModelCache(provider.id);
+      if (field === 'apiKey' && fieldValue) {
+        const check = await fetchProviderModels(provider.id);
+        if (check.success) {
+          toast.success(`Verbindung OK — ${check.models.length} Modelle verfügbar`);
+        } else {
+          toast.error(`Verbindung fehlgeschlagen: ${check.error}`);
+        }
+      }
+
       await onUpdate();
     } else {
       toast.error(result.error || 'Fehler');
@@ -263,6 +332,69 @@ function ProviderCard({
   );
 }
 
+// ─── Provider Model Group (uses Hook for dynamic fetching) ──────────────────────
+
+function ProviderModelGroup({
+  provider,
+  open,
+  currentSlot,
+  onSelectModel,
+}: {
+  provider: AIProviderForUI;
+  open: boolean;
+  currentSlot: ModelSlotWithProvider;
+  onSelectModel: (providerId: string, modelName: string) => void;
+}) {
+  const { models, error, isLoading } = useProviderModels(provider.id, provider.providerKey, open);
+
+  const heading = (
+    <span className="flex items-center gap-1.5">
+      <ModelSelectorLogo
+        provider={PROVIDER_LOGO_MAP[provider.providerKey] || provider.providerKey}
+        className="size-3"
+      />
+      {provider.providerKey}
+      {isLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+      {error && !isLoading && (
+        <span className="flex items-center gap-1 text-destructive text-[10px] font-normal">
+          <AlertCircle className="h-3 w-3" />
+          Fallback
+        </span>
+      )}
+      {!isLoading && !error && models.length > 0 && (
+        <span className="text-[10px] font-normal text-muted-foreground">{models.length}</span>
+      )}
+    </span>
+  );
+
+  if (models.length === 0 && !isLoading) return null;
+
+  return (
+    <ModelSelectorGroup heading={heading}>
+      {isLoading && (
+        <div className="px-2 py-3 text-xs text-muted-foreground flex items-center gap-2">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Modelle werden geladen...
+        </div>
+      )}
+      {error && !isLoading && <div className="px-2 py-1 text-xs text-destructive">{error}</div>}
+      {models.map(model => (
+        <ModelSelectorItem
+          key={`${provider.id}-${model.id}`}
+          onSelect={() => onSelectModel(provider.id, model.id)}
+          className="flex items-center gap-2"
+        >
+          <ModelSelectorName>{model.id}</ModelSelectorName>
+          {model.ownedBy && <span className="text-xs text-muted-foreground">{model.ownedBy}</span>}
+          {currentSlot.providerId === provider.id && currentSlot.modelName === model.id && (
+            <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+          )}
+        </ModelSelectorItem>
+      ))}
+    </ModelSelectorGroup>
+  );
+}
+
 // ─── Slot Card with ModelSelector ────────────────────────────────────────────────
 
 function SlotCard({
@@ -361,38 +493,15 @@ function SlotCard({
             <ModelSelectorInput placeholder="Modell suchen..." />
             <ModelSelectorList>
               <ModelSelectorEmpty>Kein Modell gefunden.</ModelSelectorEmpty>
-              {enabledProviders.map(provider => {
-                const models = KNOWN_MODELS[provider.providerKey] || [];
-                if (models.length === 0) return null;
-                return (
-                  <ModelSelectorGroup
-                    key={provider.id}
-                    heading={
-                      <span className="flex items-center gap-1.5">
-                        <ModelSelectorLogo
-                          provider={PROVIDER_LOGO_MAP[provider.providerKey] || provider.providerKey}
-                          className="size-3"
-                        />
-                        {provider.providerKey}
-                      </span>
-                    }
-                  >
-                    {models.map(model => (
-                      <ModelSelectorItem
-                        key={`${provider.id}-${model.name}`}
-                        onSelect={() => handleSelectModel(provider.id, model.name)}
-                        className="flex items-center gap-2"
-                      >
-                        <ModelSelectorName>{model.name}</ModelSelectorName>
-                        <span className="text-xs text-muted-foreground">{model.description}</span>
-                        {slot.providerId === provider.id && slot.modelName === model.name && (
-                          <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                        )}
-                      </ModelSelectorItem>
-                    ))}
-                  </ModelSelectorGroup>
-                );
-              })}
+              {enabledProviders.map(provider => (
+                <ProviderModelGroup
+                  key={provider.id}
+                  provider={provider}
+                  open={open}
+                  currentSlot={slot}
+                  onSelectModel={handleSelectModel}
+                />
+              ))}
             </ModelSelectorList>
           </ModelSelectorContent>
         </ModelSelector>

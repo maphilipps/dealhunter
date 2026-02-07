@@ -90,7 +90,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
         : '';
 
     const result = streamText({
-      model: getModel('quality'),
+      model: await getModel('quality'),
       system: INTERVIEW_SYSTEM_PROMPT + cmsContext,
       messages: await convertToModelMessages(messages),
       abortSignal: req.signal,

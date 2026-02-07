@@ -15,17 +15,22 @@
 import { generateText, Output } from 'ai';
 import type { Job } from 'bullmq';
 import { eq, ilike } from 'drizzle-orm';
+import { PDFDocument } from 'pdf-lib';
 import { z } from 'zod';
 
 import {
   runParallelMatrixResearch,
   saveMatrixToRfp,
+  matrixToCMSMatchingResult,
+  type LicenseCostContext,
 } from '../../cms-matching/parallel-matrix-orchestrator';
 import { extractRequirementsFromQualificationScan } from '../../cms-matching/requirements';
+import { runCMSRequirementsAgent } from '../../cms-matching/requirements-agent';
 import { generateBLRecommendation } from '../../qualification-scan/workflow/steps/synthesis';
 import type { TechStack } from '../../qualification-scan/schema';
 import { startCMSEvaluation } from '../../cms-matching/actions';
 import { modelNames } from '../../ai/config';
+import { warmModelConfigCache } from '../../ai/model-config';
 import { getProviderForSlot } from '../../ai/providers';
 import { extractTextFromPdf } from '../../bids/pdf-extractor';
 import { QUALIFICATION_QUESTIONS, type TenQuestionsPayload } from '../../bids/ten-questions';
@@ -48,6 +53,22 @@ import {
 import { runQualificationScanAgentNative } from '../../qualification-scan/agent-native';
 import { embedAgentOutput } from '../../rag/embedding-service';
 import { queryRawChunks, formatRAGContext } from '../../rag/raw-retrieval-service';
+import { gatherCompanyIntelligence } from '../../qualification-scan/tools/company-research';
+import { searchDecisionMakersNameOnly } from '../../qualification-scan/tools/decision-maker-research';
+import { checkAndSuggestUrl } from '../../qualification-scan/tools/url-suggestion-agent';
+import {
+  publishPhaseStart,
+  publishPhaseComplete,
+  publishAgentProgress,
+  publishProgressUpdate,
+  publishToolCall,
+  publishToolResult,
+  publishSectionComplete,
+  publishSectionQuality,
+  publishFinding,
+  publishCompletion,
+  publishError,
+} from '../../streaming/qualification-publisher';
 import { generateTimelineFromQualificationScan } from '../../timeline/integration';
 import { onAgentComplete } from '../../workflow/orchestrator';
 import type { PreQualProcessingJobData, PreQualProcessingJobResult } from '../queues';
@@ -58,8 +79,7 @@ import type { PreQualProcessingJobData, PreQualProcessingJobResult } from '../qu
 const PROGRESS = {
   START: 0,
   PDF_EXTRACTION: 20,
-  REQUIREMENTS: 35,
-  DUPLICATE_CHECK: 45,
+  REQUIREMENTS: 40,
   LEAD_SCAN: 70,
   TEN_QUESTIONS: 80,
   SECTION_PAGES: 90,
@@ -91,6 +111,42 @@ const EMPTY_TECH_STACK: TechStack = {
   buildTools: [],
   cdnProviders: [],
 };
+
+function normalizeWebsiteUrl(input: string): string | null {
+  const raw = input.trim();
+  if (!raw) return null;
+
+  const full = raw.startsWith('http://') || raw.startsWith('https://') ? raw : `https://${raw}`;
+  try {
+    const url = new URL(full);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    url.hash = '';
+    // Keep search params, but normalize the trailing slash for the homepage.
+    if (url.pathname === '/') url.pathname = '';
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function pickWebsiteUrl(
+  websiteUrls: string[],
+  extractedRequirements: ExtractedRequirements
+): string | null {
+  const candidates: Array<string | undefined | null> = [
+    websiteUrls?.[0],
+    extractedRequirements.websiteUrl,
+    extractedRequirements.websiteUrls?.[0]?.url,
+  ];
+
+  for (const c of candidates) {
+    if (!c) continue;
+    const normalized = normalizeWebsiteUrl(String(c));
+    if (normalized) return normalized;
+  }
+
+  return null;
+}
 
 /**
  * Update PreQualification status in database
@@ -129,6 +185,66 @@ async function updateQualificationJob(
 }
 
 /**
+ * Simple fallback extraction when ToolLoopAgent fails.
+ * Uses a single generateText call with manual JSON parsing.
+ */
+async function runSimpleFallbackExtraction(rawInput: string): Promise<ExtractedRequirements> {
+  const truncatedInput = rawInput.slice(0, 30000); // Keep within token limits
+
+  const { text } = await generateText({
+    model: (await getProviderForSlot('fast'))(modelNames.fast),
+    prompt: `Analysiere das folgende Ausschreibungsdokument und extrahiere die wichtigsten Informationen als JSON.
+
+DOKUMENT:
+---
+${truncatedInput}
+---
+
+Antworte NUR mit einem JSON-Objekt (keine Erklärungen, kein Markdown):
+{
+  "customerName": "Name des Auftraggebers/Kunden",
+  "industry": "Branche",
+  "companySize": "small|medium|large|enterprise",
+  "procurementType": "public|private|semi-public",
+  "companyLocation": "Standort",
+  "projectName": "Projektname oder -titel",
+  "projectDescription": "Kurzbeschreibung (max 300 Zeichen)",
+  "scope": "Projektumfang",
+  "technologies": ["Liste", "der", "Technologien"],
+  "keyRequirements": ["Anforderung 1", "Anforderung 2"],
+  "budgetRange": {"min": null, "max": null, "currency": "EUR", "confidence": 50, "rawText": ""},
+  "timeline": "Projektzeitrahmen",
+  "submissionDeadline": "YYYY-MM-DD oder null",
+  "submissionTime": "HH:MM oder null",
+  "contractType": "Vertragsart",
+  "contractDuration": "Vertragslaufzeit",
+  "requiredServices": ["Service 1", "Service 2"],
+  "contactPerson": "Name Ansprechpartner",
+  "contactEmail": "email@example.com",
+  "constraints": ["Randbedingung 1"],
+  "confidenceScore": 0.6
+}
+
+Setze Felder auf null wenn nicht im Dokument vorhanden. Erfinde KEINE Daten.`,
+    temperature: 0,
+  });
+
+  const jsonStart = text.indexOf('{');
+  const jsonEnd = text.lastIndexOf('}');
+  if (jsonStart === -1 || jsonEnd === -1) {
+    throw new Error('Fallback extraction returned no JSON');
+  }
+
+  const parsed = JSON.parse(text.slice(jsonStart, jsonEnd + 1)) as ExtractedRequirements;
+  parsed.extractedAt = new Date().toISOString();
+  if (!parsed.technologies) parsed.technologies = [];
+  if (!parsed.keyRequirements) parsed.keyRequirements = [];
+  if (!parsed.confidenceScore) parsed.confidenceScore = 0.5;
+
+  return parsed;
+}
+
+/**
  * Process a single PDF file from base64
  */
 async function processPdf(
@@ -137,14 +253,28 @@ async function processPdf(
 ): Promise<{
   fileName: string;
   text: string;
+  pageCount: number;
+  chunked: boolean;
   piiMatches: Array<{ type: string; original: string; replacement: string }>;
 }> {
   const buffer = Buffer.from(fileData.base64, 'base64');
   let text = '';
+  let pageCount = 0;
   if (buffer.length === 0) {
     console.warn(`[PreQual Worker] Skipping empty PDF: ${fileData.name}`);
-    return { fileName: fileData.name, text: '', piiMatches: [] };
+    return { fileName: fileData.name, text: '', pageCount: 0, chunked: false, piiMatches: [] };
   }
+
+  // Read page count before extraction
+  try {
+    const pdf = await PDFDocument.load(buffer);
+    pageCount = pdf.getPageCount();
+  } catch {
+    // Fallback: estimate from file size (~50KB per page)
+    pageCount = Math.ceil(buffer.length / (50 * 1024));
+  }
+
+  const chunked = pageCount > 30;
 
   try {
     text = await extractTextFromPdf(buffer, { extractionMode: 'thorough' });
@@ -155,7 +285,7 @@ async function processPdf(
     } else {
       console.error(`[PreQual Worker] PDF extraction failed for ${fileData.name}:`, message);
     }
-    return { fileName: fileData.name, text: '', piiMatches: [] };
+    return { fileName: fileData.name, text: '', pageCount, chunked, piiMatches: [] };
   }
   const piiMatches: Array<{ type: string; original: string; replacement: string }> = [];
 
@@ -173,7 +303,7 @@ async function processPdf(
     }
   }
 
-  return { fileName: fileData.name, text: text || '', piiMatches };
+  return { fileName: fileData.name, text: text || '', pageCount, chunked, piiMatches };
 }
 
 /**
@@ -233,7 +363,7 @@ async function inferCustomerNameFromRAG(preQualificationId: string): Promise<str
     });
 
     const result = await generateText({
-      model: getProviderForSlot('fast')(modelNames.fast),
+      model: (await getProviderForSlot('fast'))(modelNames.fast),
       output: Output.object({ schema }),
       prompt: `Extrahiere den Namen der ausschreibenden Organisation (Auftraggeber/Vergabestelle) aus diesem Kontext.
 
@@ -293,7 +423,7 @@ ${rawInput.slice(0, 12000)}`;
 
   try {
     const result = await generateText({
-      model: getProviderForSlot('fast')(modelNames.fast),
+      model: (await getProviderForSlot('fast'))(modelNames.fast),
       output: Output.object({ schema }),
       prompt,
       temperature: 0,
@@ -366,7 +496,7 @@ Gib für alle 10 Fragen eine Antwort.`;
 
   try {
     const result = await generateText({
-      model: getProviderForSlot('fast')(modelNames.fast),
+      model: (await getProviderForSlot('fast'))(modelNames.fast),
       output: Output.object({ schema: questionsSchema }),
       prompt,
       temperature: 0,
@@ -442,6 +572,9 @@ export async function processPreQualJob(
 
   console.log(`[PreQual Worker] Starting job ${job.id} for prequal ${preQualificationId}`);
 
+  // Ensure AI model config is loaded from DB (cached with 60s TTL)
+  await warmModelConfigCache();
+
   try {
     await updateQualificationJob(backgroundJobId, {
       status: 'running',
@@ -458,23 +591,60 @@ export async function processPreQualJob(
       progress: PROGRESS.START,
       currentStep: 'Dokumente extrahieren',
     });
+    void publishPhaseStart(preQualificationId, 'pdf_extraction', 'Dokumente extrahieren').catch(
+      err => console.error('[PreQual Worker] Publish failed:', err)
+    );
     await job.updateProgress(PROGRESS.START);
 
     const extractedTexts: Array<{ fileName: string; text: string }> = [];
     const allPiiMatches: Array<{ type: string; original: string; replacement: string }> = [];
+    let totalPages = 0;
 
     if (files.length > 0) {
       console.log(`[PreQual Worker] Extracting text from ${files.length} PDFs`);
+      void publishAgentProgress(
+        preQualificationId,
+        'pdf_extraction',
+        'PDF Extraktor',
+        `Verarbeite ${files.length} Dokumente...`
+      ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
 
-      // Process PDFs in parallel
-      const results = await Promise.all(files.map(file => processPdf(file, enableDSGVO)));
-
-      for (const result of results) {
+      // Process PDFs sequentially for granular progress
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const result = await processPdf(file, enableDSGVO);
         if (result.text.trim()) {
           extractedTexts.push({ fileName: result.fileName, text: result.text });
         }
+        totalPages += result.pageCount;
         allPiiMatches.push(...result.piiMatches);
+
+        // Publish per-file progress with page count and chunking info
+        const fileProgress = Math.round(
+          PROGRESS.START + ((i + 1) / files.length) * (PROGRESS.PDF_EXTRACTION - PROGRESS.START)
+        );
+        const pageInfo =
+          result.pageCount > 0
+            ? ` (${result.pageCount} Seiten${result.chunked ? ', Chunking' : ''})`
+            : '';
+        void publishProgressUpdate(
+          preQualificationId,
+          'pdf_extraction',
+          'PDF Extraktor',
+          `Dokument ${i + 1}/${files.length}: ${file.name}${pageInfo}`,
+          fileProgress
+        ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
       }
+
+      // Summary with total pages
+      const totalChars = extractedTexts.reduce((sum, t) => sum + t.text.length, 0);
+      const pagesInfo = totalPages > 0 ? `, ${totalPages} Seiten` : '';
+      void publishAgentProgress(
+        preQualificationId,
+        'pdf_extraction',
+        'PDF Extraktor',
+        `${extractedTexts.length} Dokumente extrahiert (${totalChars.toLocaleString('de-DE')} Zeichen${pagesInfo})`
+      ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
 
       console.log(
         `[PreQual Worker] Extracted text from ${extractedTexts.length}/${files.length} PDFs`
@@ -486,6 +656,11 @@ export async function processPreQualJob(
       progress: PROGRESS.PDF_EXTRACTION,
       currentStep: 'Dokumente vorbereitet',
     });
+    void publishPhaseComplete(
+      preQualificationId,
+      'pdf_extraction',
+      `${extractedTexts.length} Dokumente extrahiert`
+    ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
 
     // Build raw input
     let rawInput = buildRawInput(extractedTexts, websiteUrls, additionalText);
@@ -539,10 +714,22 @@ export async function processPreQualJob(
     const useExistingRequirements = job.data.useExistingRequirements === true;
     let extractedRequirements: ExtractedRequirements;
 
+    void publishPhaseStart(
+      preQualificationId,
+      'requirements_extraction',
+      'Anforderungen extrahieren'
+    ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+
     if (useExistingRequirements) {
       await updateQualificationJob(backgroundJobId, {
         currentStep: 'Vorhandene Extraktion verwenden',
       });
+      void publishAgentProgress(
+        preQualificationId,
+        'requirements_extraction',
+        'Extraction Agent',
+        'Vorhandene Extraktion verwenden'
+      ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
 
       const [existingPrequal] = await db
         .select({ extractedRequirements: preQualifications.extractedRequirements })
@@ -566,6 +753,14 @@ export async function processPreQualJob(
       const extractionInputType: 'pdf' | 'freetext' | 'email' =
         inputType === 'combined' ? 'freetext' : inputType;
 
+      void publishProgressUpdate(
+        preQualificationId,
+        'requirements_extraction',
+        'Extraction Agent',
+        'KI-Extraktion gestartet...',
+        PROGRESS.PDF_EXTRACTION + 5
+      ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+
       try {
         const extractionResult = await runExtractionAgentNative({
           preQualificationId,
@@ -579,18 +774,67 @@ export async function processPreQualJob(
         }
 
         extractedRequirements = extractionResult.requirements;
-      } catch (error) {
-        console.error('[PreQual Worker] Extraction agent failed, using fallback:', {
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-        });
 
-        extractedRequirements = {
-          technologies: [],
-          keyRequirements: [],
-          confidenceScore: 0.2,
-          extractedAt: new Date().toISOString(),
-        } as ExtractedRequirements;
+        // Report extracted fields
+        const foundFields: string[] = [];
+        if (extractedRequirements.customerName) foundFields.push('Kunde');
+        if (extractedRequirements.projectName) foundFields.push('Projekt');
+        if (extractedRequirements.budgetRange) foundFields.push('Budget');
+        if (extractedRequirements.submissionDeadline) foundFields.push('Frist');
+        if (extractedRequirements.technologies?.length)
+          foundFields.push(`${extractedRequirements.technologies.length} Technologien`);
+        if (extractedRequirements.contacts?.length)
+          foundFields.push(`${extractedRequirements.contacts.length} Kontakte`);
+
+        void publishAgentProgress(
+          preQualificationId,
+          'requirements_extraction',
+          'Extraction Agent',
+          `KI-Extraktion abgeschlossen: ${foundFields.join(', ') || 'Basisdaten'}`
+        ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        console.error('[PreQual Worker] Extraction agent failed:', errMsg);
+
+        void publishAgentProgress(
+          preQualificationId,
+          'requirements_extraction',
+          'Extraction Agent',
+          `Agent-Extraktion fehlgeschlagen (${errMsg.slice(0, 60)}), versuche Direkt-Extraktion...`
+        ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+
+        // Fallback: simple direct extraction with generateText + structured output
+        try {
+          extractedRequirements = await runSimpleFallbackExtraction(rawInput);
+          const fallbackFields: string[] = [];
+          if (extractedRequirements.customerName) fallbackFields.push('Kunde');
+          if (extractedRequirements.projectName) fallbackFields.push('Projekt');
+          if (extractedRequirements.technologies?.length)
+            fallbackFields.push(`${extractedRequirements.technologies.length} Tech`);
+
+          void publishAgentProgress(
+            preQualificationId,
+            'requirements_extraction',
+            'Extraction Agent',
+            `Direkt-Extraktion erfolgreich: ${fallbackFields.join(', ') || 'Basisdaten'}`
+          ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+        } catch (fallbackError) {
+          console.error('[PreQual Worker] Fallback extraction also failed:', fallbackError);
+
+          extractedRequirements = {
+            technologies: [],
+            keyRequirements: [],
+            confidenceScore: 0.2,
+            extractedAt: new Date().toISOString(),
+          } as ExtractedRequirements;
+
+          void publishAgentProgress(
+            preQualificationId,
+            'requirements_extraction',
+            'Extraction Agent',
+            'Extraktion fehlgeschlagen, verwende Minimaldaten'
+          ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+        }
       }
     }
 
@@ -633,36 +877,368 @@ export async function processPreQualJob(
         .where(eq(preQualifications.id, preQualificationId));
     }
 
+    // Publish findings for all extracted fields
+    const pf = (finding: Parameters<typeof publishFinding>[2]) =>
+      void publishFinding(preQualificationId, 'requirements_extraction', finding).catch(err =>
+        console.error('[PreQual Worker] Publish failed:', err)
+      );
+
+    // Customer & Company
+    if (extractedRequirements.customerName) {
+      pf({ type: 'customer', label: 'Kundenname', value: extractedRequirements.customerName });
+    }
+    if (extractedRequirements.industry) {
+      pf({ type: 'industry', label: 'Branche', value: extractedRequirements.industry });
+    }
+    if (extractedRequirements.companyLocation) {
+      pf({ type: 'location', label: 'Standort', value: extractedRequirements.companyLocation });
+    }
+    if (extractedRequirements.companySize) {
+      const sizeLabels: Record<string, string> = {
+        startup: 'Startup',
+        small: 'Klein',
+        medium: 'Mittelstand',
+        large: 'Großunternehmen',
+        enterprise: 'Konzern',
+      };
+      pf({
+        type: 'customer',
+        label: 'Unternehmensgröße',
+        value: sizeLabels[extractedRequirements.companySize] || extractedRequirements.companySize,
+      });
+    }
+    if (extractedRequirements.procurementType) {
+      const procLabels: Record<string, string> = {
+        public: 'Öffentlich',
+        private: 'Privat',
+        'semi-public': 'Halböffentlich',
+      };
+      pf({
+        type: 'contract',
+        label: 'Vergabeart',
+        value:
+          procLabels[extractedRequirements.procurementType] ||
+          extractedRequirements.procurementType,
+      });
+    }
+
+    // Project Details
+    if (extractedRequirements.projectName) {
+      pf({ type: 'requirement', label: 'Projektname', value: extractedRequirements.projectName });
+    }
+    if (extractedRequirements.projectDescription) {
+      pf({
+        type: 'scope',
+        label: 'Projektbeschreibung',
+        value:
+          extractedRequirements.projectDescription.length > 200
+            ? extractedRequirements.projectDescription.slice(0, 200) + '...'
+            : extractedRequirements.projectDescription,
+      });
+    }
+    if (extractedRequirements.scope) {
+      pf({ type: 'scope', label: 'Projektumfang', value: extractedRequirements.scope });
+    }
+
+    // Project Goal
+    if (extractedRequirements.projectGoal?.objective) {
+      pf({
+        type: 'goal',
+        label: 'Projektziel',
+        value: extractedRequirements.projectGoal.objective,
+      });
+    }
+    if (extractedRequirements.projectGoal?.businessDrivers?.length) {
+      pf({
+        type: 'goal',
+        label: 'Treiber',
+        value: extractedRequirements.projectGoal.businessDrivers.join(', '),
+      });
+    }
+
+    // Budget
+    if (extractedRequirements.budgetRange) {
+      const br = extractedRequirements.budgetRange;
+      const budgetStr =
+        br.min && br.max
+          ? `${br.min.toLocaleString('de-DE')}–${br.max.toLocaleString('de-DE')} ${br.currency ?? 'EUR'}`
+          : br.max
+            ? `bis ${br.max.toLocaleString('de-DE')} ${br.currency ?? 'EUR'}`
+            : JSON.stringify(br);
+      pf({ type: 'budget', label: 'Budget', value: budgetStr, confidence: br.confidence });
+    }
+
+    // Timeline & Deadlines
+    if (extractedRequirements.timeline) {
+      pf({ type: 'timeline', label: 'Projektzeitrahmen', value: extractedRequirements.timeline });
+    }
+    if (extractedRequirements.submissionDeadline) {
+      pf({
+        type: 'deadline',
+        label: 'Abgabefrist',
+        value: `${extractedRequirements.submissionDeadline}${extractedRequirements.submissionTime ? ` um ${extractedRequirements.submissionTime} Uhr` : ''}`,
+      });
+    }
+    if (extractedRequirements.projectStartDate) {
+      pf({
+        type: 'timeline',
+        label: 'Projektstart',
+        value: extractedRequirements.projectStartDate,
+      });
+    }
+    if (extractedRequirements.projectEndDate) {
+      pf({ type: 'timeline', label: 'Projektende', value: extractedRequirements.projectEndDate });
+    }
+    if (extractedRequirements.contractDuration) {
+      pf({
+        type: 'timeline',
+        label: 'Vertragslaufzeit',
+        value: extractedRequirements.contractDuration,
+      });
+    }
+
+    // Technologies
+    if (extractedRequirements.technologies?.length) {
+      pf({
+        type: 'tech_stack',
+        label: 'Technologien',
+        value: extractedRequirements.technologies.join(', '),
+      });
+    }
+    if (extractedRequirements.cmsConstraints) {
+      const cms = extractedRequirements.cmsConstraints;
+      const parts: string[] = [];
+      if (cms.required?.length) parts.push(`Pflicht: ${cms.required.join(', ')}`);
+      if (cms.preferred?.length) parts.push(`Bevorzugt: ${cms.preferred.join(', ')}`);
+      if (cms.excluded?.length) parts.push(`Ausgeschlossen: ${cms.excluded.join(', ')}`);
+      if (parts.length > 0) {
+        pf({
+          type: 'cms',
+          label: 'CMS-Vorgaben',
+          value: parts.join(' | '),
+          confidence: cms.confidence,
+        });
+      }
+    }
+
+    // Contract
+    if (extractedRequirements.contractType) {
+      pf({ type: 'contract', label: 'Vertragstyp', value: extractedRequirements.contractType });
+    }
+    if (extractedRequirements.contractModel) {
+      pf({ type: 'contract', label: 'Vertragsmodell', value: extractedRequirements.contractModel });
+    }
+    if (extractedRequirements.procedureType) {
+      pf({
+        type: 'contract',
+        label: 'Vergabeverfahren',
+        value: extractedRequirements.procedureType,
+      });
+    }
+
+    // Contacts
+    if (extractedRequirements.contactPerson) {
+      pf({
+        type: 'contact',
+        label: 'Ansprechpartner',
+        value: `${extractedRequirements.contactPerson}${extractedRequirements.contactEmail ? ` (${extractedRequirements.contactEmail})` : ''}`,
+      });
+    }
+    if (extractedRequirements.contacts?.length) {
+      for (const contact of extractedRequirements.contacts) {
+        const catLabels: Record<string, string> = {
+          decision_maker: 'Entscheider',
+          influencer: 'Einflussnehmer',
+          coordinator: 'Koordinator',
+          unknown: '',
+        };
+        const catLabel = catLabels[contact.category] || '';
+        pf({
+          type: 'contact',
+          label: catLabel ? `Kontakt (${catLabel})` : 'Kontakt',
+          value: `${contact.name} — ${contact.role}${contact.email ? ` (${contact.email})` : ''}`,
+          confidence: contact.confidence,
+        });
+      }
+    }
+
+    // Required Services
+    if (extractedRequirements.requiredServices?.length) {
+      pf({
+        type: 'service',
+        label: 'Geforderte Leistungen',
+        value: extractedRequirements.requiredServices.join(', '),
+      });
+    }
+
+    // Key Requirements
+    if (extractedRequirements.keyRequirements?.length) {
+      for (const req of extractedRequirements.keyRequirements.slice(0, 8)) {
+        pf({ type: 'requirement', label: 'Anforderung', value: req });
+      }
+    }
+
+    // Required Deliverables
+    if (extractedRequirements.requiredDeliverables?.length) {
+      for (const del of extractedRequirements.requiredDeliverables.slice(0, 5)) {
+        const parts = [del.name];
+        if (del.deadline) parts.push(`bis ${del.deadline}`);
+        if (del.format) parts.push(`Format: ${del.format}`);
+        pf({
+          type: 'deliverable',
+          label: del.mandatory ? 'Pflichtunterlage' : 'Unterlage',
+          value: parts.join(' — '),
+          confidence: del.confidence,
+        });
+      }
+    }
+
+    // Award Criteria
+    if (extractedRequirements.awardCriteria?.criteria?.length) {
+      for (let i = 0; i < extractedRequirements.awardCriteria.criteria.length && i < 6; i++) {
+        const crit = extractedRequirements.awardCriteria.criteria[i];
+        const weight = extractedRequirements.awardCriteria.weights?.[i];
+        pf({
+          type: 'criterion',
+          label: 'Zuschlagskriterium',
+          value: weight ? `${crit} (${weight})` : crit,
+        });
+      }
+    }
+
+    // References
+    if (extractedRequirements.referenceRequirements) {
+      const ref = extractedRequirements.referenceRequirements;
+      const parts: string[] = [];
+      if (ref.count) parts.push(`${ref.count} Referenzen`);
+      if (ref.requiredIndustries?.length)
+        parts.push(`Branchen: ${ref.requiredIndustries.join(', ')}`);
+      if (ref.requiredTechnologies?.length)
+        parts.push(`Technologien: ${ref.requiredTechnologies.join(', ')}`);
+      if (ref.description && !parts.length) parts.push(ref.description);
+      if (parts.length > 0) {
+        pf({ type: 'reference', label: 'Referenzanforderungen', value: parts.join(' | ') });
+      }
+    }
+
+    // Submission Portal
+    if (extractedRequirements.submissionPortal?.name) {
+      pf({
+        type: 'deadline',
+        label: 'Vergabeportal',
+        value: `${extractedRequirements.submissionPortal.name}${extractedRequirements.submissionPortal.url ? ` (${extractedRequirements.submissionPortal.url})` : ''}`,
+      });
+    }
+
+    // Team Size
+    if (extractedRequirements.teamSize) {
+      pf({
+        type: 'requirement',
+        label: 'Teamgröße',
+        value: `${extractedRequirements.teamSize} Personen`,
+      });
+    }
+
+    // Constraints
+    if (extractedRequirements.constraints?.length) {
+      pf({
+        type: 'requirement',
+        label: 'Einschränkungen',
+        value: extractedRequirements.constraints.join(', '),
+      });
+    }
+
     await job.updateProgress(PROGRESS.REQUIREMENTS);
     await updateQualificationJob(backgroundJobId, {
       progress: PROGRESS.REQUIREMENTS,
       currentStep: 'Extraktion abgeschlossen',
     });
-
-    // ═══════════════════════════════════════════════════════════════
-    // STEP 3: DUPLICATE CHECK (removed)
-    // ═══════════════════════════════════════════════════════════════
-    await job.updateProgress(PROGRESS.DUPLICATE_CHECK);
-    await updateQualificationJob(backgroundJobId, {
-      progress: PROGRESS.DUPLICATE_CHECK,
-      currentStep: 'Qualifikation läuft',
-    });
+    void publishPhaseComplete(
+      preQualificationId,
+      'requirements_extraction',
+      'Extraktion abgeschlossen'
+    ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
 
     // ═══════════════════════════════════════════════════════════════
     // STEP 4: LEAD SCAN (50-90%)
     // ═══════════════════════════════════════════════════════════════
-    const websiteUrl: string | null = null;
+    let websiteUrl: string | null = pickWebsiteUrl(websiteUrls, extractedRequirements);
 
     if (websiteUrl) {
-      const [qualificationScan] = await db
-        .insert(leadScans)
-        .values({
-          preQualificationId,
-          websiteUrl,
-          status: 'running',
-          startedAt: new Date(),
-        })
-        .returning();
+      try {
+        const urlCheck = await checkAndSuggestUrl(websiteUrl);
+        if (urlCheck.reachable) {
+          websiteUrl = urlCheck.finalUrl;
+          if (urlCheck.redirectChain?.length) {
+            void publishAgentProgress(
+              preQualificationId,
+              'qualification_scan',
+              'Website Crawler',
+              `URL erreichbar (${urlCheck.statusCode ?? 'OK'}): ${urlCheck.finalUrl}`
+            ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+          }
+        } else if (urlCheck.suggestedUrl) {
+          websiteUrl = urlCheck.suggestedUrl;
+          void publishFinding(preQualificationId, 'qualification_scan', {
+            type: 'customer',
+            label: 'URL Vorschlag',
+            value: `${urlCheck.finalUrl} → ${urlCheck.suggestedUrl}${urlCheck.reason ? ` (${urlCheck.reason})` : ''}`,
+            confidence: 60,
+          }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+        } else {
+          // No reachable URL found; fall back to document-only path.
+          websiteUrl = null;
+          void publishFinding(preQualificationId, 'qualification_scan', {
+            type: 'customer',
+            label: 'Website',
+            value: `Nicht erreichbar: ${urlCheck.reason || urlCheck.finalUrl}`,
+            confidence: 20,
+          }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+        }
+      } catch (error) {
+        console.error('[PreQual Worker] URL check failed:', error);
+        websiteUrl = null;
+      }
+    }
+
+    if (websiteUrl) {
+      const [preQualRow] = await db
+        .select({ qualificationScanId: preQualifications.qualificationScanId })
+        .from(preQualifications)
+        .where(eq(preQualifications.id, preQualificationId))
+        .limit(1);
+
+      let qualificationScan = preQualRow?.qualificationScanId
+        ? (
+            await db
+              .select()
+              .from(leadScans)
+              .where(eq(leadScans.id, preQualRow.qualificationScanId))
+              .limit(1)
+          )[0]
+        : null;
+
+      if (!qualificationScan) {
+        [qualificationScan] = await db
+          .insert(leadScans)
+          .values({
+            preQualificationId,
+            websiteUrl,
+            status: 'running',
+            startedAt: new Date(),
+          })
+          .returning();
+      } else {
+        await db
+          .update(leadScans)
+          .set({
+            websiteUrl,
+            status: 'running',
+            startedAt: qualificationScan.startedAt || new Date(),
+            completedAt: null,
+          })
+          .where(eq(leadScans.id, qualificationScan.id));
+      }
 
       await db
         .update(preQualifications)
@@ -673,6 +1249,10 @@ export async function processPreQualJob(
         })
         .where(eq(preQualifications.id, preQualificationId));
 
+      void publishPhaseStart(preQualificationId, 'qualification_scan', 'Website analysieren').catch(
+        err => console.error('[PreQual Worker] Publish failed:', err)
+      );
+
       const result = await runQualificationScanAgentNative(
         {
           bidId: preQualificationId,
@@ -680,13 +1260,18 @@ export async function processPreQualJob(
           extractedRequirements,
           userId,
           preQualificationId,
-          mode: 'qualification',
         },
         {
           onActivity: entry => {
             void updateQualificationJob(backgroundJobId, {
               currentStep: entry.action,
             });
+            void publishAgentProgress(
+              preQualificationId,
+              'qualification_scan',
+              'Website Scanner',
+              entry.action
+            ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
           },
         }
       );
@@ -726,6 +1311,97 @@ export async function processPreQualJob(
         console.error('[PreQual Worker] Timeline generation failed:', error);
       }
 
+      // CMS Matrix FIRST, then BL Recommendation (BL needs CMS result as context)
+      let urlPathCmsRecommendation: string | undefined;
+
+      try {
+        await updateQualificationJob(backgroundJobId, {
+          currentStep: 'CMS-Matrix erstellen...',
+        });
+
+        const cmsTechs = await db
+          .select()
+          .from(technologies)
+          .where(ilike(technologies.category, 'cms'));
+
+        if (cmsTechs.length === 0) {
+          throw new Error('Keine CMS-Technologies gefunden (technologies.category="CMS")');
+        }
+
+        const cmsOptions = cmsTechs.map(t => {
+          let strengths: string[] = [];
+          let weaknesses: string[] = [];
+          try {
+            strengths = t.pros ? (JSON.parse(t.pros) as string[]) : [];
+          } catch {
+            strengths = [];
+          }
+          try {
+            weaknesses = t.cons ? (JSON.parse(t.cons) as string[]) : [];
+          } catch {
+            weaknesses = [];
+          }
+          return {
+            id: t.id,
+            name: t.name,
+            isBaseline: t.isDefault || false,
+            strengths,
+            weaknesses,
+          };
+        });
+
+        // Combine scan-detected features with agent-extracted document requirements
+        const scanRequirements = extractRequirementsFromQualificationScan({
+          features: result.features,
+          techStack: result.techStack,
+          contentVolume: result.contentVolume,
+          accessibilityAudit: result.accessibilityAudit,
+          legalCompliance: result.legalCompliance,
+          performanceIndicators: result.performanceIndicators,
+        });
+        const agentRequirements = await runCMSRequirementsAgent(extractedRequirements);
+
+        // Merge & deduplicate (scan takes precedence on name conflicts)
+        const seen = new Set(scanRequirements.map(r => r.name.trim().toLowerCase()));
+        const requirements = [
+          ...scanRequirements,
+          ...agentRequirements.filter(r => !seen.has(r.name.trim().toLowerCase())),
+        ];
+        console.log(
+          `[PreQual Worker] CMS Requirements: ${scanRequirements.length} (Scan) + ${agentRequirements.length} (Agent) = ${requirements.length} (merged)`
+        );
+
+        const matrix = await runParallelMatrixResearch(requirements, cmsOptions, undefined, {
+          useCache: true,
+          saveToDb: true,
+          maxConcurrency: 5,
+        });
+
+        // Build license cost context from extracted requirements
+        const licenseCostCtx: LicenseCostContext = {
+          companySize: extractedRequirements.companySize,
+          pageCount: result.contentVolume?.estimatedPageCount,
+          requirements: requirements.map(r => ({ name: r.name, priority: r.priority })),
+        };
+        const techLicenseInfos = cmsTechs.map(t => ({
+          id: t.id,
+          annualLicenseCost: t.annualLicenseCost,
+          requiresEnterprise: t.requiresEnterprise,
+        }));
+
+        await saveMatrixToRfp(preQualificationId, matrix, licenseCostCtx, techLicenseInfos);
+
+        // Extract CMS recommendation for BL context
+        const cmsMatchingResult = matrixToCMSMatchingResult(
+          matrix,
+          licenseCostCtx,
+          techLicenseInfos
+        );
+        urlPathCmsRecommendation = cmsMatchingResult.recommendation.primaryCms;
+      } catch (error) {
+        console.error('[PreQual Worker] CMS Matrix generation failed:', error);
+      }
+
       let blRecommendation = result.blRecommendation;
       if (!blRecommendation?.primaryBusinessLine) {
         try {
@@ -758,6 +1434,7 @@ export async function processPreQualJob(
               features: result.features || getFallbackFeatures(),
               businessUnits: buList,
               extractedRequirements,
+              cmsRecommendation: urlPathCmsRecommendation,
             });
           }
         } catch (error) {
@@ -766,7 +1443,6 @@ export async function processPreQualJob(
       }
 
       const qualificationScanPayload = {
-        ...qualificationScan,
         status: 'completed' as const,
         techStack: JSON.stringify(result.techStack),
         cms: result.techStack.cms || null,
@@ -813,6 +1489,11 @@ export async function processPreQualJob(
         progress: PROGRESS.LEAD_SCAN,
         currentStep: 'Quick Scan abgeschlossen',
       });
+      void publishPhaseComplete(
+        preQualificationId,
+        'qualification_scan',
+        'Quick Scan abgeschlossen'
+      ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
 
       try {
         await embedAgentOutput(
@@ -822,62 +1503,6 @@ export async function processPreQualJob(
         );
       } catch (error) {
         console.error('[PreQual Worker] Failed to embed Quick Scan result:', error);
-      }
-
-      try {
-        await updateQualificationJob(backgroundJobId, {
-          currentStep: 'CMS-Matrix erstellen...',
-        });
-
-        const cmsTechs = await db
-          .select()
-          .from(technologies)
-          .where(ilike(technologies.category, 'cms'));
-
-        if (cmsTechs.length === 0) {
-          throw new Error('Keine CMS-Technologies gefunden (technologies.category="CMS")');
-        }
-
-        const cmsOptions = cmsTechs.map(t => {
-          let strengths: string[] = [];
-          let weaknesses: string[] = [];
-          try {
-            strengths = t.pros ? (JSON.parse(t.pros) as string[]) : [];
-          } catch {
-            strengths = [];
-          }
-          try {
-            weaknesses = t.cons ? (JSON.parse(t.cons) as string[]) : [];
-          } catch {
-            weaknesses = [];
-          }
-          return {
-            id: t.id,
-            name: t.name,
-            isBaseline: t.isDefault || false,
-            strengths,
-            weaknesses,
-          };
-        });
-
-        const requirements = extractRequirementsFromQualificationScan({
-          features: result.features,
-          techStack: result.techStack,
-          contentVolume: result.contentVolume,
-          accessibilityAudit: result.accessibilityAudit,
-          legalCompliance: result.legalCompliance,
-          performanceIndicators: result.performanceIndicators,
-        });
-
-        const matrix = await runParallelMatrixResearch(requirements, cmsOptions, undefined, {
-          useCache: true,
-          saveToDb: true,
-          maxConcurrency: 5,
-        });
-
-        await saveMatrixToRfp(preQualificationId, matrix);
-      } catch (error) {
-        console.error('[PreQual Worker] CMS Matrix generation failed:', error);
       }
 
       const questions = await runTenQuestionsAgent({
@@ -906,7 +1531,7 @@ export async function processPreQualJob(
       // Run CMS Evaluation automatically after Quick Scan
       try {
         await updateQualificationJob(backgroundJobId, {
-          currentStep: 'CMS-Matrix erstellen...',
+          currentStep: 'CMS-Evaluation...',
         });
         const cmsResult = await startCMSEvaluation(qualificationScan.id, { useWebSearch: true });
         if (cmsResult.success) {
@@ -923,6 +1548,11 @@ export async function processPreQualJob(
       await onAgentComplete(preQualificationId, 'QualificationScan');
     } else {
       console.log(`[PreQual Worker] No website URL - document-only qualification`);
+      void publishPhaseStart(
+        preQualificationId,
+        'qualification_scan',
+        'Dokumentenbasierte Analyse'
+      ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
 
       const [qualificationScan] = await db
         .insert(leadScans)
@@ -943,6 +1573,69 @@ export async function processPreQualJob(
         })
         .where(eq(preQualifications.id, preQualificationId));
 
+      void publishAgentProgress(
+        preQualificationId,
+        'qualification_scan',
+        'Dokumentenanalyse',
+        'Dokumentenbasierte Analyse wird vorbereitet...'
+      ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+
+      // Best-effort customer/decision-maker research (name-only) for doc-only qualifications.
+      if (extractedRequirements.customerName) {
+        try {
+          await updateQualificationJob(backgroundJobId, {
+            currentStep: 'Kundenrecherche (name-only)...',
+          });
+          void publishAgentProgress(
+            preQualificationId,
+            'qualification_scan',
+            'Research Agent',
+            'Kundenrecherche (name-only) gestartet...'
+          ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+
+          const [companyIntel, decisionMakers] = await Promise.all([
+            gatherCompanyIntelligence(extractedRequirements.customerName, null),
+            searchDecisionMakersNameOnly(extractedRequirements.customerName),
+          ]);
+
+          await db
+            .update(leadScans)
+            .set({
+              companyIntelligence: companyIntel ? JSON.stringify(companyIntel) : null,
+              decisionMakers: decisionMakers ? JSON.stringify(decisionMakers) : null,
+            })
+            .where(eq(leadScans.id, qualificationScan.id));
+
+          if (companyIntel?.basicInfo?.employeeCount) {
+            void publishFinding(preQualificationId, 'qualification_scan', {
+              type: 'customer',
+              label: 'Mitarbeiter',
+              value: companyIntel.basicInfo.employeeCount,
+              confidence: companyIntel.dataQuality?.confidence ?? 40,
+            }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+          }
+
+          const dmCount = decisionMakers?.decisionMakers?.length ?? 0;
+          if (dmCount > 0) {
+            void publishFinding(preQualificationId, 'qualification_scan', {
+              type: 'contact',
+              label: 'Entscheider',
+              value: `${dmCount} Profile gefunden (z.B. LinkedIn)`,
+              confidence: decisionMakers.researchQuality?.confidence ?? 40,
+            }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+          }
+        } catch (error) {
+          console.error('[PreQual Worker] Doc-only research failed:', error);
+        }
+      }
+
+      void publishAgentProgress(
+        preQualificationId,
+        'qualification_scan',
+        '10-Fragen Agent',
+        '10 BD-Fragen werden beantwortet...'
+      ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+
       const questions = await runTenQuestionsAgent({
         preQualificationId,
         userId,
@@ -961,45 +1654,33 @@ export async function processPreQualJob(
         })
         .where(eq(leadScans.id, qualificationScan.id));
 
-      try {
-        const buRows = await db.select().from(businessUnits);
-        const buList = buRows
-          .map(bu => {
-            try {
-              return { name: bu.name, keywords: JSON.parse(bu.keywords) as string[] };
-            } catch {
-              return { name: bu.name, keywords: [] };
-            }
-          })
-          .filter(bu => bu.keywords.length > 0 || bu.name.length > 0);
-
-        if (buList.length > 0) {
-          const blRecommendation = await generateBLRecommendation({
-            url: 'document-only',
-            companyName: extractedRequirements?.customerName,
-            techStack: EMPTY_TECH_STACK,
-            contentVolume: {
-              estimatedPageCount: 0,
-              contentTypes: [],
-              languages: [],
-            },
-            features: getFallbackFeatures(),
-            businessUnits: buList,
-            extractedRequirements,
-          });
-
-          await db
-            .update(leadScans)
-            .set({
-              recommendedBusinessUnit: blRecommendation.primaryBusinessLine,
-              confidence: blRecommendation.confidence,
-              reasoning: blRecommendation.reasoning,
-            })
-            .where(eq(leadScans.id, qualificationScan.id));
+      // Publish each answered question as a finding
+      void publishAgentProgress(
+        preQualificationId,
+        'qualification_scan',
+        '10-Fragen Agent',
+        `${questions.answeredCount}/${questions.totalCount} Fragen beantwortet`
+      ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+      for (const q of questions.questions) {
+        if (q.answered && q.answer) {
+          void publishFinding(preQualificationId, 'qualification_scan', {
+            type: 'question',
+            label: `Frage ${q.id}: ${q.question.slice(0, 60)}${q.question.length > 60 ? '...' : ''}`,
+            value: q.answer,
+            confidence: q.confidence,
+          }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
         }
-      } catch (error) {
-        console.error('[PreQual Worker] BL recommendation (doc-only) failed:', error);
       }
+
+      // CMS Matrix FIRST, then BL Recommendation (BL needs CMS result as context)
+      void publishAgentProgress(
+        preQualificationId,
+        'qualification_scan',
+        'CMS Agent',
+        'CMS-Matrix wird erstellt...'
+      ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+
+      let docOnlyCmsRecommendation: string | undefined;
 
       try {
         await updateQualificationJob(backgroundJobId, {
@@ -1037,11 +1718,9 @@ export async function processPreQualJob(
           };
         });
 
-        const requirements = extractRequirementsFromQualificationScan({
-          features: getFallbackFeatures(),
-          techStack: {},
-          contentVolume: { estimatedPageCount: 0 },
-        });
+        // Agent-native: AI agent extracts CMS requirements from document data
+        const requirements = await runCMSRequirementsAgent(extractedRequirements);
+        console.log(`[PreQual Worker] CMS Agent extrahierte ${requirements.length} Anforderungen`);
 
         const matrix = await runParallelMatrixResearch(requirements, cmsOptions, undefined, {
           useCache: true,
@@ -1049,9 +1728,83 @@ export async function processPreQualJob(
           maxConcurrency: 5,
         });
 
-        await saveMatrixToRfp(preQualificationId, matrix);
+        // Build license cost context from extracted requirements (document-only)
+        const docLicenseCostCtx: LicenseCostContext = {
+          companySize: extractedRequirements.companySize,
+          requirements: requirements.map(r => ({ name: r.name, priority: r.priority })),
+        };
+        const docTechLicenseInfos = cmsTechs.map(t => ({
+          id: t.id,
+          annualLicenseCost: t.annualLicenseCost,
+          requiresEnterprise: t.requiresEnterprise,
+        }));
+
+        await saveMatrixToRfp(preQualificationId, matrix, docLicenseCostCtx, docTechLicenseInfos);
+
+        // Extract CMS recommendation for BL context
+        const cmsMatchingResult = matrixToCMSMatchingResult(
+          matrix,
+          docLicenseCostCtx,
+          docTechLicenseInfos
+        );
+        docOnlyCmsRecommendation = cmsMatchingResult.recommendation.primaryCms;
       } catch (error) {
         console.error('[PreQual Worker] CMS Matrix (doc-only) failed:', error);
+      }
+
+      void publishAgentProgress(
+        preQualificationId,
+        'qualification_scan',
+        'Routing Agent',
+        'Business-Line-Zuordnung...'
+      ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+
+      try {
+        const buRows = await db.select().from(businessUnits);
+        const buList = buRows
+          .map(bu => {
+            try {
+              return { name: bu.name, keywords: JSON.parse(bu.keywords) as string[] };
+            } catch {
+              return { name: bu.name, keywords: [] };
+            }
+          })
+          .filter(bu => bu.keywords.length > 0 || bu.name.length > 0);
+
+        if (buList.length > 0) {
+          const blRecommendation = await generateBLRecommendation({
+            url: 'document-only',
+            companyName: extractedRequirements?.customerName,
+            techStack: EMPTY_TECH_STACK,
+            contentVolume: {
+              estimatedPageCount: 0,
+              contentTypes: [],
+              languages: [],
+            },
+            features: getFallbackFeatures(),
+            businessUnits: buList,
+            extractedRequirements,
+            cmsRecommendation: docOnlyCmsRecommendation,
+          });
+
+          await db
+            .update(leadScans)
+            .set({
+              recommendedBusinessUnit: blRecommendation.primaryBusinessLine,
+              confidence: blRecommendation.confidence,
+              reasoning: blRecommendation.reasoning,
+            })
+            .where(eq(leadScans.id, qualificationScan.id));
+
+          void publishFinding(preQualificationId, 'qualification_scan', {
+            type: 'business_line',
+            label: 'Business Line',
+            value: `${blRecommendation.primaryBusinessLine}${blRecommendation.reasoning ? ` — ${blRecommendation.reasoning}` : ''}`,
+            confidence: blRecommendation.confidence,
+          }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+        }
+      } catch (error) {
+        console.error('[PreQual Worker] BL recommendation (doc-only) failed:', error);
       }
 
       await updateStatus(preQualificationId, 'questions_ready');
@@ -1059,6 +1812,11 @@ export async function processPreQualJob(
         progress: PROGRESS.LEAD_SCAN,
         currentStep: 'Dokumentenbasierte Qualification abgeschlossen',
       });
+      void publishPhaseComplete(
+        preQualificationId,
+        'qualification_scan',
+        'Dokumentenbasierte Analyse abgeschlossen'
+      ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
       await updateQualificationJob(backgroundJobId, {
         progress: PROGRESS.TEN_QUESTIONS,
         currentStep: '10 Fragen beantwortet',
@@ -1069,6 +1827,17 @@ export async function processPreQualJob(
       progress: PROGRESS.SECTION_PAGES,
       currentStep: 'Detailseiten generieren',
     });
+    void publishPhaseStart(
+      preQualificationId,
+      'section_orchestration',
+      'Detailseiten generieren'
+    ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+    void publishAgentProgress(
+      preQualificationId,
+      'section_orchestration',
+      'Orchestrator',
+      `Generiere ${7} Detailseiten parallel...`
+    ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
 
     // Orchestrator-Worker Pattern: Parallele Section-Verarbeitung
     const orchestratorResult = await runPreQualSectionOrchestrator(preQualificationId, {
@@ -1081,6 +1850,14 @@ export async function processPreQualJob(
         updateQualificationJob(backgroundJobId, {
           currentStep: `Section ${completed}/${total}: ${sectionId}`,
         }).catch(err => console.error('[PreQual Worker] Progress update failed:', err));
+        void publishSectionComplete(preQualificationId, sectionId, completed, total).catch(err =>
+          console.error('[PreQual Worker] Publish failed:', err)
+        );
+        void publishSectionQuality(
+          preQualificationId,
+          sectionId,
+          Math.round((completed / total) * 100)
+        ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
       },
     });
 
@@ -1099,8 +1876,64 @@ export async function processPreQualJob(
           `[PreQual Worker] Bid/No Bid: ${orchestratorResult.decision.recommendation} (Confidence: ${orchestratorResult.decision.confidence}%)`
         );
 
+        const dec = orchestratorResult.decision;
+        const recLabels: Record<string, string> = {
+          bid: 'Bieten',
+          'no-bid': 'Nicht bieten',
+          conditional: 'Unter Bedingungen bieten',
+        };
+
+        void publishFinding(preQualificationId, 'completion', {
+          type: 'decision',
+          label: 'Bid-Empfehlung',
+          value: `${recLabels[dec.recommendation] || dec.recommendation} — ${dec.reasoning}`,
+          confidence: dec.confidence,
+        }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+
+        // Decision details as findings
+        for (const s of dec.strengths) {
+          void publishFinding(preQualificationId, 'completion', {
+            type: 'strength',
+            label: 'Stärke',
+            value: s,
+          }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+        }
+        for (const w of dec.weaknesses) {
+          void publishFinding(preQualificationId, 'completion', {
+            type: 'weakness',
+            label: 'Schwäche',
+            value: w,
+          }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+        }
+        for (const c of dec.conditions) {
+          void publishFinding(preQualificationId, 'completion', {
+            type: 'condition',
+            label: 'Bedingung',
+            value: c,
+          }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+        }
+
+        void publishAgentProgress(
+          preQualificationId,
+          'section_orchestration',
+          'Decision Agent',
+          '10 Fragen werden aus Decision synthetisiert...'
+        ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+
         // Synthetisiere 10 Fragen aus Decision (Agent-basiert)
-        const tenQuestions = await synthesizeTenQuestionsFromDecision(orchestratorResult.decision);
+        const tenQuestions = await synthesizeTenQuestionsFromDecision(dec);
+
+        // Publish each answered question as a finding
+        for (const q of tenQuestions.questions) {
+          if (q.answered && q.answer) {
+            void publishFinding(preQualificationId, 'section_orchestration', {
+              type: 'question',
+              label: `Frage ${q.id}: ${q.question.slice(0, 60)}${q.question.length > 60 ? '...' : ''}`,
+              value: q.answer,
+              confidence: q.confidence,
+            }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+          }
+        }
 
         // Speichere in qualificationScan
         const existingQualificationScan = await db
@@ -1121,7 +1954,50 @@ export async function processPreQualJob(
       }
     }
 
+    void publishPhaseComplete(
+      preQualificationId,
+      'section_orchestration',
+      `${orchestratorResult.completedSections} Sektionen abgeschlossen`
+    ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+
     await job.updateProgress(PROGRESS.LEAD_SCAN);
+
+    // If ALL sections failed, mark job as failed
+    if (orchestratorResult.completedSections === 0) {
+      const errorMsg =
+        orchestratorResult.error ||
+        `Alle ${orchestratorResult.failedSections.length} Sections fehlgeschlagen`;
+
+      await job.updateProgress(PROGRESS.COMPLETE);
+      await updateQualificationJob(backgroundJobId, {
+        status: 'failed',
+        progress: PROGRESS.COMPLETE,
+        currentStep: 'Sections fehlgeschlagen',
+        errorMessage: errorMsg,
+        completedAt: new Date(),
+      });
+      void publishError(preQualificationId, errorMsg).catch(err =>
+        console.error('[PreQual Worker] Publish failed:', err)
+      );
+
+      console.error(`[PreQual Worker] Job ${job.id} failed: ${errorMsg}`);
+
+      return {
+        success: false,
+        step: 'scanning',
+        progress: PROGRESS.SECTION_PAGES,
+        error: errorMsg,
+      };
+    }
+
+    // At least some sections succeeded
+    const resultPayload = {
+      success: true,
+      completedSections: orchestratorResult.completedSections,
+      totalSections: 7,
+      failedSections: orchestratorResult.failedSections.map(s => s.sectionId),
+      decision: orchestratorResult.decision?.recommendation,
+    };
 
     await job.updateProgress(PROGRESS.COMPLETE);
     await updateQualificationJob(backgroundJobId, {
@@ -1129,10 +2005,15 @@ export async function processPreQualJob(
       progress: PROGRESS.COMPLETE,
       currentStep: 'Abgeschlossen',
       completedAt: new Date(),
-      result: JSON.stringify({ success: true }),
+      result: JSON.stringify(resultPayload),
     });
+    void publishCompletion(preQualificationId, 'Verarbeitung abgeschlossen').catch(err =>
+      console.error('[PreQual Worker] Publish failed:', err)
+    );
 
-    console.log(`[PreQual Worker] Job ${job.id} completed.`);
+    console.log(
+      `[PreQual Worker] Job ${job.id} completed (${orchestratorResult.completedSections}/7 sections).`
+    );
 
     return {
       success: true,
@@ -1183,6 +2064,9 @@ export async function processPreQualJob(
       }),
       completedAt: new Date(),
     });
+    void publishError(preQualificationId, errorMsg).catch(err =>
+      console.error('[PreQual Worker] Publish failed:', err)
+    );
 
     return {
       success: false,

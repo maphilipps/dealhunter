@@ -7,12 +7,14 @@
  * Key principle: Extract projectGoal FIRST as it guides all other extraction.
  */
 
+import * as Sentry from '@sentry/nextjs';
 import { ToolLoopAgent, hasToolCall, stepCountIs, tool } from 'ai';
-import { generateText } from 'ai';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 
-import { registry } from '../agent-tools';
+import { registry, executeRegistryTool, wrapRegistryTools } from '../agent-tools';
 import type { ToolContext } from '../agent-tools';
+import type { WrapOptions } from '../agent-tools/ai-sdk-bridge';
 import type { ExtractedRequirements } from './schema';
 import { generateSchemaDescription, initExtractionSession } from '../agent-tools/tools/extraction';
 import { modelNames } from '../ai/config';
@@ -124,33 +126,32 @@ ${metadata?.date ? `Datum: ${metadata.date}` : ''}
 `;
 }
 
+const deadlineSchema = z.object({
+  submissionDeadline: z.string().describe('YYYY-MM-DD format').optional(),
+  submissionTime: z.string().describe('HH:MM format').optional(),
+  rawText: z.string().describe('Original text snippet').optional(),
+});
+
 async function inferSubmissionDeadline(rawText: string): Promise<{
   submissionDeadline?: string;
   submissionTime?: string;
   rawText?: string;
 }> {
-  const prompt = `Extract the bid submission deadline from this document.
+  try {
+    const prompt = `Extract the bid submission deadline from this document.
 Return JSON ONLY with keys: submissionDeadline (YYYY-MM-DD), submissionTime (HH:MM, optional), rawText (snippet).
 If no deadline is present, return {}.
 
 Document:
 ${rawText.slice(0, 9000)}`.trim();
 
-  const { text } = await generateText({
-    model: getProviderForSlot('fast')(modelNames.fast),
-    prompt,
-  });
+    const { output } = await generateText({
+      model: (await getProviderForSlot('fast'))(modelNames.fast),
+      output: Output.object({ schema: deadlineSchema }),
+      prompt,
+    });
 
-  const jsonStart = text.indexOf('{');
-  const jsonEnd = text.lastIndexOf('}');
-  if (jsonStart === -1 || jsonEnd === -1) return {};
-  try {
-    const parsed = JSON.parse(text.slice(jsonStart, jsonEnd + 1)) as {
-      submissionDeadline?: string;
-      submissionTime?: string;
-      rawText?: string;
-    };
-    return parsed;
+    return output ?? {};
   } catch {
     return {};
   }
@@ -165,6 +166,16 @@ ${rawText.slice(0, 9000)}`.trim();
  * - projectName (title of the project/RFP)
  * - language (de/en for subsequent queries)
  */
+const headerSchema = z.object({
+  customerName: z.string().nullable().describe('Full organization/company name'),
+  projectName: z.string().nullable().describe('The project or RFP title'),
+  projectDescription: z
+    .string()
+    .nullable()
+    .describe('Brief description if visible (max 200 chars)'),
+  language: z.enum(['de', 'en']).default('de').describe('Primary document language'),
+});
+
 async function extractHeaderFields(rawText: string): Promise<{
   customerName?: string;
   projectName?: string;
@@ -200,30 +211,18 @@ Return JSON with these fields:
 If a field cannot be determined, use null. DO NOT guess or use random text fragments.`;
 
   try {
-    const { text } = await generateText({
-      model: getProviderForSlot('fast')(modelNames.fast),
+    const { output } = await generateText({
+      model: (await getProviderForSlot('fast'))(modelNames.fast),
+      output: Output.object({ schema: headerSchema }),
       prompt,
       temperature: 0,
     });
 
-    const jsonStart = text.indexOf('{');
-    const jsonEnd = text.lastIndexOf('}');
-    if (jsonStart === -1 || jsonEnd === -1) {
-      return { language: 'de' };
-    }
-
-    const parsed = JSON.parse(text.slice(jsonStart, jsonEnd + 1)) as {
-      customerName?: string;
-      projectName?: string;
-      projectDescription?: string;
-      language?: string;
-    };
-
     return {
-      customerName: parsed.customerName || undefined,
-      projectName: parsed.projectName || undefined,
-      projectDescription: parsed.projectDescription || undefined,
-      language: parsed.language === 'en' ? 'en' : 'de',
+      customerName: output?.customerName ?? undefined,
+      projectName: output?.projectName ?? undefined,
+      projectDescription: output?.projectDescription ?? undefined,
+      language: output?.language === 'en' ? 'en' : 'de',
     };
   } catch (error) {
     console.error('[Header Scanner] Failed:', error);
@@ -271,13 +270,21 @@ export async function runExtractionAgentNative(
     logActivity('Embedding', 'Erstelle Dokument-Embeddings für semantische Suche...');
     const embedResult = await embedRawText(input.preQualificationId, input.rawText);
 
-    // If the qualification was deleted mid-run, skip RAG instead of crashing the job.
+    // If embedding fails, log a warning but continue — embedding failure should not block extraction.
     if (!embedResult.success && !embedResult.skipped) {
-      throw new Error(`Embedding failed: ${embedResult.error}`);
+      Sentry.captureException(new Error(`Embedding failed: ${embedResult.error}`), {
+        tags: { component: 'extraction', preQualificationId: input.preQualificationId },
+        level: 'warning',
+      });
     }
 
+    const ragAvailable = embedResult.success || embedResult.skipped;
     const embeddedChunks = embedResult.stats?.totalChunks ?? 0;
     logActivity('Embedding', `${embeddedChunks} Chunks erstellt`);
+    logActivity(
+      'Embedding',
+      ragAvailable ? 'RAG verfügbar' : 'RAG nicht verfügbar — Ergebnisse ohne semantische Suche'
+    );
 
     // Step 2: Initialize extraction session with header fields
     const initialData: Partial<ExtractedRequirements> = {
@@ -306,35 +313,43 @@ export async function runExtractionAgentNative(
       userName: 'Extraction Agent',
     };
 
-    // Step 4: Create tools for the agent using AI SDK tool() helper
+    // Step 4: Create tools for the agent — direct registry tools + completion tool
     let hasQueriedDocument = false;
 
-    const runTool = tool({
-      description: 'Execute a registered tool by name',
-      inputSchema: z.object({
-        name: z.string().describe('Tool name (e.g., prequal.query, prequal.set)'),
-        input: z.object({}).passthrough().describe('Tool input parameters'),
-      }),
-      execute: async ({ name, input: toolInput }) => {
-        if (name === 'prequal.query') {
+    const wrapOptions: WrapOptions = {
+      onExecute: (toolName, toolInput) => {
+        if (toolName === 'prequal.query') {
           hasQueriedDocument = true;
         }
+        logActivity(`Tool: ${toolName}`, JSON.stringify(toolInput).slice(0, 100));
+      },
+      onResult: (toolName, result) => {
+        const r = result as { success: boolean; error?: string };
+        if (!r.success) {
+          logActivity(`Tool Error: ${toolName}`, r.error);
+        }
+      },
+    };
 
-        if (name === 'prequal.set' && !hasQueriedDocument) {
+    // Direct tools with proper Zod schemas (replaces meta-tool "runTool")
+    const registryTools = wrapRegistryTools(
+      ['prequal.query', 'prequal.get'],
+      toolContext,
+      wrapOptions
+    );
+
+    // prequal.set with guard: requires prior prequal.query
+    const setDef = registry.get('prequal.set')!;
+    registryTools['prequal.set'] = tool({
+      description: setDef.description,
+      inputSchema: setDef.inputSchema,
+      execute: async (toolInput: unknown) => {
+        if (!hasQueriedDocument) {
           const error = 'prequal.set requires prior prequal.query in this session.';
-          logActivity(`Tool Error: ${name}`, error);
+          logActivity('Tool Error: prequal.set', error);
           return { success: false, error };
         }
-
-        logActivity(`Tool: ${name}`, JSON.stringify(toolInput).slice(0, 100));
-
-        const result = await registry.execute(name, toolInput, toolContext);
-
-        if (!result.success) {
-          logActivity(`Tool Error: ${name}`, result.error);
-        }
-
-        return result;
+        return executeRegistryTool('prequal.set', toolInput, toolContext, wrapOptions);
       },
     });
 
@@ -361,10 +376,10 @@ export async function runExtractionAgentNative(
     });
 
     const agent = new ToolLoopAgent({
-      model: getProviderForSlot('default')(modelNames.default),
+      model: (await getProviderForSlot('default'))(modelNames.default),
       instructions: systemPrompt,
-      tools: { runTool, completeExtraction },
-      stopWhen: [stepCountIs(50), hasToolCall('completeExtraction')],
+      tools: { ...registryTools, completeExtraction },
+      stopWhen: [stepCountIs(25), hasToolCall('completeExtraction')],
     });
 
     logActivity('Agent', 'Starte Extraktion...');
@@ -386,7 +401,17 @@ Beginne mit der Extraktion. Starte mit prequal.query um das Projektziel zu finde
 Nutze die Tools um alle relevanten Felder zu extrahieren.
 `.trim();
 
-    const result = await agent.generate({ prompt });
+    const result = await agent.generate({
+      prompt,
+      onStepFinish: stepResult => {
+        const toolNames =
+          stepResult.toolCalls
+            ?.filter((t): t is NonNullable<typeof t> => t != null)
+            .map(t => t.toolName)
+            .join(', ') || 'none';
+        logActivity('Step completed', `Tools: ${toolNames}`);
+      },
+    });
 
     // Step 6: Get final extraction result
     const completionCall = result.steps

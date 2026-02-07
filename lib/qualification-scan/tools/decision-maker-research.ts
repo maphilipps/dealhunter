@@ -151,7 +151,7 @@ async function extractPeopleFromPage(
     });
 
     const { text } = await generateText({
-      model: getProviderForSlot('research')(modelNames.research),
+      model: (await getProviderForSlot('research'))(modelNames.research),
       system: `Du bist ein Experte für die Extraktion von Kontaktinformationen aus Webseiten.
 
 AUFGABE: Extrahiere Entscheidungsträger und Führungspersonen von ${companyName}.
@@ -442,6 +442,111 @@ export async function searchDecisionMakers(
       linkedInFound,
       emailsConfirmed,
       emailsDerived,
+      confidence,
+      sources: Array.from(sourcesUsed),
+      lastUpdated: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Name-only decision maker research (no website/domain required).
+ *
+ * Strategy:
+ * - Only use LinkedIn/Xing search queries and parse snippets for public profile URLs.
+ * - Do not attempt email derivation (no domain context).
+ */
+export async function searchDecisionMakersNameOnly(
+  companyName: string,
+  options: { maxSearches?: number } = {}
+): Promise<DecisionMakersResearch> {
+  const { maxSearches = 4 } = options;
+
+  const decisionMakers: DecisionMaker[] = [];
+  const existingNames = new Set<string>();
+  let linkedInFound = 0;
+  let searchesExecuted = 0;
+
+  const sourcesUsed = new Set<string>();
+
+  // Focus on public profile URL discovery only (lowest risk, highest signal).
+  const queries = [
+    `"${companyName}" Geschäftsführer site:linkedin.com/in`,
+    `"${companyName}" CEO CTO site:linkedin.com/in`,
+    `"${companyName}" Managing Director site:linkedin.com/in`,
+    `"${companyName}" Geschäftsführer site:xing.com`,
+  ];
+
+  for (const query of queries) {
+    if (searchesExecuted >= maxSearches) break;
+    searchesExecuted++;
+
+    const isLinkedInSearch = query.includes('site:linkedin.com');
+    const isXingSearch = query.includes('site:xing.com');
+
+    try {
+      const searchResults = await searchAndContents(query, {
+        numResults: 5,
+        category: isLinkedInSearch ? 'people' : 'company',
+      });
+
+      if (!searchResults.results || searchResults.results.length === 0) continue;
+
+      if (isLinkedInSearch) {
+        const people = parseLinkedInResults(searchResults.results);
+        for (const person of people) {
+          const key = person.name.toLowerCase();
+          if (existingNames.has(key)) continue;
+          existingNames.add(key);
+          linkedInFound++;
+          sourcesUsed.add('linkedin');
+          decisionMakers.push({
+            name: person.name,
+            role: person.role,
+            linkedInUrl: person.linkedInUrl,
+            source: 'linkedin',
+            emailConfidence: 'unknown',
+          });
+        }
+      } else if (isXingSearch) {
+        // Minimal Xing support: store URLs if they look like profiles.
+        for (const r of searchResults.results) {
+          if (!r.url.includes('xing.com')) continue;
+          sourcesUsed.add('xing');
+          const title = r.title || '';
+          const name = title.split(' - ')[0]?.trim();
+          if (!name || name.length < 3) continue;
+          const key = name.toLowerCase();
+          if (existingNames.has(key)) continue;
+          existingNames.add(key);
+          decisionMakers.push({
+            name,
+            role: 'Unknown',
+            xingUrl: r.url,
+            source: 'xing',
+            emailConfidence: 'unknown',
+          });
+        }
+      }
+    } catch (error) {
+      console.error(
+        `[Decision Makers] Name-only search failed for "${query.slice(0, 40)}..."`,
+        error
+      );
+    }
+
+    await sleep(750);
+  }
+
+  const confidence = Math.min(100, Math.round(decisionMakers.length * 15 + linkedInFound * 10));
+
+  return {
+    decisionMakers,
+    researchQuality: {
+      linkedInFound,
+      xingFound: Array.from(sourcesUsed).includes('xing') ? 1 : 0,
+      emailsConfirmed: 0,
+      emailsDerived: 0,
       confidence,
       sources: Array.from(sourcesUsed),
       lastUpdated: new Date().toISOString(),

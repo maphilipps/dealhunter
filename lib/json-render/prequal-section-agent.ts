@@ -82,9 +82,18 @@ export async function runPreQualSectionAgent(input: {
   });
 
   const complete = tool({
-    description: 'Finalize the section generation.',
+    description: `Finalize the section generation. Call this AFTER storeVisualization (required) and storeDashboardHighlights (optional).
+This is the LAST tool you should call — it signals that your work is done.`,
     inputSchema: z.object({ success: z.boolean() }),
-    execute: async ({ success }: { success: boolean }) => ({ success }),
+    execute: async ({ success }: { success: boolean }) => {
+      if (!hasStoredVisualization) {
+        return {
+          success: false,
+          error: 'You must call storeVisualization before calling complete.',
+        };
+      }
+      return { success };
+    },
   });
 
   // JsonRenderTree Schema for visualization
@@ -238,22 +247,41 @@ Regeln:
   });
 
   const agent = new ToolLoopAgent({
-    model: getProviderForSlot('default')(modelNames.default),
+    model: (await getProviderForSlot('default'))(modelNames.default),
     instructions: [
       SECTION_UI_SYSTEM_PROMPT,
-      'Use queryDocuments first to gather document-only context.',
+      '',
+      'ERWEITERTER WORKFLOW (folge dieser Reihenfolge):',
+      '1. BRIEFING LESEN: Lies das Section-Briefing und formuliere 2-4 eigene Suchfragen',
+      '2. ERSTE SUCHE: queryDocuments mit breiter Abfrage zum Kernthema der Section (REQUIRED)',
+      '3. ANALYSE: Was hast du gefunden? Was fehlt noch?',
+      '4. FOLGE-SUCHEN: 1-3 gezielte queryDocuments-Aufrufe basierend auf Lücken',
+      '5. SYNTHESE: storeVisualization — erstelle die Visualisierung aus ALLEN gefundenen Informationen (REQUIRED)',
+      '6. storeDashboardHighlights — 1-3 Key-Facts für das Dashboard (empfohlen, optional)',
+      '7. complete — signalisiere, dass du fertig bist (REQUIRED, muss dein LETZTER Tool-Call sein)',
+      '',
+      'WICHTIG ZU queryDocuments:',
+      '- Rufe queryDocuments MEHRFACH auf (2-4 Mal empfohlen)',
+      '- Nutze KONKRETE Begriffe aus Ausschreibungen, NICHT die Briefing-Überschriften als Suchbegriff',
+      '- Beispiele guter Queries: "Budget Kostenrahmen Auftragswert EUR", "Abgabefrist Einreichung Teilnahmeantrag", "EVB-IT Vertrag Gewährleistung Haftung"',
+      '- Beispiele SCHLECHTER Queries: "Was ist das Budget?", "Wann ist die Deadline?", "Welcher Vertragstyp?"',
+      '',
       allowWebEnrichment
-        ? 'Web enrichment is allowed. If you use webSearch/fetchUrl, keep it in a separate section with source URLs.'
-        : 'Do NOT use webSearch or fetchUrl. Only use document context.',
-      'Persist findings via storeFindingsBatch with chunkType matching the sectionId.',
-      'Then call storeVisualization with a JsonRenderTree.',
-      'Finally call storeDashboardHighlights with 1-3 key facts for the dashboard.',
+        ? 'Web-Anreicherung ist erlaubt. Wenn du webSearch/fetchUrl nutzt, halte es in einer separaten Section mit Quell-URLs.'
+        : 'Nutze NICHT webSearch oder fetchUrl. Verwende NUR Dokument-Kontext.',
+      'Du kannst storeFindingsBatch verwenden, um Erkenntnisse mit chunkType passend zur sectionId zu speichern.',
     ].join('\n'),
     tools: {
       queryDocuments: tool({
-        description: 'Query only the provided documents (raw chunks) for relevant information.',
+        description: `Suche in den Ausschreibungsdokumenten. Du SOLLST dieses Tool MEHRFACH aufrufen mit unterschiedlichen Suchbegriffen.
+Formuliere deine Queries dynamisch — breite Suche zuerst, dann gezielte Nachfragen basierend auf Lücken.
+Nutze konkrete Begriffe die in Ausschreibungsdokumenten vorkommen, NICHT abstrakte Überschriften.`,
         inputSchema: z.object({
-          query: z.string(),
+          query: z
+            .string()
+            .describe(
+              'Konkrete Suchbegriffe (z.B. "Budget Kostenrahmen Auftragswert EUR" statt "Was ist das Budget?")'
+            ),
           topK: z.number().min(1).max(20).default(8),
         }),
         execute: async ({ query, topK }: { query: string; topK: number }) => {
@@ -284,22 +312,35 @@ Regeln:
       storeDashboardHighlights,
       complete,
     },
-    stopWhen: [stepCountIs(24), hasToolCall('storeDashboardHighlights')],
+    stopWhen: [stepCountIs(30), hasToolCall('complete')],
   });
 
   const prompt = `Section: ${sectionId}
 
-ANALYSEFRAGEN:
+BRIEFING FÜR DIESE SECTION:
 ${sectionQuery}
 
-DEINE AUFGABE:
-1. Rufe queryDocuments auf mit relevanten Suchbegriffen
-2. Analysiere die gefundenen Dokument-Chunks GRÜNDLICH
-3. Erstelle eine AUFBEREITETE Visualisierung mit:
+DEINE AUFGABE: Formuliere basierend auf diesem Briefing EIGENE Suchbegriffe.
+Nutze NICHT die Überschriften als Suchbegriff, sondern konkrete Begriffe die in Ausschreibungsdokumenten vorkommen.
+
+BEISPIELE für gute Queries:
+- "Budget Kostenrahmen Auftragswert EUR" (statt "Was ist das Budget?")
+- "Abgabefrist Einreichung Teilnahmeantrag Frist" (statt "Wann ist die Deadline?")
+- "EVB-IT Vertrag Gewährleistung Haftung" (statt "Welcher Vertragstyp?")
+- "Referenzen Nachweise Eignung vergleichbar" (statt "Welche Referenzen?")
+- "Zuschlagskriterien Gewichtung Bewertung Punkte" (statt "Wie wird bewertet?")
+
+WORKFLOW:
+1. Formuliere 2-4 Suchfragen basierend auf dem Briefing
+2. ERSTE SUCHE: Breite Abfrage zum Kernthema mit queryDocuments
+3. ANALYSE: Prüfe was du gefunden hast — was fehlt noch?
+4. FOLGE-SUCHEN: 1-3 gezielte Nachfragen mit queryDocuments basierend auf Lücken
+5. SYNTHESE: Erstelle die Visualisierung aus ALLEN gefundenen Informationen:
    - Zusammenfassung: Was sind die Kernpunkte für ein Angebotsteam?
-   - Details: Strukturierte Fakten mit KeyValue und BulletList
+   - Details: Strukturierte Fakten mit KeyValueTable und BulletList
    - Einschätzung: Was bedeutet das? Was fehlt? Worauf achten?
-4. Erstelle 1-3 Key-Facts für das Dashboard und speichere sie via storeDashboardHighlights
+6. Erstelle 1-3 Key-Facts für das Dashboard via storeDashboardHighlights
+7. Rufe complete auf
 
 WICHTIG:
 - KEINE Rohdaten kopieren - INTERPRETIEREN und AUFBEREITEN
@@ -324,8 +365,9 @@ WICHTIG:
     }
 
     if (!hasStoredDashboardHighlights) {
-      console.warn(`[Section:${sectionId}] Agent completed without dashboard highlights`);
-      return { success: false, error: 'Agent did not store dashboard highlights' };
+      console.warn(
+        `[Section:${sectionId}] Agent completed without dashboard highlights — skipping (non-critical)`
+      );
     }
 
     return { success: true };

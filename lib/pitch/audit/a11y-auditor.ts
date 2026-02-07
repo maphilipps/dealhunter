@@ -101,7 +101,7 @@ export async function auditAccessibility(
   const staticChecks = runStaticA11yChecks(html);
 
   const result = await generateText({
-    model: getModel('default'),
+    model: await getModel('default'),
     output: Output.object({ schema: accessibilitySchema }),
     system: `Du bist ein WCAG-Barrierefreiheits-Experte. Analysiere die statischen Prüfergebnisse einer Website und bewerte die Barrierefreiheit gemäß WCAG 2.1 Richtlinien. Beachte: Dies ist eine statische Analyse — dynamische Aspekte (Farbe, Kontrast, Tastaturnavigation) können nur geschätzt werden.`,
     prompt: `Website: ${url}\n\nStatische Prüfergebnisse:\n${staticChecks}\n\nHTML-Auszug (erste 3000 Zeichen):\n${html.slice(0, 3000)}`,

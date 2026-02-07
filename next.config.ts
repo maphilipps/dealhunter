@@ -7,8 +7,9 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['@slack/bolt'],
   experimental: {
     serverActions: {
-      bodySizeLimit: '15mb', // Allow multiple PDFs up to 10 MB each
+      bodySizeLimit: '200mb', // Allow many files (16+ PDFs up to 10 MB each)
     },
+    proxyClientMaxBodySize: 200 * 1024 * 1024, // 200MB — must match serverActions.bodySizeLimit
   },
 };
 

@@ -139,3 +139,11 @@ export {
 
 // RAG Read Tool (Agent queries knowledge base)
 export { createRagTool } from './tools/rag-tool';
+
+// AI SDK Bridge — Registry tool → AI SDK tool() conversion
+export {
+  executeRegistryTool,
+  wrapRegistryTool,
+  wrapRegistryTools,
+  type WrapOptions,
+} from './ai-sdk-bridge';

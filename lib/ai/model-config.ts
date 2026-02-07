@@ -29,27 +29,14 @@ export type ModelSlot =
   | 'premium'
   | 'synthesizer'
   | 'research'
-  | 'vision';
+  | 'vision'
+  | 'embedding';
 
 // Model configuration
 export interface ModelConfig {
   provider: AIProvider;
   modelName: string;
 }
-
-// Provider configurations from env (used as fallback when DB has no data)
-const AI_HUB_CONFIG = {
-  apiKey: process.env.AI_HUB_API_KEY || process.env.OPENAI_API_KEY,
-  baseURL: process.env.AI_HUB_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
-};
-
-const OPENAI_CONFIG = {
-  apiKey:
-    process.env.OPENAI_DIRECT_API_KEY ||
-    process.env.OPENAI_EMBEDDING_API_KEY ||
-    process.env.OPENAI_API_KEY,
-  baseURL: 'https://api.openai.com/v1',
-};
 
 // Default model configurations (hardcoded fallbacks)
 const DEFAULT_MODELS: Record<ModelSlot, ModelConfig> = {
@@ -60,6 +47,7 @@ const DEFAULT_MODELS: Record<ModelSlot, ModelConfig> = {
   synthesizer: { provider: 'openai', modelName: 'gpt-5.2-chat-latest' },
   research: { provider: 'openai', modelName: 'gpt-5.2-pro' },
   vision: { provider: 'openai', modelName: 'gpt-4o-mini' },
+  embedding: { provider: 'openai', modelName: 'text-embedding-3-large' },
 };
 
 // ─── DB Cache ────────────────────────────────────────────────────────────────────
@@ -135,7 +123,7 @@ async function loadDBConfig() {
     dbCache = { providers: providerMap, slots: slotMap, loadedAt: now };
     return dbCache;
   } catch (error) {
-    console.warn('[AI Config] Failed to load DB config, using env/defaults:', error);
+    console.warn('[AI Config] Failed to load DB config, falling back to env vars:', error);
     return null;
   }
 }
@@ -162,20 +150,11 @@ export function getModelConfig(slot: ModelSlot): ModelConfig {
     }
   }
 
-  // Env variable fallback
+  // Env variable fallback for model selection (not credentials)
   const envPrefix = `AI_MODEL_${slot.toUpperCase()}`;
-  let provider =
+  const provider =
     (process.env[`${envPrefix}_PROVIDER`] as AIProvider) || DEFAULT_MODELS[slot].provider;
   const modelName = process.env[`${envPrefix}_NAME`] || DEFAULT_MODELS[slot].modelName;
-
-  const directOpenAIKey =
-    process.env.OPENAI_DIRECT_API_KEY ||
-    process.env.OPENAI_EMBEDDING_API_KEY ||
-    process.env.OPENAI_API_KEY;
-
-  if (directOpenAIKey && modelName.startsWith('gpt-')) {
-    provider = 'openai';
-  }
 
   return { provider, modelName };
 }
@@ -203,15 +182,7 @@ export function getAllModelConfigs(): Record<
   ModelSlot,
   ModelConfig & { source: 'db' | 'env' | 'default' }
 > {
-  const slots: ModelSlot[] = [
-    'fast',
-    'default',
-    'quality',
-    'premium',
-    'synthesizer',
-    'research',
-    'vision',
-  ];
+  const slots = Object.keys(DEFAULT_MODELS) as ModelSlot[];
 
   return slots.reduce(
     (acc, slot) => {
@@ -244,32 +215,42 @@ export function getAllModelConfigs(): Record<
   );
 }
 
+// ─── Env-var Helpers ─────────────────────────────────────────────────────────────
+
+const ENV_KEYS: Record<AIProvider, { apiKey?: string; baseUrl?: string; defaultBaseUrl?: string }> =
+  {
+    'ai-hub': {
+      apiKey: 'AI_HUB_API_KEY',
+      baseUrl: 'AI_HUB_BASE_URL',
+      defaultBaseUrl: 'https://adesso-ai-hub.3asabc.de/v1',
+    },
+    openai: { apiKey: 'OPENAI_API_KEY', baseUrl: 'OPENAI_BASE_URL' },
+    vercel: {},
+  };
+
+function getEnvApiKey(provider: AIProvider): string | undefined {
+  const key = ENV_KEYS[provider].apiKey;
+  return key ? process.env[key] : undefined;
+}
+
+function getEnvBaseUrl(provider: AIProvider): string | undefined {
+  const cfg = ENV_KEYS[provider];
+  if (cfg.baseUrl) {
+    return process.env[cfg.baseUrl] ?? cfg.defaultBaseUrl;
+  }
+  return cfg.defaultBaseUrl;
+}
+
 // ─── Provider Instances ──────────────────────────────────────────────────────────
 
 const providerCache = new Map<string, OpenAIProvider>();
 
 function getProviderInstance(provider: AIProvider): OpenAIProvider {
-  // Build a cache key that includes DB-sourced baseUrl for uniqueness
-  let apiKey: string | undefined;
-  let baseURL: string | undefined;
+  const dbProvider = dbCache?.providers.get(provider);
+  const apiKey = dbProvider?.apiKey ?? getEnvApiKey(provider);
+  const baseURL = dbProvider?.baseUrl ?? getEnvBaseUrl(provider);
 
-  // Try DB config first
-  if (dbCache) {
-    const dbProvider = dbCache.providers.get(provider);
-    if (dbProvider) {
-      apiKey = dbProvider.apiKey ?? undefined;
-      baseURL = dbProvider.baseUrl ?? undefined;
-    }
-  }
-
-  // Fallback to env config
-  if (!apiKey || !baseURL) {
-    const envConfig = provider === 'openai' ? OPENAI_CONFIG : AI_HUB_CONFIG;
-    apiKey = apiKey || envConfig.apiKey;
-    baseURL = baseURL || envConfig.baseURL;
-  }
-
-  const cacheKey = `${provider}:${baseURL}`;
+  const cacheKey = `${provider}:${baseURL}:${apiKey?.slice(-4)}`;
   if (providerCache.has(cacheKey)) {
     return providerCache.get(cacheKey)!;
   }
@@ -284,20 +265,32 @@ function getProviderInstance(provider: AIProvider): OpenAIProvider {
 }
 
 /**
- * Get a model instance for a slot
+ * Get a model instance for a slot (async — ensures DB config is loaded)
+ *
+ * Uses .chat() explicitly to force the Chat Completions API format.
+ * The default provider(modelName) uses the Responses API, which fails with
+ * LiteLLM/Gemini because Gemini returns text:null for tool-only responses,
+ * violating the AI SDK's response schema validation.
  */
-export function getModel(slot: ModelSlot) {
+export async function getModel(slot: ModelSlot) {
+  await loadDBConfig();
   const config = getModelConfig(slot);
   const provider = getProviderInstance(config.provider);
-  return provider(config.modelName);
+  return provider.chat(config.modelName);
 }
 
 /**
- * Get the provider function for a slot (for ToolLoopAgent etc.)
+ * Get the provider's .chat() function for a slot (for ToolLoopAgent etc.)
+ * Async — ensures DB config is loaded before resolving.
+ *
+ * Returns provider.chat (Chat Completions API) instead of the raw provider
+ * to avoid the Responses API format which is incompatible with LiteLLM proxies.
+ * Callers use it as: (await getModelProvider(slot))(modelName)
  */
-export function getModelProvider(slot: ModelSlot) {
+export async function getModelProvider(slot: ModelSlot) {
+  await loadDBConfig();
   const config = getModelConfig(slot);
-  return getProviderInstance(config.provider);
+  return getProviderInstance(config.provider).chat;
 }
 
 /**
@@ -318,12 +311,31 @@ export function logModelConfig(): void {
   }
 }
 
+// ─── Provider Credentials ─────────────────────────────────────────────────────
+
+export interface ProviderCredentials {
+  apiKey: string | undefined;
+  baseURL: string | undefined;
+}
+
+/**
+ * Get credentials for a provider (DB → Env fallback).
+ * Ensures the DB config cache is loaded before resolving.
+ */
+export async function getProviderCredentials(provider: AIProvider): Promise<ProviderCredentials> {
+  await loadDBConfig();
+
+  const dbProvider = dbCache?.providers.get(provider);
+  return {
+    apiKey: dbProvider?.apiKey ?? getEnvApiKey(provider),
+    baseURL: dbProvider?.baseUrl ?? getEnvBaseUrl(provider),
+  };
+}
+
 // Legacy compatibility exports
 export const modelNames = new Proxy({} as Record<ModelSlot, string>, {
   get(_, prop: string) {
-    if (
-      ['fast', 'default', 'quality', 'premium', 'synthesizer', 'research', 'vision'].includes(prop)
-    ) {
+    if (prop in DEFAULT_MODELS) {
       return getModelName(prop as ModelSlot);
     }
     return undefined;

@@ -9,6 +9,21 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
+ * Maps raw error messages to user-friendly German descriptions.
+ */
+function humanizeError(rawError: string): string {
+  if (rawError.includes('401') || rawError.includes('Invalid API key'))
+    return 'AI-Provider Authentifizierung fehlgeschlagen. Bitte API-Key in der Admin-Konfiguration prüfen.';
+  if (rawError.includes('429') || rawError.includes('rate limit'))
+    return 'Zu viele Anfragen an den AI-Provider. Bitte in einigen Minuten erneut versuchen.';
+  if (rawError.includes('timeout') || rawError.includes('Timeout'))
+    return 'Die Verarbeitung hat zu lange gedauert. Bitte erneut versuchen.';
+  if (rawError.includes('ECONNREFUSED') || rawError.includes('ENOTFOUND'))
+    return 'AI-Provider nicht erreichbar. Bitte Netzwerkverbindung und Konfiguration prüfen.';
+  return rawError;
+}
+
+/**
  * Processing step configuration with progress ranges
  */
 const STEP_CONFIG = {
@@ -27,6 +42,21 @@ const STEP_CONFIG = {
   },
   reviewing: { step: 'complete', minProgress: 100, label: 'Bereit zur Überprüfung' },
   extraction_failed: { step: 'extracting', minProgress: 0, label: 'Extraktion fehlgeschlagen' },
+  duplicate_check_failed: {
+    step: 'duplicate_checking',
+    minProgress: 40,
+    label: 'Duplikatprüfung fehlgeschlagen',
+  },
+  qualification_scan_failed: {
+    step: 'scanning',
+    minProgress: 60,
+    label: 'Qualifikations-Scan fehlgeschlagen',
+  },
+  timeline_failed: {
+    step: 'sections',
+    minProgress: 80,
+    label: 'Timeline-Erstellung fehlgeschlagen',
+  },
 } as const;
 
 /**
@@ -135,7 +165,8 @@ export async function GET(
     };
 
     if (jobError || hasError) {
-      response.error = jobError || `Fehler im Status: ${status}`;
+      const rawError = jobError || `Fehler im Status: ${status}`;
+      response.error = humanizeError(rawError);
     }
 
     return NextResponse.json(response);

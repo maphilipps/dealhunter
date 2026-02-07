@@ -455,6 +455,10 @@ export const technologies = pgTable('technologies', {
   adessoExpertise: text('adesso_expertise'),
   adessoReferenceCount: integer('adesso_reference_count'),
 
+  // Licensing
+  annualLicenseCost: integer('annual_license_cost').notNull().default(0), // EUR/year
+  requiresEnterprise: boolean('requires_enterprise').notNull().default(false),
+
   // Research Metadata
   lastResearchedAt: timestamp('last_researched_at'),
   researchStatus: text('research_status'), // pending, completed, failed

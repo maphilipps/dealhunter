@@ -4,9 +4,20 @@ import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/lib/auth';
+import { invalidateModelConfigCache } from '@/lib/ai/model-config';
 import { db } from '@/lib/db';
 import { aiProviderConfigs, aiModelSlotConfigs } from '@/lib/db/schema';
 import type { AIModelSlotConfig } from '@/lib/db/schema';
+
+export type ProviderModel = {
+  id: string;
+  ownedBy: string;
+};
+
+const DEFAULT_BASE_URLS: Record<string, string> = {
+  'ai-hub': process.env.AI_HUB_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
+  openai: 'https://api.openai.com/v1',
+};
 
 export type AIProviderForUI = {
   id: string;
@@ -87,6 +98,7 @@ export async function updateAIProvider(
       .where(eq(aiProviderConfigs.id, id))
       .returning();
 
+    invalidateModelConfigCache();
     revalidatePath('/admin/configs');
     return { success: true, provider: updated };
   } catch (error) {
@@ -153,6 +165,7 @@ export async function updateModelSlot(
       .where(eq(aiModelSlotConfigs.id, slotId))
       .returning();
 
+    invalidateModelConfigCache();
     revalidatePath('/admin/configs');
     return { success: true, slot: updated };
   } catch (error) {
@@ -184,10 +197,66 @@ export async function resetModelSlot(slotId: string) {
       .where(eq(aiModelSlotConfigs.id, slotId))
       .returning();
 
+    invalidateModelConfigCache();
     revalidatePath('/admin/configs');
     return { success: true, slot: updated };
   } catch (error) {
     console.error('Error resetting model slot:', error);
     return { success: false, error: 'Fehler beim Zurücksetzen' };
+  }
+}
+
+/**
+ * Fetch available models from a provider's API.
+ * Uses the OpenAI-compatible GET /models endpoint.
+ */
+export async function fetchProviderModels(
+  providerId: string
+): Promise<{ success: true; models: ProviderModel[] } | { success: false; error: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: 'Nicht authentifiziert' };
+  if (session.user.role !== 'admin') return { success: false, error: 'Keine Berechtigung' };
+
+  try {
+    const [provider] = await db
+      .select({
+        apiKey: aiProviderConfigs.apiKey,
+        baseUrl: aiProviderConfigs.baseUrl,
+        providerKey: aiProviderConfigs.providerKey,
+      })
+      .from(aiProviderConfigs)
+      .where(eq(aiProviderConfigs.id, providerId))
+      .limit(1);
+
+    if (!provider) return { success: false, error: 'Provider nicht gefunden' };
+    if (!provider.apiKey) return { success: false, error: 'Kein API Key konfiguriert' };
+
+    const baseUrl = provider.baseUrl || DEFAULT_BASE_URLS[provider.providerKey];
+    if (!baseUrl) return { success: false, error: 'Keine Base URL konfiguriert' };
+
+    const res = await fetch(`${baseUrl}/models`, {
+      headers: { Authorization: `Bearer ${provider.apiKey}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!res.ok) {
+      const status = res.status;
+      if (status === 401 || status === 403)
+        return { success: false, error: 'API Key ungültig oder keine Berechtigung' };
+      return { success: false, error: `API-Fehler: ${status} ${res.statusText}` };
+    }
+
+    const data = (await res.json()) as { data?: { id: string; owned_by?: string }[] };
+    const models: ProviderModel[] = (data.data || [])
+      .map(m => ({ id: m.id, ownedBy: m.owned_by || '' }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+
+    return { success: true, models };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      return { success: false, error: 'Zeitüberschreitung — Provider nicht erreichbar' };
+    }
+    console.error('Error fetching provider models:', error);
+    return { success: false, error: 'Verbindungsfehler zum Provider' };
   }
 }

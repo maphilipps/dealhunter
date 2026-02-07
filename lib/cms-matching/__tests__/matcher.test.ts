@@ -98,6 +98,8 @@ describe('CMS Matcher', () => {
       features: null,
       adessoExpertise: null,
       adessoReferenceCount: null,
+      annualLicenseCost: 0,
+      requiresEnterprise: false,
       lastResearchedAt: null,
       researchStatus: null,
       ...partial,

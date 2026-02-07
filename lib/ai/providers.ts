@@ -5,7 +5,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from './config';
-const DIRECT_OPENAI_KEY = process.env.OPENAI_DIRECT_API_KEY || process.env.OPENAI_EMBEDDING_API_KEY;
 import { getModel, getModelProvider, getModelConfig, type ModelSlot } from './model-config';
 
 /**
@@ -31,17 +30,11 @@ let defaultProviderInstance: any = null;
 export function getOpenAIProvider() {
   if (!defaultProviderInstance) {
     const { createOpenAI } = require('@ai-sdk/openai');
-    if (DIRECT_OPENAI_KEY) {
-      defaultProviderInstance = createOpenAI({
-        apiKey: DIRECT_OPENAI_KEY,
-        baseURL: 'https://api.openai.com/v1',
-      });
-    } else {
-      defaultProviderInstance = createOpenAI({
-        apiKey: AI_HUB_API_KEY,
-        baseURL: AI_HUB_BASE_URL,
-      });
-    }
+    // No direct OpenAI calls in this project: always use AI Hub.
+    defaultProviderInstance = createOpenAI({
+      apiKey: AI_HUB_API_KEY,
+      baseURL: AI_HUB_BASE_URL,
+    });
   }
   return defaultProviderInstance;
 }

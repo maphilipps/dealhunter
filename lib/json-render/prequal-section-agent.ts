@@ -25,15 +25,24 @@ VERBOTEN:
 
 STRUKTUR:
 1. Root ist eine Section (Card mit H2)
-2. ZUERST: Kurze Zusammenfassung (1 Paragraph, 2-3 Sätze max)
-3. DANN: Ausführliche Details in SubSections (H3)
+2. ZUERST: Zusammenfassung (1 Paragraph, 4-8 Sätze, klar + entscheidungsrelevant)
+3. DANN: Ausführliche Details in 3-6 SubSections (H3)
 4. KEINE Rohdaten - IMMER aufbereiten!
 
 INHALT:
 - ZUSAMMENFASSUNG: Kernaussage für schnelles Verständnis
-- DETAILS: Strukturierte Fakten in SubSections
+- DETAILS: Strukturierte Fakten in SubSections, jeweils mit "Was steht drin?" + "Was bedeutet das fürs Angebotsteam?"
 - KEINE DUPLIKATE: Information nur einmal erwähnen
 - Bei fehlenden Infos: Klar benennen was fehlt
+
+SONDERFÄLLE (KRITISCH):
+- Wenn du Regeln/Mechaniken findest, die leicht missverstanden werden (z.B. Anrechnung, Rabatte, Bonus/Malus, Indexierung,
+  Erlösmodelle wie "Anzeigenakquise wird auf Jahreskosten angerechnet"), DANN MUSST du das in einer eigenen SubSection erklären.
+- Erkläre es so, dass es ohne Kontext verstanden wird:
+  1) Kurz paraphrasieren (1-2 Sätze)
+  2) Konkretes Rechenbeispiel mit Zahlen (als "Beispiel", wenn Zahlen nicht gegeben sind)
+  3) Konsequenz für Angebot/Preisgestaltung (1-3 Bullet Points)
+  4) Offene Fragen / Klärungsbedarf, falls Text unklar ist
 
 KEY-VALUE REGELN (WICHTIG!):
 - NIEMALS mehrere separate KeyValue-Elemente hintereinander!
@@ -109,10 +118,11 @@ This is the LAST tool you should call — it signals that your work is done.`,
 
 WICHTIG: Rufe erst queryDocuments auf, dann erstelle eine AUFBEREITETE Visualisierung.
 
-STRUKTUR: Zusammenfassung → Details
-1. Section (Card mit H2) als Root
-2. ZUERST: Kurze Zusammenfassung (1 Paragraph, 2-3 Sätze)
-3. DANN: Details in SubSection(s) mit KeyValueTable/BulletList
+	STRUKTUR: Zusammenfassung → Details
+	1. Section (Card mit H2) als Root
+	2. ZUERST: Zusammenfassung (1 Paragraph, 4-8 Sätze) inkl. Interpretation fürs Angebotsteam
+	3. DANN: Details in 3-6 SubSection(s) mit KeyValueTable/BulletList
+	4. Wenn Sonderfälle/Mechaniken vorkommen: eigene SubSection "Sonderfälle & Beispiele" (mit Rechenbeispiel!)
 
 Verfügbare Typen:
 - Section: Hauptcontainer mit Card + H2 (title: string, description?: string)
@@ -132,16 +142,16 @@ LAYOUT:
 - Immer einspaltig (kein Grid)
 - VERBOTEN: Grid, ResultCard (deprecated)
 
-Beispiel:
-{
-  "root": "section-main",
-  "elements": {
-    "section-main": { "key": "section-main", "type": "Section", "props": { "title": "Vertragsanalyse" }, "children": ["para-1", "sub-details"] },
-    "para-1": { "key": "para-1", "type": "Paragraph", "props": { "text": "Die Ausschreibung sieht einen EVB-IT Systemvertrag vor." } },
-    "sub-details": { "key": "sub-details", "type": "SubSection", "props": { "title": "Kommerzielle Details" }, "children": ["kvtable-1"] },
-    "kvtable-1": { "key": "kvtable-1", "type": "KeyValueTable", "props": { "items": [{"label": "Vertragstyp", "value": "EVB-IT Systemvertrag"}, {"label": "Laufzeit", "value": "4 Jahre"}] } }
-  }
-}`,
+	Beispiel:
+	{
+	  "root": "section-main",
+	  "elements": {
+	    "section-main": { "key": "section-main", "type": "Section", "props": { "title": "Vertragsanalyse" }, "children": ["para-1", "sub-details"] },
+	    "para-1": { "key": "para-1", "type": "Paragraph", "props": { "text": "Die Ausschreibung sieht einen EVB-IT Systemvertrag vor. Fuer das Angebotsteam ist wichtig: ... (4-8 Saetze)" } },
+	    "sub-details": { "key": "sub-details", "type": "SubSection", "props": { "title": "Kommerzielle Details" }, "children": ["kvtable-1"] },
+	    "kvtable-1": { "key": "kvtable-1", "type": "KeyValueTable", "props": { "items": [{"label": "Vertragstyp", "value": "EVB-IT Systemvertrag"}, {"label": "Laufzeit", "value": "4 Jahre"}] } }
+	  }
+	}`,
     inputSchema: z.object({
       visualization: z.object({
         root: z.string().nullable(),
@@ -257,8 +267,9 @@ Regeln:
       '3. ANALYSE: Was hast du gefunden? Was fehlt noch?',
       '4. FOLGE-SUCHEN: 1-3 gezielte queryDocuments-Aufrufe basierend auf Lücken',
       '5. SYNTHESE: storeVisualization — erstelle die Visualisierung aus ALLEN gefundenen Informationen (REQUIRED)',
-      '6. storeDashboardHighlights — 1-3 Key-Facts für das Dashboard (empfohlen, optional)',
-      '7. complete — signalisiere, dass du fertig bist (REQUIRED, muss dein LETZTER Tool-Call sein)',
+      '6. storeFindingsBatch — speichere 8-15 Findings (chunkType = sectionId) mit Klartext + Implikation fürs Angebotsteam (REQUIRED)',
+      '7. storeDashboardHighlights — 1-3 Key-Facts für das Dashboard (REQUIRED, [] nur wenn wirklich nichts belastbar ist)',
+      '8. complete — signalisiere, dass du fertig bist (REQUIRED, muss dein LETZTER Tool-Call sein)',
       '',
       'WICHTIG ZU queryDocuments:',
       '- Rufe queryDocuments MEHRFACH auf (2-4 Mal empfohlen)',
@@ -266,10 +277,15 @@ Regeln:
       '- Beispiele guter Queries: "Budget Kostenrahmen Auftragswert EUR", "Abgabefrist Einreichung Teilnahmeantrag", "EVB-IT Vertrag Gewährleistung Haftung"',
       '- Beispiele SCHLECHTER Queries: "Was ist das Budget?", "Wann ist die Deadline?", "Welcher Vertragstyp?"',
       '',
+      'WICHTIG ZU storeFindingsBatch:',
+      '- findings[].chunkType MUSS exakt der sectionId entsprechen (z.B. "budget")',
+      '- findings[].category: "fact" oder "recommendation" (keine Phrasen wie "vermutlich")',
+      '- Sonderfälle/Mechaniken als eigenes Finding mit Mini-Beispielrechnung dokumentieren',
+      '',
       allowWebEnrichment
         ? 'Web-Anreicherung ist erlaubt. Wenn du webSearch/fetchUrl nutzt, halte es in einer separaten Section mit Quell-URLs.'
         : 'Nutze NICHT webSearch oder fetchUrl. Verwende NUR Dokument-Kontext.',
-      'Du kannst storeFindingsBatch verwenden, um Erkenntnisse mit chunkType passend zur sectionId zu speichern.',
+      'Du MUSST storeFindingsBatch verwenden, um Erkenntnisse mit chunkType passend zur sectionId zu speichern.',
     ].join('\n'),
     tools: {
       queryDocuments: tool({
@@ -312,7 +328,8 @@ Nutze konkrete Begriffe die in Ausschreibungsdokumenten vorkommen, NICHT abstrak
       storeDashboardHighlights,
       complete,
     },
-    stopWhen: [stepCountIs(30), hasToolCall('complete')],
+    // More room for multi-step RAG + detailed synthesis without timing out early.
+    stopWhen: [stepCountIs(40), hasToolCall('complete')],
   });
 
   const prompt = `Section: ${sectionId}
@@ -339,8 +356,10 @@ WORKFLOW:
    - Zusammenfassung: Was sind die Kernpunkte für ein Angebotsteam?
    - Details: Strukturierte Fakten mit KeyValueTable und BulletList
    - Einschätzung: Was bedeutet das? Was fehlt? Worauf achten?
-6. Erstelle 1-3 Key-Facts für das Dashboard via storeDashboardHighlights
-7. Rufe complete auf
+   - Sonderfälle: Wenn Mechaniken/Anrechnungen/Erlösmodelle vorkommen, erkläre sie mit Beispielrechnung
+6. Speichere 8-15 Findings via storeFindingsBatch (chunkType = sectionId)
+7. Erstelle 1-3 Key-Facts für das Dashboard via storeDashboardHighlights
+8. Rufe complete auf
 
 WICHTIG:
 - KEINE Rohdaten kopieren - INTERPRETIEREN und AUFBEREITEN
@@ -372,56 +391,126 @@ WICHTIG:
           maxResults: 10,
         });
 
-        const fallback = await generateStructuredOutput({
-          model: 'default',
-          schema: z.object({
-            root: z.string(),
-            elements: z.record(z.string(), jsonRenderElementSchema),
-            confidence: z.number().min(0).max(100),
-          }),
-          system: SECTION_UI_SYSTEM_PROMPT,
-          prompt: [
-            `SectionId: ${sectionId}`,
-            '',
-            'BRIEFING:',
-            sectionQuery,
-            '',
-            'DOKUMENT-KONTEXT (RAG):',
-            chunks.length ? formatRAGContext(chunks) : 'Keine relevanten Informationen gefunden.',
-            '',
-            'AUFGABE:',
-            'Erstelle eine JsonRenderTree Visualisierung (Section -> Paragraph Summary -> 1-2 SubSections).',
-            'Wenn Infos fehlen: explizit benennen, was fehlt, statt zu raten.',
-          ].join('\n'),
-          temperature: 0.2,
-          maxTokens: 1200,
-          timeout: 30_000,
-        });
+        let root = 'section-main';
+        let elements: Record<string, any> = {};
+        let confidence = 35;
 
-        // Post-validate and self-heal common model mistakes.
-        let root = fallback.root;
-        const elements = { ...fallback.elements };
-        if (!elements[root]) {
-          const firstKey = Object.keys(elements)[0];
-          if (firstKey) {
-            root = firstKey;
-          } else {
-            // Hard fallback: synthesize a minimal tree ourselves.
-            root = 'section-main';
-            elements[root] = {
-              key: root,
+        try {
+          const fallback = await generateStructuredOutput({
+            model: 'default',
+            schema: z.object({
+              root: z.string(),
+              elements: z.record(z.string(), jsonRenderElementSchema),
+              confidence: z.number().min(0).max(100),
+            }),
+            system: SECTION_UI_SYSTEM_PROMPT,
+            prompt: [
+              `SectionId: ${sectionId}`,
+              '',
+              'BRIEFING:',
+              sectionQuery,
+              '',
+              'DOKUMENT-KONTEXT (RAG):',
+              chunks.length ? formatRAGContext(chunks) : 'Keine relevanten Informationen gefunden.',
+              '',
+              'AUFGABE:',
+              'Erstelle eine JsonRenderTree Visualisierung (Section -> Paragraph Summary -> 3-6 SubSections).',
+              'Wenn Infos fehlen: explizit benennen, was fehlt, statt zu raten.',
+              'Wenn Sonderfall/Mechanik vorkommt: eigene SubSection "Sonderfälle & Beispiele" (mit Rechenbeispiel).',
+            ].join('\n'),
+            temperature: 0.2,
+            maxTokens: 2000,
+            timeout: 30_000,
+          });
+
+          confidence = fallback.confidence;
+          root = fallback.root;
+          elements = { ...fallback.elements };
+        } catch (llmError) {
+          console.warn(
+            `[Section:${sectionId}] Fallback LLM visualization failed — using deterministic fallback:`,
+            llmError
+          );
+        }
+
+        // Deterministic fallback (also acts as a "self-heal" when the model output is invalid).
+        if (!elements || Object.keys(elements).length === 0 || !root || !elements[root]) {
+          const title =
+            sectionId === 'budget'
+              ? 'Budget & Laufzeit'
+              : sectionId === 'timing'
+                ? 'Zeitplan & Fristen'
+                : sectionId === 'contracts'
+                  ? 'Vertragstyp & Risiken'
+                  : sectionId === 'deliverables'
+                    ? 'Leistungen & Deliverables'
+                    : sectionId === 'references'
+                      ? 'Referenzen & Eignung'
+                      : sectionId === 'award-criteria'
+                        ? 'Zuschlagskriterien'
+                        : sectionId === 'offer-structure'
+                          ? 'Angebotsstruktur'
+                          : sectionQuery.split('\n')[0]?.slice(0, 80) || sectionId;
+
+          const topExtracts = chunks
+            .slice(0, 5)
+            .map(c => c.content)
+            .filter(Boolean)
+            .map(t => t.replace(/\s+/g, ' ').trim())
+            .map(t => (t.length > 260 ? `${t.slice(0, 260)}…` : t));
+
+          root = 'section-main';
+          elements = {
+            'section-main': {
+              key: 'section-main',
               type: 'Section',
-              props: { title: sectionQuery.split('\n')[0].slice(0, 80) || sectionId },
-              children: ['summary'],
-            };
-            elements.summary = {
+              props: { title },
+              children: ['summary', 'sub-extracts', 'sub-implications'],
+            },
+            summary: {
               key: 'summary',
               type: 'Paragraph',
               props: {
-                text: 'In den Dokumenten konnten keine belastbaren Details gefunden werden.',
+                text:
+                  'Die automatische Visualisierung konnte nicht erzeugt werden. Unten findest du die relevantesten Textauszüge und eine strukturierte Interpretation fuer das Angebotsteam. ' +
+                  'Bitte pruefe Sonderregelungen (Anrechnungen, Bonus/Malus, Erlösmodelle) besonders genau und klaere Unklarheiten vor Angebotsabgabe.',
               },
-            };
-          }
+            },
+            'sub-extracts': {
+              key: 'sub-extracts',
+              type: 'SubSection',
+              props: { title: 'Relevante Auszüge (komprimiert)' },
+              children: ['extracts-list'],
+            },
+            'extracts-list': {
+              key: 'extracts-list',
+              type: 'BulletList',
+              props: {
+                items: topExtracts.length
+                  ? topExtracts
+                  : ['Keine relevanten Informationen in den Dokumenten gefunden.'],
+              },
+            },
+            'sub-implications': {
+              key: 'sub-implications',
+              type: 'SubSection',
+              props: { title: 'Was bedeutet das fuer das Angebotsteam?' },
+              children: ['implications-list'],
+            },
+            'implications-list': {
+              key: 'implications-list',
+              type: 'BulletList',
+              props: {
+                items: [
+                  'Kernaussagen aus den Auszuegen validieren (Quelle/Seite im PDF nachschlagen).',
+                  'Sonderfaelle als klare Angebotsannahmen formulieren (z.B. Anrechnung/Bonus/Malus).',
+                  'Offene Fragen in Bieterfragen/Rueckfragen stellen, bevor Preis/Leistung finalisiert wird.',
+                ],
+              },
+            },
+          };
+
+          confidence = 25;
         }
 
         await db.insert(dealEmbeddings).values({
@@ -432,7 +521,7 @@ WICHTIG:
           chunkIndex: 0,
           chunkCategory: 'elaboration',
           content: JSON.stringify({ root, elements }),
-          confidence: fallback.confidence,
+          confidence,
           embedding: null,
           metadata: JSON.stringify({
             sectionId,
@@ -447,13 +536,48 @@ WICHTIG:
         );
         return { success: true };
       } catch (fallbackError) {
-        return {
-          success: false,
-          error:
-            fallbackError instanceof Error
-              ? `Agent did not create a visualization (fallback failed): ${fallbackError.message}`
-              : 'Agent did not create a visualization (fallback failed)',
+        // Never fail a section solely because the visualization couldn't be generated.
+        // Persist a minimal deterministic tree so UI and downstream exports still work.
+        console.warn(
+          `[Section:${sectionId}] Visualization fallback failed completely — storing minimal tree:`,
+          fallbackError
+        );
+
+        const root = 'section-main';
+        const elements = {
+          'section-main': {
+            key: 'section-main',
+            type: 'Section',
+            props: { title: sectionId },
+            children: ['summary'],
+          },
+          summary: {
+            key: 'summary',
+            type: 'Paragraph',
+            props: { text: 'Diese Sektion konnte nicht automatisch visualisiert werden.' },
+          },
         };
+
+        await db.insert(dealEmbeddings).values({
+          pitchId: null,
+          preQualificationId,
+          agentName: 'prequal_section_agent_fallback',
+          chunkType: 'visualization',
+          chunkIndex: 0,
+          chunkCategory: 'elaboration',
+          content: JSON.stringify({ root, elements }),
+          confidence: 10,
+          embedding: null,
+          metadata: JSON.stringify({
+            sectionId,
+            isVisualization: true,
+            elementCount: Object.keys(elements).length,
+            fallback: true,
+            hardFallback: true,
+          }),
+        });
+
+        return { success: true };
       }
     }
 
@@ -469,27 +593,53 @@ WICHTIG:
 
         const visualizationText = visualizationRow?.content ?? '';
 
-        const highlightResult = await generateStructuredOutput({
-          model: 'default',
-          schema: z.object({
-            highlights: z.array(z.string().max(120)).max(3),
-            confidence: z.number().min(0).max(100),
-          }),
-          system:
-            'Du extrahierst kurze Key-Facts (Dashboard Highlights) aus einer vorhandenen Visualisierung. Keine Vermutungen.',
-          prompt: [
-            `SectionId: ${sectionId}`,
-            '',
-            'VISUALISIERUNG (JSON):',
-            visualizationText || 'Keine Visualisierung gefunden.',
-            '',
-            'AUFGABE:',
-            'Gib 1-3 konkrete Fakten (max 120 Zeichen je Fact). Wenn nichts belastbar ist: []',
-          ].join('\n'),
-          temperature: 0.2,
-          maxTokens: 400,
-          timeout: 20_000,
-        });
+        let highlights: string[] = [];
+        let confidence = 55;
+
+        try {
+          const parsed = visualizationText ? (JSON.parse(visualizationText) as any) : null;
+          highlights = extractHighlightsFromVisualization(parsed).slice(0, 3);
+        } catch {
+          highlights = [];
+        }
+
+        // If deterministic extraction yields nothing, try a small structured call.
+        if (highlights.length === 0) {
+          try {
+            const highlightResult = await generateStructuredOutput({
+              model: 'default',
+              schema: z.object({
+                highlights: z.array(z.string().max(120)).max(3),
+                confidence: z.number().min(0).max(100),
+              }),
+              system:
+                'Du extrahierst kurze Key-Facts (Dashboard Highlights) aus einer vorhandenen Visualisierung. Keine Vermutungen.',
+              prompt: [
+                `SectionId: ${sectionId}`,
+                '',
+                'VISUALISIERUNG (JSON):',
+                visualizationText || 'Keine Visualisierung gefunden.',
+                '',
+                'AUFGABE:',
+                'Gib 1-3 konkrete Fakten (max 120 Zeichen je Fact). Wenn nichts belastbar ist: []',
+              ].join('\n'),
+              temperature: 0.2,
+              maxTokens: 400,
+              timeout: 20_000,
+            });
+            highlights = highlightResult.highlights;
+            confidence = highlightResult.confidence;
+          } catch (llmError) {
+            console.warn(
+              `[Section:${sectionId}] Auto-highlights LLM failed — using deterministic fallback:`,
+              llmError
+            );
+          }
+        }
+
+        if (highlights.length === 0) {
+          highlights = defaultHighlightsForSection(sectionId);
+        }
 
         // Delete existing highlights for this section
         await db
@@ -502,7 +652,7 @@ WICHTIG:
             )
           );
 
-        if (highlightResult.highlights.length > 0) {
+        if (highlights.length > 0) {
           await db.insert(dealEmbeddings).values({
             pitchId: null,
             preQualificationId,
@@ -510,8 +660,8 @@ WICHTIG:
             chunkType: 'dashboard_highlight',
             chunkIndex: 0,
             chunkCategory: 'elaboration',
-            content: JSON.stringify(highlightResult.highlights),
-            confidence: highlightResult.confidence,
+            content: JSON.stringify(highlights),
+            confidence,
             embedding: null,
             metadata: JSON.stringify({ sectionId, autoGenerated: true }),
           });
@@ -529,5 +679,109 @@ WICHTIG:
     return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+function extractHighlightsFromVisualization(tree: any): string[] {
+  if (!tree || typeof tree !== 'object') return [];
+  const elements = tree.elements && typeof tree.elements === 'object' ? tree.elements : null;
+  if (!elements) return [];
+
+  const out: string[] = [];
+  const push = (s: string) => {
+    const text = s.replace(/\s+/g, ' ').trim();
+    if (!text) return;
+    const clipped = text.length > 120 ? `${text.slice(0, 117)}…` : text;
+    if (!out.includes(clipped)) out.push(clipped);
+  };
+
+  for (const el of Object.values(elements) as any[]) {
+    if (!el || typeof el !== 'object') continue;
+    const type = el.type as string | undefined;
+    const props = el.props as Record<string, unknown> | undefined;
+    if (!type || !props) continue;
+
+    if (type === 'KeyValueTable') {
+      const items = (props as any).items;
+      if (Array.isArray(items)) {
+        for (const item of items) {
+          const label = (item as any)?.label;
+          const value = (item as any)?.value;
+          if (typeof label === 'string' && typeof value === 'string') {
+            push(`${label}: ${value}`);
+          }
+          if (out.length >= 3) return out;
+        }
+      }
+    }
+
+    if (type === 'Metric') {
+      const label = (props as any).label;
+      const value = (props as any).value;
+      const unit = (props as any).unit;
+      if (typeof label === 'string' && (typeof value === 'string' || typeof value === 'number')) {
+        push(`${label}: ${value}${typeof unit === 'string' ? ` ${unit}` : ''}`);
+        if (out.length >= 3) return out;
+      }
+    }
+
+    if (type === 'BulletList') {
+      const items = (props as any).items;
+      if (Array.isArray(items)) {
+        for (const item of items) {
+          if (typeof item === 'string') push(item);
+          if (out.length >= 3) return out;
+        }
+      }
+    }
+  }
+
+  // Fallback: first paragraph
+  for (const el of Object.values(elements) as any[]) {
+    if (el?.type === 'Paragraph' && typeof el?.props?.text === 'string') {
+      push(el.props.text);
+      break;
+    }
+  }
+
+  return out;
+}
+
+function defaultHighlightsForSection(sectionId: string): string[] {
+  switch (sectionId) {
+    case 'budget':
+      return ['Budgetangaben pruefen (Textauszug + Bezugsrahmen).', 'Laufzeit/Optionen klären.'];
+    case 'timing':
+      return [
+        'Fristen/Termine aus Dokumenten validieren.',
+        'Bieterfragen/Shortlisting-Termine pruefen.',
+      ];
+    case 'contracts':
+      return [
+        'Vertragstyp und Haftungs-/Rechte-Regelungen identifizieren.',
+        'Risiken als Angebotsannahmen formulieren.',
+      ];
+    case 'deliverables':
+      return [
+        'Pflichtleistungen und Deliverables extrahieren.',
+        'Abnahme-/Dokumentationspflichten pruefen.',
+      ];
+    case 'references':
+      return ['Anzahl/Art der Referenzen pruefen.', 'Nachweise/Formblaetter identifizieren.'];
+    case 'award-criteria':
+      return [
+        'Zuschlagskriterien + Gewichtungen extrahieren.',
+        'Bewertungsmethodik und Pflichtkonzepte pruefen.',
+      ];
+    case 'offer-structure':
+      return [
+        'Pflichtunterlagen/Konzepte zusammenstellen.',
+        'Teilnahme- vs Angebotsphase unterscheiden.',
+      ];
+    default:
+      return [
+        'Wesentliche Fakten aus Dokumenten extrahieren.',
+        'Offene Punkte als Rueckfragen markieren.',
+      ];
   }
 }

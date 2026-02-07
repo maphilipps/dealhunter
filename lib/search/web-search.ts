@@ -8,102 +8,12 @@
 import { searchDuckDuckGo, fetchUrlContents as fetchDuckDuckGo } from './duckduckgo-search';
 
 import { exa, isExaAvailable } from '@/lib/exa';
-import { generateText } from 'ai';
-
-import { directOpenAI } from '@/lib/ai/config';
 
 // Simple circuit breaker: if EXA starts returning 402 (credits exceeded),
 // stop calling it for a while to reduce noise and latency.
 let exaDisabledUntilMs = 0;
 function canUseExa(): boolean {
   return Date.now() >= exaDisabledUntilMs;
-}
-
-// Separate circuit breaker for OpenAI web search. This prevents log spam and latency
-// if credentials are misconfigured (e.g. hub/proxy tokens instead of direct OpenAI keys).
-let openaiWebSearchDisabledUntilMs = 0;
-function canUseOpenAIWebSearch(): boolean {
-  return Date.now() >= openaiWebSearchDisabledUntilMs;
-}
-
-async function searchWithOpenAIWebSearch(
-  query: string,
-  options: { numResults: number }
-): Promise<{ results: SearchResult[] }> {
-  try {
-    // Only attempt OpenAI web search when we have a *direct* OpenAI key available.
-    // Using a proxy/hub token against api.openai.com leads to noisy 401s.
-    if (!process.env.OPENAI_DIRECT_API_KEY) {
-      return { results: [] };
-    }
-
-    // Use a small, cheap model by default. This is only used to drive the provider-executed
-    // web_search tool; the actual browsing is done on OpenAI's side.
-    const modelName = process.env.OPENAI_WEBSEARCH_MODEL || 'gpt-5-mini';
-
-    const result = await generateText({
-      // Important: use DIRECT OpenAI (not the AI Hub proxy), because OpenAI's web_search
-      // tool is a provider-executed tool available on OpenAI's Responses API.
-      model: directOpenAI(modelName),
-      prompt: query,
-      tools: {
-        web_search: directOpenAI.tools.webSearch({
-          externalWebAccess: true,
-          searchContextSize: 'high',
-        }),
-      },
-      toolChoice: { type: 'tool', toolName: 'web_search' },
-      // Keep the assistant answer short; we mainly want sources.
-      providerOptions: { openai: { textVerbosity: 'low' } },
-      maxOutputTokens: 800,
-      maxRetries: 2,
-      abortSignal: AbortSignal.timeout(20_000),
-    });
-
-    const urls = (result.toolResults ?? [])
-      .filter(tr => tr.toolName === 'web_search')
-      .flatMap(tr => {
-        // Tool output is provider-defined; keep it defensive.
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const sources = (tr.output as any)?.sources as unknown;
-        if (!Array.isArray(sources)) return [];
-        return sources
-          .map(s => {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            const url = (s as any)?.url as unknown;
-            return typeof url === 'string' ? url : null;
-          })
-          .filter((u): u is string => typeof u === 'string' && u.length > 0);
-      });
-
-    const unique = Array.from(new Set(urls)).slice(0, options.numResults);
-    const answerSummary = (result.text || '').trim().slice(0, 3000) || undefined;
-
-    return {
-      results: unique.map(url => {
-        let title = '';
-        try {
-          title = new URL(url).hostname;
-        } catch {
-          title = '';
-        }
-        return {
-          title,
-          url,
-          summary: answerSummary,
-        };
-      }),
-    };
-  } catch (error) {
-    console.error('OpenAI web search error:', error);
-    // If the key is invalid/misconfigured, back off for a while.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const statusCode = (error as any)?.statusCode as number | undefined;
-    if (statusCode === 401 || statusCode === 403) {
-      openaiWebSearchDisabledUntilMs = Date.now() + 10 * 60_000;
-    }
-    return { results: [] };
-  }
 }
 
 /**
@@ -220,14 +130,6 @@ export async function searchAndContents(
         exaDisabledUntilMs = Date.now() + 10 * 60_000;
       }
       // Fall through to DuckDuckGo
-    }
-  }
-
-  // Fallback 1: OpenAI provider-executed web search tool (if available)
-  if (canUseOpenAIWebSearch() && (exaAttempted ? exaFailed : true)) {
-    const openaiResults = await searchWithOpenAIWebSearch(query, { numResults });
-    if (openaiResults.results.length > 0) {
-      return openaiResults;
     }
   }
 

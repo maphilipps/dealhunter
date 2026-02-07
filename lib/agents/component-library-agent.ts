@@ -12,7 +12,7 @@
  * - Results stored in RAG for semantic retrieval
  */
 
-import { getOpenAIDirectClient } from '@/lib/ai/config';
+import { getOpenAIClient } from '@/lib/ai/config';
 import { openPage, closeBrowser, screenshot, evaluate, createSession, wait } from '@/lib/browser';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
@@ -284,7 +284,7 @@ interface VisionResponse {
 async function detectComponents(url: string, screenshotBase64: string): Promise<Component[]> {
   try {
     /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
-    const openaiClient: any = getOpenAIDirectClient();
+    const openaiClient: any = getOpenAIClient();
     const response = (await openaiClient.chat.completions.create({
       model: 'gemini-3-flash-preview',
       messages: [

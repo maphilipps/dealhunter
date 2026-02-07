@@ -3,7 +3,7 @@
  *
  * Architektur:
  * 1. ORCHESTRATOR: Analysiert Dokumente und plant Section-Execution
- * 2. WORKERS: Führen 7 BD-Fragen parallel aus (budget, timing, contracts, deliverables, references, award-criteria, offer-structure)
+ * 2. WORKERS: Führen BD-Fragen parallel aus (budget, timing, contracts, deliverables, references, award-criteria, offer-structure, risks)
  * 3. EVALUATOR: Prüft Section-Qualität und triggert Retries bei niedrigem Score
  * 4. CMS MATRIX: Requirement Research (bestehender Agent)
  * 5. DECISION: Bid/No Bid Synthese aller Sections
@@ -24,7 +24,7 @@ import { runWithConcurrency } from '@/lib/utils/concurrency';
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * 7 BD-Fragen als Section-Definitionen (Single Source of Truth)
+ * BD-Fragen als Section-Definitionen (Single Source of Truth)
  */
 export const SECTION_DEFINITIONS = [
   {
@@ -83,6 +83,14 @@ export const SECTION_DEFINITIONS = [
     topics:
       'Angebotsstruktur, Angebotsunterlagen, Formulare, Inhalte, Gliederung, einzureichende Dokumente',
   },
+  {
+    id: 'risks' as const,
+    label: 'Risiken',
+    question:
+      'Welche Projektrisiken sind erkennbar (Termine, Budget, Technik, Recht, Personal, Scope, Abhaengigkeiten)?',
+    topics:
+      'Risiko, Vertragsstrafe, Poenale, Haftung, Verzug, Komplexitaet, Abhaengigkeiten, Migration, Personalengpass, Termindruck',
+  },
 ] as const;
 
 // Derived from SECTION_DEFINITIONS for backward compatibility
@@ -94,6 +102,7 @@ export const SECTION_IDS = SECTION_DEFINITIONS.map(s => s.id) as unknown as read
   'references',
   'award-criteria',
   'offer-structure',
+  'risks',
 ];
 export type SectionId = (typeof SECTION_IDS)[number];
 
@@ -223,16 +232,10 @@ DOKUMENT-PREVIEW:
 ${previewContext}
 
 AUFGABE:
-Analysiere die Dokument-Preview und plane die Ausführung von 7 BD-Fragen (Section-Analysen).
+Analysiere die Dokument-Preview und plane die Ausführung von ${SECTION_DEFINITIONS.length} BD-Fragen (Section-Analysen).
 
 VERFÜGBARE SECTIONS:
-- budget: Budget und Laufzeit
-- timing: Ausschreibungszeitplan, Shortlisting
-- contracts: Vertragstyp (EVB-IT, Werk, Dienst, SLA)
-- deliverables: Geforderte Leistungen
-- references: Referenzanforderungen
-- award-criteria: Zuschlagskriterien im Detail
-- offer-structure: Angebotsstruktur (was muss Team erarbeiten)
+${SECTION_DEFINITIONS.map(s => `- ${s.id}: ${s.label}`).join('\n')}
 
 STRATEGIE:
 1. Priorität: Welche Sections sind kritisch für die Bid/No-Bid Entscheidung?
@@ -240,7 +243,7 @@ STRATEGIE:
 3. Concurrency: Wie viele Sections können parallel verarbeitet werden? (1-10, empfohlen: 5)
 
 REGELN:
-- Alle 7 Sections müssen geplant werden
+- Alle ${SECTION_DEFINITIONS.length} Sections müssen geplant werden
 - mode: 'documents-first' wenn Dokumente ausreichend, 'web-enriched' wenn viel externe Info nötig, 'hybrid' für Mix
 - requiresWebEnrichment=true nur wenn wirklich externe Daten helfen (z.B. Marktpreise bei Budget)
 - maxConcurrency: 5 ist ein guter Standard (Balance zwischen Speed und Rate-Limits)
@@ -572,6 +575,7 @@ KRITERIEN:
 - references: Haben wir passende Referenzen?
 - award-criteria: Können wir bei den Zuschlagskriterien punkten?
 - offer-structure: Ist der Aufwand für das Angebot vertretbar?
+- risks: Welche Projektrisiken sind identifiziert und wie schwerwiegend sind sie?
 
 EMPFEHLUNG:
 - bid: Klare Empfehlung mitbieten

@@ -9,6 +9,7 @@ import {
   Award,
   FileText,
   LayoutDashboard,
+  ShieldAlert,
 } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 
@@ -33,6 +34,7 @@ const SECTION_ICONS: Record<string, typeof DollarSign> = {
   references: Trophy,
   'award-criteria': Award,
   'offer-structure': FileText,
+  risks: ShieldAlert,
 };
 
 /**

@@ -48,6 +48,7 @@ import type { ExtractedRequirements } from '../../extraction/schema';
 import { detectPII, cleanText } from '../../pii/pii-cleaner';
 import {
   runPreQualSectionOrchestrator,
+  SECTION_IDS,
   type Decision,
 } from '../../qualification/orchestrator-worker';
 import { runQualificationScanAgentNative } from '../../qualification-scan/agent-native';
@@ -1880,7 +1881,7 @@ export async function processPreQualJob(
       preQualificationId,
       'section_orchestration',
       'Orchestrator',
-      `Generiere ${7} Detailseiten parallel...`
+      `Generiere ${SECTION_IDS.length} Detailseiten parallel...`
     ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
 
     // Orchestrator-Worker Pattern: Parallele Section-Verarbeitung
@@ -1913,7 +1914,7 @@ export async function processPreQualJob(
       );
     } else {
       console.log(
-        `[PreQual Worker] Sections completed: ${orchestratorResult.completedSections}/${7}`
+        `[PreQual Worker] Sections completed: ${orchestratorResult.completedSections}/${SECTION_IDS.length}`
       );
       if (orchestratorResult.decision) {
         console.log(
@@ -2038,7 +2039,7 @@ export async function processPreQualJob(
     const resultPayload = {
       success: true,
       completedSections: orchestratorResult.completedSections,
-      totalSections: 7,
+      totalSections: SECTION_IDS.length,
       failedSections: orchestratorResult.failedSections.map(s => s.sectionId),
       decision: orchestratorResult.decision?.recommendation,
     };
@@ -2056,7 +2057,7 @@ export async function processPreQualJob(
     );
 
     console.log(
-      `[PreQual Worker] Job ${job.id} completed (${orchestratorResult.completedSections}/7 sections).`
+      `[PreQual Worker] Job ${job.id} completed (${orchestratorResult.completedSections}/${SECTION_IDS.length} sections).`
     );
 
     return {

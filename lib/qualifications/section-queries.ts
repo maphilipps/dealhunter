@@ -192,6 +192,62 @@ Du analysierst alle Kriterien, nach denen das Angebot bewertet wird.
 - Gibt es Gewichtungs-Anomalien (z.B. Preis nur 30% = Qualität entscheidet)?
 `,
 
+  risks: `
+## ANALYSEZIEL: Risikoanalyse
+
+Du analysierst die Ausschreibungsdokumente auf alle erkennbaren Projektrisiken.
+
+### RISIKOKATEGORIEN:
+Bewerte jede Kategorie mit Impact (hoch/mittel/niedrig) und Eintrittswahrscheinlichkeit (hoch/mittel/niedrig).
+
+1. **Terminrisiken (Schedule)**:
+   - Unrealistische Fristen, enger Zeitplan, parallele Meilensteine
+   - Abhängigkeit von Zulieferungen/Entscheidungen des AG
+   - Saisonale Engpässe (Urlaubszeit, Jahresende)
+
+2. **Budgetrisiken (Budget)**:
+   - Kein explizites Budget, Festpreis bei unscharfem Scope
+   - Nachträge/Change Requests nicht geregelt
+   - Preisdruck durch Bewertungskriterien
+
+3. **Technische Risiken (Technical)**:
+   - Komplexe Migration, Legacy-Systeme, Schnittstellenvielfalt
+   - Unbekannte/proprietäre Technologien
+   - Hohe nicht-funktionale Anforderungen (Performance, Sicherheit, Barrierefreiheit)
+
+4. **Rechtliche Risiken (Legal)**:
+   - Vertragsstrafen/Pönalen bei Verzug
+   - Unbeschränkte Haftung, fehlende Haftungsobergrenzen
+   - IP/Nutzungsrechte-Problematik, DSGVO-Anforderungen
+
+5. **Personalrisiken (Staffing)**:
+   - Spezielle Qualifikationsanforderungen, Zertifizierungen
+   - Vor-Ort-Pflicht, Sicherheitsüberprüfungen
+   - Hoher Personalbedarf parallel zu anderen Projekten
+
+6. **Scope-Risiken (Scope)**:
+   - Unscharfe Leistungsbeschreibung, Interpretationsspielraum
+   - Scope Creep durch offene Formulierungen
+   - Lose-Struktur mit Abhängigkeiten
+
+7. **Abhängigkeitsrisiken (Dependencies)**:
+   - Zulieferungen durch AG oder Dritte
+   - Parallele Vergaben, die aufeinander aufbauen
+   - Externe Genehmigungen/Freigaben
+
+### VISUALISIERUNG:
+1. **Zusammenfassung** (Paragraph): Gesamtrisikobewertung in 4-8 Sätzen
+2. **Risikomatrix** (KeyValueTable): Kategorie → Impact × Wahrscheinlichkeit = Risikoscore (1-9)
+3. **SubSections** pro Risikokategorie: Details, Belege aus Dokumenten, Mitigationsansätze
+4. **Mitigationsmassnahmen** (SubSection): Konkrete Empfehlungen für das Angebotsteam
+
+### INTERPRETATION FÜR DAS ANGEBOTSTEAM:
+- Welche Risiken müssen eingepreist werden?
+- Welche Risiken erfordern Rückfragen vor Angebotsabgabe?
+- Welche Risiken sollten als Angebotsannahmen formuliert werden?
+- Gibt es Show-Stopper, die gegen ein Angebot sprechen?
+`,
+
   'offer-structure': `
 ## ANALYSEZIEL: Angebotsstruktur & erforderliche Unterlagen
 

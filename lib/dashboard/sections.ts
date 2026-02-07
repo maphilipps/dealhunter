@@ -59,6 +59,12 @@ export const DASHBOARD_SECTIONS: DashboardSectionConfig[] = [
     group: 'bid',
     ragQuery: 'Angebotsstruktur Gliederung Format Unterlagen Abgabe',
   },
+  {
+    id: 'risks',
+    title: 'Risiken',
+    group: 'bid',
+    ragQuery: 'Risiko Haftung Vertragsstrafe Poenale Verzug Komplexitaet Abhaengigkeiten',
+  },
 ];
 
 /** Lookup map: sectionId → config */

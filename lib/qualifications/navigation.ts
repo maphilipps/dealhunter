@@ -10,6 +10,7 @@ import {
   Grid3X3,
   Building2,
   CheckCircle2,
+  ShieldAlert,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -189,6 +190,12 @@ export function getPreQualificationNavigationSections(
           title: 'CMS Matrix',
           icon: Grid3X3,
           url: `/qualifications/${preQualificationId}/routing/cms-matrix`,
+          alwaysEnabled: true,
+        },
+        {
+          title: 'Risiken',
+          icon: ShieldAlert,
+          url: `/qualifications/${preQualificationId}/risks`,
           alwaysEnabled: true,
         },
       ],

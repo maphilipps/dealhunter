@@ -435,22 +435,18 @@ WICHTIG:
 
         // Deterministic fallback (also acts as a "self-heal" when the model output is invalid).
         if (!elements || Object.keys(elements).length === 0 || !root || !elements[root]) {
+          const FALLBACK_TITLES: Record<string, string> = {
+            budget: 'Budget & Laufzeit',
+            timing: 'Zeitplan & Fristen',
+            contracts: 'Vertragstyp & Risiken',
+            deliverables: 'Leistungen & Deliverables',
+            references: 'Referenzen & Eignung',
+            'award-criteria': 'Zuschlagskriterien',
+            'offer-structure': 'Angebotsstruktur',
+            risks: 'Risiken',
+          };
           const title =
-            sectionId === 'budget'
-              ? 'Budget & Laufzeit'
-              : sectionId === 'timing'
-                ? 'Zeitplan & Fristen'
-                : sectionId === 'contracts'
-                  ? 'Vertragstyp & Risiken'
-                  : sectionId === 'deliverables'
-                    ? 'Leistungen & Deliverables'
-                    : sectionId === 'references'
-                      ? 'Referenzen & Eignung'
-                      : sectionId === 'award-criteria'
-                        ? 'Zuschlagskriterien'
-                        : sectionId === 'offer-structure'
-                          ? 'Angebotsstruktur'
-                          : sectionQuery.split('\n')[0]?.slice(0, 80) || sectionId;
+            FALLBACK_TITLES[sectionId] || sectionQuery.split('\n')[0]?.slice(0, 80) || sectionId;
 
           const topExtracts = chunks
             .slice(0, 5)
@@ -777,6 +773,11 @@ function defaultHighlightsForSection(sectionId: string): string[] {
       return [
         'Pflichtunterlagen/Konzepte zusammenstellen.',
         'Teilnahme- vs Angebotsphase unterscheiden.',
+      ];
+    case 'risks':
+      return [
+        'Projektrisiken identifizieren und bewerten.',
+        'Mitigationsmassnahmen fuer das Angebotsteam ableiten.',
       ];
     default:
       return [

@@ -433,6 +433,7 @@ export async function buildQualificationScanMarkdown(qualificationId: string): P
     'references',
     'award-criteria',
     'offer-structure',
+    'risks',
   ] as const;
   const bdSectionTitles: Record<(typeof BD_SECTION_IDS)[number], string> = {
     budget: 'Budget',
@@ -442,6 +443,7 @@ export async function buildQualificationScanMarkdown(qualificationId: string): P
     references: 'References',
     'award-criteria': 'Award Criteria',
     'offer-structure': 'Offer Structure',
+    risks: 'Risiken',
   };
 
   const sectionEmbeddings = embeddings.filter(e => e.agentName === 'prequal_section_agent');

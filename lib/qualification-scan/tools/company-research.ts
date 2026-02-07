@@ -5,6 +5,7 @@ import { searchAndContents } from '../../search/web-search';
 // Security: Prompt Injection Protection
 import { wrapUserContent } from '../../security/prompt-sanitizer';
 import { companyIntelligenceSchema, type CompanyIntelligence } from '../schema';
+import { discoverCompanyWebsiteUrl } from './website-discovery';
 
 interface ImprintData {
   companyName?: string;
@@ -110,8 +111,11 @@ export async function gatherCompanyIntelligence(
   websiteUrl: string | null,
   html?: string
 ): Promise<CompanyIntelligence> {
-  const effectiveWebsiteUrl = websiteUrl && websiteUrl.trim().length > 0 ? websiteUrl : 'unknown';
-  const sources: string[] = [websiteUrl ? 'Website' : 'Web Research'];
+  // Requirement: The website URL shown under /customer must always be discovered via websearch.
+  // Always attempt discovery (even if we already have a URL).
+  const discoveredWebsiteUrl = await discoverCompanyWebsiteUrl(companyName).catch(() => null);
+  const effectiveWebsiteUrl = discoveredWebsiteUrl ?? 'unknown';
+  const sources: string[] = ['Web Search'];
 
   // Step 1: Extract from imprint if HTML provided
   let imprintData: ImprintData | null = null;
@@ -137,7 +141,9 @@ export async function gatherCompanyIntelligence(
       searchStockData(companyName, imprintData?.legalForm?.includes('AG') ? undefined : undefined), // Stock symbol from financials if available
       searchMarketPosition(companyName),
       searchDigitalPresence(companyName, effectiveWebsiteUrl),
-      websiteUrl ? searchTechFootprint(websiteUrl) : Promise.resolve(undefined),
+      effectiveWebsiteUrl !== 'unknown'
+        ? searchTechFootprint(effectiveWebsiteUrl)
+        : Promise.resolve(undefined),
     ]);
 
   if (searchResults) {

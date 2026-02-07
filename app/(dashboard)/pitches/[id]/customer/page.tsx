@@ -56,10 +56,16 @@ export default async function PitchCustomerPage({ params }: { params: Promise<{ 
   const decisionMakers = safeParseJson<DecisionMakersResearch>(scan?.decisionMakers);
   const techStack = safeParseJson<TechStack>(scan?.techStack);
 
+  // Requirement: Website URL on /customer must always come from websearch discovery.
+  const websiteUrl =
+    companyIntelligence?.basicInfo.website && companyIntelligence.basicInfo.website !== 'unknown'
+      ? companyIntelligence.basicInfo.website
+      : null;
+
   return (
     <CustomerIntelligencePanel
       customerName={lead.customerName}
-      websiteUrl={lead.websiteUrl || scan?.websiteUrl || null}
+      websiteUrl={websiteUrl}
       companyIntelligence={companyIntelligence}
       decisionMakers={decisionMakers}
       techStack={techStack}

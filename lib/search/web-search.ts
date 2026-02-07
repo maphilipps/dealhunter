@@ -19,11 +19,24 @@ function canUseExa(): boolean {
   return Date.now() >= exaDisabledUntilMs;
 }
 
+// Separate circuit breaker for OpenAI web search. This prevents log spam and latency
+// if credentials are misconfigured (e.g. hub/proxy tokens instead of direct OpenAI keys).
+let openaiWebSearchDisabledUntilMs = 0;
+function canUseOpenAIWebSearch(): boolean {
+  return Date.now() >= openaiWebSearchDisabledUntilMs;
+}
+
 async function searchWithOpenAIWebSearch(
   query: string,
   options: { numResults: number }
 ): Promise<{ results: SearchResult[] }> {
   try {
+    // Only attempt OpenAI web search when we have a *direct* OpenAI key available.
+    // Using a proxy/hub token against api.openai.com leads to noisy 401s.
+    if (!process.env.OPENAI_DIRECT_API_KEY) {
+      return { results: [] };
+    }
+
     // Use a small, cheap model by default. This is only used to drive the provider-executed
     // web_search tool; the actual browsing is done on OpenAI's side.
     const modelName = process.env.OPENAI_WEBSEARCH_MODEL || 'gpt-5-mini';
@@ -83,6 +96,12 @@ async function searchWithOpenAIWebSearch(
     };
   } catch (error) {
     console.error('OpenAI web search error:', error);
+    // If the key is invalid/misconfigured, back off for a while.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const statusCode = (error as any)?.statusCode as number | undefined;
+    if (statusCode === 401 || statusCode === 403) {
+      openaiWebSearchDisabledUntilMs = Date.now() + 10 * 60_000;
+    }
     return { results: [] };
   }
 }
@@ -205,7 +224,7 @@ export async function searchAndContents(
   }
 
   // Fallback 1: OpenAI provider-executed web search tool (if available)
-  if (process.env.OPENAI_API_KEY && (exaAttempted ? exaFailed : true)) {
+  if (canUseOpenAIWebSearch() && (exaAttempted ? exaFailed : true)) {
     const openaiResults = await searchWithOpenAIWebSearch(query, { numResults });
     if (openaiResults.results.length > 0) {
       return openaiResults;

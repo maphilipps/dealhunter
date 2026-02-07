@@ -43,18 +43,18 @@ export default async function QualificationCustomerPage({
 
   const extracted = safeParseJson<ExtractedRequirements>(preQualification.extractedRequirements);
   const customerName = extracted?.customerName || null;
-  const websiteUrl =
-    preQualification.websiteUrl ||
-    extracted?.websiteUrl ||
-    extracted?.websiteUrls?.[0]?.url ||
-    qualificationScan?.websiteUrl ||
-    null;
 
   const companyIntelligence = safeParseJson<CompanyIntelligence>(
     qualificationScan?.companyIntelligence
   );
   const decisionMakers = safeParseJson<DecisionMakersResearch>(qualificationScan?.decisionMakers);
   const techStack = safeParseJson<TechStack>(qualificationScan?.techStack);
+
+  // Requirement: Website URL on /customer must always come from websearch discovery.
+  const websiteUrl =
+    companyIntelligence?.basicInfo.website && companyIntelligence.basicInfo.website !== 'unknown'
+      ? companyIntelligence.basicInfo.website
+      : null;
 
   return (
     <CustomerIntelligencePanel

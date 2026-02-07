@@ -32,7 +32,17 @@ export function extractRequirementsFromQualificationScan(
     | undefined;
 
   function mapCategory(raw: unknown): RequirementMatch['category'] {
-    const c = String(raw || '').toLowerCase();
+    const normalized =
+      raw == null
+        ? ''
+        : typeof raw === 'string'
+          ? raw
+          : typeof raw === 'number' || typeof raw === 'boolean'
+            ? String(raw)
+            : typeof raw === 'object'
+              ? JSON.stringify(raw)
+              : '';
+    const c = normalized.toLowerCase();
     if (c.includes('compliance') || c.includes('legal') || c.includes('privacy'))
       return 'compliance';
     if (c.includes('performance')) return 'performance';

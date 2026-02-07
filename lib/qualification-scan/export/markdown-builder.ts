@@ -19,6 +19,15 @@ interface ExportSection {
   notes?: string[];
 }
 
+function safeJsonParse<T>(value: string | null | undefined): T | null {
+  if (!value) return null;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Build a complete Markdown document from Qualification Scan results.
  * Pulls data from qualificationScans + deal_embeddings + sectionNotes.
@@ -42,6 +51,16 @@ export async function buildQualificationScanMarkdown(qualificationId: string): P
       .limit(1);
     scan = result ?? null;
   }
+
+  const extractedRequirements = safeJsonParse<{ customerName?: string }>(bid.extractedRequirements);
+  const companyIntelligence = safeJsonParse<{ basicInfo?: { name?: string } }>(
+    scan?.companyIntelligence
+  );
+  const customerName =
+    extractedRequirements?.customerName?.trim() ||
+    companyIntelligence?.basicInfo?.name?.trim() ||
+    bid.rawInput?.substring(0, 80) ||
+    'Unbekannt';
 
   // 2. Load deal_embeddings for this qualification
   const embeddings = await db
@@ -70,6 +89,36 @@ export async function buildQualificationScanMarkdown(qualificationId: string): P
 
   // 4. Build sections
   const sections: ExportSection[] = [];
+
+  // Bid/No-Bid Decision (optional fields on preQualifications)
+  const decision = bid.decision ?? 'pending';
+  const decisionData = safeJsonParse<unknown>(bid.decisionData);
+  const decisionEvaluation = safeJsonParse<unknown>(bid.decisionEvaluation);
+  if (decision !== 'pending' || decisionData || decisionEvaluation) {
+    const lines: string[] = [];
+    lines.push(`- **Decision:** ${decision}`);
+    if (decisionData) {
+      lines.push('');
+      lines.push('**Decision Data:**');
+      lines.push('');
+      lines.push('```json');
+      lines.push(JSON.stringify(decisionData, null, 2));
+      lines.push('```');
+    }
+    if (decisionEvaluation) {
+      lines.push('');
+      lines.push('**Decision Evaluation:**');
+      lines.push('');
+      lines.push('```json');
+      lines.push(JSON.stringify(decisionEvaluation, null, 2));
+      lines.push('```');
+    }
+    sections.push({
+      title: 'Bid/No-Bid Decision',
+      content: lines.join('\n'),
+      notes: notesBySection.get('decision'),
+    });
+  }
 
   // Executive Summary
   const summaryEmbeddings = embeddings.filter(
@@ -194,22 +243,238 @@ export async function buildQualificationScanMarkdown(qualificationId: string): P
 
   // CMS Matrix
   if (scan?.cmsEvaluation) {
-    const cms = JSON.parse(scan.cmsEvaluation);
+    const cms = safeJsonParse<any>(scan.cmsEvaluation);
     const lines: string[] = [];
-    if (cms.winner) lines.push(`- **Empfohlenes CMS:** ${cms.winner}`);
-    if (cms.results?.length) {
-      lines.push('\n| CMS | Score | Kategorie |');
-      lines.push('|-----|-------|-----------|');
-      for (const r of cms.results) {
+
+    const cmsMatchingResult = cms?.cmsMatchingResult;
+    const cmsMatchingMatrix = cms?.cmsMatchingMatrix;
+
+    if (cmsMatchingResult?.recommendation?.primaryCms) {
+      lines.push(`- **Empfohlenes CMS:** ${cmsMatchingResult.recommendation.primaryCms}`);
+      lines.push(`- **Konfidenz:** ${cmsMatchingResult.recommendation.confidence ?? 'N/A'}%`);
+      if (cmsMatchingResult.recommendation.reasoning) {
+        lines.push(`- **Begründung:** ${cmsMatchingResult.recommendation.reasoning}`);
+      }
+      if (cmsMatchingResult.recommendation.alternativeCms) {
+        lines.push(`- **Alternative:** ${cmsMatchingResult.recommendation.alternativeCms}`);
+        if (cmsMatchingResult.recommendation.alternativeReasoning) {
+          lines.push(
+            `- **Alternative Begründung:** ${cmsMatchingResult.recommendation.alternativeReasoning}`
+          );
+        }
+      }
+
+      if (Array.isArray(cmsMatchingResult.comparedTechnologies)) {
+        lines.push('');
+        lines.push('| CMS | Overall Score | Baseline |');
+        lines.push('|-----|--------------:|----------|');
+        for (const t of cmsMatchingResult.comparedTechnologies) {
+          lines.push(
+            `| ${t.name ?? '?'} | ${t.overallScore ?? '?'} | ${t.isBaseline ? 'Ja' : 'Nein'} |`
+          );
+        }
+      }
+
+      const compared = Array.isArray(cmsMatchingResult.comparedTechnologies)
+        ? [...cmsMatchingResult.comparedTechnologies].sort(
+            (a: any, b: any) => (b.overallScore ?? 0) - (a.overallScore ?? 0)
+          )
+        : [];
+      const topTechs = compared.slice(0, 3);
+
+      if (Array.isArray(cmsMatchingResult.requirements) && topTechs.length > 0) {
+        lines.push('');
+        lines.push(`### Feature-Bewertungen (Top ${topTechs.length})`);
+        lines.push('');
         lines.push(
-          `| ${r.cms ?? r.name ?? '?'} | ${r.totalScore ?? r.score ?? '?'} | ${r.category ?? '—'} |`
+          `| Requirement | Priority | Category | ${topTechs.map(t => t.name).join(' | ')} |`
         );
+        lines.push(
+          `|------------|----------|----------|${topTechs.map(() => '------:').join('|')}|`
+        );
+
+        for (const r of cmsMatchingResult.requirements) {
+          const scores = topTechs.map(t => {
+            const s = r.cmsScores?.[t.id];
+            return typeof s?.score === 'number' ? String(s.score) : '—';
+          });
+          lines.push(
+            `| ${r.requirement ?? '?'} | ${r.priority ?? '—'} | ${r.category ?? '—'} | ${scores.join(
+              ' | '
+            )} |`
+          );
+        }
+      }
+
+      if (cmsMatchingMatrix?.metadata) {
+        lines.push('');
+        lines.push(
+          `- **Matrix Cells:** ${cmsMatchingMatrix.metadata.completedCells ?? '?'} / ${cmsMatchingMatrix.metadata.totalCells ?? '?'}`
+        );
+        lines.push(`- **Average Score:** ${cmsMatchingMatrix.metadata.averageScore ?? 'N/A'}`);
+      }
+    } else {
+      // Legacy CMS evaluation format
+      if (cms?.winner) lines.push(`- **Empfohlenes CMS:** ${cms.winner}`);
+      if (cms?.results?.length) {
+        lines.push('\n| CMS | Score | Kategorie |');
+        lines.push('|-----|-------|-----------|');
+        for (const r of cms.results) {
+          lines.push(
+            `| ${r.cms ?? r.name ?? '?'} | ${r.totalScore ?? r.score ?? '?'} | ${r.category ?? '—'} |`
+          );
+        }
       }
     }
     sections.push({
       title: 'CMS-Matrix',
       content: lines.join('\n') || 'Keine CMS-Bewertung verfügbar.',
       notes: notesBySection.get('cms-matrix'),
+    });
+  }
+
+  // Features (from scan)
+  if (scan?.features) {
+    const features = safeJsonParse<any>(scan.features);
+    const lines: string[] = [];
+
+    const boolFeatures: Array<[string, unknown]> = [
+      ['E-Commerce', features?.ecommerce],
+      ['User Accounts', features?.userAccounts],
+      ['Suche', features?.search],
+      ['Mehrsprachigkeit', features?.multiLanguage],
+      ['Blog/News', features?.blog],
+      ['Formulare', features?.forms],
+      ['API', features?.api],
+      ['Mobile App', features?.mobileApp],
+    ];
+
+    for (const [label, value] of boolFeatures) {
+      if (typeof value === 'boolean') {
+        lines.push(`- ${value ? '✅' : '❌'} ${label}`);
+      }
+    }
+
+    if (Array.isArray(features?.customFeatures) && features.customFeatures.length > 0) {
+      lines.push('');
+      lines.push('**Custom Features:**');
+      for (const f of features.customFeatures) lines.push(`- ${f}`);
+    }
+
+    sections.push({
+      title: 'Erkannte Features',
+      content: lines.join('\n') || 'Keine Feature-Daten verfügbar.',
+      notes: notesBySection.get('features'),
+    });
+  }
+
+  // Screenshots (from scan)
+  if (scan?.screenshots) {
+    const screenshots = safeJsonParse<any>(scan.screenshots);
+    const lines: string[] = [];
+    if (screenshots?.homepage?.desktop) {
+      lines.push(`- **Homepage Desktop:** ${screenshots.homepage.desktop}`);
+    }
+    if (screenshots?.homepage?.mobile) {
+      lines.push(`- **Homepage Mobile:** ${screenshots.homepage.mobile}`);
+    }
+    if (Array.isArray(screenshots?.keyPages) && screenshots.keyPages.length > 0) {
+      lines.push('');
+      lines.push('| Page | Path | URL | Screenshot |');
+      lines.push('|------|------|-----|------------|');
+      for (const p of screenshots.keyPages) {
+        lines.push(
+          `| ${p.name ?? p.title ?? '—'} | ${p.path ?? '—'} | ${p.url ?? '—'} | ${p.screenshot ?? '—'} |`
+        );
+      }
+    }
+    sections.push({
+      title: 'Screenshots',
+      content: lines.join('\n') || 'Keine Screenshots verfügbar.',
+      notes: notesBySection.get('screenshots'),
+    });
+  }
+
+  // 10 Questions (from scan)
+  if (scan?.tenQuestions) {
+    const ten = safeJsonParse<any>(scan.tenQuestions);
+    const lines: string[] = [];
+    if (ten?.answeredCount != null && ten?.totalCount != null) {
+      lines.push(`- **Beantwortet:** ${ten.answeredCount}/${ten.totalCount}`);
+    }
+    if (Array.isArray(ten?.questions)) {
+      lines.push('');
+      for (const q of ten.questions) {
+        lines.push(`### ${q.id}. ${q.question}`);
+        lines.push('');
+        lines.push(
+          q.answered ? (q.answer ? q.answer : 'Beantwortet (ohne Text).') : 'Nicht beantwortet.'
+        );
+        if (q.confidence != null) {
+          lines.push('');
+          lines.push(`- **Confidence:** ${q.confidence}%`);
+        }
+        lines.push('');
+      }
+    }
+    sections.push({
+      title: '10 Fragen (aus Decision)',
+      content: lines.join('\n') || 'Keine 10-Fragen-Daten verfügbar.',
+      notes: notesBySection.get('ten-questions'),
+    });
+  }
+
+  // BD Sections (from deal_embeddings written by prequal section agent)
+  const BD_SECTION_IDS = [
+    'budget',
+    'timing',
+    'contracts',
+    'deliverables',
+    'references',
+    'award-criteria',
+    'offer-structure',
+  ] as const;
+  const bdSectionTitles: Record<(typeof BD_SECTION_IDS)[number], string> = {
+    budget: 'Budget',
+    timing: 'Timing',
+    contracts: 'Contracts',
+    deliverables: 'Deliverables',
+    references: 'References',
+    'award-criteria': 'Award Criteria',
+    'offer-structure': 'Offer Structure',
+  };
+
+  const sectionEmbeddings = embeddings.filter(e => e.agentName === 'prequal_section_agent');
+  const dashboardHighlights = embeddings.filter(
+    e => e.chunkType === 'dashboard_highlight' && typeof e.agentName === 'string'
+  );
+
+  for (const sectionId of BD_SECTION_IDS) {
+    const findings = sectionEmbeddings.filter(e => e.chunkType === sectionId);
+    const highlight = dashboardHighlights.find(e => e.agentName === `dashboard_${sectionId}`);
+
+    if (findings.length === 0 && !highlight) continue;
+
+    const lines: string[] = [];
+    if (highlight) {
+      const parsed = safeJsonParse<string[]>(highlight.content);
+      if (parsed && parsed.length > 0) {
+        lines.push('**Highlights:**');
+        for (const h of parsed) lines.push(`- ${h}`);
+        lines.push('');
+      }
+    }
+    if (findings.length > 0) {
+      lines.push('**Findings:**');
+      for (const f of findings) {
+        lines.push(`- ${f.content}`);
+      }
+    }
+
+    sections.push({
+      title: `BD-Section: ${bdSectionTitles[sectionId]}`,
+      content: lines.join('\n') || 'Keine Inhalte verfügbar.',
+      notes: notesBySection.get(`bd-${sectionId}`),
     });
   }
 
@@ -235,7 +500,6 @@ export async function buildQualificationScanMarkdown(qualificationId: string): P
   const lines: string[] = [];
 
   // Header
-  const customerName = bid.rawInput?.substring(0, 80) ?? 'Unbekannt';
   lines.push(`# Qualification Scan — ${customerName}`);
   lines.push('');
   lines.push(`**Website:** ${scan?.websiteUrl ?? bid.websiteUrl ?? 'N/A'}`);

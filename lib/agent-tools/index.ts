@@ -15,6 +15,9 @@ import './tools/business-unit';
 import './tools/user';
 import './tools/document';
 import './tools/staffing';
+import './tools/feature';
+import './tools/cms-evaluation';
+import './tools/export';
 import './tools/qualification-scan-crud';
 import './tools/qualification-scan'; // @deprecated aliases for qualification-scan tools
 import './tools/analysis';

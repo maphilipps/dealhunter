@@ -188,6 +188,7 @@ export const preQualifications = pgTable(
         'notified', // Team wurde benachrichtigt
         'handed_off', // Workflow abgeschlossen
         'analysis_complete', // Deep migration analysis complete (legacy)
+        'completed', // Qualification Scan completed (legacy/compat with worker status)
       ],
     })
       .notNull()

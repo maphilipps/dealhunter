@@ -10,7 +10,7 @@ test.describe('Happy Path: Complete Bid Flow', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to homepage and wait for it to load
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should complete full bid workflow', async ({ page }) => {

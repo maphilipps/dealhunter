@@ -158,7 +158,7 @@ export function MilestoneTimeline({ timing, className }: MilestoneTimelineProps)
   // Add Q&A sessions
   timing.qaSessionDates?.forEach((date, index) => {
     timelineItems.push({
-      name: `Q&A Session ${timing.qaSessionDates!.length > 1 ? index + 1 : ''}`.trim(),
+      name: `Q&A Session ${timing.qaSessionDates.length > 1 ? index + 1 : ''}`.trim(),
       date,
       dateType: 'exact',
       description: null,

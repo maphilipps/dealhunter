@@ -22,7 +22,7 @@ import {
   type PitchScanPhase,
 } from '@/hooks/use-pitch-scan-progress';
 import { PHASE_DEFINITIONS } from '@/lib/pitch-scan/constants';
-import { PITCH_SCAN_SECTION_LABELS, type PitchScanSectionId } from '@/lib/pitch-scan/section-ids';
+import { PITCH_SCAN_SECTION_LABELS } from '@/lib/pitch-scan/section-ids';
 import { cn } from '@/lib/utils';
 
 interface ScanPipelineProgressProps {
@@ -99,7 +99,7 @@ function DependencyInfo({ phaseId }: { phaseId: string }) {
   if (!phaseDef || phaseDef.dependencies.length === 0) return null;
 
   const depLabels = phaseDef.dependencies
-    .map(depId => PITCH_SCAN_SECTION_LABELS[depId as PitchScanSectionId])
+    .map(depId => PITCH_SCAN_SECTION_LABELS[depId])
     .filter(Boolean);
 
   if (depLabels.length === 0) return null;

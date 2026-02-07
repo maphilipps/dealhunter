@@ -440,7 +440,7 @@ Gib für alle 10 Fragen eine Antwort.`;
     });
 
     // Map agent responses to TenQuestionsPayload format
-    const answersMap = new Map(result.output!.answers.map(a => [a.questionId, a]));
+    const answersMap = new Map(result.output.answers.map(a => [a.questionId, a]));
 
     const questions = QUALIFICATION_QUESTIONS.map((question, index) => {
       const id = index + 1;

@@ -14,7 +14,7 @@ import { test, expect } from '@playwright/test';
 test.describe('BID/NO-BID Decision Display', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-1.1: BID/NO-BID Buttons Appear After Quick Scan', async ({ page }) => {
@@ -93,7 +93,7 @@ test.describe('BID/NO-BID Decision Display', () => {
 test.describe('Multi-Agent Evaluation: BID Flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-2.1: BID Button Starts Multi-Agent Evaluation', async ({ page }) => {
@@ -148,7 +148,7 @@ test.describe('Multi-Agent Evaluation: BID Flow', () => {
 test.describe('Agent Results Display', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-3.1: Decision Card Displays After Evaluation', async ({ page }) => {
@@ -238,7 +238,7 @@ test.describe('Agent Results Display', () => {
 test.describe('Decision Tree Display', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-4.1: Decision Tree Tab Accessible', async ({ page }) => {
@@ -299,7 +299,7 @@ test.describe('Decision Tree Display', () => {
 test.describe('NO-BID Flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('TC-5.1: NO-BID Button Opens Reason Dialog', async ({ page }) => {
@@ -432,7 +432,7 @@ test.describe('NO-BID Flow', () => {
 
     // Navigate to RFPs list
     await page.goto('/qualifications');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify archived RFP doesn't appear in active list (by default)
     // Note: This depends on how the list filters work

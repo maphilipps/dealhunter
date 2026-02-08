@@ -25,14 +25,20 @@ pool.on('error', err => {
 export const db = drizzle(pool, { schema });
 
 // Graceful shutdown
+let shutdownPromise: Promise<void> | null = null;
 const shutdown = async () => {
-  console.log('[DB] Closing pool...');
-  await pool.end();
-  console.log('[DB] Pool closed');
+  // Next.js build/dev can trigger multiple shutdown paths; pg.Pool throws if ended twice.
+  if (shutdownPromise) return shutdownPromise;
+  shutdownPromise = (async () => {
+    console.log('[DB] Closing pool...');
+    await pool.end();
+    console.log('[DB] Pool closed');
+  })();
+  return shutdownPromise;
 };
 
-process.on('SIGTERM', () => void shutdown());
-process.on('SIGINT', () => void shutdown());
+process.once('SIGTERM', () => void shutdown());
+process.once('SIGINT', () => void shutdown());
 
 // Export pool for direct queries (e.g., pgvector operations)
 export { pool };

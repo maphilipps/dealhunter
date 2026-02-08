@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from './config';
+import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from './env';
 import { getModel, getModelProvider, getModelConfig, type ModelSlot } from './model-config';
 
 /**

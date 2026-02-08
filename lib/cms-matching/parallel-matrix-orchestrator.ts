@@ -333,38 +333,22 @@ export async function runParallelMatrixResearch(
           cell.status = 'complete';
           matrix.metadata.completedCells++;
 
-          // Persist TTL cache entry keyed by (featureId, technologyId) if the requirement maps to a Feature Library row.
+          // Persist via Feature Library (auto-creates feature + upserts evaluation)
           if (opts.useCache) {
             try {
-              const featureId = featureIdByRequirementKey.get(
-                normalizeFeatureKey(cell.requirement)
-              );
-              if (!featureId) return;
-
-              const expiresAt = new Date(
-                Date.now() + CMS_FEATURE_CACHE_TTL_DAYS * 24 * 60 * 60 * 1000
-              );
-              const reasoning = result.notes || result.evidence?.join('; ') || null;
-
-              await db
-                .insert(cmsFeatureEvaluations)
-                .values({
-                  featureId,
-                  technologyId: cell.cmsId,
-                  score: result.score,
-                  reasoning,
-                  expiresAt,
-                })
-                .onConflictDoUpdate({
-                  target: [cmsFeatureEvaluations.featureId, cmsFeatureEvaluations.technologyId],
-                  set: {
-                    score: result.score,
-                    reasoning,
-                    expiresAt,
-                  },
-                });
+              const { upsertFeatureEvaluation } = await import('./feature-library');
+              await upsertFeatureEvaluation({
+                featureName: cell.requirement,
+                technologyId: cell.cmsId,
+                score: result.score,
+                reasoning: result.notes || result.evidence?.join('; ') || null,
+                confidence: result.confidence ?? null,
+                sourceUrls: result.sources ?? null,
+                notes: result.notes ?? null,
+                ttlDays: CMS_FEATURE_CACHE_TTL_DAYS,
+              });
             } catch (cacheSaveError) {
-              console.warn('[Matrix] Cache save failed:', cacheSaveError);
+              console.warn('[Matrix] Feature Library cache save failed:', cacheSaveError);
             }
           }
 

@@ -72,8 +72,20 @@ interface Technology {
   features: string | null;
 }
 
+interface RelationalFeatureData {
+  score: number;
+  confidence: number | null;
+  notes: string | null;
+  reasoning: string | null;
+  supportType: string | null;
+  moduleName: string | null;
+  sourceUrls: string[] | null;
+  updatedAt: Date | null;
+}
+
 interface TechnologyDetailProps {
   technology: Technology;
+  featureEvaluations?: Record<string, RelationalFeatureData>;
 }
 
 interface FeatureData {
@@ -152,7 +164,7 @@ interface FeatureReviewResponse {
   updatedFeatures: Record<string, FeatureData>;
 }
 
-export function TechnologyDetail({ technology }: TechnologyDetailProps) {
+export function TechnologyDetail({ technology, featureEvaluations }: TechnologyDetailProps) {
   const router = useRouter();
   const [isResearching, setIsResearching] = useState(false);
   const [featurePrompt, setFeaturePrompt] = useState('');
@@ -591,8 +603,26 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
   const targetAudiences = parseJsonArray(technology.targetAudiences);
   const useCases = parseJsonArray(technology.useCases);
   const entityCounts = parseJsonObject(technology.baselineEntityCounts);
-  // Verwende localFeatures falls vorhanden (nach manueller Recherche), sonst aus Props
-  const features = localFeatures ?? parseFeatures(technology.features);
+  // Priorität: localFeatures (nach manueller Recherche) > relationale featureEvaluations > JSON-Blob
+  const relationalFeatures: Record<string, FeatureData> | null =
+    featureEvaluations && Object.keys(featureEvaluations).length > 0
+      ? Object.fromEntries(
+          Object.entries(featureEvaluations).map(([name, data]) => [
+            name,
+            {
+              score: data.score,
+              confidence: data.confidence ?? 0,
+              notes: data.notes ?? '',
+              reasoning: data.reasoning ?? undefined,
+              supportType: data.supportType as FeatureData['supportType'],
+              moduleName: data.moduleName ?? undefined,
+              sourceUrls: data.sourceUrls ?? undefined,
+              researchedAt: data.updatedAt?.toISOString() ?? undefined,
+            },
+          ])
+        )
+      : null;
+  const features = localFeatures ?? relationalFeatures ?? parseFeatures(technology.features);
   const hasBaseline = technology.baselineHours && technology.baselineHours > 0;
   const hasFeatures = Object.keys(features).length > 0;
 

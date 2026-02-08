@@ -27,5 +27,10 @@ export default async function TechnologyDetailPage({
     notFound();
   }
 
-  return <TechnologyDetail technology={result.technology} />;
+  return (
+    <TechnologyDetail
+      technology={result.technology}
+      featureEvaluations={result.featureEvaluations}
+    />
+  );
 }

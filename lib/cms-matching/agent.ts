@@ -1046,7 +1046,7 @@ async function saveTechnologyFeature(
     // Neues Feature hinzufügen
     currentFeatures[featureName] = research;
 
-    // In DB speichern
+    // In DB speichern (JSON-Blob)
     await db
       .update(technologies)
       .set({
@@ -1055,6 +1055,24 @@ async function saveTechnologyFeature(
         researchStatus: 'completed',
       })
       .where(eq(technologies.id, technologyId));
+
+    // Dual-Write: Feature Library (relational)
+    try {
+      const { upsertFeatureEvaluation } = await import('./feature-library');
+      await upsertFeatureEvaluation({
+        featureName,
+        technologyId,
+        score: research.score,
+        reasoning: research.reasoning ?? null,
+        confidence: research.confidence,
+        supportType: research.supportType ?? null,
+        moduleName: research.moduleName ?? null,
+        sourceUrls: research.sourceUrls ?? null,
+        notes: research.notes,
+      });
+    } catch (featureLibError) {
+      console.warn('[CMS Agent] Feature Library dual-write failed:', featureLibError);
+    }
   } catch (error) {
     console.error('Error saving technology feature:', error);
   }

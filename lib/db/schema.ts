@@ -514,8 +514,14 @@ export const cmsFeatureEvaluations = pgTable(
       .references(() => technologies.id),
     score: integer('score').notNull(), // 0..100
     reasoning: text('reasoning'),
+    confidence: integer('confidence'),
+    supportType: text('support_type'), // 'native' | 'module' | 'contrib' | 'extension' | 'third-party' | 'custom' | 'unknown'
+    moduleName: text('module_name'),
+    sourceUrls: text('source_urls'), // JSON-Array als String
+    notes: text('notes'),
     expiresAt: timestamp('expires_at').notNull(),
     createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+    updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   },
   table => ({
     featureTechUniqueIdx: uniqueIndex('cms_feature_eval_feature_tech_unique_idx').on(

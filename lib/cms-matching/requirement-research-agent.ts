@@ -527,7 +527,7 @@ async function saveRequirementResearchToTechnology(
       reasoning: research.evidence.join(' | '),
     };
 
-    // Save to DB
+    // Save to DB (JSON-Blob)
     await db
       .update(technologies)
       .set({
@@ -536,6 +536,22 @@ async function saveRequirementResearchToTechnology(
         researchStatus: 'completed',
       })
       .where(eq(technologies.id, technologyId));
+
+    // Dual-Write: Feature Library (relational)
+    try {
+      const { upsertFeatureEvaluation } = await import('./feature-library');
+      await upsertFeatureEvaluation({
+        featureName: requirement,
+        technologyId,
+        score: research.score,
+        reasoning: research.evidence.join(' | ') || null,
+        confidence: research.confidence,
+        sourceUrls: research.sources,
+        notes: research.notes,
+      });
+    } catch (featureLibError) {
+      console.warn('[Requirement Agent] Feature Library dual-write failed:', featureLibError);
+    }
 
     console.log(`[Requirement Agent] Saved "${requirement}" for ${research.cmsName}`);
   } catch (error) {

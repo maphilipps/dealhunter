@@ -1,20 +1,28 @@
-# PRD
+# GitHub Issues
 
-Pull @plans/prd.md into your context.
+Fetch open issues from this repo:
+
+```bash
+gh issue list --state open --json number,title,labels,body --limit 30
+```
 
 You've been passed the last 10 RALPH commits (SHA, date, full message). Review these to understand what work has been done.
 
-# TASK BREAKDOWN
-
-Break down the PRD into tasks.
-
-Make each task the smallest possible unit of work. We don't want to outrun our headlights. Aim for one small change per task.
-
 # TASK SELECTION
 
-Pick the next task.
+Pick the highest-priority open issue. Priority order:
 
-If all tasks are complete, output `<promise>COMPLETE</promise>`.
+1. `critical` label
+2. `high` label
+3. `medium` label
+4. `low` label
+5. No priority label — treat as medium
+
+Within the same priority, prefer issues with lower numbers (older first).
+
+Skip issues that are blocked by other issues (check the issue body for dependency references like "depends on #X" or "blocked by #X").
+
+If all issues are complete or blocked, output `<promise>COMPLETE</promise>`.
 
 # EXPLORATION
 
@@ -26,6 +34,7 @@ Read the issue thoroughly before writing any code:
 2. Read all comments — newer comments take priority over older ones
 3. Identify affected files — read them completely, not just the relevant function
 4. Search for existing patterns — find code that solves similar problems in the codebase
+5. Check CLAUDE.md for project conventions and available commands
 
 # EXECUTION
 
@@ -71,6 +80,20 @@ Make a git commit. The commit message must:
 
 Keep it concise.
 
+# ISSUE UPDATE
+
+After committing, update the GitHub issue:
+
+```bash
+gh issue comment <number> --body "RALPH: <summary of work done>"
+```
+
+If the issue is fully resolved, close it:
+
+```bash
+gh issue close <number> --comment "RALPH: Resolved in commit <sha>"
+```
+
 # FINAL RULES
 
-ONLY WORK ON A SINGLE TASK.
+ONLY WORK ON A SINGLE ISSUE. BE FULLY TRANSPARENT VIA GH ISSUES.

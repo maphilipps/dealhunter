@@ -105,6 +105,71 @@ export const QUALIFICATION_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
         label: 'Pitch Scan Übersicht',
         route: 'pitch-scan',
       },
+      {
+        id: 'ps-discovery',
+        label: 'Discovery & Tech-Stack',
+        route: 'pitch-scan/ps-discovery',
+      },
+      {
+        id: 'ps-content-architecture',
+        label: 'Content-Architektur',
+        route: 'pitch-scan/ps-content-architecture',
+      },
+      {
+        id: 'ps-features',
+        label: 'Features & Funktionalität',
+        route: 'pitch-scan/ps-features',
+      },
+      {
+        id: 'ps-performance',
+        label: 'Performance',
+        route: 'pitch-scan/ps-performance',
+      },
+      {
+        id: 'ps-accessibility',
+        label: 'Barrierefreiheit',
+        route: 'pitch-scan/ps-accessibility',
+      },
+      {
+        id: 'ps-legal',
+        label: 'Legal & Compliance',
+        route: 'pitch-scan/ps-legal',
+      },
+      {
+        id: 'ps-integrations',
+        label: 'Integrationen',
+        route: 'pitch-scan/ps-integrations',
+      },
+      {
+        id: 'ps-migration',
+        label: 'Migration',
+        route: 'pitch-scan/ps-migration',
+      },
+      {
+        id: 'ps-cms-comparison',
+        label: 'CMS-Vergleich',
+        route: 'pitch-scan/ps-cms-comparison',
+      },
+      {
+        id: 'ps-cms-recommendation',
+        label: 'CMS-Empfehlung',
+        route: 'pitch-scan/ps-cms-recommendation',
+      },
+      {
+        id: 'ps-drupal-architecture',
+        label: 'Drupal-Architektur',
+        route: 'pitch-scan/ps-drupal-architecture',
+      },
+      {
+        id: 'ps-estimation',
+        label: 'Aufwandsschätzung',
+        route: 'pitch-scan/ps-estimation',
+      },
+      {
+        id: 'ps-documentation',
+        label: 'Dokumentation',
+        route: 'pitch-scan/ps-documentation',
+      },
     ],
   },
   {

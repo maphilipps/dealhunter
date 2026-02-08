@@ -17,7 +17,7 @@ import {
 } from '@/lib/qualification-scan/tools/navigation-crawler';
 import { takeScreenshot } from '@/lib/qualification-scan/tools/playwright';
 import { fetchGitHubRepoInfo, findGitHubUrl, KNOWN_GITHUB_REPOS } from '@/lib/search/github-api';
-import { searchAndContents, getContents, isExaSearchAvailable } from '@/lib/search/web-search';
+import { searchAndContents, getContents } from '@/lib/search/web-search';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
@@ -134,7 +134,7 @@ export interface IntelligentToolsContext {
 // ========================================
 
 /**
- * Web Search via EXA (with DuckDuckGo fallback).
+ * Web Search via OpenAI webSearchPreview.
  * Returns data only — no side effects.
  */
 export async function webSearch(query: string, numResults = 5): Promise<SearchResult[]> {
@@ -143,7 +143,7 @@ export async function webSearch(query: string, numResults = 5): Promise<SearchRe
     return results.map(r => ({
       title: r.title,
       url: r.url,
-      snippet: r.text || r.summary || '',
+      snippet: r.text || '',
     }));
   } catch (error) {
     console.error('[Web Search] Error:', error);
@@ -152,7 +152,7 @@ export async function webSearch(query: string, numResults = 5): Promise<SearchRe
 }
 
 /**
- * URL Content Fetching via EXA (with fetch fallback).
+ * URL Content Fetching via direct HTTP fetch.
  * Returns data only — no side effects.
  */
 export async function fetchUrl(url: string): Promise<{ content: string; error?: string }> {
@@ -344,11 +344,10 @@ export async function fetchSitemap(url: string): Promise<SitemapResult> {
 }
 
 /**
- * Returns the search provider name (EXA or DuckDuckGo).
- * Useful for orchestrators that want to include provider info in progress events.
+ * Returns the search provider name.
  */
 export function getSearchProvider(): string {
-  return isExaSearchAvailable() ? 'EXA' : 'DuckDuckGo';
+  return 'OpenAI Web Search';
 }
 
 // ========================================
@@ -615,7 +614,7 @@ export function createIntelligentTools(ctx: IntelligentToolsContext = {}): Intel
 // ========================================
 
 /**
- * Web Search Tool für AI SDK (EXA mit DuckDuckGo Fallback)
+ * Web Search Tool für AI SDK (OpenAI webSearchPreview)
  */
 export const webSearchAITool = tool({
   description: `Durchsuche das Web nach aktuellen Informationen.
@@ -633,7 +632,7 @@ Nutze dieses Tool für:
     return results.map(r => ({
       title: r.title,
       url: r.url,
-      snippet: r.text || r.summary || '',
+      snippet: r.text || '',
     }));
   },
 });

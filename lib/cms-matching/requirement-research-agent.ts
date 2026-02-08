@@ -365,7 +365,6 @@ export async function runRequirementResearchAgent(
       try {
         const searchResults = await searchAndContents(query, {
           numResults: 3,
-          summary: true,
         });
 
         for (const result of searchResults.results) {

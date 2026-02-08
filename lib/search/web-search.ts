@@ -1,19 +1,33 @@
 /**
  * Web Search Service
  *
- * EXA-basierte Websuche für AI Agents.
- * Fallback auf DuckDuckGo wenn kein EXA API Key vorhanden.
+ * - searchAndContents(): OpenAI Responses API with webSearchPreview via AI Hub (LiteLLM)
+ * - getContents(): Direct HTTP fetch (returns raw page content, not AI summaries)
+ *
+ * Uses the Responses API (/responses) instead of Chat Completions (/chat/completions)
+ * because LiteLLM only supports web_search_preview on the Responses endpoint.
+ * API key is loaded from DB (ai_provider_configs) with env var fallback.
  */
 
-import { searchDuckDuckGo, fetchUrlContents as fetchDuckDuckGo } from './duckduckgo-search';
+import { createOpenAI, type OpenAIProvider } from '@ai-sdk/openai';
+import { generateText, stepCountIs } from 'ai';
 
-import { exa, isExaAvailable } from '@/lib/exa';
+import { AI_TIMEOUTS } from '@/lib/ai/config';
+import { getProviderCredentials } from '@/lib/ai/model-config';
 
-// Simple circuit breaker: if EXA starts returning 402 (credits exceeded),
-// stop calling it for a while to reduce noise and latency.
-let exaDisabledUntilMs = 0;
-function canUseExa(): boolean {
-  return Date.now() >= exaDisabledUntilMs;
+// Cached provider instance — recreated when API key changes
+let _cached: { provider: OpenAIProvider; keyTail: string } | null = null;
+
+async function getWebSearchProvider(): Promise<OpenAIProvider> {
+  const creds = await getProviderCredentials('ai-hub');
+  if (!creds.apiKey) throw new Error('AI Hub API key not configured');
+
+  const keyTail = creds.apiKey.slice(-8);
+  if (_cached?.keyTail === keyTail) return _cached.provider;
+
+  const provider = createOpenAI({ apiKey: creds.apiKey, baseURL: creds.baseURL });
+  _cached = { provider, keyTail };
+  return provider;
 }
 
 /**
@@ -23,10 +37,6 @@ export interface SearchResult {
   title: string;
   url: string;
   text?: string;
-  summary?: string;
-  score?: number;
-  publishedDate?: string;
-  author?: string;
 }
 
 /**
@@ -34,224 +44,122 @@ export interface SearchResult {
  */
 export interface SearchOptions {
   numResults?: number;
-  type?: 'keyword' | 'neural' | 'auto';
-  category?:
-    | 'company'
-    | 'research paper'
-    | 'news'
-    | 'pdf'
-    | 'github'
-    | 'tweet'
-    | 'personal site'
-    | 'financial report'
-    | 'people';
-  summary?: boolean;
   includeDomains?: string[];
-  excludeDomains?: string[];
-  startPublishedDate?: string;
-  endPublishedDate?: string;
-  contents?: {
-    text?: boolean | { maxCharacters?: number };
-    highlights?: boolean;
-  };
 }
 
 /**
- * Search the web using EXA (preferred) or DuckDuckGo (fallback)
+ * Search the web using OpenAI Responses API with webSearchPreview via AI Hub.
+ * API key loaded from DB (ai_provider_configs), falls back to env vars.
  */
 export async function searchAndContents(
   query: string,
   options: SearchOptions = {}
-): Promise<{ results: SearchResult[] }> {
-  const numResults = options.numResults || 5;
-  let exaAttempted = false;
-  let exaFailed = false;
+): Promise<{ results: SearchResult[]; error?: string }> {
+  const numResults = options.numResults ?? 5;
 
-  // Use EXA if available
-  if (canUseExa() && isExaAvailable() && exa) {
-    try {
-      exaAttempted = true;
-      const exaOptions: Record<string, unknown> = {
-        numResults,
-        type: options.type || 'auto',
-      };
+  try {
+    const provider = await getWebSearchProvider();
 
-      // Add optional parameters
-      if (options.category) {
-        exaOptions.category = options.category;
-      }
-      if (options.includeDomains?.length) {
-        exaOptions.includeDomains = options.includeDomains;
-      }
-      if (options.excludeDomains?.length) {
-        exaOptions.excludeDomains = options.excludeDomains;
-      }
-      if (options.startPublishedDate) {
-        exaOptions.startPublishedDate = options.startPublishedDate;
-      }
-      if (options.endPublishedDate) {
-        exaOptions.endPublishedDate = options.endPublishedDate;
-      }
-
-      // Content options
-      if (options.summary) {
-        exaOptions.summary = true;
-      }
-      if (options.contents?.text) {
-        exaOptions.text =
-          typeof options.contents.text === 'object'
-            ? options.contents.text
-            : { maxCharacters: 3000 };
-      } else {
-        // Default: get text content
-        exaOptions.text = { maxCharacters: 3000 };
-      }
-
-      const response = await exa.searchAndContents(query, exaOptions);
-
-      return {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        results: response.results.map((r: any) => ({
-          title: r.title ?? '',
-          url: r.url,
-          text: r.text,
-          summary: r.summary,
-          score: r.score,
-          publishedDate: r.publishedDate,
-          author: r.author,
-        })),
-      };
-    } catch (error) {
-      console.error('EXA search error:', error);
-      exaFailed = true;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      const statusCode = (error as any)?.statusCode as number | undefined;
-      if (statusCode === 402) {
-        exaDisabledUntilMs = Date.now() + 10 * 60_000;
-      }
-      // Fall through to DuckDuckGo
+    let enrichedQuery = query;
+    if (options.includeDomains?.length) {
+      enrichedQuery += ` site:${options.includeDomains.join(' OR site:')}`;
     }
-  }
 
-  // Fallback: DuckDuckGo
-  if (!isExaAvailable()) {
-    console.log('Using DuckDuckGo fallback (EXA_API_KEY not set)');
-  } else if (exaAttempted && exaFailed) {
-    console.log('Using DuckDuckGo fallback (EXA failed)');
-  } else {
-    console.log('Using DuckDuckGo fallback');
-  }
-  const { results, error } = await searchDuckDuckGo(query, numResults);
+    // provider('model') uses the Responses API (/responses endpoint)
+    // provider.chat('model') uses Chat Completions — which does NOT support web search on LiteLLM
+    const { text, sources } = await generateText({
+      model: provider('gpt-4o-mini'),
+      tools: {
+        web_search_preview: provider.tools.webSearchPreview({
+          searchContextSize: 'low',
+        }),
+      },
+      system:
+        'You are a web search assistant. Search the web and return a comprehensive summary of findings. Include key facts, numbers, and details.',
+      prompt: `Search for: ${enrichedQuery}\n\nReturn up to ${numResults} relevant results.`,
+      stopWhen: stepCountIs(3),
+      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_SIMPLE),
+    });
 
-  if (error) {
-    console.error('DuckDuckGo search error:', error);
-    return { results: [] };
-  }
+    const urlSources = sources.filter(s => s.sourceType === 'url');
 
-  // Fetch contents for each result if summary is requested
-  const enrichedResults = await Promise.all(
-    results.map(async result => {
-      const enriched: SearchResult = {
-        title: result.title,
-        url: result.url,
-        text: result.snippet,
+    if (!urlSources.length) {
+      return {
+        results: text ? [{ title: 'Web Search Result', url: '', text }] : [],
       };
+    }
 
-      if (options.summary || options.contents?.text) {
-        try {
-          const { content } = await fetchDuckDuckGo(result.url);
-          if (content) {
-            enriched.text = content.slice(0, 3000);
-          }
-        } catch {
-          // Keep snippet if fetch fails
-        }
-      }
-
-      return enriched;
-    })
-  );
-
-  return { results: enrichedResults };
+    return {
+      results: urlSources.map(s => ({
+        title: s.title ?? '',
+        url: s.url,
+        text,
+      })),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown search error';
+    console.error('[Web Search] Responses API webSearchPreview error:', message);
+    return { results: [], error: message };
+  }
 }
 
 /**
- * Get contents of a specific URL using EXA or fetch fallback
+ * Get raw contents of a specific URL via direct HTTP fetch.
+ * Returns actual page text, NOT an AI summary.
  */
 export async function getContents(
   url: string,
   options: { text?: boolean; maxCharacters?: number } = {}
 ): Promise<{ title?: string; url: string; text?: string; error?: string }> {
-  // Use EXA if available
-  if (isExaAvailable() && exa) {
-    try {
-      const exaOptions: Record<string, unknown> = {};
-
-      if (options.text !== false) {
-        exaOptions.text = options.maxCharacters ? { maxCharacters: options.maxCharacters } : true;
-      }
-
-      const response = await exa.getContents([url], exaOptions);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = response.results[0] as any;
-
-      if (result) {
-        return {
-          title: result.title ?? undefined,
-          url: result.url,
-          text: result.text,
-        };
-      }
-    } catch (error) {
-      console.error('EXA getContents error:', error);
-      // Fall through to fetch
-    }
-  }
-
-  // Fallback: Direct fetch
-  const { content, error } = await fetchDuckDuckGo(url);
-
-  if (error) {
-    return { url, error };
-  }
-
-  return {
-    url,
-    text: options.text !== false ? content : undefined,
-  };
-}
-
-/**
- * Find similar pages to a given URL (EXA only)
- */
-export async function findSimilar(
-  url: string,
-  options: { numResults?: number; excludeSourceDomain?: boolean } = {}
-): Promise<{ results: SearchResult[] }> {
-  if (!isExaAvailable() || !exa) {
-    console.warn('findSimilar requires EXA API key');
-    return { results: [] };
-  }
-
   try {
-    const response = await exa.findSimilarAndContents(url, {
-      numResults: options.numResults || 5,
-      excludeSourceDomain: options.excludeSourceDomain ?? true,
-      text: { maxCharacters: 2000 },
+    const validUrl = new URL(url);
+    if (!['http:', 'https:'].includes(validUrl.protocol)) {
+      return { url, error: 'Only HTTP/HTTPS URLs are allowed' };
+    }
+
+    const response = await fetch(validUrl.toString(), {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; DealHunterBot/1.0)',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,de;q=0.8',
+      },
+      signal: AbortSignal.timeout(15_000),
+      redirect: 'follow',
     });
 
+    if (!response.ok) {
+      return { url, error: `HTTP ${response.status}` };
+    }
+
+    const html = await response.text();
+    const maxChars = options.maxCharacters ?? 50_000;
+
+    // Extract title from HTML
+    const titleMatch = /<title[^>]*>([^<]+)<\/title>/i.exec(html);
+    const title = titleMatch ? titleMatch[1].trim() : undefined;
+
+    // Extract text content by stripping scripts, styles, and tags
+    const textContent = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/\s+/g, ' ')
+      .trim();
+
     return {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      results: response.results.map((r: any) => ({
-        title: r.title ?? '',
-        url: r.url,
-        text: r.text,
-        score: r.score,
-      })),
+      title,
+      url,
+      text: textContent.slice(0, maxChars),
     };
   } catch (error) {
-    console.error('EXA findSimilar error:', error);
-    return { results: [] };
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Web Search] getContents error:', message);
+    return { url, error: message };
   }
 }
 
@@ -259,19 +167,18 @@ export async function findSimilar(
  * Check if web search is available
  */
 export function isWebSearchAvailable(): boolean {
-  return true; // Always available (DuckDuckGo fallback)
+  return true;
 }
 
 /**
- * Check if EXA is available (for premium features)
+ * @deprecated No longer relevant — OpenAI webSearchPreview is always used
  */
 export function isExaSearchAvailable(): boolean {
-  return isExaAvailable();
+  return false;
 }
 
 // Re-export for compatibility with existing code
 export const webSearch = {
   searchAndContents,
   getContents,
-  findSimilar,
 };

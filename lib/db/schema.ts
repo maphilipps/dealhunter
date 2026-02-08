@@ -970,6 +970,7 @@ export const backgroundJobs = pgTable(
         'team-notification',
         'cleanup',
         'visualization',
+        'technology-review',
       ],
     }).notNull(),
     inngestRunId: text('inngest_run_id'), // Inngest execution ID for tracking

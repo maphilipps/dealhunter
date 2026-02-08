@@ -266,7 +266,6 @@ async function executeSearchStrategy(
     // Execute web search
     const searchResults = await searchAndContents(query, {
       numResults: isLinkedInSearch || isXingSearch ? 5 : 3,
-      category: isLinkedInSearch ? 'people' : 'company',
     });
 
     if (!searchResults.results || searchResults.results.length === 0) {
@@ -487,7 +486,6 @@ export async function searchDecisionMakersNameOnly(
     try {
       const searchResults = await searchAndContents(query, {
         numResults: 5,
-        category: isLinkedInSearch ? 'people' : 'company',
       });
 
       if (!searchResults.results || searchResults.results.length === 0) continue;

@@ -16,6 +16,7 @@ export const QUEUE_NAMES = {
   PREQUAL_PROCESSING: 'prequal-processing',
   QUALIFICATION_SCAN: 'qualification-scan',
   VISUALIZATION: 'visualization',
+  TECHNOLOGY_REVIEW: 'technology-review',
 } as const;
 
 /**
@@ -384,6 +385,109 @@ export async function getVisualizationJob(jobId: string) {
 }
 
 // ============================================================================
+// Technology Review Queue
+// ============================================================================
+
+/**
+ * Technology Review job data structure
+ */
+export interface TechnologyReviewJobData {
+  /** Technology ID */
+  technologyId: string;
+  /** User who triggered the review */
+  userId: string;
+  /** Database job ID for status tracking */
+  dbJobId: string;
+  /** Review mode */
+  mode: 'quick' | 'deep';
+  /** Optional: only review specific features */
+  featureNames?: string[];
+}
+
+/**
+ * Technology Review job result structure
+ */
+export interface TechnologyReviewJobResult {
+  success: boolean;
+  featuresReviewed: number;
+  featuresImproved: number;
+  featuresFlagged: number;
+  overallConfidence: number;
+  error?: string;
+}
+
+/**
+ * Technology Review Queue
+ *
+ * Handles background deep review of technology features using AI + web search.
+ */
+let technologyReviewQueue: Queue<
+  TechnologyReviewJobData,
+  TechnologyReviewJobResult,
+  string
+> | null = null;
+
+/**
+ * Get or create the Technology Review queue
+ */
+export function getTechnologyReviewQueue(): Queue<
+  TechnologyReviewJobData,
+  TechnologyReviewJobResult,
+  string
+> {
+  if (!technologyReviewQueue) {
+    technologyReviewQueue = new Queue<TechnologyReviewJobData, TechnologyReviewJobResult, string>(
+      QUEUE_NAMES.TECHNOLOGY_REVIEW,
+      {
+        connection: getConnection(),
+        defaultJobOptions: {
+          attempts: 2,
+          backoff: {
+            type: 'exponential',
+            delay: 30000,
+          },
+          removeOnComplete: {
+            age: 24 * 60 * 60,
+            count: 100,
+          },
+          removeOnFail: {
+            age: 7 * 24 * 60 * 60,
+            count: 500,
+          },
+        },
+      }
+    );
+
+    console.log('[BullMQ] Technology Review queue initialized');
+  }
+
+  return technologyReviewQueue;
+}
+
+/**
+ * Add a technology review job to the queue
+ */
+export async function addTechnologyReviewJob(data: TechnologyReviewJobData) {
+  const queue = getTechnologyReviewQueue();
+
+  const job = await queue.add('process', data, {
+    jobId: data.dbJobId,
+  });
+
+  console.log(`[BullMQ] Added technology review job ${job.id} for technology ${data.technologyId}`);
+
+  return job;
+}
+
+/**
+ * Get a technology review job by ID
+ */
+export async function getTechnologyReviewJob(jobId: string) {
+  const queue = getTechnologyReviewQueue();
+  return queue.getJob(jobId);
+}
+
+// ============================================================================
 // Pitch Queue
 // ============================================================================
 
@@ -481,6 +585,11 @@ export async function closeQueues(): Promise<void> {
   if (qualificationScanQueueEvents) {
     await qualificationScanQueueEvents.close();
     qualificationScanQueueEvents = null;
+  }
+
+  if (technologyReviewQueue) {
+    await technologyReviewQueue.close();
+    technologyReviewQueue = null;
   }
 
   if (pitchQueue) {

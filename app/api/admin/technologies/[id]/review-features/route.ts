@@ -7,9 +7,14 @@ import {
   reviewFeatureResearch,
   deepReviewFeature,
   type FeatureData,
+  type FeatureReview,
 } from '@/lib/cms-matching/review-agent';
 import { db } from '@/lib/db';
 import { technologies } from '@/lib/db/schema';
+import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
+import { AgentEventType } from '@/lib/streaming/event-types';
+
+export const runtime = 'nodejs';
 
 const reviewFeaturesRequestSchema = z.object({
   mode: z.enum(['quick', 'deep']).optional(),
@@ -18,12 +23,9 @@ const reviewFeaturesRequestSchema = z.object({
 
 /**
  * POST /api/admin/technologies/[id]/review-features
- * Führt einen Review der recherchierten Features durch
  *
- * Body: { mode?: 'quick' | 'deep', featureNames?: string[] }
- * - quick: Schneller regelbasierter Review (default)
- * - deep: AI-gestützter Deep Review (langsamer, gründlicher)
- * - featureNames: Optional - nur bestimmte Features reviewen
+ * - quick: Synchronous rule-based review → JSON response
+ * - deep: AI + web search per feature → SSE stream with per-feature progress
  */
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -33,88 +35,175 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
   const { id } = await context.params;
 
-  try {
-    const body: unknown = await request.json().catch(() => ({}));
-    const parsed = reviewFeaturesRequestSchema.safeParse(body);
+  const body: unknown = await request.json().catch(() => ({}));
+  const parsed = reviewFeaturesRequestSchema.safeParse(body);
 
-    const mode = parsed.success && parsed.data.mode ? parsed.data.mode : 'quick';
-    const featureNames: string[] | undefined = parsed.success
-      ? parsed.data.featureNames
-      : undefined;
+  const mode = parsed.success && parsed.data.mode ? parsed.data.mode : 'quick';
+  const featureNames: string[] | undefined = parsed.success ? parsed.data.featureNames : undefined;
 
-    // Technologie laden
-    const techResult = await db.select().from(technologies).where(eq(technologies.id, id)).limit(1);
-    const tech = techResult[0];
+  // Load technology
+  const techResult = await db.select().from(technologies).where(eq(technologies.id, id)).limit(1);
+  const tech = techResult[0];
 
-    if (!tech) {
-      return NextResponse.json({ error: 'Technologie nicht gefunden' }, { status: 404 });
-    }
+  if (!tech) {
+    return NextResponse.json({ error: 'Technologie nicht gefunden' }, { status: 404 });
+  }
 
-    if (!tech.features) {
-      return NextResponse.json({ error: 'Keine Features zum Reviewen vorhanden' }, { status: 400 });
-    }
+  if (!tech.features) {
+    return NextResponse.json({ error: 'Keine Features zum Reviewen vorhanden' }, { status: 400 });
+  }
 
-    const features = JSON.parse(tech.features) as Record<string, FeatureData>;
+  const features = JSON.parse(tech.features) as Record<string, FeatureData>;
 
-    // Filter auf bestimmte Features wenn angegeben
-    const featuresToReview: Record<string, FeatureData> = featureNames
-      ? Object.fromEntries(
-          Object.entries(features).filter(([name]) =>
-            featureNames.some(fn => fn.toLowerCase() === name.toLowerCase())
-          )
+  // Filter features if specified
+  const featuresToReview: Record<string, FeatureData> = featureNames
+    ? Object.fromEntries(
+        Object.entries(features).filter(([name]) =>
+          featureNames.some(fn => fn.toLowerCase() === name.toLowerCase())
         )
-      : features;
+      )
+    : features;
 
-    if (Object.keys(featuresToReview).length === 0) {
-      return NextResponse.json({ error: 'Keine passenden Features gefunden' }, { status: 400 });
-    }
+  if (Object.keys(featuresToReview).length === 0) {
+    return NextResponse.json({ error: 'Keine passenden Features gefunden' }, { status: 400 });
+  }
 
-    let reviewResult;
+  // ──────────────────────────────────────────────────────────────────
+  // Deep Review: SSE stream with per-feature progress
+  // ──────────────────────────────────────────────────────────────────
+  if (mode === 'deep') {
+    const stream = createAgentEventStream(async emit => {
+      const entries = Object.entries(featuresToReview);
+      const total = entries.length;
 
-    if (mode === 'deep') {
-      // Deep Review: Jedes Feature einzeln mit AI reviewen
-      const deepReviews = await Promise.all(
-        Object.entries(featuresToReview).map(async ([name, data]) => {
-          const featureData = data as {
-            score: number;
-            confidence: number;
-            notes: string;
-            supported?: boolean;
-            researchedAt?: string;
-            supportType?: string;
-            moduleName?: string;
-            sourceUrls?: string[];
-            reasoning?: string;
-          };
-          return deepReviewFeature(tech.name, name, featureData);
-        })
-      );
-
-      reviewResult = {
-        technologyName: tech.name,
-        reviewedAt: new Date().toISOString(),
-        totalFeatures: Object.keys(features).length,
-        featuresReviewed: deepReviews.length,
-        featuresImproved: deepReviews.filter(r => r.corrections.length > 0).length,
-        featuresFlagged: deepReviews.filter(r => r.needsManualReview).length,
-        overallConfidence: Math.round(
-          deepReviews.reduce((sum, r) => sum + r.confidence, 0) / deepReviews.length
-        ),
-        summary: `Deep Review: ${deepReviews.length} Features analysiert`,
-        features: deepReviews,
-        mode: 'deep',
-      };
-    } else {
-      // Quick Review: Regelbasiert
-      reviewResult = await reviewFeatureResearch({
-        technologyName: tech.name ?? '',
-        technologyId: id,
-        features: featuresToReview,
+      emit({
+        type: AgentEventType.START,
+        data: {
+          agent: 'deep-review',
+          message: `Deep Review: ${total} Features werden analysiert...`,
+        },
       });
-      reviewResult = { ...reviewResult, mode: 'quick' };
-    }
 
-    // Korrigierte Features in DB speichern
+      const deepReviews: FeatureReview[] = [];
+      let completed = 0;
+
+      for (const [name, data] of entries) {
+        emit({
+          type: AgentEventType.AGENT_PROGRESS,
+          data: {
+            agent: 'deep-review',
+            message: `Analysiere: ${name} (${completed + 1}/${total})`,
+            metadata: { feature: name, completed, total },
+          },
+        });
+
+        try {
+          const result = await deepReviewFeature(tech.name, name, data);
+          deepReviews.push(result);
+
+          const improved = result.corrections.length > 0;
+          emit({
+            type: AgentEventType.AGENT_PROGRESS,
+            data: {
+              agent: 'deep-review',
+              message: improved
+                ? `${name}: Score ${result.originalScore}% → ${result.reviewedScore}% (${result.corrections.length} Korrekturen)`
+                : `${name}: ${result.reviewedScore}% — keine Korrekturen`,
+              metadata: {
+                feature: name,
+                completed: completed + 1,
+                total,
+                improved,
+                score: result.reviewedScore,
+                confidence: result.confidence,
+              },
+            },
+          });
+        } catch (error) {
+          console.error(`[DeepReview] Feature "${name}" failed:`, error);
+          emit({
+            type: AgentEventType.AGENT_PROGRESS,
+            data: {
+              agent: 'deep-review',
+              message: `${name}: Fehler — ${error instanceof Error ? error.message : 'Unbekannt'}`,
+              metadata: { feature: name, completed: completed + 1, total, error: true },
+            },
+          });
+        }
+
+        completed++;
+      }
+
+      // Save corrected features to DB
+      const updatedFeatures: Record<string, FeatureData> = { ...features };
+      const reviewedAt = new Date().toISOString();
+
+      for (const reviewed of deepReviews) {
+        if (reviewed.corrections.length > 0) {
+          const original = updatedFeatures[reviewed.featureName];
+          if (original) {
+            updatedFeatures[reviewed.featureName] = {
+              ...original,
+              score: reviewed.reviewedScore,
+              supportType: reviewed.reviewedSupportType,
+              moduleName: reviewed.reviewedModuleName,
+              confidence: reviewed.confidence,
+              reasoning: `[Reviewed] ${reviewed.reasoning}`,
+              reviewedAt,
+              reviewIssues: reviewed.issues,
+              reviewCorrections: reviewed.corrections,
+            };
+          }
+        }
+      }
+
+      await db
+        .update(technologies)
+        .set({
+          features: JSON.stringify(updatedFeatures),
+          lastResearchedAt: new Date(),
+        })
+        .where(eq(technologies.id, id));
+
+      // Emit final result
+      const featuresImproved = deepReviews.filter(r => r.corrections.length > 0).length;
+      const featuresFlagged = deepReviews.filter(r => r.needsManualReview).length;
+      const overallConfidence =
+        deepReviews.length > 0
+          ? Math.round(deepReviews.reduce((sum, r) => sum + r.confidence, 0) / deepReviews.length)
+          : 0;
+
+      emit({
+        type: AgentEventType.AGENT_COMPLETE,
+        data: {
+          agent: 'deep-review',
+          message: `Deep Review abgeschlossen: ${deepReviews.length} analysiert, ${featuresImproved} verbessert`,
+          result: {
+            featuresReviewed: deepReviews.length,
+            featuresImproved,
+            featuresFlagged,
+            overallConfidence,
+            updatedFeatures,
+          },
+        },
+      });
+    });
+
+    return createSSEResponse(stream);
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Quick Review: Synchronous → JSON response
+  // ──────────────────────────────────────────────────────────────────
+  try {
+    let reviewResult = await reviewFeatureResearch({
+      technologyName: tech.name ?? '',
+      technologyId: id,
+      features: featuresToReview,
+    });
+    (reviewResult as Record<string, unknown>).mode = 'quick';
+
+    // Save corrected features to DB
     const updatedFeatures: Record<string, FeatureData> = { ...features };
     for (const reviewed of reviewResult.features) {
       if (reviewed.corrections.length > 0) {
@@ -135,7 +224,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       }
     }
 
-    // In DB speichern
     await db
       .update(technologies)
       .set({

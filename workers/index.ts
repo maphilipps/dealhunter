@@ -17,6 +17,7 @@ import { QUEUE_NAMES, getPitchBackoffDelay, closeQueues } from '../lib/bullmq/qu
 import { processPitchJob } from '../lib/pitch/processor';
 import { processPreQualJob } from '../lib/bullmq/workers/prequal-processing-worker';
 import { processQualificationScanJob } from '../lib/bullmq/workers/qualification-scan-processor';
+import { processTechnologyReviewJob } from '../lib/bullmq/workers/technology-review-processor';
 import { processVisualizationJob } from '../lib/bullmq/workers/visualization-processor';
 
 /**
@@ -26,6 +27,10 @@ const PITCH_CONCURRENCY = parseInt(process.env.PITCH_CONCURRENCY || '2', 10);
 const PREQUAL_CONCURRENCY = parseInt(process.env.PREQUAL_CONCURRENCY || '1', 10);
 const QUICK_SCAN_CONCURRENCY = parseInt(process.env.QUICK_SCAN_CONCURRENCY || '3', 10);
 const VISUALIZATION_CONCURRENCY = parseInt(process.env.VISUALIZATION_CONCURRENCY || '2', 10);
+const TECHNOLOGY_REVIEW_CONCURRENCY = parseInt(
+  process.env.TECHNOLOGY_REVIEW_CONCURRENCY || '2',
+  10
+);
 
 /**
  * Create and start all workers
@@ -188,6 +193,42 @@ async function main() {
   });
 
   workers.push(visualizationWorker);
+
+  // ============================================================================
+  // Technology Review Worker
+  // ============================================================================
+  const technologyReviewWorker = new Worker(
+    QUEUE_NAMES.TECHNOLOGY_REVIEW,
+    async job => {
+      console.log(`[TechnologyReview] Processing job ${job.id}`);
+      return processTechnologyReviewJob(job);
+    },
+    {
+      connection: connectionOptions,
+      concurrency: TECHNOLOGY_REVIEW_CONCURRENCY,
+    }
+  );
+
+  technologyReviewWorker.on('ready', () => {
+    console.log(`[TechnologyReview] Ready (concurrency: ${TECHNOLOGY_REVIEW_CONCURRENCY})`);
+  });
+
+  technologyReviewWorker.on('completed', (job, result) => {
+    console.log(
+      `[TechnologyReview] Job ${job.id} completed. Reviewed: ${result.featuresReviewed}, Improved: ${result.featuresImproved}`
+    );
+  });
+
+  technologyReviewWorker.on('failed', (job, error) => {
+    console.error(`[TechnologyReview] Job ${job?.id} failed:`, {
+      message: error.message,
+      stack: error.stack,
+      jobData: job?.data,
+      attemptsMade: job?.attemptsMade,
+    });
+  });
+
+  workers.push(technologyReviewWorker);
 
   // ============================================================================
   // Shared Event Handlers

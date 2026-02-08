@@ -16,8 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useAgentStream } from '@/hooks/use-agent-stream';
-import type { AgentEvent, UrlSuggestionData } from '@/lib/streaming/in-process/event-types';
-import { AgentEventType } from '@/lib/streaming/in-process/event-types';
+import type { AgentEvent, UrlSuggestionData } from '@/lib/streaming/event-types';
+import { AgentEventType } from '@/lib/streaming/event-types';
 
 // --- Sub-components ---
 

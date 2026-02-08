@@ -13,7 +13,7 @@
 import type { EvaluationResult, EvaluationIssue } from './evaluator';
 import type { IntelligentTools, SearchResult } from './intelligent-tools';
 
-import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/in-process/event-types';
 
 // ========================================

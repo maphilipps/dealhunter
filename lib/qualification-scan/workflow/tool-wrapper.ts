@@ -6,7 +6,7 @@
 
 import type { ToolConfig, WorkflowContext, WorkflowStep, StepFunction } from './types';
 
-import { AgentEventType } from '@/lib/streaming/in-process/event-types';
+import { AgentEventType } from '@/lib/streaming/event-types';
 
 /**
  * Step configuration for automatic RAG storage

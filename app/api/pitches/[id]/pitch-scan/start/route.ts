@@ -6,10 +6,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { pitches, users, auditScanRuns, technologies } from '@/lib/db/schema';
 import { runDynamicOrchestrator } from '@/lib/pitch-scan/orchestrator';
-import {
-  createAgentEventStream,
-  createSSEResponse,
-} from '@/lib/streaming/in-process/event-emitter';
+import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

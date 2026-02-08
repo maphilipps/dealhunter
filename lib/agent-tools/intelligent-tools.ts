@@ -18,8 +18,8 @@ import {
 import { takeScreenshot } from '@/lib/qualification-scan/tools/playwright';
 import { fetchGitHubRepoInfo, findGitHubUrl, KNOWN_GITHUB_REPOS } from '@/lib/search/github-api';
 import { searchAndContents, getContents } from '@/lib/search/web-search';
-import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
-import { AgentEventType } from '@/lib/streaming/in-process/event-types';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import { AgentEventType } from '@/lib/streaming/event-types';
 
 // ========================================
 // Types

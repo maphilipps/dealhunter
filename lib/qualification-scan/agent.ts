@@ -360,11 +360,8 @@ import { createIntelligentTools, KNOWN_GITHUB_REPOS } from '@/lib/agent-tools/in
 import { optimizeQualificationScanResults } from '@/lib/agent-tools/optimizer';
 import { db } from '@/lib/db';
 import { businessUnits as businessUnitsTable } from '@/lib/db/schema';
-import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
-import {
-  AgentEventType,
-  type QualificationScanPhase,
-} from '@/lib/streaming/in-process/event-types';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import { AgentEventType, type QualificationScanPhase } from '@/lib/streaming/event-types';
 import { validateUrlForFetch } from '@/lib/utils/url-validation';
 
 async function callAI<T>(

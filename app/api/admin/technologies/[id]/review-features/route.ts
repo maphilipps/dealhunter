@@ -11,11 +11,8 @@ import {
 } from '@/lib/cms-matching/review-agent';
 import { db } from '@/lib/db';
 import { technologies } from '@/lib/db/schema';
-import {
-  createAgentEventStream,
-  createSSEResponse,
-} from '@/lib/streaming/in-process/event-emitter';
-import { AgentEventType } from '@/lib/streaming/in-process/event-types';
+import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
+import { AgentEventType } from '@/lib/streaming/event-types';
 
 export const runtime = 'nodejs';
 

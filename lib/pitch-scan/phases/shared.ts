@@ -7,7 +7,7 @@ import { PHASE_AGENT_CONFIG } from '../constants';
 import { generateWithFallback } from '@/lib/ai/config';
 import { db } from '@/lib/db';
 import { dealEmbeddings, pitches } from '@/lib/db/schema';
-import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/in-process/event-types';
 import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 

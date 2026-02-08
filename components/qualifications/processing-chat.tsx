@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
-import { memo, useEffect, useMemo, type ReactNode } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { ProcessingFinding } from './processing-finding';
@@ -34,8 +34,8 @@ import { Progress } from '@/components/ui/progress';
 import { useQualificationStream } from '@/hooks/use-qualification-stream';
 import type { PhaseStatus } from '@/hooks/use-qualification-stream';
 
-import type { QualificationProcessingEvent } from '@/lib/streaming/redis/qualification-events';
-import { QualificationEventType, isVisibleEvent } from '@/lib/streaming/redis/qualification-events';
+import type { QualificationProcessingEvent } from '@/lib/streaming/qualification-events';
+import { QualificationEventType, isVisibleEvent } from '@/lib/streaming/qualification-events';
 
 // ============================================================================
 // Props
@@ -205,21 +205,33 @@ export const ProcessingChat = memo(function ProcessingChat({
   const visibleEvents = useMemo(() => events.filter(isVisibleEvent), [events]);
 
   const completedPhaseCount = phases.filter(p => p.status === 'completed').length;
-  const header = getProcessingHeaderState({
-    error,
-    isComplete,
-    completedPhaseCount,
-    totalPhases: phases.length,
-  });
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          {header.icon}
+          {error ? (
+            <AlertCircle className="size-6 text-destructive" />
+          ) : isComplete ? (
+            <CheckCircle2 className="size-6 text-muted-foreground" />
+          ) : (
+            <Loader size="md" />
+          )}
           <div className="flex-1">
-            <CardTitle>{header.title}</CardTitle>
-            <CardDescription>{header.description}</CardDescription>
+            <CardTitle>
+              {error
+                ? 'Verarbeitung fehlgeschlagen'
+                : isComplete
+                  ? 'Verarbeitung abgeschlossen'
+                  : 'Verarbeitung läuft...'}
+            </CardTitle>
+            <CardDescription>
+              {error
+                ? 'Es ist ein Fehler aufgetreten'
+                : isComplete
+                  ? 'Die Seite wird aktualisiert...'
+                  : `Schritt ${completedPhaseCount + 1} von ${phases.length}`}
+            </CardDescription>
           </div>
         </div>
         <div className="mt-3 space-y-1">
@@ -306,32 +318,3 @@ export const ProcessingChat = memo(function ProcessingChat({
     </Card>
   );
 });
-
-function getProcessingHeaderState(params: {
-  error: string | null;
-  isComplete: boolean;
-  completedPhaseCount: number;
-  totalPhases: number;
-}): { title: string; description: string; icon: ReactNode } {
-  if (params.error) {
-    return {
-      title: 'Verarbeitung fehlgeschlagen',
-      description: 'Es ist ein Fehler aufgetreten',
-      icon: <AlertCircle className="size-6 text-destructive" />,
-    };
-  }
-
-  if (params.isComplete) {
-    return {
-      title: 'Verarbeitung abgeschlossen',
-      description: 'Die Seite wird aktualisiert...',
-      icon: <CheckCircle2 className="size-6 text-muted-foreground" />,
-    };
-  }
-
-  return {
-    title: 'Verarbeitung läuft...',
-    description: `Schritt ${params.completedPhaseCount + 1} von ${params.totalPhases}`,
-    icon: <Loader size="md" />,
-  };
-}

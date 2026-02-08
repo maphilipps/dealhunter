@@ -29,7 +29,7 @@ import {
 import { ConfidenceIndicator } from '@/components/ai-elements/confidence-indicator';
 import { Message, MessageContent } from '@/components/ai-elements/message';
 import { Badge } from '@/components/ui/badge';
-import type { FindingType } from '@/lib/streaming/redis/qualification-events';
+import type { FindingType } from '@/lib/streaming/qualification-events';
 
 interface ProcessingFindingProps {
   type: FindingType;

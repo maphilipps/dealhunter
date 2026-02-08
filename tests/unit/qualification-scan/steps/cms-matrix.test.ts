@@ -25,7 +25,7 @@ vi.mock('drizzle-orm', () => ({
   eq: vi.fn().mockReturnValue('eq_condition'),
 }));
 
-vi.mock('@/lib/streaming/in-process/event-types', () => ({
+vi.mock('@/lib/streaming/event-types', () => ({
   AgentEventType: {
     STEP_START: 'STEP_START',
     STEP_COMPLETE: 'STEP_COMPLETE',

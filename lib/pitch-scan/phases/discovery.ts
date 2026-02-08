@@ -1,5 +1,5 @@
 import type { PhaseContext, PhaseResult } from '../types';
-import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
 const SYSTEM_PROMPT = `Du bist ein Website-Analyse-Experte. Analysiere die Website-URL und erkenne:

@@ -21,8 +21,8 @@ import { modelNames } from '../ai/config';
 import { getProviderForSlot } from '../ai/providers';
 import { embedAgentOutput } from '../rag/embedding-service';
 import { embedRawText } from '../rag/raw-embedding-service';
-import type { EventEmitter } from '../streaming/in-process/event-emitter';
-import { AgentEventType } from '../streaming/in-process/event-types';
+import type { EventEmitter } from '../streaming/event-emitter';
+import { AgentEventType } from '../streaming/event-types';
 
 export interface ExtractionAgentInput {
   preQualificationId: string;
@@ -39,8 +39,6 @@ export interface ExtractionAgentOutput {
   requirements: ExtractedRequirements;
   success: boolean;
   error?: string;
-  ragStatus?: 'available' | 'disabled' | 'degraded' | 'error';
-  ragWarning?: string;
   activityLog: Array<{ timestamp: string; action: string; details?: string }>;
 }
 
@@ -280,27 +278,12 @@ export async function runExtractionAgentNative(
       });
     }
 
-    const ragAvailable = embedResult.embeddingsGenerated === true;
-    const ragStatus: ExtractionAgentOutput['ragStatus'] = ragAvailable
-      ? 'available'
-      : embedResult.skipped
-        ? 'disabled'
-        : embedResult.degraded
-          ? 'degraded'
-          : embedResult.success
-            ? 'degraded'
-            : 'error';
+    const ragAvailable = embedResult.success || embedResult.skipped;
     const embeddedChunks = embedResult.stats?.totalChunks ?? 0;
     logActivity('Embedding', `${embeddedChunks} Chunks erstellt`);
     logActivity(
       'Embedding',
-      ragAvailable
-        ? 'RAG verfügbar'
-        : ragStatus === 'disabled'
-          ? 'RAG deaktiviert (keine Embeddings konfiguriert)'
-          : ragStatus === 'degraded'
-            ? 'RAG degradiert — Ergebnisse ohne semantische Suche'
-            : 'RAG Fehler — Ergebnisse ohne semantische Suche'
+      ragAvailable ? 'RAG verfügbar' : 'RAG nicht verfügbar — Ergebnisse ohne semantische Suche'
     );
 
     // Step 2: Initialize extraction session with header fields
@@ -435,16 +418,6 @@ Nutze die Tools um alle relevanten Felder zu extrahieren.
       .flatMap(step => step.toolCalls)
       .find(call => call.toolName === 'completeExtraction');
 
-    if (!completionCall) {
-      const warning =
-        'Step limit reached or agent stopped without calling completeExtraction (partial extraction likely).';
-      console.warn('[Extraction Agent]', warning, { preQualificationId: input.preQualificationId });
-      Sentry.captureMessage(`[Extraction Agent] ${warning}`, {
-        level: 'warning',
-        tags: { component: 'extraction', preQualificationId: input.preQualificationId },
-      });
-    }
-
     // Call prequal.complete to get validated requirements
     const completeResult = await registry.execute<{ requirements: ExtractedRequirements }>(
       'prequal.complete',
@@ -499,8 +472,6 @@ Nutze die Tools um alle relevanten Felder zu extrahieren.
     return {
       requirements,
       success: true,
-      ragStatus,
-      ragWarning: embedResult.warning,
       activityLog,
     };
   } catch (error) {
@@ -525,7 +496,6 @@ Nutze die Tools um alle relevanten Felder zu extrahieren.
       },
       success: false,
       error: errorMessage,
-      ragStatus: 'error',
       activityLog,
     };
   }

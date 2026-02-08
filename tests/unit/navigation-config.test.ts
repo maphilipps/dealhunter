@@ -72,10 +72,10 @@ describe('navigation-config', () => {
       });
     });
 
-    it('should not hardcode pitch-scan subsections (dynamic navigation)', () => {
+    it('should have 13 pitch-scan subsections', () => {
       const pitchScan = QUALIFICATION_NAVIGATION_SECTIONS.find(s => s.id === 'pitch-scan');
       expect(pitchScan).toBeDefined();
-      expect(pitchScan!.subsections).toHaveLength(1); // overview only; dynamic phases are generated from plan
+      expect(pitchScan!.subsections).toHaveLength(14); // overview + 13 sections
     });
   });
 
@@ -98,8 +98,10 @@ describe('navigation-config', () => {
       expect(section?.id).toBe('pitch-scan');
     });
 
-    it('should not resolve dynamic pitch-scan phase routes from static config', () => {
-      expect(getSectionByRoute('pitch-scan/ps-discovery')).toBeUndefined();
+    it('should return pitch-scan subsection for pitch-scan/* routes', () => {
+      const section = getSectionByRoute('pitch-scan/ps-discovery');
+      expect(section).toBeDefined();
+      expect(section?.id).toBe('ps-discovery');
     });
 
     it('should normalize routes with leading/trailing slashes', () => {
@@ -225,12 +227,6 @@ describe('navigation-config', () => {
     it('should return undefined for invalid section ID', () => {
       const template = getRAGQueryTemplate('invalid-id');
       expect(template).toBeUndefined();
-    });
-
-    it('should fall back to pitch-scan template for dynamic pitch-scan section IDs', () => {
-      const parent = getRAGQueryTemplate('pitch-scan');
-      const dynamic = getRAGQueryTemplate('ps-discovery');
-      expect(dynamic).toBe(parent);
     });
 
     it('should return templates for all sections (except debug)', () => {

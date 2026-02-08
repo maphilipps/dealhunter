@@ -13,7 +13,7 @@ vi.mock('@/lib/db/schema', () => ({
   competitors: 'competitors_table',
 }));
 
-vi.mock('@/lib/streaming/in-process/event-types', () => ({
+vi.mock('@/lib/streaming/event-types', () => ({
   AgentEventType: {
     STEP_START: 'STEP_START',
     STEP_COMPLETE: 'STEP_COMPLETE',

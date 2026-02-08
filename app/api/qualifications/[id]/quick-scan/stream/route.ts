@@ -5,11 +5,8 @@ import { AI_TIMEOUTS } from '@/lib/ai/config';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { preQualifications, leadScans } from '@/lib/db/schema';
-import {
-  createAgentEventStream,
-  createSSEResponse,
-} from '@/lib/streaming/in-process/event-emitter';
-import { AgentEventType } from '@/lib/streaming/in-process/event-types';
+import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
+import { AgentEventType } from '@/lib/streaming/event-types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

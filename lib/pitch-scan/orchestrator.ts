@@ -19,7 +19,7 @@ import { db } from '@/lib/db';
 import { dealEmbeddings, auditScanRuns } from '@/lib/db/schema';
 import { markAgentComplete, markAgentFailed, updateRunStatus } from '@/lib/pitch/checkpoints';
 import { publishToChannel } from '@/lib/pitch/tools/progress-tool';
-import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/in-process/event-types';
 
 // ─── Orchestrator Options ───────────────────────────────────────────────────

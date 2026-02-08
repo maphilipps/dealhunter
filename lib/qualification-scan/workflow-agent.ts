@@ -26,8 +26,8 @@ import { qualificationScanSteps } from './workflow/steps';
 import type { QualificationScanInput } from './workflow/types';
 
 import { buildAgentContext, formatContextForPrompt } from '@/lib/agent-tools/context-builder';
-import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
-import { AgentEventType } from '@/lib/streaming/in-process/event-types';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import { AgentEventType } from '@/lib/streaming/event-types';
 
 // Re-export for backwards compatibility
 export type { QualificationScanInput, QualificationScanResult };

@@ -1,4 +1,4 @@
-import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
+import type { EventEmitter } from '@/lib/streaming/event-emitter';
 
 // ─── Phase Category ────────────────────────────────────────────────────────────
 

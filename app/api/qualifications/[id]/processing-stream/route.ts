@@ -8,122 +8,12 @@ import { backgroundJobs, preQualifications, users } from '@/lib/db/schema';
 import {
   QualificationEventType,
   type QualificationProcessingEvent,
-} from '@/lib/streaming/redis/qualification-events';
-import { getQualificationEvents } from '@/lib/streaming/redis/qualification-publisher';
-import { REDIS_URL } from '@/lib/streaming/redis/redis-config';
+} from '@/lib/streaming/qualification-events';
+import { getQualificationEvents } from '@/lib/streaming/qualification-publisher';
+import { REDIS_URL } from '@/lib/streaming/redis-config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const SSE_HEADERS = {
-  'Content-Type': 'text/event-stream',
-  'Cache-Control': 'no-cache, no-transform',
-  'X-Accel-Buffering': 'no',
-  Connection: 'keep-alive',
-} as const;
-
-function sseResponse(stream: ReadableStream): Response {
-  return new Response(stream, { headers: SSE_HEADERS });
-}
-
-function safeClose(controller: ReadableStreamDefaultController, label: string) {
-  try {
-    controller.close();
-  } catch (err) {
-    console.warn(`[QualificationStream] Close failed (${label}):`, err);
-  }
-}
-
-type MessageListener = (message: string) => void;
-type ErrorListener = (error: unknown) => void;
-
-type ChannelState = {
-  listeners: Set<MessageListener>;
-  subscribePromise: Promise<void> | null;
-};
-
-let sharedSubscriber: Redis | null = null;
-const channelStates = new Map<string, ChannelState>();
-const errorListeners = new Set<ErrorListener>();
-
-function getOrCreateSubscriber(): Redis {
-  if (sharedSubscriber) return sharedSubscriber;
-
-  const subscriber = new Redis(REDIS_URL, {
-    maxRetriesPerRequest: 3,
-    enableReadyCheck: false,
-  });
-
-  subscriber.on('message', (channel: string, message: string) => {
-    const state = channelStates.get(channel);
-    if (!state) return;
-    for (const listener of state.listeners) {
-      try {
-        listener(message);
-      } catch {
-        /* isolate SSE listeners */
-      }
-    }
-  });
-
-  subscriber.on('error', err => {
-    // Fan-out error to all active SSE clients.
-    for (const listener of errorListeners) {
-      try {
-        listener(err);
-      } catch {
-        /* isolate SSE listeners */
-      }
-    }
-  });
-
-  sharedSubscriber = subscriber;
-  return subscriber;
-}
-
-async function ensureSubscribed(channel: string): Promise<void> {
-  const subscriber = getOrCreateSubscriber();
-
-  let state = channelStates.get(channel);
-  if (!state) {
-    state = { listeners: new Set(), subscribePromise: null };
-    channelStates.set(channel, state);
-  }
-
-  if (!state.subscribePromise) {
-    state.subscribePromise = subscriber.subscribe(channel).then(() => undefined);
-  }
-
-  await state.subscribePromise;
-}
-
-async function addChannelListener(
-  channel: string,
-  onMessage: MessageListener,
-  onError: ErrorListener
-): Promise<() => Promise<void>> {
-  await ensureSubscribed(channel);
-
-  const state = channelStates.get(channel);
-  if (!state) throw new Error(`Missing channel state after subscribe: ${channel}`);
-
-  state.listeners.add(onMessage);
-  errorListeners.add(onError);
-
-  return async () => {
-    state.listeners.delete(onMessage);
-    errorListeners.delete(onError);
-
-    if (state.listeners.size === 0) {
-      channelStates.delete(channel);
-      try {
-        await sharedSubscriber?.unsubscribe(channel);
-      } catch (err) {
-        console.warn('[QualificationStream] Unsubscribe error:', err);
-      }
-    }
-  };
-}
 
 /**
  * GET /api/qualifications/[id]/processing-stream
@@ -209,15 +99,34 @@ export async function GET(
             }
           }
 
-          safeClose(controller, 'terminal');
+          controller.close();
         },
       });
 
-      return sseResponse(stream);
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+          'X-Accel-Buffering': 'no',
+          Connection: 'keep-alive',
+        },
+      });
     }
 
     // For active jobs: replay stored events, then stream live events via Redis pub/sub
-    let cleanupListener: (() => Promise<void>) | null = null;
+    const subscriber = new Redis(REDIS_URL, {
+      maxRetriesPerRequest: 3,
+      enableReadyCheck: false,
+    });
+
+    const cleanupSubscriber = async () => {
+      try {
+        await subscriber.unsubscribe();
+        await subscriber.quit();
+      } catch (err) {
+        console.warn('[QualificationStream] Subscriber cleanup error:', err);
+      }
+    };
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -236,21 +145,15 @@ export async function GET(
         // Cleanup on client disconnect
         request.signal.addEventListener('abort', () => {
           clearInterval(heartbeat);
-          void cleanupListener?.();
-          safeClose(controller, 'abort');
+          void cleanupSubscriber();
+          try {
+            controller.close();
+          } catch (err) {
+            console.warn('[QualificationStream] Close after abort failed:', err);
+          }
         });
 
-        const onRedisMessage: MessageListener = (message: string) => {
-          try {
-            controller.enqueue(`data: ${message}\n\n`);
-          } catch (err) {
-            console.warn('[QualificationStream] Enqueue message failed:', err);
-            clearInterval(heartbeat);
-            void cleanupListener?.();
-          }
-        };
-
-        const onRedisError: ErrorListener = err => {
+        subscriber.on('error', err => {
           console.error('[QualificationStream] Redis subscriber error:', err);
           clearInterval(heartbeat);
           try {
@@ -263,12 +166,26 @@ export async function GET(
           } catch {
             /* stream may be closed */
           }
-          void cleanupListener?.();
-          safeClose(controller, 'error');
-        };
+          void cleanupSubscriber();
+          try {
+            controller.close();
+          } catch (err) {
+            console.warn('[QualificationStream] Close after error failed:', err);
+          }
+        });
+
+        subscriber.on('message', (_ch: string, message: string) => {
+          try {
+            controller.enqueue(`data: ${message}\n\n`);
+          } catch (err) {
+            console.warn('[QualificationStream] Enqueue message failed:', err);
+            clearInterval(heartbeat);
+            void cleanupSubscriber();
+          }
+        });
 
         // Subscribe before replaying to avoid missing events
-        cleanupListener = await addChannelListener(channel, onRedisMessage, onRedisError);
+        await subscriber.subscribe(channel);
 
         // Send connected event
         controller.enqueue(`data: ${JSON.stringify({ type: 'connected', qualificationId })}\n\n`);
@@ -285,13 +202,18 @@ export async function GET(
         }
       },
       cancel() {
-        // The abort handler covers normal disconnects, but cancel can happen in other cases.
-        // Best-effort cleanup: per-stream listener removal.
-        void cleanupListener?.();
+        void cleanupSubscriber();
       },
     });
 
-    return sseResponse(stream);
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Accel-Buffering': 'no',
+        Connection: 'keep-alive',
+      },
+    });
   } catch (error) {
     console.error('[GET /api/qualifications/:id/processing-stream] Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

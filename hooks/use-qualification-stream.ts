@@ -5,12 +5,12 @@ import { useReducer, useRef, useCallback, useEffect } from 'react';
 import type {
   QualificationProcessingEvent,
   QualificationPhaseId,
-} from '@/lib/streaming/redis/qualification-events';
+} from '@/lib/streaming/qualification-events';
 import {
   QualificationEventType,
   QUALIFICATION_PHASES,
   isTerminalEvent,
-} from '@/lib/streaming/redis/qualification-events';
+} from '@/lib/streaming/qualification-events';
 
 // ============================================================================
 // Constants

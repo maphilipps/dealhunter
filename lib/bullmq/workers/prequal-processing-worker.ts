@@ -44,7 +44,7 @@ import {
   technologies,
 } from '../../db/schema';
 import { runExtractionAgentNative } from '../../extraction/agent-native';
-import { extractedRequirementsSchema, type ExtractedRequirements } from '../../extraction/schema';
+import type { ExtractedRequirements } from '../../extraction/schema';
 import { detectPII, cleanText } from '../../pii/pii-cleaner';
 import {
   runPreQualSectionOrchestrator,
@@ -69,7 +69,7 @@ import {
   publishFinding,
   publishCompletion,
   publishError,
-} from '../../streaming/redis/qualification-publisher';
+} from '../../streaming/qualification-publisher';
 import { generateTimelineFromQualificationScan } from '../../timeline/integration';
 import { onAgentComplete } from '../../workflow/orchestrator';
 import type { PreQualProcessingJobData, PreQualProcessingJobResult } from '../queues';
@@ -187,14 +187,13 @@ async function updateQualificationJob(
 
 /**
  * Simple fallback extraction when ToolLoopAgent fails.
- * Uses a single generateText call with structured output validation.
+ * Uses a single generateText call with manual JSON parsing.
  */
 async function runSimpleFallbackExtraction(rawInput: string): Promise<ExtractedRequirements> {
   const truncatedInput = rawInput.slice(0, 30000); // Keep within token limits
 
-  const result = await generateText({
+  const { text } = await generateText({
     model: (await getProviderForSlot('fast'))(modelNames.fast),
-    output: Output.object({ schema: extractedRequirementsSchema }),
     prompt: `Analysiere das folgende Ausschreibungsdokument und extrahiere die wichtigsten Informationen als JSON.
 
 DOKUMENT:
@@ -202,19 +201,48 @@ DOKUMENT:
 ${truncatedInput}
 ---
 
-Setze Felder auf null/leer wenn nicht im Dokument vorhanden. Erfinde KEINE Daten.`,
+Antworte NUR mit einem JSON-Objekt (keine Erklärungen, kein Markdown):
+{
+  "customerName": "Name des Auftraggebers/Kunden",
+  "industry": "Branche",
+  "companySize": "small|medium|large|enterprise",
+  "procurementType": "public|private|semi-public",
+  "companyLocation": "Standort",
+  "projectName": "Projektname oder -titel",
+  "projectDescription": "Kurzbeschreibung (max 300 Zeichen)",
+  "scope": "Projektumfang",
+  "technologies": ["Liste", "der", "Technologien"],
+  "keyRequirements": ["Anforderung 1", "Anforderung 2"],
+  "budgetRange": {"min": null, "max": null, "currency": "EUR", "confidence": 50, "rawText": ""},
+  "timeline": "Projektzeitrahmen",
+  "submissionDeadline": "YYYY-MM-DD oder null",
+  "submissionTime": "HH:MM oder null",
+  "contractType": "Vertragsart",
+  "contractDuration": "Vertragslaufzeit",
+  "requiredServices": ["Service 1", "Service 2"],
+  "contactPerson": "Name Ansprechpartner",
+  "contactEmail": "email@example.com",
+  "constraints": ["Randbedingung 1"],
+  "confidenceScore": 0.6
+}
+
+Setze Felder auf null wenn nicht im Dokument vorhanden. Erfinde KEINE Daten.`,
     temperature: 0,
   });
 
-  const parsed = result.output;
-  if (!parsed) throw new Error('Fallback extraction produced no structured output');
+  const jsonStart = text.indexOf('{');
+  const jsonEnd = text.lastIndexOf('}');
+  if (jsonStart === -1 || jsonEnd === -1) {
+    throw new Error('Fallback extraction returned no JSON');
+  }
 
-  return {
-    ...parsed,
-    extractedAt: new Date().toISOString(),
-    technologies: parsed.technologies ?? [],
-    keyRequirements: parsed.keyRequirements ?? [],
-  };
+  const parsed = JSON.parse(text.slice(jsonStart, jsonEnd + 1)) as ExtractedRequirements;
+  parsed.extractedAt = new Date().toISOString();
+  if (!parsed.technologies) parsed.technologies = [];
+  if (!parsed.keyRequirements) parsed.keyRequirements = [];
+  if (!parsed.confidenceScore) parsed.confidenceScore = 0.5;
+
+  return parsed;
 }
 
 /**

@@ -93,13 +93,18 @@ export const SECTION_DEFINITIONS = [
   },
 ] as const;
 
-export type SectionId = (typeof SECTION_DEFINITIONS)[number]['id'];
-export const SECTION_IDS: SectionId[] = SECTION_DEFINITIONS.map(s => s.id);
-const SECTION_ID_SET = new Set<string>(SECTION_IDS);
-const SectionIdSchema = z.custom<SectionId>(
-  value => typeof value === 'string' && SECTION_ID_SET.has(value),
-  { message: 'Invalid sectionId' }
-);
+// Derived from SECTION_DEFINITIONS for backward compatibility
+export const SECTION_IDS = SECTION_DEFINITIONS.map(s => s.id) as unknown as readonly [
+  'budget',
+  'timing',
+  'contracts',
+  'deliverables',
+  'references',
+  'award-criteria',
+  'offer-structure',
+  'risks',
+];
+export type SectionId = (typeof SECTION_IDS)[number];
 
 /**
  * Orchestrator-Plan Schema
@@ -107,7 +112,7 @@ const SectionIdSchema = z.custom<SectionId>(
 const OrchestratorPlanSchema = z.object({
   tasks: z.array(
     z.object({
-      sectionId: SectionIdSchema,
+      sectionId: z.enum(SECTION_IDS),
       priority: z.enum(['critical', 'high', 'medium', 'low']),
       requiresWebEnrichment: z.boolean(),
       goal: z.string().describe('Kurze Beschreibung was diese Section erreichen soll'),

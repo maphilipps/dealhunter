@@ -18,7 +18,6 @@ vi.mock('@/lib/ai/embedding-config', () => ({
 vi.mock('@/lib/db', () => ({
   db: {
     select: vi.fn(),
-    execute: vi.fn(),
   },
 }));
 
@@ -77,7 +76,6 @@ describe('raw-retrieval-service', () => {
     });
 
     it('should return empty array when no chunks exist', async () => {
-      vi.mocked(db.execute).mockResolvedValue({ rows: [] } as never);
       const mockSelect = vi.fn(() => ({
         from: vi.fn(() => ({
           where: vi.fn(() => []),
@@ -133,23 +131,44 @@ describe('raw-retrieval-service', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should filter results by similarity threshold', async () => {
-      const queryEmbedding = Array(3072).fill(0.1);
-      vi.mocked(generateQueryEmbedding).mockResolvedValue(queryEmbedding);
+    it('should filter results by similarity threshold (>0.7)', async () => {
+      // Create embeddings with different similarities
+      // Similar vector (high dot product = high similarity)
+      const similarEmbedding = Array(3072).fill(0.1);
+      // Dissimilar vector (low dot product = low similarity)
+      const dissimilarEmbedding = Array(3072).fill(-0.1);
 
-      // The SQL query applies the threshold in WHERE, so only "similar" rows are returned.
-      vi.mocked(db.execute).mockResolvedValue({
-        rows: [
-          {
-            id: 'chunk-1',
-            chunk_index: 0,
-            content: 'Budget: 100.000 EUR',
-            token_count: 50,
-            metadata: JSON.stringify({ startPosition: 0, endPosition: 100, type: 'paragraph' }),
-            similarity: 0.85,
-          },
-        ],
-      } as never);
+      const mockChunks = [
+        {
+          id: 'chunk-1',
+          preQualificationId: 'preQualification-123',
+          chunkIndex: 0,
+          content: 'Budget: 100.000 EUR',
+          tokenCount: 50,
+          embedding: similarEmbedding,
+          metadata: JSON.stringify({ startPosition: 0, endPosition: 100, type: 'paragraph' }),
+          createdAt: new Date(),
+        },
+        {
+          id: 'chunk-2',
+          preQualificationId: 'preQualification-123',
+          chunkIndex: 1,
+          content: 'Unrelated content',
+          tokenCount: 50,
+          embedding: dissimilarEmbedding,
+          metadata: JSON.stringify({ startPosition: 100, endPosition: 200, type: 'paragraph' }),
+          createdAt: new Date(),
+        },
+      ];
+
+      const mockSelect = vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => mockChunks),
+        })),
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
+      vi.mocked(generateQueryEmbedding).mockResolvedValue(similarEmbedding);
 
       const result = await queryRawChunks({
         preQualificationId: 'preQualification-123',
@@ -162,29 +181,47 @@ describe('raw-retrieval-service', () => {
     });
 
     it('should sort results by similarity in descending order', async () => {
-      const queryEmbedding = Array(3072).fill(0.1);
-      vi.mocked(generateQueryEmbedding).mockResolvedValue(queryEmbedding);
+      // Create embeddings with varying similarities
+      const baseEmbedding = Array(3072).fill(0);
+      baseEmbedding[0] = 1;
 
-      vi.mocked(db.execute).mockResolvedValue({
-        rows: [
-          {
-            id: 'chunk-2',
-            chunk_index: 1,
-            content: 'High similar',
-            token_count: 50,
-            metadata: JSON.stringify({ startPosition: 100, endPosition: 200, type: 'paragraph' }),
-            similarity: 0.9,
-          },
-          {
-            id: 'chunk-1',
-            chunk_index: 0,
-            content: 'Medium similar',
-            token_count: 50,
-            metadata: JSON.stringify({ startPosition: 0, endPosition: 100, type: 'paragraph' }),
-            similarity: 0.8,
-          },
-        ],
-      } as never);
+      const highSimilar = [...baseEmbedding];
+      highSimilar[0] = 0.95;
+
+      const mediumSimilar = [...baseEmbedding];
+      mediumSimilar[0] = 0.8;
+
+      const mockChunks = [
+        {
+          id: 'chunk-1',
+          preQualificationId: 'preQualification-123',
+          chunkIndex: 0,
+          content: 'Medium similar',
+          tokenCount: 50,
+          embedding: mediumSimilar,
+          metadata: JSON.stringify({ startPosition: 0, endPosition: 100, type: 'paragraph' }),
+          createdAt: new Date(),
+        },
+        {
+          id: 'chunk-2',
+          preQualificationId: 'preQualification-123',
+          chunkIndex: 1,
+          content: 'High similar',
+          tokenCount: 50,
+          embedding: highSimilar,
+          metadata: JSON.stringify({ startPosition: 100, endPosition: 200, type: 'paragraph' }),
+          createdAt: new Date(),
+        },
+      ];
+
+      const mockSelect = vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => mockChunks),
+        })),
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
+      vi.mocked(generateQueryEmbedding).mockResolvedValue(baseEmbedding);
 
       const result = await queryRawChunks({
         preQualificationId: 'preQualification-123',
@@ -198,23 +235,33 @@ describe('raw-retrieval-service', () => {
     });
 
     it('should respect maxResults parameter', async () => {
-      const queryEmbedding = Array(3072).fill(0.1);
-      vi.mocked(generateQueryEmbedding).mockResolvedValue(queryEmbedding);
+      const similarEmbedding = Array(3072).fill(0.1);
 
-      vi.mocked(db.execute).mockResolvedValue({
-        rows: Array.from({ length: 3 }).map((_, i) => ({
+      const mockChunks = Array(10)
+        .fill(null)
+        .map((_, i) => ({
           id: `chunk-${i}`,
-          chunk_index: i,
+          preQualificationId: 'preQualification-123',
+          chunkIndex: i,
           content: `Content ${i}`,
-          token_count: 50,
+          tokenCount: 50,
+          embedding: similarEmbedding,
           metadata: JSON.stringify({
             startPosition: i * 100,
             endPosition: (i + 1) * 100,
             type: 'paragraph',
           }),
-          similarity: 0.5,
+          createdAt: new Date(),
+        }));
+
+      const mockSelect = vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => mockChunks),
         })),
-      } as never);
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
+      vi.mocked(generateQueryEmbedding).mockResolvedValue(similarEmbedding);
 
       const result = await queryRawChunks({
         preQualificationId: 'preQualification-123',
@@ -277,19 +324,27 @@ describe('raw-retrieval-service', () => {
     it('should query multiple topics in parallel', async () => {
       const similarEmbedding = Array(3072).fill(0.1);
 
+      const mockChunks = [
+        {
+          id: 'chunk-1',
+          preQualificationId: 'preQualification-123',
+          chunkIndex: 0,
+          content: 'Budget info',
+          tokenCount: 50,
+          embedding: similarEmbedding,
+          metadata: JSON.stringify({ startPosition: 0, endPosition: 100, type: 'paragraph' }),
+          createdAt: new Date(),
+        },
+      ];
+
+      const mockSelect = vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => mockChunks),
+        })),
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
       vi.mocked(generateQueryEmbedding).mockResolvedValue(similarEmbedding);
-      vi.mocked(db.execute).mockResolvedValue({
-        rows: [
-          {
-            id: 'chunk-1',
-            chunk_index: 0,
-            content: 'Budget info',
-            token_count: 50,
-            metadata: JSON.stringify({ startPosition: 0, endPosition: 100, type: 'paragraph' }),
-            similarity: 0.7,
-          },
-        ],
-      } as never);
 
       const result = await queryMultipleTopics('preQualification-123', [
         { topic: 'Budget', maxResults: 3 },

@@ -12,12 +12,16 @@ import { Sources } from './sources';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { AgentEvent, AgentProgressData, AgentCompleteData } from '@/lib/streaming/event-types';
+import type {
+  AgentEvent,
+  AgentProgressData,
+  AgentCompleteData,
+} from '@/lib/streaming/in-process/event-types';
 import {
   AgentEventType,
   isAgentProgressData,
   isAgentCompleteData,
-} from '@/lib/streaming/event-types';
+} from '@/lib/streaming/in-process/event-types';
 
 // --- Extracted data helper ---
 

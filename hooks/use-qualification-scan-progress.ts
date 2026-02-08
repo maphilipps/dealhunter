@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 
-import { AgentEventType } from '@/lib/streaming/event-types';
+import { AgentEventType } from '@/lib/streaming/in-process/event-types';
 import type {
   QualificationScanPhase,
   StepCompleteData,
   StepStartData,
   WorkflowProgressData,
-} from '@/lib/streaming/event-types';
+} from '@/lib/streaming/in-process/event-types';
 
 // ====== Types ======
 

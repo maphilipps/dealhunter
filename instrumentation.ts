@@ -9,7 +9,8 @@ export async function register() {
     await warmModelConfigCache();
 
     // Register cleanup for qualification event publisher Redis connection
-    const { closeQualificationPublisher } = await import('@/lib/streaming/qualification-publisher');
+    const { closeQualificationPublisher } =
+      await import('@/lib/streaming/redis/qualification-publisher');
     process.on('SIGTERM', () => void closeQualificationPublisher());
     process.on('SIGINT', () => void closeQualificationPublisher());
   }

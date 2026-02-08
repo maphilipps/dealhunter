@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { runTechnologyResearchOrchestrator } from '@/lib/cms-matching/technology-research-orchestrator';
-import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
+import { AgentEventType, type AgentEvent } from '@/lib/streaming/in-process/event-types';
 
 const orchestratorRequestSchema = z.object({
   featureNames: z.array(z.string()),

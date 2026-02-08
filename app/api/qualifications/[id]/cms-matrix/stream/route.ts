@@ -18,7 +18,7 @@ import {
 import { extractRequirementsFromQualificationScan } from '@/lib/cms-matching/requirements';
 import { db } from '@/lib/db';
 import { preQualifications, leadScans, technologies } from '@/lib/db/schema';
-import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
+import { AgentEventType, type AgentEvent } from '@/lib/streaming/in-process/event-types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes for research

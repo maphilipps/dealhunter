@@ -63,7 +63,7 @@ Display scan progress as a **chat conversation** analogous to the Pre-Qualificat
 
 #### 1. New Event Types
 
-**File:** `lib/streaming/event-types.ts`
+**File:** `lib/streaming/in-process/event-types.ts`
 
 Add chat-specific event types to existing `AgentEventType` enum:
 
@@ -466,7 +466,7 @@ export function PitchScanClient({ pitchId, runId, initialData }) {
 
 **Tasks:**
 
-- [ ] Add new event types to `lib/streaming/event-types.ts`
+- [ ] Add new event types to `lib/streaming/in-process/event-types.ts`
   - `AGENT_THINKING`, `AGENT_FINDING`, `SECTION_RESULT`, `PLAN_CREATED`
   - TypeScript interfaces for event data
 - [ ] Update `isVisibleEvent()` helper function
@@ -767,8 +767,8 @@ const [state, dispatch] = useReducer(streamReducer, initialState);
 
 **SSE Infrastructure:**
 
-- `lib/streaming/event-emitter.ts:1-50` — SSE creation utilities
-- `lib/streaming/event-types.ts:1-100` — Event type definitions
+- `lib/streaming/in-process/event-emitter.ts:1-50` — SSE creation utilities
+- `lib/streaming/in-process/event-types.ts:1-100` — Event type definitions
 - `app/api/pitches/[id]/progress/route.ts:1-150` — SSE endpoint (Redis pub/sub)
 
 **Existing Hook:**
@@ -829,7 +829,7 @@ const [state, dispatch] = useReducer(streamReducer, initialState);
 
 ### Phase 1: Event Types
 
-- [ ] Add event types to `lib/streaming/event-types.ts`
+- [ ] Add event types to `lib/streaming/in-process/event-types.ts`
 - [ ] Add TypeScript interfaces for event data
 - [ ] Export new types
 - [ ] Update `isVisibleEvent()` helper

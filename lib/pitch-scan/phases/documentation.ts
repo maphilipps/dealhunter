@@ -1,5 +1,5 @@
 import type { PhaseContext, PhaseResult } from '../types';
-import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
 import { runPhaseAgent, formatPreviousResults } from './shared';
 
 const SYSTEM_PROMPT = `Du bist ein technischer Dokumentations-Experte. Erstelle eine Zusammenfassung aller Pitch-Scan-Ergebnisse als Management Summary:

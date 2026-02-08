@@ -25,7 +25,7 @@ import {
 import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
-import { AgentEventType } from '@/lib/streaming/event-types';
+import { AgentEventType } from '@/lib/streaming/in-process/event-types';
 
 /**
  * WorkflowEngine orchestrates the execution of workflow steps

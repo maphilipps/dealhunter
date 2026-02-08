@@ -148,7 +148,17 @@ ${Object.entries(checkpoint.agentResults)
   });
 
   try {
-    const result = await agent.generate({ prompt });
+    const result = await agent.generate({
+      prompt,
+      onStepFinish: stepResult => {
+        const toolNames =
+          stepResult.toolCalls
+            ?.filter((t): t is NonNullable<typeof t> => t != null)
+            .map(t => t.toolName)
+            .join(', ') || 'none';
+        console.log(`[Pitch Orchestrator] Step completed (runId=${runId}) Tools: ${toolNames}`);
+      },
+    });
 
     // Update checkpoint with final state
     checkpoint.phase = PHASES.REVIEW;

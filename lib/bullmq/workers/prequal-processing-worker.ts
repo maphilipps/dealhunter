@@ -69,7 +69,7 @@ import {
   publishFinding,
   publishCompletion,
   publishError,
-} from '../../streaming/qualification-publisher';
+} from '../../streaming/redis/qualification-publisher';
 import { generateTimelineFromQualificationScan } from '../../timeline/integration';
 import { onAgentComplete } from '../../workflow/orchestrator';
 import type { PreQualProcessingJobData, PreQualProcessingJobResult } from '../queues';

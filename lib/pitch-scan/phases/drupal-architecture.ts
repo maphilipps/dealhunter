@@ -1,5 +1,5 @@
 import type { PhaseContext, PhaseResult } from '../types';
-import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
 import { runPhaseAgent, formatPreviousResults } from './shared';
 
 const SYSTEM_PROMPT = `Du bist ein Drupal-Architektur-Experte. Falls Drupal als CMS empfohlen wurde, entwirf eine Drupal-Architektur:

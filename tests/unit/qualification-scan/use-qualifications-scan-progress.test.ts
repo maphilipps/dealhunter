@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // Mock streaming event types
-vi.mock('@/lib/streaming/event-types', () => ({
+vi.mock('@/lib/streaming/in-process/event-types', () => ({
   AgentEventType: {
     STEP_START: 'step-start',
     STEP_COMPLETE: 'step-complete',

@@ -160,7 +160,7 @@ export async function POST(_request: NextRequest, context: RouteParams): Promise
     const agentFn = PHASE_AGENT_REGISTRY[sectionId as keyof typeof PHASE_AGENT_REGISTRY];
 
     const { createAgentEventStream, createSSEResponse } =
-      await import('@/lib/streaming/event-emitter');
+      await import('@/lib/streaming/in-process/event-emitter');
 
     const stream = createAgentEventStream(async emit => {
       const result = await agentFn(

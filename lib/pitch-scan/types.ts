@@ -1,4 +1,4 @@
-import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
 
 import type { BuiltInSectionId, PitchScanSectionId } from './section-ids';
 

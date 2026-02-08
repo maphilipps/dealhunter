@@ -9,8 +9,8 @@ import type {
   StepStartData,
   StepCompleteData,
   WorkflowProgressData,
-} from '@/lib/streaming/event-types';
-import { AgentEventType } from '@/lib/streaming/event-types';
+} from '@/lib/streaming/in-process/event-types';
+import { AgentEventType } from '@/lib/streaming/in-process/event-types';
 
 /**
  * Hook for consuming Server-Sent Events from agent streams

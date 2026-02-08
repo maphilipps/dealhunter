@@ -5,12 +5,12 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import type { ProgressEvent, SnapshotEvent } from '@/lib/pitch/types';
 import { PHASE_DEFINITIONS } from '@/lib/pitch-scan/constants';
 import type { PitchScanSectionId } from '@/lib/pitch-scan/section-ids';
-import type { PitchScanNormalizedEvent } from '@/lib/streaming/pitch-scan-events';
+import type { PitchScanNormalizedEvent } from '@/lib/streaming/in-process/pitch-scan-events';
 import {
   normalizePitchScanEvent,
   isVisiblePitchScanEvent,
   PitchScanEventType,
-} from '@/lib/streaming/pitch-scan-events';
+} from '@/lib/streaming/in-process/pitch-scan-events';
 
 // ====== Phase Definitions ======
 

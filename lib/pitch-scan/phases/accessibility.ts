@@ -1,5 +1,5 @@
 import type { PhaseContext, PhaseResult } from '../types';
-import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
 import { runPhaseAgent, formatPreviousResults } from './shared';
 
 const SYSTEM_PROMPT = `Du bist ein Barrierefreiheit-Experte (WCAG 2.1/2.2). Analysiere die Website auf Barrierefreiheit:

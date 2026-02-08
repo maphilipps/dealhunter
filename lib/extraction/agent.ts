@@ -4,8 +4,8 @@ import { openai } from '../ai/config';
 import { embedAgentOutput } from '../rag/embedding-service';
 import { embedRawText } from '../rag/raw-embedding-service';
 import { queryRawChunks, formatRAGContext } from '../rag/raw-retrieval-service';
-import type { EventEmitter } from '../streaming/event-emitter';
-import { AgentEventType } from '../streaming/event-types';
+import type { EventEmitter } from '../streaming/in-process/event-emitter';
+import { AgentEventType } from '../streaming/in-process/event-types';
 
 // Prompt injection defense delimiters
 // These delimiters separate user document content from system instructions

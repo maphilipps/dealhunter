@@ -7,8 +7,8 @@ import type { PitchScanSectionId } from '../section-ids';
 import { getSectionLabel } from '../section-ids';
 import { PHASE_AGENT_CONFIG } from '../constants';
 import { generateWithFallback } from '@/lib/ai/config';
-import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import { AgentEventType } from '@/lib/streaming/event-types';
+import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
+import { AgentEventType } from '@/lib/streaming/in-process/event-types';
 
 /**
  * Zod schema for phase agent responses.

@@ -5,8 +5,8 @@
 
 import type { QualificationScanInput, QualificationScanResult } from '../agent';
 
-import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import type { QualificationScanPhase } from '@/lib/streaming/event-types';
+import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
+import type { QualificationScanPhase } from '@/lib/streaming/in-process/event-types';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STEP CONFIGURATION

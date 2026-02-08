@@ -4,7 +4,7 @@ import {
   normalizePitchScanEvent,
   isVisiblePitchScanEvent,
   PitchScanEventType,
-} from '@/lib/streaming/pitch-scan-events';
+} from '@/lib/streaming/in-process/pitch-scan-events';
 
 describe('pitch-scan-events', () => {
   it('normalizes timestamp strings to timestampMs', () => {

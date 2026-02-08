@@ -8,7 +8,7 @@ import {
   ActivityStreamEmpty,
   ActivityStreamComplete,
 } from '@/components/ai-elements/activity-stream';
-import { AgentEventType } from '@/lib/streaming/event-types';
+import { AgentEventType } from '@/lib/streaming/in-process/event-types';
 
 // Mock streamdown
 vi.mock('streamdown', () => ({

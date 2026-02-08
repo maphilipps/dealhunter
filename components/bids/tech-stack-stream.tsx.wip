@@ -24,7 +24,7 @@ import {
   Brain,
   Sparkles,
 } from 'lucide-react';
-import type { AgentEvent } from '@/lib/streaming/event-types';
+import type { AgentEvent } from '@/lib/streaming/in-process/event-types';
 import {
   TechStackEventType,
   type TechToolInvokeData,
@@ -33,7 +33,7 @@ import {
   type TechFindingData,
   type TechDetectionCompleteData,
   type TechFindingCategory,
-} from '@/lib/streaming/event-types';
+} from '@/lib/streaming/in-process/event-types';
 
 interface TechStackStreamProps {
   events: AgentEvent[];

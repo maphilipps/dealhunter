@@ -7,8 +7,8 @@ import {
   AgentMessageContent,
   AgentMessageActions,
 } from '@/components/ai-elements/agent-message';
-import type { AgentEvent } from '@/lib/streaming/event-types';
-import { AgentEventType } from '@/lib/streaming/event-types';
+import type { AgentEvent } from '@/lib/streaming/in-process/event-types';
+import { AgentEventType } from '@/lib/streaming/in-process/event-types';
 
 // Mock streamdown
 vi.mock('streamdown', () => ({

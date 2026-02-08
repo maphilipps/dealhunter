@@ -19,7 +19,7 @@ import type { RequirementMatch, CMSMatchingResult } from './schema';
 
 import { db } from '@/lib/db';
 import { cmsFeatureEvaluations, features, preQualifications, leadScans } from '@/lib/db/schema';
-import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
+import { AgentEventType, type AgentEvent } from '@/lib/streaming/in-process/event-types';
 import { runWithConcurrency } from '@/lib/utils/concurrency';
 
 const CMS_FEATURE_CACHE_TTL_DAYS = 30;

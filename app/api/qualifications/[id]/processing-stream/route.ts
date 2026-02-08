@@ -8,12 +8,31 @@ import { backgroundJobs, preQualifications, users } from '@/lib/db/schema';
 import {
   QualificationEventType,
   type QualificationProcessingEvent,
-} from '@/lib/streaming/qualification-events';
-import { getQualificationEvents } from '@/lib/streaming/qualification-publisher';
-import { REDIS_URL } from '@/lib/streaming/redis-config';
+} from '@/lib/streaming/redis/qualification-events';
+import { getQualificationEvents } from '@/lib/streaming/redis/qualification-publisher';
+import { REDIS_URL } from '@/lib/streaming/redis/redis-config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const SSE_HEADERS = {
+  'Content-Type': 'text/event-stream',
+  'Cache-Control': 'no-cache, no-transform',
+  'X-Accel-Buffering': 'no',
+  Connection: 'keep-alive',
+} as const;
+
+function sseResponse(stream: ReadableStream): Response {
+  return new Response(stream, { headers: SSE_HEADERS });
+}
+
+function safeClose(controller: ReadableStreamDefaultController, label: string) {
+  try {
+    controller.close();
+  } catch (err) {
+    console.warn(`[QualificationStream] Close failed (${label}):`, err);
+  }
+}
 
 type MessageListener = (message: string) => void;
 type ErrorListener = (error: unknown) => void;
@@ -190,18 +209,11 @@ export async function GET(
             }
           }
 
-          controller.close();
+          safeClose(controller, 'terminal');
         },
       });
 
-      return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache, no-transform',
-          'X-Accel-Buffering': 'no',
-          Connection: 'keep-alive',
-        },
-      });
+      return sseResponse(stream);
     }
 
     // For active jobs: replay stored events, then stream live events via Redis pub/sub
@@ -225,11 +237,7 @@ export async function GET(
         request.signal.addEventListener('abort', () => {
           clearInterval(heartbeat);
           void cleanupListener?.();
-          try {
-            controller.close();
-          } catch (err) {
-            console.warn('[QualificationStream] Close after abort failed:', err);
-          }
+          safeClose(controller, 'abort');
         });
 
         const onRedisMessage: MessageListener = (message: string) => {
@@ -256,11 +264,7 @@ export async function GET(
             /* stream may be closed */
           }
           void cleanupListener?.();
-          try {
-            controller.close();
-          } catch (closeErr) {
-            console.warn('[QualificationStream] Close after error failed:', closeErr);
-          }
+          safeClose(controller, 'error');
         };
 
         // Subscribe before replaying to avoid missing events
@@ -287,14 +291,7 @@ export async function GET(
       },
     });
 
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache, no-transform',
-        'X-Accel-Buffering': 'no',
-        Connection: 'keep-alive',
-      },
-    });
+    return sseResponse(stream);
   } catch (error) {
     console.error('[GET /api/qualifications/:id/processing-stream] Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

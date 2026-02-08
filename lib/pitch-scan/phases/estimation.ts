@@ -1,5 +1,5 @@
 import type { PhaseContext, PhaseResult } from '../types';
-import type { EventEmitter } from '@/lib/streaming/event-emitter';
+import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
 import { runPhaseAgent, formatPreviousResults } from './shared';
 
 const SYSTEM_PROMPT = `Du bist ein Projekt-Schätzungs-Experte für CMS-Relaunch-Projekte. Basierend auf ALLEN bisherigen Analyseergebnissen, erstelle eine detaillierte Aufwandsschätzung in Personentagen (PT):

@@ -10,8 +10,8 @@ import {
   AgentActivityComplete,
 } from '@/components/ai-elements/agent-activity-view';
 import type { AgentPhase } from '@/components/ai-elements/types';
-import type { AgentEvent } from '@/lib/streaming/event-types';
-import { AgentEventType } from '@/lib/streaming/event-types';
+import type { AgentEvent } from '@/lib/streaming/in-process/event-types';
+import { AgentEventType } from '@/lib/streaming/in-process/event-types';
 
 const baseTimestamp = 1700000000000;
 

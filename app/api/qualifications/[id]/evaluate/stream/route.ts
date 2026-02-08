@@ -5,8 +5,11 @@ import { auth } from '@/lib/auth';
 import { runBitEvaluationWithStreaming } from '@/lib/bit-evaluation/agent';
 import { db } from '@/lib/db';
 import { preQualifications } from '@/lib/db/schema';
-import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
-import { AgentEventType } from '@/lib/streaming/event-types';
+import {
+  createAgentEventStream,
+  createSSEResponse,
+} from '@/lib/streaming/in-process/event-emitter';
+import { AgentEventType } from '@/lib/streaming/in-process/event-types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

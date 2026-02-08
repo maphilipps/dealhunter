@@ -18,7 +18,10 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import type { PitchScanProgressState, PhaseStatus } from '@/hooks/use-pitch-scan-progress';
-import { PitchScanEventType, type PitchScanRawEvent } from '@/lib/streaming/pitch-scan-events';
+import {
+  PitchScanEventType,
+  type PitchScanRawEvent,
+} from '@/lib/streaming/in-process/pitch-scan-events';
 import { cn } from '@/lib/utils';
 
 const phaseStatusToTaskStatus: Record<PhaseStatus, TaskStatus> = {

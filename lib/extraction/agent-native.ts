@@ -21,8 +21,8 @@ import { modelNames } from '../ai/config';
 import { getProviderForSlot } from '../ai/providers';
 import { embedAgentOutput } from '../rag/embedding-service';
 import { embedRawText } from '../rag/raw-embedding-service';
-import type { EventEmitter } from '../streaming/event-emitter';
-import { AgentEventType } from '../streaming/event-types';
+import type { EventEmitter } from '../streaming/in-process/event-emitter';
+import { AgentEventType } from '../streaming/in-process/event-types';
 
 export interface ExtractionAgentInput {
   preQualificationId: string;
@@ -434,6 +434,16 @@ Nutze die Tools um alle relevanten Felder zu extrahieren.
     const completionCall = result.steps
       .flatMap(step => step.toolCalls)
       .find(call => call.toolName === 'completeExtraction');
+
+    if (!completionCall) {
+      const warning =
+        'Step limit reached or agent stopped without calling completeExtraction (partial extraction likely).';
+      console.warn('[Extraction Agent]', warning, { preQualificationId: input.preQualificationId });
+      Sentry.captureMessage(`[Extraction Agent] ${warning}`, {
+        level: 'warning',
+        tags: { component: 'extraction', preQualificationId: input.preQualificationId },
+      });
+    }
 
     // Call prequal.complete to get validated requirements
     const completeResult = await registry.execute<{ requirements: ExtractedRequirements }>(

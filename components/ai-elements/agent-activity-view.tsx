@@ -28,14 +28,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import type { AgentEvent } from '@/lib/streaming/event-types';
+import type { AgentEvent } from '@/lib/streaming/in-process/event-types';
 import {
   AgentEventType,
   isPhaseStartData,
   isAnalysisCompleteData,
   hasAgentField,
   hasMessageField,
-} from '@/lib/streaming/event-types';
+} from '@/lib/streaming/in-process/event-types';
 
 // ============================================================================
 // Types

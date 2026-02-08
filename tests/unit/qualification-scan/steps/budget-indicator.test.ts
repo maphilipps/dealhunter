@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('@/lib/streaming/event-types', () => ({
+vi.mock('@/lib/streaming/in-process/event-types', () => ({
   AgentEventType: {
     STEP_START: 'STEP_START',
     STEP_COMPLETE: 'STEP_COMPLETE',

@@ -59,7 +59,8 @@ export default async function SectionDetailPage({
     notFound();
   }
 
-  // Fetch section data from deal_embeddings where agentName matches sectionId
+  // Fetch section data from deal_embeddings where agentName matches sectionId.
+  // Note: While a scan is running (or before first run), this can legitimately be empty.
   const chunks = await db
     .select({
       id: dealEmbeddings.id,
@@ -71,10 +72,6 @@ export default async function SectionDetailPage({
     })
     .from(dealEmbeddings)
     .where(and(eq(dealEmbeddings.pitchId, id), eq(dealEmbeddings.agentName, sectionId)));
-
-  if (chunks.length === 0) {
-    notFound();
-  }
 
   const sectionLabelFromMetadata = (() => {
     for (const chunk of chunks) {

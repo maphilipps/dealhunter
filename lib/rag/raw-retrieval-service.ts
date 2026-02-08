@@ -8,7 +8,7 @@
  * If not configured, returns empty results.
  */
 
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import { generateQueryEmbedding, isEmbeddingEnabled } from '../ai/embedding-config';
 import { db } from '../db';
@@ -61,35 +61,6 @@ const STOP_WORDS = new Set([
   'an',
 ]);
 
-/**
- * Calculate cosine similarity between two vectors
- * Returns value between -1 and 1 (1 = identical, 0 = orthogonal, -1 = opposite)
- */
-function cosineSimilarity(vecA: number[], vecB: number[]): number {
-  if (vecA.length !== vecB.length) {
-    throw new Error('Vectors must have same length');
-  }
-
-  let dotProduct = 0;
-  let magnitudeA = 0;
-  let magnitudeB = 0;
-
-  for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    magnitudeA += vecA[i] * vecA[i];
-    magnitudeB += vecB[i] * vecB[i];
-  }
-
-  magnitudeA = Math.sqrt(magnitudeA);
-  magnitudeB = Math.sqrt(magnitudeB);
-
-  if (magnitudeA === 0 || magnitudeB === 0) {
-    return 0;
-  }
-
-  return dotProduct / (magnitudeA * magnitudeB);
-}
-
 /** Raw chunk shape from the database */
 type DBChunk = {
   id: string;
@@ -97,7 +68,6 @@ type DBChunk = {
   content: string;
   tokenCount: number;
   metadata: string | null;
-  embedding: number[];
 };
 
 /**
@@ -148,32 +118,38 @@ function keywordMatchChunks(
     .slice(0, maxResults);
 }
 
+async function fetchChunksForKeyword(preQualificationId: string): Promise<DBChunk[]> {
+  return db
+    .select({
+      id: rawChunks.id,
+      chunkIndex: rawChunks.chunkIndex,
+      content: rawChunks.content,
+      tokenCount: rawChunks.tokenCount,
+      metadata: rawChunks.metadata,
+    })
+    .from(rawChunks)
+    .where(eq(rawChunks.preQualificationId, preQualificationId));
+}
+
 /**
  * Query raw document chunks for relevant content
  *
  * Strategy:
- * 1. Fetch all raw chunks for this qualification
- * 2. If embeddings disabled or query embedding fails → keyword fallback
- * 3. Otherwise: cosine similarity with threshold + keyword fallback if no results
+ * 1. If embeddings disabled or query embedding fails → keyword fallback (without selecting embeddings)
+ * 2. Otherwise: pgvector similarity search in PostgreSQL (no embedding transfer to Node.js)
+ * 3. Keyword fallback if semantic search yields nothing
  *
  * @param query - The RAG query parameters
  * @returns Array of relevant chunks sorted by similarity
  */
 export async function queryRawChunks(query: RawRAGQuery): Promise<RawRAGResult[]> {
   try {
-    const chunks = await db
-      .select()
-      .from(rawChunks)
-      .where(eq(rawChunks.preQualificationId, query.preQualificationId));
-
-    if (chunks.length === 0) {
-      return [];
-    }
-
     const maxResults = query.maxResults || 5;
     const embeddingsEnabled = await isEmbeddingEnabled();
 
     if (!embeddingsEnabled) {
+      const chunks = await fetchChunksForKeyword(query.preQualificationId);
+      if (chunks.length === 0) return [];
       return keywordMatchChunks(chunks, query.question, maxResults);
     }
 
@@ -182,33 +158,59 @@ export async function queryRawChunks(query: RawRAGQuery): Promise<RawRAGResult[]
 
     if (!queryEmbedding) {
       console.warn('[RAG-RAW] Query embedding failed, falling back to keyword matching');
+      const chunks = await fetchChunksForKeyword(query.preQualificationId);
+      if (chunks.length === 0) return [];
       return keywordMatchChunks(chunks, query.question, maxResults);
     }
 
-    // Calculate similarity for each chunk
-    const allResults = chunks.map(chunk => {
-      const similarity = cosineSimilarity(queryEmbedding, chunk.embedding);
-      return toRAGResult(chunk, similarity);
-    });
+    const embeddingStr = `[${queryEmbedding.join(',')}]`;
 
-    // Sort all results for logging
-    allResults.sort((a, b) => b.similarity - a.similarity);
+    const results = await db.execute(sql`
+      SELECT
+        id,
+        chunk_index,
+        content,
+        token_count,
+        metadata,
+        1 - (embedding <=> ${embeddingStr}::vector) AS similarity
+      FROM raw_chunks
+      WHERE pre_qualification_id = ${query.preQualificationId}
+        AND (1 - (embedding <=> ${embeddingStr}::vector)) > ${SIMILARITY_THRESHOLD}
+      ORDER BY embedding <=> ${embeddingStr}::vector
+      LIMIT ${maxResults}
+    `);
 
-    const topSimilarities = allResults.slice(0, 3).map(r => r.similarity.toFixed(3));
+    const rows = results.rows as Array<{
+      id: string;
+      chunk_index: number;
+      content: string;
+      token_count: number;
+      metadata: string | null;
+      similarity: number;
+    }>;
+
+    const topSimilarities = rows.slice(0, 3).map(r => Number(r.similarity).toFixed(3));
     console.log(
       `[RAG-RAW] Query "${query.question.substring(0, 30)}..." - Top similarities: [${topSimilarities.join(', ')}], Threshold: ${SIMILARITY_THRESHOLD}`
     );
 
-    // Filter by threshold (order preserved from sort above)
-    const resultsWithSimilarity = allResults.filter(
-      result => result.similarity > SIMILARITY_THRESHOLD
-    );
-
-    if (resultsWithSimilarity.length > 0) {
-      return resultsWithSimilarity.slice(0, maxResults);
+    if (rows.length > 0) {
+      return rows.map(row =>
+        toRAGResult(
+          {
+            id: row.id,
+            chunkIndex: row.chunk_index,
+            content: row.content,
+            tokenCount: row.token_count,
+            metadata: row.metadata,
+          },
+          Number(row.similarity)
+        )
+      );
     }
 
-    // Fallback: keyword match when semantic search yields nothing
+    const chunks = await fetchChunksForKeyword(query.preQualificationId);
+    if (chunks.length === 0) return [];
     return keywordMatchChunks(chunks, query.question, maxResults);
   } catch (error) {
     console.error('[RAG-RAW] Query failed:', error);

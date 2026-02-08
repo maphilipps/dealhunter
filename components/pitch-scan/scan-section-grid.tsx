@@ -23,7 +23,11 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import type { PhaseStatus, PitchScanPhase } from '@/hooks/use-pitch-scan-progress';
 import type { PitchScanSectionId } from '@/lib/pitch-scan/section-ids';
-import { PITCH_SCAN_SECTION_LABELS } from '@/lib/pitch-scan/section-ids';
+import {
+  PITCH_SCAN_SECTION_LABELS,
+  getSectionLabel,
+  type BuiltInSectionId,
+} from '@/lib/pitch-scan/section-ids';
 import { cn } from '@/lib/utils';
 
 // ====== Icon mapping per section ======
@@ -117,7 +121,7 @@ export function ScanSectionGrid({
   completedSections = [],
   livePhases,
 }: ScanSectionGridProps) {
-  const sectionIds = Object.keys(PITCH_SCAN_SECTION_LABELS) as PitchScanSectionId[];
+  const sectionIds = Object.keys(PITCH_SCAN_SECTION_LABELS) as BuiltInSectionId[];
 
   // Build a lookup: sectionId → status/confidence
   const sectionMap = new Map<PitchScanSectionId, { status: PhaseStatus; confidence?: number }>();
@@ -140,7 +144,7 @@ export function ScanSectionGrid({
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {sectionIds.map(sectionId => {
         const Icon = SECTION_ICONS[sectionId];
-        const label = PITCH_SCAN_SECTION_LABELS[sectionId];
+        const label = getSectionLabel(sectionId);
         const data = sectionMap.get(sectionId);
         const status: PhaseStatus = data?.status ?? 'pending';
         const isClickable = status === 'completed';

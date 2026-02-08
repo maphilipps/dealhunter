@@ -4,7 +4,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { pitches, users, dealEmbeddings } from '@/lib/db/schema';
-import { PITCH_SCAN_SECTION_LABELS, type PitchScanSectionId } from '@/lib/pitch-scan/section-ids';
+import {
+  PITCH_SCAN_SECTION_LABELS,
+  type PitchScanSectionId,
+  getSectionLabel,
+} from '@/lib/pitch-scan/section-ids';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -83,8 +87,8 @@ export async function GET(_request: NextRequest, context: RouteParams): Promise<
     return NextResponse.json({
       success: true,
       section: {
-        sectionId: sectionId as PitchScanSectionId,
-        label: PITCH_SCAN_SECTION_LABELS[sectionId as PitchScanSectionId],
+        sectionId,
+        label: getSectionLabel(sectionId),
         content: parsedContent,
         metadata: parsedMetadata,
         confidence: section.confidence,
@@ -153,7 +157,7 @@ export async function POST(_request: NextRequest, context: RouteParams): Promise
 
     // Dynamically import and run the specific phase agent
     const { PHASE_AGENT_REGISTRY } = await import('@/lib/pitch-scan/phases');
-    const agentFn = PHASE_AGENT_REGISTRY[sectionId as PitchScanSectionId];
+    const agentFn = PHASE_AGENT_REGISTRY[sectionId as keyof typeof PHASE_AGENT_REGISTRY];
 
     const { createAgentEventStream, createSSEResponse } =
       await import('@/lib/streaming/event-emitter');

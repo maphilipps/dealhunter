@@ -105,7 +105,7 @@ export default async function ScanPage({ params }: { params: Promise<{ id: strin
     for (const agentName of completedAgents) {
       if (validSectionIds.has(agentName)) {
         completedSections.push({
-          sectionId: agentName as PitchScanSectionId,
+          sectionId: agentName,
           status: 'completed',
           confidence: agentConfidences[agentName],
         });

@@ -10,7 +10,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/lib/db';
 import { dealEmbeddings, pitches } from '@/lib/db/schema';
-import { PITCH_SCAN_SECTION_LABELS, type PitchScanSectionId } from '@/lib/pitch-scan/section-ids';
+import {
+  PITCH_SCAN_SECTION_LABELS,
+  type PitchScanSectionId,
+  getSectionLabel,
+  isBuiltInSection,
+} from '@/lib/pitch-scan/section-ids';
 
 export default async function SectionDetailPage({
   params,
@@ -19,14 +24,15 @@ export default async function SectionDetailPage({
 }) {
   const { id, sectionId } = await params;
 
-  // Validate sectionId
-  const validSectionIds = Object.keys(PITCH_SCAN_SECTION_LABELS);
-  if (!validSectionIds.includes(sectionId)) {
+  // Validate sectionId - allow both built-in and dynamic sections
+  const isValid = isBuiltInSection(sectionId);
+  // For now, only validate built-in sections. Dynamic sections will be handled later.
+  if (!isValid) {
+    // TODO: Check if it's a valid dynamic section from the checkpoint
     notFound();
   }
 
-  const typedSectionId = sectionId as PitchScanSectionId;
-  const sectionLabel = PITCH_SCAN_SECTION_LABELS[typedSectionId];
+  const sectionLabel = getSectionLabel(sectionId);
 
   // Verify pitch exists
   const [lead] = await db

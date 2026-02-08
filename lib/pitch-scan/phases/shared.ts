@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import type { PhaseContext, PhaseResult } from '../types';
 import type { PitchScanSectionId } from '../section-ids';
+import { getSectionLabel } from '../section-ids';
 import { PHASE_AGENT_CONFIG } from '../constants';
 import { generateWithFallback } from '@/lib/ai/config';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
@@ -57,6 +58,7 @@ export async function runPhaseAgent(options: RunPhaseAgentOptions): Promise<Phas
 
   const parsed: PhaseResult = {
     sectionId,
+    label: getSectionLabel(sectionId),
     content: result.content,
     confidence: result.confidence,
     sources: result.sources,

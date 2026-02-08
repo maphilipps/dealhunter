@@ -14,9 +14,32 @@ export const PITCH_SCAN_SECTIONS = {
   DOCUMENTATION: 'ps-documentation',
 } as const;
 
-export type PitchScanSectionId = (typeof PITCH_SCAN_SECTIONS)[keyof typeof PITCH_SCAN_SECTIONS];
+// ─── Section ID Types ──────────────────────────────────────────────────────────
 
-export const PITCH_SCAN_SECTION_LABELS: Record<PitchScanSectionId, string> = {
+/** Built-in section IDs (for type safety in core phases) */
+export type BuiltInSectionId = (typeof PITCH_SCAN_SECTIONS)[keyof typeof PITCH_SCAN_SECTIONS];
+
+/** Dynamic section IDs can be any string (for custom/generated phases) */
+export type DynamicSectionId = string & { readonly __brand?: 'dynamic' };
+
+/**
+ * Union type for backward compatibility.
+ * Accepts both built-in and dynamic section IDs.
+ * Note: This is effectively string, but the union is kept for documentation purposes.
+ */
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+export type PitchScanSectionId = BuiltInSectionId | DynamicSectionId;
+
+/**
+ * Type guard to check if a section ID is a built-in section.
+ */
+export function isBuiltInSection(id: string): id is BuiltInSectionId {
+  return Object.values(PITCH_SCAN_SECTIONS).includes(id as BuiltInSectionId);
+}
+
+// ─── Section Labels ────────────────────────────────────────────────────────────
+
+export const PITCH_SCAN_SECTION_LABELS: Record<BuiltInSectionId, string> = {
   'ps-discovery': 'Discovery & Tech-Stack',
   'ps-content-architecture': 'Content-Architektur',
   'ps-features': 'Features & Funktionalität',
@@ -31,3 +54,17 @@ export const PITCH_SCAN_SECTION_LABELS: Record<PitchScanSectionId, string> = {
   'ps-estimation': 'Aufwandsschätzung',
   'ps-documentation': 'Dokumentation',
 };
+
+/**
+ * Get the label for a section ID, with fallback for dynamic sections.
+ */
+export function getSectionLabel(id: string): string {
+  if (isBuiltInSection(id)) {
+    return PITCH_SCAN_SECTION_LABELS[id];
+  }
+  // For dynamic sections, format the ID as a readable label
+  return id
+    .replace(/^ps-/, '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}

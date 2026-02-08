@@ -13,6 +13,8 @@ import {
   employees,
   businessUnits,
   technologies,
+  features,
+  cmsFeatureEvaluations,
   type NewReference,
   type NewCompetency,
   type NewCompetitor,
@@ -732,7 +734,55 @@ export async function getTechnology(id: string) {
       return { success: false, error: 'Technologie nicht gefunden' };
     }
 
-    return { success: true, technology: tech };
+    // Load relational feature evaluations
+    let featureEvaluations: Record<
+      string,
+      {
+        score: number;
+        confidence: number | null;
+        notes: string | null;
+        reasoning: string | null;
+        supportType: string | null;
+        moduleName: string | null;
+        sourceUrls: string[] | null;
+        updatedAt: Date | null;
+      }
+    > = {};
+
+    try {
+      const evals = await db
+        .select({
+          featureName: features.name,
+          score: cmsFeatureEvaluations.score,
+          confidence: cmsFeatureEvaluations.confidence,
+          notes: cmsFeatureEvaluations.notes,
+          reasoning: cmsFeatureEvaluations.reasoning,
+          supportType: cmsFeatureEvaluations.supportType,
+          moduleName: cmsFeatureEvaluations.moduleName,
+          sourceUrls: cmsFeatureEvaluations.sourceUrls,
+          updatedAt: cmsFeatureEvaluations.updatedAt,
+        })
+        .from(cmsFeatureEvaluations)
+        .innerJoin(features, eq(cmsFeatureEvaluations.featureId, features.id))
+        .where(eq(cmsFeatureEvaluations.technologyId, id));
+
+      for (const row of evals) {
+        featureEvaluations[row.featureName] = {
+          score: row.score,
+          confidence: row.confidence,
+          notes: row.notes,
+          reasoning: row.reasoning,
+          supportType: row.supportType,
+          moduleName: row.moduleName,
+          sourceUrls: row.sourceUrls ? JSON.parse(row.sourceUrls) : null,
+          updatedAt: row.updatedAt,
+        };
+      }
+    } catch {
+      // Feature evaluations table may not exist yet — fall back to JSON blob
+    }
+
+    return { success: true, technology: tech, featureEvaluations };
   } catch (error) {
     console.error('Error fetching technology:', error);
     return { success: false, error: 'Fehler beim Laden der Technologie' };

@@ -156,8 +156,8 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
     refMatches,
   } = data;
 
-  // Routed-Pitch → Scan starten oder Fortschritt anzeigen (nicht die leere Overview)
-  if (lead.status === 'routed') {
+  // Routed/Scanning-Pitch → Scan starten oder Fortschritt anzeigen
+  if (lead.status === 'routed' || lead.status === 'audit_scanning') {
     const [latestRun] = await db
       .select({ id: auditScanRuns.id, status: auditScanRuns.status })
       .from(auditScanRuns)
@@ -165,8 +165,9 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
       .orderBy(desc(auditScanRuns.createdAt))
       .limit(1);
 
-    // Nur laufende Runs für Progress-Anzeige durchreichen.
-    // Terminal (completed/failed) bei status='routed' = Pipeline hat Status nicht geschalten → neuen Scan starten.
+    // Laufende Runs → Progress-Anzeige.
+    // Bei audit_scanning: immer den aktiven Run anzeigen (kein Neustart).
+    // Bei routed ohne aktiven Run: neuen Scan starten.
     const isActive = latestRun && !['completed', 'failed'].includes(latestRun.status);
 
     return (

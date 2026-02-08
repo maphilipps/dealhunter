@@ -79,6 +79,12 @@ export async function startPitchScan(
       currentStep: 'Pipeline wird gestartet...',
     });
 
+    // Transition pitch status so auto-scan-starter doesn't restart on page reload
+    await db
+      .update(pitches)
+      .set({ status: 'audit_scanning', updatedAt: new Date() })
+      .where(eq(pitches.id, pitchId));
+
     // Enqueue BullMQ job (no interviewResults — RAG data is sufficient)
     await addPitchJob({
       runId,

@@ -122,7 +122,7 @@ async function targetedResearch(
 
   for (const query of queries) {
     try {
-      const results = await searchAndContents(query, { numResults: 2, summary: true });
+      const results = await searchAndContents(query, { numResults: 2 });
       for (const r of results.results) {
         allContent += `${r.title || ''} ${r.text || ''} `;
         if (r.url && !urls.includes(r.url)) {

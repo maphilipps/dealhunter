@@ -58,7 +58,6 @@ Beispiel-Queries:
     try {
       const results = await searchAndContents(query, {
         numResults,
-        summary: fetchContent,
       });
 
       if (results.results.length === 0) {
@@ -193,7 +192,6 @@ Nutze dieses Tool für:
     try {
       const results = await searchAndContents(query, {
         numResults: 5,
-        summary: true,
       });
 
       return {

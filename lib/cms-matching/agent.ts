@@ -937,7 +937,7 @@ async function researchCMSFeatures(
       // Max 2 Queries um API-Limits zu schonen
       try {
         console.log(`[CMS Research] Searching: "${query}"`);
-        const results = await searchAndContents(query, { numResults: 3, summary: true });
+        const results = await searchAndContents(query, { numResults: 3 });
 
         if (results.results.length === 0) continue;
 

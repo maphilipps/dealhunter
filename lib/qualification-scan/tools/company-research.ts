@@ -58,7 +58,7 @@ export async function extractFromImprint(html: string, _url: string): Promise<Im
 }
 
 /**
- * Search for company news using DuckDuckGo (free, no API key)
+ * Search for company news via web search
  */
 async function searchCompanyNews(companyName: string): Promise<
   Array<{
@@ -71,7 +71,7 @@ async function searchCompanyNews(companyName: string): Promise<
   try {
     const results = await searchAndContents(
       `"${companyName}" news OR pressemitteilung OR announcement`,
-      { numResults: 5, summary: true }
+      { numResults: 5 }
     );
 
     return results.results.map((r: any) => ({
@@ -81,24 +81,24 @@ async function searchCompanyNews(companyName: string): Promise<
       url: r.url,
     }));
   } catch (error) {
-    console.error('DuckDuckGo search failed:', error);
+    console.error('Company news search failed:', error);
     return [];
   }
 }
 
 /**
- * Search for company information using DuckDuckGo (free, no API key)
+ * Search for company information via web search
  */
 async function searchCompanyInfo(companyName: string, _websiteUrl: string): Promise<string> {
   try {
     const results = await searchAndContents(
       `"${companyName}" company profile employees revenue founded headquarters`,
-      { numResults: 3, summary: true }
+      { numResults: 3 }
     );
 
     return results.results.map((r: any) => `Source: ${r.url}\n${r.text}`).join('\n\n');
   } catch (error) {
-    console.error('DuckDuckGo company search failed:', error);
+    console.error('Company search failed:', error);
     return '';
   }
 }
@@ -384,7 +384,7 @@ async function searchMarketPosition(
       ? `"${companyName}" market share competitors "${industry}" industry trends`
       : `"${companyName}" market share competitors industry trends`;
 
-    const results = await searchAndContents(searchQuery, { numResults: 3, summary: true });
+    const results = await searchAndContents(searchQuery, { numResults: 3 });
 
     if (!results.results.length) {
       return undefined;
@@ -418,11 +418,9 @@ async function searchDigitalPresence(
     const [glassdoorResults, kunuResults] = await Promise.all([
       searchAndContents(`"${companyName}" site:glassdoor.com OR site:glassdoor.de rating`, {
         numResults: 1,
-        summary: true,
       }),
       searchAndContents(`"${companyName}" site:kununu.com rating bewertung`, {
         numResults: 1,
-        summary: true,
       }),
     ]);
 
@@ -458,7 +456,7 @@ async function searchTechFootprint(
     // Search for technology stack information
     const results = await searchAndContents(
       `site:${hostname} technology stack CRM marketing cloud provider`,
-      { numResults: 2, summary: true }
+      { numResults: 2 }
     );
 
     if (!results.results.length) {

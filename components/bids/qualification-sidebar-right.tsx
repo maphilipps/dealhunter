@@ -13,8 +13,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ExportButton } from '@/components/qualification-scan/export-button';
 import {
   getPreQualificationNavigationSections,
   isQualificationRunning,
@@ -121,6 +123,21 @@ export function PreQualificationSidebarRight({
               </SidebarGroupContent>
             </SidebarGroup>
           ))}
+
+          {/* Export */}
+          {!qualificationRunning && (
+            <>
+              <SidebarSeparator />
+              <SidebarGroup>
+                <SidebarGroupLabel>Export</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <div className="px-2 py-1">
+                    <ExportButton qualificationId={preQualificationId} />
+                  </div>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </>
+          )}
         </SidebarContent>
       </Sidebar>
     </TooltipProvider>

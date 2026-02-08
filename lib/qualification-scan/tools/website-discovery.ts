@@ -95,7 +95,7 @@ export async function discoverCompanyWebsiteUrl(companyName: string): Promise<st
   const tokens = tokenizeCompanyName(companyName);
   const query = `"${companyName}" offizielle website`;
 
-  const { results } = await searchAndContents(query, { numResults: 8, summary: false });
+  const { results } = await searchAndContents(query, { numResults: 8 });
   const candidates = results
     .map(r => r.url)
     .map(normalizeToOrigin)

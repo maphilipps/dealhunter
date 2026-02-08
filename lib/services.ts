@@ -137,15 +137,8 @@ const search = tool({
       .describe('The category of the result you are looking for'),
   }),
   execute: async ({ keywords, resultCategory }) => {
-    /**
-     * Deep research using DuckDuckGo (free, no API key required)
-     * Return the results in markdown format
-     */
     const result = await searchAndContents(keywords, {
       numResults: 2,
-      type: 'keyword',
-      category: resultCategory,
-      summary: true,
     });
     return result;
   },

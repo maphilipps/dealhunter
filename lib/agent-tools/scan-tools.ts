@@ -26,7 +26,6 @@ registry.register({
   async execute(input) {
     const results = await searchAndContents(input.query, {
       numResults: input.numResults,
-      summary: input.fetchContent,
     });
 
     return {

@@ -21,7 +21,7 @@ import {
 import { Loader } from '@/components/ai-elements/loader';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -164,6 +164,18 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
     featuresFlagged: number;
     overallConfidence: number;
   } | null>(null);
+
+  // Deep Review SSE stream state
+  const [deepReviewEvents, setDeepReviewEvents] = useState<
+    Array<{ message: string; timestamp: number; type: string }>
+  >([]);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   // Orchestrator State
   const [isOrchestratorRunning, setIsOrchestratorRunning] = useState(false);
@@ -369,7 +381,115 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
 
   const handleReviewFeatures = async (mode: 'quick' | 'deep' = 'quick') => {
     setIsReviewingFeatures(true);
-    toast.info(`Starte ${mode === 'deep' ? 'Deep' : 'Quick'} Review der Features...`);
+
+    if (mode === 'deep') {
+      // Deep Review: SSE stream directly from server
+      toast.info('Starte Deep Review mit Web-Recherche...');
+      setDeepReviewEvents([]);
+
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+
+      try {
+        const response = await fetch(`/api/admin/technologies/${technology.id}/review-features`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'deep' }),
+          signal: abortController.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error('Deep Review Start fehlgeschlagen');
+        }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (!reader) {
+          throw new Error('Stream nicht verfügbar');
+        }
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const event = JSON.parse(line.slice(6)) as SSEEvent;
+                if (event.data?.message) {
+                  setDeepReviewEvents(prev => [
+                    ...prev,
+                    {
+                      message: event.data.message,
+                      timestamp: event.timestamp,
+                      type: event.type,
+                    },
+                  ]);
+                }
+
+                // On agent-complete: update features + show results
+                if (event.type === 'agent-complete' && event.data?.result) {
+                  const result = event.data.result as unknown as {
+                    featuresReviewed: number;
+                    featuresImproved: number;
+                    featuresFlagged: number;
+                    overallConfidence: number;
+                    updatedFeatures: Record<string, FeatureData>;
+                  };
+
+                  setLastReviewResult({
+                    featuresImproved: result.featuresImproved,
+                    featuresFlagged: result.featuresFlagged,
+                    overallConfidence: result.overallConfidence,
+                  });
+
+                  setLocalFeatures(result.updatedFeatures);
+
+                  if (result.featuresImproved > 0) {
+                    toast.success(`Deep Review: ${result.featuresImproved} Features verbessert`);
+                  }
+                  if (result.featuresFlagged > 0) {
+                    toast.warning(
+                      `${result.featuresFlagged} Features zur manuellen Prüfung markiert`
+                    );
+                  }
+                  if (result.featuresImproved === 0 && result.featuresFlagged === 0) {
+                    toast.success('Alle Features OK - keine Korrekturen nötig');
+                  }
+                }
+
+                // On error event
+                if (event.type === 'error') {
+                  toast.error(event.data?.message || 'Deep Review fehlgeschlagen');
+                }
+              } catch {
+                // Ignore parse errors for partial chunks
+              }
+            }
+          }
+        }
+
+        router.refresh();
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          toast.info('Deep Review abgebrochen');
+        } else {
+          toast.error('Deep Review fehlgeschlagen');
+          console.error('Deep review stream error:', error);
+        }
+      } finally {
+        abortControllerRef.current = null;
+        setIsReviewingFeatures(false);
+      }
+      return;
+    }
+
+    // Quick Review: synchronous as before
+    toast.info('Starte Quick Review der Features...');
 
     try {
       const response = await fetch(`/api/admin/technologies/${technology.id}/review-features`, {
@@ -805,6 +925,32 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
                       className="text-[10px] shrink-0"
                     >
                       {event.agent}
+                    </Badge>
+                    <span className="text-muted-foreground">{event.message}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Deep Review Event Log */}
+          {deepReviewEvents.length > 0 && (
+            <div className="border rounded-lg p-3 bg-slate-50 dark:bg-slate-900 max-h-48 overflow-y-auto">
+              <p className="text-xs font-medium mb-2 text-muted-foreground">Deep Review Log:</p>
+              <div className="space-y-1">
+                {deepReviewEvents.map((event, i) => (
+                  <div key={i} className="text-xs flex gap-2">
+                    <Badge
+                      variant={
+                        event.type === 'error'
+                          ? 'destructive'
+                          : event.type === 'agent-complete'
+                            ? 'default'
+                            : 'secondary'
+                      }
+                      className="text-[10px] shrink-0"
+                    >
+                      review
                     </Badge>
                     <span className="text-muted-foreground">{event.message}</span>
                   </div>

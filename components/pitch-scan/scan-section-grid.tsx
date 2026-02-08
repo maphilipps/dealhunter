@@ -187,7 +187,7 @@ export function ScanSectionGrid({
 
         if (isClickable) {
           return (
-            <Link key={sectionId} href={`/pitches/${pitchId}/scan/${sectionId}`}>
+            <Link key={sectionId} href={`/pitches/${pitchId}/pitch-scan/${sectionId}`}>
               {cardContent}
             </Link>
           );

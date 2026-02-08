@@ -4,16 +4,15 @@
 // Supports both static (legacy) and dynamic (planner-based) execution
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { eq, and } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
+import { CAPABILITY_MAP, type Capability } from './capabilities';
 import { PHASE_DEFINITIONS, TOTAL_PHASE_COUNT } from './constants';
-import { PHASE_AGENT_REGISTRY } from './phases';
-import type { PitchScanSectionId } from './section-ids';
-import { getSectionLabel } from './section-ids';
-import type { PhaseContext, PhaseResult, PitchScanCheckpoint, PhasePlan } from './types';
-import { CAPABILITY_POOL, CAPABILITY_MAP, type Capability } from './capabilities';
-import { createAnalysisPlan, createFullPlan, type PlanningContext } from './planner';
 import { generateNavigation, type GeneratedNavigation } from './navigation';
+import { PHASE_AGENT_REGISTRY } from './phases';
+import { createAnalysisPlan, createFullPlan, type PlanningContext } from './planner';
+import type { PitchScanSectionId } from './section-ids';
+import type { PhaseContext, PhaseResult, PitchScanCheckpoint, PhasePlan } from './types';
 
 import { db } from '@/lib/db';
 import { dealEmbeddings, auditScanRuns } from '@/lib/db/schema';
@@ -53,6 +52,20 @@ export async function runPitchScanOrchestrator(
         ? `Wiederaufnahme bei ${completedPhases.size}/${TOTAL_PHASE_COUNT} Phasen`
         : 'Starte Pitch Scan Analyse...',
     },
+  });
+
+  // Emit a static plan summary for chat-first UIs (legacy orchestrator runs all phases).
+  await publishToChannel(runId, {
+    type: 'plan_created',
+    enabledPhases: PHASE_DEFINITIONS.map(p => ({
+      id: p.id,
+      label: p.label,
+      category: CAPABILITY_MAP.get(p.id)?.category ?? 'technical',
+      dependencies: p.dependencies,
+    })),
+    skippedPhases: [],
+    summaryText: 'Analyse-Plan erstellt. Starte Ausfuehrung der Phasen...',
+    timestamp: new Date().toISOString(),
   });
 
   // Update run status to running
@@ -158,12 +171,31 @@ export async function runPitchScanOrchestrator(
             message: `${phase.label} abgeschlossen (${phaseResult.confidence}%)`,
             timestamp: new Date().toISOString(),
           });
+
+          // Chat-first: emit a compact section result (full content is fetched from DB on demand).
+          await publishToChannel(runId, {
+            type: 'section_result',
+            sectionId: phase.id,
+            label: phase.label,
+            status: 'completed',
+            confidence: phaseResult.confidence,
+            timestamp: new Date().toISOString(),
+          });
         } else {
           // Extract phase info from the error context
           const failedPhase = readyPhases[results.indexOf(result)];
           if (failedPhase) {
             failedPhases.add(failedPhase.id);
             await markAgentFailed(runId, failedPhase.id);
+
+            await publishToChannel(runId, {
+              type: 'section_result',
+              sectionId: failedPhase.id,
+              label: failedPhase.label,
+              status: 'failed',
+              error: String(result.reason),
+              timestamp: new Date().toISOString(),
+            });
 
             emit({
               type: AgentEventType.ERROR,
@@ -355,6 +387,23 @@ export async function runDynamicOrchestrator(
     plan = await createAnalysisPlan(planningContext);
   }
 
+  await publishToChannel(runId, {
+    type: 'plan_created',
+    enabledPhases: plan.enabledPhases.map(p => {
+      const cap = CAPABILITY_MAP.get(p.id);
+      return {
+        id: p.id,
+        label: cap?.labelDe ?? p.id,
+        category: cap?.category ?? 'technical',
+        priority: p.priority,
+        rationale: p.rationale,
+      };
+    }),
+    skippedPhases: plan.skippedPhases,
+    summaryText: `Analyse-Plan erstellt: ${plan.enabledPhases.length} Phasen`,
+    timestamp: new Date().toISOString(),
+  });
+
   const totalPhases = plan.enabledPhases.length;
 
   emit({
@@ -472,11 +521,29 @@ export async function runDynamicOrchestrator(
           message: `${cap.labelDe} abgeschlossen (${phaseResult.confidence}%)`,
           timestamp: new Date().toISOString(),
         });
+
+        await publishToChannel(runId, {
+          type: 'section_result',
+          sectionId: cap.id,
+          label: cap.labelDe,
+          status: 'completed',
+          confidence: phaseResult.confidence,
+          timestamp: new Date().toISOString(),
+        });
       } else {
         const failedCap = readyPhases[results.indexOf(result)];
         if (failedCap) {
           failedPhases.add(failedCap.id);
           await markAgentFailed(runId, failedCap.id);
+
+          await publishToChannel(runId, {
+            type: 'section_result',
+            sectionId: failedCap.id,
+            label: failedCap.labelDe,
+            status: 'failed',
+            error: String(result.reason),
+            timestamp: new Date().toISOString(),
+          });
 
           emit({
             type: AgentEventType.ERROR,

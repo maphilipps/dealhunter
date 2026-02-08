@@ -10,12 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/lib/db';
 import { dealEmbeddings, pitches } from '@/lib/db/schema';
-import {
-  PITCH_SCAN_SECTION_LABELS,
-  type PitchScanSectionId,
-  getSectionLabel,
-  isBuiltInSection,
-} from '@/lib/pitch-scan/section-ids';
+import { getSectionLabel, isBuiltInSection } from '@/lib/pitch-scan/section-ids';
 
 export default async function SectionDetailPage({
   params,
@@ -85,7 +80,10 @@ export default async function SectionDetailPage({
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href={`/pitches/${id}/scan`} className="hover:text-foreground transition-colors">
+        <Link
+          href={`/pitches/${id}/pitch-scan`}
+          className="hover:text-foreground transition-colors"
+        >
           <Button variant="ghost" size="sm" className="h-7 gap-1.5 px-2">
             <ArrowLeft className="h-3.5 w-3.5" />
             Pitch Scan
@@ -130,7 +128,7 @@ export default async function SectionDetailPage({
               Für diese Sektion liegen noch keine Ergebnisse vor. Starte den Pitch Scan, um
               Ergebnisse zu generieren.
             </p>
-            <Link href={`/pitches/${id}/scan`}>
+            <Link href={`/pitches/${id}/pitch-scan`}>
               <Button variant="outline" size="sm" className="mt-4">
                 Zurück zum Pitch Scan
               </Button>

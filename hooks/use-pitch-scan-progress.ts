@@ -3,8 +3,14 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 
 import type { ProgressEvent, SnapshotEvent } from '@/lib/pitch/types';
-import type { PitchScanSectionId } from '@/lib/pitch-scan/section-ids';
 import { PHASE_DEFINITIONS } from '@/lib/pitch-scan/constants';
+import type { PitchScanSectionId } from '@/lib/pitch-scan/section-ids';
+import type { PitchScanNormalizedEvent } from '@/lib/streaming/pitch-scan-events';
+import {
+  normalizePitchScanEvent,
+  isVisiblePitchScanEvent,
+  PitchScanEventType,
+} from '@/lib/streaming/pitch-scan-events';
 
 // ====== Phase Definitions ======
 
@@ -29,6 +35,9 @@ export interface PitchScanProgressState {
   status: 'idle' | 'connecting' | 'running' | 'completed' | 'error';
   progress: number;
   phases: PitchScanPhase[];
+  /** Ordered stream of visible events (bounded). */
+  events: PitchScanNormalizedEvent[];
+  runId: string | null;
   currentMessage: string | null;
   error: string | null;
   isConnected: boolean;
@@ -120,6 +129,8 @@ export function usePitchScanProgress(
     status: 'idle',
     progress: 0,
     phases: createDefaultPhases(),
+    events: [],
+    runId: null,
     currentMessage: null,
     error: null,
     isConnected: false,
@@ -161,19 +172,44 @@ export function usePitchScanProgress(
     };
 
     eventSource.onmessage = (e: MessageEvent) => {
-      let raw: Record<string, unknown>;
+      if (typeof e.data !== 'string') return;
+
+      let parsed: unknown;
       try {
-        raw = JSON.parse(e.data);
+        parsed = JSON.parse(e.data) as unknown;
       } catch {
         return;
       }
 
-      if (raw.type === 'connected') {
-        return;
+      if (!parsed || typeof parsed !== 'object') return;
+      const raw = parsed as Record<string, unknown>;
+      const rawType = typeof raw.type === 'string' ? raw.type : null;
+
+      // Normalize and store visible events for chat rendering.
+      // Snapshot events are handled separately below.
+      if (rawType !== 'snapshot') {
+        const normalized = normalizePitchScanEvent(raw);
+        if (normalized) {
+          if (normalized.type === PitchScanEventType.CONNECTED) {
+            const runId = typeof normalized.raw.runId === 'string' ? normalized.raw.runId : null;
+            setState(prev => ({ ...prev, runId }));
+            return;
+          }
+
+          if (isVisiblePitchScanEvent(normalized)) {
+            setState(prev => {
+              const next = [...prev.events, normalized];
+              // Bound in-memory event list to avoid unbounded growth.
+              const maxEvents = 200;
+              const bounded = next.length > maxEvents ? next.slice(next.length - maxEvents) : next;
+              return { ...prev, events: bounded };
+            });
+          }
+        }
       }
 
       // Handle snapshot events (DB hydration)
-      if (raw.type === 'snapshot') {
+      if (rawType === 'snapshot') {
         const snapshot = raw as unknown as SnapshotEvent;
         const phases = applySnapshot(snapshot);
         const isTerminal = ['completed', 'failed'].includes(snapshot.status);

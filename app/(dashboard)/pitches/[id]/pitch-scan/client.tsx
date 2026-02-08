@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition, useCallback } from 'react';
 
 import { Loader } from '@/components/ai-elements/loader';
-import { ScanPipelineProgress } from '@/components/pitch-scan/scan-pipeline-progress';
+import { ScanProgressChat } from '@/components/pitch-scan/scan-progress-chat';
 import { ScanSectionGrid, type SectionData } from '@/components/pitch-scan/scan-section-grid';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -158,30 +158,11 @@ export function ScanHubClient({
       </div>
 
       {/* Main layout: Grid + optional Pipeline sidebar */}
-      <div className="flex gap-6">
-        {/* Section Grid */}
-        <div className="flex-1 min-w-0">
-          <ScanSectionGrid
-            pitchId={pitchId}
-            completedSections={completedSections}
-            livePhases={isScanning ? progress.phases : undefined}
-          />
-        </div>
-
-        {/* Pipeline Progress — shown as sidebar during scan */}
-        {isScanning && (
-          <div className="hidden w-80 shrink-0 lg:block">
-            <Card className="sticky top-20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Pipeline</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScanPipelineProgress pitchId={pitchId} />
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
+      {isScanning ? (
+        <ScanProgressChat pitchId={pitchId} progress={progress} />
+      ) : (
+        <ScanSectionGrid pitchId={pitchId} completedSections={completedSections} />
+      )}
 
       {/* Status: completed run summary */}
       {!isScanning && runStatus === 'completed' && completedSections.length > 0 && (

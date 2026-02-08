@@ -10,6 +10,12 @@ STATUS_FIELD_ID=PVTSSF_lAHOAuMI6s4BNZnlzg8Z_mo
 STATUS_IN_REVIEW=df73e18b
 ```
 
+## Arbeitskonventionen
+
+- **Auf dem Issue-Branch arbeiten**: `ralph/<issue-number>-*` — checke den Branch aus
+- **Alles auf dem Issue kommentieren** — Review-Findings werden als Kommentar gepostet
+- Das Issue ist die Single Source of Truth für den gesamten Lifecycle
+
 ---
 
 ## Aufgabe
@@ -22,7 +28,15 @@ Führe ein Code-Review für das In-Review-Issue durch und poste die Ergebnisse.
 gh project item-list 4 --owner maphilipps --format json | jq '[.items[] | select(.status == "In review") | {id: .id, number: .content.number, title: .content.title, type: .content.type}]'
 ```
 
-### 2. Issue lesen
+### 2. Issue-Branch auschecken
+
+```bash
+# Branch-Name aus Issue-Kommentaren oder git branch -r ermitteln
+git fetch origin
+git checkout ralph/$ISSUE_NUMBER-<kurzbeschreibung>
+```
+
+### 3. Issue lesen
 
 ```bash
 gh issue view $ISSUE_NUMBER --json title,body,comments,labels
@@ -30,28 +44,20 @@ gh issue view $ISSUE_NUMBER --json title,body,comments,labels
 
 Verstehe was implementiert werden sollte — der Issue-Body und die Kommentare definieren die Anforderungen.
 
-### 3. Diff prüfen
+### 4. Diff prüfen
 
 ```bash
-git diff --stat
-git diff
-```
-
-Falls kein unstaged Diff vorhanden, prüfe den letzten RALPH-Commit:
-
-```bash
-git log --grep="RALPH" -n 1 --format="%H"
-git show <sha> --stat
-git diff <sha>~1..<sha>
+git diff main..HEAD --stat
+git diff main..HEAD
 ```
 
 Der Diff muss minimal sein — keine unrelated Changes, keine reinen Formatierungsänderungen, keine "while I'm here"-Verbesserungen.
 
-### 4. Review durchführen
+### 5. Review durchführen
 
 Nutze `/workflows:review` für ein Multi-Agent Code Review.
 
-### 5. Ergebnisse posten
+### 6. Ergebnisse posten
 
 Poste die Review-Ergebnisse als Kommentar auf dem Issue:
 

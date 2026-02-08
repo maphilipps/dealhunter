@@ -10,15 +10,17 @@ set -euo pipefail
 #   4/4  Fix     — Copilot         — Findings → Done
 #
 # Jeder Step nutzt das beste Tool für die Aufgabe.
+# Zwischen jedem Step: commit + push sicherstellen.
 # ─────────────────────────────────────────────────────────────
 
 COPILOT_MODEL="github-copilot/claude-opus-4.5"
 
 # --- Logging ---
-BLUE='\033[0;34m'; CYAN='\033[0;36m'; GREEN='\033[0;32m'; RED='\033[0;31m'; NC='\033[0m'
+BLUE='\033[0;34m'; CYAN='\033[0;36m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 log()     { echo -e "${BLUE}[RALPH]${NC} $1"; }
 phase()   { echo -e "\n${CYAN}━━━ $1 ━━━${NC}"; }
 success() { echo -e "${GREEN}  ✓${NC} $1"; }
+warn()    { echo -e "${YELLOW}  !${NC} $1"; }
 fail()    { echo -e "${RED}  ✗${NC} $1"; exit 1; }
 
 run_checks() {
@@ -31,6 +33,34 @@ run_checks() {
     fi
   done
   $all_pass
+}
+
+# Sicherstellen dass alles committet und gepusht ist
+ensure_committed_and_pushed() {
+  local step_name="$1"
+
+  # Uncommitted changes?
+  if [[ -n $(git status --porcelain) ]]; then
+    warn "$step_name hat uncommitted changes hinterlassen — committe jetzt."
+    git add -A
+    git commit -m "RALPH: $step_name cleanup — auto-commit uncommitted changes"
+  fi
+
+  # Unpushed commits?
+  local branch
+  branch=$(git branch --show-current)
+  local unpushed
+  unpushed=$(git log origin/"$branch".."$branch" --oneline 2>/dev/null || echo "no-remote")
+
+  if [[ "$unpushed" == "no-remote" ]]; then
+    log "Pushe Branch $branch (erster Push)..."
+    git push -u origin "$branch"
+  elif [[ -n "$unpushed" ]]; then
+    log "Pushe unpushed commits auf $branch..."
+    git push
+  fi
+
+  success "$step_name: alles committet und gepusht"
 }
 
 # ─────────────────────────────────────────────────────────────
@@ -56,7 +86,7 @@ claude -p \
 
 $RALPH_CONTEXT"
 
-success "Plan abgeschlossen"
+ensure_committed_and_pushed "Plan"
 
 # ─────────────────────────────────────────────────────────────
 # 2/4 — Work (Codex)
@@ -65,7 +95,7 @@ phase "2/4 — Work via Codex (Ready → In Review)"
 
 codex exec --full-auto - < plans/prompts/work.md
 
-success "Work abgeschlossen"
+ensure_committed_and_pushed "Work"
 
 # ─────────────────────────────────────────────────────────────
 # 3/4 — Review (Copilot)
@@ -83,7 +113,7 @@ phase "4/4 — Fix via Copilot (In Review → Done)"
 
 opencode run @plans/prompts/fix.md "$RALPH_CONTEXT" --model="$COPILOT_MODEL"
 
-success "Fix abgeschlossen"
+ensure_committed_and_pushed "Fix"
 
 # ─────────────────────────────────────────────────────────────
 # Finalize

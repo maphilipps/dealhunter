@@ -258,6 +258,50 @@ describe('Error Classification', () => {
     });
   });
 
+  describe('AI Empty Response Errors → transient (fallback-eligible)', () => {
+    it('classifies AI_TypeValidationError as AI_EMPTY_RESPONSE', () => {
+      const error = new Error('Type validation failed: Value: {"id":"..."}');
+      error.name = 'AI_TypeValidationError';
+
+      const result = classifyError(error);
+
+      expect(result.type).toBe('AI_EMPTY_RESPONSE');
+      expect(result.category).toBe('transient');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('classifies missing choices array as AI_EMPTY_RESPONSE', () => {
+      const error = new Error('"choices" — expected array, received undefined');
+
+      const result = classifyError(error);
+
+      expect(result.type).toBe('AI_EMPTY_RESPONSE');
+      expect(result.category).toBe('transient');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('classifies TypeValidationError in name as AI_EMPTY_RESPONSE', () => {
+      const error = new Error('Validation failed');
+      error.name = 'typevalidationerror';
+
+      const result = classifyError(error);
+
+      expect(result.type).toBe('AI_EMPTY_RESPONSE');
+      expect(result.category).toBe('transient');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('classifies empty response message as AI_EMPTY_RESPONSE', () => {
+      const error = new Error('AI model returned empty response');
+
+      const result = classifyError(error);
+
+      expect(result.type).toBe('AI_EMPTY_RESPONSE');
+      expect(result.category).toBe('transient');
+      expect(result.isRetryable).toBe(true);
+    });
+  });
+
   describe('Unknown Errors → critical', () => {
     it('classifies unknown errors as critical', () => {
       const error = new Error('Something went terribly wrong');

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import type { PhaseContext, PhaseResult } from '../types';
 import type { PitchScanSectionId } from '../section-ids';
 import { PHASE_AGENT_CONFIG } from '../constants';
-import { generateStructuredOutput } from '@/lib/ai/config';
+import { generateWithFallback } from '@/lib/ai/config';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { AgentEventType } from '@/lib/streaming/event-types';
 
@@ -31,9 +31,10 @@ interface RunPhaseAgentOptions {
 
 /**
  * Shared runner for all phase agents.
- * Uses AI SDK's generateObject (via generateStructuredOutput) for reliable
+ * Uses AI SDK's generateObject (via generateWithFallback) for reliable
  * structured output instead of generateText + regex JSON parsing.
- * Timeout is handled by generateStructuredOutput's built-in AbortController.
+ * Timeout is handled by generateWithFallback's built-in AbortController.
+ * Automatic model fallback is enabled for empty response errors.
  */
 export async function runPhaseAgent(options: RunPhaseAgentOptions): Promise<PhaseResult> {
   const { sectionId, label, systemPrompt, userPrompt, emit } = options;
@@ -46,7 +47,7 @@ export async function runPhaseAgent(options: RunPhaseAgentOptions): Promise<Phas
 
   const modelKey = config.modelSlot === 'fast' ? ('fast' as const) : ('quality' as const);
 
-  const result = await generateStructuredOutput({
+  const result = await generateWithFallback({
     model: modelKey,
     schema: phaseAgentResponseSchema,
     system: systemPrompt,

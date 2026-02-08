@@ -8,6 +8,7 @@
  * If not configured, RAG features are gracefully disabled.
  */
 
+import * as Sentry from '@sentry/nextjs';
 import { eq } from 'drizzle-orm';
 
 import { chunkRawText, getChunkStats, type RawChunk } from './raw-chunk-service';
@@ -62,6 +63,10 @@ export async function generateRawChunkEmbeddings(
       console.warn(
         `[RAG-RAW] Dimension mismatch: got ${firstDim}, expected ${EMBEDDING_DIMENSIONS}. Skipping.`
       );
+      Sentry.captureMessage(
+        `[RAG-RAW] Dimension mismatch: got ${firstDim}, expected ${EMBEDDING_DIMENSIONS}. Skipping.`,
+        { level: 'error', tags: { component: 'rag-raw', op: 'generateRawChunkEmbeddings' } }
+      );
       return null;
     }
 
@@ -98,6 +103,9 @@ export async function embedRawText(
   stats: ReturnType<typeof getChunkStats>;
   error?: string;
   skipped?: boolean;
+  embeddingsGenerated?: boolean;
+  degraded?: boolean;
+  warning?: string;
 }> {
   const embeddingsEnabled = await isEmbeddingEnabled();
   const zeroEmbedding = new Array(EMBEDDING_DIMENSIONS).fill(0);
@@ -137,8 +145,21 @@ export async function embedRawText(
     }
 
     let chunksWithEmbeddings: RawChunkWithEmbedding[] | null = null;
+    let embeddingWarning: string | null = null;
     if (embeddingsEnabled) {
-      chunksWithEmbeddings = await generateRawChunkEmbeddings(chunks);
+      try {
+        chunksWithEmbeddings = await generateRawChunkEmbeddings(chunks);
+        if (!chunksWithEmbeddings) {
+          embeddingWarning =
+            'Embeddings konnten nicht erzeugt werden; speichere Zero-Vectors (RAG degradiert).';
+        }
+      } catch (error) {
+        embeddingWarning = 'Embedding API Fehler; speichere Zero-Vectors (RAG degradiert).';
+        Sentry.captureException(error, {
+          tags: { component: 'rag-raw', preQualificationId },
+          level: 'warning',
+        });
+      }
     }
 
     // 4. Store in database (fallback to zero vectors if embeddings disabled)
@@ -154,6 +175,7 @@ export async function embedRawText(
     );
 
     const stats = getChunkStats(chunks);
+    const embeddingsGenerated = embeddingsEnabled && !!chunksWithEmbeddings;
     console.log(
       `[RAG-RAW] Embedded ${stats.totalChunks} chunks (${stats.totalTokens} tokens) for qualification ${preQualificationId}`
     );
@@ -162,6 +184,9 @@ export async function embedRawText(
       success: true,
       stats,
       skipped: !embeddingsEnabled,
+      embeddingsGenerated,
+      degraded: embeddingsEnabled && !embeddingsGenerated,
+      warning: embeddingWarning ?? undefined,
     };
   } catch (error) {
     console.error(

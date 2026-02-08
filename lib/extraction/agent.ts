@@ -673,6 +673,19 @@ export async function runExtractionWithStreaming(
       };
     }
 
+    if (embedResult.skipped || embedResult.degraded) {
+      emit({
+        type: AgentEventType.AGENT_PROGRESS,
+        data: {
+          agent: 'Extraktion',
+          message: embedResult.skipped
+            ? 'Hinweis: Embeddings nicht konfiguriert (RAG deaktiviert).'
+            : embedResult.warning ||
+              'Warnung: Embeddings konnten nicht erzeugt werden (RAG degradiert).',
+        },
+      });
+    }
+
     emit({
       type: AgentEventType.AGENT_PROGRESS,
       data: {

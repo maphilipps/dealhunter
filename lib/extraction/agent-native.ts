@@ -39,6 +39,8 @@ export interface ExtractionAgentOutput {
   requirements: ExtractedRequirements;
   success: boolean;
   error?: string;
+  ragStatus?: 'available' | 'disabled' | 'degraded' | 'error';
+  ragWarning?: string;
   activityLog: Array<{ timestamp: string; action: string; details?: string }>;
 }
 
@@ -278,12 +280,27 @@ export async function runExtractionAgentNative(
       });
     }
 
-    const ragAvailable = embedResult.success || embedResult.skipped;
+    const ragAvailable = embedResult.embeddingsGenerated === true;
+    const ragStatus: ExtractionAgentOutput['ragStatus'] = ragAvailable
+      ? 'available'
+      : embedResult.skipped
+        ? 'disabled'
+        : embedResult.degraded
+          ? 'degraded'
+          : embedResult.success
+            ? 'degraded'
+            : 'error';
     const embeddedChunks = embedResult.stats?.totalChunks ?? 0;
     logActivity('Embedding', `${embeddedChunks} Chunks erstellt`);
     logActivity(
       'Embedding',
-      ragAvailable ? 'RAG verfügbar' : 'RAG nicht verfügbar — Ergebnisse ohne semantische Suche'
+      ragAvailable
+        ? 'RAG verfügbar'
+        : ragStatus === 'disabled'
+          ? 'RAG deaktiviert (keine Embeddings konfiguriert)'
+          : ragStatus === 'degraded'
+            ? 'RAG degradiert — Ergebnisse ohne semantische Suche'
+            : 'RAG Fehler — Ergebnisse ohne semantische Suche'
     );
 
     // Step 2: Initialize extraction session with header fields
@@ -472,6 +489,8 @@ Nutze die Tools um alle relevanten Felder zu extrahieren.
     return {
       requirements,
       success: true,
+      ragStatus,
+      ragWarning: embedResult.warning,
       activityLog,
     };
   } catch (error) {
@@ -496,6 +515,7 @@ Nutze die Tools um alle relevanten Felder zu extrahieren.
       },
       success: false,
       error: errorMessage,
+      ragStatus: 'error',
       activityLog,
     };
   }

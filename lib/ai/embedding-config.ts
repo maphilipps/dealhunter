@@ -13,7 +13,12 @@
 import * as Sentry from '@sentry/nextjs';
 import OpenAI from 'openai';
 
-import { getModelConfigAsync, getProviderCredentials } from './model-config';
+import {
+  getModelConfigAsync,
+  getProviderCredentials,
+  onModelConfigInvalidate,
+} from './model-config';
+import { fingerprintSecret } from './key-fingerprint';
 
 /**
  * DB vectors are 3072 dimensions — this is a schema-level constraint.
@@ -46,6 +51,7 @@ export async function getEmbeddingApiOptions(): Promise<{
 }
 
 const embeddingClientCache = new Map<string, OpenAI>();
+onModelConfigInvalidate(() => embeddingClientCache.clear());
 
 /**
  * Check if embedding API is configured (async — resolves credentials via DB/env).
@@ -77,7 +83,7 @@ export async function getEmbeddingClient(): Promise<OpenAI | null> {
     return null;
   }
 
-  const cacheKey = `${config.provider}:${credentials.baseURL}`;
+  const cacheKey = `${config.provider}:${credentials.baseURL}:${fingerprintSecret(credentials.apiKey)}`;
   if (!embeddingClientCache.has(cacheKey)) {
     embeddingClientCache.set(
       cacheKey,

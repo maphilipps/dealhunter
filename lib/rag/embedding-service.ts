@@ -7,6 +7,7 @@
  * If not configured, embedding operations are silently skipped.
  */
 
+import * as Sentry from '@sentry/nextjs';
 import type { Chunk } from './chunk-service';
 import { chunkAgentOutput } from './chunk-service';
 import {
@@ -53,6 +54,10 @@ export async function generateChunkEmbeddings(
     console.warn(
       `[RAG] Dimension mismatch: got ${firstDim}, expected ${EMBEDDING_DIMENSIONS}. Skipping.`
     );
+    Sentry.captureMessage(
+      `[RAG] Dimension mismatch: got ${firstDim}, expected ${EMBEDDING_DIMENSIONS}. Skipping.`,
+      { level: 'error', tags: { component: 'rag', op: 'generateChunkEmbeddings' } }
+    );
     return null;
   }
 
@@ -94,7 +99,10 @@ export async function embedAgentOutput(
     const chunksWithEmbeddings = await generateChunkEmbeddings(chunks);
 
     if (!chunksWithEmbeddings) {
-      // Embeddings disabled - should not happen since we checked above
+      Sentry.captureMessage('[RAG] Embedding generation returned null while enabled.', {
+        level: 'warning',
+        tags: { component: 'rag', agentName, preQualificationId },
+      });
       return;
     }
 

@@ -57,9 +57,6 @@ export function wrapRegistryTool(toolName: string, context: ToolContext, options
  * Wrap multiple registry tools at once into a ToolSet.
  *
  * Tool names containing dots stay as-is — AI SDK supports dots in keys.
- *
- * Tools that don't exist in the registry are silently skipped
- * (useful when some tools are conditionally registered).
  */
 export function wrapRegistryTools(
   toolNames: string[],
@@ -67,13 +64,18 @@ export function wrapRegistryTools(
   options?: WrapOptions
 ): ToolSet {
   const tools: ToolSet = {};
+  const missing: string[] = [];
 
   for (const name of toolNames) {
     if (!registry.get(name)) {
-      console.warn(`wrapRegistryTools: skipping unknown tool "${name}"`);
+      missing.push(name);
       continue;
     }
     tools[name] = wrapRegistryTool(name, context, options);
+  }
+
+  if (missing.length > 0) {
+    throw new Error(`wrapRegistryTools: missing tools in registry: ${missing.join(', ')}`);
   }
 
   return tools;

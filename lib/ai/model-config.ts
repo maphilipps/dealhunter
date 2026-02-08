@@ -13,10 +13,13 @@
  */
 
 import { createOpenAI, type OpenAIProvider } from '@ai-sdk/openai';
+import * as Sentry from '@sentry/nextjs';
 
 import { db } from '@/lib/db';
 import { aiProviderConfigs, aiModelSlotConfigs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+
+import { fingerprintSecret } from './key-fingerprint';
 
 // Provider types
 export type AIProvider = 'ai-hub' | 'openai' | 'vercel';
@@ -123,7 +126,11 @@ async function loadDBConfig() {
     dbCache = { providers: providerMap, slots: slotMap, loadedAt: now };
     return dbCache;
   } catch (error) {
-    console.warn('[AI Config] Failed to load DB config, falling back to env vars:', error);
+    Sentry.captureException(error, {
+      tags: { component: 'ai-config', op: 'loadDBConfig' },
+      level: 'error',
+    });
+    console.error('[AI Config] Failed to load DB config; using env/defaults.', error);
     return null;
   }
 }
@@ -133,6 +140,30 @@ async function loadDBConfig() {
  */
 export function invalidateModelConfigCache() {
   dbCache = null;
+  providerCache.clear();
+  for (const handler of invalidateHandlers) {
+    try {
+      handler();
+    } catch (error) {
+      Sentry.captureException(error, {
+        tags: { component: 'ai-config', op: 'invalidateModelConfigCache' },
+        level: 'warning',
+      });
+    }
+  }
+}
+
+const invalidateHandlers = new Set<() => void>();
+
+/**
+ * Register a callback to clear related in-memory caches when model/provider configuration changes.
+ *
+ * This avoids import cycles: consumers (e.g. embedding, PDF extraction) register their clearers here,
+ * and the admin UI calls invalidateModelConfigCache() after updates.
+ */
+export function onModelConfigInvalidate(handler: () => void): () => void {
+  invalidateHandlers.add(handler);
+  return () => invalidateHandlers.delete(handler);
 }
 
 // ─── Config Resolution ───────────────────────────────────────────────────────────
@@ -250,7 +281,7 @@ function getProviderInstance(provider: AIProvider): OpenAIProvider {
   const apiKey = dbProvider?.apiKey ?? getEnvApiKey(provider);
   const baseURL = dbProvider?.baseUrl ?? getEnvBaseUrl(provider);
 
-  const cacheKey = `${provider}:${baseURL}:${apiKey?.slice(-4)}`;
+  const cacheKey = `${provider}:${baseURL}:${fingerprintSecret(apiKey)}`;
   if (providerCache.has(cacheKey)) {
     return providerCache.get(cacheKey)!;
   }

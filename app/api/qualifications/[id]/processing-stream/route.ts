@@ -15,6 +15,97 @@ import { REDIS_URL } from '@/lib/streaming/redis-config';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+type MessageListener = (message: string) => void;
+type ErrorListener = (error: unknown) => void;
+
+type ChannelState = {
+  listeners: Set<MessageListener>;
+  subscribePromise: Promise<void> | null;
+};
+
+let sharedSubscriber: Redis | null = null;
+const channelStates = new Map<string, ChannelState>();
+const errorListeners = new Set<ErrorListener>();
+
+function getOrCreateSubscriber(): Redis {
+  if (sharedSubscriber) return sharedSubscriber;
+
+  const subscriber = new Redis(REDIS_URL, {
+    maxRetriesPerRequest: 3,
+    enableReadyCheck: false,
+  });
+
+  subscriber.on('message', (channel: string, message: string) => {
+    const state = channelStates.get(channel);
+    if (!state) return;
+    for (const listener of state.listeners) {
+      try {
+        listener(message);
+      } catch {
+        /* isolate SSE listeners */
+      }
+    }
+  });
+
+  subscriber.on('error', err => {
+    // Fan-out error to all active SSE clients.
+    for (const listener of errorListeners) {
+      try {
+        listener(err);
+      } catch {
+        /* isolate SSE listeners */
+      }
+    }
+  });
+
+  sharedSubscriber = subscriber;
+  return subscriber;
+}
+
+async function ensureSubscribed(channel: string): Promise<void> {
+  const subscriber = getOrCreateSubscriber();
+
+  let state = channelStates.get(channel);
+  if (!state) {
+    state = { listeners: new Set(), subscribePromise: null };
+    channelStates.set(channel, state);
+  }
+
+  if (!state.subscribePromise) {
+    state.subscribePromise = subscriber.subscribe(channel).then(() => undefined);
+  }
+
+  await state.subscribePromise;
+}
+
+async function addChannelListener(
+  channel: string,
+  onMessage: MessageListener,
+  onError: ErrorListener
+): Promise<() => Promise<void>> {
+  await ensureSubscribed(channel);
+
+  const state = channelStates.get(channel);
+  if (!state) throw new Error(`Missing channel state after subscribe: ${channel}`);
+
+  state.listeners.add(onMessage);
+  errorListeners.add(onError);
+
+  return async () => {
+    state.listeners.delete(onMessage);
+    errorListeners.delete(onError);
+
+    if (state.listeners.size === 0) {
+      channelStates.delete(channel);
+      try {
+        await sharedSubscriber?.unsubscribe(channel);
+      } catch (err) {
+        console.warn('[QualificationStream] Unsubscribe error:', err);
+      }
+    }
+  };
+}
+
 /**
  * GET /api/qualifications/[id]/processing-stream
  *
@@ -114,19 +205,7 @@ export async function GET(
     }
 
     // For active jobs: replay stored events, then stream live events via Redis pub/sub
-    const subscriber = new Redis(REDIS_URL, {
-      maxRetriesPerRequest: 3,
-      enableReadyCheck: false,
-    });
-
-    const cleanupSubscriber = async () => {
-      try {
-        await subscriber.unsubscribe();
-        await subscriber.quit();
-      } catch (err) {
-        console.warn('[QualificationStream] Subscriber cleanup error:', err);
-      }
-    };
+    let cleanupListener: (() => Promise<void>) | null = null;
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -145,7 +224,7 @@ export async function GET(
         // Cleanup on client disconnect
         request.signal.addEventListener('abort', () => {
           clearInterval(heartbeat);
-          void cleanupSubscriber();
+          void cleanupListener?.();
           try {
             controller.close();
           } catch (err) {
@@ -153,7 +232,17 @@ export async function GET(
           }
         });
 
-        subscriber.on('error', err => {
+        const onRedisMessage: MessageListener = (message: string) => {
+          try {
+            controller.enqueue(`data: ${message}\n\n`);
+          } catch (err) {
+            console.warn('[QualificationStream] Enqueue message failed:', err);
+            clearInterval(heartbeat);
+            void cleanupListener?.();
+          }
+        };
+
+        const onRedisError: ErrorListener = err => {
           console.error('[QualificationStream] Redis subscriber error:', err);
           clearInterval(heartbeat);
           try {
@@ -166,26 +255,16 @@ export async function GET(
           } catch {
             /* stream may be closed */
           }
-          void cleanupSubscriber();
+          void cleanupListener?.();
           try {
             controller.close();
-          } catch (err) {
-            console.warn('[QualificationStream] Close after error failed:', err);
+          } catch (closeErr) {
+            console.warn('[QualificationStream] Close after error failed:', closeErr);
           }
-        });
-
-        subscriber.on('message', (_ch: string, message: string) => {
-          try {
-            controller.enqueue(`data: ${message}\n\n`);
-          } catch (err) {
-            console.warn('[QualificationStream] Enqueue message failed:', err);
-            clearInterval(heartbeat);
-            void cleanupSubscriber();
-          }
-        });
+        };
 
         // Subscribe before replaying to avoid missing events
-        await subscriber.subscribe(channel);
+        cleanupListener = await addChannelListener(channel, onRedisMessage, onRedisError);
 
         // Send connected event
         controller.enqueue(`data: ${JSON.stringify({ type: 'connected', qualificationId })}\n\n`);
@@ -202,7 +281,9 @@ export async function GET(
         }
       },
       cancel() {
-        void cleanupSubscriber();
+        // The abort handler covers normal disconnects, but cancel can happen in other cases.
+        // Best-effort cleanup: per-stream listener removal.
+        void cleanupListener?.();
       },
     });
 

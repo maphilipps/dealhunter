@@ -1,5 +1,6 @@
 'use server';
 
+import { isIP } from 'net';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
@@ -18,6 +19,67 @@ const DEFAULT_BASE_URLS: Record<string, string> = {
   'ai-hub': process.env.AI_HUB_BASE_URL || 'https://adesso-ai-hub.3asabc.de/v1',
   openai: 'https://api.openai.com/v1',
 };
+
+function isPrivateIPv4(ip: string): boolean {
+  const parts = ip.split('.').map(n => Number(n));
+  if (parts.length !== 4 || parts.some(n => Number.isNaN(n) || n < 0 || n > 255)) return false;
+  const [a, b] = parts;
+  if (a === 10) return true;
+  if (a === 127) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  return false;
+}
+
+function isPrivateIPv6(ip: string): boolean {
+  const v = ip.toLowerCase();
+  if (v === '::1') return true;
+  if (v.startsWith('fc') || v.startsWith('fd')) return true; // unique local
+  if (v.startsWith('fe80:')) return true; // link-local
+  return false;
+}
+
+function validateProviderBaseUrl(providerKey: string, rawBaseUrl: string): URL | null {
+  let url: URL;
+  try {
+    url = new URL(rawBaseUrl);
+  } catch {
+    return null;
+  }
+
+  if (url.username || url.password) return null;
+  if (url.protocol !== 'https:') return null;
+
+  const hostname = url.hostname.toLowerCase();
+
+  // Allow localhost only in non-production environments (developer convenience).
+  if (hostname === 'localhost' || hostname.endsWith('.localhost')) {
+    if (process.env.NODE_ENV !== 'production') return url;
+    return null;
+  }
+
+  const ipVersion = isIP(hostname);
+  if (ipVersion === 4 && isPrivateIPv4(hostname)) return null;
+  if (ipVersion === 6 && isPrivateIPv6(hostname)) return null;
+  if (ipVersion !== 0) return null; // reject IP literals entirely (even public)
+
+  if (providerKey === 'openai') {
+    return hostname === 'api.openai.com' ? url : null;
+  }
+
+  if (providerKey === 'ai-hub') {
+    return hostname.endsWith('.3asabc.de') ? url : null;
+  }
+
+  return null;
+}
+
+function normalizeBaseUrlForJoin(url: URL): string {
+  // URL resolution treats a base without trailing slash as a "file".
+  // Ensure we join endpoints like /v1/models (not /models).
+  return url.toString().replace(/\/?$/, '/');
+}
 
 export type AIProviderForUI = {
   id: string;
@@ -234,7 +296,12 @@ export async function fetchProviderModels(
     const baseUrl = provider.baseUrl || DEFAULT_BASE_URLS[provider.providerKey];
     if (!baseUrl) return { success: false, error: 'Keine Base URL konfiguriert' };
 
-    const res = await fetch(`${baseUrl}/models`, {
+    const validatedBase = validateProviderBaseUrl(provider.providerKey, baseUrl);
+    if (!validatedBase) return { success: false, error: 'Ungültige Base URL (Sicherheitsprüfung)' };
+
+    const modelsUrl = new URL('models', normalizeBaseUrlForJoin(validatedBase)).toString();
+
+    const res = await fetch(modelsUrl, {
       headers: { Authorization: `Bearer ${provider.apiKey}` },
       signal: AbortSignal.timeout(10_000),
     });

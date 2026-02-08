@@ -15,9 +15,15 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { PDFDocument } from 'pdf-lib';
 
-import { getProviderCredentials, warmModelConfigCache } from '@/lib/ai/model-config';
+import {
+  getProviderCredentials,
+  onModelConfigInvalidate,
+  warmModelConfigCache,
+} from '@/lib/ai/model-config';
+import { fingerprintSecret } from '@/lib/ai/key-fingerprint';
 
 const pdfProviderCache = new Map<string, ReturnType<typeof createOpenAI>>();
+onModelConfigInvalidate(() => pdfProviderCache.clear());
 
 async function getPdfExtractionModel() {
   // Ensure DB config is loaded
@@ -36,7 +42,7 @@ async function getPdfExtractionModel() {
     );
   }
 
-  const cacheKey = `ai-hub:${credentials.baseURL}`;
+  const cacheKey = `ai-hub:${credentials.baseURL}:${fingerprintSecret(credentials.apiKey)}`;
   if (!pdfProviderCache.has(cacheKey)) {
     pdfProviderCache.set(
       cacheKey,

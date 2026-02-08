@@ -1,8 +1,9 @@
 import type { PhaseContext, PhaseResult } from '../types';
 import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
-import { runPhaseAgent, formatPreviousResults } from './shared';
+import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
-const SYSTEM_PROMPT = `Du bist ein Barrierefreiheit-Experte (WCAG 2.1/2.2). Analysiere die Website auf Barrierefreiheit:
+const SYSTEM_PROMPT =
+  `Du bist ein Barrierefreiheit-Experte (WCAG 2.1/2.2). Analysiere die Website auf Barrierefreiheit:
 - WCAG-Konformitätslevel (A, AA, AAA)
 - Kritische Violations (fehlende Alt-Texte, Kontrast, Tastaturbedienbarkeit)
 - ARIA-Nutzung und Landmarks
@@ -10,21 +11,11 @@ const SYSTEM_PROMPT = `Du bist ein Barrierefreiheit-Experte (WCAG 2.1/2.2). Anal
 - Fokus-Management
 - Schätzung der Behebungsaufwände
 
-Antworte als JSON:
-\`\`\`json
-{
-  "content": {
-    "estimatedLevel": "A|AA|AAA|fail",
-    "score": 0,
-    "issues": { "critical": 0, "serious": 0, "moderate": 0, "minor": 0 },
-    "checks": [{ "name": "...", "passed": true }],
-    "estimatedFixHours": 0,
-    "recommendations": ["..."]
-  },
-  "confidence": 60,
-  "sources": ["WCAG-Analyse"]
-}
-\`\`\``;
+Output: JSON gemaess Schema:
+- content.summary
+- content.findings (3-7) mit WCAG Bezug (Kriterium) wo moeglich
+- content.estimatedLevel/score/issues/checks/estimatedFixHours/recommendations als strukturierte Felder
+- confidence, sources optional` as const;
 
 export async function runAccessibilityPhase(
   context: PhaseContext,
@@ -34,7 +25,7 @@ export async function runAccessibilityPhase(
     sectionId: 'ps-accessibility',
     label: 'Barrierefreiheit',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Website: ${context.websiteUrl}\n\nVorherige Ergebnisse:\n${formatPreviousResults(context)}`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Barrierefreiheit\n- Priorisiere Findings nach Risiko/Impact.\n- Wenn PreQual public procurement/Compliance relevant: besonders streng und konkret sein.`,
     context,
     emit,
   });

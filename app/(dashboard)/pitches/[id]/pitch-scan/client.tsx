@@ -167,8 +167,7 @@ export function ScanHubClient({
       {/* Status: completed run summary */}
       {!isScanning && runStatus === 'completed' && completedSections.length > 0 && (
         <p className="text-sm text-muted-foreground">
-          {completedSections.length} von 13 Sektionen abgeschlossen. Klicke auf eine Sektion für
-          Details.
+          {completedSections.length} Sektionen abgeschlossen. Klicke auf eine Sektion fuer Details.
         </p>
       )}
     </div>

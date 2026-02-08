@@ -1,8 +1,9 @@
 import type { PhaseContext, PhaseResult } from '../types';
 import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
-import { runPhaseAgent, formatPreviousResults } from './shared';
+import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
-const SYSTEM_PROMPT = `Du bist ein technischer Dokumentations-Experte. Erstelle eine Zusammenfassung aller Pitch-Scan-Ergebnisse als Management Summary:
+const SYSTEM_PROMPT =
+  `Du bist ein technischer Dokumentations-Experte. Erstelle eine Zusammenfassung aller Pitch-Scan-Ergebnisse als Management Summary:
 
 Die Zusammenfassung soll enthalten:
 1. Executive Summary (2-3 Sätze)
@@ -13,34 +14,11 @@ Die Zusammenfassung soll enthalten:
 6. Top-3 Chancen
 7. Empfohlene nächste Schritte
 
-Antworte als JSON:
-\`\`\`json
-{
-  "content": {
-    "executiveSummary": "...",
-    "currentState": {
-      "techStack": "...",
-      "contentVolume": "...",
-      "performance": "...",
-      "accessibility": "..."
-    },
-    "cmsRecommendation": {
-      "recommended": "...",
-      "reasoning": "..."
-    },
-    "estimation": {
-      "range": "... - ... PT",
-      "duration": "... Monate",
-      "teamSize": 0
-    },
-    "topRisks": [{ "risk": "...", "mitigation": "..." }],
-    "topOpportunities": ["..."],
-    "nextSteps": ["..."]
-  },
-  "confidence": 75,
-  "sources": ["Zusammenfassung aller Analysen"]
-}
-\`\`\``;
+Output: JSON gemaess Schema:
+- content.summary (Executive Summary, 1-2 Saetze)
+- content.findings (3-7) (Top Risiken/Chancen/Next steps als Findings)
+- content.executiveSummary/currentState/cmsRecommendation/estimation/topRisks/topOpportunities/nextSteps als strukturierte Felder
+- confidence, sources optional` as const;
 
 export async function runDocumentationPhase(
   context: PhaseContext,
@@ -50,7 +28,7 @@ export async function runDocumentationPhase(
     sectionId: 'ps-documentation',
     label: 'Dokumentation',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Website: ${context.websiteUrl}\n\nAlle Ergebnisse:\n${formatPreviousResults(context)}`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Dokumentation (Management Summary)\n- Zusammenfassung muss auf PreQual Anforderungen zugeschnitten sein.\n- Keine Widersprueche zur Aufwandsschaetzung/CMS Empfehlung.`,
     context,
     emit,
   });

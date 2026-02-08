@@ -1,8 +1,8 @@
 import type { PhaseContext, PhaseResult } from '../types';
 import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
-import { runPhaseAgent, formatPreviousResults } from './shared';
+import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
-const SYSTEM_PROMPT = `Du bist ein Website-Analyse-Experte. Analysiere die gegebene Website-URL und erkenne:
+const SYSTEM_PROMPT = `Du bist ein Website-Analyse-Experte. Analysiere die Website-URL und erkenne:
 - CMS (WordPress, Drupal, Typo3, Custom, etc.)
 - Framework (React, Vue, Angular, etc.)
 - Backend-Technologie (PHP, Node.js, .NET, Java, etc.)
@@ -10,23 +10,16 @@ const SYSTEM_PROMPT = `Du bist ein Website-Analyse-Experte. Analysiere die gegeb
 - CDN (Cloudflare, Akamai, etc.)
 - Weitere Libraries und Tools
 
-Antworte ausschließlich als JSON mit folgender Struktur:
-\`\`\`json
-{
-  "content": {
-    "cms": { "name": "...", "version": "...", "confidence": 0.9 },
-    "framework": { "name": "...", "version": "...", "confidence": 0.8 },
-    "backend": { "name": "...", "confidence": 0.7 },
-    "hosting": { "name": "...", "confidence": 0.6 },
-    "cdn": { "name": "...", "confidence": 0.5 },
-    "libraries": [{ "name": "...", "version": "...", "category": "..." }],
-    "server": { "name": "..." },
-    "buildTools": [{ "name": "..." }]
-  },
-  "confidence": 75,
-  "sources": ["URL-Analyse", "HTTP-Header-Analyse"]
-}
-\`\`\``;
+Wichtig:
+- Wenn du etwas nicht sicher ableiten kannst, setze es auf null und erklaere es kurz.
+- Keine generischen Floskeln. Nenne konkrete Indikatoren (Header, URLs, Asset-Namen).
+
+Output: JSON gemaess Schema:
+- content.summary: 1-2 Saetze Gesamtueberblick
+- content.findings: 3-7 konkrete Findings (problem/relevance/recommendation)
+- content.techStack: strukturierte Erkennung (cms/framework/backend/hosting/cdn/libraries/...)
+- confidence: 0-100
+- sources: optional` as const;
 
 export async function runDiscoveryPhase(
   context: PhaseContext,
@@ -36,7 +29,7 @@ export async function runDiscoveryPhase(
     sectionId: 'ps-discovery',
     label: 'Discovery & Tech-Stack',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Analysiere die Website: ${context.websiteUrl}\n\nZiel-CMS-IDs für Vergleich: ${context.targetCmsIds.join(', ') || 'keine'}`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Discovery & Tech-Stack\n- Erkenne moeglichst konkret die aktuelle technische Basis.\n- Gib 3-7 Findings mit Kunden-Relevanz (aus PreQual Kontext ableiten, falls vorhanden).\n- Ziel-CMS-IDs (nur als Kontext, nicht als Voraussetzung): ${context.targetCmsIds.join(', ') || 'keine'}`,
     context,
     emit,
   });

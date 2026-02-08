@@ -1,8 +1,9 @@
 import type { PhaseContext, PhaseResult } from '../types';
 import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
-import { runPhaseAgent, formatPreviousResults } from './shared';
+import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
-const SYSTEM_PROMPT = `Du bist ein Integrations-Experte. Erkenne alle externen Services und APIs der Website:
+const SYSTEM_PROMPT =
+  `Du bist ein Integrations-Experte. Erkenne alle externen Services und APIs der Website:
 - Analytics (Google Analytics, Matomo, etc.)
 - Marketing (HubSpot, Salesforce, Marketo)
 - Payment (Stripe, PayPal, Klarna)
@@ -14,20 +15,11 @@ const SYSTEM_PROMPT = `Du bist ein Integrations-Experte. Erkenne alle externen S
 - CDN und Asset-Management
 - PIM/DAM-Systeme
 
-Antworte als JSON:
-\`\`\`json
-{
-  "content": {
-    "integrations": [
-      { "name": "...", "category": "analytics|marketing|payment|crm|erp|social|support|newsletter|cdn|pim", "confidence": 0.8, "migrationImpact": "low|medium|high" }
-    ],
-    "apiEndpoints": ["..."],
-    "migrationConsiderations": ["..."]
-  },
-  "confidence": 68,
-  "sources": ["Script-Analyse", "Network-Analyse"]
-}
-\`\`\``;
+Output: JSON gemaess Schema:
+- content.summary
+- content.findings (3-7) mit konkreten Tools + Migrations-Impact
+- content.integrations/apiEndpoints/migrationConsiderations als strukturierte Felder
+- confidence, sources optional` as const;
 
 export async function runIntegrationsPhase(
   context: PhaseContext,
@@ -37,7 +29,7 @@ export async function runIntegrationsPhase(
     sectionId: 'ps-integrations',
     label: 'Integrationen',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Website: ${context.websiteUrl}\n\nVorherige Ergebnisse:\n${formatPreviousResults(context)}`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Integrationen\n- Nenne konkrete Integrationen (Vendor/Produkt) und wieso sie relevant sind.\n- Empfehlungen: konkrete Migrations-/Ablauf-Strategie.`,
     context,
     emit,
   });

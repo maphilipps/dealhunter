@@ -37,6 +37,36 @@ async function fetchJson(url: string): Promise<SectionApiResponse> {
   return data;
 }
 
+type Finding = {
+  problem: string;
+  relevance: string;
+  recommendation: string;
+  estimatedImpact?: 'high' | 'medium' | 'low';
+};
+
+type StructuredPhaseContent = {
+  summary: string;
+  findings: Finding[];
+  // Phase-specific structured fields are allowed (passthrough schema).
+  [key: string]: unknown;
+};
+
+function isStructuredPhaseContent(content: unknown): content is StructuredPhaseContent {
+  if (!content || typeof content !== 'object') return false;
+  const c = content as Record<string, unknown>;
+  if (typeof c.summary !== 'string' || c.summary.length === 0) return false;
+  if (!Array.isArray(c.findings) || c.findings.length === 0) return false;
+  return c.findings.every(f => {
+    if (!f || typeof f !== 'object') return false;
+    const ff = f as Record<string, unknown>;
+    return (
+      typeof ff.problem === 'string' &&
+      typeof ff.relevance === 'string' &&
+      typeof ff.recommendation === 'string'
+    );
+  });
+}
+
 export interface ScanResultCardProps {
   pitchId: string;
   sectionId: string;
@@ -107,10 +137,8 @@ export function ScanResultCard({
     }
 
     const content = data.section.content;
-    const asMarkdown =
-      typeof content === 'string'
-        ? content
-        : `\`\`\`json\n${JSON.stringify(content, null, 2)}\n\`\`\``;
+    const asMarkdown = typeof content === 'string' ? content : null;
+    const asStructured = isStructuredPhaseContent(content) ? content : null;
 
     return (
       <div className="space-y-3">
@@ -122,9 +150,47 @@ export function ScanResultCard({
             </Link>
           </Button>
         </div>
-        <div className="prose prose-sm dark:prose-invert max-w-none">
-          <MessageResponse>{asMarkdown}</MessageResponse>
-        </div>
+        {asStructured ? (
+          <div className="space-y-3">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <MessageResponse>{asStructured.summary}</MessageResponse>
+            </div>
+            <div className="space-y-2">
+              {asStructured.findings.map((f, idx) => (
+                <div key={idx} className="rounded-md border bg-card/50 p-3">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium">Finding {idx + 1}</p>
+                    {f.estimatedImpact && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        Impact: {f.estimatedImpact}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="mt-2 space-y-2 text-sm">
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Problem</p>
+                      <p>{f.problem}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Relevanz</p>
+                      <p>{f.relevance}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Empfehlung</p>
+                      <p>{f.recommendation}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <MessageResponse>
+              {asMarkdown ?? `\`\`\`json\n${JSON.stringify(content, null, 2)}\n\`\`\``}
+            </MessageResponse>
+          </div>
+        )}
       </div>
     );
   }, [open, status, errorMessage, isLoading, error, data, pitchId, sectionId]);
@@ -137,42 +203,44 @@ export function ScanResultCard({
     ) : null;
 
   return (
-    <Card className={cn('border-border', status === 'failed' && 'border-destructive/30')}>
-      <Collapsible open={open} onOpenChange={setOpen}>
-        <div className="px-4 py-3">
-          <div className="flex items-center gap-2">
-            {status === 'failed' ? (
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-            ) : open ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
-            <div className="min-w-0">
-              <p className="text-sm font-medium leading-tight truncate">{label}</p>
-              <p className="text-xs text-muted-foreground truncate">{sectionId}</p>
+    <div id={`section-${sectionId}`} className="scroll-mt-24">
+      <Card className={cn('border-border', status === 'failed' && 'border-destructive/30')}>
+        <Collapsible open={open} onOpenChange={setOpen}>
+          <div className="px-4 py-3">
+            <div className="flex items-center gap-2">
+              {status === 'failed' ? (
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+              ) : open ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-medium leading-tight truncate">{label}</p>
+                <p className="text-xs text-muted-foreground truncate">{sectionId}</p>
+              </div>
+              {badge}
             </div>
-            {badge}
+            <div className="mt-2 flex items-center gap-2">
+              <Badge
+                variant={status === 'failed' ? 'destructive' : 'outline'}
+                className="text-[10px]"
+              >
+                {status === 'failed' ? 'Fehlgeschlagen' : 'Ergebnis'}
+              </Badge>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="ml-auto h-7 px-2">
+                  {open ? 'Schließen' : 'Öffnen'}
+                </Button>
+              </CollapsibleTrigger>
+            </div>
           </div>
-          <div className="mt-2 flex items-center gap-2">
-            <Badge
-              variant={status === 'failed' ? 'destructive' : 'outline'}
-              className="text-[10px]"
-            >
-              {status === 'failed' ? 'Fehlgeschlagen' : 'Ergebnis'}
-            </Badge>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="ml-auto h-7 px-2">
-                {open ? 'Schließen' : 'Öffnen'}
-              </Button>
-            </CollapsibleTrigger>
-          </div>
-        </div>
 
-        <CollapsibleContent>
-          <div className="border-t px-4 py-3">{body}</div>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
+          <CollapsibleContent>
+            <div className="border-t px-4 py-3">{body}</div>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
+    </div>
   );
 }

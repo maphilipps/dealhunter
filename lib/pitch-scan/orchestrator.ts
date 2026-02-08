@@ -13,6 +13,7 @@ import { PHASE_AGENT_REGISTRY } from './phases';
 import { createAnalysisPlan, createFullPlan, type PlanningContext } from './planner';
 import type { PitchScanSectionId } from './section-ids';
 import type { PhaseContext, PhaseResult, PitchScanCheckpoint, PhasePlan } from './types';
+import { loadPreQualContext } from './phases/shared';
 
 import { db } from '@/lib/db';
 import { dealEmbeddings, auditScanRuns } from '@/lib/db/schema';
@@ -53,6 +54,8 @@ export async function runPitchScanOrchestrator(
         : 'Starte Pitch Scan Analyse...',
     },
   });
+
+  const preQualContext = await loadPreQualContext(pitchId);
 
   // Emit a static plan summary for chat-first UIs (legacy orchestrator runs all phases).
   await publishToChannel(runId, {
@@ -113,6 +116,7 @@ export async function runPitchScanOrchestrator(
             previousResults: Object.fromEntries(
               Object.entries(phaseResults).map(([k, v]) => [k, v.content])
             ),
+            preQualContext,
             targetCmsIds,
           };
 
@@ -387,6 +391,16 @@ export async function runDynamicOrchestrator(
     plan = await createAnalysisPlan(planningContext);
   }
 
+  const preQualContext = await loadPreQualContext(pitchId);
+
+  // Initialize (or resume) execution state as early as possible so we can persist the plan
+  // for server-rendered navigation (sidebar) while the scan is running.
+  const completedPhases = new Set<string>(checkpoint?.completedPhases ?? []);
+  const failedPhases = new Set<string>();
+  const phaseResults: Record<string, PhaseResult> = checkpoint?.phaseResults ?? {};
+
+  await saveDynamicCheckpoint(runId, plan, completedPhases, phaseResults);
+
   await publishToChannel(runId, {
     type: 'plan_created',
     enabledPhases: plan.enabledPhases.map(p => {
@@ -404,13 +418,11 @@ export async function runDynamicOrchestrator(
     timestamp: new Date().toISOString(),
   });
 
-  const totalPhases = plan.enabledPhases.length;
-
   emit({
     type: AgentEventType.AGENT_PROGRESS,
     data: {
       agent: 'Dynamic Orchestrator',
-      message: `Plan erstellt: ${totalPhases} Phasen, ${plan.skippedPhases.length} übersprungen`,
+      message: `Plan erstellt: ${plan.enabledPhases.length} Phasen, ${plan.skippedPhases.length} übersprungen`,
     },
   });
 
@@ -436,12 +448,9 @@ export async function runDynamicOrchestrator(
   }));
 
   const allCapabilities = [...enabledCapabilities, ...customCapabilities];
+  const totalPhases = allCapabilities.length;
 
   // ─── Step 3: DAG execution ──────────────────────────────────────────────────
-
-  const completedPhases = new Set<string>(checkpoint?.completedPhases ?? []);
-  const failedPhases = new Set<string>();
-  const phaseResults: Record<string, PhaseResult> = checkpoint?.phaseResults ?? {};
 
   await updateRunStatus(runId, 'running', {
     progress: Math.round((completedPhases.size / totalPhases) * 100),
@@ -483,6 +492,7 @@ export async function runDynamicOrchestrator(
           previousResults: Object.fromEntries(
             Object.entries(phaseResults).map(([k, v]) => [k, v.content])
           ),
+          preQualContext,
           targetCmsIds,
         };
 

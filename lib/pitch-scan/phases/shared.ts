@@ -3,26 +3,40 @@
 import { z } from 'zod';
 
 import type { PhaseContext, PhaseResult } from '../types';
-import type { PitchScanSectionId } from '../section-ids';
-import { getSectionLabel } from '../section-ids';
 import { PHASE_AGENT_CONFIG } from '../constants';
 import { generateWithFallback } from '@/lib/ai/config';
+import { db } from '@/lib/db';
+import { dealEmbeddings, pitches } from '@/lib/db/schema';
 import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
 import { AgentEventType } from '@/lib/streaming/in-process/event-types';
+import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 
 /**
  * Zod schema for phase agent responses.
  * All phase agents return structured JSON with content, confidence, and optional sources.
  * Using generateObject (via generateStructuredOutput) eliminates brittle regex JSON parsing.
  */
-const phaseAgentResponseSchema = z.object({
-  content: z.unknown(),
+const findingSchema = z.object({
+  problem: z.string().min(1),
+  relevance: z.string().min(1),
+  recommendation: z.string().min(1),
+  estimatedImpact: z.enum(['high', 'medium', 'low']).optional(),
+});
+
+export const phaseAgentResponseSchema = z.object({
+  content: z
+    .object({
+      summary: z.string().min(1),
+      findings: z.array(findingSchema).min(3).max(7),
+    })
+    // Allow phase-specific structured fields (e.g. discovery tech stack).
+    .passthrough(),
   confidence: z.number().min(0).max(100),
   sources: z.array(z.string()).optional(),
 });
 
 interface RunPhaseAgentOptions {
-  sectionId: PitchScanSectionId;
+  sectionId: string;
   label: string;
   systemPrompt: string;
   userPrompt: string;
@@ -39,7 +53,10 @@ interface RunPhaseAgentOptions {
  */
 export async function runPhaseAgent(options: RunPhaseAgentOptions): Promise<PhaseResult> {
   const { sectionId, label, systemPrompt, userPrompt, emit } = options;
-  const config = PHASE_AGENT_CONFIG[sectionId];
+  const config = PHASE_AGENT_CONFIG[sectionId as keyof typeof PHASE_AGENT_CONFIG];
+  if (!config) {
+    throw new Error(`Unknown phase config for sectionId="${sectionId}"`);
+  }
 
   emit({
     type: AgentEventType.AGENT_PROGRESS,
@@ -58,7 +75,7 @@ export async function runPhaseAgent(options: RunPhaseAgentOptions): Promise<Phas
 
   const parsed: PhaseResult = {
     sectionId,
-    label: getSectionLabel(sectionId),
+    label,
     content: result.content,
     confidence: result.confidence,
     sources: result.sources,
@@ -90,4 +107,128 @@ export function formatPreviousResults(context: PhaseContext): string {
       return `### ${key}\n${summary}`;
     })
     .join('\n\n');
+}
+
+interface PreQualChunk {
+  agentName: string;
+  chunkType: string;
+  chunkCategory: string | null;
+  confidence: number | null;
+  content: string;
+}
+
+export function formatPreQualContext(
+  chunks: PreQualChunk[],
+  maxChars: number
+): {
+  raw: string;
+  truncated: boolean;
+} {
+  const formatted = chunks
+    .map(c => {
+      const meta = [
+        c.chunkCategory ? `cat=${c.chunkCategory}` : null,
+        c.confidence != null ? `conf=${c.confidence}%` : null,
+      ]
+        .filter(Boolean)
+        .join(', ');
+
+      const header = meta
+        ? `### ${c.agentName} (${c.chunkType}) [${meta}]`
+        : `### ${c.agentName} (${c.chunkType})`;
+      return `${header}\n${c.content}`;
+    })
+    .join('\n\n');
+
+  const truncated = formatted.length > maxChars;
+  const body = truncated ? `${formatted.slice(0, maxChars)}\n\n[...Kontext gekuerzt]` : formatted;
+
+  return {
+    raw: `<prequal_context>\n${body}\n</prequal_context>`,
+    truncated,
+  };
+}
+
+/**
+ * Load PreQualification context from deal_embeddings.
+ * Gracefully degrades (returns undefined) when PreQual is missing or query fails.
+ */
+export async function loadPreQualContext(
+  pitchId: string
+): Promise<PhaseContext['preQualContext'] | undefined> {
+  try {
+    const [pitch] = await db
+      .select({ preQualificationId: pitches.preQualificationId })
+      .from(pitches)
+      .where(eq(pitches.id, pitchId))
+      .limit(1);
+
+    if (!pitch?.preQualificationId) return undefined;
+
+    const chunks = await db
+      .select({
+        agentName: dealEmbeddings.agentName,
+        chunkType: dealEmbeddings.chunkType,
+        chunkCategory: dealEmbeddings.chunkCategory,
+        confidence: dealEmbeddings.confidence,
+        content: dealEmbeddings.content,
+      })
+      .from(dealEmbeddings)
+      .where(
+        and(
+          eq(dealEmbeddings.preQualificationId, pitch.preQualificationId),
+          inArray(dealEmbeddings.chunkCategory, [
+            'fact',
+            'recommendation',
+            'risk',
+            'estimate',
+            'elaboration',
+          ]),
+          gte(dealEmbeddings.confidence, 50)
+        )
+      )
+      .orderBy(desc(dealEmbeddings.confidence))
+      .limit(15);
+
+    if (chunks.length === 0) return undefined;
+
+    const MAX_CONTEXT_CHARS = 8000;
+    const { raw, truncated } = formatPreQualContext(chunks, MAX_CONTEXT_CHARS);
+
+    return {
+      raw,
+      metadata: {
+        preQualificationId: pitch.preQualificationId,
+        chunkCount: chunks.length,
+        truncated,
+      },
+    };
+  } catch (error) {
+    console.error(`[Pitch Scan] Failed to load PreQual context for pitch ${pitchId}:`, error);
+    return undefined;
+  }
+}
+
+/**
+ * Build a common user prompt that includes website, PreQual context, and previous results.
+ */
+export function buildBaseUserPrompt(context: PhaseContext): string {
+  const parts: string[] = [];
+
+  parts.push(`# Website\n${context.websiteUrl || '(keine URL)'}\n`);
+
+  if (context.preQualContext) {
+    parts.push(`# Kontext aus Pre-Qualification\n${context.preQualContext.raw}`);
+    if (context.preQualContext.metadata.truncated) {
+      parts.push(`*(Hinweis: Kontext wurde gekuerzt)*`);
+    }
+  } else {
+    parts.push(
+      `# Kontext aus Pre-Qualification\n*(Kein PreQual-Kontext verfuegbar. Bitte nutze Best-Effort und mache Annahmen explizit.)*`
+    );
+  }
+
+  parts.push(`# Vorherige Analyse-Ergebnisse\n${formatPreviousResults(context)}`);
+
+  return parts.join('\n\n');
 }

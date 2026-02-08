@@ -1,8 +1,9 @@
 import type { PhaseContext, PhaseResult } from '../types';
 import type { EventEmitter } from '@/lib/streaming/in-process/event-emitter';
-import { runPhaseAgent, formatPreviousResults } from './shared';
+import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
-const SYSTEM_PROMPT = `Du bist ein Drupal-Architektur-Experte. Falls Drupal als CMS empfohlen wurde, entwirf eine Drupal-Architektur:
+const SYSTEM_PROMPT =
+  `Du bist ein Drupal-Architektur-Experte. Falls Drupal als CMS empfohlen wurde, entwirf eine Drupal-Architektur:
 - Content-Typen und Felder
 - Taxonomien und Vokabulare
 - Views und Displays
@@ -14,29 +15,11 @@ const SYSTEM_PROMPT = `Du bist ein Drupal-Architektur-Experte. Falls Drupal als 
 
 Falls Drupal NICHT empfohlen wurde, erstelle eine generische CMS-Architektur-Empfehlung.
 
-Antworte als JSON:
-\`\`\`json
-{
-  "content": {
-    "isDrupalRecommended": true,
-    "architecture": {
-      "contentTypes": [{ "name": "...", "fields": ["..."], "bundles": ["..."] }],
-      "taxonomies": [{ "name": "...", "purpose": "..." }],
-      "views": [{ "name": "...", "purpose": "...", "displayMode": "..." }],
-      "modules": {
-        "contributed": ["..."],
-        "custom": [{ "name": "...", "purpose": "..." }]
-      },
-      "theme": { "approach": "component-library|traditional", "components": ["..."] },
-      "layoutStrategy": "paragraphs|layout-builder|hybrid"
-    },
-    "estimatedCustomDevelopment": 0,
-    "recommendations": ["..."]
-  },
-  "confidence": 70,
-  "sources": ["Drupal-Architektur-Entwurf"]
-}
-\`\`\``;
+Output: JSON gemaess Schema:
+- content.summary
+- content.findings (3-7)
+- content.isDrupalRecommended + content.architecture + estimatedCustomDevelopment + recommendations
+- confidence, sources optional` as const;
 
 export async function runDrupalArchitecturePhase(
   context: PhaseContext,
@@ -46,7 +29,7 @@ export async function runDrupalArchitecturePhase(
     sectionId: 'ps-drupal-architecture',
     label: 'Drupal-Architektur',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Website: ${context.websiteUrl}\n\nVorherige Ergebnisse:\n${formatPreviousResults(context)}`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Drupal-Architektur\n- Wenn Drupal nicht empfohlen: gib trotzdem eine saubere, generische CMS-Architektur-Option.\n- Make decisions explicit: contributed vs custom, layout strategy, multilingual, etc.`,
     context,
     emit,
   });

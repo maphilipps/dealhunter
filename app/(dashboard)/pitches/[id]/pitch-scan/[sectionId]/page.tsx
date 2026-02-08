@@ -10,7 +10,36 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/lib/db';
 import { dealEmbeddings, pitches } from '@/lib/db/schema';
-import { getSectionLabel, isBuiltInSection } from '@/lib/pitch-scan/section-ids';
+import { getSectionLabel } from '@/lib/pitch-scan/section-ids';
+
+type Finding = {
+  problem: string;
+  relevance: string;
+  recommendation: string;
+  estimatedImpact?: 'high' | 'medium' | 'low';
+};
+
+type StructuredPhaseContent = {
+  summary: string;
+  findings: Finding[];
+  [key: string]: unknown;
+};
+
+function isStructuredPhaseContent(content: unknown): content is StructuredPhaseContent {
+  if (!content || typeof content !== 'object') return false;
+  const c = content as Record<string, unknown>;
+  if (typeof c.summary !== 'string' || c.summary.length === 0) return false;
+  if (!Array.isArray(c.findings) || c.findings.length === 0) return false;
+  return c.findings.every(f => {
+    if (!f || typeof f !== 'object') return false;
+    const ff = f as Record<string, unknown>;
+    return (
+      typeof ff.problem === 'string' &&
+      typeof ff.relevance === 'string' &&
+      typeof ff.recommendation === 'string'
+    );
+  });
+}
 
 export default async function SectionDetailPage({
   params,
@@ -18,16 +47,6 @@ export default async function SectionDetailPage({
   params: Promise<{ id: string; sectionId: string }>;
 }) {
   const { id, sectionId } = await params;
-
-  // Validate sectionId - allow both built-in and dynamic sections
-  const isValid = isBuiltInSection(sectionId);
-  // For now, only validate built-in sections. Dynamic sections will be handled later.
-  if (!isValid) {
-    // TODO: Check if it's a valid dynamic section from the checkpoint
-    notFound();
-  }
-
-  const sectionLabel = getSectionLabel(sectionId);
 
   // Verify pitch exists
   const [lead] = await db
@@ -53,10 +72,31 @@ export default async function SectionDetailPage({
     .from(dealEmbeddings)
     .where(and(eq(dealEmbeddings.pitchId, id), eq(dealEmbeddings.agentName, sectionId)));
 
+  if (chunks.length === 0) {
+    notFound();
+  }
+
+  const sectionLabelFromMetadata = (() => {
+    for (const chunk of chunks) {
+      if (!chunk.metadata) continue;
+      try {
+        const meta = JSON.parse(chunk.metadata) as Record<string, unknown>;
+        const label = meta && typeof meta.label === 'string' ? meta.label : null;
+        if (label) return label;
+      } catch {
+        // ignore parse errors
+      }
+    }
+    return null;
+  })();
+
+  const sectionLabel = sectionLabelFromMetadata ?? getSectionLabel(sectionId);
+
   // Try to find a json-render tree in the chunks
   let renderTree: Record<string, unknown> | null = null;
   let confidence: number | null = null;
   let timestamp: Date | null = null;
+  let structuredContent: StructuredPhaseContent | null = null;
 
   for (const chunk of chunks) {
     if (chunk.chunkType === 'json_render' || chunk.chunkType === 'json-render') {
@@ -64,6 +104,14 @@ export default async function SectionDetailPage({
         renderTree = JSON.parse(chunk.content) as Record<string, unknown>;
       } catch {
         // ignore parse errors
+      }
+    }
+    if (!structuredContent) {
+      try {
+        const parsed = JSON.parse(chunk.content) as unknown;
+        if (isStructuredPhaseContent(parsed)) structuredContent = parsed;
+      } catch {
+        // ignore
       }
     }
     if (chunk.confidence != null) {
@@ -137,6 +185,42 @@ export default async function SectionDetailPage({
         </Card>
       ) : renderTree ? (
         <SectionRendererClient tree={renderTree} />
+      ) : structuredContent ? (
+        <Card>
+          <CardContent className="pt-6 space-y-6">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <p>{structuredContent.summary}</p>
+            </div>
+            <div className="space-y-3">
+              {structuredContent.findings.map((f, idx) => (
+                <div key={idx} className="rounded-md border bg-card/50 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium">Finding {idx + 1}</p>
+                    {f.estimatedImpact && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        Impact: {f.estimatedImpact}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="mt-3 space-y-3 text-sm">
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Problem</p>
+                      <p>{f.problem}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Relevanz</p>
+                      <p>{f.relevance}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Empfehlung</p>
+                      <p>{f.recommendation}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <Card>
           <CardContent className="pt-6">

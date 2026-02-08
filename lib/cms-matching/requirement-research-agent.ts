@@ -209,9 +209,20 @@ Provide a realistic assessment based on the evidence above.`,
     });
 
     if (output) {
+      let normalizedScore = output.score;
+      let normalizedConfidence = output.confidence;
+
+      // LLM gibt manchmal 0-1 statt 0-100 zurück
+      if (normalizedScore > 0 && normalizedScore <= 1) {
+        normalizedScore = normalizedScore * 100;
+      }
+      if (normalizedConfidence > 0 && normalizedConfidence <= 1) {
+        normalizedConfidence = normalizedConfidence * 100;
+      }
+
       return {
-        score: Math.round(Math.max(0, Math.min(100, output.score))),
-        confidence: Math.round(Math.max(0, Math.min(100, output.confidence))),
+        score: Math.round(Math.max(0, Math.min(100, normalizedScore))),
+        confidence: Math.round(Math.max(0, Math.min(100, normalizedConfidence))),
         supported: output.supported,
         evidence: output.evidence.slice(0, 5),
         notes: output.notes,
@@ -399,7 +410,7 @@ export async function runRequirementResearchAgent(
         confidence: 15,
         supported: false,
         evidence: [],
-        notes: `Keine Web-Ergebnisse für "${input.requirement}" in ${input.cmsName}`,
+        notes: `Recherche ohne Ergebnisse — Feature-Support für "${input.requirement}" in ${input.cmsName} konnte nicht verifiziert werden.`,
       };
     } else {
       analysis = await analyzeResearchResults(allResults, input.cmsName, input.requirement);
@@ -501,12 +512,20 @@ async function saveRequirementResearchToTechnology(
 
     // Parse or initialize features
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const currentFeatures: Record<string, RequirementResearchResult> = tech[0].features
+    const currentFeatures: Record<string, Record<string, unknown>> = tech[0].features
       ? JSON.parse(tech[0].features)
       : {};
 
-    // Add new feature research
-    currentFeatures[requirement] = research;
+    // In FeatureData-Format speichern (UI erwartet sourceUrls statt sources)
+    currentFeatures[requirement] = {
+      score: research.score,
+      confidence: research.confidence,
+      notes: research.notes,
+      supported: research.supported,
+      researchedAt: research.researchedAt,
+      sourceUrls: research.sources,
+      reasoning: research.evidence.join(' | '),
+    };
 
     // Save to DB
     await db
@@ -540,8 +559,27 @@ export async function getCachedRequirementResearch(
 
     if (!tech.length || !tech[0].features) return null;
 
-    const features: Record<string, RequirementResearchResult> = JSON.parse(tech[0].features);
-    return features[requirement] || null;
+    const features: Record<string, Record<string, unknown>> = JSON.parse(tech[0].features);
+    const data = features[requirement];
+    if (!data) return null;
+
+    // Beide Formate unterstützen (legacy: sources, neu: sourceUrls)
+    const sources = (data.sourceUrls ?? data.sources ?? []) as string[];
+
+    return {
+      requirement,
+      cmsId: technologyId,
+      cmsName: (data.cmsName as string) || '',
+      score: (data.score as number) || 50,
+      confidence: (data.confidence as number) || 15,
+      notes: (data.notes as string) || '',
+      supported: (data.supported as boolean) || false,
+      evidence: Array.isArray(data.evidence) ? (data.evidence as string[]) : [],
+      sources,
+      webSearchUsed: (data.webSearchUsed as boolean) ?? true,
+      researchedAt: (data.researchedAt as string) || '',
+      researchDurationMs: (data.researchDurationMs as number) || 0,
+    };
   } catch {
     return null;
   }

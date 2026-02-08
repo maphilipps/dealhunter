@@ -1032,8 +1032,12 @@ export function TechnologyDetail({ technology }: TechnologyDetailProps) {
                     .map(([featureName, data]) => {
                       const isNoData = data.score === 50 && data.confidence <= 40;
                       // Extrahiere Notizen ohne URLs für bessere Lesbarkeit
-                      const notesWithoutUrls =
+                      let notesWithoutUrls =
                         data.notes?.split(' | Quellen:')[0] || data.notes || '';
+                      // Irreführende "Keine Web-Ergebnisse" Notes bei positivem Score bereinigen
+                      if (notesWithoutUrls.startsWith('Keine Web-Ergebnisse') && data.score >= 60) {
+                        notesWithoutUrls = `Feature wird unterstützt (Score: ${data.score}%)`;
+                      }
                       return (
                         <TableRow key={featureName}>
                           <TableCell className="font-medium">{featureName}</TableCell>

@@ -960,7 +960,7 @@ async function researchCMSFeatures(
       return {
         score: 50,
         confidence: 20,
-        notes: `Keine Web-Ergebnisse für "${requirement}" in ${cmsName}`,
+        notes: `Recherche ohne Ergebnisse — Feature-Support für "${requirement}" in ${cmsName} konnte nicht verifiziert werden.`,
         supported: false,
         researchedAt: now,
         supportType: 'unknown',

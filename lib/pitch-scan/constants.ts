@@ -1,14 +1,14 @@
 import {
   PITCH_SCAN_SECTIONS,
-  type PitchScanSectionId,
+  type BuiltInSectionId,
   PITCH_SCAN_SECTION_LABELS,
 } from './section-ids';
 
 export interface PhaseDefinition {
-  id: PitchScanSectionId;
+  id: BuiltInSectionId;
   label: string;
   order: number;
-  dependencies: PitchScanSectionId[];
+  dependencies: BuiltInSectionId[];
   model: 'fast' | 'quality';
 }
 
@@ -170,7 +170,7 @@ const QUALITY_CONFIG: PhaseAgentConfig = {
   maxRetries: 2,
 };
 
-export const PHASE_AGENT_CONFIG: Record<PitchScanSectionId, PhaseAgentConfig> = {
+export const PHASE_AGENT_CONFIG: Record<BuiltInSectionId, PhaseAgentConfig> = {
   'ps-discovery': FAST_CONFIG,
   'ps-content-architecture': QUALITY_CONFIG,
   'ps-features': QUALITY_CONFIG,

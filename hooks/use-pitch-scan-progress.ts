@@ -14,7 +14,7 @@ import {
 
 // ====== Phase Definitions ======
 
-export type PitchScanPhaseId = PitchScanSectionId;
+export type PitchScanPhaseId = string;
 export type PhaseStatus = 'pending' | 'active' | 'completed' | 'failed';
 
 export interface PhaseAgent {
@@ -50,7 +50,7 @@ interface UsePitchScanProgressOptions {
 }
 
 const PHASE_DEFS: ReadonlyArray<{
-  id: PitchScanPhaseId;
+  id: PitchScanSectionId;
   label: string;
   agents: ReadonlyArray<{ name: string; label: string }>;
 }> = PHASE_DEFINITIONS.map(def => ({
@@ -59,9 +59,7 @@ const PHASE_DEFS: ReadonlyArray<{
   agents: [{ name: def.id, label: def.label }],
 }));
 
-const PHASE_ORDER: PitchScanPhaseId[] = PHASE_DEFS.map(p => p.id);
-
-function createDefaultPhases(): PitchScanPhase[] {
+function createLegacyDefaultPhases(): PitchScanPhase[] {
   return PHASE_DEFS.map(def => ({
     id: def.id,
     label: def.label,
@@ -74,46 +72,67 @@ function createDefaultPhases(): PitchScanPhase[] {
   }));
 }
 
+function createPhasesFromPlanPayload(enabledPhases: unknown): PitchScanPhase[] | null {
+  if (!Array.isArray(enabledPhases) || enabledPhases.length === 0) return null;
+
+  const phases: PitchScanPhase[] = [];
+  for (const p of enabledPhases) {
+    if (!p || typeof p !== 'object') continue;
+    const obj = p as Record<string, unknown>;
+    const id = typeof obj.id === 'string' ? obj.id : null;
+    const label = typeof obj.label === 'string' ? obj.label : id;
+    if (!id || !label) continue;
+    phases.push({
+      id,
+      label,
+      status: 'pending',
+      agents: [{ name: id, label, status: 'pending' }],
+    });
+  }
+
+  return phases.length > 0 ? phases : null;
+}
+
 /**
  * Derive phase structure from a DB snapshot. Pure function.
  */
-function applySnapshot(snapshot: SnapshotEvent): PitchScanPhase[] {
-  const phases = createDefaultPhases();
+function applySnapshot(phases: PitchScanPhase[], snapshot: SnapshotEvent): PitchScanPhase[] {
   const { completedAgents, failedAgents, agentConfidences, currentPhase } = snapshot;
 
-  const currentPhaseIdx = currentPhase ? PHASE_ORDER.indexOf(currentPhase as PitchScanPhaseId) : -1;
+  const byId = new Map(phases.map(p => [p.id, p]));
 
-  for (let pi = 0; pi < phases.length; pi++) {
-    const phase = phases[pi];
-
-    // Set individual agent statuses
+  for (const phase of phases) {
     for (const agent of phase.agents) {
       if (completedAgents.includes(agent.name)) {
         agent.status = 'completed';
         agent.confidence = agentConfidences[agent.name];
       } else if (failedAgents.includes(agent.name)) {
         agent.status = 'failed';
-      } else if (pi === currentPhaseIdx) {
-        agent.status = 'active';
+      } else {
+        agent.status = 'pending';
+        agent.confidence = undefined;
       }
     }
 
-    // Derive phase-level status
     const allCompleted = phase.agents.every(a => a.status === 'completed');
     const anyFailed = phase.agents.some(a => a.status === 'failed');
-    const anyActive = phase.agents.some(a => a.status === 'active');
+    if (allCompleted) phase.status = 'completed';
+    else if (anyFailed) phase.status = 'failed';
+    else phase.status = 'pending';
+  }
 
-    if (allCompleted) {
-      phase.status = 'completed';
-    } else if (anyFailed) {
-      phase.status = 'failed';
-    } else if (anyActive || pi === currentPhaseIdx) {
-      phase.status = 'active';
-    } else if (pi < currentPhaseIdx) {
-      // Phases before the current one that aren't fully complete yet
-      phase.status = 'completed';
+  // Mark active phase from snapshot if present.
+  if (currentPhase && byId.has(currentPhase)) {
+    const active = byId.get(currentPhase)!;
+    active.status = 'active';
+    active.agents = active.agents.map(a => ({ ...a, status: 'active' }));
+  } else if (snapshot.status === 'running') {
+    // Otherwise, best-effort: first pending phase is active.
+    const firstPending = phases.find(p => p.status === 'pending');
+    if (firstPending) {
+      firstPending.status = 'active';
+      firstPending.agents = firstPending.agents.map(a => ({ ...a, status: 'active' }));
     }
-    // else: stays 'pending'
   }
 
   return phases;
@@ -128,7 +147,7 @@ export function usePitchScanProgress(
   const [state, setState] = useState<PitchScanProgressState>(() => ({
     status: 'idle',
     progress: 0,
-    phases: createDefaultPhases(),
+    phases: createLegacyDefaultPhases(),
     events: [],
     runId: null,
     currentMessage: null,
@@ -185,6 +204,34 @@ export function usePitchScanProgress(
       const raw = parsed as Record<string, unknown>;
       const rawType = typeof raw.type === 'string' ? raw.type : null;
 
+      // Plan event: update phase list to match enabled phases.
+      if (rawType === PitchScanEventType.PLAN_CREATED) {
+        const nextPhases = createPhasesFromPlanPayload(raw.enabledPhases);
+        if (nextPhases) {
+          setState(prev => {
+            // Preserve any known statuses/confidence by id.
+            const prevById = new Map(prev.phases.map(p => [p.id, p]));
+            const merged = nextPhases.map(p => {
+              const existing = prevById.get(p.id);
+              if (!existing) return p;
+              const agent = existing.agents[0];
+              return {
+                ...p,
+                status: existing.status,
+                agents: [
+                  {
+                    ...p.agents[0],
+                    status: agent?.status ?? p.agents[0].status,
+                    confidence: agent?.confidence,
+                  },
+                ],
+              };
+            });
+            return { ...prev, phases: merged };
+          });
+        }
+      }
+
       // Normalize and store visible events for chat rendering.
       // Snapshot events are handled separately below.
       if (rawType !== 'snapshot') {
@@ -211,21 +258,27 @@ export function usePitchScanProgress(
       // Handle snapshot events (DB hydration)
       if (rawType === 'snapshot') {
         const snapshot = raw as unknown as SnapshotEvent;
-        const phases = applySnapshot(snapshot);
         const isTerminal = ['completed', 'failed'].includes(snapshot.status);
 
-        setState(prev => ({
-          ...prev,
-          progress: snapshot.progress,
-          phases,
-          startedAt: snapshot.startedAt,
-          currentMessage: snapshot.currentStep,
-          ...(isTerminal && {
-            status: snapshot.status === 'completed' ? 'completed' : 'error',
-            isConnected: false,
-            ...(snapshot.status === 'failed' && { error: snapshot.currentStep }),
-          }),
-        }));
+        setState(prev => {
+          const phases = applySnapshot(
+            prev.phases.map(p => ({ ...p, agents: p.agents.map(a => ({ ...a })) })),
+            snapshot
+          );
+
+          return {
+            ...prev,
+            progress: snapshot.progress,
+            phases,
+            startedAt: snapshot.startedAt,
+            currentMessage: snapshot.currentStep,
+            ...(isTerminal && {
+              status: snapshot.status === 'completed' ? 'completed' : 'error',
+              isConnected: false,
+              ...(snapshot.status === 'failed' && { error: snapshot.currentStep }),
+            }),
+          };
+        });
 
         if (snapshot.status === 'completed') {
           disconnect();
@@ -249,8 +302,8 @@ export function usePitchScanProgress(
             phases: prev.phases.map(p => {
               if (p.id !== event.phase) {
                 // Phases before the active one should be completed
-                const phaseIdx = PHASE_ORDER.indexOf(p.id);
-                const activeIdx = PHASE_ORDER.indexOf(event.phase as PitchScanPhaseId);
+                const phaseIdx = prev.phases.findIndex(x => x.id === p.id);
+                const activeIdx = prev.phases.findIndex(x => x.id === (event.phase as string));
                 if (activeIdx >= 0 && phaseIdx < activeIdx && p.status !== 'completed') {
                   return {
                     ...p,

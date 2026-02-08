@@ -1,19 +1,44 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches, users, dealEmbeddings } from '@/lib/db/schema';
-import {
-  PITCH_SCAN_SECTION_LABELS,
-  type PitchScanSectionId,
-  getSectionLabel,
-} from '@/lib/pitch-scan/section-ids';
+import { pitches, users, dealEmbeddings, auditScanRuns } from '@/lib/db/schema';
+import { PITCH_SCAN_SECTION_LABELS, getSectionLabel } from '@/lib/pitch-scan/section-ids';
+import type { PitchScanCheckpoint } from '@/lib/pitch-scan/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type RouteParams = { params: Promise<{ id: string; sectionId: string }> };
+
+function isSafeSectionId(sectionId: string): boolean {
+  if (sectionId.length === 0 || sectionId.length > 80) return false;
+  if (sectionId.includes('/') || sectionId.includes('\\')) return false;
+  // Keep it conservative: ids are expected to be kebab-case.
+  return /^[a-z0-9-]+$/.test(sectionId);
+}
+
+function safeParseCheckpoint(snapshotData: string | null): PitchScanCheckpoint | null {
+  if (!snapshotData) return null;
+  try {
+    return JSON.parse(snapshotData) as PitchScanCheckpoint;
+  } catch {
+    return null;
+  }
+}
+
+function isSectionAllowedByPlan(
+  checkpoint: PitchScanCheckpoint | null,
+  sectionId: string
+): boolean {
+  if (!checkpoint?.plan) return false;
+  if (sectionId === 'ps-overview') return true;
+  const enabled = new Set(checkpoint.plan.enabledPhases.map(p => p.id));
+  if (enabled.has(sectionId)) return true;
+  const custom = new Set((checkpoint.plan.customPhases ?? []).map(p => p.id));
+  return custom.has(sectionId);
+}
 
 /**
  * GET /api/pitches/[id]/pitch-scan/sections/[sectionId]
@@ -29,9 +54,8 @@ export async function GET(_request: NextRequest, context: RouteParams): Promise<
 
     const { id: pitchId, sectionId } = await context.params;
 
-    // Validate sectionId
-    if (!(sectionId in PITCH_SCAN_SECTION_LABELS)) {
-      return NextResponse.json({ error: 'Unbekannte Section ID' }, { status: 400 });
+    if (!isSafeSectionId(sectionId)) {
+      return NextResponse.json({ error: 'Ungueltige Section ID' }, { status: 400 });
     }
 
     // Verify pitch access
@@ -51,6 +75,21 @@ export async function GET(_request: NextRequest, context: RouteParams): Promise<
 
     if (currentUser.role !== 'admin' && currentUser.businessUnitId !== pitch.businessUnitId) {
       return NextResponse.json({ error: 'Kein Zugriff' }, { status: 403 });
+    }
+
+    // Validate sectionId against plan when available. If no plan exists, only allow built-in sections.
+    const [latestRun] = await db
+      .select({ snapshotData: auditScanRuns.snapshotData })
+      .from(auditScanRuns)
+      .where(eq(auditScanRuns.pitchId, pitchId))
+      .orderBy(desc(auditScanRuns.createdAt))
+      .limit(1);
+
+    const checkpoint = safeParseCheckpoint(latestRun?.snapshotData ?? null);
+    const allowedByPlan = isSectionAllowedByPlan(checkpoint, sectionId);
+    const allowedBuiltIn = sectionId in PITCH_SCAN_SECTION_LABELS;
+    if (!allowedByPlan && !allowedBuiltIn) {
+      return NextResponse.json({ error: 'Unbekannte Section ID' }, { status: 400 });
     }
 
     // Fetch section data from deal_embeddings
@@ -84,11 +123,19 @@ export async function GET(_request: NextRequest, context: RouteParams): Promise<
       parsedMetadata = section.metadata;
     }
 
+    const label =
+      parsedMetadata &&
+      typeof parsedMetadata === 'object' &&
+      'label' in (parsedMetadata as Record<string, unknown>) &&
+      typeof (parsedMetadata as Record<string, unknown>).label === 'string'
+        ? ((parsedMetadata as Record<string, unknown>).label as string)
+        : getSectionLabel(sectionId);
+
     return NextResponse.json({
       success: true,
       section: {
         sectionId,
-        label: getSectionLabel(sectionId),
+        label,
         content: parsedContent,
         metadata: parsedMetadata,
         confidence: section.confidence,

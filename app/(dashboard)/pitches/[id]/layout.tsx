@@ -7,6 +7,21 @@ import { LeadSidebarRight } from '@/components/pitches/pitch-sidebar-right';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { pitches, auditScanRuns } from '@/lib/db/schema';
+import type { PitchScanCheckpoint } from '@/lib/pitch-scan/types';
+import {
+  generateNavigation,
+  generatePendingNavigation,
+  type GeneratedNavigation,
+} from '@/lib/pitch-scan/navigation';
+
+function safeParseCheckpoint(snapshotData: string | null): PitchScanCheckpoint | null {
+  if (!snapshotData) return null;
+  try {
+    return JSON.parse(snapshotData) as PitchScanCheckpoint;
+  } catch {
+    return null;
+  }
+}
 
 export default async function LeadDashboardLayout({
   children,
@@ -33,15 +48,39 @@ export default async function LeadDashboardLayout({
     );
   }
 
-  // Check for an active (non-terminal) pipeline run
-  const [activeRun] = await db
-    .select({ id: auditScanRuns.id })
-    .from(auditScanRuns)
-    .where(
-      and(eq(auditScanRuns.pitchId, id), notInArray(auditScanRuns.status, ['completed', 'failed']))
-    )
-    .orderBy(desc(auditScanRuns.createdAt))
-    .limit(1);
+  // Fetch runs in parallel (avoid waterfalls in layout rendering).
+  const [[activeRun], [latestRun]] = await Promise.all([
+    db
+      .select({ id: auditScanRuns.id })
+      .from(auditScanRuns)
+      .where(
+        and(
+          eq(auditScanRuns.pitchId, id),
+          notInArray(auditScanRuns.status, ['completed', 'failed'])
+        )
+      )
+      .orderBy(desc(auditScanRuns.createdAt))
+      .limit(1),
+    db
+      .select({
+        id: auditScanRuns.id,
+        status: auditScanRuns.status,
+        snapshotData: auditScanRuns.snapshotData,
+      })
+      .from(auditScanRuns)
+      .where(eq(auditScanRuns.pitchId, id))
+      .orderBy(desc(auditScanRuns.createdAt))
+      .limit(1),
+  ]);
+
+  const checkpoint = safeParseCheckpoint(latestRun?.snapshotData ?? null);
+  let pitchScanNavigation: GeneratedNavigation | null = null;
+  if (checkpoint?.plan) {
+    pitchScanNavigation =
+      latestRun && ['pending', 'running', 'waiting_for_user', 'review'].includes(latestRun.status)
+        ? generatePendingNavigation(checkpoint.plan)
+        : generateNavigation(checkpoint.plan, checkpoint.phaseResults);
+  }
 
   // Sidebar nur rendern wenn Pipeline-Daten vorhanden (nicht bei frischen Pitches)
   const hasData = lead.status !== 'routed';
@@ -57,6 +96,10 @@ export default async function LeadDashboardLayout({
               customerName={lead.customerName}
               status={lead.status}
               blVote={lead.blVote}
+              pitchScanNavigation={pitchScanNavigation}
+              pitchScanIsRunning={
+                !!(latestRun && ['pending', 'running'].includes(latestRun.status))
+              }
             />
           </div>
         )}

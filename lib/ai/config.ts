@@ -90,6 +90,69 @@ export const AI_TIMEOUTS = {
   WORKER_LOCK: 10 * 60_000,
 } as const;
 
+/**
+ * Model fallback configuration
+ *
+ * When the primary model fails with specific error types (empty responses,
+ * validation errors), we fall back to an alternative model.
+ *
+ * Fallback is triggered by:
+ * - AI_TypeValidationError (e.g., missing `choices` array from Gemini via LiteLLM)
+ * - Empty response with completion_tokens: 0
+ * - Timeout errors after primary model exhausts retries
+ */
+export const MODEL_FALLBACK_CONFIG: Record<ModelSlot, ModelSlot | null> = {
+  fast: 'default', // fast → default
+  default: 'quality', // default → quality
+  quality: 'premium', // quality → premium
+  premium: null, // premium has no fallback
+  synthesizer: 'default', // synthesizer → default
+  research: 'quality', // research → quality
+  vision: null, // vision has no fallback (specialized)
+  embedding: null, // embedding has no fallback
+};
+
+/**
+ * Check if an error should trigger model fallback
+ *
+ * Fallback-eligible errors:
+ * - AI_TypeValidationError: missing `choices` array (Gemini via LiteLLM bug)
+ * - Empty response errors
+ * - Timeout errors after retries exhausted
+ */
+export function isFallbackEligibleError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+
+  const message = error.message.toLowerCase();
+  const name = error.name.toLowerCase();
+
+  // AI SDK type validation errors (missing choices array)
+  if (
+    name.includes('typevalidationerror') ||
+    name.includes('ai_typevalidationerror') ||
+    message.includes('expected array, received undefined') ||
+    message.includes('"choices"')
+  ) {
+    return true;
+  }
+
+  // Timeout errors (already retried by primary model)
+  if (name === 'aborterror' || message.includes('timeout') || message.includes('timed out')) {
+    return true;
+  }
+
+  // Empty response indicators
+  if (
+    message.includes('empty response') ||
+    message.includes('no content') ||
+    message.includes('completion_tokens')
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 export async function generateStructuredOutput<T extends z.ZodType>(options: {
   model?: ModelKey;
   schema: T;
@@ -143,5 +206,93 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
     throw error;
   } finally {
     clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Generate structured output with automatic model fallback
+ *
+ * If the primary model fails with a fallback-eligible error (empty response,
+ * type validation error, timeout), automatically retries with the fallback model.
+ *
+ * Fallback chain is configured in MODEL_FALLBACK_CONFIG.
+ *
+ * @example
+ * // Will try 'quality' model first, fallback to 'premium' on failure
+ * const result = await generateWithFallback({
+ *   model: 'quality',
+ *   schema: mySchema,
+ *   system: 'You are a helpful assistant.',
+ *   prompt: 'Analyze this content...',
+ * });
+ */
+export async function generateWithFallback<T extends z.ZodType>(options: {
+  model?: ModelKey;
+  schema: T;
+  system: string;
+  prompt: string;
+  temperature?: number;
+  maxTokens?: number;
+  /** Timeout in milliseconds (default: 60000 = 60s) */
+  timeout?: number;
+  /** External abort signal for cancellation */
+  abortSignal?: AbortSignal;
+  /** Disable fallback (useful for testing or when fallback is not desired) */
+  disableFallback?: boolean;
+}): Promise<z.infer<T>> {
+  const modelKey = options.model ?? 'default';
+  const fallbackModelKey = MODEL_FALLBACK_CONFIG[modelKey];
+
+  try {
+    // Try primary model
+    return await generateStructuredOutput(options);
+  } catch (primaryError) {
+    // Check if we should fallback
+    const canFallback =
+      !options.disableFallback &&
+      fallbackModelKey !== null &&
+      isFallbackEligibleError(primaryError);
+
+    if (!canFallback) {
+      // No fallback available or error not eligible — rethrow
+      throw primaryError;
+    }
+
+    // Log fallback attempt
+    const primaryModelName = modelNames[modelKey];
+    const fallbackModelName = modelNames[fallbackModelKey];
+    console.warn(
+      `[AI Fallback] Primary model ${primaryModelName} failed, trying fallback ${fallbackModelName}:`,
+      primaryError instanceof Error ? primaryError.message : primaryError
+    );
+
+    try {
+      // Try fallback model
+      const result = await generateStructuredOutput({
+        ...options,
+        model: fallbackModelKey,
+      });
+
+      console.log(`[AI Fallback] Fallback model ${fallbackModelName} succeeded`);
+      return result;
+    } catch (fallbackError) {
+      // Fallback also failed — throw the fallback error but log both
+      console.error(
+        `[AI Fallback] Fallback model ${fallbackModelName} also failed:`,
+        fallbackError instanceof Error ? fallbackError.message : fallbackError
+      );
+
+      // Throw a combined error that mentions both failures
+      const primaryMsg =
+        primaryError instanceof Error ? primaryError.message : String(primaryError);
+      const fallbackMsg =
+        fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+
+      throw new Error(
+        `AI generation failed with both primary and fallback models. ` +
+          `Primary (${primaryModelName}): ${primaryMsg}. ` +
+          `Fallback (${fallbackModelName}): ${fallbackMsg}`
+      );
+    }
   }
 }

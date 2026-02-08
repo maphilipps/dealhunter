@@ -26,6 +26,7 @@ export type ErrorType =
   | 'BROWSER_AUTOMATION_ERROR'
   | 'PDF_PARSING_ERROR'
   | 'AUTHENTICATION_ERROR'
+  | 'AI_EMPTY_RESPONSE'
   | 'UNKNOWN_ERROR';
 
 export interface ClassifiedError {
@@ -62,6 +63,25 @@ export function classifyError(error: unknown): ClassifiedError {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
     const errorName = error.name.toLowerCase();
+
+    // AI Empty Response errors → fallback-eligible (marked transient for retry, but special handling)
+    // Gemini via LiteLLM sometimes returns HTTP 200 with no choices array
+    if (
+      errorName.includes('typevalidationerror') ||
+      errorName.includes('ai_typevalidationerror') ||
+      message.includes('choices') ||
+      message.includes('expected array, received undefined') ||
+      message.includes('completion_tokens') ||
+      message.includes('empty response')
+    ) {
+      return {
+        type: 'AI_EMPTY_RESPONSE',
+        category: 'transient', // Mark as transient so fallback can handle
+        message: 'AI model returned empty response. Trying fallback model...',
+        details: error,
+        isRetryable: true,
+      };
+    }
 
     // Network errors → transient
     if (

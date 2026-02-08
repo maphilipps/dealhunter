@@ -1,6 +1,6 @@
 // Phase Agent Registry — maps sectionId to agent function
 
-import type { PitchScanSectionId } from '../section-ids';
+import type { BuiltInSectionId } from '../section-ids';
 import type { PhaseAgentFn } from '../types';
 
 import { runDiscoveryPhase } from './discovery';
@@ -17,7 +17,7 @@ import { runDrupalArchitecturePhase } from './drupal-architecture';
 import { runEstimationPhase } from './estimation';
 import { runDocumentationPhase } from './documentation';
 
-export const PHASE_AGENT_REGISTRY: Record<PitchScanSectionId, PhaseAgentFn> = {
+export const PHASE_AGENT_REGISTRY: Record<BuiltInSectionId, PhaseAgentFn> = {
   'ps-discovery': runDiscoveryPhase,
   'ps-content-architecture': runContentArchitecturePhase,
   'ps-features': runFeaturesPhase,

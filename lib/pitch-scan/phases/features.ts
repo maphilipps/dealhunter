@@ -1,8 +1,9 @@
 import type { PhaseContext, PhaseResult } from '../types';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import { runPhaseAgent, formatPreviousResults } from './shared';
+import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
-const SYSTEM_PROMPT = `Du bist ein Feature-Analyse-Experte. Erkenne alle Funktionen und Features der Website:
+const SYSTEM_PROMPT =
+  `Du bist ein Feature-Analyse-Experte. Erkenne alle Funktionen und Features der Website:
 - E-Commerce (Shop, Warenkorb, Checkout)
 - Formulare (Kontakt, Login, Registrierung)
 - Suche (Volltext, Facettensuche)
@@ -12,20 +13,12 @@ const SYSTEM_PROMPT = `Du bist ein Feature-Analyse-Experte. Erkenne alle Funktio
 - Social Media Integration
 - Barrierefreiheit-Features
 
-Antworte als JSON:
-\`\`\`json
-{
-  "content": {
-    "features": [
-      { "name": "...", "detected": true, "category": "ecommerce|form|search|interactive|marketing|social|a11y", "details": "..." }
-    ],
-    "complexity": "low|medium|high",
-    "customDevelopment": ["..."]
-  },
-  "confidence": 72,
-  "sources": ["DOM-Analyse", "Script-Analyse"]
-}
-\`\`\``;
+Output: JSON gemaess Schema:
+- content.summary
+- content.findings (3-7)
+- content.features: Liste erkannter Features (name/detected/category/details)
+- content.complexity, content.customDevelopment (optional)
+- confidence, sources optional` as const;
 
 export async function runFeaturesPhase(
   context: PhaseContext,
@@ -35,7 +28,7 @@ export async function runFeaturesPhase(
     sectionId: 'ps-features',
     label: 'Features & Funktionalität',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Website: ${context.websiteUrl}\n\nVorherige Ergebnisse:\n${formatPreviousResults(context)}`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Features & Funktionalitaet\n- Nenne konkrete user flows (z.B. Checkout, Registrierung) und wo sie sichtbar sind.\n- Findings sollen priorisiert und umsetzbar sein.`,
     context,
     emit,
   });

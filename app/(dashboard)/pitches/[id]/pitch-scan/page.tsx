@@ -5,8 +5,8 @@ import { ScanHubClient } from './client';
 
 import { db } from '@/lib/db';
 import { pitches, preQualifications, auditScanRuns } from '@/lib/db/schema';
-import type { PitchScanSectionId } from '@/lib/pitch-scan/section-ids';
 import { PITCH_SCAN_SECTION_LABELS } from '@/lib/pitch-scan/section-ids';
+import type { BuiltInSectionId } from '@/lib/pitch-scan/section-ids';
 import type { PhaseStatus } from '@/hooks/use-pitch-scan-progress';
 
 export default async function ScanPage({ params }: { params: Promise<{ id: string }> }) {
@@ -76,7 +76,7 @@ export default async function ScanPage({ params }: { params: Promise<{ id: strin
   // Build completed sections from deal_embeddings (grouped by agentName)
   const validSectionIds = new Set(Object.keys(PITCH_SCAN_SECTION_LABELS));
   const completedSections: Array<{
-    sectionId: PitchScanSectionId;
+    sectionId: BuiltInSectionId;
     status: PhaseStatus;
     confidence?: number;
   }> = [];
@@ -105,7 +105,7 @@ export default async function ScanPage({ params }: { params: Promise<{ id: strin
     for (const agentName of completedAgents) {
       if (validSectionIds.has(agentName)) {
         completedSections.push({
-          sectionId: agentName,
+          sectionId: agentName as BuiltInSectionId,
           status: 'completed',
           confidence: agentConfidences[agentName],
         });

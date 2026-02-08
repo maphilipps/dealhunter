@@ -17,7 +17,7 @@ import { z } from 'zod';
 
 import { generateStructuredOutput } from '@/lib/ai/config';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import { AgentEventType } from '@/lib/streaming/event-types';
+import { AgentEventType } from '@/lib/streaming/in-process/event-types';
 
 // ========================================
 // Types

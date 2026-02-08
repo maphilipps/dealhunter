@@ -20,15 +20,25 @@ import {
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { QUALIFICATION_NAVIGATION_SECTIONS } from '@/lib/pitches/navigation-config';
+import type { GeneratedNavigation, GeneratedNavSection } from '@/lib/pitch-scan/navigation';
+import { cn } from '@/lib/utils';
 
 interface LeadSidebarRightProps {
   leadId: string;
   customerName: string;
   status: string;
   blVote: 'BID' | 'NO-BID' | null;
+  pitchScanNavigation?: GeneratedNavigation | null;
+  pitchScanIsRunning?: boolean;
 }
 
-export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRightProps) {
+export function LeadSidebarRight({
+  leadId,
+  customerName,
+  status,
+  pitchScanNavigation,
+  pitchScanIsRunning = false,
+}: LeadSidebarRightProps) {
   const pathname = usePathname();
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['overview']));
 
@@ -71,6 +81,53 @@ export function LeadSidebarRight({ leadId, customerName, status }: LeadSidebarRi
                 const hasSubsections = section.subsections && section.subsections.length > 0;
                 const isOpen = openSections.has(section.id);
                 const isDecisionSection = section.id === 'decision';
+
+                if (section.id === 'pitch-scan' && pitchScanNavigation) {
+                  const overviewRoute = `/pitches/${leadId}/pitch-scan`;
+                  const isActive = pathname === overviewRoute;
+
+                  const dynamicSubsections: GeneratedNavSection[] =
+                    pitchScanNavigation.sections.filter(s => s.id !== 'ps-overview');
+
+                  return (
+                    <SidebarMenuItem key={section.id}>
+                      <SidebarMenuButton asChild isActive={isActive}>
+                        <Link href={overviewRoute}>
+                          {IconComponent && <IconComponent className="h-4 w-4" />}
+                          <span>{section.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                      {dynamicSubsections.length > 0 && (
+                        <SidebarMenuSub>
+                          {dynamicSubsections.map(sub => {
+                            const route = pitchScanIsRunning
+                              ? `/pitches/${leadId}/pitch-scan#section-${sub.id}`
+                              : `/pitches/${leadId}/${sub.route}`;
+                            const isSubActive = pathname === `/pitches/${leadId}/${sub.route}`;
+                            return (
+                              <SidebarMenuSubItem key={sub.id}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={isSubActive}
+                                  className={cn(!sub.hasContent && 'text-muted-foreground')}
+                                >
+                                  <Link href={route}>
+                                    <span className="truncate">{sub.label}</span>
+                                    {!sub.hasContent && (
+                                      <span className="ml-auto text-[10px] opacity-70">
+                                        pending
+                                      </span>
+                                    )}
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            );
+                          })}
+                        </SidebarMenuSub>
+                      )}
+                    </SidebarMenuItem>
+                  );
+                }
 
                 // Content to render (collapsible, always-expanded, or single item)
                 const content =

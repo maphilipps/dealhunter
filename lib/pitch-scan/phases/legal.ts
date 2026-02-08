@@ -1,8 +1,9 @@
 import type { PhaseContext, PhaseResult } from '../types';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import { runPhaseAgent, formatPreviousResults } from './shared';
+import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
-const SYSTEM_PROMPT = `Du bist ein Experte für Web-Compliance und Datenschutz. Analysiere die Website auf:
+const SYSTEM_PROMPT =
+  `Du bist ein Experte für Web-Compliance und Datenschutz. Analysiere die Website auf:
 - DSGVO-Konformität (Cookie-Consent, Datenschutzerklärung)
 - Impressum (Vollständigkeit gemäß § 5 TMG)
 - Cookie-Banner und Consent-Management-Tool
@@ -10,22 +11,11 @@ const SYSTEM_PROMPT = `Du bist ein Experte für Web-Compliance und Datenschutz. 
 - SSL/TLS-Zertifikat
 - AGB und Widerrufsbelehrung (bei E-Commerce)
 
-Antworte als JSON:
-\`\`\`json
-{
-  "content": {
-    "score": 0,
-    "checks": [{ "name": "...", "passed": true }],
-    "cookieTool": "...",
-    "trackers": ["..."],
-    "sslValid": true,
-    "gdprIssues": ["..."],
-    "recommendations": ["..."]
-  },
-  "confidence": 70,
-  "sources": ["Compliance-Analyse"]
-}
-\`\`\``;
+Output: JSON gemaess Schema:
+- content.summary
+- content.findings (3-7)
+- content.score/checks/cookieTool/trackers/sslValid/gdprIssues/recommendations als strukturierte Felder
+- confidence, sources optional` as const;
 
 export async function runLegalPhase(
   context: PhaseContext,
@@ -35,7 +25,7 @@ export async function runLegalPhase(
     sectionId: 'ps-legal',
     label: 'Legal & Compliance',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Website: ${context.websiteUrl}\n\nVorherige Ergebnisse:\n${formatPreviousResults(context)}`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Legal & Compliance\n- Findings muessen konkrete Stellen nennen (Impressum/Datenschutz/Consent).\n- Empfehlungen muessen pragmatisch umsetzbar sein.`,
     context,
     emit,
   });

@@ -1,8 +1,9 @@
 import type { PhaseContext, PhaseResult } from '../types';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import { runPhaseAgent, formatPreviousResults } from './shared';
+import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
-const SYSTEM_PROMPT = `Du bist ein CMS-Vergleichs-Experte. Vergleiche die Ziel-CMS-Systeme basierend auf den Anforderungen der analysierten Website:
+const SYSTEM_PROMPT =
+  `Du bist ein CMS-Vergleichs-Experte. Vergleiche die Ziel-CMS-Systeme basierend auf den Anforderungen der analysierten Website:
 - Feature-Abdeckung pro CMS
 - Migrationskomplexität pro CMS
 - Kosten (Lizenz, Hosting, Entwicklung)
@@ -13,30 +14,11 @@ const SYSTEM_PROMPT = `Du bist ein CMS-Vergleichs-Experte. Vergleiche die Ziel-C
 
 Erstelle eine Vergleichsmatrix mit Scores pro Kriterium.
 
-Antworte als JSON:
-\`\`\`json
-{
-  "content": {
-    "cmsOptions": [
-      {
-        "name": "...",
-        "cmsId": "...",
-        "scores": {
-          "features": 0, "migration": 0, "cost": 0, "community": 0,
-          "performance": 0, "accessibility": 0, "enterprise": 0
-        },
-        "totalScore": 0,
-        "pros": ["..."],
-        "cons": ["..."]
-      }
-    ],
-    "comparisonCriteria": ["features", "migration", "cost", "community", "performance", "accessibility", "enterprise"],
-    "recommendation": "..."
-  },
-  "confidence": 72,
-  "sources": ["CMS-Vergleich"]
-}
-\`\`\``;
+Output: JSON gemaess Schema:
+- content.summary
+- content.findings (3-7)
+- content.cmsOptions/comparisonCriteria/recommendation als strukturierte Felder
+- confidence, sources optional` as const;
 
 export async function runCmsComparisonPhase(
   context: PhaseContext,
@@ -46,7 +28,7 @@ export async function runCmsComparisonPhase(
     sectionId: 'ps-cms-comparison',
     label: 'CMS-Vergleich',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Website: ${context.websiteUrl}\nZiel-CMS-IDs: ${context.targetCmsIds.join(', ') || 'Drupal, Magnolia, Ibexa'}\n\nVorherige Ergebnisse:\n${formatPreviousResults(context)}`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: CMS-Vergleich\n- Ziel-CMS-IDs (Kontext): ${context.targetCmsIds.join(', ') || 'keine'}\n- Nutze PreQual Anforderungen (Compliance, Budget, Timeline) fuer scoring.\n- Findings sollen die Tradeoffs klar machen.`,
     context,
     emit,
   });

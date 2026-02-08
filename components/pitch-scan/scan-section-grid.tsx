@@ -22,7 +22,6 @@ import { Loader } from '@/components/ai-elements/loader';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import type { PhaseStatus, PitchScanPhase } from '@/hooks/use-pitch-scan-progress';
-import type { PitchScanSectionId } from '@/lib/pitch-scan/section-ids';
 import {
   PITCH_SCAN_SECTION_LABELS,
   getSectionLabel,
@@ -32,7 +31,7 @@ import { cn } from '@/lib/utils';
 
 // ====== Icon mapping per section ======
 
-const SECTION_ICONS: Record<PitchScanSectionId, LucideIcon> = {
+const SECTION_ICONS: Record<BuiltInSectionId, LucideIcon> = {
   'ps-discovery': Search,
   'ps-content-architecture': FileText,
   'ps-features': Zap,
@@ -103,7 +102,7 @@ function confidenceBadge(confidence: number | undefined) {
 // ====== Props ======
 
 export interface SectionData {
-  sectionId: PitchScanSectionId;
+  sectionId: BuiltInSectionId;
   status: PhaseStatus;
   confidence?: number;
 }
@@ -124,7 +123,7 @@ export function ScanSectionGrid({
   const sectionIds = Object.keys(PITCH_SCAN_SECTION_LABELS) as BuiltInSectionId[];
 
   // Build a lookup: sectionId → status/confidence
-  const sectionMap = new Map<PitchScanSectionId, { status: PhaseStatus; confidence?: number }>();
+  const sectionMap = new Map<string, { status: PhaseStatus; confidence?: number }>();
 
   // First, populate from DB data
   for (const s of completedSections) {
@@ -187,7 +186,7 @@ export function ScanSectionGrid({
 
         if (isClickable) {
           return (
-            <Link key={sectionId} href={`/pitches/${pitchId}/scan/${sectionId}`}>
+            <Link key={sectionId} href={`/pitches/${pitchId}/pitch-scan/${sectionId}`}>
               {cardContent}
             </Link>
           );

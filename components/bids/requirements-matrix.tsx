@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
+import { AgentEventType, type AgentEvent } from '@/lib/streaming/in-process/event-types';
 
 interface MatrixCell {
   requirement: string;

@@ -117,7 +117,7 @@ async function getBusinessUnitsOnce(): Promise<CachedBusinessUnit[]> {
 
 ### Phase Events Already Defined
 
-**File:** `/Users/marc.philipps/Sites/dealhunter/lib/streaming/event-types.ts`
+**File:** `/Users/marc.philipps/Sites/dealhunter/lib/streaming/in-process/event-types.ts`
 **Lines:** 11-31
 **Status:** ✅ Ready to use
 
@@ -198,8 +198,8 @@ DATABASE
 
 ```
 Streaming:
-  /Users/marc.philipps/Sites/dealhunter/lib/streaming/event-types.ts
-  /Users/marc.philipps/Sites/dealhunter/lib/streaming/event-emitter.ts
+  /Users/marc.philipps/Sites/dealhunter/lib/streaming/in-process/event-types.ts
+  /Users/marc.philipps/Sites/dealhunter/lib/streaming/in-process/event-emitter.ts
 
 Agent & Orchestration:
   /Users/marc.philipps/Sites/dealhunter/lib/quick-scan/agent.ts

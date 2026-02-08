@@ -153,4 +153,4 @@ Orchestrator analysiert:
 - Aktueller Pitch Scan Orchestrator: `lib/pitch-scan/orchestrator.ts`
 - Pitch Scan Phasen: `lib/pitch-scan/phases/*.ts`
 - Navigation Config: `lib/pitches/navigation-config.ts`
-- SSE Streaming: `lib/streaming/event-emitter.ts`
+- SSE Streaming: `lib/streaming/in-process/event-emitter.ts`

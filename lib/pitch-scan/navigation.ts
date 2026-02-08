@@ -80,14 +80,14 @@ export function generateNavigation(
     const capability = CAPABILITY_MAP.get(phase.id);
     const result = results[phase.id];
 
-    if (capability && result) {
+    if (capability) {
       sections.push({
         id: phase.id,
         label: capability.labelDe,
         route: `pitch-scan/${phase.id}`,
         category: capability.category,
-        hasContent: true,
-        confidence: result.confidence,
+        hasContent: Boolean(result),
+        confidence: result?.confidence,
       });
 
       categoryCount.set(capability.category, (categoryCount.get(capability.category) ?? 0) + 1);
@@ -97,18 +97,16 @@ export function generateNavigation(
   // Add custom phases if any
   for (const custom of plan.customPhases ?? []) {
     const result = results[custom.id];
-    if (result) {
-      sections.push({
-        id: custom.id,
-        label: custom.labelDe,
-        route: `pitch-scan/${custom.id}`,
-        category: custom.category,
-        hasContent: true,
-        confidence: result.confidence,
-      });
+    sections.push({
+      id: custom.id,
+      label: custom.labelDe,
+      route: `pitch-scan/${custom.id}`,
+      category: custom.category,
+      hasContent: Boolean(result),
+      confidence: result?.confidence,
+    });
 
-      categoryCount.set(custom.category, (categoryCount.get(custom.category) ?? 0) + 1);
-    }
+    categoryCount.set(custom.category, (categoryCount.get(custom.category) ?? 0) + 1);
   }
 
   // Build categories array sorted by predefined order

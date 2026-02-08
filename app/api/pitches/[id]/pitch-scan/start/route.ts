@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { pitches, users, auditScanRuns, technologies } from '@/lib/db/schema';
-import { runPitchScanOrchestrator } from '@/lib/pitch-scan/orchestrator';
+import { runDynamicOrchestrator } from '@/lib/pitch-scan/orchestrator';
 import { createAgentEventStream, createSSEResponse } from '@/lib/streaming/event-emitter';
 
 export const runtime = 'nodejs';
@@ -101,12 +101,18 @@ export async function POST(
 
     // Create SSE stream and launch orchestrator
     const stream = createAgentEventStream(async emit => {
-      await runPitchScanOrchestrator(
+      await runDynamicOrchestrator(
         {
           runId: run.id,
           pitchId,
           websiteUrl: pitch.websiteUrl ?? '',
           targetCmsIds,
+          planningContext: {
+            customerName: pitch.customerName ?? undefined,
+            websiteUrl: pitch.websiteUrl ?? undefined,
+            targetCms: targetCmsIds,
+            timeConstraint: 'standard',
+          },
         },
         emit
       );

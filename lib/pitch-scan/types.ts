@@ -1,7 +1,5 @@
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
 
-import type { BuiltInSectionId, PitchScanSectionId } from './section-ids';
-
 // ─── Phase Category ────────────────────────────────────────────────────────────
 
 /**
@@ -22,7 +20,14 @@ export interface PhaseContext {
   pitchId: string;
   websiteUrl: string;
   previousResults: Record<string, unknown>;
-  ragContext?: unknown;
+  preQualContext?: {
+    raw: string;
+    metadata: {
+      preQualificationId: string;
+      chunkCount: number;
+      truncated: boolean;
+    };
+  };
   targetCmsIds: string[];
 }
 
@@ -119,16 +124,4 @@ export interface CustomSection {
   content: unknown;
   createdAt: string;
   prompt: string;
-}
-
-// ─── Legacy Type Aliases (for backward compatibility) ──────────────────────────
-
-/**
- * @deprecated Use PhaseResult with string sectionId instead
- */
-export interface LegacyPhaseResult {
-  sectionId: BuiltInSectionId;
-  content: unknown;
-  confidence: number;
-  sources?: string[];
 }

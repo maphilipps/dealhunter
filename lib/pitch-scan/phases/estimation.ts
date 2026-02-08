@@ -1,8 +1,9 @@
 import type { PhaseContext, PhaseResult } from '../types';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import { runPhaseAgent, formatPreviousResults } from './shared';
+import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
-const SYSTEM_PROMPT = `Du bist ein Projekt-Schätzungs-Experte für CMS-Relaunch-Projekte. Basierend auf ALLEN bisherigen Analyseergebnissen, erstelle eine detaillierte Aufwandsschätzung in Personentagen (PT):
+const SYSTEM_PROMPT =
+  `Du bist ein Projekt-Schätzungs-Experte für CMS-Relaunch-Projekte. Basierend auf ALLEN bisherigen Analyseergebnissen, erstelle eine detaillierte Aufwandsschätzung in Personentagen (PT):
 
 Berechne PT für diese Phasen:
 1. Konzeption & UX Design
@@ -19,26 +20,11 @@ Berechne PT für diese Phasen:
 
 Berücksichtige Risikopuffer und Komplexitätsfaktoren.
 
-Antworte als JSON:
-\`\`\`json
-{
-  "content": {
-    "phases": [
-      { "name": "...", "minPT": 0, "maxPT": 0, "confidence": 0.7, "notes": "..." }
-    ],
-    "totalEstimate": { "minPT": 0, "maxPT": 0, "bestCase": 0 },
-    "riskBuffer": { "percentage": 20, "reasoning": "..." },
-    "disciplines": {
-      "pm": 0, "ux": 0, "design": 0, "frontend": 0, "backend": 0, "qa": 0, "devops": 0
-    },
-    "assumptions": ["..."],
-    "excludedFromEstimate": ["..."],
-    "estimatedDuration": { "months": 0, "teamSize": 0 }
-  },
-  "confidence": 60,
-  "sources": ["Aufwandsschätzung basierend auf Analyse"]
-}
-\`\`\``;
+Output: JSON gemaess Schema:
+- content.summary
+- content.findings (3-7) (z.B. groesste Treiber, groesste Risiken, Annahmen)
+- content.phases/totalEstimate/riskBuffer/disciplines/assumptions/excludedFromEstimate/estimatedDuration
+- confidence, sources optional` as const;
 
 export async function runEstimationPhase(
   context: PhaseContext,
@@ -48,7 +34,7 @@ export async function runEstimationPhase(
     sectionId: 'ps-estimation',
     label: 'Aufwandsschätzung',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Website: ${context.websiteUrl}\n\nVorherige Ergebnisse:\n${formatPreviousResults(context)}`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Aufwandsschaetzung\n- Zahlen muessen konsistent sein (Summe passt).\n- Annahmen explizit machen; keine Halluzinationen als Fakten darstellen.`,
     context,
     emit,
   });

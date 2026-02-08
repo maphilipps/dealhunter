@@ -1,8 +1,9 @@
 import type { PhaseContext, PhaseResult } from '../types';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import { runPhaseAgent, formatPreviousResults } from './shared';
+import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
-const SYSTEM_PROMPT = `Du bist ein Web-Performance-Experte. Analysiere die Performance der Website basierend auf typischen Indikatoren:
+const SYSTEM_PROMPT =
+  `Du bist ein Web-Performance-Experte. Analysiere die Performance der Website basierend auf typischen Indikatoren:
 - Core Web Vitals (LCP, FID/INP, CLS)
 - Ladezeiten und TTFB
 - Ressourcen-Optimierung (Bilder, Scripts, CSS)
@@ -10,24 +11,11 @@ const SYSTEM_PROMPT = `Du bist ein Web-Performance-Experte. Analysiere die Perfo
 - CDN-Nutzung
 - Compression (Brotli, gzip)
 
-Antworte als JSON:
-\`\`\`json
-{
-  "content": {
-    "estimatedLoadTime": "fast|medium|slow",
-    "coreWebVitals": {
-      "lcp": { "value": "...", "rating": "good|needs-improvement|poor" },
-      "cls": { "value": "...", "rating": "good|needs-improvement|poor" },
-      "inp": { "value": "...", "rating": "good|needs-improvement|poor" }
-    },
-    "resources": { "scripts": 0, "stylesheets": 0, "images": 0, "fonts": 0 },
-    "optimizations": [{ "name": "...", "enabled": true }],
-    "recommendations": ["..."]
-  },
-  "confidence": 65,
-  "sources": ["Performance-Analyse"]
-}
-\`\`\``;
+Output: JSON gemaess Schema:
+- content.summary
+- content.findings (3-7) mit Impact (high/medium/low) wo sinnvoll
+- content.coreWebVitals/resources/optimizations/recommendations als strukturierte Felder
+- confidence, sources optional` as const;
 
 export async function runPerformancePhase(
   context: PhaseContext,
@@ -37,7 +25,7 @@ export async function runPerformancePhase(
     sectionId: 'ps-performance',
     label: 'Performance',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Website: ${context.websiteUrl}\n\nVorherige Ergebnisse:\n${formatPreviousResults(context)}`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Performance\n- Gib konkrete, messbare Hinweise (TTFB, große Assets, Render-Blocking) und sinnvolle Next Steps.\n- Beziehe Kundenanforderungen (PreQual) ein.`,
     context,
     emit,
   });

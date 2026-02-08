@@ -338,7 +338,14 @@ export function isValidSectionRoute(route: string): boolean {
 
 export function getRAGQueryTemplate(sectionId: string): string | undefined {
   const section = getSectionById(sectionId);
-  if (!section) return undefined;
+  if (!section) {
+    // Dynamic pitch-scan sections are not part of the static navigation config.
+    // Use the parent pitch-scan template as a sensible default.
+    if (sectionId.startsWith('ps-')) {
+      return QUALIFICATION_NAVIGATION_SECTIONS.find(s => s.id === 'pitch-scan')?.ragQueryTemplate;
+    }
+    return undefined;
+  }
 
   if (!section.ragQueryTemplate && 'route' in section) {
     const parent = QUALIFICATION_NAVIGATION_SECTIONS.find(s =>

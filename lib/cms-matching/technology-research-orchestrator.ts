@@ -21,7 +21,7 @@ import {
 
 import { db } from '@/lib/db';
 import { technologies } from '@/lib/db/schema';
-import { AgentEventType, type AgentEvent } from '@/lib/streaming/event-types';
+import { AgentEventType, type AgentEvent } from '@/lib/streaming/in-process/event-types';
 
 /**
  * Event Emitter für Streaming

@@ -1,8 +1,9 @@
 import type { PhaseContext, PhaseResult } from '../types';
 import type { EventEmitter } from '@/lib/streaming/event-emitter';
-import { runPhaseAgent, formatPreviousResults } from './shared';
+import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
-const SYSTEM_PROMPT = `Du bist ein Migrations-Experte für CMS-Relaunches. Basierend auf allen bisherigen Analyseergebnissen, bewerte die Migrationskomplexität:
+const SYSTEM_PROMPT =
+  `Du bist ein Migrations-Experte für CMS-Relaunches. Basierend auf allen bisherigen Analyseergebnissen, bewerte die Migrationskomplexität:
 - Daten-Migration (Content-Volumen, Content-Typen, Medien)
 - Template/Theme-Migration
 - Modul/Plugin-Migration
@@ -11,23 +12,11 @@ const SYSTEM_PROMPT = `Du bist ein Migrations-Experte für CMS-Relaunches. Basie
 - Risikofaktoren und Blocker
 - Geschätzter Migrationsaufwand
 
-Antworte als JSON:
-\`\`\`json
-{
-  "content": {
-    "overallComplexity": "low|medium|high|very_high",
-    "complexityScore": 0,
-    "factors": [
-      { "name": "...", "score": 0, "impact": "low|medium|high", "notes": "..." }
-    ],
-    "risks": [{ "risk": "...", "probability": "low|medium|high", "mitigation": "..." }],
-    "estimatedEffort": { "minPT": 0, "maxPT": 0, "confidence": 0.7 },
-    "recommendations": ["..."]
-  },
-  "confidence": 65,
-  "sources": ["Migrations-Analyse"]
-}
-\`\`\``;
+Output: JSON gemaess Schema:
+- content.summary
+- content.findings (3-7)
+- content.overallComplexity/complexityScore/factors/risks/estimatedEffort/recommendations als strukturierte Felder
+- confidence, sources optional` as const;
 
 export async function runMigrationPhase(
   context: PhaseContext,
@@ -37,7 +26,7 @@ export async function runMigrationPhase(
     sectionId: 'ps-migration',
     label: 'Migration',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Website: ${context.websiteUrl}\n\nVorherige Ergebnisse:\n${formatPreviousResults(context)}`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Migration\n- Identifiziere konkrete Blocker/Risiken und eine realistische Migrations-Strategie.\n- Recommendations sollen direkt in Tasks umsetzbar sein.`,
     context,
     emit,
   });

@@ -12,6 +12,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { RequirementMatch } from './schema';
+import { upsertFeatureEvaluation } from './feature-library';
 
 import { modelNames } from '@/lib/ai/config';
 import { getProviderForSlot } from '@/lib/ai/providers';
@@ -539,7 +540,6 @@ async function saveRequirementResearchToTechnology(
 
     // Dual-Write: Feature Library (relational)
     try {
-      const { upsertFeatureEvaluation } = await import('./feature-library');
       await upsertFeatureEvaluation({
         featureName: requirement,
         technologyId,

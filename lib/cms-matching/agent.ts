@@ -9,6 +9,7 @@
 
 import { eq } from 'drizzle-orm';
 
+import { upsertFeatureEvaluation } from './feature-library';
 import { type CMSMatchingResult, type RequirementMatch, cmsMatchingResultSchema } from './schema';
 
 // Intelligent Agent Framework - NEW
@@ -1058,7 +1059,6 @@ async function saveTechnologyFeature(
 
     // Dual-Write: Feature Library (relational)
     try {
-      const { upsertFeatureEvaluation } = await import('./feature-library');
       await upsertFeatureEvaluation({
         featureName,
         technologyId,

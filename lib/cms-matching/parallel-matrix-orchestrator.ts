@@ -16,6 +16,7 @@ import {
   type ResearchEventEmitter,
 } from './requirement-research-agent';
 import type { RequirementMatch, CMSMatchingResult } from './schema';
+import { upsertFeatureEvaluation } from './feature-library';
 
 import { db } from '@/lib/db';
 import { cmsFeatureEvaluations, features, preQualifications, leadScans } from '@/lib/db/schema';
@@ -336,7 +337,6 @@ export async function runParallelMatrixResearch(
           // Persist via Feature Library (auto-creates feature + upserts evaluation)
           if (opts.useCache) {
             try {
-              const { upsertFeatureEvaluation } = await import('./feature-library');
               await upsertFeatureEvaluation({
                 featureName: cell.requirement,
                 technologyId: cell.cmsId,

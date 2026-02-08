@@ -39,13 +39,14 @@ gh project item-list 4 --owner maphilipps --format json | jq '[.items[] | select
 
 Priorisierung: P0 > P1 > P2, innerhalb gleicher Priorität niedrigere Issue-Nummern zuerst.
 
-### 2. Verlinkten Branch erstellen
+### 2. Issue-Branch auschecken
+
+Der Branch wurde bereits im Plan-Step erstellt und ist mit dem Issue verlinkt.
 
 ```bash
-gh issue develop $ISSUE_NUMBER --name ralph/$ISSUE_NUMBER-<kurzbeschreibung> --base main --checkout
+git fetch origin
+git checkout ralph/$ISSUE_NUMBER-<kurzbeschreibung>
 ```
-
-Das erstellt den Branch UND verlinkt ihn automatisch mit dem Issue (sichtbar in der "Development"-Sektion).
 
 ### 3. Status → In Progress
 

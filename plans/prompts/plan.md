@@ -73,11 +73,29 @@ gh issue view $ISSUE_NUMBER --json title,body,comments,labels
 5. Suche nach bestehenden Patterns im Codebase
 6. Prüfe CLAUDE.md für Projektkonventionen
 
-### 3. Plan erstellen
+### 3. Verlinkten Branch erstellen
+
+```bash
+gh issue develop $ISSUE_NUMBER --name ralph/$ISSUE_NUMBER-<kurzbeschreibung> --base main --checkout
+```
+
+Das erstellt den Branch UND verlinkt ihn automatisch mit dem Issue (sichtbar in der "Development"-Sektion).
+
+### 4. Plan erstellen
 
 Nutze `/workflows:plan` um einen Implementierungsplan zu erstellen.
 
-### 4. Bei großen Issues: Sub-Issues anlegen
+Das erzeugt eine Plan-Datei unter `docs/plans/YYYY-MM-DD-<type>-<beschreibung>-plan.md`.
+
+### 5. Plan committen + pushen
+
+```bash
+git add docs/plans/*.md
+git commit -m "RALPH: add implementation plan for #$ISSUE_NUMBER"
+git push -u origin ralph/$ISSUE_NUMBER-<kurzbeschreibung>
+```
+
+### 6. Bei großen Issues: Sub-Issues anlegen
 
 Wenn das Issue zu komplex für einen Durchlauf ist, zerlege es in Sub-Issues:
 
@@ -85,21 +103,23 @@ Wenn das Issue zu komplex für einen Durchlauf ist, zerlege es in Sub-Issues:
 gh issue create --title "Sub: <teilaufgabe>" --body "Parent: #$ISSUE_NUMBER" --label "sub-issue"
 ```
 
-Verlinke die Sub-Issues als Checkliste im Plan-Kommentar.
+### 7. Plan auf dem Issue verlinken
 
-### 5. Plan posten
+Poste einen Kommentar mit Link zur Plan-Datei und ggf. Sub-Issues:
 
 ```bash
-gh issue comment $ISSUE_NUMBER --body "RALPH: Refinement complete. Implementation plan:
+PLAN_FILE=$(ls -t docs/plans/*-plan.md | head -1)
+BRANCH=ralph/$ISSUE_NUMBER-<kurzbeschreibung>
+gh issue comment $ISSUE_NUMBER --body "RALPH: Refinement complete.
 
-<plan summary>
+📋 Plan: [\`$PLAN_FILE\`](../blob/$BRANCH/$PLAN_FILE)
 
 <optional: Sub-Issues>
 - [ ] #<sub-issue-1>
 - [ ] #<sub-issue-2>"
 ```
 
-### 6. Status → Ready
+### 8. Status → Ready
 
 ```bash
 gh project item-edit --id "$ITEM_ID" --field-id "PVTSSF_lAHOAuMI6s4BNZnlzg8Z_mo" --project-id "PVT_kwHOAuMI6s4BNZnl" --single-select-option-id "61e4505c"

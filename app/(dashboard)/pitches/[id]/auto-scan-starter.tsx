@@ -1,10 +1,11 @@
 'use client';
 
-import { Loader } from '@/components/ai-elements/loader';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { PipelineProgress } from '@/components/pitches/pipeline-progress';
+import { Loader } from '@/components/ai-elements/loader';
+import { ScanProgressChat } from '@/components/pitch-scan/scan-progress-chat';
+import { usePitchScanProgress } from '@/hooks/use-pitch-scan-progress';
 import { startPitchScan } from '@/lib/pitches/actions';
 
 interface AutoScanStarterProps {
@@ -19,6 +20,12 @@ export function AutoScanStarter({ pitchId, customerName, activeRunId }: AutoScan
   const [error, setError] = useState<string | null>(null);
   const startedRef = useRef(false);
   const [started, setStarted] = useState(!!activeRunId);
+
+  const progress = usePitchScanProgress(started ? pitchId : null, {
+    onComplete: useCallback(() => {
+      router.refresh();
+    }, [router]),
+  });
 
   useEffect(() => {
     if (activeRunId || startedRef.current) return;
@@ -51,7 +58,7 @@ export function AutoScanStarter({ pitchId, customerName, activeRunId }: AutoScan
           Fehler beim Starten des Scans: {error}
         </div>
       ) : started ? (
-        <PipelineProgress pitchId={pitchId} onComplete={() => router.refresh()} />
+        <ScanProgressChat pitchId={pitchId} progress={progress} />
       ) : (
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader size="sm" />

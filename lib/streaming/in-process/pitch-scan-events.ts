@@ -31,6 +31,8 @@ export const PitchScanEventType = {
   PLAN_CREATED: 'plan_created',
   CHAT_MESSAGE: 'chat_message',
   SECTION_RESULT: 'section_result',
+  AGENT_THINKING: 'agent_thinking',
+  AGENT_FINDING: 'agent_finding',
 } as const;
 
 export type PitchScanEventType = (typeof PitchScanEventType)[keyof typeof PitchScanEventType];
@@ -96,6 +98,8 @@ export function isVisiblePitchScanEvent(event: PitchScanNormalizedEvent): boolea
     event.type === PitchScanEventType.SECTION_RESULT ||
     event.type === PitchScanEventType.PHASE_START ||
     event.type === PitchScanEventType.AGENT_COMPLETE ||
+    event.type === PitchScanEventType.AGENT_THINKING ||
+    event.type === PitchScanEventType.AGENT_FINDING ||
     event.type === PitchScanEventType.ERROR ||
     event.type === PitchScanEventType.COMPLETE
   );

@@ -98,6 +98,18 @@ export async function runPitchScanOrchestrator(
         readyPhases.map(async phase => {
           const agentFn = PHASE_AGENT_REGISTRY[phase.id];
 
+          // Emit thinking event before phase starts
+          await publishToChannel(runId, {
+            type: 'agent_thinking',
+            phase: phase.id,
+            message: `Analysiere ${phase.label}...`,
+            reasoning:
+              phase.dependencies.length > 0
+                ? `Basiert auf Ergebnissen von ${phase.dependencies.length} vorherigen Phasen.`
+                : undefined,
+            timestamp: new Date().toISOString(),
+          });
+
           // Publish phase start
           await publishToChannel(runId, {
             type: 'phase_start',
@@ -175,6 +187,17 @@ export async function runPitchScanOrchestrator(
             message: `${phase.label} abgeschlossen (${phaseResult.confidence}%)`,
             timestamp: new Date().toISOString(),
           });
+
+          // Emit finding event with confidence summary
+          if (phaseResult.confidence >= 70) {
+            await publishToChannel(runId, {
+              type: 'agent_finding',
+              phase: phase.id,
+              message: `${phase.label}: Analyse abgeschlossen mit hoher Konfidenz.`,
+              confidence: phaseResult.confidence,
+              timestamp: new Date().toISOString(),
+            });
+          }
 
           // Chat-first: emit a compact section result (full content is fetched from DB on demand).
           await publishToChannel(runId, {
@@ -474,6 +497,18 @@ export async function runDynamicOrchestrator(
     // Execute ready phases in parallel
     const results = await Promise.allSettled(
       readyPhases.map(async cap => {
+        // Emit thinking event before phase starts
+        await publishToChannel(runId, {
+          type: 'agent_thinking',
+          phase: cap.id,
+          message: `Analysiere ${cap.labelDe}...`,
+          reasoning:
+            cap.dependencies.length > 0
+              ? `Basiert auf Ergebnissen von ${cap.dependencies.length} vorherigen Phasen.`
+              : undefined,
+          timestamp: new Date().toISOString(),
+        });
+
         // Publish phase start
         await publishToChannel(runId, {
           type: 'phase_start',
@@ -531,6 +566,17 @@ export async function runDynamicOrchestrator(
           message: `${cap.labelDe} abgeschlossen (${phaseResult.confidence}%)`,
           timestamp: new Date().toISOString(),
         });
+
+        // Emit finding event with confidence summary
+        if (phaseResult.confidence >= 70) {
+          await publishToChannel(runId, {
+            type: 'agent_finding',
+            phase: cap.id,
+            message: `${cap.labelDe}: Analyse abgeschlossen mit hoher Konfidenz.`,
+            confidence: phaseResult.confidence,
+            timestamp: new Date().toISOString(),
+          });
+        }
 
         await publishToChannel(runId, {
           type: 'section_result',

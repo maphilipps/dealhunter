@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Lightbulb } from 'lucide-react';
 import { memo, useMemo } from 'react';
 
 import { ScanResultCard } from './scan-result-card';
@@ -143,6 +143,44 @@ const EventItem = memo(function EventItem({
       <Message from="assistant">
         <MessageContent>
           <MessageResponse>{msg}</MessageResponse>
+        </MessageContent>
+      </Message>
+    );
+  }
+
+  if (type === PitchScanEventType.AGENT_THINKING) {
+    const msg = asString(raw.message) ?? asString(raw.text);
+    if (!msg) return null;
+    const reasoning = asString(raw.reasoning);
+    return (
+      <Message from="assistant">
+        <MessageContent>
+          <MessageResponse>{msg}</MessageResponse>
+          {reasoning && <p className="mt-1 text-xs text-muted-foreground">{reasoning}</p>}
+        </MessageContent>
+      </Message>
+    );
+  }
+
+  if (type === PitchScanEventType.AGENT_FINDING) {
+    const msg = asString(raw.message) ?? asString(raw.text);
+    if (!msg) return null;
+    const confidence =
+      typeof raw.confidence === 'number' && Number.isFinite(raw.confidence)
+        ? raw.confidence
+        : undefined;
+    return (
+      <Message from="assistant">
+        <MessageContent>
+          <div className="flex items-start gap-2">
+            <Lightbulb className="mt-0.5 size-4 shrink-0 text-yellow-500" />
+            <div>
+              <MessageResponse>{msg}</MessageResponse>
+              {confidence !== undefined && (
+                <p className="mt-1 text-xs text-muted-foreground">Konfidenz: {confidence}%</p>
+              )}
+            </div>
+          </div>
         </MessageContent>
       </Message>
     );

@@ -50,7 +50,7 @@ export const PITCH_SCAN_SECTION_LABELS: Record<BuiltInSectionId, string> = {
   'ps-migration': 'Migration',
   'ps-cms-comparison': 'CMS-Vergleich',
   'ps-cms-recommendation': 'CMS-Empfehlung',
-  'ps-drupal-architecture': 'Drupal-Architektur',
+  'ps-drupal-architecture': 'Architektur',
   'ps-estimation': 'Aufwandsschätzung',
   'ps-documentation': 'Dokumentation',
 };

@@ -71,7 +71,7 @@ export async function markAgentComplete(
 ): Promise<void> {
   // Atomic append + RETURNING to avoid read-after-write race
   const rows = await db.execute<typeof auditScanRuns.$inferSelect>(sql`
-    UPDATE pitch_scan_runs
+    UPDATE audit_scan_runs
     SET
       completed_agents = CASE
         WHEN completed_agents IS NULL THEN ${JSON.stringify([agentName])}
@@ -97,7 +97,7 @@ export async function markAgentComplete(
 export async function markAgentFailed(runId: string, agentName: string): Promise<void> {
   // Atomic append + RETURNING to avoid read-after-write race
   const rows = await db.execute<typeof auditScanRuns.$inferSelect>(sql`
-    UPDATE pitch_scan_runs
+    UPDATE audit_scan_runs
     SET
       failed_agents = CASE
         WHEN failed_agents IS NULL THEN ${JSON.stringify([agentName])}

@@ -157,7 +157,7 @@ export const QUALIFICATION_NAVIGATION_SECTIONS: LeadNavigationSection[] = [
       },
       {
         id: 'ps-drupal-architecture',
-        label: 'Drupal-Architektur',
+        label: 'Architektur',
         route: 'pitch-scan/ps-drupal-architecture',
       },
       {

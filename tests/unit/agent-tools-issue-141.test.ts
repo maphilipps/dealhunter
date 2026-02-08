@@ -63,6 +63,7 @@ describe('Issue #141 agent tools', () => {
   it('registers cmsEvaluation tools', () => {
     expect(registry.get('cmsEvaluation.list')).toBeDefined();
     expect(registry.get('cmsEvaluation.get')).toBeDefined();
+    expect(registry.get('cmsEvaluation.answer')).toBeDefined();
   });
 
   it('registers export tools', () => {

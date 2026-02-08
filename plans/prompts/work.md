@@ -19,6 +19,12 @@ ITEM_ID=$(gh project item-list 4 --owner maphilipps --format json | jq -r ".item
 gh project item-edit --id "$ITEM_ID" --field-id "PVTSSF_lAHOAuMI6s4BNZnlzg8Z_mo" --project-id "PVT_kwHOAuMI6s4BNZnl" --single-select-option-id "STATUS_OPTION_ID"
 ```
 
+## Arbeitskonventionen
+
+- **Eigener Branch pro Issue**: `ralph/<issue-number>-<kurzbeschreibung>` (z.B. `ralph/42-add-auth`)
+- **Alles auf dem Issue kommentieren** — jeder Statuswechsel, Fortschritt, Blocker
+- Das Issue ist die Single Source of Truth für den gesamten Lifecycle
+
 ---
 
 ## Aufgabe
@@ -33,14 +39,20 @@ gh project item-list 4 --owner maphilipps --format json | jq '[.items[] | select
 
 Priorisierung: P0 > P1 > P2, innerhalb gleicher Priorität niedrigere Issue-Nummern zuerst.
 
-### 2. Status → In Progress
+### 2. Branch erstellen
+
+```bash
+git checkout -b ralph/$ISSUE_NUMBER-<kurzbeschreibung> main
+```
+
+### 3. Status → In Progress
 
 ```bash
 gh project item-edit --id "$ITEM_ID" --field-id "PVTSSF_lAHOAuMI6s4BNZnlzg8Z_mo" --project-id "PVT_kwHOAuMI6s4BNZnl" --single-select-option-id "47fc9ee4"
-gh issue comment $ISSUE_NUMBER --body "RALPH: Starting work on this issue."
+gh issue comment $ISSUE_NUMBER --body "RALPH: Starting work on branch \`ralph/$ISSUE_NUMBER-<kurzbeschreibung>\`."
 ```
 
-### 3. Issue + Plan lesen
+### 4. Issue + Plan lesen
 
 ```bash
 gh issue view $ISSUE_NUMBER --json title,body,comments,labels
@@ -53,7 +65,7 @@ gh issue view $ISSUE_NUMBER --json title,body,comments,labels
 5. Suche nach bestehenden Patterns — finde Code, der ähnliche Probleme löst
 6. Prüfe CLAUDE.md für Projektkonventionen
 
-### 4. Implementierung
+### 5. Implementierung
 
 Nutze `/workflows:work` um den Plan umzusetzen.
 
@@ -66,7 +78,7 @@ gh issue comment $ISSUE_NUMBER --body "RALPH: Blocked — <reason>. Moving back 
 
 Nach der ersten Implementierung: Ist das die einfachste mögliche Lösung? Wenn nicht, verwerfen und neu implementieren.
 
-### 5. Checks
+### 6. Checks
 
 Vor dem Commit alle Checks durchlaufen:
 
@@ -79,7 +91,7 @@ npm run format:check  # Prettier (fix with npm run format)
 
 Alle vier müssen bestehen.
 
-### 6. Commit
+### 7. Commit
 
 Git-Commit erstellen. Die Commit-Message muss:
 
@@ -91,11 +103,12 @@ Git-Commit erstellen. Die Commit-Message muss:
 
 Kurz halten.
 
-### 7. Status → In Review
+### 8. Push + Status → In Review
 
 ```bash
+git push -u origin ralph/$ISSUE_NUMBER-<kurzbeschreibung>
 gh project item-edit --id "$ITEM_ID" --field-id "PVTSSF_lAHOAuMI6s4BNZnlzg8Z_mo" --project-id "PVT_kwHOAuMI6s4BNZnl" --single-select-option-id "df73e18b"
-gh issue comment $ISSUE_NUMBER --body "RALPH: Implementation complete. Commit: <sha>. Moving to review."
+gh issue comment $ISSUE_NUMBER --body "RALPH: Implementation complete. Commit: <sha>. Branch: \`ralph/$ISSUE_NUMBER-<kurzbeschreibung>\`. Moving to review."
 ```
 
 ---

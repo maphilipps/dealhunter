@@ -18,6 +18,13 @@ ITEM_ID=$(gh project item-list 4 --owner maphilipps --format json | jq -r ".item
 gh project item-edit --id "$ITEM_ID" --field-id "PVTSSF_lAHOAuMI6s4BNZnlzg8Z_mo" --project-id "PVT_kwHOAuMI6s4BNZnl" --single-select-option-id "STATUS_OPTION_ID"
 ```
 
+## Arbeitskonventionen
+
+- **Eigener Branch pro Issue**: `ralph/<issue-number>-<kurzbeschreibung>` (z.B. `ralph/42-add-auth`)
+- **Alles auf dem Issue kommentieren** — jeder Statuswechsel, Plan, Fortschritt, Review-Findings
+- **Sub-Issues** nutzen wenn ein Issue zu groß ist — als Checkliste auf dem Parent-Issue verlinken
+- Das Issue ist die Single Source of Truth für den gesamten Lifecycle
+
 ---
 
 ## Aufgabe
@@ -70,15 +77,29 @@ gh issue view $ISSUE_NUMBER --json title,body,comments,labels
 
 Nutze `/workflows:plan` um einen Implementierungsplan zu erstellen.
 
-### 4. Plan posten
+### 4. Bei großen Issues: Sub-Issues anlegen
+
+Wenn das Issue zu komplex für einen Durchlauf ist, zerlege es in Sub-Issues:
+
+```bash
+gh issue create --title "Sub: <teilaufgabe>" --body "Parent: #$ISSUE_NUMBER" --label "sub-issue"
+```
+
+Verlinke die Sub-Issues als Checkliste im Plan-Kommentar.
+
+### 5. Plan posten
 
 ```bash
 gh issue comment $ISSUE_NUMBER --body "RALPH: Refinement complete. Implementation plan:
 
-<plan summary>"
+<plan summary>
+
+<optional: Sub-Issues>
+- [ ] #<sub-issue-1>
+- [ ] #<sub-issue-2>"
 ```
 
-### 5. Status → Ready
+### 6. Status → Ready
 
 ```bash
 gh project item-edit --id "$ITEM_ID" --field-id "PVTSSF_lAHOAuMI6s4BNZnlzg8Z_mo" --project-id "PVT_kwHOAuMI6s4BNZnl" --single-select-option-id "61e4505c"

@@ -593,7 +593,7 @@ WICHTIG:
         let confidence = 55;
 
         try {
-          const parsed = visualizationText ? (JSON.parse(visualizationText) as any) : null;
+          const parsed = visualizationText ? JSON.parse(visualizationText) : null;
           highlights = extractHighlightsFromVisualization(parsed).slice(0, 3);
         } catch {
           highlights = [];
@@ -680,8 +680,9 @@ WICHTIG:
 
 function extractHighlightsFromVisualization(tree: any): string[] {
   if (!tree || typeof tree !== 'object') return [];
-  const elements = tree.elements && typeof tree.elements === 'object' ? tree.elements : null;
-  if (!elements) return [];
+  const elementsUnknown = (tree as { elements?: unknown }).elements;
+  if (!elementsUnknown || typeof elementsUnknown !== 'object') return [];
+  const elements = elementsUnknown as Record<string, unknown>;
 
   const out: string[] = [];
   const push = (s: string) => {
@@ -691,18 +692,22 @@ function extractHighlightsFromVisualization(tree: any): string[] {
     if (!out.includes(clipped)) out.push(clipped);
   };
 
-  for (const el of Object.values(elements) as any[]) {
-    if (!el || typeof el !== 'object') continue;
-    const type = el.type as string | undefined;
-    const props = el.props as Record<string, unknown> | undefined;
+  for (const elUnknown of Object.values(elements)) {
+    if (!elUnknown || typeof elUnknown !== 'object') continue;
+    const el = elUnknown as { type?: unknown; props?: unknown };
+    const type = typeof el.type === 'string' ? el.type : undefined;
+    const props =
+      el.props && typeof el.props === 'object' ? (el.props as Record<string, unknown>) : undefined;
     if (!type || !props) continue;
 
     if (type === 'KeyValueTable') {
-      const items = (props as any).items;
+      const items = props.items;
       if (Array.isArray(items)) {
-        for (const item of items) {
-          const label = (item as any)?.label;
-          const value = (item as any)?.value;
+        for (const itemUnknown of items) {
+          if (!itemUnknown || typeof itemUnknown !== 'object') continue;
+          const item = itemUnknown as Record<string, unknown>;
+          const label = item.label;
+          const value = item.value;
           if (typeof label === 'string' && typeof value === 'string') {
             push(`${label}: ${value}`);
           }
@@ -712,9 +717,9 @@ function extractHighlightsFromVisualization(tree: any): string[] {
     }
 
     if (type === 'Metric') {
-      const label = (props as any).label;
-      const value = (props as any).value;
-      const unit = (props as any).unit;
+      const label = props.label;
+      const value = props.value;
+      const unit = props.unit;
       if (typeof label === 'string' && (typeof value === 'string' || typeof value === 'number')) {
         push(`${label}: ${value}${typeof unit === 'string' ? ` ${unit}` : ''}`);
         if (out.length >= 3) return out;
@@ -722,7 +727,7 @@ function extractHighlightsFromVisualization(tree: any): string[] {
     }
 
     if (type === 'BulletList') {
-      const items = (props as any).items;
+      const items = props.items;
       if (Array.isArray(items)) {
         for (const item of items) {
           if (typeof item === 'string') push(item);
@@ -733,9 +738,14 @@ function extractHighlightsFromVisualization(tree: any): string[] {
   }
 
   // Fallback: first paragraph
-  for (const el of Object.values(elements) as any[]) {
-    if (el?.type === 'Paragraph' && typeof el?.props?.text === 'string') {
-      push(el.props.text);
+  for (const elUnknown of Object.values(elements)) {
+    if (!elUnknown || typeof elUnknown !== 'object') continue;
+    const el = elUnknown as { type?: unknown; props?: unknown };
+    if (el.type !== 'Paragraph' || !el.props || typeof el.props !== 'object') continue;
+    const props = el.props as Record<string, unknown>;
+    const text = props.text;
+    if (typeof text === 'string') {
+      push(text);
       break;
     }
   }

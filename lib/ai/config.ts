@@ -9,18 +9,13 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 
-import { getProviderForSlot } from './providers';
+import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from './env';
+import { getModelProvider, modelNames, type ModelSlot } from './model-config';
 
 // Lazy-initialized OpenAI clients to reduce bundle size
 // Only the OpenAI SDK is imported (not multiple providers)
 // This implements Vercel React Best Practice: bundle-conditional
 let openaiInstance: any = null;
-
-export const AI_HUB_API_KEY = process.env.AI_HUB_API_KEY || process.env.OPENAI_API_KEY;
-export const AI_HUB_BASE_URL =
-  process.env.AI_HUB_BASE_URL ||
-  process.env.OPENAI_BASE_URL ||
-  'https://adesso-ai-hub.3asabc.de/v1';
 
 // Initialize AI SDK OpenAI provider (AI Hub)
 export const aiHubOpenAI = createOpenAI({
@@ -52,36 +47,6 @@ export const openai = new Proxy({} as any, {
   },
 });
 
-// Dynamic model names - reads from environment variables
-// Lazy import to avoid circular dependency
-function getModelNameLazy(slot: string): string {
-  const { getModelName } = require('./model-config') as { getModelName: (s: string) => string };
-  return getModelName(slot);
-}
-
-// Use getModelName() from model-config.ts for dynamic access
-// This object provides legacy compatibility with static property access
-export const modelNames = {
-  get fast() {
-    return getModelNameLazy('fast');
-  },
-  get default() {
-    return getModelNameLazy('default');
-  },
-  get quality() {
-    return getModelNameLazy('quality');
-  },
-  get premium() {
-    return getModelNameLazy('premium');
-  },
-  get synthesizer() {
-    return getModelNameLazy('synthesizer');
-  },
-  get research() {
-    return getModelNameLazy('research');
-  },
-} as const;
-
 export const defaultSettings = {
   deterministic: {
     temperature: 0.3,
@@ -98,6 +63,9 @@ export const defaultSettings = {
 } as const;
 
 export type ModelKey = keyof typeof modelNames;
+export { modelNames };
+export type { ModelSlot };
+export { AI_HUB_API_KEY, AI_HUB_BASE_URL };
 
 /**
  * Centralized timeout configurations for AI operations
@@ -149,7 +117,7 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
 
   try {
     const { output, usage } = await generateText({
-      model: (await getProviderForSlot(modelKey))(modelName),
+      model: (await getModelProvider(modelKey))(modelName),
       output: Output.object({ schema: options.schema }),
       system: options.system,
       prompt: options.prompt,

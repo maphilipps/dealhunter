@@ -12,10 +12,10 @@ const SYSTEM_PROMPT =
 - Compression (Brotli, gzip)
 
 Output: JSON gemaess Schema:
-- content.summary
-- content.findings (3-7) mit Impact (high/medium/low) wo sinnvoll
-- content.coreWebVitals/resources/optimizations/recommendations als strukturierte Felder
-- confidence, sources optional` as const;
+- content.summary: 1-2 Saetze Kurzfassung
+- content.markdown: Vollstaendige Analyse als Markdown mit Metriken-Tabelle (LCP, FID/INP, CLS, TTFB) und Empfehlungen. Keine kuenstliche Kuerzung — alle relevanten Details ausfuehren.
+- confidence: 0-100
+- sources: optional` as const;
 
 export async function runPerformancePhase(
   context: PhaseContext,

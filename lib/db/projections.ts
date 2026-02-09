@@ -36,6 +36,7 @@ export const LEAD_PUBLIC_FIELDS = {
   industry: pitches.industry,
   budget: pitches.budget,
   websiteUrl: pitches.websiteUrl,
+  clientUrl: pitches.clientUrl,
   projectDescription: pitches.projectDescription,
   status: pitches.status,
   blVote: pitches.blVote,

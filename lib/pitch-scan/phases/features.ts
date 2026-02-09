@@ -14,11 +14,10 @@ const SYSTEM_PROMPT =
 - Barrierefreiheit-Features
 
 Output: JSON gemaess Schema:
-- content.summary
-- content.findings (3-7)
-- content.features: Liste erkannter Features (name/detected/category/details)
-- content.complexity, content.customDevelopment (optional)
-- confidence, sources optional` as const;
+- content.summary: 1-2 Saetze Kurzfassung
+- content.markdown: Vollstaendige Analyse als Markdown mit Feature-Matrix (| Feature | Vorhanden | Kategorie | Details |). Keine kuenstliche Kuerzung — alle relevanten Details ausfuehren.
+- confidence: 0-100
+- sources: optional` as const;
 
 export async function runFeaturesPhase(
   context: PhaseContext,
@@ -28,7 +27,7 @@ export async function runFeaturesPhase(
     sectionId: 'ps-features',
     label: 'Features & Funktionalität',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Features & Funktionalitaet\n- Nenne konkrete user flows (z.B. Checkout, Registrierung) und wo sie sichtbar sind.\n- Findings sollen priorisiert und umsetzbar sein.`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Features & Funktionalitaet\n- Nenne konkrete user flows (z.B. Checkout, Registrierung) und wo sie sichtbar sind.\n- Erkenntnisse sollen priorisiert und umsetzbar sein.`,
     context,
     emit,
   });

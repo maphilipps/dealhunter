@@ -16,10 +16,10 @@ const SYSTEM_PROMPT =
 - PIM/DAM-Systeme
 
 Output: JSON gemaess Schema:
-- content.summary
-- content.findings (3-7) mit konkreten Tools + Migrations-Impact
-- content.integrations/apiEndpoints/migrationConsiderations als strukturierte Felder
-- confidence, sources optional` as const;
+- content.summary: 1-2 Saetze Kurzfassung
+- content.markdown: Vollstaendige Analyse als Markdown mit Integrations-Tabelle (| Integration | Vendor | Migrations-Impact |). Keine kuenstliche Kuerzung — alle relevanten Details ausfuehren.
+- confidence: 0-100
+- sources: optional` as const;
 
 export async function runIntegrationsPhase(
   context: PhaseContext,

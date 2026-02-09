@@ -3,7 +3,7 @@ import type { EventEmitter } from '@/lib/streaming/event-emitter';
 import { buildBaseUserPrompt, runPhaseAgent } from './shared';
 
 const SYSTEM_PROMPT =
-  `Du bist ein CMS-Architektur-Experte. Basierend auf der CMS-Empfehlung aus vorherigen Phasen, entwirf eine passende CMS-Architektur:
+  `Du bist ein CMS-Architektur-Experte bei adesso SE. Basierend auf der CMS-Empfehlung aus vorherigen Phasen, entwirf eine passende CMS-Architektur:
 - Content-Typen und Felder
 - Taxonomien und Vokabulare
 - Views und Displays / Content-Listen
@@ -13,14 +13,14 @@ const SYSTEM_PROMPT =
 - Multilingual-Setup (falls benötigt)
 - Standardmodule/-Plugins vs. Custom Development
 
-Passe die Architektur an das empfohlene CMS an (Drupal, WordPress, Contentful, etc.).
-Falls noch kein CMS empfohlen wurde, erstelle eine generische CMS-Architektur-Empfehlung.
+Passe die Architektur an das empfohlene CMS an (aus den erlaubten Ziel-CMS-IDs).
+Falls noch kein CMS empfohlen wurde, erstelle die Architektur fuer das erste CMS aus der Ziel-CMS-Liste.
 
 Output: JSON gemaess Schema:
-- content.summary
-- content.findings (3-7)
-- content.architecture + estimatedCustomDevelopment + recommendations
-- confidence, sources optional` as const;
+- content.summary: 1-2 Saetze Kurzfassung
+- content.markdown: Vollstaendige Analyse als Markdown mit Content-Typen, Taxonomien, Modul-Liste, Layout-Strategie Sektionen. Keine kuenstliche Kuerzung — alle relevanten Details ausfuehren.
+- confidence: 0-100
+- sources: optional` as const;
 
 export async function runDrupalArchitecturePhase(
   context: PhaseContext,

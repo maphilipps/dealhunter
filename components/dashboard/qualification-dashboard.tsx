@@ -8,9 +8,11 @@ import {
   Trophy,
   Award,
   FileText,
+  FileSearch,
   LayoutDashboard,
   ShieldAlert,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 
 import { BURoutingCard } from './bu-routing-card';
@@ -18,6 +20,7 @@ import { ManagementSummaryCard } from './management-summary-card';
 import { SectionCard } from './section-card';
 import { SectionGroup } from './section-group';
 
+import { Button } from '@/components/ui/button';
 import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schema';
 import { SECTION_BY_ID, BID_SECTION_IDS } from '@/lib/dashboard/sections';
 import type { DashboardSummaryResponse, SectionHighlight } from '@/lib/dashboard/types';
@@ -103,8 +106,24 @@ export function QualificationDashboard({
 
   const managementSummary = data?.managementSummary ?? initialSummary ?? null;
 
+  const hasData =
+    !isLoading &&
+    (managementSummary || data?.sectionHighlights.some(s => s.status === 'available'));
+
   return (
     <div className="space-y-8">
+      {/* Summary Link */}
+      {hasData && (
+        <div className="flex justify-end">
+          <Link href={`/qualifications/${preQualificationId}/summary`}>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <FileSearch className="h-4 w-4" />
+              Zusammenfassung anzeigen
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {/* Management Summary */}
       <ManagementSummaryCard summary={managementSummary} isLoading={isLoading && !initialSummary} />
 

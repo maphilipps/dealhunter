@@ -68,7 +68,13 @@ export async function assignBusinessUnit(
     const bid = bids[0];
 
     // Validate status - must be a routing-ready state
-    const routingReadyStates = ['decision_made', 'bit_pending', 'bid_voted', 'questions_ready'];
+    const routingReadyStates = [
+      'decision_made',
+      'bit_pending',
+      'bid_voted',
+      'questions_ready',
+      'routed',
+    ];
     if (!routingReadyStates.includes(bid.status)) {
       return {
         success: false,

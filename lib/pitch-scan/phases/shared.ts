@@ -13,24 +13,14 @@ import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 
 /**
  * Zod schema for phase agent responses.
- * All phase agents return structured JSON with content, confidence, and optional sources.
+ * All phase agents return markdown-first output: a short summary plus full markdown analysis.
  * Using generateObject (via generateStructuredOutput) eliminates brittle regex JSON parsing.
  */
-const findingSchema = z.object({
-  problem: z.string().min(1),
-  relevance: z.string().min(1),
-  recommendation: z.string().min(1),
-  estimatedImpact: z.enum(['high', 'medium', 'low']).optional(),
-});
-
 export const phaseAgentResponseSchema = z.object({
-  content: z
-    .object({
-      summary: z.string().min(1),
-      findings: z.array(findingSchema).min(3).max(7),
-    })
-    // Allow phase-specific structured fields (e.g. discovery tech stack).
-    .passthrough(),
+  content: z.object({
+    summary: z.string().min(1),
+    markdown: z.string().min(1),
+  }),
   confidence: z.number().min(0).max(100),
   sources: z.array(z.string()).optional(),
 });
@@ -216,6 +206,12 @@ export function buildBaseUserPrompt(context: PhaseContext): string {
   const parts: string[] = [];
 
   parts.push(`# Website\n${context.websiteUrl || '(keine URL)'}\n`);
+
+  if (context.targetCmsIds.length > 0) {
+    parts.push(
+      `# Erlaubte Ziel-CMS (adesso Portfolio)\nNur diese CMS duerfen empfohlen werden: ${context.targetCmsIds.join(', ')}\nANDERE CMS (WordPress, Contentful, Strapi, etc.) sind NICHT im adesso Portfolio und duerfen NICHT empfohlen werden.`
+    );
+  }
 
   if (context.preQualContext) {
     parts.push(`# Kontext aus Pre-Qualification\n${context.preQualContext.raw}`);

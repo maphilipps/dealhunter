@@ -21,10 +21,10 @@ Berechne PT für diese Phasen:
 Berücksichtige Risikopuffer und Komplexitätsfaktoren.
 
 Output: JSON gemaess Schema:
-- content.summary
-- content.findings (3-7) (z.B. groesste Treiber, groesste Risiken, Annahmen)
-- content.phases/totalEstimate/riskBuffer/disciplines/assumptions/excludedFromEstimate/estimatedDuration
-- confidence, sources optional` as const;
+- content.summary: 1-2 Saetze Kurzfassung
+- content.markdown: Vollstaendige Analyse als Markdown mit PT-Tabelle pro Disziplin (| Disziplin | PT Min | PT Max | Annahmen |), Risikopuffer, Gesamtsumme. Keine kuenstliche Kuerzung — alle relevanten Details ausfuehren.
+- confidence: 0-100
+- sources: optional` as const;
 
 export async function runEstimationPhase(
   context: PhaseContext,

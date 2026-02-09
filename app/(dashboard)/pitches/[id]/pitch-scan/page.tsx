@@ -17,6 +17,7 @@ export default async function ScanPage({ params }: { params: Promise<{ id: strin
       id: pitches.id,
       customerName: pitches.customerName,
       websiteUrl: pitches.websiteUrl,
+      clientUrl: pitches.clientUrl,
       preQualificationId: pitches.preQualificationId,
     })
     .from(pitches)
@@ -127,6 +128,7 @@ export default async function ScanPage({ params }: { params: Promise<{ id: strin
       <ScanHubClient
         pitchId={id}
         websiteUrl={lead.websiteUrl || ''}
+        clientUrl={lead.clientUrl || ''}
         suggestedUrls={suggestedUrls}
         completedSections={completedSections}
         hasExistingRun={!!latestRun}

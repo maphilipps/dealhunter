@@ -4,8 +4,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
-import { AutoScanStarter } from './auto-scan-starter';
-
 import { AuditStatusBadge } from '@/components/pitches/audit-status-badge';
 import { BulkVisualizationGenerator } from '@/components/pitches/bulk-visualization-generator';
 import { CustomerDeepDive } from '@/components/pitches/customer-deep-dive';
@@ -29,7 +27,6 @@ import {
 } from '@/lib/db/projections';
 import {
   pitches,
-  auditScanRuns,
   preQualifications,
   businessUnits,
   websiteAudits,
@@ -155,29 +152,6 @@ export default async function LeadOverviewPage({ params }: { params: Promise<{ i
     ptEstimation,
     refMatches,
   } = data;
-
-  // Routed/Scanning-Pitch → Scan starten oder Fortschritt anzeigen
-  if (lead.status === 'routed' || lead.status === 'audit_scanning') {
-    const [latestRun] = await db
-      .select({ id: auditScanRuns.id, status: auditScanRuns.status })
-      .from(auditScanRuns)
-      .where(eq(auditScanRuns.pitchId, id))
-      .orderBy(desc(auditScanRuns.createdAt))
-      .limit(1);
-
-    // Laufende Runs → Progress-Anzeige.
-    // Bei audit_scanning: immer den aktiven Run anzeigen (kein Neustart).
-    // Bei routed ohne aktiven Run: neuen Scan starten.
-    const isActive = latestRun && !['completed', 'failed'].includes(latestRun.status);
-
-    return (
-      <AutoScanStarter
-        pitchId={id}
-        customerName={lead.customerName}
-        activeRunId={isActive ? latestRun.id : null}
-      />
-    );
-  }
 
   return (
     <div className="space-y-6">

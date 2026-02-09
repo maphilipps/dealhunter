@@ -11,10 +11,10 @@ const SYSTEM_PROMPT =
 - Multisite/Multilingual-Setup
 
 Output: JSON gemaess Schema:
-- content.summary
-- content.findings (3-7)
-- content.contentArchitecture: pageTypes/taxonomies/languages/estimatedPages/contentComplexity/mediaAssets/navigation
-- confidence, sources optional` as const;
+- content.summary: 1-2 Saetze Kurzfassung
+- content.markdown: Vollstaendige Analyse als Markdown mit Content-Typen-Liste, Seitenstruktur-Uebersicht und Navigationsebenen. Keine kuenstliche Kuerzung — alle relevanten Details ausfuehren.
+- confidence: 0-100
+- sources: optional` as const;
 
 export async function runContentArchitecturePhase(
   context: PhaseContext,
@@ -24,7 +24,7 @@ export async function runContentArchitecturePhase(
     sectionId: 'ps-content-architecture',
     label: 'Content-Architektur',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Content-Architektur\n- Gib konkrete Beispiele (Seitentypen, Sprachvarianten, Navigationsebenen).\n- Findings muessen an Kundenanforderungen ankoppeln (PreQual).`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Content-Architektur\n- Gib konkrete Beispiele (Seitentypen, Sprachvarianten, Navigationsebenen).\n- Analyse muss an Kundenanforderungen ankoppeln (PreQual).`,
     context,
     emit,
   });

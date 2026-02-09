@@ -1227,6 +1227,7 @@ export const pitches = pgTable(
     // Extracted from PreQualification (denormalized)
     customerName: text('customer_name').notNull(),
     websiteUrl: text('website_url'),
+    clientUrl: text('client_url'),
     industry: text('industry'),
     projectDescription: text('project_description'),
     budget: text('budget'),

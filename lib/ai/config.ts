@@ -10,7 +10,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 
 import { AI_HUB_API_KEY, AI_HUB_BASE_URL } from './env';
-import { getModelProvider, modelNames, type ModelSlot } from './model-config';
+import { getModelProvider, getModelConfigAsync, modelNames, type ModelSlot } from './model-config';
 
 // Lazy-initialized OpenAI clients to reduce bundle size
 // Only the OpenAI SDK is imported (not multiple providers)
@@ -166,7 +166,9 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
   abortSignal?: AbortSignal;
 }): Promise<z.infer<T>> {
   const modelKey = options.model ?? 'default';
-  const modelName = modelNames[modelKey];
+  // Resolve model config async to ensure DB cache is loaded before reading model name
+  const resolvedConfig = await getModelConfigAsync(modelKey);
+  const modelName = resolvedConfig.modelName;
 
   // Setup timeout handling
   const timeoutMs = options.timeout ?? 60_000; // 60s default

@@ -15,10 +15,10 @@ Die Zusammenfassung soll enthalten:
 7. Empfohlene nächste Schritte
 
 Output: JSON gemaess Schema:
-- content.summary (Executive Summary, 1-2 Saetze)
-- content.findings (3-7) (Top Risiken/Chancen/Next steps als Findings)
-- content.executiveSummary/currentState/cmsRecommendation/estimation/topRisks/topOpportunities/nextSteps als strukturierte Felder
-- confidence, sources optional` as const;
+- content.summary: 1-2 Saetze Kurzfassung
+- content.markdown: Vollstaendige Analyse als Markdown mit Executive Summary, Ist-Zustand, CMS-Empfehlung, Aufwandsschaetzung, Top-Risiken/Chancen, Naechste Schritte als H2 Sektionen. Keine kuenstliche Kuerzung — alle relevanten Details ausfuehren.
+- confidence: 0-100
+- sources: optional` as const;
 
 export async function runDocumentationPhase(
   context: PhaseContext,

@@ -70,6 +70,7 @@ export async function buildQualificationScanMarkdown(qualificationId: string): P
       content: dealEmbeddings.content,
       chunkCategory: dealEmbeddings.chunkCategory,
       confidence: dealEmbeddings.confidence,
+      metadata: dealEmbeddings.metadata,
     })
     .from(dealEmbeddings)
     .where(eq(dealEmbeddings.preQualificationId, qualificationId));
@@ -470,6 +471,82 @@ export async function buildQualificationScanMarkdown(qualificationId: string): P
       lines.push('**Findings:**');
       for (const f of findings) {
         lines.push(`- ${f.content}`);
+      }
+    }
+
+    // Sources block (decision-grade sections)
+    if (sectionId === 'deliverables' || sectionId === 'references') {
+      type AnySource = Record<string, unknown> & { kind?: string };
+      const all: AnySource[] = [];
+
+      for (const f of findings) {
+        const meta = safeJsonParse<Record<string, unknown>>(f.metadata as any);
+        const sources = (meta as any)?.sources;
+        if (Array.isArray(sources)) {
+          for (const s of sources) {
+            if (s && typeof s === 'object') all.push(s as AnySource);
+          }
+        }
+      }
+
+      const keyOf = (s: AnySource) => {
+        const kind = String(s.kind ?? '');
+        if (kind === 'rfp_pdf') {
+          return `rfp_pdf:${String(s.fileName ?? '')}:${String(s.page ?? '')}:${String(
+            s.paragraphStart ?? ''
+          )}-${String(s.paragraphEnd ?? '')}:${String(s.heading ?? '')}`;
+        }
+        if (kind === 'internal_reference')
+          return `internal_reference:${String(s.referenceId ?? '')}`;
+        if (kind === 'web') return `web:${String(s.url ?? '')}`;
+        if (kind === 'assumption') return `assumption:${String(s.label ?? '')}`;
+        return `other:${JSON.stringify(s)}`;
+      };
+
+      const formatLine = (s: AnySource): string | null => {
+        const kind = String(s.kind ?? '');
+        if (kind === 'rfp_pdf') {
+          const file = String(s.fileName ?? '—');
+          const page = String(s.page ?? '—');
+          const ps = String(s.paragraphStart ?? '—');
+          const pe = String(s.paragraphEnd ?? '—');
+          const heading = s.heading ? `, "${String(s.heading)}"` : '';
+          return `${file}, S. ${page}, Absatz ${ps}-${pe}${heading}`;
+        }
+        if (kind === 'internal_reference') {
+          const id = String(s.referenceId ?? '—');
+          const projectName = String(s.projectName ?? '—');
+          const customerName = String(s.customerName ?? '—');
+          return `Intern Ref #${id} — ${projectName} (${customerName})`;
+        }
+        if (kind === 'web') {
+          const url = String(s.url ?? '');
+          if (!url) return null;
+          const title = s.title ? ` — ${String(s.title)}` : '';
+          return `${url}${title}`;
+        }
+        if (kind === 'assumption') {
+          const label = String(s.label ?? '—');
+          const rationale = s.rationale ? ` — ${String(s.rationale)}` : '';
+          return `Annahme: ${label}${rationale}`;
+        }
+        return null;
+      };
+
+      const deduped: AnySource[] = [];
+      const seen = new Set<string>();
+      for (const s of all) {
+        const k = keyOf(s);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        deduped.push(s);
+      }
+
+      const top = deduped.map(formatLine).filter(Boolean).slice(0, 5) as string[];
+      if (top.length > 0) {
+        lines.push('');
+        lines.push('**Quellen (Top 5):**');
+        for (const t of top) lines.push(`- ${t}`);
       }
     }
 

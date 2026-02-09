@@ -90,72 +90,61 @@ Du analysierst alle vertragsrechtlichen Aspekte der Ausschreibung.
 `,
 
   deliverables: `
-## ANALYSEZIEL: Leistungsumfang & Deliverables
+## ANALYSEZIEL: Deliverables (Einreichungsunterlagen) + Aufwand für Bid-Team
 
-Du analysierst den kompletten geforderten Leistungsumfang.
+Du analysierst die Ausschreibungsdokumente auf alle **abzugebenden Unterlagen/Deliverables** (Teilnahmeantrag/Angebot)
+und was das Angebotsteam konkret erstellen muss.
 
-### PRIMÄRE FRAGEN:
-1. **Hauptleistungen** (Was muss geliefert werden?):
-   - Software/System-Komponenten
-   - Dienstleistungen (Beratung, Konzeption, Entwicklung, Migration)
-   - Dokumentation, Schulungen, Support
+WICHTIG (Qualitäts-Gate):
+- Ergebnisse müssen **decision-grade** sein: Inventar, Anforderungen, Risiken, offene Fragen, konkrete Next Steps.
+- Jede Aussage muss **belegt** sein (Quelle) oder als **Annahme** markiert werden.
 
-2. **Strukturierung**:
-   - Gibt es Lose? Wenn ja, welche?
-   - Pflichtleistungen vs. optionale Leistungen (Bedarfspositionen)
-   - Phasen / Arbeitspakete / Module
+### 1) INVENTAR (zwingend, als Tabelle denken)
+Erstelle ein vollständiges Inventar der abzugebenden Deliverables, inkl.:
+- Name des Deliverables / Formblatt / Konzept
+- Pflicht vs. optional
+- Format (PDF/Portal-Formular/Signatur) und Abgabeweg (Portal/E-Mail/physisch)
+- Seitenlimit oder Umfangsbeschränkungen (wenn genannt)
+- Deadlines (Angebot/Teilnahmeantrag/Präsentationstermin; getrennt wenn vorhanden)
 
-3. **Technische Anforderungen**:
-   - Funktionale Anforderungen (Features, Use Cases)
-   - Nicht-funktionale Anforderungen (Performance, Sicherheit, Barrierefreiheit)
-   - Schnittstellen zu Drittsystemen
-   - Technologie-Vorgaben oder -Einschränkungen
+### 2) AUFWAND & DAUER (Bid-Unterlagen, NICHT Projektumsetzung)
+Leite für jedes Deliverable eine grobe, nachvollziehbare Aufwandsschätzung ab (Stunden / PT / Kalenderdauer)
+und liste eine kurze WBS (Tasks + Rollen).
+Wenn Details fehlen: nenne Annahmen explizit (z.B. Review-Overhead).
 
-4. **Mengengerüste**:
-   - Anzahl Nutzer, Seiten, Datensätze
-   - Transaktionsvolumen, Speicherbedarf
-   - Standorte, Sprachen
+### 3) RISIKEN & OFFENE FRAGEN
+- Risiken/Stolpersteine (z.B. Signaturpflicht, harte Formvorgaben, unklare Anlagen)
+- Offene Fragen, die als Bieterfrage geklärt werden sollten (mit Begründung)
 
-### INTERPRETATION FÜR DAS ANGEBOTSTEAM:
-- Welche Leistungen sind der Kern, welche sind Beiwerk?
-- Wo sind Aufwandstreiber versteckt?
-- Welche Leistungen könnten wir besonders gut / innovativ anbieten?
-- Gibt es Unklarheiten, die Rückfragen erfordern?
+### 4) NEXT STEPS
+- Konkrete ToDos für das Angebotsteam (Checkliste, Verantwortlichkeiten, Reihenfolge).
 `,
 
   references: `
-## ANALYSEZIEL: Referenzanforderungen & Eignungskriterien
+## ANALYSEZIEL: Referenzen (Anforderungen) + optimale Referenz-Struktur + interne Matches
 
-Du analysierst alle Anforderungen an Referenzen und Nachweise.
+Du analysierst alle Anforderungen an Referenzen/Eignungsnachweise und machst sie diskussionsfaehig.
 
-### PRIMÄRE FRAGEN:
-1. **Anzahl & Art der Referenzen**:
-   - Wie viele Referenzen werden gefordert? (Minimum/Maximum)
-   - Unternehmensreferenzen vs. Mitarbeiterreferenzen
-   - Müssen es abgeschlossene Projekte sein?
+WICHTIG (Qualitäts-Gate):
+- Ergebnisse müssen **decision-grade** sein.
+- Jede Aussage muss **belegt** sein (Quelle) oder als **Annahme** markiert werden.
 
-2. **Eingrenzungskriterien** (KRITISCH für Machbarkeit!):
-   - **Branche**: Öffentlicher Sektor? Spezifische Branche?
-   - **Projektgröße**: Mindest-Budget? Mindest-Nutzerzahl?
-   - **Technologie**: Bestimmte Systeme/Plattformen gefordert?
-   - **Zeitraum**: Projekte der letzten X Jahre?
-   - **Vergleichbarkeit**: "vergleichbar" - wie eng ausgelegt?
+### 1) ANFORDERUNGEN (Must/Should/K.O.)
+Extrahiere alle Referenzanforderungen und klassifiziere:
+- KO (Ausschluss), MUST (zwingend), SHOULD (bewertungsrelevant), CAN (optional)
 
-3. **Harte vs. weiche Kriterien**:
-   - MUSS-Kriterien (Ausschluss bei Nichterfüllung)
-   - SOLL-Kriterien (Punktabzug, aber kein Ausschluss)
-   - KANN-Kriterien (Bonus-Punkte)
+### 2) OPTIMALE REFERENZ (Template)
+Beschreibe, wie eine optimale Referenz aussehen sollte (als Template/Checkliste)
+und markiere das als Best Practice/Annahme (nicht RFP-spezifisch).
 
-4. **Nachweisform**:
-   - Formblätter / Eigenerklärungen
-   - Bestätigungsschreiben vom Auftraggeber nötig?
-   - Welche Details müssen genannt werden?
+### 3) INTERNE REFERENZEN (Top 3-5)
+Schlage konkrete interne Referenzen vor (IDs), in Reihenfolge:
+1) RFP-Anforderung
+2) optimale Referenz (Template)
+3) interne Matches: "ggfs. passt das:" inkl. Gaps und Positionierung
 
-### INTERPRETATION FÜR DAS ANGEBOTSTEAM:
-- Haben wir passende Referenzen? Welche?
-- Sind die Kriterien so eng, dass sie den Wettbewerb einschränken?
-- Gibt es Interpretationsspielraum bei "Vergleichbarkeit"?
-- Müssen wir mit Bietergemeinschaft / Nachunternehmer arbeiten?
+### 4) OFFENE FRAGEN
+Wenn Anforderungen unklar sind: klare Rückfragen formulieren (inkl. warum es relevant ist).
 `,
 
   'award-criteria': `

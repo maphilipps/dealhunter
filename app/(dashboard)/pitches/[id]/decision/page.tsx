@@ -37,5 +37,10 @@ export default async function DecisionPage({ params }: { params: Promise<{ id: s
     );
   }
 
+  // Already decided — redirect to overview
+  if (lead.blVote) {
+    redirect(`/pitches/${id}`);
+  }
+
   return <DecisionPageClient lead={lead} />;
 }

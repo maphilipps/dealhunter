@@ -299,7 +299,8 @@ export async function convertRfpToLead(
         preQualificationId: preQualification.id,
         status: 'routed',
         customerName: (extractedReqs.customerName as string | undefined) || 'Unbekannter Kunde',
-        websiteUrl: preQualification.websiteUrl || websiteUrl,
+        clientUrl: preQualification.websiteUrl || null,
+        websiteUrl: websiteUrl || preQualification.websiteUrl || null,
         industry: (extractedReqs.industry as string | undefined) || null,
         projectDescription: (extractedReqs.projectDescription as string | undefined) || null,
         budget: (extractedReqs.budget as string | undefined) || null,
@@ -544,6 +545,54 @@ export async function updateLeadWebsiteUrl(
     return { success: true };
   } catch (error) {
     console.error('Error updating lead website URL:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+    };
+  }
+}
+
+/**
+ * Update the client URL (Auftraggeber-URL) of a lead.
+ */
+export async function updateLeadClientUrl(
+  leadId: string,
+  clientUrl: string
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Nicht authentifiziert' };
+  }
+
+  try {
+    const urlSchema = z.string().url();
+    const result = urlSchema.safeParse(clientUrl);
+    if (!result.success) {
+      return { success: false, error: 'Ungültige URL' };
+    }
+
+    const [lead] = await db.select().from(pitches).where(eq(pitches.id, leadId)).limit(1);
+    if (!lead) {
+      return { success: false, error: 'Lead nicht gefunden' };
+    }
+
+    await db.update(pitches).set({ clientUrl }).where(eq(pitches.id, leadId));
+
+    await createAuditLog({
+      action: 'update',
+      entityType: 'qualification',
+      entityId: leadId,
+      previousValue: JSON.stringify({ clientUrl: lead.clientUrl }),
+      newValue: JSON.stringify({ clientUrl }),
+      reason: 'Auftraggeber-URL aktualisiert',
+    });
+
+    revalidatePath(`/pitches/${leadId}`);
+    revalidatePath(`/pitches/${leadId}/scan`);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating lead client URL:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',

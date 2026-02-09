@@ -69,10 +69,19 @@ interface CombinedStats {
 }
 
 interface RAGDataClientProps {
-  leadId: string;
+  pitchId?: string;
+  preQualificationId?: string;
 }
 
-export function RAGDataClient({ leadId }: RAGDataClientProps) {
+export function RAGDataClient({
+  pitchId,
+  preQualificationId: providedPreQualId,
+}: RAGDataClientProps) {
+  const mode: 'lead' | 'qualification' = pitchId ? 'lead' : 'qualification';
+  if (mode === 'qualification' && !providedPreQualId) {
+    throw new Error('RAGDataClient requires either pitchId or preQualificationId');
+  }
+
   const [preQualificationId, setRfpId] = useState<string | null>(null);
   const [combinedStats, setCombinedStats] = useState<CombinedStats>({
     rfpStats: null,
@@ -89,44 +98,60 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
     setError(null);
 
     try {
-      // Get Qualification ID (may be null)
-      const rfpResult = await getRfpIdForLead(leadId);
-      const foundRfpId = rfpResult.success ? rfpResult.data : null;
-      setRfpId(foundRfpId);
+      if (mode === 'lead') {
+        // Get Qualification ID (may be null)
+        const rfpResult = await getRfpIdForLead(pitchId!);
+        const foundRfpId = rfpResult.success ? rfpResult.data : null;
+        setRfpId(foundRfpId);
 
-      // Load all data in parallel
-      const promises: Promise<unknown>[] = [
-        getSectionData({ leadId }),
-        getLeadEmbeddingsStats(leadId),
-      ];
+        // Load all data in parallel
+        const promises: Promise<unknown>[] = [
+          getSectionData({ pitchId: pitchId! }),
+          getLeadEmbeddingsStats(pitchId!),
+        ];
 
-      // Only fetch qualification stats if we have a qualification
-      if (foundRfpId) {
-        promises.push(getRAGStats({ preQualificationId: foundRfpId }));
-      }
+        // Only fetch qualification stats if we have a qualification
+        if (foundRfpId) {
+          promises.push(getRAGStats({ preQualificationId: foundRfpId }));
+        }
 
-      const results = await Promise.all(promises);
-      const sectionResult = results[0] as Awaited<ReturnType<typeof getSectionData>>;
-      const leadStatsResult = results[1] as Awaited<ReturnType<typeof getLeadEmbeddingsStats>>;
-      const rfpStatsResult = foundRfpId
-        ? (results[2] as Awaited<ReturnType<typeof getRAGStats>>)
-        : null;
+        const results = await Promise.all(promises);
+        const sectionResult = results[0] as Awaited<ReturnType<typeof getSectionData>>;
+        const leadStatsResult = results[1] as Awaited<ReturnType<typeof getLeadEmbeddingsStats>>;
+        const rfpStatsResult = foundRfpId
+          ? (results[2] as Awaited<ReturnType<typeof getRAGStats>>)
+          : null;
 
-      setCombinedStats({
-        rfpStats: rfpStatsResult?.success ? rfpStatsResult.data : null,
-        leadStats: leadStatsResult.success ? leadStatsResult.data : null,
-      });
+        setCombinedStats({
+          rfpStats: rfpStatsResult?.success ? rfpStatsResult.data : null,
+          leadStats: leadStatsResult.success ? leadStatsResult.data : null,
+        });
 
-      if (sectionResult.success) {
-        setSectionData(sectionResult.data);
-      }
+        if (sectionResult.success) {
+          setSectionData(sectionResult.data);
+        }
 
-      // Only show error if we have NO data at all
-      const hasRfpData = rfpStatsResult?.success && rfpStatsResult.data.totalEmbeddings > 0;
-      const hasLeadData = leadStatsResult.success && leadStatsResult.data.total > 0;
+        // Only show error if we have NO data at all
+        const hasRfpData = rfpStatsResult?.success && rfpStatsResult.data.totalEmbeddings > 0;
+        const hasLeadData = leadStatsResult.success && leadStatsResult.data.total > 0;
 
-      if (!hasRfpData && !hasLeadData) {
-        setError('Keine RAG-Daten für diesen Lead gefunden.');
+        if (!hasRfpData && !hasLeadData) {
+          setError('Keine RAG-Daten für diesen Lead gefunden.');
+        }
+      } else {
+        // Qualification-only mode: no lead dependencies.
+        const foundRfpId = providedPreQualId!;
+        setRfpId(foundRfpId);
+
+        const rfpStatsResult = await getRAGStats({ preQualificationId: foundRfpId });
+        setCombinedStats({
+          rfpStats: rfpStatsResult.success ? rfpStatsResult.data : null,
+          leadStats: null,
+        });
+
+        if (!rfpStatsResult.success || rfpStatsResult.data.totalEmbeddings === 0) {
+          setError('Keine RAG-Daten für diese Qualification gefunden.');
+        }
       }
     } catch (err) {
       console.error('Failed to load RAG data:', err);
@@ -134,7 +159,7 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [leadId]);
+  }, [pitchId, mode, providedPreQualId]);
 
   useEffect(() => {
     void loadData();
@@ -164,7 +189,11 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">RAG Data Visibility</h2>
-          <p className="text-muted-foreground">Alle gespeicherten RAG-Daten für diesen Lead</p>
+          <p className="text-muted-foreground">
+            {mode === 'lead'
+              ? 'Alle gespeicherten RAG-Daten für diesen Lead'
+              : 'Alle gespeicherten RAG-Daten für diese Qualification'}
+          </p>
         </div>
         <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
@@ -174,7 +203,9 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList
+          className={mode === 'lead' ? 'grid w-full grid-cols-5' : 'grid w-full grid-cols-4'}
+        >
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             <span className="hidden sm:inline">Übersicht</span>
@@ -187,10 +218,12 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">Raw Chunks</span>
           </TabsTrigger>
-          <TabsTrigger value="section-data" className="flex items-center gap-2">
-            <Layers className="h-4 w-4" />
-            <span className="hidden sm:inline">Section Data</span>
-          </TabsTrigger>
+          {mode === 'lead' && (
+            <TabsTrigger value="section-data" className="flex items-center gap-2">
+              <Layers className="h-4 w-4" />
+              <span className="hidden sm:inline">Section Data</span>
+            </TabsTrigger>
+          )}
           <TabsTrigger value="similarity" className="flex items-center gap-2">
             <Search className="h-4 w-4" />
             <span className="hidden sm:inline">Similarity Test</span>
@@ -211,19 +244,32 @@ export function RAGDataClient({ leadId }: RAGDataClientProps) {
           )}
         </TabsContent>
 
-        {/* Raw Chunks Tab - shows Lead Embeddings (Audit Data) */}
+        {/* Raw Chunks Tab */}
         <TabsContent value="raw-chunks" className="mt-6">
-          <LeadEmbeddingsBrowser leadId={leadId} />
+          {mode === 'qualification' ? (
+            preQualificationId ? (
+              <ChunkBrowser preQualificationId={preQualificationId} mode="raw" />
+            ) : (
+              <NoDataPlaceholder message="Keine Qualification-Daten - Raw Chunks nur mit Qualification verfügbar" />
+            )
+          ) : (
+            <LeadEmbeddingsBrowser pitchId={pitchId!} />
+          )}
         </TabsContent>
 
         {/* Section Data Tab */}
-        <TabsContent value="section-data" className="mt-6">
-          <SectionDataView data={sectionData} isLoading={isLoading} />
-        </TabsContent>
+        {mode === 'lead' && (
+          <TabsContent value="section-data" className="mt-6">
+            <SectionDataView data={sectionData} isLoading={isLoading} />
+          </TabsContent>
+        )}
 
         {/* Similarity Tester Tab */}
         <TabsContent value="similarity" className="mt-6">
-          <SimilarityTester preQualificationId={preQualificationId ?? undefined} leadId={leadId} />
+          <SimilarityTester
+            preQualificationId={preQualificationId ?? undefined}
+            pitchId={mode === 'lead' ? pitchId : undefined}
+          />
         </TabsContent>
       </Tabs>
     </div>
@@ -383,7 +429,7 @@ function CombinedStatsCard({ stats, isLoading }: { stats: CombinedStats; isLoadi
 
 const PAGE_SIZE = 20;
 
-function LeadEmbeddingsBrowser({ leadId }: { leadId: string }) {
+function LeadEmbeddingsBrowser({ pitchId }: { pitchId: string }) {
   const [data, setData] = useState<LeadEmbeddingsResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -405,20 +451,20 @@ function LeadEmbeddingsBrowser({ leadId }: { leadId: string }) {
 
   // Load filter options
   useEffect(() => {
-    void Promise.all([getLeadEmbeddingAgents(leadId), getLeadEmbeddingTypes(leadId)]).then(
+    void Promise.all([getLeadEmbeddingAgents(pitchId), getLeadEmbeddingTypes(pitchId)]).then(
       ([agentsResult, typesResult]) => {
         if (agentsResult.success) setAvailableAgents(agentsResult.data);
         if (typesResult.success) setAvailableTypes(typesResult.data);
       }
     );
-  }, [leadId]);
+  }, [pitchId]);
 
   // Fetch data
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await getLeadEmbeddings({
-        pitchId: leadId,
+        pitchId,
         agentName: agentFilter,
         chunkType: typeFilter,
         search: debouncedSearch || undefined,
@@ -433,7 +479,7 @@ function LeadEmbeddingsBrowser({ leadId }: { leadId: string }) {
     } finally {
       setIsLoading(false);
     }
-  }, [leadId, agentFilter, typeFilter, debouncedSearch, page]);
+  }, [pitchId, agentFilter, typeFilter, debouncedSearch, page]);
 
   useEffect(() => {
     void fetchData();

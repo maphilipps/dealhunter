@@ -13,6 +13,7 @@ import { eq } from 'drizzle-orm';
 import { generateQueryEmbedding, isEmbeddingEnabled } from '../ai/embedding-config';
 import { db } from '../db';
 import { rawChunks } from '../db/schema';
+import { formatSourceCitation } from './citations';
 
 export interface RawRAGQuery {
   preQualificationId: string;
@@ -30,6 +31,34 @@ export interface RawRAGResult {
     startPosition: number;
     endPosition: number;
     type: string;
+    source?: {
+      kind: 'pdf';
+      fileName: string;
+      pass?: 'text' | 'tables' | 'images';
+      page: number;
+      paragraphStart: number;
+      paragraphEnd: number;
+      heading: string | null;
+    };
+    webSource?: {
+      url: string;
+      title?: string;
+      accessedAt?: string;
+    };
+  };
+  source?: {
+    kind: 'pdf';
+    fileName: string;
+    pass?: 'text' | 'tables' | 'images';
+    page: number;
+    paragraphStart: number;
+    paragraphEnd: number;
+    heading: string | null;
+  };
+  webSource?: {
+    url: string;
+    title?: string;
+    accessedAt?: string;
   };
 }
 
@@ -108,6 +137,24 @@ function toRAGResult(chunk: DBChunk, similarity: number): RawRAGResult {
     ? (JSON.parse(chunk.metadata) as RawRAGResult['metadata'])
     : { startPosition: 0, endPosition: 0, type: 'unknown' };
 
+  const sourceCandidate =
+    metadata && typeof metadata === 'object' ? (metadata.source as any) : undefined;
+  const source =
+    sourceCandidate && typeof sourceCandidate === 'object' && sourceCandidate.kind === 'pdf'
+      ? (sourceCandidate as RawRAGResult['source'])
+      : undefined;
+
+  const webCandidate =
+    metadata && typeof metadata === 'object' ? (metadata.webSource as any) : undefined;
+  const webSource =
+    webCandidate && typeof webCandidate === 'object' && typeof webCandidate.url === 'string'
+      ? ({
+          url: webCandidate.url,
+          title: webCandidate.title,
+          accessedAt: webCandidate.accessedAt,
+        } as RawRAGResult['webSource'])
+      : undefined;
+
   return {
     chunkId: chunk.id,
     chunkIndex: chunk.chunkIndex,
@@ -115,6 +162,8 @@ function toRAGResult(chunk: DBChunk, similarity: number): RawRAGResult {
     similarity,
     tokenCount: chunk.tokenCount,
     metadata,
+    ...(source ? { source } : {}),
+    ...(webSource ? { webSource } : {}),
   };
 }
 
@@ -263,7 +312,16 @@ export function formatRAGContext(results: RawRAGResult[], label?: string): strin
 
   const header = label ? `### ${label}\n\n` : '';
   const chunks = results
-    .map(r => `[Relevanz: ${Math.round(r.similarity * 100)}%]\n${r.content}`)
+    .map(r => {
+      const lines = [`[Relevanz: ${Math.round(r.similarity * 100)}%]`];
+      if (r.source) {
+        lines.push(`[Quelle: ${formatSourceCitation(r.source)}]`);
+      } else if (r.webSource?.url) {
+        lines.push(`[Quelle: ${r.webSource.url}]`);
+      }
+      lines.push(r.content);
+      return lines.join('\n');
+    })
     .join('\n\n---\n\n');
 
   return `${header}${chunks}`;

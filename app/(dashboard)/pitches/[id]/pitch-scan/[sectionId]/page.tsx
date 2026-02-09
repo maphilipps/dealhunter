@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 
 import { SectionRendererClient } from './section-renderer-client';
 
+import { MessageResponse } from '@/components/ai-elements/message';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +19,22 @@ type Finding = {
   recommendation: string;
   estimatedImpact?: 'high' | 'medium' | 'low';
 };
+
+type MarkdownPhaseContent = {
+  summary: string;
+  markdown: string;
+};
+
+function isMarkdownContent(content: unknown): content is MarkdownPhaseContent {
+  if (!content || typeof content !== 'object') return false;
+  const c = content as Record<string, unknown>;
+  return (
+    typeof c.summary === 'string' &&
+    c.summary.length > 0 &&
+    typeof c.markdown === 'string' &&
+    c.markdown.length > 0
+  );
+}
 
 type StructuredPhaseContent = {
   summary: string;
@@ -93,6 +110,7 @@ export default async function SectionDetailPage({
   let renderTree: Record<string, unknown> | null = null;
   let confidence: number | null = null;
   let timestamp: Date | null = null;
+  let markdownContent: MarkdownPhaseContent | null = null;
   let structuredContent: StructuredPhaseContent | null = null;
 
   for (const chunk of chunks) {
@@ -103,7 +121,15 @@ export default async function SectionDetailPage({
         // ignore parse errors
       }
     }
-    if (!structuredContent) {
+    if (!markdownContent) {
+      try {
+        const parsed = JSON.parse(chunk.content) as unknown;
+        if (isMarkdownContent(parsed)) markdownContent = parsed;
+      } catch {
+        // ignore
+      }
+    }
+    if (!markdownContent && !structuredContent) {
       try {
         const parsed = JSON.parse(chunk.content) as unknown;
         if (isStructuredPhaseContent(parsed)) structuredContent = parsed;
@@ -182,6 +208,17 @@ export default async function SectionDetailPage({
         </Card>
       ) : renderTree ? (
         <SectionRendererClient tree={renderTree} />
+      ) : markdownContent ? (
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <p className="text-muted-foreground">{markdownContent.summary}</p>
+            </div>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <MessageResponse>{markdownContent.markdown}</MessageResponse>
+            </div>
+          </CardContent>
+        </Card>
       ) : structuredContent ? (
         <Card>
           <CardContent className="pt-6 space-y-6">

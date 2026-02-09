@@ -69,6 +69,20 @@ export interface RawChunkItem {
     startPosition?: number;
     endPosition?: number;
     type?: string;
+    source?: {
+      kind: 'pdf';
+      fileName: string;
+      pass?: 'text' | 'tables' | 'images';
+      page: number;
+      paragraphStart: number;
+      paragraphEnd: number;
+      heading: string | null;
+    };
+    webSource?: {
+      url: string;
+      title?: string;
+      accessedAt?: string;
+    };
   };
   createdAt: Date;
 }
@@ -108,7 +122,7 @@ export interface SectionDataResult {
 }
 
 export interface SectionDataFilter {
-  leadId: string;
+  pitchId: string;
   sectionId?: string;
 }
 
@@ -129,7 +143,7 @@ export interface SimilarityResult {
 
 export interface SimilaritySearchParams {
   preQualificationId?: string;
-  leadId?: string;
+  pitchId?: string;
   query: string;
   threshold?: number;
   maxResults?: number;

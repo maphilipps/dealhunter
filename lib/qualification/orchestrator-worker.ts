@@ -12,10 +12,13 @@
  */
 
 import { generateText, Output } from 'ai';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { getModelForSlot } from '@/lib/ai/providers';
 import { runPreQualSectionAgent } from '@/lib/json-render/prequal-section-agent';
+import { db } from '@/lib/db';
+import { dealEmbeddings } from '@/lib/db/schema';
 import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
 import { runWithConcurrency } from '@/lib/utils/concurrency';
 
@@ -377,6 +380,98 @@ async function evaluateSectionResult(
       completeness: 0,
       needsRetry: true,
       reasoning: result.error || 'Section fehlgeschlagen',
+    };
+  }
+
+  // Deterministic quality gates for decision-grade sections (anti "too general").
+  if (result.sectionId === 'deliverables' || result.sectionId === 'references') {
+    const sectionId = result.sectionId;
+    const minFindings = sectionId === 'deliverables' ? 12 : 10;
+    const minRfpGrounded = sectionId === 'deliverables' ? 4 : 3;
+
+    const rows = await db
+      .select({
+        content: dealEmbeddings.content,
+        metadata: dealEmbeddings.metadata,
+      })
+      .from(dealEmbeddings)
+      .where(
+        and(
+          eq(dealEmbeddings.preQualificationId, preQualificationId),
+          eq(dealEmbeddings.agentName, 'prequal_section_agent'),
+          eq(dealEmbeddings.chunkType, sectionId)
+        )
+      );
+
+    const total = rows.length;
+    const hasSource = (row: { content: string; metadata: string | null }) => {
+      const content = row.content ?? '';
+      if (/\((Quelle|Annahme):/i.test(content) || /\bQuelle:\s*/i.test(content)) return true;
+      if (!row.metadata) return false;
+      try {
+        const m = JSON.parse(row.metadata) as any;
+        const sources = m?.sources;
+        return Array.isArray(sources) && sources.length > 0;
+      } catch {
+        return false;
+      }
+    };
+
+    const withSources = rows.filter(r => hasSource(r)).length;
+    const ratio = total > 0 ? withSources / total : 0;
+
+    const rfpGrounded = rows.filter(r => {
+      if (!r.metadata) return false;
+      try {
+        const m = JSON.parse(r.metadata) as any;
+        const sources = m?.sources;
+        return (
+          Array.isArray(sources) &&
+          sources.some((s: any) => s && typeof s === 'object' && s.kind === 'rfp_pdf')
+        );
+      } catch {
+        return false;
+      }
+    }).length;
+
+    const hasEffortMarker =
+      sectionId !== 'deliverables'
+        ? true
+        : rows.some(r => /\bAufwand:\b/i.test(r.content) || /\bWBS\b/i.test(r.content));
+
+    const reasons: string[] = [];
+    if (total < minFindings) {
+      reasons.push(`Zu wenig Findings: ${total}/${minFindings}`);
+    }
+    if (ratio < 0.85) {
+      reasons.push(`Zu wenig Quellenabdeckung: ${(ratio * 100).toFixed(0)}% (<85%)`);
+    }
+    if (rfpGrounded < minRfpGrounded) {
+      reasons.push(
+        `Zu wenig RFP/PDF-Grounding: ${rfpGrounded}/${minRfpGrounded} Findings mit rfp_pdf Quelle`
+      );
+    }
+    if (!hasEffortMarker) {
+      reasons.push('Fehlender Aufwand/WBS-Finding (Pattern: "Aufwand:" oder "WBS")');
+    }
+
+    if (reasons.length > 0) {
+      return {
+        qualityScore: 35,
+        confidence: 70,
+        completeness: Math.max(10, Math.round((total / minFindings) * 100)),
+        needsRetry: true,
+        reasoning: `Quality-Gate failed (${sectionId}): ${reasons.join('; ')}`,
+      };
+    }
+
+    const score = Math.min(95, Math.round(60 + ratio * 40));
+    return {
+      qualityScore: score,
+      confidence: 85,
+      completeness: Math.min(100, Math.round((total / minFindings) * 100)),
+      needsRetry: false,
+      reasoning: `Quality-Gate passed (${sectionId}): ${total} Findings, Quellenabdeckung ${(ratio * 100).toFixed(0)}%`,
     };
   }
 

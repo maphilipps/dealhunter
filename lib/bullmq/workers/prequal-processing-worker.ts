@@ -278,7 +278,7 @@ async function processPdf(
   const chunked = pageCount > 30;
 
   try {
-    text = await extractTextFromPdf(buffer, { extractionMode: 'thorough' });
+    text = await extractTextFromPdf(buffer, { extractionMode: 'thorough', includeLocators: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (message.toLowerCase().includes('document has no pages')) {
@@ -318,11 +318,9 @@ function buildRawInput(
   const rawInputParts: string[] = [];
 
   // Add PDF sections
-  if (extractedTexts.length === 1) {
-    rawInputParts.push(extractedTexts[0].text);
-  } else if (extractedTexts.length > 1) {
+  if (extractedTexts.length > 0) {
     for (const { fileName, text } of extractedTexts) {
-      rawInputParts.push(`=== DOKUMENT: ${fileName} ===\n\n${text}`);
+      rawInputParts.push(`[[DOC]] ${fileName}\n\n${text}\n\n[[ENDDOC]]`);
     }
   }
 

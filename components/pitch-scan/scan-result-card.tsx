@@ -44,6 +44,22 @@ type Finding = {
   estimatedImpact?: 'high' | 'medium' | 'low';
 };
 
+type MarkdownPhaseContent = {
+  summary: string;
+  markdown: string;
+};
+
+function isMarkdownContent(content: unknown): content is MarkdownPhaseContent {
+  if (!content || typeof content !== 'object') return false;
+  const c = content as Record<string, unknown>;
+  return (
+    typeof c.summary === 'string' &&
+    c.summary.length > 0 &&
+    typeof c.markdown === 'string' &&
+    c.markdown.length > 0
+  );
+}
+
 type StructuredPhaseContent = {
   summary: string;
   findings: Finding[];
@@ -137,8 +153,9 @@ export function ScanResultCard({
     }
 
     const content = data.section.content;
-    const asMarkdown = typeof content === 'string' ? content : null;
-    const asStructured = isStructuredPhaseContent(content) ? content : null;
+    const asMarkdownContent = isMarkdownContent(content) ? content : null;
+    const asStructured = !asMarkdownContent && isStructuredPhaseContent(content) ? content : null;
+    const asRawMarkdown = typeof content === 'string' ? content : null;
 
     return (
       <div className="space-y-3">
@@ -150,7 +167,19 @@ export function ScanResultCard({
             </Link>
           </Button>
         </div>
-        {asStructured ? (
+        {asMarkdownContent ? (
+          <div className="space-y-3">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <MessageResponse>{asMarkdownContent.summary}</MessageResponse>
+            </div>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <MessageResponse>
+                {asMarkdownContent.markdown.slice(0, 500) +
+                  (asMarkdownContent.markdown.length > 500 ? '...' : '')}
+              </MessageResponse>
+            </div>
+          </div>
+        ) : asStructured ? (
           <div className="space-y-3">
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <MessageResponse>{asStructured.summary}</MessageResponse>
@@ -187,7 +216,7 @@ export function ScanResultCard({
         ) : (
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <MessageResponse>
-              {asMarkdown ?? `\`\`\`json\n${JSON.stringify(content, null, 2)}\n\`\`\``}
+              {asRawMarkdown ?? `\`\`\`json\n${JSON.stringify(content, null, 2)}\n\`\`\``}
             </MessageResponse>
           </div>
         )}

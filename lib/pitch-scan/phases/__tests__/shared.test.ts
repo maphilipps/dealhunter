@@ -62,22 +62,11 @@ vi.mock('drizzle-orm', () => ({
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
-function makeFinding(overrides: Record<string, unknown> = {}) {
-  return {
-    problem: 'Seite laedt langsam',
-    relevance: 'Performance beeinflusst Conversion Rate',
-    recommendation: 'Bildoptimierung und Caching einfuehren',
-    ...overrides,
-  };
-}
-
-function makeValidResponse(findingsCount = 3) {
+function makeValidResponse() {
   return {
     content: {
       summary: 'Zusammenfassung der Analyse',
-      findings: Array.from({ length: findingsCount }, (_, i) =>
-        makeFinding({ problem: `Problem ${i + 1}` })
-      ),
+      markdown: '## Ergebnis\n\nDetaillierte Analyse als Markdown.',
     },
     confidence: 75,
     sources: ['https://example.com'],
@@ -105,107 +94,69 @@ describe('shared phase utilities', () => {
   // ── phaseAgentResponseSchema ──────────────────────────────────────────────
 
   describe('phaseAgentResponseSchema', () => {
-    it('accepts valid response with 3 findings', () => {
-      const result = phaseAgentResponseSchema.safeParse(makeValidResponse(3));
+    it('accepts valid response with summary and markdown', () => {
+      const result = phaseAgentResponseSchema.safeParse(makeValidResponse());
       expect(result.success).toBe(true);
     });
 
-    it('accepts valid response with 5 findings', () => {
-      const result = phaseAgentResponseSchema.safeParse(makeValidResponse(5));
-      expect(result.success).toBe(true);
-    });
-
-    it('accepts valid response with 7 findings (max)', () => {
-      const result = phaseAgentResponseSchema.safeParse(makeValidResponse(7));
-      expect(result.success).toBe(true);
-    });
-
-    it('rejects response with fewer than 3 findings', () => {
-      const result = phaseAgentResponseSchema.safeParse(makeValidResponse(2));
+    it('rejects empty summary', () => {
+      const data = makeValidResponse();
+      data.content.summary = '';
+      const result = phaseAgentResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
 
-    it('rejects response with more than 7 findings', () => {
-      const result = phaseAgentResponseSchema.safeParse(makeValidResponse(8));
+    it('rejects empty markdown', () => {
+      const data = makeValidResponse();
+      data.content.markdown = '';
+      const result = phaseAgentResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
 
-    it('rejects finding without problem field', () => {
-      const data = makeValidResponse(3);
+    it('rejects missing summary field', () => {
+      const data = makeValidResponse();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (data.content.findings[0] as any).problem;
+      delete (data.content as any).summary;
       const result = phaseAgentResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
 
-    it('rejects finding without relevance field', () => {
-      const data = makeValidResponse(3);
+    it('rejects missing markdown field', () => {
+      const data = makeValidResponse();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (data.content.findings[0] as any).relevance;
-      const result = phaseAgentResponseSchema.safeParse(data);
-      expect(result.success).toBe(false);
-    });
-
-    it('rejects finding without recommendation field', () => {
-      const data = makeValidResponse(3);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (data.content.findings[0] as any).recommendation;
-      const result = phaseAgentResponseSchema.safeParse(data);
-      expect(result.success).toBe(false);
-    });
-
-    it('rejects empty problem string', () => {
-      const data = makeValidResponse(3);
-      data.content.findings[0] = makeFinding({ problem: '' });
-      const result = phaseAgentResponseSchema.safeParse(data);
-      expect(result.success).toBe(false);
-    });
-
-    it('accepts optional estimatedImpact field', () => {
-      const data = makeValidResponse(3);
-      data.content.findings[0] = makeFinding({ estimatedImpact: 'high' });
-      const result = phaseAgentResponseSchema.safeParse(data);
-      expect(result.success).toBe(true);
-    });
-
-    it('rejects invalid estimatedImpact value', () => {
-      const data = makeValidResponse(3);
-      data.content.findings[0] = makeFinding({ estimatedImpact: 'critical' });
+      delete (data.content as any).markdown;
       const result = phaseAgentResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
 
     it('rejects confidence below 0', () => {
-      const data = makeValidResponse(3);
+      const data = makeValidResponse();
       data.confidence = -1;
       const result = phaseAgentResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
 
     it('rejects confidence above 100', () => {
-      const data = makeValidResponse(3);
+      const data = makeValidResponse();
       data.confidence = 101;
       const result = phaseAgentResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
 
     it('accepts missing sources (optional)', () => {
-      const { sources: _, ...data } = makeValidResponse(3);
+      const { sources: _, ...data } = makeValidResponse();
       const result = phaseAgentResponseSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
 
-    it('allows passthrough fields on content', () => {
-      const data = makeValidResponse(3);
+    it('strips unknown fields from content (no passthrough)', () => {
+      const data = makeValidResponse();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (data.content as any).techStack = ['React', 'Node.js'];
       const result = phaseAgentResponseSchema.safeParse(data);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect((result.data.content as Record<string, unknown>).techStack).toEqual([
-          'React',
-          'Node.js',
-        ]);
+        expect((result.data.content as Record<string, unknown>).techStack).toBeUndefined();
       }
     });
   });

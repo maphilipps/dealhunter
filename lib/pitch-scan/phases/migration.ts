@@ -13,10 +13,10 @@ const SYSTEM_PROMPT =
 - Geschätzter Migrationsaufwand
 
 Output: JSON gemaess Schema:
-- content.summary
-- content.findings (3-7)
-- content.overallComplexity/complexityScore/factors/risks/estimatedEffort/recommendations als strukturierte Felder
-- confidence, sources optional` as const;
+- content.summary: 1-2 Saetze Kurzfassung
+- content.markdown: Vollstaendige Analyse als Markdown mit Migrations-Phasen-Tabelle (| Phase | Beschreibung | Aufwand | Risiko |). Keine kuenstliche Kuerzung — alle relevanten Details ausfuehren.
+- confidence: 0-100
+- sources: optional` as const;
 
 export async function runMigrationPhase(
   context: PhaseContext,

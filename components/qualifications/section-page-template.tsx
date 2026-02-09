@@ -8,6 +8,7 @@ export interface PreQualificationSectionPageTemplateProps {
   sectionId: string;
   title: string;
   description?: string;
+  children?: React.ReactNode;
 }
 
 /**
@@ -23,6 +24,7 @@ export function PreQualificationSectionPageTemplate({
   sectionId,
   title,
   description,
+  children,
 }: PreQualificationSectionPageTemplateProps) {
   return (
     <SectionPageTemplate
@@ -30,6 +32,7 @@ export function PreQualificationSectionPageTemplate({
       sectionId={sectionId}
       title={title}
       description={description}
+      children={children}
       banner={<QualificationScanStatusBanner compact showWhenComplete={false} />}
       noDataTitle="Analyse wird automatisch erstellt"
       noDataDescription="Die Analyse startet automatisch sobald Daten verfügbar sind."

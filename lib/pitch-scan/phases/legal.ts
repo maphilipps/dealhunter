@@ -12,10 +12,10 @@ const SYSTEM_PROMPT =
 - AGB und Widerrufsbelehrung (bei E-Commerce)
 
 Output: JSON gemaess Schema:
-- content.summary
-- content.findings (3-7)
-- content.score/checks/cookieTool/trackers/sslValid/gdprIssues/recommendations als strukturierte Felder
-- confidence, sources optional` as const;
+- content.summary: 1-2 Saetze Kurzfassung
+- content.markdown: Vollstaendige Analyse als Markdown mit DSGVO-Checkliste und Cookie/Consent-Analyse. Keine kuenstliche Kuerzung — alle relevanten Details ausfuehren.
+- confidence: 0-100
+- sources: optional` as const;
 
 export async function runLegalPhase(
   context: PhaseContext,
@@ -25,7 +25,7 @@ export async function runLegalPhase(
     sectionId: 'ps-legal',
     label: 'Legal & Compliance',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Legal & Compliance\n- Findings muessen konkrete Stellen nennen (Impressum/Datenschutz/Consent).\n- Empfehlungen muessen pragmatisch umsetzbar sein.`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Legal & Compliance\n- Analyse muss konkrete Stellen nennen (Impressum/Datenschutz/Consent).\n- Empfehlungen muessen pragmatisch umsetzbar sein.`,
     context,
     emit,
   });

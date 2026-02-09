@@ -1,6 +1,8 @@
 import { notFound, redirect } from 'next/navigation';
+import Link from 'next/link';
 
 import { PreQualificationSectionPageTemplate } from '@/components/qualifications/section-page-template';
+import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/auth';
 import { getCachedPreQualification } from '@/lib/qualifications/cached-queries';
 
@@ -30,6 +32,12 @@ export default async function ReferencesPage({ params }: { params: Promise<{ id:
       sectionId="references"
       title="Referenzen"
       description="Welche und wie viele Referenzen sind gefordert? Wie spitz sind die Kriterien (z.B. Branche)?"
-    />
+    >
+      <div className="flex justify-end">
+        <Button asChild variant="outline" size="sm">
+          <Link href={`/qualifications/${id}/rag-data`}>Quellen prüfen</Link>
+        </Button>
+      </div>
+    </PreQualificationSectionPageTemplate>
   );
 }

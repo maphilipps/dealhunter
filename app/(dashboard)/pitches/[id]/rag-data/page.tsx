@@ -31,7 +31,7 @@ export default async function RAGDataPage({ params }: PageProps) {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <RAGDataClient leadId={id} />
+      <RAGDataClient pitchId={id} />
     </div>
   );
 }

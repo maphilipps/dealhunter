@@ -12,10 +12,10 @@ const SYSTEM_PROMPT =
 - Schätzung der Behebungsaufwände
 
 Output: JSON gemaess Schema:
-- content.summary
-- content.findings (3-7) mit WCAG Bezug (Kriterium) wo moeglich
-- content.estimatedLevel/score/issues/checks/estimatedFixHours/recommendations als strukturierte Felder
-- confidence, sources optional` as const;
+- content.summary: 1-2 Saetze Kurzfassung
+- content.markdown: Vollstaendige Analyse als Markdown mit WCAG-Kriterien-Tabelle und Prioritaetsliste. Keine kuenstliche Kuerzung — alle relevanten Details ausfuehren.
+- confidence: 0-100
+- sources: optional` as const;
 
 export async function runAccessibilityPhase(
   context: PhaseContext,
@@ -25,7 +25,7 @@ export async function runAccessibilityPhase(
     sectionId: 'ps-accessibility',
     label: 'Barrierefreiheit',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Barrierefreiheit\n- Priorisiere Findings nach Risiko/Impact.\n- Wenn PreQual public procurement/Compliance relevant: besonders streng und konkret sein.`,
+    userPrompt: `${buildBaseUserPrompt(context)}\n\n# Phase: Barrierefreiheit\n- Priorisiere Erkenntnisse nach Risiko/Impact.\n- Wenn PreQual public procurement/Compliance relevant: besonders streng und konkret sein.`,
     context,
     emit,
   });

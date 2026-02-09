@@ -7,6 +7,7 @@ import {
   Calendar,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Code,
@@ -53,7 +54,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { Table, TableBody, TableCell, TableHead, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   TypographyH2,
   TypographyH3,
@@ -471,6 +479,94 @@ export const qualificationScanRegistry: Record<string, ComponentType<RegistryCom
           ))}
         </TableBody>
       </Table>
+    );
+  },
+
+  /**
+   * DataTable - General purpose table with pagination.
+   * Note: PaginationWrapper can't be used inside <TableBody> due to DOM structure.
+   */
+  DataTable: ({ element }) => {
+    const { columns, rows, compact } = element.props as {
+      columns: Array<{ key: string; label: string }>;
+      rows: Array<Record<string, string>>;
+      compact?: boolean;
+    };
+
+    if (!Array.isArray(columns) || columns.length === 0) return null;
+    const safeRows = Array.isArray(rows) ? rows : [];
+
+    const pageSize = compact ? 15 : 10;
+    const [page, setPage] = React.useState(0);
+
+    // Reset pagination when the table shape changes.
+    React.useEffect(() => {
+      setPage(0);
+    }, [safeRows.length, columns.length]);
+
+    const totalPages = Math.max(1, Math.ceil(safeRows.length / pageSize));
+    const clampedPage = Math.min(page, totalPages - 1);
+    const startIdx = clampedPage * pageSize;
+    const pageRows = safeRows.slice(startIdx, startIdx + pageSize);
+
+    const cellPadding = compact ? 'py-2' : 'py-3';
+
+    return (
+      <div className="space-y-2">
+        <div className="overflow-x-auto rounded-md border bg-background">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {columns.map(col => (
+                  <TableHead key={col.key} className={cellPadding}>
+                    {col.label}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageRows.map((row, idx) => (
+                <TableRow key={idx}>
+                  {columns.map(col => (
+                    <TableCell key={col.key} className={cellPadding}>
+                      {row[col.key] ?? ''}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {safeRows.length > pageSize && (
+          <div className="flex items-center justify-between pt-2 border-t">
+            <TypographyMutedSpan>
+              {startIdx + 1}–{Math.min(startIdx + pageSize, safeRows.length)} von {safeRows.length}
+            </TypographyMutedSpan>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={clampedPage === 0}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <TypographyMutedSpan className="px-2">
+                {clampedPage + 1}/{totalPages}
+              </TypographyMutedSpan>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={clampedPage >= totalPages - 1}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     );
   },
 

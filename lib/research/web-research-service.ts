@@ -240,7 +240,13 @@ export async function performWebResearch(query: WebResearchQuery): Promise<WebRe
         embedding: chunk.embedding,
         metadata: JSON.stringify({
           ...chunk.metadata,
-          source: 'web_research',
+          // Do not use `metadata.source` (reserved for PDF locators).
+          // This avoids downstream code treating web research as PDF citations.
+          webSource: {
+            url: results[0]?.url,
+            title: results[0]?.title,
+            accessedAt: results[0]?.timestamp?.toISOString?.() ?? new Date().toISOString(),
+          },
           sectionId,
           query: question,
           researchSource: results[0].source,

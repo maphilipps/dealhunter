@@ -10,6 +10,7 @@
 import { count, eq, like, sql, and, desc } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { auth } from '@/lib/auth';
 import type {
   ActionResult,
   RAGStats,
@@ -27,7 +28,14 @@ import type {
 
 import { generateQueryEmbedding } from '@/lib/ai/embedding-config';
 import { db } from '@/lib/db';
-import { dealEmbeddings, rawChunks, pitchSectionData, pitches } from '@/lib/db/schema';
+import {
+  dealEmbeddings,
+  rawChunks,
+  pitchSectionData,
+  pitches,
+  preQualifications,
+  users,
+} from '@/lib/db/schema';
 
 // ============================================================================
 // Validation Schemas
@@ -70,6 +78,65 @@ const searchSimilarSchema = z.object({
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+async function getSessionUser(): Promise<
+  { ok: true; userId: string; role: string } | { ok: false; error: string }
+> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: 'Nicht authentifiziert' };
+  return { ok: true, userId: session.user.id, role: session.user.role };
+}
+
+async function assertCanAccessPreQualification(
+  preQualificationId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await getSessionUser();
+  if (!session.ok) return session;
+  if (session.role === 'admin') return { ok: true };
+
+  const [row] = await db
+    .select({ id: preQualifications.id })
+    .from(preQualifications)
+    .where(
+      and(
+        eq(preQualifications.id, preQualificationId),
+        eq(preQualifications.userId, session.userId)
+      )
+    )
+    .limit(1);
+
+  return row ? { ok: true } : { ok: false, error: 'Keine Berechtigung' };
+}
+
+async function assertCanAccessPitch(
+  pitchId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await getSessionUser();
+  if (!session.ok) return session;
+  if (session.role === 'admin') return { ok: true };
+
+  // Only BL users can access pitches; scoped to their business unit.
+  if (session.role !== 'bl') return { ok: false, error: 'Keine Berechtigung' };
+
+  const [[me], [pitch]] = await Promise.all([
+    db
+      .select({ businessUnitId: users.businessUnitId })
+      .from(users)
+      .where(eq(users.id, session.userId))
+      .limit(1),
+    db
+      .select({ businessUnitId: pitches.businessUnitId })
+      .from(pitches)
+      .where(eq(pitches.id, pitchId))
+      .limit(1),
+  ]);
+
+  if (!me || !me.businessUnitId) return { ok: false, error: 'Keine Berechtigung' };
+  if (!pitch) return { ok: false, error: 'Lead nicht gefunden' };
+  return pitch.businessUnitId === me.businessUnitId
+    ? { ok: true }
+    : { ok: false, error: 'Keine Berechtigung' };
+}
 
 /**
  * Calculate cosine similarity between two vectors
@@ -127,6 +194,8 @@ export async function getRAGStats(
   }
 
   const { preQualificationId } = parsed.data;
+  const access = await assertCanAccessPreQualification(preQualificationId);
+  if (!access.ok) return { success: false, error: access.error };
 
   try {
     // Get total embeddings count
@@ -162,7 +231,7 @@ export async function getRAGStats(
       .select({
         agentName: dealEmbeddings.agentName,
         chunkCount: count(),
-        lastUpdated: sql<string>`MAX(${dealEmbeddings.createdAt})`,
+        lastUpdated: sql<unknown>`MAX(${dealEmbeddings.createdAt})`,
       })
       .from(dealEmbeddings)
       .where(eq(dealEmbeddings.preQualificationId, preQualificationId))
@@ -191,7 +260,11 @@ export async function getRAGStats(
       agentName: row.agentName,
       chunkCount: row.chunkCount,
       chunkTypes: Array.from(agentChunkTypes.get(row.agentName) || []),
-      lastUpdated: row.lastUpdated ? new Date(Number(row.lastUpdated) * 1000) : null,
+      lastUpdated: (() => {
+        if (!row.lastUpdated) return null;
+        const d = new Date(row.lastUpdated as any);
+        return Number.isFinite(d.getTime()) ? d : null;
+      })(),
     }));
 
     // Get chunk type distribution
@@ -238,6 +311,8 @@ export async function getAgentOutputs(
 
   const { preQualificationId, agentName, chunkType, search, page, pageSize } = parsed.data;
   const offset = (page - 1) * pageSize;
+  const access = await assertCanAccessPreQualification(preQualificationId);
+  if (!access.ok) return { success: false, error: access.error };
 
   try {
     // Build where conditions
@@ -314,6 +389,8 @@ export async function getRawChunks(input: RawChunksFilter): Promise<ActionResult
 
   const { preQualificationId, search, page, pageSize } = parsed.data;
   const offset = (page - 1) * pageSize;
+  const access = await assertCanAccessPreQualification(preQualificationId);
+  if (!access.ok) return { success: false, error: access.error };
 
   try {
     // Build where conditions
@@ -352,10 +429,20 @@ export async function getRawChunks(input: RawChunksFilter): Promise<ActionResult
       data: {
         items: items.map(item => ({
           ...item,
-          metadata: safeParseJSON<{ startPosition?: number; endPosition?: number; type?: string }>(
-            item.metadata,
-            {}
-          ),
+          metadata: safeParseJSON<{
+            startPosition?: number;
+            endPosition?: number;
+            type?: string;
+            source?: {
+              kind: 'pdf';
+              fileName: string;
+              pass?: 'text' | 'tables' | 'images';
+              page: number;
+              paragraphStart: number;
+              paragraphEnd: number;
+              heading: string | null;
+            };
+          }>(item.metadata, {}),
           createdAt: item.createdAt ?? new Date(),
         })),
         total,
@@ -371,7 +458,7 @@ export async function getRawChunks(input: RawChunksFilter): Promise<ActionResult
 }
 
 /**
- * Get lead section data
+ * Get pitch section data
  */
 export async function getSectionData(
   input: SectionDataFilter
@@ -382,6 +469,8 @@ export async function getSectionData(
   }
 
   const { pitchId, sectionId } = parsed.data;
+  const access = await assertCanAccessPitch(pitchId);
+  if (!access.ok) return { success: false, error: access.error };
 
   try {
     // Build where conditions
@@ -440,6 +529,15 @@ export async function searchSimilar(
   // Need either preQualificationId or pitchId
   if (!preQualificationId && !pitchId) {
     return { success: false, error: 'Either preQualificationId or pitchId is required' };
+  }
+
+  if (preQualificationId) {
+    const access = await assertCanAccessPreQualification(preQualificationId);
+    if (!access.ok) return { success: false, error: access.error };
+  }
+  if (pitchId) {
+    const access = await assertCanAccessPitch(pitchId);
+    if (!access.ok) return { success: false, error: access.error };
   }
 
   try {
@@ -585,6 +683,9 @@ export async function searchSimilar(
  * Get Qualification ID for a lead (helper for client components)
  */
 export async function getRfpIdForLead(pitchId: string): Promise<ActionResult<string | null>> {
+  const access = await assertCanAccessPitch(pitchId);
+  if (!access.ok) return { success: false, error: access.error };
+
   try {
     const [lead] = await db
       .select({ preQualificationId: pitches.preQualificationId })
@@ -647,6 +748,8 @@ export async function getLeadEmbeddings(
 
   const { pitchId, agentName, chunkType, search, page, pageSize } = parsed.data;
   const offset = (page - 1) * pageSize;
+  const access = await assertCanAccessPitch(pitchId);
+  if (!access.ok) return { success: false, error: access.error };
 
   try {
     // Build where conditions
@@ -720,6 +823,9 @@ export async function getLeadEmbeddingsStats(
 ): Promise<
   ActionResult<{ total: number; byAgent: Record<string, number>; byType: Record<string, number> }>
 > {
+  const access = await assertCanAccessPitch(pitchId);
+  if (!access.ok) return { success: false, error: access.error };
+
   try {
     // Get total count
     const [totalResult] = await db
@@ -775,6 +881,9 @@ export async function getLeadEmbeddingsStats(
  * Get unique agent names for lead embeddings
  */
 export async function getLeadEmbeddingAgents(pitchId: string): Promise<ActionResult<string[]>> {
+  const access = await assertCanAccessPitch(pitchId);
+  if (!access.ok) return { success: false, error: access.error };
+
   try {
     const agents = await db
       .selectDistinct({ agentName: dealEmbeddings.agentName })
@@ -796,6 +905,9 @@ export async function getLeadEmbeddingAgents(pitchId: string): Promise<ActionRes
  * Get unique chunk types for lead embeddings
  */
 export async function getLeadEmbeddingTypes(pitchId: string): Promise<ActionResult<string[]>> {
+  const access = await assertCanAccessPitch(pitchId);
+  if (!access.ok) return { success: false, error: access.error };
+
   try {
     const types = await db
       .selectDistinct({ chunkType: dealEmbeddings.chunkType })
@@ -817,6 +929,9 @@ export async function getLeadEmbeddingTypes(pitchId: string): Promise<ActionResu
  * Get unique agent names for a Qualification (for filter dropdowns)
  */
 export async function getAgentNames(preQualificationId: string): Promise<ActionResult<string[]>> {
+  const access = await assertCanAccessPreQualification(preQualificationId);
+  if (!access.ok) return { success: false, error: access.error };
+
   try {
     const agents = await db
       .selectDistinct({ agentName: dealEmbeddings.agentName })
@@ -838,6 +953,9 @@ export async function getAgentNames(preQualificationId: string): Promise<ActionR
  * Get unique chunk types for a Qualification (for filter dropdowns)
  */
 export async function getChunkTypes(preQualificationId: string): Promise<ActionResult<string[]>> {
+  const access = await assertCanAccessPreQualification(preQualificationId);
+  if (!access.ok) return { success: false, error: access.error };
+
   try {
     const types = await db
       .selectDistinct({ chunkType: dealEmbeddings.chunkType })

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { chunkRawText, estimateTokens, getChunkStats, type RawChunk } from '../raw-chunk-service';
+import {
+  chunkRawText,
+  chunkRawTextWithLocators,
+  estimateTokens,
+  getChunkStats,
+  type RawChunk,
+} from '../raw-chunk-service';
 
 describe('raw-chunk-service', () => {
   describe('estimateTokens', () => {
@@ -193,6 +199,95 @@ Email: m.mustermann@mustermann.de
       expect(stats.avgTokensPerChunk).toBe(150);
       expect(stats.minTokens).toBe(100);
       expect(stats.maxTokens).toBe(200);
+    });
+  });
+
+  describe('chunkRawTextWithLocators', () => {
+    it('should attach stable PDF locators (file/page/paragraph/heading) when markers exist', () => {
+      const input = [
+        '[[DOC]] A.pdf',
+        '[[PASS text]]',
+        '[[PAGE 15]]',
+        '[[H]] Titel',
+        '',
+        'Absatz 1. '.repeat(60),
+        '',
+        'Absatz 2. '.repeat(60),
+        '',
+        'Absatz 3. '.repeat(60),
+      ].join('\n');
+
+      const chunks = chunkRawTextWithLocators(input);
+      expect(chunks.length).toBeGreaterThanOrEqual(1);
+
+      // We want a chunk that covers paragraph 3 to exist.
+      const withLocator = chunks.find(c => c.metadata.source?.page === 15);
+      expect(withLocator).toBeTruthy();
+      expect(withLocator!.metadata.source!.fileName).toBe('A.pdf');
+      expect(withLocator!.metadata.source!.page).toBe(15);
+      expect(withLocator!.metadata.source!.pass).toBe('text');
+      expect(withLocator!.metadata.source!.paragraphStart).toBeGreaterThanOrEqual(1);
+      expect(withLocator!.metadata.source!.paragraphEnd).toBeGreaterThanOrEqual(
+        withLocator!.metadata.source!.paragraphStart
+      );
+      expect(withLocator!.metadata.source!.heading).toBe('Titel');
+    });
+
+    it('should never create chunks that cross page boundaries', () => {
+      const pageText = (label: string) => `${label} `.repeat(120);
+      const input = [
+        '[[DOC]] A.pdf',
+        '[[PASS text]]',
+        '[[PAGE 1]]',
+        pageText('Seite1-Absatz1'),
+        '',
+        pageText('Seite1-Absatz2'),
+        '',
+        '[[PASS tables]]',
+        '[[PAGE 2]]',
+        pageText('Seite2-Absatz1'),
+        '',
+        pageText('Seite2-Absatz2'),
+      ].join('\n');
+
+      const chunks = chunkRawTextWithLocators(input);
+      const pages = new Set(chunks.map(c => c.metadata.source?.page).filter(Boolean));
+      expect(pages.has(1)).toBe(true);
+      expect(pages.has(2)).toBe(true);
+
+      for (const chunk of chunks) {
+        const src = chunk.metadata.source;
+        if (!src) continue;
+        expect(src.paragraphStart).toBeLessThanOrEqual(src.paragraphEnd);
+        expect([1, 2]).toContain(src.page);
+      }
+    });
+
+    it('should not mix different passes for the same page into a single chunk', () => {
+      const input = [
+        '[[DOC]] A.pdf',
+        '[[PASS text]]',
+        '[[PAGE 1]]',
+        'Textpass Inhalt. '.repeat(80),
+        '',
+        '[[PASS tables]]',
+        '[[PAGE 1]]',
+        'Tabellenpass Inhalt. '.repeat(80),
+      ].join('\n');
+
+      const chunks = chunkRawTextWithLocators(input);
+      expect(chunks.length).toBeGreaterThanOrEqual(2);
+
+      const passes = new Set(chunks.map(c => c.metadata.source?.pass).filter(Boolean));
+      expect(passes.has('text')).toBe(true);
+      expect(passes.has('tables')).toBe(true);
+
+      for (const chunk of chunks) {
+        const src = chunk.metadata.source;
+        if (!src) continue;
+        expect(src.fileName).toBe('A.pdf');
+        expect(src.page).toBe(1);
+      }
     });
   });
 });

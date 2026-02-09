@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
+import { extractTextFromPdf } from '@/lib/bids/pdf-extractor';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { ingestDocument } from '@/lib/pitch/rag/ingest-pipeline';
+
+export const runtime = 'nodejs';
 
 /**
  * POST /api/pitches/knowledge/upload
@@ -45,7 +48,17 @@ export async function POST(request: Request) {
     const sourceType = (formData.get('sourceType') as string) || 'upload';
 
     // Read file content
-    const content = await file.text();
+    let content = '';
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (isPdf) {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      content = await extractTextFromPdf(buffer, {
+        extractionMode: 'thorough',
+      });
+    } else {
+      content = await file.text();
+    }
 
     if (!content.trim()) {
       return NextResponse.json({ error: 'File is empty' }, { status: 400 });

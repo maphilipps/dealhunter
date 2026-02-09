@@ -1,12 +1,12 @@
 import { and, desc, eq, notInArray } from 'drizzle-orm';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { LeadLayoutClient } from './layout-client';
 
 import { LeadSidebarRight } from '@/components/pitches/pitch-sidebar-right';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { pitches, auditScanRuns } from '@/lib/db/schema';
+import { pitches, auditScanRuns, users } from '@/lib/db/schema';
 import type { PitchScanCheckpoint } from '@/lib/pitch-scan/types';
 import {
   generateNavigation,
@@ -37,7 +37,14 @@ export default async function LeadDashboardLayout({
     redirect('/login');
   }
 
-  const [lead] = await db.select().from(pitches).where(eq(pitches.id, id)).limit(1);
+  const [[me], [lead]] = await Promise.all([
+    db
+      .select({ businessUnitId: users.businessUnitId })
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1),
+    db.select().from(pitches).where(eq(pitches.id, id)).limit(1),
+  ]);
 
   if (!lead) {
     return (
@@ -46,6 +53,17 @@ export default async function LeadDashboardLayout({
         <p className="text-muted-foreground">Der angeforderte Lead konnte nicht gefunden werden.</p>
       </div>
     );
+  }
+
+  // Authorization: admin can access all, BL only their BU, others denied.
+  if (session.user.role !== 'admin') {
+    if (
+      session.user.role !== 'bl' ||
+      !me?.businessUnitId ||
+      me.businessUnitId !== lead.businessUnitId
+    ) {
+      notFound();
+    }
   }
 
   // Fetch runs in parallel (avoid waterfalls in layout rendering).

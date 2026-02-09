@@ -466,6 +466,21 @@ export const qualificationScanCatalogSchema = {
       })
       .optional(),
   }),
+
+  // ========================================
+  // Tables (General Purpose)
+  // ========================================
+
+  DataTable: z.object({
+    columns: z.array(
+      z.object({
+        key: z.string(),
+        label: z.string(),
+      })
+    ),
+    rows: z.array(z.record(z.string(), z.string())),
+    compact: z.boolean().optional(),
+  }),
 };
 
 // Component descriptions for AI
@@ -517,6 +532,10 @@ export const qualificationScanComponentDescriptions = {
   // Questions
   QuestionChecklist:
     '10 Questions checklist with progress and answered/unanswered status per question',
+
+  // Tables
+  DataTable:
+    'General purpose table with explicit columns and string rows. Use for inventories/WBS/effort tables.',
 };
 
 // System prompt for AI

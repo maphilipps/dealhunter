@@ -9,6 +9,9 @@ import { getProviderForSlot } from '@/lib/ai/providers';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
 import { getPreQualSectionQueryTemplate } from '@/lib/qualifications/section-queries';
+import { runDeliverablesSection } from '@/lib/qualifications/sections/deliverables-section';
+import { runReferencesSection } from '@/lib/qualifications/sections/references-section';
+import { formatSourceCitation } from '@/lib/rag/citations';
 import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
 
 const SECTION_UI_SYSTEM_PROMPT = `Du generierst JsonRenderTree UI für eine Ausschreibungs-Analyse-Section.
@@ -79,6 +82,15 @@ export async function runPreQualSectionAgent(input: {
   const sectionQuery = getPreQualSectionQueryTemplate(sectionId);
   if (!sectionQuery) {
     return { success: false, error: `No query template for section ${sectionId}` };
+  }
+
+  // Specialized, decision-grade sections with per-claim sources + deterministic estimators.
+  // These sections bypass the generic ToolLoopAgent to avoid "too general" outputs.
+  if (sectionId === 'deliverables') {
+    return runDeliverablesSection({ preQualificationId, allowWebEnrichment });
+  }
+  if (sectionId === 'references') {
+    return runReferencesSection({ preQualificationId, allowWebEnrichment });
   }
 
   let hasQueriedDocuments = false;
@@ -173,6 +185,17 @@ LAYOUT:
       if (visualization.root && !visualization.elements[visualization.root]) {
         return { success: false, error: `Root element "${visualization.root}" not found` };
       }
+
+      // Delete any existing visualization for this section first (avoid stale findFirst).
+      await db
+        .delete(dealEmbeddings)
+        .where(
+          and(
+            eq(dealEmbeddings.preQualificationId, preQualificationId),
+            eq(dealEmbeddings.chunkType, 'visualization'),
+            sql`(metadata::jsonb)->>'sectionId' = ${sectionId}`
+          )
+        );
 
       // Store visualization in DB
       await db.insert(dealEmbeddings).values({
@@ -317,7 +340,12 @@ Nutze konkrete Begriffe die in Ausschreibungsdokumenten vorkommen, NICHT abstrak
           return {
             found: true,
             context: formatRAGContext(chunks),
-            chunks: chunks.map(c => ({ text: c.content, score: c.similarity })),
+            chunks: chunks.map(c => ({
+              chunkId: c.chunkId,
+              score: c.similarity,
+              contentExcerpt: c.content.length > 900 ? `${c.content.slice(0, 899)}…` : c.content,
+              sourceCitation: c.source ? formatSourceCitation(c.source) : null,
+            })),
           };
         },
       }),
@@ -509,6 +537,17 @@ WICHTIG:
           confidence = 25;
         }
 
+        // Delete any existing visualization for this section first (avoid stale findFirst).
+        await db
+          .delete(dealEmbeddings)
+          .where(
+            and(
+              eq(dealEmbeddings.preQualificationId, preQualificationId),
+              eq(dealEmbeddings.chunkType, 'visualization'),
+              sql`(metadata::jsonb)->>'sectionId' = ${sectionId}`
+            )
+          );
+
         await db.insert(dealEmbeddings).values({
           pitchId: null,
           preQualificationId,
@@ -553,6 +592,17 @@ WICHTIG:
             props: { text: 'Diese Sektion konnte nicht automatisch visualisiert werden.' },
           },
         };
+
+        // Delete any existing visualization for this section first (avoid stale findFirst).
+        await db
+          .delete(dealEmbeddings)
+          .where(
+            and(
+              eq(dealEmbeddings.preQualificationId, preQualificationId),
+              eq(dealEmbeddings.chunkType, 'visualization'),
+              sql`(metadata::jsonb)->>'sectionId' = ${sectionId}`
+            )
+          );
 
         await db.insert(dealEmbeddings).values({
           pitchId: null,

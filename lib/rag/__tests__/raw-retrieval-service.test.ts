@@ -31,6 +31,55 @@ describe('raw-retrieval-service', () => {
   });
 
   describe('queryRawChunks', () => {
+    it('should surface PDF source locators from metadata', async () => {
+      vi.mocked(isEmbeddingEnabled).mockResolvedValue(false);
+
+      const mockChunks = [
+        {
+          id: 'chunk-1',
+          preQualificationId: 'preQualification-123',
+          chunkIndex: 0,
+          content: 'Budget: 100.000 EUR für das Projekt',
+          tokenCount: 50,
+          embedding: Array(3072).fill(0),
+          metadata: JSON.stringify({
+            startPosition: 0,
+            endPosition: 100,
+            type: 'paragraph',
+            source: {
+              kind: 'pdf',
+              fileName: 'Dokument.pdf',
+              page: 15,
+              paragraphStart: 3,
+              paragraphEnd: 3,
+              heading: 'Überschrift',
+            },
+          }),
+          createdAt: new Date(),
+        },
+      ];
+
+      const mockSelect = vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => mockChunks),
+        })),
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(db.select).mockImplementation(mockSelect as any);
+
+      const result = await queryRawChunks({
+        preQualificationId: 'preQualification-123',
+        question: 'Budget',
+      });
+
+      expect(result.length).toBe(1);
+      expect(result[0].source).toBeTruthy();
+      expect(result[0].source!.fileName).toBe('Dokument.pdf');
+      expect(result[0].source!.page).toBe(15);
+      expect(result[0].source!.paragraphStart).toBe(3);
+      expect(result[0].source!.heading).toBe('Überschrift');
+    });
+
     it('should use keyword fallback when embeddings are disabled', async () => {
       vi.mocked(isEmbeddingEnabled).mockResolvedValue(false);
 

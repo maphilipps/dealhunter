@@ -10,7 +10,7 @@
 
 import { eq } from 'drizzle-orm';
 
-import { chunkRawText, getChunkStats, type RawChunk } from './raw-chunk-service';
+import { chunkRawTextWithLocators, getChunkStats, type RawChunk } from './raw-chunk-service';
 import {
   EMBEDDING_DIMENSIONS,
   getEmbeddingApiOptions,
@@ -124,7 +124,7 @@ export async function embedRawText(
     await db.delete(rawChunks).where(eq(rawChunks.preQualificationId, preQualificationId));
 
     // 2. Chunk the raw text
-    const chunks = chunkRawText(rawText);
+    const chunks = chunkRawTextWithLocators(rawText);
 
     if (chunks.length === 0) {
       console.log(

@@ -27,10 +27,10 @@ import type { SimilarityResult, SimilaritySearchResult } from '@/lib/rag/types';
 
 interface SimilarityTesterProps {
   preQualificationId?: string;
-  leadId?: string;
+  pitchId?: string;
 }
 
-export function SimilarityTester({ preQualificationId, leadId }: SimilarityTesterProps) {
+export function SimilarityTester({ preQualificationId, pitchId }: SimilarityTesterProps) {
   const [query, setQuery] = useState('');
   const [threshold, setThreshold] = useState(0.5);
   const [maxResults, setMaxResults] = useState(10);
@@ -49,7 +49,7 @@ export function SimilarityTester({ preQualificationId, leadId }: SimilarityTeste
     try {
       const searchResult = await searchSimilar({
         preQualificationId,
-        leadId,
+        pitchId,
         query: query.trim(),
         threshold,
         maxResults,
@@ -67,7 +67,7 @@ export function SimilarityTester({ preQualificationId, leadId }: SimilarityTeste
     } finally {
       setIsLoading(false);
     }
-  }, [preQualificationId, leadId, query, threshold, maxResults, includeRaw]);
+  }, [preQualificationId, pitchId, query, threshold, maxResults, includeRaw]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !isLoading) {

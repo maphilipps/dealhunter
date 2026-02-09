@@ -77,15 +77,36 @@ const PDF_CHUNK_DELAY_MS = parseInt(process.env.PDF_CHUNK_DELAY_MS || '1500', 10
  */
 export type PdfExtractionMode = 'fast' | 'thorough';
 
+export type PdfLocatorStyle = 'bracket_v1';
+
+export type PdfExtractionPass = 'text' | 'tables' | 'images';
+
 export type PdfExtractionOptions = {
   extractionMode?: PdfExtractionMode;
+  /**
+   * When enabled, the extractor will try to preserve source locators using explicit markers:
+   * - [[PAGE N]] at the start of each page
+   * - [[PASS text|tables|images]] at the start of each extraction pass (added by us, not the model)
+   * - [[H]] Heading for headings
+   *
+   * This is best-effort (model may not fully comply), but allows deterministic parsing later.
+   */
+  includeLocators?: boolean;
+  locatorStyle?: PdfLocatorStyle;
 };
+
+function withPassHeader(pass: PdfExtractionPass, text: string): string {
+  if (!text) return '';
+  return `[[PASS ${pass}]]\n${text}`.trim();
+}
 
 export async function extractTextFromPdf(
   buffer: Buffer,
   options: PdfExtractionOptions = {}
 ): Promise<string> {
   const extractionMode: PdfExtractionMode = options.extractionMode ?? 'fast';
+  const includeLocators = options.includeLocators === true;
+  const locatorStyle: PdfLocatorStyle = options.locatorStyle ?? 'bracket_v1';
 
   // Try to get actual page count to avoid calling the model on empty PDFs
   let estimatedPages = Math.ceil(buffer.length / (50 * 1024));
@@ -107,9 +128,9 @@ export async function extractTextFromPdf(
   // For small documents, use single extraction
   if (estimatedPages <= MAX_PAGES_PER_CHUNK) {
     if (extractionMode === 'thorough') {
-      return extractTextMultiPass(buffer);
+      return extractTextMultiPass(buffer, { includeLocators, locatorStyle });
     }
-    return extractTextSinglePass(buffer);
+    return extractTextSinglePass(buffer, { includeLocators, locatorStyle });
   }
 
   // For large documents, use chunked extraction
@@ -117,18 +138,38 @@ export async function extractTextFromPdf(
     `[PDF Extractor] Large PDF detected (~${estimatedPages} pages). Using chunked extraction.`
   );
   if (extractionMode === 'thorough') {
-    return extractTextChunked(buffer, estimatedPages, { extractionMode: 'thorough' });
+    return extractTextChunked(buffer, estimatedPages, {
+      extractionMode: 'thorough',
+      includeLocators,
+      locatorStyle,
+    });
   }
-  return extractTextChunked(buffer, estimatedPages, { extractionMode: 'fast' });
+  return extractTextChunked(buffer, estimatedPages, {
+    extractionMode: 'fast',
+    includeLocators,
+    locatorStyle,
+  });
 }
 
 type ExtractionPass = 'text' | 'tables' | 'images';
 
-function getSystemPrompt(pass: ExtractionPass, extra?: { startPage?: number; endPage?: number }) {
+function getSystemPrompt(
+  pass: ExtractionPass,
+  extra?: {
+    startPage?: number;
+    endPage?: number;
+    includeLocators?: boolean;
+    locatorStyle?: PdfLocatorStyle;
+  }
+) {
   const pageHint =
     extra?.startPage && extra?.endPage
       ? `\n- Fokussiere dich auf die Seiten ${extra.startPage} bis ${extra.endPage}\n`
       : '\n';
+
+  const locatorsHint = extra?.includeLocators
+    ? `\nQUELLENMARKER (WICHTIG):\n- Gib jede Seite separat aus.\n- Beginne jede Seite mit einer eigenen Zeile im Format [[PAGE N]] (N = Original-Seitennummer).\n- Markiere Ueberschriften mit einer eigenen Zeile im Format [[H]] <Ueberschrift>.\n- Trenne Absaetze durch eine Leerzeile.\n- Gib nur Inhalte zurueck, keine Erklaerungen.\n`
+    : '';
 
   if (pass === 'tables') {
     return `Du bist ein Dokumenten-Extraktions-Assistent. Deine Aufgabe ist es, ALLE TABELLEN aus einem PDF zu extrahieren.${pageHint}
@@ -137,7 +178,7 @@ WICHTIG:
 - Gib Tabellen als Markdown-Tabellen aus, wenn moeglich; ansonsten als klar strukturierter Text
 - Wenn Tabellen ueber mehrere Seiten gehen, fuehre sie sinnvoll zusammen
 - Ergaenze pro Tabelle eine kurze Ueberschrift, falls im Dokument vorhanden
-- Gib NUR die Tabellen zurueck, keine Erklaerungen`;
+- Gib NUR die Tabellen zurueck, keine Erklaerungen${locatorsHint}`;
   }
 
   if (pass === 'images') {
@@ -146,7 +187,7 @@ WICHTIG:
 - Extrahiere lesbaren Text aus eingebetteten Bildern, Scans, Diagrammen, Screenshots
 - Ignoriere rein dekorative Elemente ohne Text
 - Wenn unleserlich: schreibe [UNLESERLICH] an die Stelle
-- Gib NUR den extrahierten OCR-Text zurueck, keine Erklaerungen`;
+- Gib NUR den extrahierten OCR-Text zurueck, keine Erklaerungen${locatorsHint}`;
   }
 
   // pass === 'text'
@@ -157,13 +198,19 @@ WICHTIG:
 - Bei Formularen: Extrahiere Feldnamen und Werte
 - Ignoriere Seitenzahlen, Header/Footer wenn nicht inhaltlich relevant
 - Gib NUR den extrahierten Text zurueck, keine Kommentare oder Erklaerungen
-- Wenn das Dokument zu lang ist, extrahiere so viel wie moeglich und ende mit [FORTSETZUNG NOETIG]`;
+- Wenn das Dokument zu lang ist, extrahiere so viel wie moeglich und ende mit [FORTSETZUNG NOETIG]${locatorsHint}`;
 }
 
 async function runExtractionPass(
   buffer: Buffer,
   pass: ExtractionPass,
-  extra?: { startPage?: number; endPage?: number; partLabel?: string }
+  extra?: {
+    startPage?: number;
+    endPage?: number;
+    partLabel?: string;
+    includeLocators?: boolean;
+    locatorStyle?: PdfLocatorStyle;
+  }
 ): Promise<string> {
   const model = await getPdfExtractionModel();
 
@@ -201,8 +248,14 @@ async function runExtractionPass(
 /**
  * Single-pass extraction for smaller PDFs
  */
-async function extractTextSinglePass(buffer: Buffer): Promise<string> {
-  const extractedText = await runExtractionPass(buffer, 'text');
+async function extractTextSinglePass(
+  buffer: Buffer,
+  options: { includeLocators: boolean; locatorStyle: PdfLocatorStyle }
+): Promise<string> {
+  const extractedText = await runExtractionPass(buffer, 'text', {
+    includeLocators: options.includeLocators,
+    locatorStyle: options.locatorStyle,
+  });
 
   if (!extractedText || extractedText.trim().length === 0) {
     throw new Error(
@@ -215,6 +268,10 @@ async function extractTextSinglePass(buffer: Buffer): Promise<string> {
     console.warn('[PDF Extractor] Output was truncated. Consider chunked extraction.');
   }
 
+  if (options.includeLocators) {
+    return withPassHeader('text', extractedText);
+  }
+
   return extractedText.trim();
 }
 
@@ -225,20 +282,31 @@ async function extractTextSinglePass(buffer: Buffer): Promise<string> {
  * 2) Tables (often lost in linearized extraction)
  * 3) OCR text from images only if the text pass looks suspiciously empty
  */
-async function extractTextMultiPass(buffer: Buffer): Promise<string> {
+async function extractTextMultiPass(
+  buffer: Buffer,
+  options: { includeLocators: boolean; locatorStyle: PdfLocatorStyle }
+): Promise<string> {
   const [text, tables] = await Promise.all([
-    runExtractionPass(buffer, 'text'),
-    runExtractionPass(buffer, 'tables'),
+    runExtractionPass(buffer, 'text', options),
+    runExtractionPass(buffer, 'tables', options),
   ]);
 
   const parts: string[] = [];
-  if (text) parts.push(`## Text\n\n${text}`);
-  if (tables) parts.push(`## Tabellen\n\n${tables}`);
+  if (options.includeLocators) {
+    if (text) parts.push(withPassHeader('text', text));
+    if (tables) parts.push(withPassHeader('tables', tables));
+  } else {
+    if (text) parts.push(`## Text\n\n${text}`);
+    if (tables) parts.push(`## Tabellen\n\n${tables}`);
+  }
 
   // If we got almost nothing from the text pass, the PDF is likely scanned.
   if (text.length < 800) {
-    const images = await runExtractionPass(buffer, 'images');
-    if (images) parts.push(`## Bilder (OCR)\n\n${images}`);
+    const images = await runExtractionPass(buffer, 'images', options);
+    if (images)
+      parts.push(
+        options.includeLocators ? withPassHeader('images', images) : `## Bilder (OCR)\n\n${images}`
+      );
   }
 
   const combined = parts.join('\n\n---\n\n').trim();
@@ -257,7 +325,11 @@ async function extractTextMultiPass(buffer: Buffer): Promise<string> {
 async function extractTextChunked(
   buffer: Buffer,
   estimatedPages: number,
-  options: { extractionMode: PdfExtractionMode }
+  options: {
+    extractionMode: PdfExtractionMode;
+    includeLocators: boolean;
+    locatorStyle: PdfLocatorStyle;
+  }
 ): Promise<string> {
   const extractionMode = options.extractionMode;
 
@@ -275,25 +347,41 @@ async function extractTextChunked(
           startPage,
           endPage,
           partLabel: `(Teil ${i + 1} von ${numChunks})`,
+          includeLocators: options.includeLocators,
+          locatorStyle: options.locatorStyle,
         }),
         runExtractionPass(buffer, 'tables', {
           startPage,
           endPage,
           partLabel: `(Teil ${i + 1} von ${numChunks})`,
+          includeLocators: options.includeLocators,
+          locatorStyle: options.locatorStyle,
         }),
       ]);
 
       const chunkParts: string[] = [];
-      if (text) chunkParts.push(`## Text (S. ${startPage}-${endPage})\n\n${text}`);
-      if (tables) chunkParts.push(`## Tabellen (S. ${startPage}-${endPage})\n\n${tables}`);
+      if (options.includeLocators) {
+        if (text) chunkParts.push(withPassHeader('text', text));
+        if (tables) chunkParts.push(withPassHeader('tables', tables));
+      } else {
+        if (text) chunkParts.push(`## Text (S. ${startPage}-${endPage})\n\n${text}`);
+        if (tables) chunkParts.push(`## Tabellen (S. ${startPage}-${endPage})\n\n${tables}`);
+      }
 
       if (text.length < 500) {
         const images = await runExtractionPass(buffer, 'images', {
           startPage,
           endPage,
           partLabel: `(Teil ${i + 1} von ${numChunks})`,
+          includeLocators: options.includeLocators,
+          locatorStyle: options.locatorStyle,
         });
-        if (images) chunkParts.push(`## Bilder (OCR) (S. ${startPage}-${endPage})\n\n${images}`);
+        if (images)
+          chunkParts.push(
+            options.includeLocators
+              ? withPassHeader('images', images)
+              : `## Bilder (OCR) (S. ${startPage}-${endPage})\n\n${images}`
+          );
       }
 
       const chunkCombined = chunkParts.join('\n\n').trim();
@@ -303,6 +391,8 @@ async function extractTextChunked(
         startPage,
         endPage,
         partLabel: `(Teil ${i + 1} von ${numChunks})`,
+        includeLocators: options.includeLocators,
+        locatorStyle: options.locatorStyle,
       });
       if (chunkText) chunks.push(chunkText);
     }

@@ -1,6 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
 
-import { PreQualificationSectionPageTemplate } from '@/components/qualifications/section-page-template';
 import { auth } from '@/lib/auth';
 import { getCachedPreQualification } from '@/lib/qualifications/cached-queries';
 
@@ -22,12 +21,6 @@ export default async function LegalPage({ params }: { params: Promise<{ id: stri
     notFound();
   }
 
-  return (
-    <PreQualificationSectionPageTemplate
-      preQualificationId={id}
-      sectionId="legal"
-      title="Legal"
-      description="Rechtliche Anforderungen, Compliance, Datenschutz, Haftung, SLA"
-    />
-  );
+  // Legacy route: redirect to the contracts analysis section.
+  redirect(`/qualifications/${id}/contracts`);
 }

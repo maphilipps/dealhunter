@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/auth';
 import { getCachedPreQualification } from '@/lib/qualifications/cached-queries';
 
-export default async function DeliverablesPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SubmissionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
 
@@ -27,9 +27,9 @@ export default async function DeliverablesPage({ params }: { params: Promise<{ i
   return (
     <PreQualificationSectionPageTemplate
       preQualificationId={id}
-      sectionId="deliverables"
-      title="Lieferumfang"
-      description="Welche Leistungen und Projekt-Deliverables werden während der Leistungserbringung erwartet?"
+      sectionId="submission"
+      title="Abgabe"
+      description="Welche Unterlagen müssen eingereicht werden, in welchem Format und bis wann?"
     >
       <div className="flex justify-end">
         <Button asChild variant="outline" size="sm">

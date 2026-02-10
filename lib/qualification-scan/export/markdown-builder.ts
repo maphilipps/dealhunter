@@ -431,6 +431,7 @@ export async function buildQualificationScanMarkdown(qualificationId: string): P
     'timing',
     'contracts',
     'deliverables',
+    'submission',
     'references',
     'award-criteria',
     'offer-structure',
@@ -438,12 +439,13 @@ export async function buildQualificationScanMarkdown(qualificationId: string): P
   ] as const;
   const bdSectionTitles: Record<(typeof BD_SECTION_IDS)[number], string> = {
     budget: 'Budget',
-    timing: 'Timing',
-    contracts: 'Contracts',
-    deliverables: 'Deliverables',
-    references: 'References',
-    'award-criteria': 'Award Criteria',
-    'offer-structure': 'Offer Structure',
+    timing: 'Zeitplan',
+    contracts: 'Verträge',
+    deliverables: 'Lieferumfang',
+    submission: 'Abgabe',
+    references: 'Referenzen',
+    'award-criteria': 'Zuschlagskriterien',
+    'offer-structure': 'Angebotsstruktur',
     risks: 'Risiken',
   };
 
@@ -475,7 +477,7 @@ export async function buildQualificationScanMarkdown(qualificationId: string): P
     }
 
     // Sources block (decision-grade sections)
-    if (sectionId === 'deliverables' || sectionId === 'references') {
+    if (sectionId === 'deliverables' || sectionId === 'submission' || sectionId === 'references') {
       type AnySource = Record<string, unknown> & { kind?: string };
       const all: AnySource[] = [];
 

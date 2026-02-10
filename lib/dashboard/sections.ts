@@ -37,9 +37,17 @@ export const DASHBOARD_SECTIONS: DashboardSectionConfig[] = [
   },
   {
     id: 'deliverables',
-    title: 'Leistungsumfang',
+    title: 'Lieferumfang',
     group: 'bid',
-    ragQuery: 'Leistungen Anforderungen Deliverables Umfang Aufgaben',
+    ragQuery:
+      'Lieferumfang Leistungen Anforderungen Deliverables Scope Abnahme Akzeptanzkriterien Mitwirkungspflichten Abhaengigkeiten',
+  },
+  {
+    id: 'submission',
+    title: 'Abgabe',
+    group: 'bid',
+    ragQuery:
+      'Abgabe Einreichung Angebot Preisblatt Kalkulation Konzepte Formblatt Nachweise Portal Deadline Signatur',
   },
   {
     id: 'references',

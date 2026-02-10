@@ -34,6 +34,17 @@ async function getDirectVisualization(
     });
 
     if (result?.content) {
+      // Stale deliverables visualizations (pre split into Lieferumfang/Abgabe) did not include schemaVersion.
+      // Treat them as missing so the UI can self-heal via "Visualisierung generieren".
+      if (sectionId === 'deliverables') {
+        try {
+          const meta = (result.metadata ? JSON.parse(result.metadata) : null) as any;
+          const schemaVersion = typeof meta?.schemaVersion === 'number' ? meta.schemaVersion : null;
+          if (!schemaVersion || schemaVersion < 2) return null;
+        } catch {
+          return null;
+        }
+      }
       return {
         tree: JSON.parse(result.content) as JsonRenderTree,
         confidence: result.confidence ?? 50,

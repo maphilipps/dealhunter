@@ -90,33 +90,81 @@ Du analysierst alle vertragsrechtlichen Aspekte der Ausschreibung.
 `,
 
   deliverables: `
-## ANALYSEZIEL: Deliverables (Einreichungsunterlagen) + Aufwand für Bid-Team
+## ANALYSEZIEL: Lieferumfang (während der Leistungserbringung)
+
+Du analysierst die Ausschreibungsdokumente auf den **geforderten Leistungsumfang** (Services, Arbeitspakete, Projekt-Deliverables),
+die während der **Leistungserbringung** erwartet werden.
+
+WICHTIG (Qualitäts-Gate):
+- Ergebnisse müssen **decision-grade** sein.
+- Jede Aussage muss **belegt** sein (Quelle) oder als **Annahme** markiert werden.
+- NICHT behandeln: Einreichungsunterlagen/Abgabeformalitäten (dafür gibt es die Sektion "Abgabe").
+
+### 1) SCOPE-INVENTAR (als Tabelle denken)
+Extrahiere alle geforderten Leistungen und Projekt-Deliverables, z.B.:
+- Discovery/Analyse, Konzeption, UX/UI, Implementierung, Migration, Integrationen, Hosting/Betrieb, Schulung, Dokumentation, Support
+
+Pro Eintrag festhalten:
+- Was genau ist zu liefern/zu leisten (klar benennen)
+- Pflicht vs. optional
+- Wenn erkennbar: Phase/Meilenstein
+- Abnahme/Akzeptanzkriterien oder Definition of Done (wenn genannt)
+- Abhängigkeiten (AG-Zulieferungen, Dritte, Systeme, Freigaben)
+
+### 2) ABGRENZUNG (In/Out of Scope)
+- Was ist explizit ausgeschlossen?
+- Was bleibt unklar (und müsste als Annahme formuliert oder per Bieterfrage geklärt werden)?
+
+### 3) ABNAHME & QUALITÄT
+- Gibt es Abnahmemodalitäten, Tests, Dokumentationspflichten, Nachweise, SLA/Support-Umfang?
+- Welche Deliverables hängen an welchen Abnahmen/Meilensteinen?
+
+### 4) RISIKEN & OFFENE FRAGEN
+- Risiken aus dem Scope (Unschärfe, Scope Creep, Abhängigkeiten, Abnahme-Kriterien)
+- Offene Fragen, die als Bieterfrage geklärt werden sollten (mit Begründung)
+
+### 5) NEXT STEPS
+- Konkrete ToDos fürs Angebotsteam: Annahmen, Klärungen, Struktur fürs Angebot (Scope-Kapitel), Verantwortlichkeiten.
+`,
+
+  submission: `
+## ANALYSEZIEL: Abgabe (Einreichungsunterlagen) + Aufwand für Bid-Team
 
 Du analysierst die Ausschreibungsdokumente auf alle **abzugebenden Unterlagen/Deliverables** (Teilnahmeantrag/Angebot)
 und was das Angebotsteam konkret erstellen muss.
 
 WICHTIG (Qualitäts-Gate):
-- Ergebnisse müssen **decision-grade** sein: Inventar, Anforderungen, Risiken, offene Fragen, konkrete Next Steps.
+- Ergebnisse müssen **decision-grade** sein: vollständiges Inventar, Anforderungen, Fristen, formale Vorgaben, Risiken, offene Fragen, konkrete Next Steps.
 - Jede Aussage muss **belegt** sein (Quelle) oder als **Annahme** markiert werden.
 
 ### 1) INVENTAR (zwingend, als Tabelle denken)
-Erstelle ein vollständiges Inventar der abzugebenden Deliverables, inkl.:
+Erstelle ein vollständiges Inventar der abzugebenden Unterlagen, inkl.:
+- Preisblatt/Kalkulation, kommerzielle Formblätter
+- Konzepte (technisch, Vorgehen, Projektmanagement, Betrieb, Sicherheit, Barrierefreiheit, etc.)
+- Referenzen, Eignungsnachweise, Eigenerklärungen, CVs
+- Weitere Formblätter/Anhänge
+
+Pro Eintrag erfassen:
 - Name des Deliverables / Formblatt / Konzept
 - Pflicht vs. optional
 - Format (PDF/Portal-Formular/Signatur) und Abgabeweg (Portal/E-Mail/physisch)
 - Seitenlimit oder Umfangsbeschränkungen (wenn genannt)
-- Deadlines (Angebot/Teilnahmeantrag/Präsentationstermin; getrennt wenn vorhanden)
+- Deadlines (Teilnahmeantrag/Angebot/Präsentation; getrennt wenn vorhanden)
+- Hinweise (Sprache, Dateigrößen, Portal-Schritte, Verschlüsselung, qualifizierte Signatur, etc.)
 
-### 2) AUFWAND & DAUER (Bid-Unterlagen, NICHT Projektumsetzung)
+### 2) KEY DATES (Chronologisch)
+Wenn vorhanden: Rückfragenfrist, Angebotsfrist, Bindefrist, Präsentation/Verhandlungstermine, Zuschlag, Projektstart.
+
+### 3) AUFWAND & DAUER (Bid-Unterlagen, NICHT Projektumsetzung)
 Leite für jedes Deliverable eine grobe, nachvollziehbare Aufwandsschätzung ab (Stunden / PT / Kalenderdauer)
 und liste eine kurze WBS (Tasks + Rollen).
 Wenn Details fehlen: nenne Annahmen explizit (z.B. Review-Overhead).
 
-### 3) RISIKEN & OFFENE FRAGEN
-- Risiken/Stolpersteine (z.B. Signaturpflicht, harte Formvorgaben, unklare Anlagen)
+### 4) FORMALITÄTEN / RISIKEN / OFFENE FRAGEN
+- Risiken/Stolpersteine (z.B. Signaturpflicht, harte Formvorgaben, unklare Anlagen, Seitenlimits)
 - Offene Fragen, die als Bieterfrage geklärt werden sollten (mit Begründung)
 
-### 4) NEXT STEPS
+### 5) NEXT STEPS
 - Konkrete ToDos für das Angebotsteam (Checkliste, Verantwortlichkeiten, Reihenfolge).
 `,
 

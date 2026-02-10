@@ -1,6 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
 
-import { PreQualificationSectionPageTemplate } from '@/components/qualifications/section-page-template';
 import { auth } from '@/lib/auth';
 import { getCachedPreQualification } from '@/lib/qualifications/cached-queries';
 
@@ -22,12 +21,6 @@ export default async function FactsPage({ params }: { params: Promise<{ id: stri
     notFound();
   }
 
-  return (
-    <PreQualificationSectionPageTemplate
-      preQualificationId={id}
-      sectionId="facts"
-      title="Facts"
-      description="Kernfakten aus den Dokumenten (Kunde, Projekt, Umfang, Eckdaten)"
-    />
-  );
+  // Legacy route: facts are shown on the overview/dashboard page.
+  redirect(`/qualifications/${id}`);
 }

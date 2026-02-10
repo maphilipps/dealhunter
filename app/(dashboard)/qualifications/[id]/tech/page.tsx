@@ -1,6 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
 
-import { PreQualificationSectionPageTemplate } from '@/components/qualifications/section-page-template';
 import { auth } from '@/lib/auth';
 import { getCachedPreQualification } from '@/lib/qualifications/cached-queries';
 
@@ -22,12 +21,6 @@ export default async function TechStackPage({ params }: { params: Promise<{ id: 
     notFound();
   }
 
-  return (
-    <PreQualificationSectionPageTemplate
-      preQualificationId={id}
-      sectionId="tech-stack"
-      title="Tech Stack"
-      description="Technologien, CMS, Integrationen und technische Anforderungen"
-    />
-  );
+  // Legacy route: tech-stack section was removed. Redirect to customer intelligence.
+  redirect(`/qualifications/${id}/customer`);
 }

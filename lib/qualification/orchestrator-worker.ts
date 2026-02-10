@@ -3,7 +3,7 @@
  *
  * Architektur:
  * 1. ORCHESTRATOR: Analysiert Dokumente und plant Section-Execution
- * 2. WORKERS: Führen BD-Fragen parallel aus (budget, timing, contracts, deliverables, references, award-criteria, offer-structure, risks)
+ * 2. WORKERS: Führen BD-Fragen parallel aus (budget, timing, contracts, deliverables, submission, references, award-criteria, offer-structure, risks)
  * 3. EVALUATOR: Prüft Section-Qualität und triggert Retries bei niedrigem Score
  * 4. CMS MATRIX: Requirement Research (bestehender Agent)
  * 5. DECISION: Bid/No Bid Synthese aller Sections
@@ -56,11 +56,19 @@ export const SECTION_DEFINITIONS = [
   },
   {
     id: 'deliverables' as const,
-    label: 'Leistungen & Deliverables',
+    label: 'Lieferumfang',
     question:
-      'Welche konkreten Leistungen, Liefergegenstaende und Ergebnisse werden gefordert (Scope, Anforderungen, technische Lieferobjekte)?',
+      'Welche konkreten Leistungen, Liefergegenstaende und Ergebnisse werden waehrend der Leistungserbringung gefordert (Scope, Abnahme, Mitwirkungspflichten)?',
     topics:
-      'Leistungen, Liefergegenstaende, Deliverables, Anforderungen, Scope, Pflichtenheft, technische Anforderungen',
+      'Lieferumfang, Leistungen, Deliverables, Anforderungen, Scope, Abnahme, Akzeptanzkriterien, Mitwirkungspflichten, Abhaengigkeiten',
+  },
+  {
+    id: 'submission' as const,
+    label: 'Abgabe',
+    question:
+      'Welche Unterlagen muessen eingereicht werden (Preisblatt, Kalkulation, Konzepte, Referenzen), welche Formvorgaben/Fristen gelten und wie hoch ist der Aufwand fuer die Angebotserstellung?',
+    topics:
+      'Abgabe, Einreichung, Angebotsunterlagen, Preisblatt, Kalkulation, Formblaetter, Konzepte, Nachweise, Signatur, Portal, Fristen, Bieterfragen, Bindefrist',
   },
   {
     id: 'references' as const,
@@ -102,6 +110,7 @@ export const SECTION_IDS = SECTION_DEFINITIONS.map(s => s.id) as unknown as read
   'timing',
   'contracts',
   'deliverables',
+  'submission',
   'references',
   'award-criteria',
   'offer-structure',
@@ -384,10 +393,14 @@ async function evaluateSectionResult(
   }
 
   // Deterministic quality gates for decision-grade sections (anti "too general").
-  if (result.sectionId === 'deliverables' || result.sectionId === 'references') {
+  if (
+    result.sectionId === 'deliverables' ||
+    result.sectionId === 'submission' ||
+    result.sectionId === 'references'
+  ) {
     const sectionId = result.sectionId;
-    const minFindings = sectionId === 'deliverables' ? 12 : 10;
-    const minRfpGrounded = sectionId === 'deliverables' ? 4 : 3;
+    const minFindings = sectionId === 'references' ? 10 : 12;
+    const minRfpGrounded = sectionId === 'references' ? 3 : 4;
 
     const rows = await db
       .select({
@@ -434,10 +447,10 @@ async function evaluateSectionResult(
       }
     }).length;
 
-    const hasEffortMarker =
-      sectionId !== 'deliverables'
-        ? true
-        : rows.some(r => /\bAufwand:\b/i.test(r.content) || /\bWBS\b/i.test(r.content));
+    const requiresEffortMarker = sectionId === 'submission';
+    const hasEffortMarker = !requiresEffortMarker
+      ? true
+      : rows.some(r => /\bAufwand:\b/i.test(r.content) || /\bWBS\b/i.test(r.content));
 
     const reasons: string[] = [];
     if (total < minFindings) {
@@ -667,6 +680,7 @@ KRITERIEN:
 - timing: Sind die Fristen machbar?
 - contracts: Sind die Vertragsbedingungen akzeptabel?
 - deliverables: Können wir die Leistungen erbringen?
+- submission: Sind Abgabeformalitäten/Deadlines klar und ist der Angebotsaufwand vertretbar?
 - references: Haben wir passende Referenzen?
 - award-criteria: Können wir bei den Zuschlagskriterien punkten?
 - offer-structure: Ist der Aufwand für das Angebot vertretbar?

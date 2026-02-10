@@ -152,9 +152,15 @@ export function getPreQualificationNavigationSections(
           alwaysEnabled: true,
         },
         {
-          title: 'Leistungsumfang',
+          title: 'Lieferumfang',
           icon: Package,
           url: `/qualifications/${preQualificationId}/deliverables`,
+          alwaysEnabled: true,
+        },
+        {
+          title: 'Abgabe',
+          icon: FileText,
+          url: `/qualifications/${preQualificationId}/submission`,
           alwaysEnabled: true,
         },
         {

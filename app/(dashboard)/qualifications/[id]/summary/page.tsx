@@ -10,6 +10,7 @@ import {
   Trophy,
   Award,
   FileText,
+  Upload,
   LayoutDashboard,
   ShieldAlert,
 } from 'lucide-react';
@@ -31,6 +32,7 @@ const SECTION_ICONS: Record<string, typeof DollarSign> = {
   timing: Clock,
   contracts: Scale,
   deliverables: Package,
+  submission: Upload,
   references: Trophy,
   'award-criteria': Award,
   'offer-structure': FileText,

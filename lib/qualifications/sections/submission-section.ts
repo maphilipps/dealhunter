@@ -55,7 +55,7 @@ const SubmissionMethodSchema = z.enum([
   'unknown',
 ] satisfies SubmissionMethod[]);
 
-const DeliverablesExtractSchema = z.object({
+const SubmissionExtractSchema = z.object({
   inventory: z.array(
     z.intersection(
       z.object({
@@ -67,6 +67,34 @@ const DeliverablesExtractSchema = z.object({
         submissionMethod: SubmissionMethodSchema,
         deadline: z.string().nullable(),
         notes: z.string().nullable(),
+      }),
+      EvidenceFields
+    )
+  ),
+  keyDates: z.array(
+    z.intersection(
+      z.object({
+        label: z.string().min(1),
+        date: z.string().nullable(),
+        notes: z.string().nullable(),
+      }),
+      EvidenceFields
+    )
+  ),
+  formalRequirements: z.array(
+    z.intersection(
+      z.object({
+        requirement: z.string().min(1),
+        details: z.string().min(1),
+      }),
+      EvidenceFields
+    )
+  ),
+  pricingRequirements: z.array(
+    z.intersection(
+      z.object({
+        requirement: z.string().min(1),
+        details: z.string().min(1),
       }),
       EvidenceFields
     )
@@ -94,28 +122,45 @@ const DeliverablesExtractSchema = z.object({
   confidence: z.number().min(0).max(100),
 });
 
-type DeliverablesExtract = z.infer<typeof DeliverablesExtractSchema>;
+type SubmissionExtract = z.infer<typeof SubmissionExtractSchema>;
 
 function buildVisualizationTree(params: {
   summary: string;
+  keyDatesRows: Array<Record<string, string>>;
   inventoryRows: Array<Record<string, string>>;
+  formalRequirementsRows: Array<Record<string, string>>;
+  pricingRequirementsRows: Array<Record<string, string>>;
   effortRows: Array<Record<string, string>>;
   wbsRows: Array<Record<string, string>>;
   risks: string[];
   openQuestions: string[];
   nextSteps: string[];
 }): { root: string; elements: Record<string, unknown> } {
-  const { summary, inventoryRows, effortRows, wbsRows, risks, openQuestions, nextSteps } = params;
+  const {
+    summary,
+    keyDatesRows,
+    inventoryRows,
+    formalRequirementsRows,
+    pricingRequirementsRows,
+    effortRows,
+    wbsRows,
+    risks,
+    openQuestions,
+    nextSteps,
+  } = params;
 
   const elements: Record<string, any> = {};
 
   elements['section-main'] = {
     key: 'section-main',
     type: 'Section',
-    props: { title: 'Leistungsumfang (Bid-Unterlagen)' },
+    props: { title: 'Abgabe (Einreichungsunterlagen)' },
     children: [
       'para-summary',
+      ...(keyDatesRows.length > 0 ? ['sub-dates'] : []),
       'sub-inventory',
+      ...(formalRequirementsRows.length > 0 ? ['sub-formal'] : []),
+      ...(pricingRequirementsRows.length > 0 ? ['sub-pricing'] : []),
       'sub-effort',
       ...(wbsRows.length > 0 ? ['sub-wbs'] : []),
       'sub-risks',
@@ -125,6 +170,29 @@ function buildVisualizationTree(params: {
   };
 
   elements['para-summary'] = { key: 'para-summary', type: 'Paragraph', props: { text: summary } };
+
+  if (keyDatesRows.length > 0) {
+    elements['sub-dates'] = {
+      key: 'sub-dates',
+      type: 'SubSection',
+      props: { title: 'Key Dates (Fristen & Termine)' },
+      children: ['table-dates'],
+    };
+    elements['table-dates'] = {
+      key: 'table-dates',
+      type: 'DataTable',
+      props: {
+        columns: [
+          { key: 'label', label: 'Event' },
+          { key: 'date', label: 'Datum/Zeit' },
+          { key: 'notes', label: 'Hinweise' },
+          { key: 'source', label: 'Quelle' },
+        ],
+        rows: keyDatesRows,
+        compact: true,
+      },
+    };
+  }
 
   elements['sub-inventory'] = {
     key: 'sub-inventory',
@@ -143,12 +211,57 @@ function buildVisualizationTree(params: {
         { key: 'pageLimit', label: 'Seitenlimit' },
         { key: 'submission', label: 'Abgabeweg' },
         { key: 'deadline', label: 'Deadline' },
+        { key: 'notes', label: 'Hinweise' },
         { key: 'source', label: 'Quelle' },
       ],
       rows: inventoryRows,
       compact: true,
     },
   };
+
+  if (formalRequirementsRows.length > 0) {
+    elements['sub-formal'] = {
+      key: 'sub-formal',
+      type: 'SubSection',
+      props: { title: 'Formalitäten (Format, Signatur, Portal, Sprache)' },
+      children: ['table-formal'],
+    };
+    elements['table-formal'] = {
+      key: 'table-formal',
+      type: 'DataTable',
+      props: {
+        columns: [
+          { key: 'requirement', label: 'Anforderung' },
+          { key: 'details', label: 'Details' },
+          { key: 'source', label: 'Quelle' },
+        ],
+        rows: formalRequirementsRows,
+        compact: true,
+      },
+    };
+  }
+
+  if (pricingRequirementsRows.length > 0) {
+    elements['sub-pricing'] = {
+      key: 'sub-pricing',
+      type: 'SubSection',
+      props: { title: 'Preisblatt/Kalkulation (Anforderungen)' },
+      children: ['table-pricing'],
+    };
+    elements['table-pricing'] = {
+      key: 'table-pricing',
+      type: 'DataTable',
+      props: {
+        columns: [
+          { key: 'requirement', label: 'Anforderung' },
+          { key: 'details', label: 'Details' },
+          { key: 'source', label: 'Quelle' },
+        ],
+        rows: pricingRequirementsRows,
+        compact: true,
+      },
+    };
+  }
 
   elements['sub-effort'] = {
     key: 'sub-effort',
@@ -291,12 +404,12 @@ function collectRfpSourcesFromChunkIds(
   return out;
 }
 
-export async function runDeliverablesSection(options: {
+export async function runSubmissionSection(options: {
   preQualificationId: string;
   allowWebEnrichment?: boolean;
 }): Promise<{ success: boolean; error?: string }> {
   const { preQualificationId, allowWebEnrichment } = options;
-  const sectionId = 'deliverables';
+  const sectionId = 'submission';
 
   try {
     // Ensure qualification exists (and helps future access-control extensions).
@@ -317,13 +430,14 @@ export async function runDeliverablesSection(options: {
             preQualificationId,
             sectionId,
             question:
-              'Einreichung Angebotsunterlagen: Abgabeweg (Portal/E-Mail), Formblätter, Fristen',
+              'Einreichung Angebotsunterlagen: Abgabeweg (Portal/E-Mail), Formblätter, Fristen, Signatur',
             maxResults: 2,
           }),
           performWebResearch({
             preQualificationId,
             sectionId,
-            question: 'Angebotsunterlagen: Seitenlimit, Formatvorgaben, Signatur, Nachweise',
+            question:
+              'Angebotsunterlagen: Seitenlimit, Formatvorgaben, Preisblatt/Kalkulation, Nachweise',
             maxResults: 2,
           }),
         ]);
@@ -339,15 +453,19 @@ export async function runDeliverablesSection(options: {
         { query: 'Abgabeweg Portal E-Mail Upload Dateiformat PDF Signatur qualifiziert' },
         { query: 'Seitenlimit Umfang Begrenzung max Seiten technisches Konzept Konzeptpapier' },
         { query: 'Frist Abgabefrist Angebotsfrist Teilnahmeantrag Deadline Uhrzeit' },
+        { query: 'Rückfragenfrist Bieterfragen Frist Fragen stellen' },
+        { query: 'Bindefrist Zuschlagsfrist Zuschlagstermin Projektstart' },
+        { query: 'Preisblatt Preisformblatt Kalkulation Zuschlagskriterien Preisangaben' },
+        { query: 'Formale Anforderungen Sprache Dateigröße Verschlüsselung Portal Schritte' },
       ],
       maxTotal: 26,
     });
 
     const evidenceContext = buildEvidenceContextForExtraction(chunks);
 
-    const extraction = await generateStructuredOutput({
+    const extraction: SubmissionExtract = await generateStructuredOutput({
       model: 'default',
-      schema: DeliverablesExtractSchema,
+      schema: SubmissionExtractSchema,
       system: `Du extrahierst Einreichungs-Deliverables aus RFP-Chunks.
 
 KRITISCHE REGELN:
@@ -363,8 +481,11 @@ KRITISCHE REGELN:
         'AUFGABE:',
         '1) Erstelle ein Inventar aller abzugebenden Unterlagen/Deliverables fuer Teilnahmeantrag/Angebot.',
         '2) Markiere Pflicht/Optional, Abgabeweg, Format, Seitenlimit, Deadline.',
-        '3) Formuliere 3-7 Risiken und 5-10 offene Fragen (nur wenn sachlich begruendbar).',
-        '4) Schreibe eine kurze Summary (4-8 Saetze) fuer das Angebotsteam.',
+        '3) Extrahiere Key Dates (Rueckfragenfrist, Angebotsfrist, Bindefrist, Praesentationen/Verhandlungen, Zuschlag, Projektstart) falls vorhanden.',
+        '4) Extrahiere Formalitaeten (Sprache, Signatur, Dateiformate/Dateigroessen, Portal-Workflow, Verschluesselung) falls vorhanden.',
+        '5) Extrahiere Preisblatt/Kalkulations-Anforderungen (Formblatt, Struktur, Zuschlagslogik) falls vorhanden.',
+        '6) Formuliere 3-7 Risiken und 5-10 offene Fragen (nur wenn sachlich begruendbar).',
+        '7) Schreibe eine kurze Summary (4-8 Saetze) fuer das Angebotsteam.',
       ].join('\n'),
       temperature: 0,
       maxTokens: 5000,
@@ -372,6 +493,9 @@ KRITISCHE REGELN:
     });
 
     const inv = extraction.inventory;
+    const keyDates = extraction.keyDates;
+    const formalReqs = extraction.formalRequirements;
+    const pricingReqs = extraction.pricingRequirements;
 
     // Deterministic effort estimate (bid deliverables only).
     const estimatorInput: DeliverableInput[] = inv.map(d => ({
@@ -419,6 +543,96 @@ KRITISCHE REGELN:
         pageLimit: d.pageLimit != null ? String(d.pageLimit) : '—',
         submission: fmtSubmission(d.submissionMethod),
         deadline: fmtDeadline(d.deadline),
+        notes: d.notes?.trim() || '—',
+        source: formatInlineSourcesBlock(sources).trim(),
+      };
+    });
+
+    const keyDatesRows = keyDates.map(kd => {
+      const rfpSources = collectRfpSourcesFromChunkIds(kd.evidenceChunkIds, byId);
+      const sources: SourceRef[] = kd.needsManualReview
+        ? [
+            ...rfpSources,
+            {
+              kind: 'assumption',
+              label: 'Manuelle Prüfung erforderlich',
+              rationale: 'Termin/Frist ist im Kontext unklar oder nicht explizit genannt.',
+            },
+          ]
+        : rfpSources;
+
+      if (sources.length === 0 && kd.evidenceChunkIds.length > 0) {
+        sources.push({
+          kind: 'assumption',
+          label: 'Chunk ohne PDF-Locator',
+          rationale:
+            'Der gefundene Raw-Chunk hat keine Seiten-/Absatz-Lokatoren (includeLocators fehlt oder Parser konnte Quelle nicht ableiten).',
+        });
+      }
+
+      return {
+        label: kd.label,
+        date: fmtDeadline(kd.date),
+        notes: (kd.notes ?? '').trim() || '—',
+        source: formatInlineSourcesBlock(sources).trim(),
+      };
+    });
+
+    const formalRequirementsRows = formalReqs.map(r => {
+      const rfpSources = collectRfpSourcesFromChunkIds(r.evidenceChunkIds, byId);
+      const sources: SourceRef[] = r.needsManualReview
+        ? [
+            ...rfpSources,
+            {
+              kind: 'assumption',
+              label: 'Manuelle Prüfung erforderlich',
+              rationale: 'Formvorgabe ist im Kontext unklar oder nicht explizit genannt.',
+            },
+          ]
+        : rfpSources;
+
+      if (sources.length === 0 && r.evidenceChunkIds.length > 0) {
+        sources.push({
+          kind: 'assumption',
+          label: 'Chunk ohne PDF-Locator',
+          rationale:
+            'Der gefundene Raw-Chunk hat keine Seiten-/Absatz-Lokatoren (includeLocators fehlt oder Parser konnte Quelle nicht ableiten).',
+        });
+      }
+
+      return {
+        requirement: r.requirement,
+        details: r.details,
+        source: formatInlineSourcesBlock(sources).trim(),
+      };
+    });
+
+    const pricingRequirementsRows = pricingReqs.map(r => {
+      const rfpSources = collectRfpSourcesFromChunkIds(r.evidenceChunkIds, byId);
+      const sources: SourceRef[] = r.needsManualReview
+        ? [
+            ...rfpSources,
+            {
+              kind: 'assumption',
+              label: 'Manuelle Prüfung erforderlich',
+              rationale:
+                'Kalkulationsanforderung ist im Kontext unklar oder nicht explizit genannt.',
+            },
+          ]
+        : rfpSources;
+
+      if (sources.length === 0 && r.evidenceChunkIds.length > 0) {
+        sources.push({
+          kind: 'assumption',
+          label: 'Chunk ohne PDF-Locator',
+          rationale:
+            'Der gefundene Raw-Chunk hat keine Seiten-/Absatz-Lokatoren (includeLocators fehlt oder Parser konnte Quelle nicht ableiten).',
+        });
+      }
+
+      return {
+        requirement: r.requirement,
+        details: r.details,
         source: formatInlineSourcesBlock(sources).trim(),
       };
     });
@@ -493,15 +707,19 @@ KRITISCHE REGELN:
     });
 
     const nextSteps = [
-      'Inventar gegen RFP-Checkliste/Formblätter verifizieren (Pflicht/Optional, Dateiformate, Signatur).',
-      'Interne Deadlines rueckwaerts vom spaetesten Abgabetermin planen (1-2 Review-Schleifen einplanen).',
-      'Alle Unklarheiten als Bieterfrage formulieren (insb. Seitenlimits, Format, Nachweise, Referenzform).',
+      'Inventar gegen RFP-Checkliste/Formblätter verifizieren (Pflicht/Optional, Dateiformate, Signatur, Portal-Workflow).',
+      'Key Dates als internen Angebotsplan abbilden (Rueckwaertsplanung, 1-2 Review-Schleifen, Puffer fuer Upload/Signatur).',
+      'Preisblatt/Kalkulation: Verantwortliche benennen, Datenquellen klaeren, Plausibilisierung einplanen.',
+      'Alle Unklarheiten als Bieterfrage formulieren (insb. Seitenlimits, Format, Nachweise, Referenzform, Signatur/Portal).',
       'Aufwaende mit Teamkapazitaet abgleichen; kritische Deliverables frueh starten (Technik-Konzept, Preisblatt, Nachweise).',
     ];
 
     const tree = buildVisualizationTree({
       summary: extraction.summary,
+      keyDatesRows,
       inventoryRows,
+      formalRequirementsRows,
+      pricingRequirementsRows,
       effortRows: [
         ...effortRows,
         {
@@ -533,6 +751,8 @@ KRITISCHE REGELN:
         sectionId,
         isVisualization: true,
         elementCount: Object.keys(tree.elements).length,
+        schemaVersion: 2,
+        generatedAt: new Date().toISOString(),
       }),
     });
 
@@ -557,7 +777,10 @@ KRITISCHE REGELN:
       category: 'fact' | 'recommendation';
     }> = [];
 
-    for (const d of inv) {
+    const sortedInventoryForFindings = [...inv].sort(
+      (a, b) => b.evidenceChunkIds.length - a.evidenceChunkIds.length
+    );
+    for (const d of sortedInventoryForFindings) {
       const rfpSources = collectRfpSourcesFromChunkIds(d.evidenceChunkIds, byId);
       const sources: SourceRef[] = d.needsManualReview
         ? [
@@ -583,12 +806,103 @@ KRITISCHE REGELN:
         `${d.format ? `, Format: ${d.format}` : ''}` +
         `${d.pageLimit != null ? `, Seitenlimit: ${d.pageLimit}` : ''}` +
         `${d.deadline ? `, Deadline: ${d.deadline}` : ', Deadline: unklar'}` +
+        `${d.notes ? `, Hinweise: ${d.notes}` : ''}` +
         formatInlineSourcesBlock(sources);
 
       findings.push({
         content: line,
         category: 'fact',
         metadata: { sectionId, sources: dedupeSourceRefs(sources) },
+      });
+    }
+
+    for (const kd of keyDates.slice(0, 10)) {
+      const rfpSources = collectRfpSourcesFromChunkIds(kd.evidenceChunkIds, byId);
+      const sources: SourceRef[] = kd.needsManualReview
+        ? [
+            ...rfpSources,
+            {
+              kind: 'assumption',
+              label: 'Manuelle Prüfung erforderlich',
+              rationale: 'Termin/Frist ist im Kontext unklar oder nicht explizit genannt.',
+            },
+          ]
+        : rfpSources;
+      if (sources.length === 0 && kd.evidenceChunkIds.length > 0) {
+        sources.push({
+          kind: 'assumption',
+          label: 'Chunk ohne PDF-Locator',
+          rationale:
+            'Der gefundene Raw-Chunk hat keine Seiten-/Absatz-Lokatoren (includeLocators fehlt oder Parser konnte Quelle nicht ableiten).',
+        });
+      }
+
+      findings.push({
+        content:
+          `Termin: ${kd.label} — ${fmtDeadline(kd.date)}` +
+          `${kd.notes ? ` (${kd.notes})` : ''}` +
+          formatInlineSourcesBlock(sources),
+        category: 'fact',
+        metadata: { sectionId, sources: dedupeSourceRefs(sources), kind: 'key_date' },
+      });
+    }
+
+    for (const r of formalReqs.slice(0, 8)) {
+      const rfpSources = collectRfpSourcesFromChunkIds(r.evidenceChunkIds, byId);
+      const sources: SourceRef[] = r.needsManualReview
+        ? [
+            ...rfpSources,
+            {
+              kind: 'assumption',
+              label: 'Manuelle Prüfung erforderlich',
+              rationale: 'Formvorgabe ist im Kontext unklar oder nicht explizit genannt.',
+            },
+          ]
+        : rfpSources;
+      if (sources.length === 0 && r.evidenceChunkIds.length > 0) {
+        sources.push({
+          kind: 'assumption',
+          label: 'Chunk ohne PDF-Locator',
+          rationale:
+            'Der gefundene Raw-Chunk hat keine Seiten-/Absatz-Lokatoren (includeLocators fehlt oder Parser konnte Quelle nicht ableiten).',
+        });
+      }
+
+      findings.push({
+        content: `Formalität: ${r.requirement} — ${r.details}${formatInlineSourcesBlock(sources)}`,
+        category: 'fact',
+        metadata: { sectionId, sources: dedupeSourceRefs(sources), kind: 'formal_requirement' },
+      });
+    }
+
+    for (const r of pricingReqs.slice(0, 8)) {
+      const rfpSources = collectRfpSourcesFromChunkIds(r.evidenceChunkIds, byId);
+      const sources: SourceRef[] = r.needsManualReview
+        ? [
+            ...rfpSources,
+            {
+              kind: 'assumption',
+              label: 'Manuelle Prüfung erforderlich',
+              rationale:
+                'Kalkulationsanforderung ist im Kontext unklar oder nicht explizit genannt.',
+            },
+          ]
+        : rfpSources;
+      if (sources.length === 0 && r.evidenceChunkIds.length > 0) {
+        sources.push({
+          kind: 'assumption',
+          label: 'Chunk ohne PDF-Locator',
+          rationale:
+            'Der gefundene Raw-Chunk hat keine Seiten-/Absatz-Lokatoren (includeLocators fehlt oder Parser konnte Quelle nicht ableiten).',
+        });
+      }
+
+      findings.push({
+        content: `Preisblatt/Kalkulation: ${r.requirement} — ${r.details}${formatInlineSourcesBlock(
+          sources
+        )}`,
+        category: 'fact',
+        metadata: { sectionId, sources: dedupeSourceRefs(sources), kind: 'pricing_requirement' },
       });
     }
 
@@ -688,8 +1002,19 @@ KRITISCHE REGELN:
       });
     }
 
+    const MAX_FINDINGS = 20;
+
+    // Ensure effort/WBS markers make it into the stored subset (quality gate).
+    const effortIdx = findings.findIndex(
+      f => /\bAufwand:\b/i.test(f.content) || /\bWBS\b/i.test(f.content)
+    );
+    if (effortIdx >= MAX_FINDINGS) {
+      const [effort] = findings.splice(effortIdx, 1);
+      if (effort) findings.unshift(effort);
+    }
+
     // Enforce limits + minimum.
-    const capped = findings.slice(0, 20);
+    const capped = findings.slice(0, MAX_FINDINGS);
 
     const embeddings = await generateEmbeddingsWithConcurrency(
       capped.map(f => f.content),

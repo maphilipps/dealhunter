@@ -1,6 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
 
-import { PreQualificationSectionPageTemplate } from '@/components/qualifications/section-page-template';
 import { auth } from '@/lib/auth';
 import { getCachedPreQualification } from '@/lib/qualifications/cached-queries';
 
@@ -22,12 +21,6 @@ export default async function ContactsPage({ params }: { params: Promise<{ id: s
     notFound();
   }
 
-  return (
-    <PreQualificationSectionPageTemplate
-      preQualificationId={id}
-      sectionId="contacts"
-      title="Kontakte"
-      description="Entscheider, Ansprechpartner und Kommunikationswege"
-    />
-  );
+  // Legacy route: contacts are shown as part of customer intelligence.
+  redirect(`/qualifications/${id}/customer`);
 }

@@ -9,7 +9,8 @@ import { getProviderForSlot } from '@/lib/ai/providers';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
 import { getPreQualSectionQueryTemplate } from '@/lib/qualifications/section-queries';
-import { runDeliverablesSection } from '@/lib/qualifications/sections/deliverables-section';
+import { runDeliveryScopeSection } from '@/lib/qualifications/sections/delivery-scope-section';
+import { runSubmissionSection } from '@/lib/qualifications/sections/submission-section';
 import { runReferencesSection } from '@/lib/qualifications/sections/references-section';
 import { formatSourceCitation } from '@/lib/rag/citations';
 import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
@@ -72,6 +73,58 @@ BEISPIEL (Zusammenfassung → Details):
 SPRACHE: Deutsch, professionell, prägnant.
 `;
 
+const ALLOWED_PREQUAL_ELEMENT_TYPES = new Set([
+  // Layout
+  'Section',
+  'SubSection',
+  // Content
+  'BulletList',
+  'Paragraph',
+  // Tables/Metrics
+  'KeyValue',
+  'KeyValueTable',
+  'Metric',
+  'DataTable',
+]);
+
+function validatePreQualVisualizationTree(visualization: {
+  root: string | null;
+  elements: Record<string, unknown>;
+}): string | null {
+  if (!visualization || typeof visualization !== 'object') return 'Visualization is not an object';
+  const root = visualization.root;
+  if (typeof root !== 'string' || root.trim().length === 0) return 'Missing or empty root';
+  const elements = visualization.elements;
+  if (!elements || typeof elements !== 'object') return 'Missing elements map';
+  if (!elements[root]) return `Root element "${root}" not found`;
+
+  for (const [k, v] of Object.entries(elements)) {
+    if (!v || typeof v !== 'object') return `Element "${k}" is not an object`;
+    const el = v as Record<string, unknown>;
+    if (el.key !== k)
+      return `Element key mismatch: map key "${k}" != element.key "${String(el.key)}"`;
+    const type = el.type;
+    if (typeof type !== 'string' || type.trim().length === 0) return `Element "${k}" missing type`;
+    if (!ALLOWED_PREQUAL_ELEMENT_TYPES.has(type)) {
+      return `Unsupported element type "${type}" for "${k}"`;
+    }
+    const props = el.props;
+    if (!props || typeof props !== 'object') return `Element "${k}" missing props`;
+    const children = el.children;
+    if (children !== undefined) {
+      if (!Array.isArray(children)) return `Element "${k}".children is not an array`;
+      for (const childKey of children) {
+        if (typeof childKey !== 'string' || childKey.trim().length === 0) {
+          return `Invalid child key in "${k}".children`;
+        }
+        if (!elements[childKey]) return `Missing child element "${childKey}" referenced by "${k}"`;
+      }
+    }
+  }
+
+  return null;
+}
+
 export async function runPreQualSectionAgent(input: {
   preQualificationId: string;
   sectionId: string;
@@ -84,10 +137,13 @@ export async function runPreQualSectionAgent(input: {
     return { success: false, error: `No query template for section ${sectionId}` };
   }
 
-  // Specialized, decision-grade sections with per-claim sources + deterministic estimators.
+  // Specialized, decision-grade sections with per-claim sources (and deterministic estimators where applicable).
   // These sections bypass the generic ToolLoopAgent to avoid "too general" outputs.
   if (sectionId === 'deliverables') {
-    return runDeliverablesSection({ preQualificationId, allowWebEnrichment });
+    return runDeliveryScopeSection({ preQualificationId, allowWebEnrichment });
+  }
+  if (sectionId === 'submission') {
+    return runSubmissionSection({ preQualificationId, allowWebEnrichment });
   }
   if (sectionId === 'references') {
     return runReferencesSection({ preQualificationId, allowWebEnrichment });
@@ -181,10 +237,8 @@ LAYOUT:
 
       const { visualization, confidence } = input;
 
-      // Validate tree structure
-      if (visualization.root && !visualization.elements[visualization.root]) {
-        return { success: false, error: `Root element "${visualization.root}" not found` };
-      }
+      const treeError = validatePreQualVisualizationTree(visualization);
+      if (treeError) return { success: false, error: treeError };
 
       // Delete any existing visualization for this section first (avoid stale findFirst).
       await db
@@ -401,13 +455,13 @@ WICHTIG:
       prompt,
     });
 
-    // Check if storeVisualization was actually called
-    const storedVisualization = result.steps.some(step =>
-      step.toolCalls.some(call => call.toolName === 'storeVisualization')
-    );
-
-    if (!storedVisualization) {
-      console.warn(`[Section:${sectionId}] Agent completed without storing visualization`);
+    if (!hasStoredVisualization) {
+      const attemptedStore = result.steps.some(step =>
+        step.toolCalls.some(call => call.toolName === 'storeVisualization')
+      );
+      console.warn(
+        `[Section:${sectionId}] Visualization missing after agent run (${attemptedStore ? 'storeVisualization attempted' : 'storeVisualization not called'}) — generating fallback`
+      );
 
       // Fallback: Generate a minimal visualization in a single structured call.
       // This prevents the whole qualification run from failing a section because the
@@ -467,7 +521,8 @@ WICHTIG:
             budget: 'Budget & Laufzeit',
             timing: 'Zeitplan & Fristen',
             contracts: 'Vertragstyp & Risiken',
-            deliverables: 'Leistungen & Deliverables',
+            deliverables: 'Lieferumfang',
+            submission: 'Abgabe',
             references: 'Referenzen & Eignung',
             'award-criteria': 'Zuschlagskriterien',
             'offer-structure': 'Angebotsstruktur',

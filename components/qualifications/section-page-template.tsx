@@ -17,7 +17,7 @@ export interface PreQualificationSectionPageTemplateProps {
  * Thin wrapper around the generic SectionPageTemplate that provides:
  * - API path: /api/qualifications/{preQualificationId}
  * - QualificationScanStatusBanner at the top
- * - No visualization generation (analyses are created automatically)
+ * - Visualization generation as a self-heal when stored visualizations are missing
  */
 export function PreQualificationSectionPageTemplate({
   preQualificationId,
@@ -34,6 +34,7 @@ export function PreQualificationSectionPageTemplate({
       description={description}
       children={children}
       banner={<QualificationScanStatusBanner compact showWhenComplete={false} />}
+      enableVisualizationGeneration
       noDataTitle="Analyse wird automatisch erstellt"
       noDataDescription="Die Analyse startet automatisch sobald Daten verfügbar sind."
     />

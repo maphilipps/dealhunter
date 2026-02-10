@@ -9,8 +9,18 @@ import { auth } from '@/lib/auth';
 import { SECTION_BY_ID } from '@/lib/dashboard/sections';
 import { db } from '@/lib/db';
 import { dealEmbeddings, preQualifications } from '@/lib/db/schema';
+import { excerptText } from '@/lib/qualifications/sources';
 import { getPreQualSectionQueryTemplate } from '@/lib/qualifications/section-queries';
+import { formatSourceCitation } from '@/lib/rag/citations';
+import type { RawRAGResult } from '@/lib/rag/raw-retrieval-service';
 import { formatRAGContext, queryRawChunks } from '@/lib/rag/raw-retrieval-service';
+import {
+  buildSourcesFromRawChunks,
+  injectSourcesPanel,
+  looksLikeMarkdownTable,
+  parseMarkdownTable,
+  validatePropsForElementType,
+} from '@/lib/json-render/prequal-visualization-utils';
 
 interface JsonRenderTree {
   root: string | null;
@@ -32,12 +42,24 @@ const AllowedElementTypes = new Set([
   // Content
   'Paragraph',
   'BulletList',
+  'CitedExcerpts',
   // Tables/Metrics
   'KeyValue',
   'KeyValueTable',
   'Metric',
   'DataTable',
+  // Visuals
+  'BarChart',
+  'AreaChart',
+  // Sources
+  'SourcesPanel',
 ]);
+
+function getOptionalStringField(obj: unknown, key: string): string | undefined {
+  if (!obj || typeof obj !== 'object') return undefined;
+  const value = (obj as Record<string, unknown>)[key];
+  return typeof value === 'string' ? value : undefined;
+}
 
 function validateTree(tree: JsonRenderTree): { ok: true } | { ok: false; error: string } {
   if (!tree || typeof tree !== 'object') {
@@ -75,6 +97,10 @@ function validateTree(tree: JsonRenderTree): { ok: true } | { ok: false; error: 
     }
     if (!props || typeof props !== 'object') {
       return { ok: false, error: `Element "${k}" is missing props` };
+    }
+    const propsError = validatePropsForElementType(type, props);
+    if (propsError) {
+      return { ok: false, error: `Invalid props for "${k}" (${type}): ${propsError}` };
     }
     if (children !== undefined) {
       if (!Array.isArray(children)) {
@@ -130,6 +156,105 @@ function buildMinimalTree(params: { title: string; message: string }): JsonRende
   return { root, elements };
 }
 
+function buildDeterministicFallbackTree(params: {
+  title: string;
+  sectionId: string;
+  message: string;
+  chunks: RawRAGResult[];
+}): JsonRenderTree {
+  const citedItems: Array<{ excerpt: string; citation?: string; score?: number }> = [];
+  const elements: Record<string, any> = {};
+  const extractsChildren: string[] = [];
+
+  let tableIdx = 0;
+  for (const c of params.chunks.slice(0, 6)) {
+    const raw = String(c.content || '');
+    const citation = c.source
+      ? formatSourceCitation(c.source)
+      : c.webSource?.url || c.metadata?.webSource?.url || undefined;
+
+    const parsed =
+      looksLikeMarkdownTable(raw) && raw.length <= 40_000 ? parseMarkdownTable(raw) : null;
+
+    if (parsed) {
+      const tableKey = `table-${tableIdx++}`;
+      elements[tableKey] = {
+        key: tableKey,
+        type: 'DataTable',
+        props: { columns: parsed.columns, rows: parsed.rows, compact: true },
+      };
+      extractsChildren.push(tableKey);
+      continue;
+    }
+
+    citedItems.push({
+      excerpt: excerptText(raw, 350),
+      ...(citation ? { citation } : {}),
+      score: c.similarity,
+    });
+  }
+
+  if (citedItems.length > 0) {
+    elements['extracts-excerpts'] = {
+      key: 'extracts-excerpts',
+      type: 'CitedExcerpts',
+      props: { items: citedItems },
+    };
+    extractsChildren.unshift('extracts-excerpts');
+  }
+
+  if (extractsChildren.length === 0) {
+    elements['extracts-empty'] = {
+      key: 'extracts-empty',
+      type: 'Paragraph',
+      props: { text: 'Keine relevanten Informationen in den Dokumenten gefunden.' },
+    };
+    extractsChildren.push('extracts-empty');
+  }
+
+  const root = 'section-main';
+  return {
+    root,
+    elements: {
+      [root]: {
+        key: root,
+        type: 'Section',
+        props: { title: params.title },
+        children: ['summary', 'sub-extracts', 'sub-next'],
+      },
+      summary: {
+        key: 'summary',
+        type: 'Paragraph',
+        props: { text: params.message },
+      },
+      'sub-extracts': {
+        key: 'sub-extracts',
+        type: 'SubSection',
+        props: { title: 'Relevante Auszüge' },
+        children: extractsChildren,
+      },
+      'sub-next': {
+        key: 'sub-next',
+        type: 'SubSection',
+        props: { title: 'Next Steps' },
+        children: ['next-steps'],
+      },
+      'next-steps': {
+        key: 'next-steps',
+        type: 'BulletList',
+        props: {
+          items: [
+            'Originaldokument(e) anhand der Quellenangaben prüfen.',
+            'Sonderregelungen (Anrechnungen, Bonus/Malus, Erlösmodelle) als Angebotsannahmen sauber formulieren.',
+            'Unklare Punkte als Bieterfragen formulieren, bevor Preis/Leistung finalisiert wird.',
+          ],
+        },
+      },
+      ...elements,
+    },
+  };
+}
+
 /**
  * POST /api/qualifications/[id]/sections/[sectionId]/visualize
  *
@@ -149,11 +274,8 @@ export async function POST(
     }
 
     const { id: preQualificationId, sectionId } = await context.params;
-    const body = await request.json().catch(() => ({}));
-    const refinementPrompt =
-      body && typeof body === 'object' && typeof (body as any).refinementPrompt === 'string'
-        ? ((body as any).refinementPrompt as string).trim()
-        : undefined;
+    const body: unknown = await request.json().catch(() => ({}));
+    const refinementPrompt = getOptionalStringField(body, 'refinementPrompt')?.trim() || undefined;
 
     // Verify ownership
     const preQual = await db.query.preQualifications.findFirst({
@@ -193,6 +315,7 @@ export async function POST(
     }
 
     const ragContext = formatRAGContext(chunks);
+    const sources = buildSourcesFromRawChunks(chunks, { maxSources: 10, maxExcerptChars: 350 });
 
     const elementSchema = z.object({
       key: z.string().min(1),
@@ -220,6 +343,9 @@ VERFÜGBARE KOMPONENTEN (NUTZE NUR DIESE):
 - KeyValue (props: {label, value}) NUR für ein einzelnes, isoliertes Paar
 - Metric (props: {label, value, subValue?, trend?})
 - DataTable (props: {columns: {key,label}[], rows: Record<string,string>[], compact?})
+- CitedExcerpts (props: {title?, items: {excerpt, citation?, score?}[]})
+- BarChart (props: {title?, description?, data: {label,value}[], format?, height?, color?})
+- AreaChart (props: {title?, description?, data: {label,value}[], format?, height?, color?})
 
 REGELN:
 - Root MUSS eine Section sein.
@@ -229,6 +355,17 @@ REGELN:
 - Keine doppelten Aussagen.
 - Wenn Informationen fehlen: explizit sagen was fehlt und warum es relevant ist (statt zu raten).
 - Kein Grid, keine verschachtelten Cards, kein ResultCard.
+
+KEIN MARKDOWN:
+- Keine "###" Überschriften, keine "---" Trenner, keine Markdown-Tabellen ("| :--- |") in Texten.
+- Wenn Daten tabellarisch wirken: DataTable nutzen.
+
+VISUALS (nur wenn passend):
+- BarChart für Vergleiche/Anteile (z.B. Gewichtungen).
+- AreaChart für Verläufe über Zeit (z.B. Vertragsjahre).
+
+QUELLEN:
+- Quellen werden automatisch ergänzt; keine Quellenliste in Texten bauen.
 
 KEY-VALUE REGELN:
 - NIEMALS mehrere separate KeyValue-Elemente hintereinander.
@@ -274,11 +411,13 @@ SPRACHE: Deutsch, professionell, prägnant.`;
           sectionId,
           error: validation.error,
         });
-        tree = buildMinimalTree({
+        tree = buildDeterministicFallbackTree({
           title,
+          sectionId,
           message:
-            'Die Visualisierung konnte nicht in einem gültigen Format erzeugt werden. ' +
-            'Unten sind sichere Next Steps. Bitte versuche es erneut oder prüfe die Originaldokumente.',
+            'Hier sind belastbare Auszüge aus den Dokumenten und sichere Next Steps. ' +
+            'Bitte prüfe die Quellen direkt im PDF und kläre Unklarheiten vor Angebotsabgabe.',
+          chunks,
         });
         confidence = Math.min(35, out.confidence);
       } else {
@@ -287,13 +426,52 @@ SPRACHE: Deutsch, professionell, prägnant.`;
       }
     } catch (e) {
       console.error('[PreQual Visualize API] Generation failed, using minimal fallback:', e);
+      tree = buildDeterministicFallbackTree({
+        title,
+        sectionId,
+        message:
+          'Die Visualisierung konnte gerade nicht generiert werden (Fehler/Timeout). ' +
+          'Unten findest du belastbare Auszüge und sichere Next Steps.',
+        chunks,
+      });
+      confidence = 25;
+    }
+
+    if (!tree) {
       tree = buildMinimalTree({
         title,
         message:
-          'Die Visualisierung konnte gerade nicht generiert werden (Fehler/Timeout). ' +
-          'Unten sind sichere Next Steps. Bitte versuche es später erneut.',
+          'Die Visualisierung konnte nicht erzeugt werden. Unten sind sichere Next Steps. Bitte versuche es später erneut.',
       });
-      confidence = 25;
+    }
+
+    // Deterministically append sources so the UI is always auditable.
+    tree = injectSourcesPanel(tree as any, sources, {
+      subSectionTitle: 'Quellen',
+      panelTitle: 'Quellen',
+      maxSources: 10,
+    }) as unknown as JsonRenderTree;
+
+    const finalValidation = validateTree(tree);
+    if (!finalValidation.ok) {
+      console.warn(
+        '[PreQual Visualize API] Tree became invalid after sources injection, using minimal fallback:',
+        {
+          sectionId,
+          error: finalValidation.error,
+        }
+      );
+      tree = injectSourcesPanel(
+        buildMinimalTree({
+          title,
+          message:
+            'Die Visualisierung konnte nicht in einem gültigen Format erzeugt werden. ' +
+            'Unten sind sichere Next Steps. Bitte prüfe die Originaldokumente.',
+        }) as any,
+        sources,
+        { subSectionTitle: 'Quellen', panelTitle: 'Quellen', maxSources: 10 }
+      ) as unknown as JsonRenderTree;
+      confidence = Math.min(confidence, 35);
     }
 
     // Delete any existing visualization for this section first (avoid stale findFirst).

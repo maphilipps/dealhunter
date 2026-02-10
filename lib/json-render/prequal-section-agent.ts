@@ -8,24 +8,40 @@ import { generateStructuredOutput, modelNames } from '@/lib/ai/config';
 import { getProviderForSlot } from '@/lib/ai/providers';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
+import { excerptText } from '@/lib/qualifications/sources';
 import { getPreQualSectionQueryTemplate } from '@/lib/qualifications/section-queries';
 import { runDeliveryScopeSection } from '@/lib/qualifications/sections/delivery-scope-section';
 import { runSubmissionSection } from '@/lib/qualifications/sections/submission-section';
 import { runReferencesSection } from '@/lib/qualifications/sections/references-section';
 import { formatSourceCitation } from '@/lib/rag/citations';
 import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
+import {
+  buildSourcesFromRawChunks,
+  injectSourcesPanel,
+  looksLikeMarkdownTable,
+  parseMarkdownTable,
+  type SourcePanelItem,
+  validatePropsForElementType,
+} from '@/lib/json-render/prequal-visualization-utils';
 
 const SECTION_UI_SYSTEM_PROMPT = `Du generierst JsonRenderTree UI für eine Ausschreibungs-Analyse-Section.
 
 VERFÜGBARE KOMPONENTEN:
 - Layout: Section (äußerer Container mit H2), SubSection (H3 für Unterabschnitte)
-- Inhalt: BulletList, Paragraph, KeyValue, KeyValueTable, Metric
+- Inhalt: Paragraph, BulletList, KeyValue, KeyValueTable, DataTable
+- Exzerpte: CitedExcerpts (Auszug + optional Quelle)
+- Visuals (optional, nur wenn passend): BarChart (Vergleich/Anteile), AreaChart (Verlauf über Zeit)
+- Quellen: SourcesPanel wird automatisch ergänzt (du musst keine Quellenliste bauen)
 
 VERBOTEN:
 - ProgressBar, ScoreCard, Confidence-Anzeigen (wird bereits oben angezeigt)
 - ResultCard (deprecated - nutze SubSection stattdessen)
 - Grid (deprecated - nutze Section mit SubSection)
 - Verschachtelte Cards (NIEMALS Card in Card!)
+
+KEIN MARKDOWN:
+- Keine "###" Überschriften, keine "---" Trenner, keine Markdown-Tabellen (z.B. "| :--- |").
+- Wenn Daten tabellarisch wirken: nutze DataTable (columns/rows) statt Markdown.
 
 STRUKTUR:
 1. Root ist eine Section (Card mit H2)
@@ -80,11 +96,17 @@ const ALLOWED_PREQUAL_ELEMENT_TYPES = new Set([
   // Content
   'BulletList',
   'Paragraph',
+  'CitedExcerpts',
   // Tables/Metrics
   'KeyValue',
   'KeyValueTable',
   'Metric',
   'DataTable',
+  // Visuals
+  'BarChart',
+  'AreaChart',
+  // Sources
+  'SourcesPanel',
 ]);
 
 function validatePreQualVisualizationTree(visualization: {
@@ -110,6 +132,8 @@ function validatePreQualVisualizationTree(visualization: {
     }
     const props = el.props;
     if (!props || typeof props !== 'object') return `Element "${k}" missing props`;
+    const propsError = validatePropsForElementType(type, props);
+    if (propsError) return `Invalid props for "${k}" (${type}): ${propsError}`;
     const children = el.children;
     if (children !== undefined) {
       if (!Array.isArray(children)) return `Element "${k}".children is not an array`;
@@ -152,6 +176,7 @@ export async function runPreQualSectionAgent(input: {
   let hasQueriedDocuments = false;
   let hasStoredVisualization = false;
   let hasStoredDashboardHighlights = false;
+  let capturedSources: SourcePanelItem[] = [];
 
   const storeFindingsBatch = createBatchRagWriteTool({
     preQualificationId,
@@ -192,23 +217,29 @@ WICHTIG: Rufe erst queryDocuments auf, dann erstelle eine AUFBEREITETE Visualisi
 	3. DANN: Details in 3-6 SubSection(s) mit KeyValueTable/BulletList
 	4. Wenn Sonderfälle/Mechaniken vorkommen: eigene SubSection "Sonderfälle & Beispiele" (mit Rechenbeispiel!)
 
-Verfügbare Typen:
-- Section: Hauptcontainer mit Card + H2 (title: string, description?: string)
-- SubSection: Unterabschnitt mit H3 (title: string)
-- KeyValueTable: Mehrere Key-Value-Paare als EINE Tabelle (items: [{label, value}, ...])
-- KeyValue: NUR für ein einzelnes, isoliertes Paar (label: string, value: string)
-- BulletList: Aufzählung (items: string[])
-- Paragraph: Fließtext (text: string)
-- Metric: Einzelne Kennzahl (label: string, value: string|number, unit?: string)
+	Verfügbare Typen:
+	- Section: Hauptcontainer mit Card + H2 (title: string, description?: string)
+	- SubSection: Unterabschnitt mit H3 (title: string)
+	- KeyValueTable: Mehrere Key-Value-Paare als EINE Tabelle (items: [{label, value}, ...])
+	- KeyValue: NUR für ein einzelnes, isoliertes Paar (label: string, value: string)
+	- BulletList: Aufzählung (items: string[])
+	- Paragraph: Fließtext (text: string)
+	- Metric: Einzelne Kennzahl (label: string, value: string|number, unit?: string)
+	- DataTable: Tabelle (columns: [{key,label}], rows: Record<string,string>[], compact?: boolean)
+	- CitedExcerpts: Exzerpt-Liste (items: [{excerpt, citation?, score?}])
+	- BarChart: Balkendiagramm (data: [{label, value}], format?: 'number'|'percent'|'currency')
+	- AreaChart: Flächen-Diagramm (data: [{label, value}], format?: 'number'|'percent'|'currency')
+	- SourcesPanel: Quellenliste (wird automatisch ergänzt; du musst sie nicht selbst bauen)
 
 KEY-VALUE REGELN (KRITISCH!):
 - NIEMALS mehrere separate KeyValue-Elemente hintereinander verwenden!
 - Bei 2+ Key-Value-Paaren: IMMER KeyValueTable mit items-Array
 - KeyValue NUR für ein einzelnes, isoliertes Paar
 
-LAYOUT:
-- Immer einspaltig (kein Grid)
-- VERBOTEN: Grid, ResultCard (deprecated)
+	LAYOUT:
+	- Immer einspaltig (kein Grid)
+	- VERBOTEN: Grid, ResultCard (deprecated)
+	- KEIN MARKDOWN: Keine "###", keine "---", keine Markdown-Tabellen ("| :--- |") in Texten.
 
 	Beispiel:
 	{
@@ -240,6 +271,15 @@ LAYOUT:
       const treeError = validatePreQualVisualizationTree(visualization);
       if (treeError) return { success: false, error: treeError };
 
+      // Deterministically append a sources block (deduped + limited) so the UI is always auditable.
+      const visualizationWithSources = injectSourcesPanel(
+        visualization as any,
+        capturedSources
+      ) as unknown as typeof visualization;
+
+      const injectedError = validatePreQualVisualizationTree(visualizationWithSources);
+      if (injectedError) return { success: false, error: injectedError };
+
       // Delete any existing visualization for this section first (avoid stale findFirst).
       await db
         .delete(dealEmbeddings)
@@ -259,19 +299,19 @@ LAYOUT:
         chunkType: 'visualization',
         chunkIndex: 0,
         chunkCategory: 'elaboration',
-        content: JSON.stringify(visualization),
+        content: JSON.stringify(visualizationWithSources),
         confidence,
         embedding: null,
         metadata: JSON.stringify({
           sectionId,
           isVisualization: true,
-          elementCount: Object.keys(visualization.elements).length,
+          elementCount: Object.keys(visualizationWithSources.elements).length,
         }),
       });
 
       hasStoredVisualization = true;
       console.log(
-        `[Section:${sectionId}] Visualization stored (${Object.keys(visualization.elements).length} elements)`
+        `[Section:${sectionId}] Visualization stored (${Object.keys(visualizationWithSources.elements).length} elements)`
       );
 
       return {
@@ -384,6 +424,25 @@ Nutze konkrete Begriffe die in Ausschreibungsdokumenten vorkommen, NICHT abstrak
             question: query,
             maxResults: topK,
           });
+          capturedSources.push(
+            ...chunks
+              .map(c => {
+                const citation = c.source
+                  ? formatSourceCitation(c.source)
+                  : c.webSource?.url || (c.metadata as any)?.webSource?.url || '';
+                const normalized = String(citation || '')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                if (!normalized) return null;
+                const item: SourcePanelItem = {
+                  citation: normalized,
+                  excerpt: excerptText(c.content, 350),
+                  score: c.similarity,
+                };
+                return item;
+              })
+              .filter((s): s is SourcePanelItem => s !== null)
+          );
           if (chunks.length === 0) {
             return {
               found: false,
@@ -434,11 +493,12 @@ WORKFLOW:
 2. ERSTE SUCHE: Breite Abfrage zum Kernthema mit queryDocuments
 3. ANALYSE: Prüfe was du gefunden hast — was fehlt noch?
 4. FOLGE-SUCHEN: 1-3 gezielte Nachfragen mit queryDocuments basierend auf Lücken
-5. SYNTHESE: Erstelle die Visualisierung aus ALLEN gefundenen Informationen:
-   - Zusammenfassung: Was sind die Kernpunkte für ein Angebotsteam?
-   - Details: Strukturierte Fakten mit KeyValueTable und BulletList
-   - Einschätzung: Was bedeutet das? Was fehlt? Worauf achten?
-   - Sonderfälle: Wenn Mechaniken/Anrechnungen/Erlösmodelle vorkommen, erkläre sie mit Beispielrechnung
+	5. SYNTHESE: Erstelle die Visualisierung aus ALLEN gefundenen Informationen:
+	   - Zusammenfassung: Was sind die Kernpunkte für ein Angebotsteam?
+	   - Details: Strukturierte Fakten mit KeyValueTable/BulletList/DataTable (keine Markdown-Tabellen)
+	   - Visuals (nur wenn passend): BarChart für Vergleiche/Anteile, AreaChart für Verläufe über Zeit
+	   - Einschätzung: Was bedeutet das? Was fehlt? Worauf achten?
+	   - Sonderfälle: Wenn Mechaniken/Anrechnungen/Erlösmodelle vorkommen, erkläre sie mit Beispielrechnung
 6. Speichere 8-15 Findings via storeFindingsBatch (chunkType = sectionId)
 7. Erstelle 1-3 Key-Facts für das Dashboard via storeDashboardHighlights
 8. Rufe complete auf
@@ -515,8 +575,20 @@ WICHTIG:
           );
         }
 
+        const sources = buildSourcesFromRawChunks(chunks, {
+          maxSources: 10,
+          maxExcerptChars: 350,
+        });
+
         // Deterministic fallback (also acts as a "self-heal" when the model output is invalid).
-        if (!elements || Object.keys(elements).length === 0 || !root || !elements[root]) {
+        const candidateError = validatePreQualVisualizationTree({ root, elements });
+        if (
+          !elements ||
+          Object.keys(elements).length === 0 ||
+          !root ||
+          !elements[root] ||
+          candidateError
+        ) {
           const FALLBACK_TITLES: Record<string, string> = {
             budget: 'Budget & Laufzeit',
             timing: 'Zeitplan & Fristen',
@@ -531,12 +603,67 @@ WICHTIG:
           const title =
             FALLBACK_TITLES[sectionId] || sectionQuery.split('\n')[0]?.slice(0, 80) || sectionId;
 
-          const topExtracts = chunks
-            .slice(0, 5)
-            .map(c => c.content)
-            .filter(Boolean)
-            .map(t => t.replace(/\s+/g, ' ').trim())
-            .map(t => (t.length > 260 ? `${t.slice(0, 260)}…` : t));
+          const citedItems: Array<{ excerpt: string; citation?: string; score?: number }> = [];
+          const extraElements: Record<string, any> = {};
+          const tableChildKeys: string[] = [];
+
+          let tableIdx = 0;
+          for (const c of chunks.slice(0, 5)) {
+            const raw = String(c.content || '');
+            const citation = c.source
+              ? formatSourceCitation(c.source)
+              : c.webSource?.url || (c.metadata as any)?.webSource?.url || undefined;
+
+            const parsed =
+              looksLikeMarkdownTable(raw) && raw.length <= 40_000 ? parseMarkdownTable(raw) : null;
+
+            if (parsed) {
+              const srcKey = `table-src-${tableIdx}`;
+              const tableKey = `table-${tableIdx}`;
+              extraElements[srcKey] = {
+                key: srcKey,
+                type: 'Paragraph',
+                props: {
+                  text: citation ? `Quelle: ${citation}` : 'Tabelle aus den Dokumenten',
+                },
+              };
+              extraElements[tableKey] = {
+                key: tableKey,
+                type: 'DataTable',
+                props: { columns: parsed.columns, rows: parsed.rows, compact: true },
+              };
+              tableChildKeys.push(srcKey, tableKey);
+              tableIdx += 1;
+              continue;
+            }
+
+            citedItems.push({
+              excerpt: excerptText(raw, 350),
+              ...(citation ? { citation } : {}),
+              score: c.similarity,
+            });
+          }
+
+          const extractsChildren: string[] = [];
+          if (citedItems.length > 0) {
+            extraElements['extracts-excerpts'] = {
+              key: 'extracts-excerpts',
+              type: 'CitedExcerpts',
+              props: { items: citedItems },
+            };
+            extractsChildren.push('extracts-excerpts');
+          }
+
+          extractsChildren.push(...tableChildKeys);
+
+          if (extractsChildren.length === 0) {
+            extraElements['extracts-empty'] = {
+              key: 'extracts-empty',
+              type: 'Paragraph',
+              props: { text: 'Keine relevanten Informationen in den Dokumenten gefunden.' },
+            };
+            extractsChildren.push('extracts-empty');
+          }
 
           root = 'section-main';
           elements = {
@@ -550,30 +677,24 @@ WICHTIG:
               key: 'summary',
               type: 'Paragraph',
               props: {
-                text:
-                  'Die automatische Visualisierung konnte nicht erzeugt werden. Unten findest du die relevantesten Textauszüge und eine strukturierte Interpretation fuer das Angebotsteam. ' +
-                  'Bitte pruefe Sonderregelungen (Anrechnungen, Bonus/Malus, Erlösmodelle) besonders genau und klaere Unklarheiten vor Angebotsabgabe.',
+                text: [
+                  'Hier sind belastbare Auszüge aus den Dokumenten und eine erste strukturierte Einordnung für das Angebotsteam.',
+                  'Bitte prüfe insbesondere Sonderregelungen (Anrechnungen, Bonus/Malus, Erlösmodelle) direkt im PDF anhand der Quellenangaben.',
+                  'Wenn Angaben fehlen oder widersprüchlich sind: als Bieterfrage klären, bevor Preis/Leistung finalisiert wird.',
+                  'Diese Darstellung ist ein Fallback und ersetzt keine finale Angebotsprüfung.',
+                ].join(' '),
               },
             },
             'sub-extracts': {
               key: 'sub-extracts',
               type: 'SubSection',
-              props: { title: 'Relevante Auszüge (komprimiert)' },
-              children: ['extracts-list'],
-            },
-            'extracts-list': {
-              key: 'extracts-list',
-              type: 'BulletList',
-              props: {
-                items: topExtracts.length
-                  ? topExtracts
-                  : ['Keine relevanten Informationen in den Dokumenten gefunden.'],
-              },
+              props: { title: 'Relevante Auszüge' },
+              children: extractsChildren,
             },
             'sub-implications': {
               key: 'sub-implications',
               type: 'SubSection',
-              props: { title: 'Was bedeutet das fuer das Angebotsteam?' },
+              props: { title: 'Was bedeutet das für das Angebotsteam?' },
               children: ['implications-list'],
             },
             'implications-list': {
@@ -581,16 +702,26 @@ WICHTIG:
               type: 'BulletList',
               props: {
                 items: [
-                  'Kernaussagen aus den Auszuegen validieren (Quelle/Seite im PDF nachschlagen).',
-                  'Sonderfaelle als klare Angebotsannahmen formulieren (z.B. Anrechnung/Bonus/Malus).',
-                  'Offene Fragen in Bieterfragen/Rueckfragen stellen, bevor Preis/Leistung finalisiert wird.',
+                  'Kernaussagen aus den Auszügen validieren (Quelle/Seite im PDF nachschlagen).',
+                  'Sonderfälle als klare Angebotsannahmen formulieren (z.B. Anrechnung/Bonus/Malus).',
+                  'Offene Punkte als Bieterfragen/Rückfragen klären, bevor Preis/Leistung finalisiert wird.',
                 ],
               },
             },
+            ...extraElements,
           };
 
           confidence = 25;
         }
+
+        // Always append an auditable sources block for fallback visualizations.
+        const injected = injectSourcesPanel({ root, elements } as any, sources, {
+          subSectionTitle: 'Quellen',
+          panelTitle: 'Quellen',
+          maxSources: 10,
+        });
+        root = injected.root ?? root;
+        elements = injected.elements;
 
         // Delete any existing visualization for this section first (avoid stale findFirst).
         await db
@@ -633,8 +764,8 @@ WICHTIG:
           fallbackError
         );
 
-        const root = 'section-main';
-        const elements = {
+        let root = 'section-main';
+        let elements: Record<string, any> = {
           'section-main': {
             key: 'section-main',
             type: 'Section',
@@ -647,6 +778,15 @@ WICHTIG:
             props: { text: 'Diese Sektion konnte nicht automatisch visualisiert werden.' },
           },
         };
+
+        // Best-effort: still attach sources from earlier document queries, if available.
+        const injected = injectSourcesPanel({ root, elements } as any, capturedSources, {
+          subSectionTitle: 'Quellen',
+          panelTitle: 'Quellen',
+          maxSources: 10,
+        });
+        root = injected.root ?? root;
+        elements = injected.elements;
 
         // Delete any existing visualization for this section first (avoid stale findFirst).
         await db

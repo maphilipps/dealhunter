@@ -41,6 +41,15 @@ import {
 } from 'lucide-react';
 import React from 'react';
 import type { ComponentType, ReactNode } from 'react';
+import {
+  Area,
+  AreaChart as RechartsAreaChart,
+  Bar,
+  BarChart as RechartsBarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 import {
   Accordion,
@@ -72,6 +81,7 @@ import {
   TypographyP,
   TypographySmall,
 } from '@/components/ui/typography';
+import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { PaginationWrapper } from '@/components/json-render/pagination-wrapper';
 import { cn } from '@/lib/utils';
 
@@ -493,7 +503,7 @@ export const qualificationScanRegistry: Record<string, ComponentType<RegistryCom
       compact?: boolean;
     };
 
-    if (!Array.isArray(columns) || columns.length === 0) return null;
+    const safeColumns = Array.isArray(columns) ? columns : [];
     const safeRows = Array.isArray(rows) ? rows : [];
 
     const pageSize = compact ? 15 : 10;
@@ -502,7 +512,9 @@ export const qualificationScanRegistry: Record<string, ComponentType<RegistryCom
     // Reset pagination when the table shape changes.
     React.useEffect(() => {
       setPage(0);
-    }, [safeRows.length, columns.length]);
+    }, [safeRows.length, safeColumns.length]);
+
+    if (safeColumns.length === 0) return null;
 
     const totalPages = Math.max(1, Math.ceil(safeRows.length / pageSize));
     const clampedPage = Math.min(page, totalPages - 1);
@@ -517,7 +529,7 @@ export const qualificationScanRegistry: Record<string, ComponentType<RegistryCom
           <Table>
             <TableHeader>
               <TableRow>
-                {columns.map(col => (
+                {safeColumns.map(col => (
                   <TableHead key={col.key} className={cellPadding}>
                     {col.label}
                   </TableHead>
@@ -527,7 +539,7 @@ export const qualificationScanRegistry: Record<string, ComponentType<RegistryCom
             <TableBody>
               {pageRows.map((row, idx) => (
                 <TableRow key={idx}>
-                  {columns.map(col => (
+                  {safeColumns.map(col => (
                     <TableCell key={col.key} className={cellPadding}>
                       {row[col.key] ?? ''}
                     </TableCell>
@@ -566,6 +578,320 @@ export const qualificationScanRegistry: Record<string, ComponentType<RegistryCom
             </div>
           </div>
         )}
+      </div>
+    );
+  },
+
+  /**
+   * SourcesPanel - Collapsible sources list (PDF page/paragraph citations + excerpts)
+   */
+  SourcesPanel: ({ element }) => {
+    const { title = 'Quellen', sources } = element.props as {
+      title?: string;
+      sources: Array<{ citation: string; excerpt?: string; score?: number }>;
+    };
+
+    const [isOpen, setIsOpen] = React.useState(false);
+
+    if (!Array.isArray(sources) || sources.length === 0) return null;
+
+    const formatScore = (score: number | undefined): string | null => {
+      if (typeof score !== 'number' || !Number.isFinite(score)) return null;
+      const pct = score <= 1 ? Math.round(score * 100) : Math.round(score);
+      return `${pct}%`;
+    };
+
+    return (
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-3">
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
+            {title} ({sources.length})
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-2">
+          {sources.map((s, idx) => {
+            const score = formatScore(s.score);
+            return (
+              <div key={idx} className="rounded-lg border bg-background p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <FileText className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium break-words">{s.citation}</div>
+                      {s.excerpt && (
+                        <div className="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">
+                          {s.excerpt}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {score && (
+                    <Badge variant="outline" className="text-xs flex-shrink-0">
+                      {score}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  },
+
+  /**
+   * CitedExcerpts - Curated excerpts list with optional citations/scores
+   */
+  CitedExcerpts: ({ element }) => {
+    const { title, items } = element.props as {
+      title?: string;
+      items: Array<{ excerpt: string; citation?: string; score?: number }>;
+    };
+
+    if (!Array.isArray(items) || items.length === 0) return null;
+
+    const formatScore = (score: number | undefined): string | null => {
+      if (typeof score !== 'number' || !Number.isFinite(score)) return null;
+      const pct = score <= 1 ? Math.round(score * 100) : Math.round(score);
+      return `${pct}%`;
+    };
+
+    return (
+      <div className="space-y-2">
+        {title ? (
+          <TypographySmall className="text-muted-foreground">{title}</TypographySmall>
+        ) : null}
+        <div className="space-y-2">
+          {items.map((it, idx) => {
+            const score = formatScore(it.score);
+            return (
+              <div key={idx} className="rounded-lg border bg-background p-3 space-y-2">
+                <div className="text-sm whitespace-pre-wrap">{it.excerpt}</div>
+                {(it.citation || score) && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                    {it.citation ? <span className="break-words">{it.citation}</span> : null}
+                    {score ? (
+                      <Badge variant="outline" className="text-xs">
+                        {score}
+                      </Badge>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  },
+
+  /**
+   * BarChart - Horizontal bar chart (label/value)
+   */
+  BarChart: ({ element }) => {
+    const {
+      title,
+      description,
+      data,
+      format = 'number',
+      height = 260,
+      color,
+    } = element.props as {
+      title?: string;
+      description?: string;
+      data: Array<{ label: string; value: number }>;
+      format?: 'number' | 'percent' | 'currency';
+      height?: number;
+      color?: string;
+    };
+
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    const safeData = data
+      .filter(d => d && typeof d.label === 'string' && Number.isFinite(d.value))
+      .map(d => ({ label: d.label, value: Number(d.value) }));
+    if (safeData.length === 0) return null;
+
+    const formatValue = (n: number): string => {
+      const normalized = format === 'percent' && n <= 1 ? n * 100 : n;
+      if (format === 'currency') {
+        try {
+          return new Intl.NumberFormat('de-DE', {
+            style: 'currency',
+            currency: 'EUR',
+            maximumFractionDigits: 0,
+          }).format(normalized);
+        } catch {
+          return `${Math.round(normalized)} EUR`;
+        }
+      }
+      if (format === 'percent') return `${Math.round(normalized)}%`;
+      try {
+        return new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(normalized);
+      } catch {
+        return String(Math.round(normalized));
+      }
+    };
+
+    const chartConfig = {
+      value: {
+        label: title ?? 'Wert',
+        color: color ?? 'hsl(var(--chart-1))',
+      },
+    } satisfies ChartConfig;
+
+    return (
+      <div className="rounded-lg border bg-background p-4 space-y-3">
+        {(title || description) && (
+          <div className="space-y-1">
+            {title ? <div className="text-sm font-medium">{title}</div> : null}
+            {description ? (
+              <div className="text-xs text-muted-foreground">{description}</div>
+            ) : null}
+          </div>
+        )}
+
+        <ChartContainer
+          config={chartConfig}
+          className="w-full min-h-[200px] aspect-auto"
+          style={{ height }}
+        >
+          <RechartsBarChart data={safeData} layout="vertical" margin={{ left: 0, right: 16 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis type="number" tickFormatter={value => formatValue(Number(value))} />
+            <YAxis dataKey="label" type="category" width={180} tickLine={false} axisLine={false} />
+            <ChartTooltip
+              content={({ active, payload }) => {
+                if (!active || !payload || payload.length === 0) return null;
+                const p = payload[0] as any;
+                const label = String(p?.payload?.label ?? '');
+                const value = typeof p?.value === 'number' ? p.value : Number(p?.value ?? 0);
+                return (
+                  <div className="rounded-lg border bg-background p-2 shadow-sm text-xs">
+                    <div className="font-medium">{label}</div>
+                    <div className="mt-1 text-muted-foreground">{formatValue(value)}</div>
+                  </div>
+                );
+              }}
+            />
+            <Bar dataKey="value" fill="var(--color-value)" radius={[0, 4, 4, 0]} />
+          </RechartsBarChart>
+        </ChartContainer>
+      </div>
+    );
+  },
+
+  /**
+   * AreaChart - Area chart (label/value)
+   */
+  AreaChart: ({ element }) => {
+    const {
+      title,
+      description,
+      data,
+      format = 'number',
+      height = 260,
+      color,
+    } = element.props as {
+      title?: string;
+      description?: string;
+      data: Array<{ label: string; value: number }>;
+      format?: 'number' | 'percent' | 'currency';
+      height?: number;
+      color?: string;
+    };
+
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    const safeData = data
+      .filter(d => d && typeof d.label === 'string' && Number.isFinite(d.value))
+      .map(d => ({ label: d.label, value: Number(d.value) }));
+    if (safeData.length === 0) return null;
+
+    const formatValue = (n: number): string => {
+      const normalized = format === 'percent' && n <= 1 ? n * 100 : n;
+      if (format === 'currency') {
+        try {
+          return new Intl.NumberFormat('de-DE', {
+            style: 'currency',
+            currency: 'EUR',
+            maximumFractionDigits: 0,
+          }).format(normalized);
+        } catch {
+          return `${Math.round(normalized)} EUR`;
+        }
+      }
+      if (format === 'percent') return `${Math.round(normalized)}%`;
+      try {
+        return new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(normalized);
+      } catch {
+        return String(Math.round(normalized));
+      }
+    };
+
+    const chartConfig = {
+      value: {
+        label: title ?? 'Wert',
+        color: color ?? 'hsl(var(--chart-1))',
+      },
+    } satisfies ChartConfig;
+
+    const gradientId = `${element.key}-gradient`;
+
+    return (
+      <div className="rounded-lg border bg-background p-4 space-y-3">
+        {(title || description) && (
+          <div className="space-y-1">
+            {title ? <div className="text-sm font-medium">{title}</div> : null}
+            {description ? (
+              <div className="text-xs text-muted-foreground">{description}</div>
+            ) : null}
+          </div>
+        )}
+
+        <ChartContainer
+          config={chartConfig}
+          className="w-full min-h-[200px] aspect-auto"
+          style={{ height }}
+        >
+          <RechartsAreaChart data={safeData} margin={{ left: 0, right: 16 }}>
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--color-value)" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="var(--color-value)" stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={10} />
+            <YAxis tickFormatter={value => formatValue(Number(value))} />
+            <ChartTooltip
+              content={({ active, payload }) => {
+                if (!active || !payload || payload.length === 0) return null;
+                const p = payload[0] as any;
+                const label = String(p?.payload?.label ?? '');
+                const value = typeof p?.value === 'number' ? p.value : Number(p?.value ?? 0);
+                return (
+                  <div className="rounded-lg border bg-background p-2 shadow-sm text-xs">
+                    <div className="font-medium">{label}</div>
+                    <div className="mt-1 text-muted-foreground">{formatValue(value)}</div>
+                  </div>
+                );
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="var(--color-value)"
+              fill={`url(#${gradientId})`}
+              strokeWidth={2}
+              dot={false}
+            />
+          </RechartsAreaChart>
+        </ChartContainer>
       </div>
     );
   },

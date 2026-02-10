@@ -81,6 +81,8 @@ progress.txt
 # Claude settings with potential secrets
 .claude/settings*.json
 .claude/*.local.md
+.claude/hooks/
+HANDOVER-*.md
 
 # Local working data (attachments, raw RFP exports, etc.)
 /work_data/

@@ -11,6 +11,19 @@ const nextConfig: NextConfig = {
     },
     proxyClientMaxBodySize: 200 * 1024 * 1024, // 200MB — must match serverActions.bodySizeLimit
   },
+  async headers() {
+    return [
+      {
+        // Override stale 301 browser cache from removed permanent redirect (qualifications->pitches).
+        // Browsers cache 301s indefinitely. This header ensures fresh requests on next visit.
+        // TODO: Remove after all users have visited once (mid-March 2026)
+        source: '/qualifications/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, max-age=0' },
+        ],
+      },
+    ];
+  },
 };
 
 export default withSentryConfig(withWorkflow(withBotId(nextConfig)), {

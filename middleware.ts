@@ -2,10 +2,26 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 
+const REDIRECT_CACHE_BUST_COOKIE = 'dh_redirect_cache_bust_v1';
+
 export default auth(req => {
   const { pathname } = req.nextUrl;
   const isAuth = !!req.auth;
   const userRole = req.auth?.user?.role;
+
+  const maybeBustRedirectCache = (res: NextResponse) => {
+    // Only clear once per browser to avoid repeatedly nuking the HTTP cache.
+    // Cache clear is scoped to this origin and does not clear cookies/storage.
+    res.headers.set('Clear-Site-Data', '"cache"');
+    res.cookies.set(REDIRECT_CACHE_BUST_COOKIE, '1', {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: req.nextUrl.protocol === 'https:',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+    return res;
+  };
 
   const publicRoutes = ['/login', '/register'];
   const isPublicRoute = publicRoutes.includes(pathname);
@@ -30,35 +46,59 @@ export default auth(req => {
     return NextResponse.next();
   }
 
+  // Self-heal: some browsers cache old permanent redirects (301) indefinitely.
+  // If a user has a stale redirect cached for `/qualifications -> /pitches`, we can only fix it
+  // after they hit *any* server response. `/pitches` is a common landing page in that scenario,
+  // so we clear only the HTTP cache once per browser via a cookie gate.
+  //
+  // This avoids telling users to manually clear their browser cache.
+  const isGet = req.method === 'GET';
+  const isPrefetch =
+    req.headers.get('x-middleware-prefetch') === '1' ||
+    req.headers.get('next-router-prefetch') === '1' ||
+    req.headers.get('purpose') === 'prefetch' ||
+    req.headers.get('sec-purpose') === 'prefetch';
+  const shouldBustRedirectCache =
+    isGet &&
+    !isPrefetch &&
+    pathname.startsWith('/pitches') &&
+    !req.cookies.get(REDIRECT_CACHE_BUST_COOKIE);
+
   // Allow public routes
   if (isPublicRoute) {
     // Redirect to leads if already authenticated
     if (isAuth && (pathname === '/login' || pathname === '/register')) {
-      return NextResponse.redirect(new URL('/qualifications', req.url));
+      const res = NextResponse.redirect(new URL('/qualifications', req.url));
+      return shouldBustRedirectCache ? maybeBustRedirectCache(res) : res;
     }
-    return NextResponse.next();
+    const res = NextResponse.next();
+    return shouldBustRedirectCache ? maybeBustRedirectCache(res) : res;
   }
 
   // Require authentication for all other routes
   if (!isAuth) {
-    return NextResponse.redirect(new URL('/login', req.url));
+    const res = NextResponse.redirect(new URL('/login', req.url));
+    return shouldBustRedirectCache ? maybeBustRedirectCache(res) : res;
   }
 
   // Admin-only routes
   const adminRoutes = ['/admin'];
   const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
   if (isAdminRoute && userRole !== 'admin') {
-    return NextResponse.redirect(new URL('/qualifications', req.url));
+    const res = NextResponse.redirect(new URL('/qualifications', req.url));
+    return shouldBustRedirectCache ? maybeBustRedirectCache(res) : res;
   }
 
   // BL-only routes (BL and Admin can access)
   const blRoutes = ['/bl-review'];
   const isBLRoute = blRoutes.some(route => pathname.startsWith(route));
   if (isBLRoute && userRole !== 'bl' && userRole !== 'admin') {
-    return NextResponse.redirect(new URL('/qualifications', req.url));
+    const res = NextResponse.redirect(new URL('/qualifications', req.url));
+    return shouldBustRedirectCache ? maybeBustRedirectCache(res) : res;
   }
 
-  return NextResponse.next();
+  const res = NextResponse.next();
+  return shouldBustRedirectCache ? maybeBustRedirectCache(res) : res;
 });
 
 export const config = {
@@ -78,5 +118,5 @@ export const config = {
   ],
 };
 
-// Force Node.js runtime for middleware
+// Force Node.js runtime for middleware (required by NextAuth crypto)
 export const runtime = 'nodejs';

@@ -3,12 +3,36 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { performWebResearch, clearRateLimit } from '../web-research-service';
 
 // Mock dependencies
-vi.mock('@/lib/rag/raw-chunk-service');
-vi.mock('@/lib/rag/raw-embedding-service');
-vi.mock('@/lib/db');
-
-// Mock fetch globally
-global.fetch = vi.fn();
+vi.mock('@/lib/rag/raw-chunk-service', () => ({
+  chunkRawText: vi.fn(() => [{ content: 'test chunk', tokenCount: 10, metadata: {} }]),
+}));
+vi.mock('@/lib/rag/raw-embedding-service', () => ({
+  generateRawChunkEmbeddings: vi.fn(chunks =>
+    Promise.resolve(
+      chunks.map((chunk: any) => ({
+        ...chunk,
+        embedding: new Array(1536).fill(0),
+      }))
+    )
+  ),
+}));
+vi.mock('@/lib/db', () => ({
+  db: {
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          orderBy: vi.fn(() => ({
+            limit: vi.fn(() => Promise.resolve([])),
+          })),
+        })),
+      })),
+    })),
+    insert: vi.fn(() => ({
+      values: vi.fn(() => Promise.resolve()),
+    })),
+  },
+}));
+vi.mock('@/lib/search/web-search');
 
 describe('web-research-service', () => {
   beforeEach(() => {
@@ -19,14 +43,15 @@ describe('web-research-service', () => {
 
   describe('rate limiting', () => {
     it('should allow requests within rate limit', async () => {
+      const { searchAndContents } = await import('@/lib/search/web-search');
       const preQualificationId = 'test-preQualification-1';
       clearRateLimit(preQualificationId);
 
-      // Mock fetch to return empty results
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ results: [] }),
-      } as Response);
+      // Mock searchAndContents to return empty results
+      vi.mocked(searchAndContents).mockResolvedValue({
+        results: [],
+        error: undefined,
+      });
 
       // First request should succeed
       const result1 = await performWebResearch({
@@ -40,14 +65,15 @@ describe('web-research-service', () => {
     });
 
     it('should block requests exceeding rate limit', async () => {
+      const { searchAndContents } = await import('@/lib/search/web-search');
       const preQualificationId = 'test-preQualification-2';
       clearRateLimit(preQualificationId);
 
-      // Mock fetch to return empty results
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ results: [] }),
-      } as Response);
+      // Mock searchAndContents to return empty results
+      vi.mocked(searchAndContents).mockResolvedValue({
+        results: [],
+        error: undefined,
+      });
 
       // Make 5 requests (at the limit)
       for (let i = 0; i < 5; i++) {
@@ -78,81 +104,23 @@ describe('web-research-service', () => {
     });
   });
 
-  describe('Exa API integration', () => {
-    it('should skip Exa API when API key is not configured', async () => {
+  describe('Web search integration', () => {
+    it('should use searchAndContents for web research', async () => {
+      const { searchAndContents } = await import('@/lib/search/web-search');
       const preQualificationId = 'test-preQualification-4';
       clearRateLimit(preQualificationId);
 
-      // No EXA_API_KEY set
-      process.env.EXA_API_KEY = '';
-
-      // Mock fetch (shouldn't be called for Exa)
-      const fetchMock = vi.mocked(global.fetch);
-
-      await performWebResearch({
-        preQualificationId,
-        sectionId: 'overview',
-        question: 'Test query',
+      // Mock searchAndContents response
+      vi.mocked(searchAndContents).mockResolvedValueOnce({
+        results: [
+          {
+            url: 'https://example.com/1',
+            title: 'Example Result 1',
+            text: 'This is example content',
+          },
+        ],
+        error: undefined,
       });
-
-      // Should not call Exa API
-      expect(fetchMock).not.toHaveBeenCalledWith('https://api.exa.ai/search', expect.anything());
-    });
-
-    it('should use Exa API when configured', async () => {
-      const preQualificationId = 'test-preQualification-5';
-      clearRateLimit(preQualificationId);
-
-      // Set Exa API key
-      process.env.EXA_API_KEY = 'test-key-123';
-
-      // Mock Exa API response
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            results: [
-              {
-                url: 'https://example.com/1',
-                title: 'Example Result 1',
-                text: 'This is example content',
-                highlights: ['Highlighted text'],
-              },
-            ],
-          }),
-      } as Response);
-
-      await performWebResearch({
-        preQualificationId,
-        sectionId: 'overview',
-        question: 'Test query',
-      });
-
-      // Should call Exa API
-      expect(global.fetch).toHaveBeenCalledWith(
-        'https://api.exa.ai/search',
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            Authorization: 'Bearer test-key-123',
-          }),
-        })
-      );
-    });
-
-    it('should fallback to native search when Exa fails', async () => {
-      const preQualificationId = 'test-preQualification-6';
-      clearRateLimit(preQualificationId);
-
-      // Set Exa API key
-      process.env.EXA_API_KEY = 'test-key-123';
-
-      // Mock Exa API failure
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-      } as Response);
 
       const result = await performWebResearch({
         preQualificationId,
@@ -160,7 +128,28 @@ describe('web-research-service', () => {
         question: 'Test query',
       });
 
-      // Should attempt fallback (native search will also fail in test env)
+      // Should call searchAndContents
+      expect(searchAndContents).toHaveBeenCalledWith('Test query', { numResults: 3 });
+      expect(result.success).toBe(true);
+    });
+
+    it('should handle search failures gracefully', async () => {
+      const { searchAndContents } = await import('@/lib/search/web-search');
+      const preQualificationId = 'test-preQualification-5';
+      clearRateLimit(preQualificationId);
+
+      // Mock search failure
+      vi.mocked(searchAndContents).mockResolvedValueOnce({
+        results: [],
+        error: 'Search failed',
+      });
+
+      const result = await performWebResearch({
+        preQualificationId,
+        sectionId: 'overview',
+        question: 'Test query',
+      });
+
       expect(result.success).toBe(true);
       expect(result.results).toEqual([]);
     });
@@ -168,14 +157,15 @@ describe('web-research-service', () => {
 
   describe('result processing', () => {
     it('should return empty results when no search results found', async () => {
+      const { searchAndContents } = await import('@/lib/search/web-search');
       const preQualificationId = 'test-preQualification-7';
       clearRateLimit(preQualificationId);
 
-      // Mock empty Exa response
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ results: [] }),
-      } as Response);
+      // Mock empty search response
+      vi.mocked(searchAndContents).mockResolvedValueOnce({
+        results: [],
+        error: undefined,
+      });
 
       const result = await performWebResearch({
         preQualificationId,
@@ -189,25 +179,18 @@ describe('web-research-service', () => {
     });
 
     it('should respect maxResults parameter', async () => {
+      const { searchAndContents } = await import('@/lib/search/web-search');
       const preQualificationId = 'test-preQualification-8';
       clearRateLimit(preQualificationId);
 
-      process.env.EXA_API_KEY = 'test-key';
-
-      // Mock Exa API response with multiple results
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            results: [
-              { url: 'https://example.com/1', title: 'Result 1', text: 'Content 1' },
-              { url: 'https://example.com/2', title: 'Result 2', text: 'Content 2' },
-              { url: 'https://example.com/3', title: 'Result 3', text: 'Content 3' },
-              { url: 'https://example.com/4', title: 'Result 4', text: 'Content 4' },
-              { url: 'https://example.com/5', title: 'Result 5', text: 'Content 5' },
-            ],
-          }),
-      } as Response);
+      // Mock search response
+      vi.mocked(searchAndContents).mockResolvedValueOnce({
+        results: [
+          { url: 'https://example.com/1', title: 'Result 1', text: 'Content 1' },
+          { url: 'https://example.com/2', title: 'Result 2', text: 'Content 2' },
+        ],
+        error: undefined,
+      });
 
       await performWebResearch({
         preQualificationId,
@@ -216,26 +199,22 @@ describe('web-research-service', () => {
         maxResults: 2,
       });
 
-      // Should request only 2 results from Exa
-      expect(global.fetch).toHaveBeenCalledWith(
-        'https://api.exa.ai/search',
-        expect.objectContaining({
-          body: expect.stringContaining('"numResults":2'),
-        })
-      );
+      // Should request only 2 results via searchAndContents
+      expect(searchAndContents).toHaveBeenCalledWith('Test query', { numResults: 2 });
     });
   });
 
   describe('error handling', () => {
-    it('should handle network errors gracefully', async () => {
+    it('should handle search errors gracefully', async () => {
+      const { searchAndContents } = await import('@/lib/search/web-search');
       const preQualificationId = 'test-preQualification-9';
       clearRateLimit(preQualificationId);
 
-      process.env.EXA_API_KEY = 'test-key';
-
-      // Reset and mock network error for Exa
-      vi.mocked(global.fetch).mockReset();
-      vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
+      // Mock search returning error
+      vi.mocked(searchAndContents).mockResolvedValueOnce({
+        results: [],
+        error: 'Network error',
+      });
 
       const result = await performWebResearch({
         preQualificationId,
@@ -243,25 +222,21 @@ describe('web-research-service', () => {
         question: 'Test query',
       });
 
-      // Should not crash - both Exa and fallback failed, returns empty
-      // The code gracefully degrades by returning empty results
+      // Should not crash and return empty results
       expect(result.results).toEqual([]);
-      // Success can be true or false depending on whether processing happened
-      // The key is that it doesn't throw and returns a valid response
-      expect(result.error).toBeTruthy();
+      expect(result.error).toBe('No search results found');
     });
 
-    it('should handle malformed API responses', async () => {
+    it('should handle empty search results', async () => {
+      const { searchAndContents } = await import('@/lib/search/web-search');
       const preQualificationId = 'test-preQualification-10';
       clearRateLimit(preQualificationId);
 
-      process.env.EXA_API_KEY = 'test-key';
-
-      // Mock malformed response
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ invalid: 'response' }), // Missing 'results' key
-      } as Response);
+      // Mock empty results
+      vi.mocked(searchAndContents).mockResolvedValueOnce({
+        results: [],
+        error: undefined,
+      });
 
       const result = await performWebResearch({
         preQualificationId,
@@ -271,6 +246,7 @@ describe('web-research-service', () => {
 
       // Should handle gracefully
       expect(result.success).toBe(true);
+      expect(result.results).toEqual([]);
     });
   });
 });

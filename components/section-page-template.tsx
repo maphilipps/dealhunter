@@ -27,6 +27,13 @@ interface SynthesizedSectionResult {
   errorMessage?: string;
   visualizationTree?: RenderTree;
   synthesisMethod?: 'ai' | 'fallback';
+  qualificationStatus?: string;
+  artifacts?: {
+    findingsCount: number;
+    hasHighlight: boolean;
+    hasVisualization: boolean;
+  };
+  canRegenerate?: boolean;
 }
 
 export interface SectionPageTemplateProps {
@@ -74,11 +81,16 @@ export function SectionPageTemplate({
   const [visualizationTree, setVisualizationTree] = useState<RenderTree | null>(null);
   const [synthesisMethod, setSynthesisMethod] = useState<'ai' | 'fallback' | null>(null);
   const [hasData, setHasData] = useState(false);
+  const [canRegenerate, setCanRegenerate] = useState(false);
 
   // Visualization generation state
   const [isGeneratingViz, setIsGeneratingViz] = useState(false);
   const [refinementPrompt, setRefinementPrompt] = useState('');
   const [vizError, setVizError] = useState<string | null>(null);
+
+  // Analysis regeneration state
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenError, setRegenError] = useState<string | null>(null);
 
   const fetchSectionData = useCallback(async () => {
     setLoading(true);
@@ -93,6 +105,7 @@ export function SectionPageTemplate({
       }
 
       const data = (await response.json()) as SynthesizedSectionResult;
+      setCanRegenerate(Boolean(data.canRegenerate));
 
       if (data.status === 'error') {
         setError(data.errorMessage || 'Unbekannter Fehler');
@@ -111,6 +124,7 @@ export function SectionPageTemplate({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Fehler beim Laden');
       setHasData(false);
+      setCanRegenerate(false);
     } finally {
       setLoading(false);
     }
@@ -123,6 +137,34 @@ export function SectionPageTemplate({
   const handleRefresh = () => {
     void fetchSectionData();
   };
+
+  const handleRegenerateAnalysis = useCallback(async () => {
+    setIsRegenerating(true);
+    setRegenError(null);
+
+    try {
+      const response = await fetch(`${apiBasePath}/sections/${sectionId}/rerun`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok || data.success === false) {
+        throw new Error(data.error || 'Analyse konnte nicht generiert werden');
+      }
+
+      await fetchSectionData();
+    } catch (err) {
+      setRegenError(err instanceof Error ? err.message : 'Fehler bei der Analyse');
+    } finally {
+      setIsRegenerating(false);
+    }
+  }, [apiBasePath, sectionId, fetchSectionData]);
 
   const handleGenerateVisualization = useCallback(async () => {
     setIsGeneratingViz(true);
@@ -176,7 +218,12 @@ export function SectionPageTemplate({
               {synthesisMethod === 'ai' ? 'AI Synthese' : 'Fallback'}
             </Badge>
           )}
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={loading || isRegenerating || isGeneratingViz}
+          >
             {loading ? (
               <>
                 <Loader size="sm" className="mr-2" />
@@ -235,11 +282,30 @@ export function SectionPageTemplate({
             <CardTitle>{noDataTitle}</CardTitle>
             <CardDescription>{noDataDescription}</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button variant="outline" onClick={handleRefresh}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Daten prüfen
-            </Button>
+          <CardContent className="space-y-3">
+            {regenError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{regenError}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex flex-wrap gap-2">
+              {canRegenerate && (
+                <Button onClick={handleRegenerateAnalysis} disabled={isRegenerating}>
+                  {isRegenerating ? (
+                    <Loader size="sm" className="mr-2" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4" />
+                  )}
+                  Analyse generieren
+                </Button>
+              )}
+              <Button variant="outline" onClick={handleRefresh} disabled={isRegenerating}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Daten prüfen
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -262,10 +328,10 @@ export function SectionPageTemplate({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {vizError && (
+            {(vizError || regenError) && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{vizError}</AlertDescription>
+                <AlertDescription>{vizError || regenError}</AlertDescription>
               </Alert>
             )}
 
@@ -274,18 +340,35 @@ export function SectionPageTemplate({
                 placeholder="Optional: Verfeinerung, z.B. 'Fokus auf technische Details'..."
                 value={refinementPrompt}
                 onChange={e => setRefinementPrompt(e.target.value)}
-                disabled={isGeneratingViz}
+                disabled={isGeneratingViz || isRegenerating}
                 rows={1}
                 className="min-h-[40px] resize-none"
               />
               <Button
                 onClick={handleGenerateVisualization}
-                disabled={isGeneratingViz}
+                disabled={isGeneratingViz || isRegenerating}
                 className="shrink-0"
               >
                 {isGeneratingViz ? <Loader size="sm" /> : <Sparkles className="h-4 w-4" />}
               </Button>
             </div>
+
+            {canRegenerate && (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleRegenerateAnalysis}
+                  disabled={isRegenerating || isGeneratingViz}
+                >
+                  {isRegenerating ? (
+                    <Loader size="sm" className="mr-2" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  Analyse regenerieren
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

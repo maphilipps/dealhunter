@@ -18,51 +18,14 @@ type DecisionMakerSource =
   | 'team_page';
 
 /**
- * Decision Maker Research Tool - SMART VERSION
- * Uses web search to find decision makers instead of manually iterating URLs
+ * Decision Maker Research Tool - AI-AGENT VERSION
+ * Uses an AI agent with tools to intelligently find decision makers
  *
  * Strategy:
- * 1. Web search for team/management/leadership pages
- * 2. Web search for specific roles (CEO, CTO, etc.)
- * 3. LinkedIn search as fallback
- * 4. Extract from found pages with AI
- * 5. Iterate until enough contacts are found
+ * - Agent uses web_search, fetch_page, submit_contacts tools
+ * - Agent decides search strategy and domain-relevance autonomously
+ * - Handles domain redirects and finds contacts even with changing domains
  */
-
-// Schema for AI-extracted person data
-const extractedPersonSchema = z.object({
-  name: z.string(),
-  role: z.string(),
-  email: z.string().nullable(),
-  linkedInUrl: z.string().nullable(),
-  xingUrl: z.string().nullable(),
-  phone: z.string().nullable(),
-});
-
-// Search strategies - ordered by effectiveness
-const SEARCH_STRATEGIES = [
-  // Strategy 1: Direct team/management page search
-  (company: string) => `"${company}" Team Management Geschäftsführung site:`,
-  (company: string) => `"${company}" Über uns Team Führung`,
-  (company: string) => `"${company}" Impressum Geschäftsführer`,
-
-  // Strategy 2: Role-specific searches
-  (company: string) => `"${company}" Geschäftsführer CEO`,
-  (company: string) => `"${company}" IT-Leiter CTO "Head of IT"`,
-  (company: string) => `"${company}" Marketingleiter CMO "Head of Marketing"`,
-  (company: string) => `"${company}" "Digital" Director Head`,
-
-  // Strategy 3: LinkedIn searches
-  (company: string) => `"${company}" Geschäftsführer site:linkedin.com/in`,
-  (company: string) => `"${company}" CEO CTO site:linkedin.com/in`,
-
-  // Strategy 4: Xing searches (DACH region)
-  (company: string) => `"${company}" Geschäftsführer site:xing.com`,
-
-  // Strategy 5: Press/News searches
-  (company: string) => `"${company}" CEO ernennt neuer Geschäftsführer`,
-  (company: string) => `"${company}" Management Vorstand Pressemitteilung`,
-];
 
 // Common email patterns for derivation
 const EMAIL_PATTERNS = [
@@ -121,94 +84,6 @@ function deriveEmails(name: string, domain: string): Array<{ email: string; conf
 }
 
 /**
- * Extract people from a web page using AI
- */
-async function extractPeopleFromPage(
-  pageContent: string,
-  pageUrl: string,
-  companyName: string
-): Promise<
-  Array<{
-    name: string;
-    role: string;
-    email?: string;
-    linkedInUrl?: string;
-    phone?: string;
-    source: DecisionMakerSource;
-  }>
-> {
-  try {
-    const responseSchema = z.object({
-      people: z.array(
-        z.object({
-          name: z.string(),
-          role: z.string(),
-          email: z.string().nullable(),
-          linkedInUrl: z.string().nullable(),
-          phone: z.string().nullable(),
-        })
-      ),
-    });
-
-    const { text } = await generateText({
-      model: (await getProviderForSlot('research'))(modelNames.research),
-      system: `Du bist ein Experte für die Extraktion von Kontaktinformationen aus Webseiten.
-
-AUFGABE: Extrahiere Entscheidungsträger und Führungspersonen von ${companyName}.
-
-WICHTIG:
-- Nur Personen mit Führungsrollen (Geschäftsführer, CEO, CTO, Leiter, Director, Head of, Manager, Vorstand)
-- Ignoriere normale Mitarbeiter ohne Führungsposition
-- Extrahiere echte E-Mails (nicht info@, kontakt@, etc.)
-- Extrahiere LinkedIn URLs wenn vorhanden
-- Maximal 5 relevante Personen`,
-      prompt: `Extrahiere Entscheidungsträger von ${companyName} aus diesem Seiteninhalt:
-
-URL: ${pageUrl}
-
-INHALT:
-${pageContent.slice(0, 10000)}
-
-Gib ein JSON zurück mit allen gefundenen Führungspersonen.`,
-      maxRetries: 2,
-      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_SIMPLE),
-    });
-
-    const jsonStart = text.indexOf('{');
-    const jsonEnd = text.lastIndexOf('}');
-    if (jsonStart === -1 || jsonEnd === -1) {
-      throw new Error('No JSON object found in model output');
-    }
-
-    const jsonString = text.slice(jsonStart, jsonEnd + 1);
-    const parsed = JSON.parse(jsonString);
-    const validated = responseSchema.safeParse(parsed);
-    if (!validated.success) {
-      throw new Error(`Decision maker schema validation failed: ${validated.error.message}`);
-    }
-
-    const source: DecisionMakerSource = pageUrl.includes('linkedin.com')
-      ? 'linkedin'
-      : pageUrl.includes('xing.com')
-        ? 'xing'
-        : pageUrl.includes('impressum')
-          ? 'impressum'
-          : 'web_search';
-    return validated.data.people.map(p => ({
-      name: p.name,
-      role: p.role,
-      email: p.email ?? undefined,
-      linkedInUrl: p.linkedInUrl ?? undefined,
-      phone: p.phone ?? undefined,
-      source,
-    }));
-  } catch (error) {
-    console.error(`[Decision Makers] AI extraction failed for ${pageUrl}:`, error);
-    return [];
-  }
-}
-
-/**
  * Parse LinkedIn search results to extract basic info
  */
 function parseLinkedInResults(
@@ -239,160 +114,200 @@ function parseLinkedInResults(
 }
 
 /**
- * Execute a single search strategy and extract people
- */
-async function executeSearchStrategy(
-  strategy: (company: string) => string,
-  companyName: string,
-  websiteDomain: string,
-  existingNames: Set<string>
-): Promise<
-  Array<{
-    name: string;
-    role: string;
-    email?: string;
-    linkedInUrl?: string;
-    phone?: string;
-    source: DecisionMakerSource;
-  }>
-> {
-  const query = strategy(companyName);
-  const isLinkedInSearch = query.includes('site:linkedin.com');
-  const isXingSearch = query.includes('site:xing.com');
-
-  console.log(`[Decision Makers] Searching: "${query.slice(0, 60)}..."`);
-
-  try {
-    // Execute web search
-    const searchResults = await searchAndContents(query, {
-      numResults: isLinkedInSearch || isXingSearch ? 5 : 3,
-    });
-
-    if (!searchResults.results || searchResults.results.length === 0) {
-      return [];
-    }
-
-    const foundPeople: Array<{
-      name: string;
-      role: string;
-      email?: string;
-      linkedInUrl?: string;
-      phone?: string;
-      source: DecisionMakerSource;
-    }> = [];
-
-    // For LinkedIn/Xing searches, parse results directly
-    if (isLinkedInSearch) {
-      const linkedInPeople = parseLinkedInResults(searchResults.results);
-      for (const person of linkedInPeople) {
-        if (!existingNames.has(person.name.toLowerCase())) {
-          foundPeople.push({
-            ...person,
-            source: 'linkedin' as const,
-          });
-        }
-      }
-      return foundPeople;
-    }
-
-    // For other searches, fetch and extract from pages
-    for (const result of searchResults.results.slice(0, 3)) {
-      // Skip if it's a different company's website
-      const resultDomain = extractDomain(result.url);
-      const isSameDomain =
-        resultDomain.includes(websiteDomain) || websiteDomain.includes(resultDomain);
-      const isLinkedIn = result.url.includes('linkedin.com');
-      const isXing = result.url.includes('xing.com');
-
-      if (!isSameDomain && !isLinkedIn && !isXing) {
-        console.log(`[Decision Makers] Skipping external domain: ${resultDomain}`);
-        continue;
-      }
-
-      try {
-        // Fetch page content
-        const pageContent = await getContents(result.url, { text: true });
-        if (!pageContent.text || pageContent.text.length < 300) continue;
-
-        // Extract people using AI
-        const people = await extractPeopleFromPage(pageContent.text, result.url, companyName);
-
-        for (const person of people) {
-          if (!existingNames.has(person.name.toLowerCase())) {
-            foundPeople.push(person);
-            existingNames.add(person.name.toLowerCase());
-          }
-        }
-
-        // Rate limiting
-        await sleep(500);
-      } catch (error) {
-        console.error(`[Decision Makers] Failed to fetch ${result.url}:`, error);
-      }
-    }
-
-    return foundPeople;
-  } catch (error) {
-    console.error(`[Decision Makers] Search failed for "${query.slice(0, 40)}...":`, error);
-    return [];
-  }
-}
-
-/**
- * Main research function - SMART VERSION
- * Uses web search iteratively until enough contacts are found
+ * Main research function - AI-AGENT VERSION
+ * Uses AI agent with tools to intelligently find decision makers
  */
 export async function searchDecisionMakers(
   companyName: string,
   websiteUrl: string,
-  options: { minContacts?: number; maxSearches?: number } = {}
+  options: { minContacts?: number } = {}
 ): Promise<DecisionMakersResearch> {
-  const { minContacts = 3, maxSearches = 6 } = options;
+  const { minContacts = 3 } = options;
 
-  const decisionMakers: DecisionMaker[] = [];
-  const existingNames = new Set<string>();
   const domain = extractDomain(websiteUrl);
-
-  let linkedInFound = 0;
-  let emailsConfirmed = 0;
-  let emailsDerived = 0;
-  let searchesExecuted = 0;
-  const sourcesUsed = new Set<string>();
-
-  console.log(`[Decision Makers] Starting SMART research for "${companyName}" (domain: ${domain})`);
-  console.log(`[Decision Makers] Target: ${minContacts} contacts, max ${maxSearches} searches`);
-
-  // Execute search strategies until we have enough contacts or exhausted strategies
-  for (const strategy of SEARCH_STRATEGIES) {
-    // Check if we have enough contacts
-    if (decisionMakers.length >= minContacts) {
-      console.log(`[Decision Makers] Found ${decisionMakers.length} contacts - stopping search`);
-      break;
+  const foundPeople = new Map<
+    string,
+    {
+      name: string;
+      role: string;
+      email?: string;
+      linkedInUrl?: string;
+      xingUrl?: string;
+      phone?: string;
+      source: DecisionMakerSource;
     }
+  >();
 
-    // Check if we've done enough searches
-    if (searchesExecuted >= maxSearches) {
-      console.log(`[Decision Makers] Reached max searches (${maxSearches}) - stopping`);
-      break;
-    }
+  console.log(
+    `[Decision Makers] Starting AI-Agent research for "${companyName}" (domain: ${domain})`
+  );
+  console.log(`[Decision Makers] Target: ${minContacts} contacts`);
 
-    searchesExecuted++;
+  // Define AI-SDK Tools for the agent
+  const web_search = {
+    description:
+      'Search the web for information. Returns search results with URLs, titles, and snippets.',
+    inputSchema: z.object({
+      query: z.string().describe('The search query'),
+      numResults: z.number().optional().describe('Number of results (default: 5, max: 10)'),
+    }),
+    execute: async ({ query, numResults = 5 }: { query: string; numResults?: number }) => {
+      console.log(`[Agent] web_search: "${query.slice(0, 60)}..."`);
+      try {
+        const results = await searchAndContents(query, { numResults: Math.min(numResults, 10) });
+        return {
+          success: true,
+          results: results.results?.map(r => ({
+            url: r.url,
+            title: r.title,
+            snippet: r.text?.slice(0, 300),
+          })),
+        };
+      } catch (error) {
+        return { success: false, error: String(error) };
+      }
+    },
+  };
 
-    const foundPeople = await executeSearchStrategy(strategy, companyName, domain, existingNames);
+  const fetch_page = {
+    description:
+      'Fetch the full text content of a web page. Use this to extract contact information from team pages, impressum, etc.',
+    inputSchema: z.object({
+      url: z.string().describe('The URL to fetch'),
+    }),
+    execute: async ({ url }: { url: string }) => {
+      console.log(`[Agent] fetch_page: ${url.slice(0, 60)}...`);
+      try {
+        const content = await getContents(url, { text: true });
+        return {
+          success: true,
+          url,
+          text: content.text?.slice(0, 15000) || '',
+        };
+      } catch (error) {
+        return { success: false, error: String(error) };
+      }
+    },
+  };
 
-    for (const person of foundPeople) {
-      // Track source
+  const submit_contacts = {
+    description:
+      'Submit found decision makers. Call this when you have found enough contacts (at least the minimum required) or when you have exhausted search options. This ends the research loop.',
+    inputSchema: z.object({
+      contacts: z.array(
+        z.object({
+          name: z.string().describe('Full name of the person'),
+          role: z.string().describe('Job title/role'),
+          email: z.string().optional().describe('Email address if found'),
+          linkedInUrl: z.string().optional().describe('LinkedIn profile URL if found'),
+          xingUrl: z.string().optional().describe('Xing profile URL if found'),
+          phone: z.string().optional().describe('Phone number if found'),
+          source: z
+            .enum(['impressum', 'linkedin', 'xing', 'website', 'web_search', 'team_page'])
+            .describe('Where this contact was found'),
+        })
+      ),
+      notes: z.string().optional().describe('Any notes about the research process'),
+    }),
+    execute: async ({
+      contacts,
+      notes,
+    }: {
+      contacts: Array<{
+        name: string;
+        role: string;
+        email?: string;
+        linkedInUrl?: string;
+        xingUrl?: string;
+        phone?: string;
+        source: DecisionMakerSource;
+      }>;
+      notes?: string;
+    }) => {
+      console.log(`[Agent] submit_contacts: ${contacts.length} contacts`);
+      if (notes) console.log(`[Agent] Notes: ${notes}`);
+
+      // Store found people (deduplicate by name)
+      for (const contact of contacts) {
+        const key = contact.name.toLowerCase();
+        if (!foundPeople.has(key)) {
+          foundPeople.set(key, contact);
+        }
+      }
+
+      return {
+        success: true,
+        message: `Submitted ${contacts.length} contacts. Total unique: ${foundPeople.size}`,
+      };
+    },
+  };
+
+  // Agent system prompt
+  const systemPrompt = `Du bist ein spezialisierter AI-Agent für Decision-Maker-Research.
+
+ZIEL: Finde mindestens ${minContacts} Entscheidungsträger und Führungspersonen für das Unternehmen "${companyName}".
+
+VERFÜGBARE TOOLS:
+- web_search: Suche im Web nach Kontakten (LinkedIn, Xing, Team-Seiten, Impressum)
+- fetch_page: Lade Seiteninhalt zum Extrahieren von Kontakten
+- submit_contacts: Reiche gefundene Kontakte ein (beendet die Recherche)
+
+SUCHSTRATEGIE:
+1. Suche zuerst nach Team-Seiten, Impressum, Führungsteam ("${companyName}" Team Geschäftsführung)
+2. Suche nach spezifischen Rollen (CEO, CTO, IT-Leiter, Marketingleiter)
+3. Nutze LinkedIn/Xing-Suchen (site:linkedin.com/in "${companyName}" Geschäftsführer)
+4. Extrahiere Kontakte aus gefundenen Seiten mit fetch_page
+5. WICHTIG: Auch bei Domain-Redirects weitersuchen (z.B. Firmenname ≠ Domain)
+
+QUALITÄTSKRITERIEN:
+- NUR Führungspersonen (Geschäftsführer, CEO, CTO, Director, Head of, Leiter, Manager, Vorstand)
+- Echte E-Mails bevorzugt (nicht info@, kontakt@)
+- LinkedIn/Xing-Profile erhöhen Qualität
+- Mindestens ${minContacts} Kontakte sammeln
+
+DOMAIN-HANDLING:
+- Firmen-Domain: ${domain}
+- Falls Suchergebnisse auf andere Domains zeigen (Redirects, Umbenennungen): Trotzdem verwenden!
+- Prüfe Relevanz über Firmennamen, nicht nur Domain
+
+Wenn du genügend Kontakte hast, rufe submit_contacts auf.`;
+
+  const userPrompt = `Finde jetzt Decision-Makers für "${companyName}" (Website: ${websiteUrl}, Domain: ${domain}).
+
+Starte mit einer breiten Suche nach Team-Seiten oder Führungskräften. Nutze die Tools intelligent und eigenständig.`;
+
+  try {
+    await generateText({
+      model: (await getProviderForSlot('research'))(modelNames.research),
+      system: systemPrompt,
+      prompt: userPrompt,
+      tools: { web_search, fetch_page, submit_contacts },
+      abortSignal: AbortSignal.timeout(AI_TIMEOUTS.AGENT_COMPLEX),
+    });
+
+    console.log(`[Decision Makers] Agent completed with ${foundPeople.size} unique contacts`);
+
+    // Convert to DecisionMaker array
+    const decisionMakers: DecisionMaker[] = [];
+    let linkedInFound = 0;
+    let xingFound = 0;
+    let emailsConfirmed = 0;
+    let emailsDerived = 0;
+    const sourcesUsed = new Set<string>();
+
+    for (const person of foundPeople.values()) {
       sourcesUsed.add(person.source);
       if (person.source === 'linkedin') linkedInFound++;
+      if (person.source === 'xing') xingFound++;
 
-      // Derive email if not found
       let email = person.email;
-      let emailConfidence: 'confirmed' | 'likely' | 'derived' | undefined = undefined;
+      let emailConfidence: 'confirmed' | 'likely' | 'derived' | 'unknown' = 'unknown';
 
       if (email) {
         emailConfidence = 'confirmed';
         emailsConfirmed++;
       } else {
+        // Derive email if not found
         const derivedEmails = deriveEmails(person.name, domain);
         if (derivedEmails.length > 0) {
           email = derivedEmails[0].email;
@@ -401,51 +316,63 @@ export async function searchDecisionMakers(
         }
       }
 
-      // Add to results
       decisionMakers.push({
         name: person.name,
         role: person.role,
         email,
         emailConfidence,
         linkedInUrl: person.linkedInUrl,
+        xingUrl: person.xingUrl,
         phone: person.phone,
         source: person.source,
       });
-
-      existingNames.add(person.name.toLowerCase());
     }
 
-    // Rate limiting between strategies
-    await sleep(1000);
+    // Calculate confidence score
+    const confidence = Math.min(
+      100,
+      Math.round(
+        decisionMakers.length * 15 + linkedInFound * 10 + emailsConfirmed * 20 + emailsDerived * 5
+      )
+    );
+
+    console.log(`[Decision Makers] Research complete:`);
+    console.log(`  - Total contacts: ${decisionMakers.length}`);
+    console.log(`  - LinkedIn found: ${linkedInFound}`);
+    console.log(`  - Xing found: ${xingFound}`);
+    console.log(`  - Emails confirmed: ${emailsConfirmed}`);
+    console.log(`  - Emails derived: ${emailsDerived}`);
+    console.log(`  - Confidence: ${confidence}%`);
+
+    return {
+      decisionMakers,
+      researchQuality: {
+        linkedInFound,
+        xingFound,
+        emailsConfirmed,
+        emailsDerived,
+        confidence,
+        sources: Array.from(sourcesUsed),
+        lastUpdated: new Date().toISOString(),
+      },
+    };
+  } catch (error) {
+    console.error('[Decision Makers] Agent failed:', error);
+
+    // Return empty result on failure
+    return {
+      decisionMakers: [],
+      researchQuality: {
+        linkedInFound: 0,
+        xingFound: 0,
+        emailsConfirmed: 0,
+        emailsDerived: 0,
+        confidence: 0,
+        sources: [],
+        lastUpdated: new Date().toISOString(),
+      },
+    };
   }
-
-  // Calculate confidence score
-  const confidence = Math.min(
-    100,
-    Math.round(
-      decisionMakers.length * 15 + linkedInFound * 10 + emailsConfirmed * 20 + emailsDerived * 5
-    )
-  );
-
-  console.log(`[Decision Makers] Research complete:`);
-  console.log(`  - Total contacts: ${decisionMakers.length}`);
-  console.log(`  - LinkedIn found: ${linkedInFound}`);
-  console.log(`  - Emails confirmed: ${emailsConfirmed}`);
-  console.log(`  - Emails derived: ${emailsDerived}`);
-  console.log(`  - Searches executed: ${searchesExecuted}`);
-  console.log(`  - Confidence: ${confidence}%`);
-
-  return {
-    decisionMakers,
-    researchQuality: {
-      linkedInFound,
-      emailsConfirmed,
-      emailsDerived,
-      confidence,
-      sources: Array.from(sourcesUsed),
-      lastUpdated: new Date().toISOString(),
-    },
-  };
 }
 
 /**

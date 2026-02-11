@@ -1,9 +1,8 @@
-import { AlertCircle, Target } from 'lucide-react';
+import { Info, Target } from 'lucide-react';
 
 import { Loader } from '@/components/ai-elements/loader';
 import { notFound, redirect } from 'next/navigation';
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -14,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { auth } from '@/lib/auth';
 import type { CMSMatchingResult } from '@/lib/cms-matching/schema';
 import { getCachedPreQualificationWithRelations } from '@/lib/qualifications/cached-queries';
@@ -85,8 +85,23 @@ export default async function CMSMatrixPage({ params }: { params: Promise<{ id: 
   }
 
   // Get sorted technologies for table headers
-  const technologies =
-    cmsEvaluation?.comparedTechnologies?.sort((a, b) => b.overallScore - a.overallScore) || [];
+  type ComparedTechnology = NonNullable<CMSMatchingResult['comparedTechnologies']>[number];
+  type TechGroup = ComparedTechnology & { ids: string[] };
+
+  const techGroups = new Map<string, ComparedTechnology[]>();
+  for (const tech of cmsEvaluation?.comparedTechnologies ?? []) {
+    const key = tech.name.trim().toLowerCase();
+    const arr = techGroups.get(key) ?? [];
+    arr.push(tech);
+    techGroups.set(key, arr);
+  }
+
+  const technologies: TechGroup[] = [...techGroups.values()]
+    .map(group => {
+      const best = [...group].sort((a, b) => b.overallScore - a.overallScore)[0];
+      return { ...best, ids: group.map(t => t.id) };
+    })
+    .sort((a, b) => b.overallScore - a.overallScore);
 
   return (
     <div className="space-y-6">
@@ -154,11 +169,66 @@ export default async function CMSMatrixPage({ params }: { params: Promise<{ id: 
                           </Badge>
                         </TableCell>
                         {technologies.map(tech => {
-                          const scoreData = req.cmsScores[tech.id];
+                          const candidates = tech.ids
+                            .map(id => req.cmsScores[id])
+                            .filter(Boolean) as Array<{
+                            score: number;
+                            confidence: number;
+                            notes?: string;
+                            webSearchUsed?: boolean;
+                          }>;
+                          const scoreData = [...candidates].sort((a, b) => {
+                            if (b.score !== a.score) return b.score - a.score;
+                            return (b.confidence ?? 0) - (a.confidence ?? 0);
+                          })[0];
                           const score = scoreData?.score ?? 0;
+                          const confidence = scoreData?.confidence ?? 0;
+                          const notes = scoreData?.notes;
+                          const webSearchUsed = Boolean(scoreData?.webSearchUsed);
+
                           return (
                             <TableCell key={tech.id} className="text-center">
-                              <span className={`font-bold ${getScoreColor(score)}`}>{score}%</span>
+                              <div className="flex items-center justify-center gap-1">
+                                <span className={`font-bold ${getScoreColor(score)}`}>
+                                  {score}%
+                                </span>
+                                {scoreData && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        type="button"
+                                        className="text-muted-foreground hover:text-foreground"
+                                        aria-label="Details anzeigen"
+                                      >
+                                        <Info className="h-3.5 w-3.5" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent
+                                      sideOffset={6}
+                                      className="max-w-xs whitespace-pre-wrap"
+                                    >
+                                      <div className="space-y-1">
+                                        <div>
+                                          <span className="font-medium">Score:</span> {score}%
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Confidence:</span>{' '}
+                                          {confidence}%
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Web Search:</span>{' '}
+                                          {webSearchUsed ? 'ja' : 'nein'}
+                                        </div>
+                                        {notes && (
+                                          <div>
+                                            <span className="font-medium">Notes:</span> {notes}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </div>
                             </TableCell>
                           );
                         })}
@@ -166,6 +236,62 @@ export default async function CMSMatrixPage({ params }: { params: Promise<{ id: 
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Technology details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Technology Details</CardTitle>
+              <CardDescription>Stärken, Schwächen und Hinweise pro CMS</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                {technologies.map(tech => (
+                  <div key={tech.id} className="rounded-lg border p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-base font-semibold">{tech.name}</div>
+                        {tech.category && (
+                          <div className="text-xs text-muted-foreground">{tech.category}</div>
+                        )}
+                      </div>
+                      <Badge variant="secondary">{tech.overallScore}%</Badge>
+                    </div>
+
+                    {tech.strengths.length > 0 && (
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground">Stärken</div>
+                        <ul className="mt-1 list-disc pl-5 text-sm">
+                          {tech.strengths.slice(0, 6).map((s, idx) => (
+                            <li key={idx}>{s}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {tech.weaknesses.length > 0 && (
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground">Schwächen</div>
+                        <ul className="mt-1 list-disc pl-5 text-sm">
+                          {tech.weaknesses.slice(0, 6).map((w, idx) => (
+                            <li key={idx}>{w}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {tech.licenseCostNote && (
+                      <div className="text-sm">
+                        <div className="text-xs font-medium text-muted-foreground">
+                          Lizenzkosten
+                        </div>
+                        <div className="mt-1">{tech.licenseCostNote}</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

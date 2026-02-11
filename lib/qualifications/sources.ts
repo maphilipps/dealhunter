@@ -89,7 +89,7 @@ export function formatInlineSourceRef(source: SourceRef): string {
       return `Quelle: ${source.fileName}, S. ${source.page}, ${para}${heading}`;
     }
     case 'web':
-      return `Quelle: ${source.url}`;
+      return `Quelle (Web-Enrichment): ${source.url}`;
     case 'internal_reference':
       return `Quelle: Intern Ref #${source.referenceId}`;
     case 'assumption':

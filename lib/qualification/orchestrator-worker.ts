@@ -12,15 +12,21 @@
  */
 
 import { generateText, Output } from 'ai';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { getModelForSlot } from '@/lib/ai/providers';
 import { runPreQualSectionAgent } from '@/lib/json-render/prequal-section-agent';
 import { db } from '@/lib/db';
 import { dealEmbeddings } from '@/lib/db/schema';
+import {
+  buildSourcesFromRawChunks,
+  injectSourcesPanel,
+} from '@/lib/json-render/prequal-visualization-utils';
+import { formatInlineSourcesBlock, type SourceRef } from '@/lib/qualifications/sources';
 import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
 import { runWithConcurrency } from '@/lib/utils/concurrency';
+import { generateEmbeddingsWithConcurrency } from '@/lib/qualifications/sections/section-utils';
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES & SCHEMAS
@@ -365,6 +371,289 @@ async function executeSectionWorkers(
   return results;
 }
 
+function defaultSectionHighlights(sectionId: SectionId): string[] {
+  switch (sectionId) {
+    case 'budget':
+      return ['Budget-/Preisangaben manuell verifizieren.', 'Sonderregeln als Bieterfrage klären.'];
+    case 'timing':
+      return [
+        'Fristen/Meilensteine im Original prüfen.',
+        'Zentrale Bieterfragen zu Terminunklarheiten.',
+      ];
+    case 'contracts':
+      return [
+        'Kritische Klauseln juristisch prüfen.',
+        'Haftung/Pönalen als Klärungspunkt markieren.',
+      ];
+    case 'deliverables':
+      return ['Lieferumfang und Abgrenzung verifizieren.', 'Abnahmekriterien manuell prüfen.'];
+    case 'submission':
+      return ['Pflichtunterlagen und Fristen prüfen.', 'Formalia/Signaturvorgaben klären.'];
+    case 'references':
+      return [
+        'Referenzanforderungen gegen Formblätter prüfen.',
+        'Unklare Mindestanforderungen als Frage aufnehmen.',
+      ];
+    case 'award-criteria':
+      return ['Bewertungsmatrix manuell validieren.', 'Gewichtungslogik als Bieterfrage klären.'];
+    case 'offer-structure':
+      return ['Angebotsstruktur gegen Anlagen prüfen.', 'Unklare Pflichtkapitel zentral klären.'];
+    case 'risks':
+      return ['Risikotreiber manuell prüfen.', 'Risikoklärungen als Bieterfragen sammeln.'];
+    default:
+      return ['Manuelle Prüfung erforderlich.'];
+  }
+}
+
+async function persistLastResortSectionArtifacts(params: {
+  preQualificationId: string;
+  sectionId: SectionId;
+  reason: string;
+}) {
+  const { preQualificationId, sectionId, reason } = params;
+  const def = SECTION_DEFINITIONS.find(s => s.id === sectionId);
+  const title = def?.label ?? sectionId;
+  const chunks = await queryRawChunks({
+    preQualificationId,
+    question: def?.question ?? sectionId,
+    maxResults: 8,
+  });
+
+  const citedItems = chunks.slice(0, 5).map(chunk => {
+    const citation = chunk.source
+      ? `${chunk.source.fileName}, S. ${chunk.source.page}, Absatz ${chunk.source.paragraphStart}-${chunk.source.paragraphEnd}`
+      : chunk.webSource?.url || (chunk.metadata as any)?.webSource?.url || '';
+
+    return {
+      excerpt: String(chunk.content || '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 320),
+      citation: citation || undefined,
+      score: Math.round(chunk.similarity * 100),
+    };
+  });
+
+  const questionSource: SourceRef = {
+    kind: 'assumption',
+    label: 'Manuelle Prüfung erforderlich',
+    rationale:
+      'Automatische Sektionserzeugung ist fehlgeschlagen; Rückfrage vor Angebotsfinalisierung nötig.',
+  };
+  const centralQuestion =
+    `Bitte präzisieren Sie fehlende/unklare Angaben in der Section "${title}" vor Angebotsabgabe.` +
+    formatInlineSourcesBlock([questionSource]);
+
+  let tree = {
+    root: 'section-main',
+    elements: {
+      'section-main': {
+        key: 'section-main',
+        type: 'Section',
+        props: { title },
+        children: ['summary', 'sub-extracts', 'sub-bidder-questions', 'sub-next'],
+      },
+      summary: {
+        key: 'summary',
+        type: 'Paragraph',
+        props: {
+          text: `Automatische Synthese fehlgeschlagen (${reason}). Bitte Angaben anhand der Quellen prüfen und offene Punkte vor Angebotsabgabe klären.`,
+        },
+      },
+      'sub-extracts': {
+        key: 'sub-extracts',
+        type: 'SubSection',
+        props: { title: 'Belastbare Auszüge (Fallback)' },
+        children: citedItems.length > 0 ? ['extracts'] : ['extracts-empty'],
+      },
+      extracts: {
+        key: 'extracts',
+        type: 'CitedExcerpts',
+        props: { items: citedItems },
+      },
+      'extracts-empty': {
+        key: 'extracts-empty',
+        type: 'Paragraph',
+        props: { text: 'Keine relevanten Auszüge verfügbar.' },
+      },
+      'sub-bidder-questions': {
+        key: 'sub-bidder-questions',
+        type: 'SubSection',
+        props: { title: 'Bieterfragen (zentral geführt)' },
+        children: ['bq'],
+      },
+      bq: {
+        key: 'bq',
+        type: 'Paragraph',
+        props: {
+          text: 'Bieterfragen werden zentral mit Section-Verweis gesammelt. Für diese Section wurde ein Fallback-Eintrag erzeugt.',
+        },
+      },
+      'sub-next': {
+        key: 'sub-next',
+        type: 'SubSection',
+        props: { title: 'Next Steps' },
+        children: ['next'],
+      },
+      next: {
+        key: 'next',
+        type: 'BulletList',
+        props: {
+          items: [
+            'Originaldokumente mit Seiten-/Absatzbezug prüfen.',
+            'Unklare Punkte als zentrale Bieterfrage klären.',
+            'Preis/Leistung erst nach Klärung finalisieren.',
+          ],
+        },
+      },
+    } as Record<string, unknown>,
+  };
+
+  tree = injectSourcesPanel(tree as any, buildSourcesFromRawChunks(chunks), {
+    subSectionTitle: 'Quellen',
+    panelTitle: 'Quellen',
+    maxSources: 10,
+  }) as typeof tree;
+
+  await db
+    .delete(dealEmbeddings)
+    .where(
+      and(
+        eq(dealEmbeddings.preQualificationId, preQualificationId),
+        eq(dealEmbeddings.chunkType, 'visualization'),
+        sql`(metadata::jsonb)->>'sectionId' = ${sectionId}`
+      )
+    );
+
+  await db
+    .delete(dealEmbeddings)
+    .where(
+      and(
+        eq(dealEmbeddings.preQualificationId, preQualificationId),
+        eq(dealEmbeddings.agentName, 'prequal_section_agent'),
+        eq(dealEmbeddings.chunkType, sectionId)
+      )
+    );
+
+  await db
+    .delete(dealEmbeddings)
+    .where(
+      and(
+        eq(dealEmbeddings.preQualificationId, preQualificationId),
+        eq(dealEmbeddings.agentName, 'prequal_section_agent'),
+        eq(dealEmbeddings.chunkType, 'bidder_question'),
+        sql`(metadata::jsonb)->>'sectionId' = ${sectionId}`
+      )
+    );
+
+  await db
+    .delete(dealEmbeddings)
+    .where(
+      and(
+        eq(dealEmbeddings.preQualificationId, preQualificationId),
+        eq(dealEmbeddings.chunkType, 'dashboard_highlight'),
+        eq(dealEmbeddings.agentName, `dashboard_${sectionId}`)
+      )
+    );
+
+  await db.insert(dealEmbeddings).values({
+    pitchId: null,
+    preQualificationId,
+    agentName: 'prequal_section_agent',
+    chunkType: 'visualization',
+    chunkIndex: 0,
+    chunkCategory: 'elaboration',
+    content: JSON.stringify(tree),
+    confidence: 20,
+    embedding: null,
+    metadata: JSON.stringify({
+      sectionId,
+      isVisualization: true,
+      fallback: true,
+      schemaVersion: 2,
+      generatedAt: new Date().toISOString(),
+    }),
+  });
+
+  await db.insert(dealEmbeddings).values({
+    pitchId: null,
+    preQualificationId,
+    agentName: `dashboard_${sectionId}`,
+    chunkType: 'dashboard_highlight',
+    chunkIndex: 0,
+    chunkCategory: 'elaboration',
+    content: JSON.stringify(defaultSectionHighlights(sectionId)),
+    confidence: 20,
+    embedding: null,
+    metadata: JSON.stringify({ sectionId, fallback: true }),
+  });
+
+  const findings = [
+    `Fallback-Hinweis: Section "${title}" konnte nicht automatisch vollständig generiert werden.`,
+    ...citedItems.map(
+      item => `Auszug: ${item.excerpt}${item.citation ? ` (Quelle: ${item.citation})` : ''}`
+    ),
+    `Offene Frage: ${centralQuestion}`,
+    'Next Step: Originaldokumente mit Quellenbezug prüfen.',
+    'Next Step: Bieterfrage zentral mit Section-Verweis verfolgen.',
+    'Next Step: Finalisierung erst nach Klärung.',
+  ];
+
+  while (findings.length < 10) {
+    findings.push('Manuelle Prüfung: Inhaltliche Lücken in dieser Section klären.');
+  }
+
+  const cappedFindings = findings.slice(0, 20);
+  const embeddings = await generateEmbeddingsWithConcurrency(cappedFindings, { concurrency: 3 });
+
+  const findingRows: (typeof dealEmbeddings.$inferInsert)[] = cappedFindings.map(
+    (content, idx) => ({
+      pitchId: null,
+      preQualificationId,
+      agentName: 'prequal_section_agent',
+      chunkType: sectionId,
+      chunkIndex: idx,
+      chunkCategory: idx < 3 ? 'fact' : 'recommendation',
+      content,
+      confidence: 20,
+      requiresValidation: false,
+      embedding: embeddings[idx],
+      metadata: JSON.stringify({
+        sectionId,
+        kind: content.startsWith('Offene Frage:') ? 'open_question' : 'fallback',
+        fallback: true,
+        sources: [questionSource],
+      }),
+    })
+  );
+
+  await db.insert(dealEmbeddings).values(findingRows);
+
+  const questionEmbedding = await generateEmbeddingsWithConcurrency([centralQuestion], {
+    concurrency: 1,
+  });
+
+  await db.insert(dealEmbeddings).values({
+    pitchId: null,
+    preQualificationId,
+    agentName: 'prequal_section_agent',
+    chunkType: 'bidder_question',
+    chunkIndex: 0,
+    chunkCategory: 'recommendation',
+    content: centralQuestion,
+    confidence: 20,
+    requiresValidation: false,
+    embedding: questionEmbedding[0],
+    metadata: JSON.stringify({
+      sectionId,
+      kind: 'open_question',
+      centralized: true,
+      fallback: true,
+      sources: [questionSource],
+    }),
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════
 // EVALUATOR
 // ═══════════════════════════════════════════════════════════════
@@ -422,7 +711,7 @@ async function evaluateSectionResult(
       if (/\((Quelle|Annahme):/i.test(content) || /\bQuelle:\s*/i.test(content)) return true;
       if (!row.metadata) return false;
       try {
-        const m = JSON.parse(row.metadata) as any;
+        const m = JSON.parse(row.metadata);
         const sources = m?.sources;
         return Array.isArray(sources) && sources.length > 0;
       } catch {
@@ -436,7 +725,7 @@ async function evaluateSectionResult(
     const rfpGrounded = rows.filter(r => {
       if (!r.metadata) return false;
       try {
-        const m = JSON.parse(r.metadata) as any;
+        const m = JSON.parse(r.metadata);
         const sources = m?.sources;
         return (
           Array.isArray(sources) &&
@@ -770,18 +1059,17 @@ export async function runPreQualSectionOrchestrator(
       console.log('[Evaluator] Prüfe Section-Qualität...');
 
       for (const result of results) {
-        if (!result.success) continue;
-
-        const evaluation = await evaluateSectionResult(preQualificationId, result);
-
+        let evaluation = await evaluateSectionResult(preQualificationId, result);
         result.qualityScore = evaluation.qualityScore;
 
-        if (evaluation.needsRetry && result.retryAttempt < maxRetries) {
+        while (
+          (evaluation.needsRetry || evaluation.qualityScore < qualityThreshold) &&
+          result.retryAttempt < maxRetries
+        ) {
           console.log(
             `[Evaluator] Section ${result.sectionId} needs retry (Score: ${evaluation.qualityScore})`
           );
 
-          // Retry mit Web-Enrichment
           const retryResult = await executeSectionWorker(
             preQualificationId,
             result.sectionId,
@@ -789,9 +1077,27 @@ export async function runPreQualSectionOrchestrator(
             result.retryAttempt + 1
           );
 
-          // Update result
           Object.assign(result, retryResult);
+          evaluation = await evaluateSectionResult(preQualificationId, result);
+          result.qualityScore = evaluation.qualityScore;
         }
+      }
+    }
+
+    // STEP 3b: LAST-RESORT - Für verbleibende Fehlschläge deterministische Fallback-Artefakte persistieren
+    const postRetryFailures = results.filter(r => !r.success);
+    for (const failed of postRetryFailures) {
+      try {
+        await persistLastResortSectionArtifacts({
+          preQualificationId,
+          sectionId: failed.sectionId,
+          reason: failed.error || 'section_execution_failed',
+        });
+      } catch (fallbackError) {
+        console.error(
+          `[Orchestrator] Last-resort fallback fehlgeschlagen (${failed.sectionId}):`,
+          fallbackError
+        );
       }
     }
 

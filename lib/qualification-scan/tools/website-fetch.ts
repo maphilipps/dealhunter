@@ -129,6 +129,7 @@ export async function fetchWebsiteData(url: string): Promise<WebsiteData> {
     });
 
     if (response.ok) {
+      result.url = response.url; // Finale URL nach Redirect
       result.html = await response.text();
       response.headers.forEach((value, key) => {
         result.headers[key.toLowerCase()] = value;

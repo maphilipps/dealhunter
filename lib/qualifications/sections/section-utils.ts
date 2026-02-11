@@ -46,6 +46,18 @@ export async function deletePreQualSectionArtifacts(options: {
         eq(dealEmbeddings.agentName, `dashboard_${sectionId}`)
       )
     );
+
+  // Delete centralized bidder questions for this section.
+  await db
+    .delete(dealEmbeddings)
+    .where(
+      and(
+        eq(dealEmbeddings.preQualificationId, preQualificationId),
+        eq(dealEmbeddings.agentName, 'prequal_section_agent'),
+        eq(dealEmbeddings.chunkType, 'bidder_question'),
+        sql`(metadata::jsonb)->>'sectionId' = ${sectionId}`
+      )
+    );
 }
 
 export async function collectEvidenceChunks(options: {

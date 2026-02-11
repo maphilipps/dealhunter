@@ -17,6 +17,26 @@ function fmtDate(value?: string | null) {
   return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function normalizeExternalUrl(raw?: string | null): { href: string; display: string } | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed === 'unknown' || trimmed === 'document-only') return null;
+
+  const withScheme =
+    trimmed.startsWith('http://') || trimmed.startsWith('https://')
+      ? trimmed
+      : `https://${trimmed}`;
+
+  try {
+    const url = new URL(withScheme);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    const display = url.hostname.replace(/^www\./, '');
+    return { href: url.toString(), display };
+  } catch {
+    return null;
+  }
+}
+
 export function CustomerIntelligencePanel({
   customerName,
   websiteUrl,
@@ -35,6 +55,8 @@ export function CustomerIntelligencePanel({
 
   const decisionMakerList = decisionMakers?.decisionMakers ?? [];
   const generic = decisionMakers?.genericContacts;
+
+  const websiteLink = normalizeExternalUrl(websiteUrl || company?.website);
 
   return (
     <div className="space-y-6">
@@ -98,16 +120,23 @@ export function CustomerIntelligencePanel({
             <div className="h-px w-full bg-border" />
 
             <div className="flex flex-wrap items-center gap-2">
-              {(websiteUrl || company?.website) && (
-                <a
-                  className="inline-flex items-center gap-2 text-sm underline underline-offset-4"
-                  href={(websiteUrl || company?.website) ?? undefined}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Website
-                </a>
+              {websiteLink ? (
+                <div className="inline-flex items-center gap-2">
+                  <a
+                    className="inline-flex items-center gap-2 text-sm underline underline-offset-4"
+                    href={websiteLink.href}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Website
+                  </a>
+                  <span className="text-xs text-muted-foreground">{websiteLink.display}</span>
+                </div>
+              ) : (
+                (websiteUrl || company?.website) && (
+                  <span className="text-xs text-muted-foreground">Website URL ungültig</span>
+                )
               )}
               {companyIntelligence?.digitalPresence?.linkedInCompanyUrl && (
                 <a

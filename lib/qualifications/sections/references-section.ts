@@ -26,27 +26,15 @@ import {
   generateEmbeddingsWithConcurrency,
 } from './section-utils';
 
-const EvidenceFields = z.union([
-  z.object({
-    evidenceChunkIds: z.array(z.string()).min(1),
-    needsManualReview: z.literal(false),
-  }),
-  z.object({
-    evidenceChunkIds: z.array(z.string()).length(0),
-    needsManualReview: z.literal(true),
-  }),
-]);
-
 const ReferencesExtractSchema = z.object({
   requirements: z.array(
-    z.intersection(
-      z.object({
-        priority: z.enum(['KO', 'MUST', 'SHOULD', 'CAN']),
-        requirement: z.string().min(1),
-        details: z.string().nullable(),
-      }),
-      EvidenceFields
-    )
+    z.object({
+      priority: z.enum(['KO', 'MUST', 'SHOULD', 'CAN']),
+      requirement: z.string().min(1),
+      details: z.string().nullable(),
+      evidenceChunkIds: z.array(z.string()),
+      needsManualReview: z.boolean(),
+    })
   ),
   matchingConstraints: z.object({
     requiredIndustries: z.array(z.string()).optional(),
@@ -57,13 +45,12 @@ const ReferencesExtractSchema = z.object({
     durationMonthsMax: z.number().int().positive().nullable().optional(),
   }),
   openQuestions: z.array(
-    z.intersection(
-      z.object({
-        question: z.string().min(1),
-        whyItMatters: z.string().min(1),
-      }),
-      EvidenceFields
-    )
+    z.object({
+      question: z.string().min(1),
+      whyItMatters: z.string().min(1),
+      evidenceChunkIds: z.array(z.string()),
+      needsManualReview: z.boolean(),
+    })
   ),
   summary: z.string().min(40),
   dashboardHighlights: z.array(z.string().min(5)).max(3),
@@ -285,31 +272,52 @@ export async function runReferencesSection(options: {
 
     const evidenceContext = buildEvidenceContextForExtraction(chunks);
 
-    const extraction: ReferencesExtract = await generateStructuredOutput({
-      model: 'default',
-      schema: ReferencesExtractSchema,
-      system: `Du extrahierst Referenzanforderungen aus RFP-Chunks.
+    let extraction: ReferencesExtract;
+    try {
+      extraction = await generateStructuredOutput({
+        model: 'default',
+        schema: ReferencesExtractSchema,
+        system: `Du extrahierst Referenzanforderungen aus RFP-Chunks.
 
 KRITISCHE REGELN:
 - NUR Informationen aus den EVIDENCE CHUNKS verwenden.
 - Jede Anforderung / offene Frage MUSS evidenceChunkIds (>=1) haben ODER needsManualReview=true und evidenceChunkIds=[].
 - Keine Halluzinationen. Bei Unklarheit: needsManualReview=true.
 - Priorität: KO = Ausschluss / MUST = zwingend / SHOULD = bewertungsrelevant / CAN = optional.`,
-      prompt: [
-        `SECTION: ${sectionId}`,
-        '',
-        evidenceContext,
-        '',
-        'AUFGABE:',
-        '1) Extrahiere Referenzanforderungen und klassifiziere in KO/MUST/SHOULD/CAN.',
-        '2) Extrahiere Constraints fuer Matching (Industrie, Technologien, Teamgroesse, Dauer) falls explizit genannt.',
-        '3) Formuliere 5-10 offene Fragen (nur wenn sachlich begruendbar).',
-        '4) Schreibe eine kurze Summary (4-8 Saetze) fuer das Angebotsteam.',
-      ].join('\n'),
-      temperature: 0,
-      maxTokens: 4500,
-      timeout: 60_000,
-    });
+        prompt: [
+          `SECTION: ${sectionId}`,
+          '',
+          evidenceContext,
+          '',
+          'AUFGABE:',
+          '1) Extrahiere Referenzanforderungen und klassifiziere in KO/MUST/SHOULD/CAN.',
+          '2) Extrahiere Constraints fuer Matching (Industrie, Technologien, Teamgroesse, Dauer) falls explizit genannt.',
+          '3) Formuliere 5-10 offene Fragen (nur wenn sachlich begruendbar).',
+          '4) Schreibe eine kurze Summary (4-8 Saetze) fuer das Angebotsteam.',
+        ].join('\n'),
+        temperature: 0,
+        maxTokens: 4500,
+        timeout: 60_000,
+      });
+    } catch (extractionError) {
+      console.warn(
+        '[ReferencesSection] Structured extraction failed, continuing with deterministic fallback:',
+        extractionError
+      );
+      extraction = {
+        requirements: [],
+        matchingConstraints: {},
+        openQuestions: [],
+        summary:
+          'Automatische Referenz-Extraktion war nicht vollständig möglich. Die Sektion enthält einen deterministischen Fallback und muss gegen Formblätter/Originaldokument geprüft werden.',
+        dashboardHighlights: [
+          'Referenzanforderungen im Originaldokument validieren.',
+          'Mindestanforderungen/K.O.-Kriterien als zentrale Bieterfrage klären.',
+          'Interne Referenz-Matches dienen als Vorschlag und benötigen fachliche Freigabe.',
+        ],
+        confidence: 25,
+      };
+    }
 
     const constraints: ReferenceRequirementConstraints = {
       requiredIndustries: extraction.matchingConstraints.requiredIndustries ?? [],
@@ -521,6 +529,8 @@ KRITISCHE REGELN:
         sectionId,
         isVisualization: true,
         elementCount: Object.keys(tree.elements).length,
+        schemaVersion: 2,
+        generatedAt: new Date().toISOString(),
       }),
     });
 

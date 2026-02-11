@@ -33,7 +33,11 @@ import { modelNames } from '../../ai/config';
 import { warmModelConfigCache } from '../../ai/model-config';
 import { getProviderForSlot } from '../../ai/providers';
 import { extractTextFromPdf } from '../../bids/pdf-extractor';
-import { QUALIFICATION_QUESTIONS, type TenQuestionsPayload } from '../../bids/ten-questions';
+import {
+  QUALIFICATION_QUESTIONS,
+  createEmptyTenQuestionsPayload,
+  type TenQuestionsPayload,
+} from '../../bids/ten-questions';
 import { runTenQuestionsAgent } from '../../bids/ten-questions-agent';
 import { db } from '../../db';
 import {
@@ -54,8 +58,12 @@ import {
 import { runQualificationScanAgentNative } from '../../qualification-scan/agent-native';
 import { embedAgentOutput } from '../../rag/embedding-service';
 import { queryRawChunks, formatRAGContext } from '../../rag/raw-retrieval-service';
+import { runSummaryAgent } from '../../agents/expert-agents/summary-agent';
 import { gatherCompanyIntelligence } from '../../qualification-scan/tools/company-research';
-import { searchDecisionMakersNameOnly } from '../../qualification-scan/tools/decision-maker-research';
+import {
+  searchDecisionMakers,
+  searchDecisionMakersNameOnly,
+} from '../../qualification-scan/tools/decision-maker-research';
 import { checkAndSuggestUrl } from '../../qualification-scan/tools/url-suggestion-agent';
 import {
   publishPhaseStart,
@@ -1607,19 +1615,30 @@ export async function processPreQualJob(
       if (extractedRequirements.customerName) {
         try {
           await updateQualificationJob(backgroundJobId, {
-            currentStep: 'Kundenrecherche (name-only)...',
+            currentStep: 'Kundenrecherche...',
           });
           void publishAgentProgress(
             preQualificationId,
             'qualification_scan',
             'Research Agent',
-            'Kundenrecherche (name-only) gestartet...'
+            'Kundenrecherche gestartet...'
           ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
 
-          const [companyIntel, decisionMakers] = await Promise.all([
-            gatherCompanyIntelligence(extractedRequirements.customerName, null),
-            searchDecisionMakersNameOnly(extractedRequirements.customerName),
-          ]);
+          const companyIntel = await gatherCompanyIntelligence(
+            extractedRequirements.customerName,
+            null
+          );
+
+          // If we can discover a usable website, do the higher-signal SMART decision-maker research.
+          const discoveredWebsiteRaw = companyIntel?.basicInfo?.website ?? null;
+          const discoveredWebsite =
+            discoveredWebsiteRaw && discoveredWebsiteRaw !== 'unknown'
+              ? normalizeWebsiteUrl(String(discoveredWebsiteRaw))
+              : null;
+
+          const decisionMakers = discoveredWebsite
+            ? await searchDecisionMakers(extractedRequirements.customerName, discoveredWebsite)
+            : await searchDecisionMakersNameOnly(extractedRequirements.customerName);
 
           await db
             .update(leadScans)
@@ -1960,40 +1979,137 @@ export async function processPreQualJob(
           preQualificationId,
           'section_orchestration',
           'Decision Agent',
-          '10 Fragen werden aus Decision synthetisiert...'
+          'Decision wird in 10 Fragen übernommen...'
         ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
 
-        // Synthetisiere 10 Fragen aus Decision (Agent-basiert)
-        const tenQuestions = await synthesizeTenQuestionsFromDecision(dec);
-
-        // Publish each answered question as a finding
-        for (const q of tenQuestions.questions) {
-          if (q.answered && q.answer) {
-            void publishFinding(preQualificationId, 'section_orchestration', {
-              type: 'question',
-              label: `Frage ${q.id}: ${q.question.slice(0, 60)}${q.question.length > 60 ? '...' : ''}`,
-              value: q.answer,
-              confidence: q.confidence,
-            }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
-          }
-        }
-
-        // Speichere in qualificationScan
+        // Merge Decision into the existing (document-grounded) TenQuestions:
+        // - Always overwrite Q10 with decision-based answer
+        // - Only fill other missing answers when decision synthesis provides high-confidence info
         const existingQualificationScan = await db
-          .select({ id: leadScans.id })
+          .select({ id: leadScans.id, tenQuestions: leadScans.tenQuestions })
           .from(leadScans)
           .where(eq(leadScans.preQualificationId, preQualificationId))
           .limit(1);
 
         if (existingQualificationScan.length > 0) {
+          const scanRow = existingQualificationScan[0];
+
+          // Start from canonical question list; overlay stored answers if present.
+          const baseline = createEmptyTenQuestionsPayload();
+          if (scanRow.tenQuestions) {
+            try {
+              const parsed = JSON.parse(scanRow.tenQuestions) as TenQuestionsPayload;
+              for (const q of parsed?.questions ?? []) {
+                const slot = baseline.questions.find(s => s.id === q.id);
+                if (!slot) continue;
+                slot.answer = q.answer;
+                slot.answered = Boolean(q.answered ?? q.answer);
+                slot.evidence = q.evidence;
+                slot.confidence = q.confidence;
+              }
+              baseline.answeredCount =
+                parsed.answeredCount ?? baseline.questions.filter(q => Boolean(q.answer)).length;
+              baseline.totalCount = parsed.totalCount ?? baseline.questions.length;
+              baseline.projectType = parsed.projectType ?? baseline.projectType;
+            } catch {
+              // ignore invalid stored payload, keep empty baseline
+            }
+          }
+
+          const beforeAnswered = new Map<number, boolean>(
+            baseline.questions.map(q => [q.id, Boolean(q.answer)])
+          );
+
+          const q10Answer =
+            `${recLabels[dec.recommendation] || dec.recommendation}: ${dec.reasoning}`.trim();
+
+          const missingNonDecision = baseline.questions
+            .filter(q => q.id !== 10 && !q.answer)
+            .map(q => q.id);
+
+          const synthesized =
+            missingNonDecision.length > 0 ? await synthesizeTenQuestionsFromDecision(dec) : null;
+          const synthById = new Map<number, { answer?: string; confidence?: number }>(
+            (synthesized?.questions ?? []).map(q => [
+              q.id,
+              { answer: q.answer, confidence: q.confidence },
+            ])
+          );
+
+          const FILL_MIN_CONFIDENCE = 70;
+
+          for (const q of baseline.questions) {
+            if (q.id === 10) {
+              q.answer = q10Answer;
+              q.answered = true;
+              q.confidence = dec.confidence;
+              q.evidence = [];
+              continue;
+            }
+
+            if (q.answer) continue;
+            const cand = synthById.get(q.id);
+            if (cand?.answer && (cand.confidence ?? 0) >= FILL_MIN_CONFIDENCE) {
+              q.answer = cand.answer;
+              q.answered = true;
+              q.confidence = cand.confidence ?? 0;
+              q.evidence = [];
+            }
+          }
+
+          baseline.answeredCount = baseline.questions.filter(q => Boolean(q.answer)).length;
+          baseline.totalCount = baseline.questions.length;
+
           await db
             .update(leadScans)
             .set({
-              tenQuestions: JSON.stringify(tenQuestions),
+              tenQuestions: JSON.stringify(baseline),
             })
-            .where(eq(leadScans.id, existingQualificationScan[0].id));
-          console.log('[PreQual Worker] 10 Fragen aus Decision synthetisiert');
+            .where(eq(leadScans.id, scanRow.id));
+
+          // Publish Q10 (decision) and any newly filled answers.
+          for (const q of baseline.questions) {
+            const wasAnswered = beforeAnswered.get(q.id) ?? false;
+            const isNowAnswered = Boolean(q.answer);
+            if (!isNowAnswered) continue;
+            if (q.id !== 10 && wasAnswered) continue;
+
+            void publishFinding(preQualificationId, 'section_orchestration', {
+              type: 'question',
+              label: `Frage ${q.id}: ${q.question.slice(0, 60)}${q.question.length > 60 ? '...' : ''}`,
+              value: q.answer!,
+              confidence: q.confidence,
+            }).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+          }
+
+          console.log('[PreQual Worker] 10 Fragen mit Decision gemerged (Q10 überschrieben)');
         }
+      }
+    }
+
+    // Always try to produce a Management Summary after section orchestration.
+    // Non-fatal: summary should not fail the whole job.
+    if (orchestratorResult.completedSections > 0) {
+      try {
+        await updateQualificationJob(backgroundJobId, {
+          currentStep: 'Management Summary...',
+        });
+
+        void publishAgentProgress(
+          preQualificationId,
+          'section_orchestration',
+          'Summary Agent',
+          'Management Summary wird erstellt...'
+        ).catch(err => console.error('[PreQual Worker] Publish failed:', err));
+
+        const summary = await runSummaryAgent({ preQualificationId });
+        if (!summary.success) {
+          console.warn('[PreQual Worker] Summary agent failed:', summary.error);
+        } else {
+          console.log('[PreQual Worker] Management Summary created');
+        }
+      } catch (error) {
+        console.error('[PreQual Worker] Summary agent error:', error);
       }
     }
 

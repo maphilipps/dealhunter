@@ -39,9 +39,10 @@ const DEPRECATED_ALIASES: Array<[string, string]> = [
 for (const [oldName, newName] of DEPRECATED_ALIASES) {
   const canonicalTool = registry.get(newName);
   if (!canonicalTool) {
-    throw new Error(
-      `Cannot create alias "${oldName}": canonical tool "${newName}" not found. Check import order in index.ts`
+    console.warn(
+      `[agent-tools] Skipping alias "${oldName}": canonical tool "${newName}" not found. Check import order in index.ts`
     );
+    continue;
   }
   registry.alias(oldName, newName);
 }

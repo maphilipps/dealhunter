@@ -27,17 +27,6 @@ import {
   generateEmbeddingsWithConcurrency,
 } from './section-utils';
 
-const EvidenceFields = z.union([
-  z.object({
-    evidenceChunkIds: z.array(z.string()).min(1),
-    needsManualReview: z.literal(false),
-  }),
-  z.object({
-    evidenceChunkIds: z.array(z.string()).length(0),
-    needsManualReview: z.literal(true),
-  }),
-]);
-
 const DeliverableCategorySchema = z.enum([
   'proposal_document',
   'commercial',
@@ -57,65 +46,59 @@ const SubmissionMethodSchema = z.enum([
 
 const SubmissionExtractSchema = z.object({
   inventory: z.array(
-    z.intersection(
-      z.object({
-        name: z.string().min(1),
-        category: DeliverableCategorySchema,
-        mandatory: z.boolean(),
-        format: z.string().nullable(),
-        pageLimit: z.number().int().positive().nullable(),
-        submissionMethod: SubmissionMethodSchema,
-        deadline: z.string().nullable(),
-        notes: z.string().nullable(),
-      }),
-      EvidenceFields
-    )
+    z.object({
+      name: z.string().min(1),
+      category: DeliverableCategorySchema,
+      mandatory: z.boolean(),
+      format: z.string().nullable(),
+      pageLimit: z.number().int().positive().nullable(),
+      submissionMethod: SubmissionMethodSchema,
+      deadline: z.string().nullable(),
+      notes: z.string().nullable(),
+      evidenceChunkIds: z.array(z.string()),
+      needsManualReview: z.boolean(),
+    })
   ),
   keyDates: z.array(
-    z.intersection(
-      z.object({
-        label: z.string().min(1),
-        date: z.string().nullable(),
-        notes: z.string().nullable(),
-      }),
-      EvidenceFields
-    )
+    z.object({
+      label: z.string().min(1),
+      date: z.string().nullable(),
+      notes: z.string().nullable(),
+      evidenceChunkIds: z.array(z.string()),
+      needsManualReview: z.boolean(),
+    })
   ),
   formalRequirements: z.array(
-    z.intersection(
-      z.object({
-        requirement: z.string().min(1),
-        details: z.string().min(1),
-      }),
-      EvidenceFields
-    )
+    z.object({
+      requirement: z.string().min(1),
+      details: z.string().min(1),
+      evidenceChunkIds: z.array(z.string()),
+      needsManualReview: z.boolean(),
+    })
   ),
   pricingRequirements: z.array(
-    z.intersection(
-      z.object({
-        requirement: z.string().min(1),
-        details: z.string().min(1),
-      }),
-      EvidenceFields
-    )
+    z.object({
+      requirement: z.string().min(1),
+      details: z.string().min(1),
+      evidenceChunkIds: z.array(z.string()),
+      needsManualReview: z.boolean(),
+    })
   ),
   risks: z.array(
-    z.intersection(
-      z.object({
-        title: z.string().min(1),
-        description: z.string().min(1),
-      }),
-      EvidenceFields
-    )
+    z.object({
+      title: z.string().min(1),
+      description: z.string().min(1),
+      evidenceChunkIds: z.array(z.string()),
+      needsManualReview: z.boolean(),
+    })
   ),
   openQuestions: z.array(
-    z.intersection(
-      z.object({
-        question: z.string().min(1),
-        whyItMatters: z.string().min(1),
-      }),
-      EvidenceFields
-    )
+    z.object({
+      question: z.string().min(1),
+      whyItMatters: z.string().min(1),
+      evidenceChunkIds: z.array(z.string()),
+      needsManualReview: z.boolean(),
+    })
   ),
   summary: z.string().min(40),
   dashboardHighlights: z.array(z.string().min(5)).max(3),
@@ -463,34 +446,58 @@ export async function runSubmissionSection(options: {
 
     const evidenceContext = buildEvidenceContextForExtraction(chunks);
 
-    const extraction: SubmissionExtract = await generateStructuredOutput({
-      model: 'default',
-      schema: SubmissionExtractSchema,
-      system: `Du extrahierst Einreichungs-Deliverables aus RFP-Chunks.
+    let extraction: SubmissionExtract;
+    try {
+      extraction = await generateStructuredOutput({
+        model: 'default',
+        schema: SubmissionExtractSchema,
+        system: `Du extrahierst Einreichungs-Deliverables aus RFP-Chunks.
 
 KRITISCHE REGELN:
 - Du darfst NUR Informationen aus den EVIDENCE CHUNKS verwenden.
 - Jede Zeile MUSS entweder (a) evidenceChunkIds (>=1) haben ODER (b) needsManualReview=true und evidenceChunkIds=[].
 - Keine Halluzinationen. Wenn unklar: needsManualReview=true.
 - PageLimit NUR wenn explizit genannt. Deadline als Freitext, wenn Datum/Uhrzeit genannt.`,
-      prompt: [
-        `SECTION: ${sectionId}`,
-        '',
-        evidenceContext,
-        '',
-        'AUFGABE:',
-        '1) Erstelle ein Inventar aller abzugebenden Unterlagen/Deliverables fuer Teilnahmeantrag/Angebot.',
-        '2) Markiere Pflicht/Optional, Abgabeweg, Format, Seitenlimit, Deadline.',
-        '3) Extrahiere Key Dates (Rueckfragenfrist, Angebotsfrist, Bindefrist, Praesentationen/Verhandlungen, Zuschlag, Projektstart) falls vorhanden.',
-        '4) Extrahiere Formalitaeten (Sprache, Signatur, Dateiformate/Dateigroessen, Portal-Workflow, Verschluesselung) falls vorhanden.',
-        '5) Extrahiere Preisblatt/Kalkulations-Anforderungen (Formblatt, Struktur, Zuschlagslogik) falls vorhanden.',
-        '6) Formuliere 3-7 Risiken und 5-10 offene Fragen (nur wenn sachlich begruendbar).',
-        '7) Schreibe eine kurze Summary (4-8 Saetze) fuer das Angebotsteam.',
-      ].join('\n'),
-      temperature: 0,
-      maxTokens: 5000,
-      timeout: 60_000,
-    });
+        prompt: [
+          `SECTION: ${sectionId}`,
+          '',
+          evidenceContext,
+          '',
+          'AUFGABE:',
+          '1) Erstelle ein Inventar aller abzugebenden Unterlagen/Deliverables fuer Teilnahmeantrag/Angebot.',
+          '2) Markiere Pflicht/Optional, Abgabeweg, Format, Seitenlimit, Deadline.',
+          '3) Extrahiere Key Dates (Rueckfragenfrist, Angebotsfrist, Bindefrist, Praesentationen/Verhandlungen, Zuschlag, Projektstart) falls vorhanden.',
+          '4) Extrahiere Formalitaeten (Sprache, Signatur, Dateiformate/Dateigroessen, Portal-Workflow, Verschluesselung) falls vorhanden.',
+          '5) Extrahiere Preisblatt/Kalkulations-Anforderungen (Formblatt, Struktur, Zuschlagslogik) falls vorhanden.',
+          '6) Formuliere 3-7 Risiken und 5-10 offene Fragen (nur wenn sachlich begruendbar).',
+          '7) Schreibe eine kurze Summary (4-8 Saetze) fuer das Angebotsteam.',
+        ].join('\n'),
+        temperature: 0,
+        maxTokens: 5000,
+        timeout: 60_000,
+      });
+    } catch (extractionError) {
+      console.warn(
+        '[SubmissionSection] Structured extraction failed, continuing with deterministic fallback:',
+        extractionError
+      );
+      extraction = {
+        inventory: [],
+        keyDates: [],
+        formalRequirements: [],
+        pricingRequirements: [],
+        risks: [],
+        openQuestions: [],
+        summary:
+          'Automatische Extraktion der Einreichungsanforderungen war nicht vollständig möglich. Die Sektion wurde mit Fallback-Regeln erzeugt und sollte gegen Formblätter/Originaldokument geprüft werden.',
+        dashboardHighlights: [
+          'Pflichtunterlagen und Fristen im Original verifizieren.',
+          'Formale Vorgaben (Format/Signatur/Portal) manuell absichern.',
+          'Unklare Punkte zentral als Bieterfrage mit Section-Verweis führen.',
+        ],
+        confidence: 25,
+      };
+    }
 
     const inv = extraction.inventory;
     const keyDates = extraction.keyDates;

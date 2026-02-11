@@ -12,6 +12,69 @@ import { db } from '@/lib/db';
 import { features, cmsFeatureEvaluations } from '@/lib/db/schema';
 
 const DEFAULT_TTL_DAYS = 30;
+let hasWarnedMissingFeatureLibraryTables = false;
+
+function readErrorMessage(part: unknown): string {
+  if (part instanceof Error) return part.message;
+  if (typeof part === 'string') return part;
+  if (typeof part === 'number' || typeof part === 'boolean' || typeof part === 'bigint') {
+    return String(part);
+  }
+  if (part && typeof part === 'object' && 'message' in part) {
+    const msg = (part as { message?: unknown }).message;
+    if (typeof msg === 'string') return msg;
+  }
+  return '';
+}
+
+function readErrorCode(part: unknown): string | null {
+  if (!part || typeof part !== 'object') return null;
+  if ('code' in part) {
+    const code = (part as { code?: unknown }).code;
+    if (typeof code === 'string' && code.trim().length > 0) return code;
+  }
+  return null;
+}
+
+function collectErrorChain(error: unknown): unknown[] {
+  const chain: unknown[] = [];
+  const seen = new Set<unknown>();
+
+  let current: unknown = error;
+  while (current && typeof current === 'object' && !seen.has(current)) {
+    seen.add(current);
+    chain.push(current);
+    if (!('cause' in current)) break;
+    current = (current as { cause?: unknown }).cause;
+  }
+
+  if (chain.length === 0) chain.push(error);
+  return chain;
+}
+
+export function isMissingFeatureLibraryTablesError(error: unknown): boolean {
+  const chain = collectErrorChain(error);
+  const combinedMessage = chain.map(readErrorMessage).join(' | ').toLowerCase();
+  const codes = chain.map(readErrorCode).filter((code): code is string => Boolean(code));
+
+  const isMissingRelation = codes.includes('42P01') || combinedMessage.includes('does not exist');
+  if (!isMissingRelation) return false;
+
+  return (
+    combinedMessage.includes('"features"') ||
+    combinedMessage.includes('"cms_feature_evaluations"') ||
+    /relation\s+features\b/i.test(combinedMessage) ||
+    /relation\s+cms_feature_evaluations\b/i.test(combinedMessage)
+  );
+}
+
+function warnMissingFeatureLibraryTablesOnce(): void {
+  if (hasWarnedMissingFeatureLibraryTables) return;
+  hasWarnedMissingFeatureLibraryTables = true;
+  console.warn(
+    '[Feature Library] Tabellen "features"/"cms_feature_evaluations" fehlen. Dual-Write wird übersprungen.'
+  );
+}
 
 // ─── Slug helpers (extracted from lib/agent-tools/tools/feature.ts) ───────────
 
@@ -150,29 +213,18 @@ export interface UpsertFeatureEvaluationParams {
 export async function upsertFeatureEvaluation(
   params: UpsertFeatureEvaluationParams
 ): Promise<void> {
-  const featureId = await ensureFeatureExists(params.featureName, params.featureCategory);
+  try {
+    const featureId = await ensureFeatureExists(params.featureName, params.featureCategory);
 
-  const ttlDays = params.ttlDays ?? DEFAULT_TTL_DAYS;
-  const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
-  const sourceUrlsJson = params.sourceUrls?.length ? JSON.stringify(params.sourceUrls) : null;
+    const ttlDays = params.ttlDays ?? DEFAULT_TTL_DAYS;
+    const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
+    const sourceUrlsJson = params.sourceUrls?.length ? JSON.stringify(params.sourceUrls) : null;
 
-  await db
-    .insert(cmsFeatureEvaluations)
-    .values({
-      featureId,
-      technologyId: params.technologyId,
-      score: params.score,
-      reasoning: params.reasoning ?? null,
-      confidence: params.confidence ?? null,
-      supportType: params.supportType ?? null,
-      moduleName: params.moduleName ?? null,
-      sourceUrls: sourceUrlsJson,
-      notes: params.notes ?? null,
-      expiresAt,
-    })
-    .onConflictDoUpdate({
-      target: [cmsFeatureEvaluations.featureId, cmsFeatureEvaluations.technologyId],
-      set: {
+    await db
+      .insert(cmsFeatureEvaluations)
+      .values({
+        featureId,
+        technologyId: params.technologyId,
         score: params.score,
         reasoning: params.reasoning ?? null,
         confidence: params.confidence ?? null,
@@ -181,7 +233,26 @@ export async function upsertFeatureEvaluation(
         sourceUrls: sourceUrlsJson,
         notes: params.notes ?? null,
         expiresAt,
-        updatedAt: new Date(),
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: [cmsFeatureEvaluations.featureId, cmsFeatureEvaluations.technologyId],
+        set: {
+          score: params.score,
+          reasoning: params.reasoning ?? null,
+          confidence: params.confidence ?? null,
+          supportType: params.supportType ?? null,
+          moduleName: params.moduleName ?? null,
+          sourceUrls: sourceUrlsJson,
+          notes: params.notes ?? null,
+          expiresAt,
+          updatedAt: new Date(),
+        },
+      });
+  } catch (error) {
+    if (isMissingFeatureLibraryTablesError(error)) {
+      warnMissingFeatureLibraryTablesOnce();
+      return;
+    }
+    throw error;
+  }
 }

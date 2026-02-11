@@ -13,6 +13,12 @@ import { getPreQualSectionQueryTemplate } from '@/lib/qualifications/section-que
 import { runDeliveryScopeSection } from '@/lib/qualifications/sections/delivery-scope-section';
 import { runSubmissionSection } from '@/lib/qualifications/sections/submission-section';
 import { runReferencesSection } from '@/lib/qualifications/sections/references-section';
+import { runRisksSection } from '@/lib/qualifications/sections/risks-section';
+import { runBudgetSection } from '@/lib/qualifications/sections/budget-section';
+import { runTimingSection } from '@/lib/qualifications/sections/timing-section';
+import { runContractsSection } from '@/lib/qualifications/sections/contracts-section';
+import { runAwardCriteriaSection } from '@/lib/qualifications/sections/award-criteria-section';
+import { runOfferStructureSection } from '@/lib/qualifications/sections/offer-structure-section';
 import { formatSourceCitation } from '@/lib/rag/citations';
 import { queryRawChunks, formatRAGContext } from '@/lib/rag/raw-retrieval-service';
 import {
@@ -163,6 +169,15 @@ export async function runPreQualSectionAgent(input: {
 
   // Specialized, decision-grade sections with per-claim sources (and deterministic estimators where applicable).
   // These sections bypass the generic ToolLoopAgent to avoid "too general" outputs.
+  if (sectionId === 'budget') {
+    return runBudgetSection({ preQualificationId, allowWebEnrichment });
+  }
+  if (sectionId === 'timing') {
+    return runTimingSection({ preQualificationId, allowWebEnrichment });
+  }
+  if (sectionId === 'contracts') {
+    return runContractsSection({ preQualificationId, allowWebEnrichment });
+  }
   if (sectionId === 'deliverables') {
     return runDeliveryScopeSection({ preQualificationId, allowWebEnrichment });
   }
@@ -171,6 +186,15 @@ export async function runPreQualSectionAgent(input: {
   }
   if (sectionId === 'references') {
     return runReferencesSection({ preQualificationId, allowWebEnrichment });
+  }
+  if (sectionId === 'award-criteria') {
+    return runAwardCriteriaSection({ preQualificationId, allowWebEnrichment });
+  }
+  if (sectionId === 'offer-structure') {
+    return runOfferStructureSection({ preQualificationId, allowWebEnrichment });
+  }
+  if (sectionId === 'risks') {
+    return runRisksSection({ preQualificationId, allowWebEnrichment });
   }
 
   let hasQueriedDocuments = false;
@@ -306,6 +330,8 @@ KEY-VALUE REGELN (KRITISCH!):
           sectionId,
           isVisualization: true,
           elementCount: Object.keys(visualizationWithSources.elements).length,
+          schemaVersion: 2,
+          generatedAt: new Date().toISOString(),
         }),
       });
 
@@ -749,6 +775,8 @@ WICHTIG:
             isVisualization: true,
             elementCount: Object.keys(elements).length,
             fallback: true,
+            schemaVersion: 2,
+            generatedAt: new Date().toISOString(),
           }),
         });
 
@@ -815,6 +843,8 @@ WICHTIG:
             elementCount: Object.keys(elements).length,
             fallback: true,
             hardFallback: true,
+            schemaVersion: 2,
+            generatedAt: new Date().toISOString(),
           }),
         });
 

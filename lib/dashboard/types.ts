@@ -14,9 +14,16 @@ export interface BURoutingRecommendation {
   reasoning: string | null;
 }
 
+export interface CentralBidderQuestion {
+  sectionId: string;
+  sectionTitle: string;
+  question: string;
+}
+
 export interface DashboardSummaryResponse {
   managementSummary: ManagementSummary | null;
   sectionHighlights: SectionHighlight[];
+  bidderQuestions: CentralBidderQuestion[];
   buRouting: BURoutingRecommendation;
   processingStatus: {
     isProcessing: boolean;

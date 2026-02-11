@@ -14,7 +14,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { BURoutingCard } from './bu-routing-card';
 import { ManagementSummaryCard } from './management-summary-card';
@@ -72,14 +72,17 @@ export function QualificationDashboard({
   const [data, setData] = useState<DashboardSummaryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const fetchDashboard = useCallback(
+    async (options?: { signal?: AbortSignal; setLoading?: boolean }) => {
+      const setLoading = options?.setLoading ?? false;
+      if (setLoading) setIsLoading(true);
 
-    async function fetchDashboard() {
       try {
         const response = await fetch(
           `/api/qualifications/${preQualificationId}/dashboard-summary`,
-          { signal: controller.signal }
+          {
+            signal: options?.signal,
+          }
         );
         if (!response.ok) {
           throw new Error('Failed to fetch dashboard data');
@@ -90,13 +93,18 @@ export function QualificationDashboard({
         if (error instanceof DOMException && error.name === 'AbortError') return;
         console.error('[Dashboard] Fetch error:', error);
       } finally {
-        setIsLoading(false);
+        if (setLoading) setIsLoading(false);
       }
-    }
+    },
+    [preQualificationId]
+  );
 
-    void fetchDashboard();
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void fetchDashboard({ signal: controller.signal, setLoading: true });
     return () => controller.abort();
-  }, [preQualificationId]);
+  }, [fetchDashboard]);
 
   const sectionsMap = useMemo(() => {
     const map = new Map<string, SectionHighlight>();
@@ -127,7 +135,12 @@ export function QualificationDashboard({
       )}
 
       {/* Management Summary */}
-      <ManagementSummaryCard summary={managementSummary} isLoading={isLoading && !initialSummary} />
+      <ManagementSummaryCard
+        preQualificationId={preQualificationId}
+        summary={managementSummary}
+        isLoading={isLoading && !initialSummary}
+        onRegenerated={() => void fetchDashboard()}
+      />
 
       {/* Overview Group - Facts removed from dashboard */}
 

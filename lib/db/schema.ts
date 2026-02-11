@@ -2009,7 +2009,7 @@ export const auditScanRuns = pgTable(
       .$defaultFn(() => createId()),
     pitchId: text('pitch_id')
       .notNull()
-      .references(() => pitches.id),
+      .references(() => pitches.id, { onDelete: 'cascade' }),
     userId: text('user_id')
       .notNull()
       .references(() => users.id),
@@ -2074,10 +2074,10 @@ export const pitchDocuments = pgTable(
       .$defaultFn(() => createId()),
     runId: text('run_id')
       .notNull()
-      .references(() => auditScanRuns.id),
+      .references(() => auditScanRuns.id, { onDelete: 'cascade' }),
     pitchId: text('pitch_id')
       .notNull()
-      .references(() => pitches.id),
+      .references(() => pitches.id, { onDelete: 'cascade' }),
 
     // Document Type
     documentType: text('document_type', {
@@ -2123,10 +2123,10 @@ export const pitchScanResults = pgTable(
       .$defaultFn(() => createId()),
     runId: text('run_id')
       .notNull()
-      .references(() => auditScanRuns.id),
+      .references(() => auditScanRuns.id, { onDelete: 'cascade' }),
     pitchId: text('pitch_id')
       .notNull()
-      .references(() => pitches.id),
+      .references(() => pitches.id, { onDelete: 'cascade' }),
 
     // Website
     websiteUrl: text('website_url').notNull(),

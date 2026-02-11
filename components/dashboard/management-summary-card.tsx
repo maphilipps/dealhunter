@@ -1,8 +1,12 @@
 'use client';
 
-import { Calendar, Target } from 'lucide-react';
+import { AlertCircle, Calendar, Target } from 'lucide-react';
+import { useCallback, useState } from 'react';
 
+import { Loader } from '@/components/ai-elements/loader';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,9 +15,11 @@ import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schem
 import { cn } from '@/lib/utils';
 
 export interface ManagementSummaryCardProps {
+  preQualificationId?: string;
   summary: ManagementSummary | null;
   isLoading?: boolean;
   className?: string;
+  onRegenerated?: () => void;
 }
 
 /**
@@ -23,16 +29,67 @@ export interface ManagementSummaryCardProps {
  * Read-only, generated at qualification completion.
  */
 export function ManagementSummaryCard({
+  preQualificationId,
   summary,
   isLoading = false,
   className,
+  onRegenerated,
 }: ManagementSummaryCardProps) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+
+  const handleGenerate = useCallback(async () => {
+    if (!preQualificationId) return;
+    setIsGenerating(true);
+    setGenerateError(null);
+
+    try {
+      const response = await fetch(`/api/qualifications/${preQualificationId}/rerun-summary`, {
+        method: 'POST',
+      });
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error || 'Management Summary konnte nicht erzeugt werden');
+      }
+      onRegenerated?.();
+    } catch (err) {
+      setGenerateError(err instanceof Error ? err.message : 'Fehler beim Erzeugen der Summary');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [preQualificationId, onRegenerated]);
+
   if (isLoading) {
     return <ManagementSummaryCardSkeleton className={className} />;
   }
 
   if (!summary) {
-    return null;
+    return (
+      <Card className={cn('', className)}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Management Summary
+          </CardTitle>
+          <CardDescription className="text-base">
+            Noch keine Management Summary vorhanden. Du kannst sie manuell erzeugen.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {generateError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{generateError}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button onClick={handleGenerate} disabled={!preQualificationId || isGenerating}>
+            {isGenerating ? <Loader size="sm" className="mr-2" /> : null}
+            Management Summary erzeugen
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

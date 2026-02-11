@@ -12,7 +12,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { RequirementMatch } from './schema';
-import { upsertFeatureEvaluation } from './feature-library';
+import { isMissingFeatureLibraryTablesError, upsertFeatureEvaluation } from './feature-library';
 
 import { modelNames } from '@/lib/ai/config';
 import { getProviderForSlot } from '@/lib/ai/providers';
@@ -64,6 +64,8 @@ export type ResearchEventEmitter = (event: {
     result?: RequirementResearchResult;
   };
 }) => void;
+
+let hasWarnedMissingFeatureLibraryTables = false;
 
 /**
  * CMS-spezifische Suchqueries generieren
@@ -550,7 +552,16 @@ async function saveRequirementResearchToTechnology(
         notes: research.notes,
       });
     } catch (featureLibError) {
-      console.warn('[Requirement Agent] Feature Library dual-write failed:', featureLibError);
+      if (isMissingFeatureLibraryTablesError(featureLibError)) {
+        if (!hasWarnedMissingFeatureLibraryTables) {
+          hasWarnedMissingFeatureLibraryTables = true;
+          console.warn(
+            '[Requirement Agent] Feature Library Tabellen fehlen, Dual-Write wird übersprungen.'
+          );
+        }
+      } else {
+        console.warn('[Requirement Agent] Feature Library dual-write failed:', featureLibError);
+      }
     }
 
     console.log(`[Requirement Agent] Saved "${requirement}" for ${research.cmsName}`);

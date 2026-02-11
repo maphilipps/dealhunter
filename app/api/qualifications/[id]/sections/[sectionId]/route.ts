@@ -2,8 +2,10 @@ import { and, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
+import { SECTION_BY_ID } from '@/lib/dashboard/sections';
 import { db } from '@/lib/db';
 import { dealEmbeddings, preQualifications } from '@/lib/db/schema';
+import { isProcessingState } from '@/lib/qualifications/constants';
 import { getPreQualSectionQueryTemplate } from '@/lib/qualifications/section-queries';
 import { queryRAG } from '@/lib/rag/retrieval-service';
 
@@ -93,24 +95,60 @@ export async function GET(
       return NextResponse.json({ error: 'No template found' }, { status: 404 });
     }
 
-    const results = await queryRAG({
-      preQualificationId: qualificationId,
-      question: template,
-      maxResults: 10,
-    });
+    // Use a short, section-specific RAG query (long templates perform poorly for retrieval).
+    const retrievalQuery = SECTION_BY_ID.get(sectionId)?.ragQuery ?? sectionId;
 
-    const confidence = calculateConfidence(results.map(r => r.similarity));
+    const isProcessing = isProcessingState(preQualification.status);
+    const canRegenerate = !isProcessing;
+
+    const [results, directViz, findingsCountRows, highlightRow] = await Promise.all([
+      queryRAG({
+        preQualificationId: qualificationId,
+        question: retrievalQuery,
+        maxResults: 10,
+      }),
+      getDirectVisualization(qualificationId, sectionId),
+      db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(dealEmbeddings)
+        .where(
+          and(
+            eq(dealEmbeddings.preQualificationId, qualificationId),
+            eq(dealEmbeddings.agentName, 'prequal_section_agent'),
+            eq(dealEmbeddings.chunkType, sectionId)
+          )
+        ),
+      db.query.dealEmbeddings.findFirst({
+        where: and(
+          eq(dealEmbeddings.preQualificationId, qualificationId),
+          eq(dealEmbeddings.chunkType, 'dashboard_highlight'),
+          eq(dealEmbeddings.agentName, `dashboard_${sectionId}`)
+        ),
+      }),
+    ]);
+
+    const findingsCount = findingsCountRows[0]?.count ?? 0;
+    const artifacts = {
+      findingsCount,
+      hasHighlight: Boolean(highlightRow),
+      hasVisualization: Boolean(directViz),
+    };
+
+    const confidence = directViz?.confidence ?? calculateConfidence(results.map(r => r.similarity));
 
     if (rawMode) {
       return NextResponse.json({
         sectionId,
+        retrievalQuery,
         results,
         confidence,
         status: results.length > 0 ? 'success' : 'no_data',
+        qualificationStatus: preQualification.status,
+        artifacts,
+        canRegenerate,
       });
     }
 
-    const directViz = await getDirectVisualization(qualificationId, sectionId);
     if (directViz) {
       return NextResponse.json({
         sectionId,
@@ -119,16 +157,27 @@ export async function GET(
         status: 'success',
         visualizationTree: directViz.tree,
         synthesisMethod: 'ai',
+        qualificationStatus: preQualification.status,
+        artifacts,
+        canRegenerate,
       });
     }
 
-    if (results.length === 0) {
+    if (
+      results.length === 0 &&
+      !artifacts.hasVisualization &&
+      !artifacts.hasHighlight &&
+      findingsCount === 0
+    ) {
       return NextResponse.json({
         sectionId,
         results: [],
         confidence: 0,
         status: 'no_data',
         errorMessage: 'Keine RAG-Daten für diese Sektion vorhanden',
+        qualificationStatus: preQualification.status,
+        artifacts,
+        canRegenerate,
       });
     }
 
@@ -137,7 +186,10 @@ export async function GET(
       results,
       confidence,
       status: 'success',
-      synthesisMethod: 'fallback',
+      ...(results.length > 0 ? { synthesisMethod: 'fallback' as const } : {}),
+      qualificationStatus: preQualification.status,
+      artifacts,
+      canRegenerate,
     });
   } catch (error) {
     console.error('[Qualification Section API] Error:', error);

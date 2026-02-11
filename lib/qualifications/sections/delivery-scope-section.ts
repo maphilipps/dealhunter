@@ -21,66 +21,50 @@ import {
   generateEmbeddingsWithConcurrency,
 } from './section-utils';
 
-const EvidenceFields = z.union([
-  z.object({
-    evidenceChunkIds: z.array(z.string()).min(1),
-    needsManualReview: z.literal(false),
-  }),
-  z.object({
-    evidenceChunkIds: z.array(z.string()).length(0),
-    needsManualReview: z.literal(true),
-  }),
-]);
+const ScopeItemSchema = z.object({
+  name: z.string().min(1),
+  mandatory: z.boolean(),
+  description: z.string().min(1),
+  phaseOrMilestone: z.string().nullable(),
+  acceptanceCriteria: z.string().nullable(),
+  dependencies: z.array(z.string().min(1)).max(12),
+  evidenceChunkIds: z.array(z.string()),
+  needsManualReview: z.boolean(),
+});
 
-const ScopeItemSchema = z.intersection(
-  z.object({
-    name: z.string().min(1),
-    mandatory: z.boolean(),
-    description: z.string().min(1),
-    phaseOrMilestone: z.string().nullable(),
-    acceptanceCriteria: z.string().nullable(),
-    dependencies: z.array(z.string().min(1)).max(12),
-  }),
-  EvidenceFields
-);
+const OutOfScopeItemSchema = z.object({
+  item: z.string().min(1),
+  details: z.string().nullable(),
+  evidenceChunkIds: z.array(z.string()),
+  needsManualReview: z.boolean(),
+});
 
-const OutOfScopeItemSchema = z.intersection(
-  z.object({
-    item: z.string().min(1),
-    details: z.string().nullable(),
-  }),
-  EvidenceFields
-);
-
-const AssumptionSchema = z.intersection(
-  z.object({
-    assumption: z.string().min(1),
-    rationale: z.string().min(1),
-  }),
-  EvidenceFields
-);
+const AssumptionSchema = z.object({
+  assumption: z.string().min(1),
+  rationale: z.string().min(1),
+  evidenceChunkIds: z.array(z.string()),
+  needsManualReview: z.boolean(),
+});
 
 const DeliveryScopeExtractSchema = z.object({
   scopeInventory: z.array(ScopeItemSchema),
   outOfScope: z.array(OutOfScopeItemSchema),
   assumptions: z.array(AssumptionSchema),
   risks: z.array(
-    z.intersection(
-      z.object({
-        title: z.string().min(1),
-        description: z.string().min(1),
-      }),
-      EvidenceFields
-    )
+    z.object({
+      title: z.string().min(1),
+      description: z.string().min(1),
+      evidenceChunkIds: z.array(z.string()),
+      needsManualReview: z.boolean(),
+    })
   ),
   openQuestions: z.array(
-    z.intersection(
-      z.object({
-        question: z.string().min(1),
-        whyItMatters: z.string().min(1),
-      }),
-      EvidenceFields
-    )
+    z.object({
+      question: z.string().min(1),
+      whyItMatters: z.string().min(1),
+      evidenceChunkIds: z.array(z.string()),
+      needsManualReview: z.boolean(),
+    })
   ),
   nextSteps: z.array(z.string().min(5)).min(3).max(8),
   summary: z.string().min(60),
@@ -316,34 +300,58 @@ export async function runDeliveryScopeSection(options: {
 
     const evidenceContext = buildEvidenceContextForExtraction(chunks);
 
-    const extraction: DeliveryScopeExtract = await generateStructuredOutput({
-      model: 'default',
-      schema: DeliveryScopeExtractSchema,
-      system: `Du extrahierst Lieferumfang (während Leistungserbringung) aus RFP-Chunks.
+    let extraction: DeliveryScopeExtract;
+    try {
+      extraction = await generateStructuredOutput({
+        model: 'default',
+        schema: DeliveryScopeExtractSchema,
+        system: `Du extrahierst Lieferumfang (während Leistungserbringung) aus RFP-Chunks.
 
 KRITISCHE REGELN:
 - NUR Informationen aus den EVIDENCE CHUNKS verwenden.
 - Jede Zeile MUSS entweder (a) evidenceChunkIds (>=1) haben ODER (b) needsManualReview=true und evidenceChunkIds=[].
 - Keine Halluzinationen. Bei Unklarheit: needsManualReview=true.
 - Out of scope NUR wenn explizit genannt; sonst leeres Array.`,
-      prompt: [
-        `SECTION: ${sectionId}`,
-        '',
-        evidenceContext,
-        '',
-        'AUFGABE:',
-        '1) Erstelle ein Scope-Inventar: alle geforderten Leistungen/Deliverables waehrend der Leistungserbringung.',
-        '   Pro Eintrag: Pflicht/Optional, kurze Beschreibung, Phase/Meilenstein (falls erkennbar), Abnahme/Akzeptanz (falls genannt), Abhaengigkeiten.',
-        '2) Extrahiere explizite Out-of-scope Punkte (falls vorhanden).',
-        '3) Formuliere 5-10 Annahmen, wenn RFP in wichtigen Details unklar ist (needsManualReview=true, evidenceChunkIds=[]).',
-        '4) Formuliere 3-7 scope-basierte Risiken und 5-10 offene Fragen (mit Begründung).',
-        '5) Gib 3-8 konkrete Next Steps fuer das Angebotsteam.',
-        '6) Schreibe eine Summary (6-10 Saetze) fuer das Angebotsteam (entscheidungsrelevant).',
-      ].join('\n'),
-      temperature: 0,
-      maxTokens: 5200,
-      timeout: 70_000,
-    });
+        prompt: [
+          `SECTION: ${sectionId}`,
+          '',
+          evidenceContext,
+          '',
+          'AUFGABE:',
+          '1) Erstelle ein Scope-Inventar: alle geforderten Leistungen/Deliverables waehrend der Leistungserbringung.',
+          '   Pro Eintrag: Pflicht/Optional, kurze Beschreibung, Phase/Meilenstein (falls erkennbar), Abnahme/Akzeptanz (falls genannt), Abhaengigkeiten.',
+          '2) Extrahiere explizite Out-of-scope Punkte (falls vorhanden).',
+          '3) Formuliere 5-10 Annahmen, wenn RFP in wichtigen Details unklar ist (needsManualReview=true, evidenceChunkIds=[]).',
+          '4) Formuliere 3-7 scope-basierte Risiken und 5-10 offene Fragen (mit Begründung).',
+          '5) Gib 3-8 konkrete Next Steps fuer das Angebotsteam.',
+          '6) Schreibe eine Summary (6-10 Saetze) fuer das Angebotsteam (entscheidungsrelevant).',
+        ].join('\n'),
+        temperature: 0,
+        maxTokens: 5200,
+        timeout: 70_000,
+      });
+    } catch (extractionError) {
+      console.warn(
+        '[DeliveryScopeSection] Structured extraction failed, continuing with deterministic fallback:',
+        extractionError
+      );
+      extraction = {
+        scopeInventory: [],
+        outOfScope: [],
+        assumptions: [],
+        risks: [],
+        openQuestions: [],
+        nextSteps: [],
+        summary:
+          'Automatische Scope-Extraktion war nicht vollständig möglich. Die Sektion wurde mit deterministischen Fallback-Regeln aufgebaut und sollte gegen das Originaldokument validiert werden.',
+        dashboardHighlights: [
+          'Scope/Deliverables im Original-PDF verifizieren.',
+          'Unklare Leistungen und Abgrenzungen als Bieterfrage klären.',
+          'Annahmen vor Preis-/Leistungsfinalisierung absichern.',
+        ],
+        confidence: 25,
+      };
+    }
 
     const scopeRows = extraction.scopeInventory.map(s => {
       const rfpSources = collectRfpSourcesFromChunkIds(s.evidenceChunkIds, byId);

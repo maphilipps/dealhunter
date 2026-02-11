@@ -48,18 +48,14 @@ export async function storeAgentResult(
   content: string,
   metadata?: Record<string, unknown>
 ): Promise<{ success: boolean; error?: string }> {
-  if (!(await isEmbeddingEnabled())) {
-    return { success: true };
-  }
-
   try {
-    const embedding = await generateQueryEmbedding(content);
-
-    if (!embedding) {
-      return {
-        success: false,
-        error: 'Failed to generate embedding for agent result',
-      };
+    let embedding: number[] | null = null;
+    if (await isEmbeddingEnabled()) {
+      try {
+        embedding = await generateQueryEmbedding(content);
+      } catch {
+        embedding = null;
+      }
     }
 
     // Get next chunk index for this agent+preQualification combination (unified dealEmbeddings table)
@@ -83,7 +79,7 @@ export async function storeAgentResult(
       chunkType: `${agentName}_result`,
       chunkIndex: nextChunkIndex,
       content,
-      embedding: embedding,
+      embedding,
       metadata: metadata ? JSON.stringify(metadata) : null,
     });
 

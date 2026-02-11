@@ -15,7 +15,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { BURoutingCard } from '@/components/dashboard/bu-routing-card';
 import { ManagementSummaryCard } from '@/components/dashboard/management-summary-card';
@@ -62,18 +62,21 @@ export default function QualificationSummaryPage({ params }: { params: Promise<{
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    params.then(p => setPreQualificationId(p.id));
+    void params.then(p => setPreQualificationId(p.id));
   }, [params]);
 
-  useEffect(() => {
-    if (!preQualificationId) return;
-    const controller = new AbortController();
+  const fetchDashboard = useCallback(
+    async (options?: { signal?: AbortSignal; setLoading?: boolean }) => {
+      if (!preQualificationId) return;
+      const setLoading = options?.setLoading ?? false;
+      if (setLoading) setIsLoading(true);
 
-    async function fetchDashboard() {
       try {
         const response = await fetch(
           `/api/qualifications/${preQualificationId}/dashboard-summary`,
-          { signal: controller.signal }
+          {
+            signal: options?.signal,
+          }
         );
         if (!response.ok) {
           throw new Error('Failed to fetch dashboard data');
@@ -84,13 +87,18 @@ export default function QualificationSummaryPage({ params }: { params: Promise<{
         if (error instanceof DOMException && error.name === 'AbortError') return;
         console.error('[Summary] Fetch error:', error);
       } finally {
-        setIsLoading(false);
+        if (setLoading) setIsLoading(false);
       }
-    }
+    },
+    [preQualificationId]
+  );
 
-    void fetchDashboard();
+  useEffect(() => {
+    if (!preQualificationId) return;
+    const controller = new AbortController();
+    void fetchDashboard({ signal: controller.signal, setLoading: true });
     return () => controller.abort();
-  }, [preQualificationId]);
+  }, [preQualificationId, fetchDashboard]);
 
   const sectionsMap = useMemo(() => {
     const map = new Map<string, SectionHighlight>();
@@ -138,7 +146,11 @@ export default function QualificationSummaryPage({ params }: { params: Promise<{
       </div>
 
       {/* Management Summary */}
-      <ManagementSummaryCard summary={data?.managementSummary ?? null} />
+      <ManagementSummaryCard
+        preQualificationId={preQualificationId}
+        summary={data?.managementSummary ?? null}
+        onRegenerated={() => void fetchDashboard()}
+      />
 
       {/* BU Routing */}
       <BURoutingCard
@@ -198,6 +210,34 @@ export default function QualificationSummaryPage({ params }: { params: Promise<{
             );
           })}
         </div>
+      </div>
+
+      {/* Central Bidder Questions */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Bieterfragen (zentral)</h2>
+        <Card>
+          <CardContent className="py-4">
+            {data?.bidderQuestions && data.bidderQuestions.length > 0 ? (
+              <ul className="space-y-3">
+                {data.bidderQuestions.map((item, idx) => (
+                  <li key={`${item.sectionId}-${idx}`} className="text-sm">
+                    <div className="mb-1 flex items-center gap-2">
+                      <Badge variant="outline">{item.sectionTitle}</Badge>
+                      <Link href={getSectionUrl(preQualificationId, item.sectionId)}>
+                        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                          Section öffnen
+                        </Button>
+                      </Link>
+                    </div>
+                    <p className="text-muted-foreground">{item.question}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">Keine Bieterfragen verfügbar</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Footer */}

@@ -1,12 +1,13 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, or, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { getAgentResult, hasExpertAgentResults } from '@/lib/agents/expert-agents';
 import type { ManagementSummary } from '@/lib/agents/expert-agents/summary-schema';
 import { auth } from '@/lib/auth';
-import { DASHBOARD_SECTIONS } from '@/lib/dashboard/sections';
+import { DASHBOARD_SECTIONS, SECTION_BY_ID } from '@/lib/dashboard/sections';
 import type {
   BURoutingRecommendation,
+  CentralBidderQuestion,
   DashboardSummaryResponse,
   SectionHighlight,
 } from '@/lib/dashboard/types';
@@ -73,6 +74,90 @@ async function getSectionHighlights(
   return highlights;
 }
 
+async function getCentralBidderQuestions(
+  qualificationId: string
+): Promise<CentralBidderQuestion[]> {
+  const normalizeQuestion = (raw: string): string => {
+    let text = raw
+      .replace(/^Offene Frage:\s*/i, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!text) return '';
+
+    // Remove trailing inline source block "(Quelle ... | Annahme ...)" for stable dedupe.
+    if (text.endsWith(')')) {
+      const markerIndex = text.lastIndexOf(' (');
+      if (markerIndex > 0) {
+        const suffix = text.slice(markerIndex + 2, -1);
+        if (/\b(Quelle|Annahme)\b/i.test(suffix)) {
+          text = text.slice(0, markerIndex).trim();
+        }
+      }
+    }
+    return text;
+  };
+
+  const knownSectionIds = new Set(SECTION_BY_ID.keys());
+
+  const rows = await db
+    .select({
+      content: dealEmbeddings.content,
+      metadata: dealEmbeddings.metadata,
+      chunkType: dealEmbeddings.chunkType,
+      createdAt: dealEmbeddings.createdAt,
+      chunkIndex: dealEmbeddings.chunkIndex,
+    })
+    .from(dealEmbeddings)
+    .where(
+      and(
+        eq(dealEmbeddings.preQualificationId, qualificationId),
+        eq(dealEmbeddings.agentName, 'prequal_section_agent'),
+        or(
+          eq(dealEmbeddings.chunkType, 'bidder_question'),
+          sql`(metadata::jsonb)->>'kind' = 'open_question'`
+        )
+      )
+    )
+    .orderBy(desc(dealEmbeddings.createdAt), dealEmbeddings.chunkIndex);
+
+  const out: CentralBidderQuestion[] = [];
+  const seen = new Set<string>();
+
+  for (const row of rows) {
+    let sectionId = 'unknown';
+    const rawText = String(row.content || '').trim();
+
+    try {
+      const meta = row.metadata ? (JSON.parse(row.metadata) as Record<string, unknown>) : null;
+      if (meta && typeof meta.sectionId === 'string' && meta.sectionId.trim().length > 0) {
+        sectionId = meta.sectionId;
+      }
+    } catch {
+      // Keep defaults for malformed metadata
+    }
+
+    if (sectionId === 'unknown' && knownSectionIds.has(row.chunkType)) {
+      sectionId = row.chunkType;
+    }
+    if (sectionId === 'unknown') continue;
+
+    const text = normalizeQuestion(rawText);
+    if (!text) continue;
+
+    const dedupeKey = `${sectionId}::${text.toLowerCase()}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    out.push({
+      sectionId,
+      sectionTitle: SECTION_BY_ID.get(sectionId)?.title ?? sectionId,
+      question: text,
+    });
+  }
+
+  return out.slice(0, 30);
+}
+
 /**
  * GET /api/qualifications/[id]/dashboard-summary
  *
@@ -122,17 +207,29 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     // Get Section Highlights
     const sectionHighlights = await getSectionHighlights(qualificationId, isProcessing);
 
+    const bidderQuestions = await getCentralBidderQuestions(qualificationId);
+
     // Get BU Routing from qualificationScan
-    const qualificationScan = preQualification.qualificationScan as Record<string, any> | null;
+    const qualificationScan = preQualification.qualificationScan as Record<string, unknown> | null;
     const buRouting: BURoutingRecommendation = {
-      recommendedBusinessUnit: qualificationScan?.recommendedBusinessUnit ?? null,
-      confidence: qualificationScan?.confidence ?? null,
-      reasoning: qualificationScan?.reasoning ?? null,
+      recommendedBusinessUnit:
+        qualificationScan && typeof qualificationScan.recommendedBusinessUnit === 'string'
+          ? qualificationScan.recommendedBusinessUnit
+          : null,
+      confidence:
+        qualificationScan && typeof qualificationScan.confidence === 'number'
+          ? qualificationScan.confidence
+          : null,
+      reasoning:
+        qualificationScan && typeof qualificationScan.reasoning === 'string'
+          ? qualificationScan.reasoning
+          : null,
     };
 
     const response: DashboardSummaryResponse = {
       managementSummary,
       sectionHighlights,
+      bidderQuestions,
       buRouting,
       processingStatus: {
         isProcessing,

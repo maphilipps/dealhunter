@@ -5,7 +5,7 @@
  * 1. Generate query embedding
  * 2. Vector similarity search via pgvector
  * 3. Optional tech stack filtering
- * 4. Threshold filtering (similarity > 0.7)
+ * 4. Prefer threshold filtering (similarity > 0.7), but fall back to top-N when none match
  * 5. Ranking by similarity
  */
 
@@ -32,6 +32,10 @@ export interface RAGResult {
   metadata: Record<string, unknown>;
 }
 
+// This threshold was originally introduced to avoid returning irrelevant chunks.
+// In practice, many real-world qualification queries peak below 0.7, which caused
+// false "no data" results across the product. We still use the threshold as a
+// preference, but fall back to top-N when nothing clears it.
 const SIMILARITY_THRESHOLD = 0.7;
 
 /**
@@ -70,9 +74,9 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
  * 1. Generate embedding for query
  * 2. Fetch all chunks for this qualification
  * 3. Calculate cosine similarity for each chunk
- * 4. Filter by threshold (>0.7)
- * 5. Optional tech stack filter
- * 6. Sort by similarity DESC
+ * 4. Sort by similarity DESC
+ * 5. Prefer thresholded results (>0.7), but fall back to top-N when none match
+ * 6. Optional tech stack filter
  * 7. Return top N results
  */
 export async function queryRAG(query: RAGQuery): Promise<RAGResult[]> {
@@ -96,13 +100,20 @@ export async function queryRAG(query: RAGQuery): Promise<RAGResult[]> {
     }
 
     // 3. Calculate similarity for each chunk (filter out chunks without embeddings)
-    const resultsWithSimilarity = chunks
+    const resultsWithSimilarity: RAGResult[] = chunks
       .filter(chunk => chunk.embedding !== null)
       .map(chunk => {
         const chunkEmbedding = chunk.embedding!;
         const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
 
-        const metadata = chunk.metadata ? JSON.parse(chunk.metadata) : {};
+        let metadata: Record<string, unknown> = {};
+        if (chunk.metadata) {
+          try {
+            metadata = JSON.parse(chunk.metadata) as Record<string, unknown>;
+          } catch {
+            metadata = {};
+          }
+        }
 
         return {
           chunkId: chunk.id,
@@ -112,34 +123,38 @@ export async function queryRAG(query: RAGQuery): Promise<RAGResult[]> {
           similarity,
           metadata,
         };
-      })
-      // 4. Filter by threshold
-      .filter(result => result.similarity > SIMILARITY_THRESHOLD);
-
-    // 5. Optional tech stack filter
-    let filteredResults = resultsWithSimilarity;
-    if (query.techStackFilter) {
-      filteredResults = resultsWithSimilarity.filter(result => {
-        const cms = result.metadata.cms as string | undefined;
-        const framework = result.metadata.framework as string | undefined;
-        return (
-          cms?.toLowerCase().includes(query.techStackFilter!.toLowerCase()) ||
-          framework?.toLowerCase().includes(query.techStackFilter!.toLowerCase())
-        );
       });
 
-      // If tech stack filter yields no results, fall back to all results
-      if (filteredResults.length === 0) {
-        filteredResults = resultsWithSimilarity;
+    if (resultsWithSimilarity.length === 0) {
+      return [];
+    }
+
+    // 4. Sort by similarity DESC (always)
+    resultsWithSimilarity.sort((a, b) => b.similarity - a.similarity);
+
+    // 5. Prefer thresholded results, but fall back to top-N if nothing clears the threshold.
+    const thresholded = resultsWithSimilarity.filter(r => r.similarity > SIMILARITY_THRESHOLD);
+    const pool = thresholded.length > 0 ? thresholded : resultsWithSimilarity;
+
+    // 6. Optional tech stack filter (applied after pool selection)
+    let filtered = pool;
+    if (query.techStackFilter) {
+      const needle = query.techStackFilter.toLowerCase();
+      const techFiltered = pool.filter(result => {
+        const cms = result.metadata.cms as string | undefined;
+        const framework = result.metadata.framework as string | undefined;
+        return cms?.toLowerCase().includes(needle) || framework?.toLowerCase().includes(needle);
+      });
+
+      // If tech stack filter yields no results, fall back to the unfiltered pool
+      if (techFiltered.length > 0) {
+        filtered = techFiltered;
       }
     }
 
-    // 6. Sort by similarity DESC
-    filteredResults.sort((a, b) => b.similarity - a.similarity);
-
     // 7. Return top N results
     const maxResults = query.maxResults || 5;
-    return filteredResults.slice(0, maxResults);
+    return filtered.slice(0, maxResults);
   } catch (error) {
     console.error('[RAG] Query failed:', error);
     return [];

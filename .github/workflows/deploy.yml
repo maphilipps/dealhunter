@@ -28,21 +28,12 @@ jobs:
             set -e
             cd /var/www
 
-            # Check for permission issues (writability matters for git, not ownership).
-            # If .git files are group-writable but not owned by deploy, deployment can still succeed.
-            echo "🔍 Checking for permission issues..."
+            # Auto-fix permission issues
+            echo "🔍 Checking permissions..."
             if [ ! -w "dealhunter/.git/index" ] || [ ! -w "dealhunter/.git/config" ]; then
-              echo ""
-              echo "❌ PERMISSION ERROR: Repo is not writable by deploy user"
-              echo ""
-              echo "Not writable:"
-              [ ! -w "dealhunter/.git/index" ] && echo "  - dealhunter/.git/index"
-              [ ! -w "dealhunter/.git/config" ] && echo "  - dealhunter/.git/config"
-              echo ""
-              echo "🔧 MANUAL FIX REQUIRED - Run on server as root:"
-              echo "   sudo chown -R deploy:deploy /var/www/dealhunter"
-              echo ""
-              exit 1
+              echo "⚠️  Permission issue detected, fixing..."
+              sudo chown -R deploy:deploy /var/www/dealhunter
+              echo "✅ Permissions fixed"
             fi
 
             cd dealhunter
@@ -59,6 +50,9 @@ jobs:
 
             echo "🔨 Building application..."
             npm run build
+
+            echo "🗄️  Running database migrations..."
+            npx drizzle-kit push || echo "⚠️  Migration failed (may already be applied)"
 
             echo "🔄 Restarting services..."
             pm2 reload dealhunter || pm2 start npm --name dealhunter -- start

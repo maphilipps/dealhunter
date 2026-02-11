@@ -13,7 +13,7 @@ import { createOpenAI, type OpenAIProvider } from '@ai-sdk/openai';
 import { generateText, stepCountIs } from 'ai';
 
 import { AI_TIMEOUTS } from '@/lib/ai/config';
-import { getProviderCredentials } from '@/lib/ai/model-config';
+import { getModelConfigAsync, getProviderCredentials } from '@/lib/ai/model-config';
 
 // Cached provider instance — recreated when API key changes
 let _cached: { provider: OpenAIProvider; keyTail: string } | null = null;
@@ -59,6 +59,7 @@ export async function searchAndContents(
 
   try {
     const provider = await getWebSearchProvider();
+    const config = await getModelConfigAsync('web-search');
 
     let enrichedQuery = query;
     if (options.includeDomains?.length) {
@@ -68,7 +69,7 @@ export async function searchAndContents(
     // provider('model') uses the Responses API (/responses endpoint)
     // provider.chat('model') uses Chat Completions — which does NOT support web search on LiteLLM
     const { text, sources } = await generateText({
-      model: provider('gpt-4o-mini'),
+      model: provider(config.modelName),
       tools: {
         web_search_preview: provider.tools.webSearchPreview({
           searchContextSize: 'low',

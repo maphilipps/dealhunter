@@ -110,6 +110,7 @@ export const MODEL_FALLBACK_CONFIG: Record<ModelSlot, ModelSlot | null> = {
   research: 'quality', // research → quality
   vision: null, // vision has no fallback (specialized)
   embedding: null, // embedding has no fallback
+  'web-search': null, // web-search has no fallback (specialized)
 };
 
 /**

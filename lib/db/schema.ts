@@ -110,6 +110,7 @@ export const aiModelSlotConfigs = pgTable('ai_model_slot_configs', {
       'research',
       'vision',
       'embedding',
+      'web-search',
     ],
   })
     .notNull()

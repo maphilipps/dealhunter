@@ -30,7 +30,8 @@ export type ModelSlot =
   | 'synthesizer'
   | 'research'
   | 'vision'
-  | 'embedding';
+  | 'embedding'
+  | 'web-search';
 
 // Model configuration
 export interface ModelConfig {
@@ -48,6 +49,7 @@ const DEFAULT_MODELS: Record<ModelSlot, ModelConfig> = {
   research: { provider: 'openai', modelName: 'gpt-5.2-pro' },
   vision: { provider: 'openai', modelName: 'gpt-4o-mini' },
   embedding: { provider: 'openai', modelName: 'text-embedding-3-large' },
+  'web-search': { provider: 'openai', modelName: 'gpt-4o-mini' },
 };
 
 // ─── DB Cache ────────────────────────────────────────────────────────────────────

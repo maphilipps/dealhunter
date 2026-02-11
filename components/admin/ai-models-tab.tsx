@@ -74,6 +74,7 @@ const SLOT_LABELS: Record<string, string> = {
   research: 'Research',
   vision: 'Vision',
   embedding: 'Embedding',
+  'web-search': 'Web Search',
 };
 
 const SLOT_DESCRIPTIONS: Record<string, string> = {
@@ -85,6 +86,7 @@ const SLOT_DESCRIPTIONS: Record<string, string> = {
   research: 'Deep Research & Exploration',
   vision: 'Bild- & PDF-Analyse',
   embedding: 'Text-Embeddings',
+  'web-search': 'Web-Suche & Recherche',
 };
 
 const PROVIDER_LOGO_MAP: Record<string, string> = {
@@ -582,6 +584,93 @@ export function AIModelsTab() {
             </p>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Provider Only Tab ───────────────────────────────────────────────────────────
+
+export function ProvidersTab() {
+  const [providers, setProviders] = useState<AIProviderForUI[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    const p = await getAIProviders();
+    setProviders(p);
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  if (isLoading) {
+    return <div className="py-4">Lade Provider...</div>;
+  }
+
+  return (
+    <div>
+      <div className="grid gap-3">
+        {providers.map(provider => (
+          <ProviderCard
+            key={provider.id}
+            provider={provider}
+            isSaving={false}
+            onUpdate={loadData}
+          />
+        ))}
+        {providers.length === 0 && (
+          <p className="text-sm text-muted-foreground py-4">
+            Keine Provider konfiguriert. Tabelle <code>ai_provider_configs</code> muss initialisiert
+            werden.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Model Slots Only Tab ────────────────────────────────────────────────────────
+
+export function ModelSlotsTab() {
+  const [providers, setProviders] = useState<AIProviderForUI[]>([]);
+  const [slots, setSlots] = useState<ModelSlotWithProvider[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    const [p, s] = await Promise.all([getAIProviders(), getModelSlots()]);
+    setProviders(p);
+    setSlots(s);
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  if (isLoading) {
+    return <div className="py-4">Lade Model Slots...</div>;
+  }
+
+  return (
+    <div>
+      <div className="grid gap-3">
+        {slots.map(slot => (
+          <SlotCard
+            key={slot.id}
+            slot={slot}
+            providers={providers}
+            isSaving={false}
+            onUpdate={loadData}
+          />
+        ))}
+        {slots.length === 0 && (
+          <p className="text-sm text-muted-foreground py-4">
+            Keine Model Slots konfiguriert. Tabelle <code>ai_model_slot_configs</code> muss
+            initialisiert werden.
+          </p>
+        )}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
  * Web Research Service (DEA-144)
  *
  * Automatic data enrichment via web research when RAG confidence is low.
- * Uses Exa API (primary) with fallback to native web search.
+ * Uses OpenAI webSearchPreview via AI Hub for reliable web search.
  * Results are chunked, embedded, and stored in RAG for future queries.
  */
 
@@ -14,6 +14,7 @@ import { db } from '@/lib/db';
 import { rawChunks } from '@/lib/db/schema';
 import { chunkRawText } from '@/lib/rag/raw-chunk-service';
 import { generateRawChunkEmbeddings } from '@/lib/rag/raw-embedding-service';
+import { searchAndContents } from '@/lib/search/web-search';
 
 export interface WebResearchQuery {
   preQualificationId: string;
@@ -27,7 +28,7 @@ export interface WebResearchResult {
   title: string;
   snippet: string;
   timestamp: Date;
-  source: 'exa' | 'native';
+  source: 'web';
 }
 
 export interface WebResearchResponse {
@@ -64,78 +65,23 @@ function checkRateLimit(preQualificationId: string): boolean {
 }
 
 /**
- * Search web using Exa API
- * Returns null if Exa API is not configured
+ * Search web using OpenAI webSearchPreview via AI Hub
  */
-async function searchWithExa(
-  query: string,
-  maxResults: number
-): Promise<WebResearchResult[] | null> {
-  const exaApiKey = process.env.EXA_API_KEY;
+async function searchWeb(query: string, maxResults: number): Promise<WebResearchResult[]> {
+  const { results, error } = await searchAndContents(query, { numResults: maxResults });
 
-  if (!exaApiKey || exaApiKey.trim() === '') {
-    console.log('[WEB-RESEARCH] Exa API key not configured, skipping Exa search');
-    return null;
+  if (error || !results.length) {
+    console.error('[WEB-RESEARCH] Search failed:', error);
+    return [];
   }
 
-  try {
-    const response = await fetch('https://api.exa.ai/search', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${exaApiKey}`,
-      },
-      body: JSON.stringify({
-        query,
-        numResults: maxResults,
-        useAutoprompt: true, // Let Exa optimize the query
-        type: 'neural', // Semantic search
-        contents: {
-          text: true,
-          highlights: true,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('[WEB-RESEARCH] Exa API error:', response.status, response.statusText);
-      return null;
-    }
-
-    const data = (await response.json()) as {
-      results: Array<{
-        url: string;
-        title: string;
-        text?: string;
-        highlights?: string[];
-      }>;
-    };
-
-    return data.results.map(result => ({
-      url: result.url,
-      title: result.title,
-      snippet: result.highlights?.[0] || result.text?.slice(0, 500) || '',
-      timestamp: new Date(),
-      source: 'exa' as const,
-    }));
-  } catch (error) {
-    console.error('[WEB-RESEARCH] Exa API request failed:', error);
-    return null;
-  }
-}
-
-/**
- * Search web using native web search (fallback)
- * Note: This requires the web-search MCP to be available
- * Currently placeholder - can be implemented when MCP wrapper is available
- */
-async function searchWithNative(query: string, maxResults: number): Promise<WebResearchResult[]> {
-  console.log(
-    `[WEB-RESEARCH] Native web search not yet implemented (query: "${query}", maxResults: ${maxResults})`
-  );
-  // TODO: Implement when web-search MCP wrapper is available
-  // For now, return empty to allow graceful degradation
-  return [];
+  return results.map(r => ({
+    url: r.url,
+    title: r.title,
+    snippet: r.text?.slice(0, 500) || '',
+    timestamp: new Date(),
+    source: 'web' as const,
+  }));
 }
 
 /**
@@ -143,12 +89,11 @@ async function searchWithNative(query: string, maxResults: number): Promise<WebR
  *
  * Flow:
  * 1. Check rate limit
- * 2. Try Exa API first
- * 3. Fallback to native web search if Exa fails
- * 4. Combine results into text
- * 5. Chunk text
- * 6. Generate embeddings
- * 7. Store in rawChunks with source metadata
+ * 2. Perform web search via OpenAI webSearchPreview
+ * 3. Combine results into text
+ * 4. Chunk text
+ * 5. Generate embeddings
+ * 6. Store in rawChunks with source metadata
  *
  * @param query - The research query
  * @returns Research response with results and stats
@@ -169,14 +114,8 @@ export async function performWebResearch(query: WebResearchQuery): Promise<WebRe
 
   console.log(`[WEB-RESEARCH] Starting research for: "${question}" (section: ${sectionId})`);
 
-  // 2. Try Exa API first
-  let results = await searchWithExa(question, maxResults);
-
-  // 3. Fallback to native web search
-  if (!results || results.length === 0) {
-    console.log('[WEB-RESEARCH] Falling back to native web search');
-    results = await searchWithNative(question, maxResults);
-  }
+  // 2. Perform web search
+  const results = await searchWeb(question, maxResults);
 
   if (results.length === 0) {
     console.warn('[WEB-RESEARCH] No results found from any source');

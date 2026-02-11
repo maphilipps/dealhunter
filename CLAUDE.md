@@ -122,3 +122,5 @@ Tools are grouped by category in the registry. Use these standard categories:
 4. **Use underscores for multi-word operations** — `decision.list_sections` not `decision.listSections`.
 
 5. **Deprecate, don't delete** — When refactoring, keep old tools marked as deprecated to maintain backward compatibility.
+
+<!-- Pipeline test: 2026-02-11_12:44:01 -->

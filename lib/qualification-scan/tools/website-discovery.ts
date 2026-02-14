@@ -21,6 +21,30 @@ const EXCLUDED_HOSTS = new Set([
   'www.glassdoor.com',
 ]);
 
+// Patterns that indicate cloud/tech/aggregator domains — never a customer website.
+const EXCLUDED_HOST_PATTERNS = [
+  /\.google\.com$/,
+  /\.googleapis\.com$/,
+  /\.gstatic\.com$/,
+  /\.microsoft\.com$/,
+  /\.azure\.com$/,
+  /\.amazonaws\.com$/,
+  /\.cloudflare\.com$/,
+  /\.github\.com$/,
+  /\.github\.io$/,
+  /\.stackoverflow\.com$/,
+  /\.reddit\.com$/,
+  /\.youtube\.com$/,
+  /\.yelp\.com$/,
+  /\.trustpilot\.com$/,
+  /\.indeed\.com$/,
+  /\.stepstone\.de$/,
+  /\.northdata\.de$/,
+  /\.firmenwissen\.de$/,
+  /\.dnb\.com$/,
+  /\.crunchbase\.com$/,
+];
+
 function normalizeToOrigin(url: string): string | null {
   try {
     const u = new URL(url);
@@ -104,7 +128,9 @@ export async function discoverCompanyWebsiteUrl(companyName: string): Promise<st
   const unique = Array.from(new Set(candidates)).filter(u => {
     try {
       const host = new URL(u).hostname.toLowerCase();
-      return !EXCLUDED_HOSTS.has(host);
+      if (EXCLUDED_HOSTS.has(host)) return false;
+      if (EXCLUDED_HOST_PATTERNS.some(p => p.test(host))) return false;
+      return true;
     } catch {
       return false;
     }
@@ -119,5 +145,10 @@ export async function discoverCompanyWebsiteUrl(companyName: string): Promise<st
     })
     .sort((a, b) => b.score - a.score);
 
-  return scored[0]?.url ?? null;
+  // Require at least one company-name token to appear in the hostname (score >= 3).
+  // Without this, unrelated URLs with high generic scores can slip through.
+  const best = scored[0];
+  if (!best || best.score < 3) return null;
+
+  return best.url;
 }

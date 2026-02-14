@@ -12,15 +12,8 @@ import {
   competitors,
   employees,
   preQualifications,
-  pitches,
   leadScans,
-  websiteAudits,
-  pitchSectionData,
-  cmsMatchResults,
-  ptEstimations,
   references,
-  referenceMatches,
-  competitorMatches,
 } from './schema';
 
 import { db } from './index';
@@ -62,15 +55,14 @@ async function seed() {
   ];
 
   for (const data of buData) {
-    const existing = await db.query.businessUnits.findFirst({
-      where: eq(businessUnits.name, data.name),
-    });
-    if (!existing) {
-      await db.insert(businessUnits).values({ ...data, keywords: JSON.stringify(data.keywords) });
-    }
+    await db
+      .insert(businessUnits)
+      .values({ ...data, keywords: JSON.stringify(data.keywords) })
+      .onConflictDoNothing();
   }
 
   const allBUs = await db.query.businessUnits.findMany();
+
   const phpBL = allBUs.find(b => b.name === 'PHP');
   const wemBL = allBUs.find(b => b.name === 'WEM');
 
@@ -144,7 +136,6 @@ async function seed() {
       }
     }
   }
-  const allTechs = await db.query.technologies.findMany();
 
   // Seed feature library (used by qualification scan + CMS matrix)
   const featureSeeds: Array<{
@@ -478,7 +469,6 @@ async function seed() {
       })
       .onConflictDoNothing();
   }
-  const allCompetitors = await db.query.competitors.findMany();
 
   const refProjects = [
     'Global Intranet Relaunch',
@@ -505,13 +495,12 @@ async function seed() {
       })
       .onConflictDoNothing();
   }
-  const allReferences = await db.query.references.findMany();
 
   const leadScenarios = [
-    { status: 'routed', decision: 'pending', blVote: null },
-    { status: 'bl_reviewing', decision: 'pending', blVote: null },
-    { status: 'bid_voted', decision: 'bid', blVote: 'BID' },
-    { status: 'archived', decision: 'no_bid', blVote: 'NO-BID' },
+    { status: 'routed', decision: 'pending' },
+    { status: 'bl_reviewing', decision: 'pending' },
+    { status: 'bid_voted', decision: 'bid' },
+    { status: 'archived', decision: 'no_bid' },
   ];
 
   for (const scenario of leadScenarios) {
@@ -550,126 +539,12 @@ async function seed() {
       .update(preQualifications)
       .set({ qualificationScanId: qs.id })
       .where(eq(preQualifications.id, preQualification.id));
-
-    const [lead] = await db
-      .insert(pitches)
-      .values({
-        preQualificationId: preQualification.id,
-        status: scenario.status as any,
-        customerName: account.name,
-        websiteUrl: account.website,
-        industry: account.industry,
-        projectDescription: `Comprehensive relaunch of the corporate website for ${account.name}. The goal is to modernize the tech stack, improve UX, and migrate from legacy systems.`,
-        budget: '500.000€ - 800.000€',
-        requirements: JSON.stringify([
-          { id: 'req_1', text: 'Headless CMS Architecture', priority: 'high' },
-          { id: 'req_2', text: 'SSO Integration with Azure AD', priority: 'critical' },
-          { id: 'req_3', text: 'Multi-language support (DE, EN, FR)', priority: 'medium' },
-          { id: 'req_4', text: 'WCAG 2.1 AA Accessibility', priority: 'high' },
-        ]),
-        qualificationScanId: qs.id,
-        decisionMakers: JSON.stringify([
-          { name: faker.person.fullName(), role: 'CTO', influence: 'high' },
-          { name: faker.person.fullName(), role: 'Procurement Lead', influence: 'medium' },
-        ]),
-        businessUnitId: bu.id,
-        blVote: scenario.blVote as any,
-        blVotedAt: scenario.blVote ? new Date() : null,
-        blVotedByUserId: scenario.blVote
-          ? blUsers.find(u => u.businessUnitId === bu.id)?.id || adminUser.id
-          : null,
-        blReasoning:
-          scenario.blVote === 'BID'
-            ? 'Strong fit with our portfolio. We have resources available.'
-            : scenario.blVote === 'NO-BID'
-              ? 'Budget too low for the requirements.'
-              : null,
-        blConfidenceScore: scenario.blVote ? faker.number.int({ min: 70, max: 95 }) : null,
-      })
-      .returning();
-
-    const sections = ['executive-summary', 'technology-fit', 'commercial-aspects'];
-    for (const section of sections) {
-      await db.insert(pitchSectionData).values({
-        pitchId: lead.id,
-        sectionId: section,
-        content: JSON.stringify({
-          summary: faker.lorem.paragraph(),
-          points: [faker.lorem.sentence(), faker.lorem.sentence()],
-        }),
-        confidence: faker.number.int({ min: 60, max: 90 }),
-      });
-    }
-
-    await db.insert(websiteAudits).values({
-      pitchId: lead.id,
-      status: 'completed',
-      websiteUrl: account.website || faker.internet.url(),
-      performanceScore: faker.number.int({ min: 40, max: 90 }),
-      accessibilityScore: faker.number.int({ min: 50, max: 95 }),
-      seoScore: faker.number.int({ min: 60, max: 100 }),
-      techStack: JSON.stringify(['Typo3', 'jQuery', 'Bootstrap']),
-      migrationComplexity: 'medium',
-    });
-
-    if (allTechs.length > 0) {
-      const tech = random(allTechs);
-      await db.insert(cmsMatchResults).values({
-        pitchId: lead.id,
-        technologyId: tech.id,
-        totalScore: faker.number.int({ min: 70, max: 95 }),
-        featureScore: 80,
-        industryScore: 75,
-        sizeScore: 90,
-        budgetScore: 60,
-        migrationScore: 70,
-        rank: 1,
-        isRecommended: true,
-        reasoning: 'Best fit for enterprise requirements.',
-      });
-    }
-
-    await db.insert(ptEstimations).values({
-      pitchId: lead.id,
-      totalPT: faker.number.int({ min: 100, max: 1000 }),
-      totalCost: faker.number.int({ min: 100000, max: 1000000 }),
-      durationMonths: faker.number.int({ min: 3, max: 12 }),
-      phases: JSON.stringify([
-        { name: 'Discovery', weeks: 4 },
-        { name: 'Implementation', weeks: 20 },
-        { name: 'Go-Live', weeks: 2 },
-      ]),
-      confidenceLevel: 'medium',
-    });
-
-    if (allReferences.length > 0) {
-      await db.insert(referenceMatches).values({
-        pitchId: lead.id,
-        referenceId: random(allReferences).id,
-        totalScore: 85,
-        techStackScore: 90,
-        industryScore: 80,
-        rank: 1,
-        reasoning: 'Similar industry and tech stack.',
-      });
-    }
-
-    if (allCompetitors.length > 0) {
-      await db.insert(competitorMatches).values({
-        pitchId: lead.id,
-        competitorId: random(allCompetitors).id,
-        source: 'database',
-        relevanceScore: 90,
-        likelyInvolved: true,
-        reasoning: 'Incumbent provider.',
-      });
-    }
   }
 }
 
 seed()
   .then(() => process.exit(0))
   .catch(error => {
-    console.error('❌ Seed failed:', error);
+    console.error('Seed failed:', error);
     process.exit(1);
   });

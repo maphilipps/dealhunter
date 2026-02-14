@@ -182,7 +182,7 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
     : controller.signal;
 
   try {
-    const { output, usage } = await generateText({
+    const result = await generateText({
       model: (await getModelProvider(modelKey))(modelName),
       output: Output.object({ schema: options.schema }),
       system: options.system,
@@ -194,18 +194,27 @@ export async function generateStructuredOutput<T extends z.ZodType>(options: {
     });
 
     // Log token usage for monitoring
-    console.log(`[AI] Generated object with ${modelName}: ${usage.totalTokens} tokens`);
+    console.log(`[AI] Generated object with ${modelName}: ${result.usage.totalTokens} tokens`);
 
-    // Type assertion: Output.object infers the schema type correctly,
-    // but TypeScript can't unify it with z.infer<T> across the generic boundary
-    return output as z.infer<T>;
+    // output getter throws NoOutputGeneratedError when the model fails to
+    // produce a schema-valid response.  Catch it here so callers get a clear message.
+    try {
+      return result.output as z.infer<T>;
+    } catch (outputError) {
+      if (outputError instanceof Error && outputError.name === 'AI_NoOutputGeneratedError') {
+        throw new Error(
+          `[generateStructuredOutput] Model ${modelName} did not produce valid structured output. ` +
+            `The response could not be parsed against the provided schema.`
+        );
+      }
+      throw outputError;
+    }
   } catch (error) {
     // Enhance timeout errors with more context
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error(`AI generation timeout after ${timeoutMs}ms (model: ${modelName})`);
     }
     console.error('[generateStructuredOutput] Error:', error);
-    // Propagate error for the caller to handle, now with better types from AI SDK
     throw error;
   } finally {
     clearTimeout(timeoutId);

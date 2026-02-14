@@ -4,7 +4,7 @@ import { withBotId } from 'botid/next/config';
 import { withWorkflow } from 'workflow/next';
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['@slack/bolt'],
+  serverExternalPackages: ['@slack/bolt', 'pdfjs-dist'],
   experimental: {
     serverActions: {
       bodySizeLimit: '200mb', // Allow many files (16+ PDFs up to 10 MB each)

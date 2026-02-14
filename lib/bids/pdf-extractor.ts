@@ -1,14 +1,13 @@
 /**
- * PDF Text Extraction using AI
+ * PDF Text Extraction
  *
- * Uses the adesso AI Hub (Gemini models) to extract text from PDFs.
- * This approach has several advantages over traditional PDF parsing:
- * - Handles scanned documents (OCR capability)
- * - Understands document structure and formatting
- * - No third-party library warnings or compatibility issues
- * - Works with complex PDFs (forms, tables, multi-column layouts)
+ * Supports two engines:
+ * - 'deterministic' (default): Uses pdfjs-dist for fast, deterministic extraction.
+ *   No API calls, works offline, produces consistent output.
+ * - 'ai': Uses the adesso AI Hub (Gemini models) for OCR-capable extraction.
+ *   Handles scanned documents and complex layouts but is slower and non-deterministic.
  *
- * For large PDFs (>50 pages), uses chunked extraction to avoid token limits.
+ * The engine can be controlled via the `engine` option or the PDF_EXTRACTION_ENGINE env var.
  */
 
 import { createOpenAI } from '@ai-sdk/openai';
@@ -16,6 +15,7 @@ import { generateText } from 'ai';
 import { PDFDocument } from 'pdf-lib';
 
 import { getProviderCredentials, warmModelConfigCache } from '@/lib/ai/model-config';
+import { extractTextDeterministic } from './pdf-deterministic-extractor';
 
 const pdfProviderCache = new Map<string, ReturnType<typeof createOpenAI>>();
 
@@ -64,25 +64,24 @@ const MAX_PAGES_PER_CHUNK = 30;
 const MAX_OUTPUT_TOKENS = 16000;
 const PDF_CHUNK_DELAY_MS = parseInt(process.env.PDF_CHUNK_DELAY_MS || '1500', 10);
 
-/**
- * Extract text content from a PDF buffer using AI
- *
- * For small PDFs: Single API call (fast) or multi-pass (thorough)
- * For large PDFs: Estimates page count and processes in chunks if needed
- *
- * @param buffer - The PDF file as a Buffer
- * @param options - Extraction options
- * @returns Promise<string> - The extracted text content
- * @throws Error if extraction fails
- */
 export type PdfExtractionMode = 'fast' | 'thorough';
 
-export type PdfLocatorStyle = 'bracket_v1';
+type PdfLocatorStyle = 'bracket_v1';
 
 export type PdfExtractionPass = 'text' | 'tables' | 'images';
 
+export type PdfExtractionEngine = 'deterministic' | 'ai';
+
 export type PdfExtractionOptions = {
   extractionMode?: PdfExtractionMode;
+  /**
+   * Extraction engine to use.
+   * - 'deterministic': pdfjs-dist based, fast, no API calls (default)
+   * - 'ai': Gemini-based, supports OCR for scanned documents
+   *
+   * Can also be set via PDF_EXTRACTION_ENGINE env var.
+   */
+  engine?: PdfExtractionEngine;
   /**
    * When enabled, the extractor will try to preserve source locators using explicit markers:
    * - [[PAGE N]] at the start of each page
@@ -100,7 +99,44 @@ function withPassHeader(pass: PdfExtractionPass, text: string): string {
   return `[[PASS ${pass}]]\n${text}`.trim();
 }
 
+/**
+ * Extract text from a PDF buffer.
+ *
+ * @param buffer - The PDF file as a Buffer
+ * @param options - Extraction options
+ * @param options.engine - 'deterministic' (default, pdfjs-dist) or 'ai' (Gemini-based, OCR-capable)
+ *
+ * When using the 'deterministic' engine, AI-specific options (extractionMode, includeLocators,
+ * model) are ignored. The deterministic engine uses pdfjs-dist for fast, offline extraction.
+ *
+ * When using the 'ai' engine, all options are supported including OCR for scanned PDFs.
+ */
 export async function extractTextFromPdf(
+  buffer: Buffer,
+  options: PdfExtractionOptions = {}
+): Promise<string> {
+  const VALID_ENGINES: PdfExtractionEngine[] = ['deterministic', 'ai'];
+  const rawEngine = process.env.PDF_EXTRACTION_ENGINE;
+  let envEngine: PdfExtractionEngine | undefined;
+  if (rawEngine) {
+    if (VALID_ENGINES.includes(rawEngine as PdfExtractionEngine)) {
+      envEngine = rawEngine as PdfExtractionEngine;
+    } else {
+      console.warn(
+        `[PDF Extractor] Invalid PDF_EXTRACTION_ENGINE="${rawEngine}", falling back to default`
+      );
+    }
+  }
+  const engine: PdfExtractionEngine = options.engine ?? envEngine ?? 'deterministic';
+
+  if (engine === 'deterministic') {
+    return extractTextDeterministic(buffer);
+  }
+
+  return extractTextFromPdfAI(buffer, options);
+}
+
+async function extractTextFromPdfAI(
   buffer: Buffer,
   options: PdfExtractionOptions = {}
 ): Promise<string> {
@@ -409,56 +445,4 @@ async function extractTextChunked(
 
   // Combine chunks with clear separation
   return chunks.join('\n\n---\n\n');
-}
-
-/**
- * Extract text with explicit page range (for manual control)
- * Useful when you know exact page numbers to extract
- */
-export async function extractTextFromPdfPages(
-  buffer: Buffer,
-  startPage: number,
-  endPage: number
-): Promise<string> {
-  const model = await getPdfExtractionModel();
-
-  const result = await generateText({
-    model,
-    messages: [
-      {
-        role: 'system',
-        content: `Du bist ein Dokumenten-Extraktions-Assistent. Extrahiere Text aus einem spezifischen Seitenbereich.
-
-WICHTIG:
-- Extrahiere NUR Seiten ${startPage} bis ${endPage}
-- Behalte die logische Struktur
-- Gib NUR den extrahierten Text zurück`,
-      },
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: `Extrahiere den Text von Seite ${startPage} bis ${endPage}:`,
-          },
-          {
-            type: 'file',
-            mediaType: 'application/pdf',
-            data: buffer,
-            filename: 'document.pdf',
-          },
-        ],
-      },
-    ],
-    // omit temperature for model compatibility
-    maxOutputTokens: MAX_OUTPUT_TOKENS,
-  });
-
-  const extractedText = result.text;
-
-  if (!extractedText || extractedText.trim().length === 0) {
-    throw new Error(`Keine Inhalte auf Seiten ${startPage}-${endPage} gefunden`);
-  }
-
-  return extractedText.trim();
 }

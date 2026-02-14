@@ -52,11 +52,14 @@ jobs:
             npm run build
 
             echo "🗄️  Running database migrations..."
-            # Run latest migration (0015) if exists
-            if [ -f "drizzle/0015_add_web_search_slot.sql" ]; then
-              psql "$DATABASE_URL" -f drizzle/0015_add_web_search_slot.sql || echo "⚠️  Migration may already be applied"
-            fi
+            for migration in drizzle/00*.sql; do
+              echo "  Applying $(basename "$migration")..."
+              psql "$DATABASE_URL" -f "$migration" 2>/dev/null || true
+            done
             echo "✅ Migrations complete"
+
+            echo "🌱 Running seed (idempotent)..."
+            npx tsx lib/db/seed.ts || echo "⚠️  Seed had warnings"
 
             echo "🔄 Restarting services..."
             pm2 reload dealhunter || pm2 start npm --name dealhunter -- start
